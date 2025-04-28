@@ -1,0 +1,32 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('erp_home_loans', function (Blueprint $table) {
+            $table->string('series')->after('id');
+            $table->string('appli_no')->after('series');
+            $table->string('ref_no')->after('appli_no');
+            $table->integer('status')->after('image')->default(0);
+            $table->date('proceed_date')->after('status')->nullable();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('erp_home_loans', function (Blueprint $table) {
+            $table->dropColumn(['series', 'appli_no', 'ref_no', 'status', 'proceed_date']);
+        });
+    }
+};

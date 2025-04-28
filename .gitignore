@@ -1,0 +1,73 @@
+# Laravel specific exclusions
+/vendor
+/node_modules
+/public/hot
+/public/build
+/public/temp
+/public/storage
+/public/storage
+/public/build
+/storage/*.key
+/storage/logs/*.log
+/bootstrap/cache/*
+/public/voucherDocuments
+/.env
+.env.backup
+.env.production
+.phpunit.result.cache
+/.phpunit.cache
+
+# Ignore configuration files
+/config/database.php
+config/database.php
+
+
+# Vagrant environment files
+/bootstrap
+/vendor
+/.idea
+/.vagrant
+Homestead.json
+Homestead.yaml
+
+# Composer dependencies
+composer.lock
+auth.json
+
+# npm/Yarn error files
+npm-debug.log
+yarn-error.log
+composer.lock
+.env
+.vscode
+/public/attachments
+/public/documents
+/public/public
+/public/uploads
+/public/voucherDocuments
+/public/voucherPaymentDocuments
+
+# JetBrains IDE (PHPStorm) files
+/.idea
+
+# Visual Studio Code files
+/.vscode
+
+# Fleet (JetBrains new IDE) files
+/.fleet
+
+# MacOS and Linux files
+.DS_Store
+Thumbs.db
+
+# Laravel Mix artifacts
+/public/build
+
+# Ignore Laravel cache files
+/bootstrap/cache
+
+# Exclude test result cache
+.phpunit.result.cache
+
+# Ignore Laravel Telescope entries (if you use it)
+/telescope
