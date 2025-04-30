@@ -103,17 +103,13 @@ class GroupController extends Controller
     })
     ->count();
 
-        
-
         // Find the organization based on the user's organization_id
-        $organization = Organization::where('id', Helper::getAuthenticatedUser()->organization_id)->first();
+        // $organization = Organization::where('id', Helper::getAuthenticatedUser()->organization_id)->first();
         if($groups==0){
         // Create a new group record with organization details
-        Group::create(array_merge($request->all(), [
-            'organization_id' => $organization->id,
-            'group_id' => $organization->group_id,
-            'company_id' => $organization->company_id,
-        ]));
+        $parentUrl = ConstantHelper::LEDGER_GROUP_SERVICE_ALIAS;
+        $validatedData = Helper::prepareValidatedDataWithPolicy($parentUrl);
+        Group::create(array_merge($request->all(),$validatedData));
 
         // Redirect with a success message
         return redirect()->route('ledger-groups.index')->with('success', 'Group created successfully');
