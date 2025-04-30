@@ -670,9 +670,9 @@ class VoucherController extends Controller
         $parentUrl = request()->segments()[0];
 
         $serviceAlias = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
-        if (count($serviceAlias['services']) == 0) {
-            return redirect()->route('/');
-        }
+        // if (count($serviceAlias['services']) == 0) {
+        //     return redirect()->route('/');
+        // }
 
         $bookTypes = $serviceAlias['services'];
 

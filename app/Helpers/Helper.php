@@ -2594,7 +2594,7 @@ class Helper
                     'message' => 'All Data Found'
                 ];
             } else {
-                $services = EmployeeBookMapping::where('service_menu_id', $organizationMenu ?-> serviceMenu -> id) -> where('employee_id', $authUser -> auth_user_id) -> first();
+                $services = EmployeeBookMapping::where('service_menu_id', $organizationMenu ?-> serviceMenu ?-> id) -> where('employee_id', $authUser -> auth_user_id) -> first();
                 if (!isset($services)) { //Assign all services and books data if no record is found
                     $serviceIds = $organizationMenu ?-> serviceMenu ?-> erp_service_id ?? [];
 

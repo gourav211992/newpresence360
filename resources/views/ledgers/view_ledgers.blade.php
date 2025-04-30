@@ -128,6 +128,8 @@
 <!-- END: Content-->
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script type="text/javascript" src="{{asset('assets/js/modules/finance-table.js')}}"></script>
+
 <script>
 	$(function () {
 		var dt_basic_table = $('.datatables-basic'),
@@ -273,7 +275,13 @@
 		$('.datatables-basic tbody').on('click', '.delete-record', function () {
 			dt_basic.row($(this).parents('tr')).remove().draw();
 		});
+
+		handleRowSelection('.datatables-basic');
 	});
+
+
+
+
 </script>
 
 @endsection

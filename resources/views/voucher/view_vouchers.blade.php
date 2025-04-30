@@ -374,6 +374,8 @@
                 }
             });
 
+handleRowSelection('.datatables-basic');
+
             // Optionally, you can add some custom logic or event listeners here
         });
     </script>

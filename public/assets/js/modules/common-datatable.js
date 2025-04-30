@@ -78,4 +78,21 @@ function initializeDataTable(selector, ajaxUrl, columns, filters = {}, exportTit
         });
         return dataTableInstance;
     }
+
+    function handleRowSelection(tableSelector) {
+    $(tableSelector).on('click', 'tbody tr', function () {
+        // Toggle the 'trselected' class on the clicked row
+        $(this).toggleClass('trselected');
+    });
+
+    // Optional: Handle keyboard navigation for row selection (Up/Down arrow keys)
+    $(document).on('keydown', function (e) {
+        if (e.which == 38) {  // Up arrow key
+            $(tableSelector).find('.trselected').prev('tr').addClass('trselected').siblings().removeClass('trselected');
+        } else if (e.which == 40) {  // Down arrow key
+            $(tableSelector).find('.trselected').next('tr').addClass('trselected').siblings().removeClass('trselected');
+        }
+    });
+}
+
 }

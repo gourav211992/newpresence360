@@ -50,9 +50,9 @@ class RegistrationController extends Controller
         $parentURL = "fixed-asset_registration";
         
          $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
-         if (count($servicesBooks['services']) == 0) {
-            return redirect() -> route('/');
-        }
+        //  if (count($servicesBooks['services']) == 0) {
+        //     return redirect() -> route('/');
+        // }
         $organization = Helper::getAuthenticatedUser()->organization;
         $firstService = $servicesBooks['services'][0];
         $series = Helper::getBookSeriesNew($firstService -> alias, $parentURL)->get();
