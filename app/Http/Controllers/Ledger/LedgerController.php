@@ -269,16 +269,12 @@ class LedgerController extends Controller
             $request->request->remove('tax_percentage');
         }
 
-        // Get the authenticated user
-        $user = Helper::getAuthenticatedUser();
+        $parentUrl = ConstantHelper::LEDGERS_SERVICE_ALIAS;
+        $validatedData = Helper::prepareValidatedDataWithPolicy($parentUrl);
 
-        $organization = Organization::where('id', $user->organization_id)->first();
+        
         // Create a new ledger record with organization details
-        Ledger::create(array_merge($request->all(), [
-            'organization_id' => $organization->id,
-            'group_id' => $organization->group_id,
-            'company_id' => $organization->company_id,
-        ]));
+        Ledger::create(array_merge($request->all(),$validatedData));
 
 
 

@@ -2894,6 +2894,40 @@ class Helper
             return self::getChildLedgerGroupsByNameArray(ConstantHelper::NON_CARRY_FORWARD_BALANCE_GROUPS);
         }
 
+        public static function prepareValidatedDataWithPolicy($parentUrlAlias = null)
+        {
+            $user = self::getAuthenticatedUser();
+            $organization = $user->organization;
+            $validatedData = [];
+
+            $parentUrl = $parentUrlAlias ?? '';
+
+            $services = self::getAccessibleServicesFromMenuAlias($parentUrl);
+
+            if ($services && $services['services'] && $services['services']->isNotEmpty()) {
+                $firstService = $services['services']->first();
+                $serviceId = $firstService->service_id;
+
+                $policyData = self::getPolicyByServiceId($serviceId);
+
+                if ($policyData && isset($policyData['policyLevelData'])) {
+                    $policyLevelData = $policyData['policyLevelData'];
+                    $validatedData['group_id'] = $policyLevelData['group_id'];
+                    $validatedData['company_id'] = $policyLevelData['company_id'];
+                    $validatedData['organization_id'] = $policyLevelData['organization_id'];
+                } else {
+                    $validatedData['group_id'] = $organization->group_id;
+                    $validatedData['company_id'] = null;
+                    $validatedData['organization_id'] = null;
+                }
+            } else {
+                $validatedData['group_id'] = $organization->group_id;
+                $validatedData['company_id'] = null;
+                $validatedData['organization_id'] = null;
+            }
+
+            return $validatedData;
+        }
 }
 
 

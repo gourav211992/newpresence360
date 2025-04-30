@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\CostCenter;
 
+use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
 use App\Http\Controllers\Controller;
 use App\Models\CostCenterOrgLocations;
@@ -51,15 +52,11 @@ class CostCenterController extends Controller
         ]);
 
         // Find the organization based on the user's organization_id
-        $organization = Organization::where('id', Helper::getAuthenticatedUser()->organization_id)->first();
-
-
+        // $organization = Organization::where('id', Helper::getAuthenticatedUser()->organization_id)->first();
         // Create a new cost center record with organization details
-        $costCenter = CostCenter::create(array_merge($request->all(), [
-            'organization_id' => $organization->id,
-            'group_id' => $organization->group_id,
-            'company_id' => $organization->company_id,
-        ]));
+        $parentUrl = ConstantHelper::COST_CENTER_SERVICE_ALIAS;
+        $validatedData = Helper::prepareValidatedDataWithPolicy($parentUrl);
+        $costCenter = CostCenter::create(array_merge($request->all(),$validatedData));
 
         $locationOrgMappings = json_decode($request->input('location_org_mappings'), true);
             if (is_array($locationOrgMappings)) {
