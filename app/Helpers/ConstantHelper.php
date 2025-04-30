@@ -507,6 +507,9 @@ class ConstantHelper
     const RESEARCH_FILES = 'research-files';
 
     const ITEM_SERVICE_ALIAS = 'items';
+    const LEDGERS_SERVICE_ALIAS = 'ledgers';
+    const LEDGER_GROUP_SERVICE_ALIAS = 'ledger-groups';
+    const COST_CENTER_SERVICE_ALIAS = 'cost-center';
     const HSN_SERVICE_ALIAS = 'hsn';
     const CATEGORY_SERVICE_ALIAS = 'categories';
     const ATTRIBUTE_SERVICE_ALIAS = 'attributes';
