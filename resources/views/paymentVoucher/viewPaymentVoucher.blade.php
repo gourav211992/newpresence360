@@ -914,6 +914,7 @@
 @endsection
 
 @section('scripts')
+
     <script>
 
         function onPostVoucherOpen(type = "not_posted") {

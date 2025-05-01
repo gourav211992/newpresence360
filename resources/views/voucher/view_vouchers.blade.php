@@ -266,6 +266,8 @@
 @endsection
 
 @section('scripts')
+<script type="text/javascript" src="{{asset('assets/js/modules/finance-table.js')}}"></script>
+
     <script>
         function setApproval(id) {
             document.getElementById('id').value = id;
@@ -374,7 +376,7 @@
                 }
             });
 
-handleRowSelection('.datatables-basic');
+          handleRowSelection('.datatables-basic');
 
             // Optionally, you can add some custom logic or event listeners here
         });
