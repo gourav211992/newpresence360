@@ -32,14 +32,14 @@ class GroupController extends Controller
             }
         ])->get();
 
-        $data = Group::where(function($q){
-            $q->whereNull('organization_id');
-            $q->OrWhere('organization_id', Helper::getAuthenticatedUser()->organization_id);
-        })->with([
+        $data = Group::withDefaultGroupCompanyOrg()
+        ->with([
             'parent' => function ($q) {
                 $q->select('id', 'name');
             }
-        ])->orderBy('id', 'desc')->get();
+        ])
+        ->orderBy('id', 'desc')
+        ->get();
         $non_editable = ConstantHelper::LEDGER_ACCOUNT_NON_EDITABLE;
 
         return view('ledgers.groups.view_groups', compact('data', 'parentGroup','non_editable'));

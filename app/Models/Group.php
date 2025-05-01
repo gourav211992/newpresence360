@@ -5,12 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Helpers\Helper;
+use App\Traits\DefaultGroupCompanyOrg;
+
 
 class Group extends Model
 {
     protected $table = 'erp_groups';
 
-    use HasFactory;
+    use HasFactory, DefaultGroupCompanyOrg;
 
     protected $fillable = [
         'name',
