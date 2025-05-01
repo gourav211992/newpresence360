@@ -44,7 +44,8 @@ class LedgerController extends Controller
                     $organizations[] = $organizationId;
                 }
 
-                $ledgers = Ledger::whereIn('organization_id', $organizations)->orderBy('id', 'desc');
+                // $ledgers = Ledger::whereIn('organization_id', $organizations)->orderBy('id', 'desc');
+                $ledgers = Ledger::withDefaultGroupCompanyOrg()->orderBy('id', 'desc')->get();
                 if ($request->group) {
                     $ledgers->whereJsonContains('ledger_group_id', (string) $request->group)
                         ->orWhere('ledger_group_id', $request->group);

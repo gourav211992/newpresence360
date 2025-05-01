@@ -23,7 +23,8 @@ class CostCenterController extends Controller
      */
     public function index()
     {
-        $centers = CostCenter::where('organization_id',Helper::getAuthenticatedUser()->organization_id)->orderBy('id', 'desc')->get();
+        // $centers = CostCenter::where('organization_id',Helper::getAuthenticatedUser()->organization_id)->orderBy('id', 'desc')->get();
+        $centers = CostCenter::withDefaultGroupCompanyOrg()->get();
         $companies = Helper::getAuthenticatedUser()->access_rights_org;
         $organizationId = Helper::getAuthenticatedUser()->organization_id;
         
