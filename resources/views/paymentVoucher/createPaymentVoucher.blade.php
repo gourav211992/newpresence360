@@ -9,12 +9,22 @@
 @endsection
 
 @section('content')
+    <script>
+        const locationCostCentersMap = @json(
+            $locations->mapWithKeys(function ($location) {
+                return [
+                    $location->id => $location->cost_centers->map(function ($cc) {
+                        return ['id' => $cc->id, 'name' => $cc->name];
+                    }),
+                ];
+            }));
+    </script>
     <!-- BEGIN: Content-->
     <div class="app-content content ">
         <div class="content-overlay"></div>
         <div class="header-navbar-shadow"></div>
         <div class="content-wrapper container-xxl p-0">
-       
+
 
             <form id="voucherForm" action="{{ $storeUrl }}" method="POST" enctype="multipart/form-data"
                 onsubmit="return check_amount()">
@@ -68,7 +78,8 @@
                                     class="btn btn-outline-primary btn-sm mb-50 mb-sm-0"><i data-feather='save'></i> Save as
                                     Draft</button>
                                 <button type="button" onclick="submitForm('submitted');"
-                                    class="btn btn-primary btn-sm mb-50 mb-sm-0" id="submitted"><i data-feather="check-circle"></i>
+                                    class="btn btn-primary btn-sm mb-50 mb-sm-0" id="submitted"><i
+                                        data-feather="check-circle"></i>
                                     Submit</button>
                                 <input id="submitButton" type="submit" value="Submit" class="hidden" />
                             </div>
@@ -77,8 +88,8 @@
                 </div>
                 <div class="content-body">
                     <section id="basic-datatable">
-                       
-                   
+
+
                         <div class="row">
                             <div class="col-12">
 
@@ -108,7 +119,8 @@
                                                             required onchange="getDocNumberByBookId()">
                                                             <option disabled selected value="">Select</option>
                                                             @foreach ($books as $book)
-                                                                <option value="{{ $book->id }}">{{ strtoupper($book->book_code) }}
+                                                                <option value="{{ $book->id }}">
+                                                                    {{ strtoupper($book->book_code) }}
                                                                 </option>
                                                             @endforeach
                                                         </select>
@@ -139,8 +151,8 @@
 
                                                     <div class="col-md-5">
                                                         <input type="date" class="form-control" name="date"
-                                                            id="date" required
-                                                            value="{{ date('Y-m-d') }}" max="{{ date('Y-m-d') }}" />
+                                                            id="date" required value="{{ date('Y-m-d') }}"
+                                                            max="{{ date('Y-m-d') }}" />
                                                     </div>
 
                                                 </div>
@@ -180,7 +192,7 @@
                                                             max="{{ date('Y-m-d') }}" />
                                                     </div>
                                                 </div>
-                                               
+
 
                                                 <div class="row align-items-center mb-1 bankfield">
                                                     <div class="col-md-2">
@@ -278,15 +290,15 @@
 
 
 
-                                                
+
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-2">
                                                         <label class="form-label mt-50">Exchange Rates</label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="text" class="form-control"
-                                                         id="orgExchangeRate" value="" oninput="resetCalculations()"/>
-                                               
+                                                        <input type="text" class="form-control" id="orgExchangeRate"
+                                                            value="" oninput="resetCalculations()" />
+
 
                                                     </div>
                                                     <div hidden class="col-md-5 mb-1 mb-sm-0">
@@ -328,29 +340,44 @@
                                                                     <label class="form-label">Group</label>
                                                                 </div>
                                                             </div>
-                                                            
+
                                                         </div>
                                                     </div>
-                                                    
+
                                                 </div>
-                                                @if(count($cost_centers) > 0)
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-2">
-                                                        <label class="form-label">Cost Center <span
+                                                        <label class="form-label">Location <span
                                                                 class="text-danger">*</span></label>
                                                     </div>
-                                                <div class="col-md-5">
-                                                    <select class="form-control select2" name="cost_center_id"
-                                                        id="cost_center_id">
-                                                        @foreach ($cost_centers as $cost)
-                                                            <option value="{{ $cost['id'] }}">
-                                                                {{ $cost['name'] }}</option>
-                                                        @endforeach
-                                                    </select>
+
+                                                    <div class="col-md-5">
+                                                        <select id="locations" class="form-select select2"
+                                                            name="location">
+                                                            <option disabled value="" selected>Select Locations
+                                                            </option>
+                                                            @foreach ($locations as $location)
+                                                                <option value="{{ $location->id }}">
+                                                                    {{ $location->store_name }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+
                                                 </div>
-                                            </div>
-                                                
-                                                @endif
+                                                {{-- @if (count($cost_centers) > 0) --}}
+                                               
+                                                <div class="row align-items-center mb-1" id="costCenterRow" style="display: none;">
+                                                    <div class="col-md-2">
+                                                        <label class="form-label">Cost Center <span class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <select class="costCenter form-control select2" name="cost_center_id" id="cost_center_id">
+                                                            {{-- options will be appended dynamically --}}
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                {{-- @endif --}}
 
                                             </div>
 
@@ -411,15 +438,15 @@
                                                                         placeholder="Select"
                                                                         class="form-control mw-100 mb-25 partyName"
                                                                         id="party_name1" />
-                                                                    </td>
-                                                                    <td>
-                                                                        <select required id="groupSelect1"
-                                                                            name="parent_ledger_id[]"
-                                                                            class="ledgerGroup form-select mw-100">
-                                                                        </select>
-                                                                    </td>
+                                                                </td>
                                                                 <td>
-                                                                  
+                                                                    <select required id="groupSelect1"
+                                                                        name="parent_ledger_id[]"
+                                                                        class="ledgerGroup form-select mw-100">
+                                                                    </select>
+                                                                </td>
+                                                                <td>
+
                                                                     <div
                                                                         class="position-relative d-flex align-items-center">
                                                                         <select
@@ -506,8 +533,10 @@
                         <div class="col-md-3">
                             <div class="mb-1">
                                 <label class="form-label">Date <span class="text-danger">*</span></label>
-                                <input type="text" id="fp-range" name="date_range" value="{{ Request::get('date_range') }}" class="form-control flatpickr-range bg-white"
-                                placeholder="YYYY-MM-DD to YYYY-MM-DD" />
+                                <input type="text" id="fp-range" name="date_range"
+                                    value="{{ Request::get('date_range') }}"
+                                    class="form-control flatpickr-range bg-white"
+                                    placeholder="YYYY-MM-DD to YYYY-MM-DD" />
                             </div>
                         </div>
 
@@ -520,7 +549,7 @@
                                         <option>{{ strtoupper($book->alias) }}</option>
                                     @endforeach
                                 </select>
-                                </div>
+                            </div>
                         </div>
 
                         <div class="col-md-3">
@@ -572,8 +601,8 @@
                 <div class="modal-footer text-end">
                     <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"><i
                             data-feather="x-circle"></i> Cancel</button>
-                    <button class="btn btn-primary btn-sm"  type="button"
-                        onclick="setAmount()"><i data-feather="check-circle"></i> Process</button>
+                    <button class="btn btn-primary btn-sm" type="button" onclick="setAmount()"><i
+                            data-feather="check-circle"></i> Process</button>
                 </div>
             </div>
         </div>
@@ -595,29 +624,31 @@
         function setAmount() {
             let isValid = true;
 
-    $('.settleInput').each(function () {
-            let input = $(this);
-            let row = input.closest('.voucherRows');
-            let balanceText = row.find('.balanceInput').text().replace(/,/g, '');
-            let balance = parseFloat(balanceText);
-            let settleAmount = parseFloat(input.val());
+            $('.settleInput').each(function() {
+                let input = $(this);
+                let row = input.closest('.voucherRows');
+                let balanceText = row.find('.balanceInput').text().replace(/,/g, '');
+                let balance = parseFloat(balanceText);
+                let settleAmount = parseFloat(input.val());
 
-            // Remove existing error message
-            input.next('.invalid-feedback').remove();
+                // Remove existing error message
+                input.next('.invalid-feedback').remove();
 
-            if (settleAmount > balance) {
-                input.addClass('is-invalid');
-                input.after('<span class="invalid-feedback d-block">Settle amount cannot be greater than balance.</span>');
-                isValid = false;
-            } else {
-                input.removeClass('is-invalid');
+                if (settleAmount > balance) {
+                    input.addClass('is-invalid');
+                    input.after(
+                        '<span class="invalid-feedback d-block">Settle amount cannot be greater than balance.</span>'
+                        );
+                    isValid = false;
+                } else {
+                    input.removeClass('is-invalid');
+                }
+            });
+
+            if (!isValid) {
+                // Prevent modal close or further processing
+                return false;
             }
-        });
-
-        if (!isValid) {
-            // Prevent modal close or further processing
-            return false;
-        }
             $('#excAmount' + $('#currentRow').val()).val($('.settleTotal').text());
             $('#excAmount' + $('#currentRow').val()).trigger('keyup');
             $('#invoice').modal('toggle');
@@ -667,7 +698,7 @@
                 $('#invoice').modal('toggle');
             } else {
                 $('.drop' + id).val('');
-                showToast('error','Select ledger to select invoice!!');
+                showToast('error', 'Select ledger to select invoice!!');
             }
         }
 
@@ -761,80 +792,80 @@
 
         function adjustInvoice(rows) {
             let enteredAmount = parseFloat($(rows).val()) || 0;
-        let entersettle = $(rows);
+            let entersettle = $(rows);
 
-        let row = $(rows).closest("tr");
-        let balance = parseFloat(row.find(".balanceInput").text().replace(/,/g, "")) || 0;
+            let row = $(rows).closest("tr");
+            let balance = parseFloat(row.find(".balanceInput").text().replace(/,/g, "")) || 0;
 
-        if (enteredAmount > balance) {
-            let excessAmount = enteredAmount - balance;
-            if (excessAmount > 0) {
-                $(".voucherRows").each(function () {
-                    let nextBalance = parseFloat($(this).find(".balanceInput").text().replace(/,/g, "")) || 0;
-                    let nextSettleInput = $(this).find(".settleInput");
-                    let checkBox = $(this).find(".vouchers");
-                    let settle = parseFloat(nextSettleInput.val()) || 0;
-                    let deduct = nextBalance-settle;
-                    let nextSettle = settle + deduct;
-                    if(excessAmount>=deduct && nextBalance > settle){
-                        excessAmount-=deduct;
-                        nextSettleInput.val(deduct+settle);
-                        if(nextSettleInput.val()!=0)
-                        checkBox.prop('checked', true);
-                        console.log(enteredAmount-deduct);
-                        
-                        entersettle.val(enteredAmount-deduct);
-                    }
-                });
-                $(".voucherRows").each(function () {
-                    let nextBalance = parseFloat($(this).find(".balanceInput").text().replace(/,/g, "")) || 0;
-                    let nextSettleInput = $(this).find(".settleInput");
-                    let checkBox = $(this).find(".vouchers");
-                    let settle = parseFloat(nextSettleInput.val()) || 0;
-                    let deduct = nextBalance-settle;
-                    let nextSettle = settle + deduct;
-                    if(excessAmount>=deduct && nextBalance > settle){
-                        excessAmount-=deduct;
-                        nextSettleInput.val(deduct+settle);
-                        if(nextSettleInput.val()!=0)
-                        checkBox.prop('checked', true);
-                        console.log(enteredAmount-deduct);
-                        
-                        entersettle.val(entersettle.val()-deduct);
-                    }else if(excessAmount<deduct && nextBalance > settle){
-                        nextSettleInput.val(excessAmount+settle);
-                        if(nextSettleInput.val()!=0)
-                        checkBox.prop('checked', true);
-                        entersettle.val(entersettle.val()-excessAmount);
-                        excessAmount=0;
-                    }
-                });
-                $(".voucherRows").get().reverse().forEach(function () {
-                    let checkBox = $(this).find(".vouchers");
-                    let nextBalance = parseFloat($(this).find(".balanceInput").text().replace(/,/g, "")) || 0;
-                    let nextSettleInput = $(this).find(".settleInput");
-                    let settle = parseFloat(nextSettleInput.val()) || 0;
-                    let deduct = nextBalance-settle;
-                    let nextSettle = settle + deduct;
-                    if(excessAmount>=deduct && nextBalance > settle){
-                        excessAmount-=deduct;
-                        nextSettleInput.val(deduct+settle);
-                        if(nextSettleInput.val()!=0)
-                        checkBox.prop('checked', true);
-                        console.log(enteredAmount-deduct);
-                        
-                        entersettle.val(entersettle.val()-deduct);
-                    }else if(excessAmount<deduct && nextBalance > settle){
-                        nextSettleInput.val(excessAmount+settle);
-                        if(nextSettleInput.val()!=0)
-                        checkBox.prop('checked', true);
-                        entersettle.val(entersettle.val()-excessAmount);
-                        excessAmount=0;
-                    }
-                });
-                
+            if (enteredAmount > balance) {
+                let excessAmount = enteredAmount - balance;
+                if (excessAmount > 0) {
+                    $(".voucherRows").each(function() {
+                        let nextBalance = parseFloat($(this).find(".balanceInput").text().replace(/,/g, "")) || 0;
+                        let nextSettleInput = $(this).find(".settleInput");
+                        let checkBox = $(this).find(".vouchers");
+                        let settle = parseFloat(nextSettleInput.val()) || 0;
+                        let deduct = nextBalance - settle;
+                        let nextSettle = settle + deduct;
+                        if (excessAmount >= deduct && nextBalance > settle) {
+                            excessAmount -= deduct;
+                            nextSettleInput.val(deduct + settle);
+                            if (nextSettleInput.val() != 0)
+                                checkBox.prop('checked', true);
+                            console.log(enteredAmount - deduct);
+
+                            entersettle.val(enteredAmount - deduct);
+                        }
+                    });
+                    $(".voucherRows").each(function() {
+                        let nextBalance = parseFloat($(this).find(".balanceInput").text().replace(/,/g, "")) || 0;
+                        let nextSettleInput = $(this).find(".settleInput");
+                        let checkBox = $(this).find(".vouchers");
+                        let settle = parseFloat(nextSettleInput.val()) || 0;
+                        let deduct = nextBalance - settle;
+                        let nextSettle = settle + deduct;
+                        if (excessAmount >= deduct && nextBalance > settle) {
+                            excessAmount -= deduct;
+                            nextSettleInput.val(deduct + settle);
+                            if (nextSettleInput.val() != 0)
+                                checkBox.prop('checked', true);
+                            console.log(enteredAmount - deduct);
+
+                            entersettle.val(entersettle.val() - deduct);
+                        } else if (excessAmount < deduct && nextBalance > settle) {
+                            nextSettleInput.val(excessAmount + settle);
+                            if (nextSettleInput.val() != 0)
+                                checkBox.prop('checked', true);
+                            entersettle.val(entersettle.val() - excessAmount);
+                            excessAmount = 0;
+                        }
+                    });
+                    $(".voucherRows").get().reverse().forEach(function() {
+                        let checkBox = $(this).find(".vouchers");
+                        let nextBalance = parseFloat($(this).find(".balanceInput").text().replace(/,/g, "")) || 0;
+                        let nextSettleInput = $(this).find(".settleInput");
+                        let settle = parseFloat(nextSettleInput.val()) || 0;
+                        let deduct = nextBalance - settle;
+                        let nextSettle = settle + deduct;
+                        if (excessAmount >= deduct && nextBalance > settle) {
+                            excessAmount -= deduct;
+                            nextSettleInput.val(deduct + settle);
+                            if (nextSettleInput.val() != 0)
+                                checkBox.prop('checked', true);
+                            console.log(enteredAmount - deduct);
+
+                            entersettle.val(entersettle.val() - deduct);
+                        } else if (excessAmount < deduct && nextBalance > settle) {
+                            nextSettleInput.val(excessAmount + settle);
+                            if (nextSettleInput.val() != 0)
+                                checkBox.prop('checked', true);
+                            entersettle.val(entersettle.val() - excessAmount);
+                            excessAmount = 0;
+                        }
+                    });
+
+                }
             }
-        }
         }
 
 
@@ -853,13 +884,13 @@
             let rowCount = document.querySelectorAll('.mrntableselectexcel tr').length;
             for (let index = 1; index <= rowCount; index++) {
                 if (parseFloat($('#excAmount' + index).val()) == 0) {
-                    showToast('error','Can not save ledger with amount 0');
+                    showToast('error', 'Can not save ledger with amount 0');
                     return false;
                 }
             }
 
             if (parseFloat(removeCommas($('.currentCurrencySum').text())) == 0) {
-                showToast('error','Total amount should be greater than 0');
+                showToast('error', 'Total amount should be greater than 0');
                 return false;
             }
         }
@@ -927,20 +958,22 @@
             }
             //adjustInvoice(this);
             let input = $(this);
-    let row = input.closest('.voucherRows');
-    let balanceText = row.find('.balanceInput').text().replace(/,/g, '');
-    let balance = parseFloat(balanceText);
-    let settleAmount = parseFloat(input.val());
+            let row = input.closest('.voucherRows');
+            let balanceText = row.find('.balanceInput').text().replace(/,/g, '');
+            let balance = parseFloat(balanceText);
+            let settleAmount = parseFloat(input.val());
 
-    // Remove existing error message span if it exists
-    input.next('.invalid-feedback').remove();
+            // Remove existing error message span if it exists
+            input.next('.invalid-feedback').remove();
 
-    if (settleAmount > balance) {
-        input.addClass('is-invalid');
-        input.after('<span class="invalid-feedback d-block">Settle amount cannot be greater than balance.</span>');
-    } else {
-        input.removeClass('is-invalid');
-    }
+            if (settleAmount > balance) {
+                input.addClass('is-invalid');
+                input.after(
+                    '<span class="invalid-feedback d-block">Settle amount cannot be greater than balance.</span>'
+                    );
+            } else {
+                input.removeClass('is-invalid');
+            }
             calculateSettle();
         });
 
@@ -974,7 +1007,7 @@
                             },
                             error: function() {
                                 response(
-                            []); // Respond with an empty array in case of error
+                                    []); // Respond with an empty array in case of error
                             },
                         });
                     },
@@ -994,7 +1027,7 @@
                         calculateSettle();
                         $("#party_name" + id).val(ui.item.label);
                         let groupDropdown = $(`#groupSelect${id}`);
-                            $.ajax({
+                        $.ajax({
                             url: '{{ route('voucher.getLedgerGroups') }}',
                             method: 'GET',
                             data: {
@@ -1010,20 +1043,20 @@
                                         `<option value="${item.id}" data-ledger="${ui.item.label}">${item.name}</option>`
                                     );
                                 });
-                                groupDropdown.data('ledger',ui.item.label);
-                           
+                                groupDropdown.data('ledger', ui.item.label);
+
                             },
                             error: function(xhr) {
                                 let errorMessage =
-                                'Error fetching group items.'; // Default message
+                                    'Error fetching group items.'; // Default message
 
                                 if (xhr.responseJSON && xhr.responseJSON.error) {
                                     errorMessage = xhr.responseJSON
-                                    .error; // Use API error message if available
+                                        .error; // Use API error message if available
                                 }
                                 showToast("error", errorMessage);
 
-                                
+
                             }
                         });
                         return false;
@@ -1033,7 +1066,7 @@
                             $(this).val("");
                             const id = $(this).attr("data-id");
                             $("#party_id" + id).val("");
-                            
+
                         }
                     },
                     focus: function() {
@@ -1105,7 +1138,7 @@
                     </tr>`;
                 $('.mrntableselectexcel').append(newRow);
                 bind();
-    
+
 
                 initializeAutocomplete();
 
@@ -1118,23 +1151,22 @@
                 $('.select2').select2();
                 count++;
             });
- 
+
             $(document).on('input', '.amount', function() {
                 if ($('#orgExchangeRate').val() == "") {
-                    showToast('error','Select currency first!!');
+                    showToast('error', 'Select currency first!!');
                     return false;
                 }
                 const inVal = parseFloat($(this).val()) || 0;
                 if (inVal > 0) {
                     $("." + $(this).attr('id')).val($(this).val() * $('#orgExchangeRate').val());
-                }
-                else{
+                } else {
                     $("." + $(this).attr('id')).val("0.00");
                 }
                 calculateTotal();
             });
 
-            
+
             // $('#document_type').change(function() {
             //     $('.ledgerselect').val('');
             //     $('.ledgers').val('');
@@ -1159,12 +1191,12 @@
         function submitForm(status) {
             $('#status').val(status);
             $('#submitButton').click();
-          
+
         }
         $('#voucherForm').on('submit', function() {
-        $('#draft').attr('disabled', true);
-        $('#submitted').attr('disabled', true);
-    });
+            $('#draft').attr('disabled', true);
+            $('#submitted').attr('disabled', true);
+        });
 
 
         function getAccounts() {
@@ -1235,13 +1267,13 @@
                         } else {
                             resetCurrencies();
                             $('#orgExchangeRate').val('');
-                            showToast('error',response.message);
+                            showToast('error', response.message);
                         }
                     }
                 });
 
             } else {
-                showToast('error','Organization currency is not set!!');
+                showToast('error', 'Organization currency is not set!!');
             }
         }
         $(document).ready(function() {
@@ -1315,15 +1347,16 @@
                 }
             });
         }
-        function on_account_required(data){
+
+        function on_account_required(data) {
             let onAccountRequired = false;
             $('.invoiceDrop').each(function() {
-                    $(this).find('option').filter(function() {
-                        return $(this).text().trim() === 'On Account';
-                    }).hide();
-                });
-            
-         
+                $(this).find('option').filter(function() {
+                    return $(this).text().trim() === 'On Account';
+                }).hide();
+            });
+
+
             if (data != null) {
                 console.log(data.parameters.on_account_required);
                 if (Array.isArray(data?.parameters?.on_account_required)) {
@@ -1333,13 +1366,13 @@
                                 $(this).find('option').filter(function() {
                                     return $(this).text().trim() === 'On Account';
                                 }).show();
-                    });
+                            });
 
                             break; // Exit the loop once we find "yes"
                         }
                     }
-                   
-              
+
+
 
                 }
             }
@@ -1435,38 +1468,41 @@
                         $('#doc_prefix').val('');
                         $('#doc_suffix').val('');
                         $('#doc_no').val('');
-                        showToast('error',data.message);
+                        showToast('error', data.message);
                     }
                 });
             });
         }
-        function bind(){
-                                                   
-$('.amount').on('click', function () {
-    if($(this).val()==="0" || $(this).val()==="0.00"){
-        $(this).val('');
-    }
-});
 
-$('.amount').on('focusout', function () {
-    if($(this).val()===""){
-        $(this).val('0.00');
-    }
-});
- 
+        function bind() {
+
+            $('.amount').on('click', function() {
+                if ($(this).val() === "0" || $(this).val() === "0.00") {
+                    $(this).val('');
+                }
+            });
+
+            $('.amount').on('focusout', function() {
+                if ($(this).val() === "") {
+                    $(this).val('0.00');
+                }
+            });
+
         }
-        function changerate(){
-        $('#org_currency_exg_rate').val($('#orgExchangeRate').val());
-        calculateTotal();
+
+        function changerate() {
+            $('#org_currency_exg_rate').val($('#orgExchangeRate').val());
+            calculateTotal();
         }
         bind();
+
         function showToast(icon, title) {
             Swal.fire({
-                        title:'Alert!',
-                        text: title,
-                        icon: icon
-                    });
-} 
+                title: 'Alert!',
+                text: title,
+                icon: icon
+            });
+        }
         @if (session('success'))
             showToast("success", "{{ session('success') }}");
         @endif
@@ -1477,11 +1513,44 @@ $('.amount').on('focusout', function () {
 
         @if ($errors->any())
             showToast('error',
-                "@foreach ($errors->all() as $error){{$error}}@endforeach"
+                "@foreach ($errors->all() as $error){{ $error }}@endforeach"
             );
         @endif
 
-        
-   
+        // 
+        $('#locations').on('change', function () {
+    let selectedLocationIds = $(this).val();
+
+    // Ensure selectedLocationIds is always an array
+    if (!Array.isArray(selectedLocationIds)) {
+        selectedLocationIds = selectedLocationIds ? [selectedLocationIds] : [];
+    }
+
+    let costCenterSet = new Map();
+
+    selectedLocationIds.forEach(locId => {
+        let centers = locationCostCentersMap[locId] || [];
+        centers.forEach(center => {
+            costCenterSet.set(center.id, center.name);
+        });
+    });
+
+    // Get the div
+    let $costCenterRow = $('#costCenterRow');
+    let $dropdown = $('.costCenter');
+
+    // Show or hide the row based on availability
+    if (costCenterSet.size > 0) {
+        $costCenterRow.show();
+        $dropdown.empty();
+        costCenterSet.forEach((name, id) => {
+            $dropdown.append(`<option value="${id}">${name}</option>`);
+        });
+    } else {
+        $costCenterRow.hide();
+        $dropdown.empty();
+    }
+});
+
     </script>
 @endsection
