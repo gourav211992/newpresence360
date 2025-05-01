@@ -9,6 +9,7 @@ use App\Helpers\SaleModuleHelper;
 use App\Models\ErpAddress;
 use App\Models\Bank;
 use App\Models\BankDetail;
+use App\Models\ErpStore;
 use App\Models\ApprovalWorkflow;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Storage;
@@ -352,7 +353,10 @@ class PaymentVoucherController extends Controller
         ];
     })
     ->toArray();
-        return view('paymentVoucher.createPaymentVoucher', compact('cost_centers','books_t', 'books', 'banks', 'ledgers', 'currencies', 'orgCurrency', 'type', 'storeUrl', 'redirectUrl'));
+        // pass authenticate user's org locations
+        $locations = ErpStore::where('organization_id',Helper::getAuthenticatedUser()->organization_id)->get();
+
+        return view('paymentVoucher.createPaymentVoucher', compact('cost_centers','books_t', 'books', 'banks', 'ledgers', 'currencies', 'orgCurrency', 'type', 'storeUrl', 'redirectUrl','locations'));
     }
 
     /**
@@ -445,6 +449,8 @@ class PaymentVoucherController extends Controller
             $voucher->group_currency_id = $request->group_currency_id;
             $voucher->group_currency_code = $request->group_currency_code;
             $voucher->group_currency_exg_rate = $request->group_currency_exg_rate;
+            $voucher->location = $request->location;
+
 
             // Payment amount and organization details
             $voucher->amount = $request->totalAmount;
@@ -670,11 +676,12 @@ class PaymentVoucherController extends Controller
         
 
 
+        $locations = ErpStore::where('organization_id',Helper::getAuthenticatedUser()->organization_id)->get();
 
         if ($data->document_status == ConstantHelper::DRAFT)
-            return view('paymentVoucher.editPaymentVoucher', compact('cost_centers','books_t', 'data', 'books', 'buttons', 'history', 'banks', 'ledgers', 'currencies', 'orgCurrency', 'revision_number', 'currNumber', 'editUrl', 'indexUrl', 'editUrlString'));
+            return view('paymentVoucher.editPaymentVoucher', compact('cost_centers','books_t', 'data', 'books', 'buttons', 'history', 'banks', 'ledgers', 'currencies', 'orgCurrency', 'revision_number', 'currNumber', 'editUrl', 'indexUrl', 'editUrlString','locations'));
         else
-            return view('paymentVoucher.viewPaymentVoucher', compact('cost_centers', 'data','books_t', 'books', 'buttons', 'history', 'banks', 'ledgers', 'currencies', 'orgCurrency', 'revision_number', 'currNumber', 'editUrl', 'indexUrl', 'editUrlString', 'approvalHistory', 'cc_users', 'to_users', 'to_user_mail', 'to_type'));
+            return view('paymentVoucher.viewPaymentVoucher', compact('cost_centers', 'data','books_t', 'books', 'buttons', 'history', 'banks', 'ledgers', 'currencies', 'orgCurrency', 'revision_number', 'currNumber', 'editUrl', 'indexUrl', 'editUrlString', 'approvalHistory', 'cc_users', 'to_users', 'to_user_mail', 'to_type','locations'));
     }
 
 
@@ -736,6 +743,7 @@ class PaymentVoucherController extends Controller
             $voucher->document_type = $request->document_type;
             $voucher->date = $request->date;
             $voucher->payment_type = $request->payment_type;
+            $voucher->location = $request->location;
             $status = $request->status;
     
             if ($status == ConstantHelper::SUBMITTED) {

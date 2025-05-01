@@ -12,6 +12,16 @@
 @endsection
 
 @section('content')
+<script>
+    const locationCostCentersMap = @json(
+        $locations->mapWithKeys(function ($location) {
+            return [
+                $location->id => $location->cost_centers->map(function ($cc) {
+                    return ['id' => $cc->id, 'name' => $cc->name];
+                }),
+            ];
+        }));
+</script>
     <!-- BEGIN: Content-->
     <div class="app-content content ">
         <div class="content-overlay"></div>
@@ -440,10 +450,28 @@
 
                                                         </div>
                                                     </div>
-                                           
+                                                    <div class="row align-items-center mb-1">
+                                                        <div class="col-md-2">
+                                                            <label class="form-label">Location <span
+                                                                    class="text-danger">*</span></label>
+                                                        </div>
+    
+                                                        <div class="col-md-4">
+                                                            <select id="locations" class="form-select select2" name="location">
+                                                                <option disabled value="" selected>Select Locations</option>
+                                                                @foreach ($locations as $location)
+                                                                <option value="{{ $location->id }}"
+                                                                    {{ (isset($data->location) && $data->location == $location->id) ? 'selected' : '' }}>
+                                                                    {{ $location->store_name }}
+                                                                </option>       
+                                                                @endforeach                                     
+                                                            </select>
+                                                        </div>
+                                                        
+                                                    </div>
 
                                                 </div>
-                                                @if(count($cost_centers) > 0 && $data->cost_center_id!=null)
+                                                {{-- @if(count($cost_centers) > 0 && $data->cost_center_id!=null)
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Cost Center <span
@@ -461,7 +489,35 @@
                                                     </div>
                                                 </div>
                                                     
-                                                    @endif
+                                                    @endif --}}
+                                                    @php
+                                                    // Find the selected location object
+                                                    $selectedLocation = $locations->firstWhere('id', $data->location);
+                                                    $locationCostCenters = $selectedLocation->cost_centers ?? [];
+
+                                                    // Check if the selected cost center exists in this location
+                                                    $showCostCenter = count($locationCostCenters) > 0 || collect($locationCostCenters)->contains('id', $data->cost_center_id);
+                                                @endphp
+
+                                                <div class="row align-items-center mb-1" id="costCenterRow" style="{{ $showCostCenter ? '' : 'display:none;' }}">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Cost Center <span class="text-danger">*</span></label>
+                                                    </div>
+
+                                                    <div class="col-md-5 mb-1 mb-sm-0">
+                                                        <select class="form-control select2" name="cost_center_id" id="cost_center_id">
+                                                            @foreach ($cost_centers as $cost)
+                                                                {{-- Show only cost centers of the selected location OR the already selected one --}}
+                                                                @if(collect($locationCostCenters)->pluck('id')->contains($cost['id']) || $cost['id'] == $data->cost_center_id)
+                                                                    <option value="{{ $cost['id'] }}" @if($cost['id'] == $data->cost_center_id) selected @endif>
+                                                                        {{ $cost['name'] }}
+                                                                    </option>
+                                                                @endif
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+                                                </div>
+
 
                                             </div>
                                                                {{-- History Code --}}
@@ -2066,7 +2122,40 @@ $('#applyBtn').on('click', function (e) {
                 }
             }
         });
- 
+ //
+ $('#locations').on('change', function () {
+    let selectedLocationIds = $(this).val();
+
+    // Ensure selectedLocationIds is always an array
+    if (!Array.isArray(selectedLocationIds)) {
+        selectedLocationIds = selectedLocationIds ? [selectedLocationIds] : [];
+    }
+
+    let costCenterSet = new Map();
+
+    selectedLocationIds.forEach(locId => {
+        let centers = locationCostCentersMap[locId] || [];
+        centers.forEach(center => {
+            costCenterSet.set(center.id, center.name);
+        });
+    });
+
+    // Get the div
+    let $costCenterRow = $('#costCenterRow');
+    let $dropdown = $('.costCenter');
+
+    // Show or hide the row based on availability
+    if (costCenterSet.size > 0) {
+        $costCenterRow.show();
+        $dropdown.empty();
+        costCenterSet.forEach((name, id) => {
+            $dropdown.append(`<option value="${id}">${name}</option>`);
+        });
+    } else {
+        $costCenterRow.hide();
+        $dropdown.empty();
+    }
+}); 
            
     </script>
 @endsection
