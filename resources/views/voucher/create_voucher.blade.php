@@ -136,7 +136,7 @@
 
                                                     <div class="col-md-4">
                                                         <select class="form-select select2" name="book_type_id"
-                                                            id="book_type_id" onchange="getBooks()">
+                                                            id="book_type_id" required onchange="getBooks()">
                                                             <option disabled selected value="">Select Document Type
                                                             </option>
                                                             @foreach ($bookTypes as $bookType)
@@ -157,7 +157,7 @@
 
                                                     <div class="col-md-4">
                                                         <select class="form-select" id="book_id" name="book_id"
-                                                             onchange="getDocNumberByBookId()">
+                                                            required onchange="getDocNumberByBookId()">
                                                             <option disabled selected value="">Select</option>
                                                         </select>
                                                     </div>
@@ -171,7 +171,7 @@
 
                                                     <div class="col-md-4">
                                                         <input type="text" class="form-control" name="voucher_name"
-                                                            id="voucher_name"  value="{{ old('voucher_name') }}"
+                                                            id="voucher_name" required value="{{ old('voucher_name') }}"
                                                             readonly />
                                                         @error('voucher_name')
                                                             <span class="text-danger">{{ $message }}</span>
@@ -202,7 +202,6 @@
                                                         <label class="form-label">Date <span
                                                                 class="text-danger">*</span></label>
                                                     </div>
-                                                    
                                                     <div class="col-md-4">
                                                         <input type="date" class="form-control" id="date"
                                                             name="date" required
@@ -385,12 +384,12 @@
                                                                         onfocus="focusInput(this)" name="credit_amt[]"
                                                                         id="crd_1" min="0" step="0.01" value="0" />
                                                                 </td>
+                                                                
                                                                 <td>
                                                                     <select class="costCenter form-select mw-100" name="cost_center_id[]" id="cost_center_id1">
                                                                         {{-- Dynamically filled --}}
                                                                     </select>
                                                                 </td>
-                                                               
                                                                 <td>
                                                                     <input type="text"
                                                                         class="form-control mw-100 remarks_"
@@ -1092,7 +1091,7 @@ let stop= false;
         showToast('error','Can not save ledgers with Credit and Debit amount both being 0');
        
     
-        stop=false;
+        stop=true;
         return false;  // Stop the loop and return false
     }
 });
