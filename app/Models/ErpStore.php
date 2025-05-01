@@ -88,4 +88,12 @@ class ErpStore extends Model
             'sub_store_id'
         );
     }
+
+    public function getCostCentersAttribute()
+    {
+        return CostCenter::all()->filter(function ($costCenter) {
+            return in_array($this->id, $costCenter->locations ?? []);
+        });
+    }
+
 }

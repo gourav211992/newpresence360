@@ -18,6 +18,15 @@
 @endsection
 
 @section('content')
+<script>
+    const locationCostCentersMap = @json(
+        $locations->mapWithKeys(function($location) {
+            return [$location->id => $location->cost_centers->map(function($cc) {
+                return ['id' => $cc->id, 'name' => $cc->name];
+            })];
+        })
+    );
+</script>
     <!-- BEGIN: Content-->
     <div class="app-content content ">
         <div class="content-overlay"></div>
@@ -274,6 +283,25 @@
                                                 </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-2">
+                                                        <label class="form-label">Location <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+
+                                                    <div class="col-md-4">
+                                                        <select id="locations" class="form-select select2" name="location">
+                                                            <option disabled value="" selected>Select Locations</option>
+                                                            @foreach ($locations as $location)
+                                                            <option value="{{ $location->id }}"
+                                                                {{ (isset($data->location) && $data->location == $location->id) ? 'selected' : '' }}>
+                                                                {{ $location->store_name }}
+                                                            </option>       
+                                                            @endforeach                                     
+                                                        </select>
+                                                    </div>
+                                                    
+                                                </div>
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-2">
                                                         <label class="form-label">Currency <span
                                                                 class="text-danger">*</span></label>
                                                     </div>
@@ -472,13 +500,22 @@
                                                                     min="0" step="0.01" value="{{ $item->credit_amt }}" />
                                                             </td>
                                                             <td>
-                                                                <select class="costCenter form-select mw-100" name="cost_center_id[]" id="cost_center_id{{ $no }}">
-                                                                    @foreach ($cost_centers as $key => $value)
-                                                                    <option value="{{ $value['id'] }}" @if($value['id']===$item->cost_center_id) selected @endif>
-                                                                        {{ $value['name'] }}
-                                                                    </option>
-                                                                    @endforeach
-                                                                </select>
+                                                                @php
+                                                            // Find the selected location object
+                                                            $selectedLocation = $locations->firstWhere('id', $data->location);
+                                                            $locationCostCenters = $selectedLocation->cost_centers ?? [];
+                                                        @endphp
+
+                                                        <select class="costCenter form-select mw-100" name="cost_center_id[]" id="cost_center_id{{ $no }}">
+                                                            @foreach ($locationCostCenters as $value)
+                                                                <option value="{{ $value['id'] }}" 
+                                                                    @if($value['id'] == $item->cost_center_id) selected @endif>
+                                                                    {{ $value['name'] }}
+                                                                </option>
+                                                            @endforeach
+                                                        </select>
+
+                                                              
                                                             </td>
                                                             <td>
                                                                 <input type="text" class="form-control mw-100 remarks_" placeholder="Enter Remarks"
@@ -1531,9 +1568,7 @@ function calculate_cr_dr() {
                     </td>
                    <td>
                         <select class="costCenter form-select mw-100" name="cost_center_id[]" id="cost_center_id${rowCount + 1}">
-                            @foreach ($cost_centers as $key => $value)
-                            <option value="{{ $value['id'] }}">{{ $value['name'] }}</option>
-                            @endforeach
+                           
                         </select>
                     </td>
                     <td>
@@ -2259,6 +2294,36 @@ $(document).on('change', '.costCenter', function() {
             $('.costCenter').val(selectedValue); // Set the same value for all dropdowns
         });
         
+        $('#locations').on('change', function () {
+            let selectedLocationIds = $(this).val();
 
+// Ensure selectedLocationIds is always an array
+if (!Array.isArray(selectedLocationIds)) {
+    selectedLocationIds = selectedLocationIds ? [selectedLocationIds] : [];
+}
+
+// Collect unique cost centers for all selected locations
+let costCenterSet = new Map();
+
+selectedLocationIds.forEach(locId => {
+    let centers = locationCostCentersMap[locId] || [];
+    console.log(centers);
+    centers.forEach(center => {
+        costCenterSet.set(center.id, center.name);
+    });
+});
+
+
+    // Update all .costCenter selects
+    $('.costCenter').each(function () {
+        let $dropdown = $(this);
+        $dropdown.empty();
+        // $dropdown.append('<option value="">Select Cost Center</option>');
+
+        costCenterSet.forEach((name, id) => {
+            $dropdown.append(`<option value="${id}">${name}</option>`);
+        });
+    });
+});
     </script>
 @endsection

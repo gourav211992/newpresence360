@@ -118,6 +118,7 @@ class Voucher extends Model
         'document_status',
         'revision_number',
         'revision_date',
+        'location'
     ];
 
     protected $appends = [
@@ -155,5 +156,10 @@ class Voucher extends Model
     public function getCreatedByAttribute()
     {
         return $this -> voucherable_id;
+    }
+
+    public function ErpLocation()
+    {
+        return $this->belongsTo(ErpStore::class, 'location', 'id');
     }
 }

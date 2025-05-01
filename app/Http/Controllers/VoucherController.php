@@ -25,6 +25,7 @@ use App\Models\DocumentApproval;
 use App\Models\VoucherHistory;
 use Carbon\Carbon;
 use Exception;
+use App\Models\ErpStore;
 use Hamcrest\Arrays\IsArray;
 
 use Illuminate\Support\Facades\Log;
@@ -583,7 +584,7 @@ class VoucherController extends Controller
         }
 
         // Retrieve vouchers based on organization_id and include series with levels
-        $data =  Voucher::whereIn("organization_id", $organizations)
+        $data =  Voucher::withDefaultGroupCompanyOrg()
         ->with([
             'documents:id,name',
         ])
@@ -703,7 +704,10 @@ class VoucherController extends Controller
             ];
         })
         ->toArray();
-        return view('voucher.create_voucher', compact('cost_centers','allledgers', 'currencies', 'orgCurrency', 'cost_centers', 'bookTypes', 'lastVoucher','allowedCVGroups','exlucdeJVGroups'));
+        // pass authenticate user's org locations
+        $locations = ErpStore::where('organization_id',Helper::getAuthenticatedUser()->organization_id)->get();
+        // dd($locations,Helper::getAuthenticatedUser()->organization_id);
+        return view('voucher.create_voucher', compact('cost_centers','allledgers', 'currencies', 'orgCurrency', 'cost_centers', 'bookTypes', 'lastVoucher','allowedCVGroups','exlucdeJVGroups','locations'));
     }
 
     function get_series($id)
@@ -716,9 +720,9 @@ class VoucherController extends Controller
     {
         $currNumber = $r->revisionNumber;
         if ($currNumber) {
-            $data = VoucherHistory::with(['items.ledgers.groups'])->where('source_id', $id)->where('revision_number', $currNumber)->first();
+            $data = VoucherHistory::with(['items.ledgers.groups','ErpLocation'])->where('source_id', $id)->where('revision_number', $currNumber)->first();
         } else {
-            $data = Voucher::with(['items'])->find($id);
+            $data = Voucher::with(['items','ErpLocation'])->find($id);
         }
         $parentUrl = request()->segments()[0];
         $cost_centers = CostCenter::where('organization_id', Helper::getAuthenticatedUser()->organization_id)->select('id as value', 'name as label')->get()->toArray();
@@ -791,7 +795,8 @@ class VoucherController extends Controller
             ];
         })
         ->toArray();
-      return view('voucher.edit_voucher', compact('cost_centers','groups', 'orgCurrency', 'currencies', 'cost_centers', 'bookTypes', 'data', 'books', 'buttons', 'history', 'revision_number', 'currNumber','approvalHistory','ref_view_route','allowedCVGroups','exlucdeJVGroups'));
+        $locations = ErpStore::where('organization_id',Helper::getAuthenticatedUser()->organization_id)->get();
+      return view('voucher.edit_voucher', compact('cost_centers','groups', 'orgCurrency', 'currencies', 'cost_centers', 'bookTypes', 'data', 'books', 'buttons', 'history', 'revision_number', 'currNumber','approvalHistory','ref_view_route','allowedCVGroups','exlucdeJVGroups','locations'));
     }
 
     public function store(Request $request)
@@ -827,6 +832,7 @@ class VoucherController extends Controller
             'ledger_id' => 'required|array',
             'ledger_id.*' => 'required|numeric|min:1',
             'parent_ledger_id' => 'required|array',
+            'location' => 'required|numeric|min:1',
             'parent_ledger_id.*' => 'required|numeric|min:1',  //parent_ledger_id
         ], [
             // Custom error messages
@@ -848,6 +854,7 @@ class VoucherController extends Controller
             'parent_ledger_id.array' => 'The ledger Group ID must be an array.',
             'parent_ledger_id.*.required' => 'Each ledger Group is required.',
             'parent_ledger_id.required' => 'Ledger Group is required.',
+            'location.required' => 'Location is required.',
 
 
         ]);
@@ -897,6 +904,7 @@ class VoucherController extends Controller
 
         $voucher->document_date = $request->date;
         $voucher->date = $request->date;
+        $voucher->location = $request->location;
         $voucher->doc_no = $numberPatternData['doc_no'];
         $voucher->doc_number_type = $numberPatternData['type'];
         $voucher->doc_reset_pattern = $numberPatternData['reset_pattern'];
@@ -1078,6 +1086,7 @@ class VoucherController extends Controller
             'ledger_id' => 'required|array',
             'ledger_id.*' => 'required|numeric|min:1',
             'parent_ledger_id' => 'required|array',
+            'location' => 'required|numeric|min:1',
             'parent_ledger_id.*' => 'required|numeric|min:1',  //parent_ledger_id
         ], [
             // Custom error messages
@@ -1099,6 +1108,7 @@ class VoucherController extends Controller
             'parent_ledger_id.array' => 'The ledger Group ID must be an array.',
             'parent_ledger_id.*.required' => 'Each ledger Group is required.',
             'parent_ledger_id.required' => 'Ledger Group is required.',
+            'location.required' => 'location is required.',
 
         ]);
 
@@ -1126,6 +1136,7 @@ class VoucherController extends Controller
         $voucher->group_currency_code = $request->group_currency_code;
         $voucher->group_currency_exg_rate = $request->group_currency_exg_rate;
         $voucher->document_date = $request->date;
+        $voucher->location = $request->location;
 
         $voucher->approvalStatus = $request->status;
 

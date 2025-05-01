@@ -17,6 +17,15 @@
 @endsection
 
 @section('content')
+<script>
+    const locationCostCentersMap = @json(
+        $locations->mapWithKeys(function($location) {
+            return [$location->id => $location->cost_centers->map(function($cc) {
+                return ['id' => $cc->id, 'name' => $cc->name];
+            })];
+        })
+    );
+</script>
     <!-- BEGIN: Content-->
     <div class="app-content content">
         <div class="content-overlay"></div>
@@ -127,7 +136,7 @@
 
                                                     <div class="col-md-4">
                                                         <select class="form-select select2" name="book_type_id"
-                                                            id="book_type_id" required onchange="getBooks()">
+                                                            id="book_type_id" onchange="getBooks()">
                                                             <option disabled selected value="">Select Document Type
                                                             </option>
                                                             @foreach ($bookTypes as $bookType)
@@ -148,7 +157,7 @@
 
                                                     <div class="col-md-4">
                                                         <select class="form-select" id="book_id" name="book_id"
-                                                            required onchange="getDocNumberByBookId()">
+                                                             onchange="getDocNumberByBookId()">
                                                             <option disabled selected value="">Select</option>
                                                         </select>
                                                     </div>
@@ -162,7 +171,7 @@
 
                                                     <div class="col-md-4">
                                                         <input type="text" class="form-control" name="voucher_name"
-                                                            id="voucher_name" required value="{{ old('voucher_name') }}"
+                                                            id="voucher_name"  value="{{ old('voucher_name') }}"
                                                             readonly />
                                                         @error('voucher_name')
                                                             <span class="text-danger">{{ $message }}</span>
@@ -193,11 +202,28 @@
                                                         <label class="form-label">Date <span
                                                                 class="text-danger">*</span></label>
                                                     </div>
+                                                    
                                                     <div class="col-md-4">
                                                         <input type="date" class="form-control" id="date"
                                                             name="date" required
                                                             value="{{ date('Y-m-d') }}" max="{{ date('Y-m-d') }}" />
                                                     </div>
+                                                </div>
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-2">
+                                                        <label class="form-label">Location <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+
+                                                    <div class="col-md-4">
+                                                        <select id="locations" class="form-select select2" name="location">
+                                                            <option disabled value="" selected>Select Locations</option>
+                                                            @foreach ($locations as $location)
+                                                                <option value="{{ $location->id }}">{{ $location->store_name }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+                                                    
                                                 </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-2">
@@ -359,14 +385,12 @@
                                                                         onfocus="focusInput(this)" name="credit_amt[]"
                                                                         id="crd_1" min="0" step="0.01" value="0" />
                                                                 </td>
-                                                                
                                                                 <td>
                                                                     <select class="costCenter form-select mw-100" name="cost_center_id[]" id="cost_center_id1">
-                                                                        @foreach ($cost_centers as $key => $value)
-                                                                        <option value="{{ $value['id'] }}">{{ $value['name'] }}</option>
-                                                                        @endforeach
+                                                                        {{-- Dynamically filled --}}
                                                                     </select>
                                                                 </td>
+                                                               
                                                                 <td>
                                                                     <input type="text"
                                                                         class="form-control mw-100 remarks_"
@@ -1068,7 +1092,7 @@ let stop= false;
         showToast('error','Can not save ledgers with Credit and Debit amount both being 0');
        
     
-        stop=true;
+        stop=false;
         return false;  // Stop the loop and return false
     }
 });
@@ -1310,9 +1334,7 @@ return false;
                     </td>
                     <td>
                         <select class="costCenter form-select mw-100" name="cost_center_id[]" id="cost_center_id${rowCount + 1}">
-                            @foreach ($cost_centers as $key => $value)
-                            <option value="{{ $value['id'] }}">{{ $value['name'] }}</option>
-                            @endforeach
+                            
                         </select>
                     </td>
                     <td>
@@ -1961,5 +1983,36 @@ return false;
             $('.costCenter').val(selectedValue); // Set the same value for all dropdowns
         });
    
+        $('#locations').on('change', function () {
+            let selectedLocationIds = $(this).val();
+
+// Ensure selectedLocationIds is always an array
+if (!Array.isArray(selectedLocationIds)) {
+    selectedLocationIds = selectedLocationIds ? [selectedLocationIds] : [];
+}
+
+// Collect unique cost centers for all selected locations
+let costCenterSet = new Map();
+
+selectedLocationIds.forEach(locId => {
+    let centers = locationCostCentersMap[locId] || [];
+    console.log(centers);
+    centers.forEach(center => {
+        costCenterSet.set(center.id, center.name);
+    });
+});
+
+
+    // Update all .costCenter selects
+    $('.costCenter').each(function () {
+        let $dropdown = $(this);
+        $dropdown.empty();
+        // $dropdown.append('<option value="">Select Cost Center</option>');
+
+        costCenterSet.forEach((name, id) => {
+            $dropdown.append(`<option value="${id}">${name}</option>`);
+        });
+    });
+});
     </script>
 @endsection
