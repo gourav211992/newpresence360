@@ -572,7 +572,6 @@ class LedgerController extends Controller
                 'erp_payment_vouchers' => ['ledger_id'],
                 'erp_sales_accounts' => ['ledger_id'],
                 'erp_stock_accounts' => ['ledger_id'],
-                'stock_ledger_item_attributes' => ['stock_ledger_id'],
                 'erp_tax_details' => ['ledger_id'],
                 'erp_vendors' => ['ledger_id'],
             ];
