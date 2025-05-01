@@ -105,4 +105,9 @@ protected static function booted()
     {
         return $this->belongsTo(AuthUser::class, 'user_id');
     }
+
+    public function ErpLocation()
+    {
+        return $this->belongsTo(ErpStore::class, 'location', 'id');
+    }
 }
