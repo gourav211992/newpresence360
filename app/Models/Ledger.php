@@ -11,7 +11,6 @@ use App\Traits\Deletable;
 use App\Helpers\ConstantHelper;
 
 
-
 class Ledger extends Model
 {
     protected $table = 'erp_ledgers';
