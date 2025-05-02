@@ -450,26 +450,27 @@
 
                                                         </div>
                                                     </div>
-                                                    <div class="row align-items-center mb-1">
-                                                        <div class="col-md-2">
-                                                            <label class="form-label">Location <span
-                                                                    class="text-danger">*</span></label>
-                                                        </div>
-    
-                                                        <div class="col-md-4">
-                                                            <select id="locations" class="form-select select2" name="location">
-                                                                <option disabled value="" selected>Select Locations</option>
-                                                                @foreach ($locations as $location)
-                                                                <option value="{{ $location->id }}"
-                                                                    {{ (isset($data->location) && $data->location == $location->id) ? 'selected' : '' }}>
-                                                                    {{ $location->store_name }}
-                                                                </option>       
-                                                                @endforeach                                     
-                                                            </select>
-                                                        </div>
-                                                        
+                                                    
+
+                                                </div>
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-2">
+                                                        <label class="form-label">Location <span
+                                                                class="text-danger">*</span></label>
                                                     </div>
 
+                                                    <div class="col-md-4">
+                                                        <select id="locations" class="form-select select2" name="location">
+                                                            <option disabled value="" selected>Select Locations</option>
+                                                            @foreach ($locations as $location)
+                                                            <option value="{{ $location->id }}"
+                                                                {{ (isset($data->location) && $data->location == $location->id) ? 'selected' : '' }}>
+                                                                {{ $location->store_name }}
+                                                            </option>       
+                                                            @endforeach                                     
+                                                        </select>
+                                                    </div>
+                                                    
                                                 </div>
                                                 {{-- @if(count($cost_centers) > 0 && $data->cost_center_id!=null)
                                                 <div class="row align-items-center mb-1">
