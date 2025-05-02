@@ -2276,4 +2276,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
 
 
 Route::post('/validate-gst', [GstValidationController::class, 'validateGstNumber']);
-Route::get('/splite-merger-add',[SpliteHandlerController::class, 'getSpliteMerger']);
+
+Route::get('/get-splite',[SpliteHandlerController::class, 'index']);
+
+Route::get('/add-splite', [SpliteHandlerController::class, 'addSplite'])->name('splite.add');
