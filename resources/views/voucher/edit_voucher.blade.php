@@ -287,7 +287,7 @@
                                                                 class="text-danger">*</span></label>
                                                     </div>
 
-                                                    <div class="col-md-4">
+                                                    <div class="col-md-6">
                                                         <select id="locations" class="form-select select2" name="location">
                                                             <option disabled value="" selected>Select Locations</option>
                                                             @foreach ($locations as $location)
