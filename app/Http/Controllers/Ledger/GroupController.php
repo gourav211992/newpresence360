@@ -32,7 +32,7 @@ class GroupController extends Controller
             }
         ])->get();
 
-        $data = Group::withDefaultGroupCompanyOrg()
+        $data = Group::withDefaultGroupCompanyOrg()->orWhere('edit',0)
         ->with([
             'parent' => function ($q) {
                 $q->select('id', 'name');
