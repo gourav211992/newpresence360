@@ -112,16 +112,17 @@
                                                                 <i data-feather="more-vertical"></i>
                                                             </button>
                                                             <div class="dropdown-menu dropdown-menu-end">
-                                                                <a class="dropdown-item" href="{{route('finance.fixed-asset.registration.show', $asset->id)}}">
-                                                                    <i data-feather="edit" class="me-50"></i>
-                                                                    <span>View Detail</span>
-                                                                </a>
                                                                 @if($asset->document_status=='draft')
                                                                 <a class="dropdown-item" href="{{route('finance.fixed-asset.registration.edit', $asset->id)}}">
                                                                     <i data-feather="edit-3" class="me-50"></i>
                                                                     <span>Edit</span>
                                                                 </a>
-                                                                @endif
+                                                                @else
+                                                                <a class="dropdown-item" href="{{route('finance.fixed-asset.registration.show', $asset->id)}}">
+                                                                    <i data-feather="edit" class="me-50"></i>
+                                                                    <span>View Detail</span>
+                                                                </a>
+                                                                @endif    
                                                             </div>
                                                         </div>
                                                     </td>
