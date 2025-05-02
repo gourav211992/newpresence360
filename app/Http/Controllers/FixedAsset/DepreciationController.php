@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Log;
 
 use Exception;
 use App\Http\Requests\DepreciationRequest;
+use App\Models\ApprovalWorkflow;
 
 class DepreciationController extends Controller
 {
@@ -73,7 +74,6 @@ class DepreciationController extends Controller
 public function store(DepreciationRequest $request)
 {
     $validator = $request->validated();
-
     if (!$validator) {
         return redirect()
             ->route('finance.fixed-asset.depreciation.create')
@@ -99,7 +99,14 @@ public function store(DepreciationRequest $request)
 
     try {
         $insert = FixedAssetDepreciation::create($data);
-
+        if ($request->document_status == ConstantHelper::SUBMITTED) {
+            $insert->document_status = Helper::checkApprovalRequired($request->book_id);
+            if (Helper::checkApprovalRequired($request->book_id) == ConstantHelper::SUBMITTED) {
+                if (self::check_approved($request->book_id))
+                    $insert->document_status = 'approved';
+                    $insert->save();
+            }
+        }
         $sub_assets = json_decode($request->asset_details, true);
         $assets = array_unique(array_column($sub_assets, 'asset_id'));
         
@@ -123,6 +130,13 @@ public function store(DepreciationRequest $request)
             }
         }
         
+        if ($insert->document_status == ConstantHelper::SUBMITTED) {
+            Helper::approveDocument($request->book_id, $insert->id, $insert->revision_number, "", null, 1, 'submit', 0, get_class($insert));
+        }
+
+        if ($insert->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED || $insert->approvalStatus == ConstantHelper::APPROVED) {
+            Helper::approveDocument($request->book_id, $insert->id, $insert->revision_number, "", null, 1, 'approve', 0, get_class($insert));
+        }
 
         DB::commit();
 
@@ -136,6 +150,18 @@ public function store(DepreciationRequest $request)
     }
 }
 
+    public function check_approved($book_id)
+    {
+        $workflow = ApprovalWorkflow::where('book_id', $book_id);
+        $user = Helper::getAuthenticatedUser();
+
+        if ($workflow && $workflow->count() == 1) {
+            $workflow = $workflow->first();
+            if ($workflow->user_id === $user->auth_user_id) {
+                return true;
+            } else return false;
+        } else return false;
+    }
 
     /**
      * Display the specified resource.

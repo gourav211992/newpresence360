@@ -141,7 +141,7 @@
                                                 </div>
                                             
                                             </div>
-                                            @include('partials.approval-history', ['document_status' => "", 'revision_number' => $data->revision_number])
+                                            @include('partials.approval-history', ['document_status' => $data->document_status, 'revision_number' => $data->revision_number])
                                          
                                         </div> 
                                 </div>
