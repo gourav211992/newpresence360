@@ -354,7 +354,7 @@ class PaymentVoucherController extends Controller
     })
     ->toArray();
         // pass authenticate user's org locations
-        $locations = ErpStore::where('organization_id',Helper::getAuthenticatedUser()->organization_id)->get();
+        $locations = Helper::getStoreLocation(Helper::getAuthenticatedUser()->organization_id);
 
         return view('paymentVoucher.createPaymentVoucher', compact('cost_centers','books_t', 'books', 'banks', 'ledgers', 'currencies', 'orgCurrency', 'type', 'storeUrl', 'redirectUrl','locations'));
     }
@@ -676,7 +676,7 @@ class PaymentVoucherController extends Controller
         
 
 
-        $locations = ErpStore::where('organization_id',Helper::getAuthenticatedUser()->organization_id)->get();
+        $locations = Helper::getStoreLocation(Helper::getAuthenticatedUser()->organization_id);
 
         if ($data->document_status == ConstantHelper::DRAFT)
             return view('paymentVoucher.editPaymentVoucher', compact('cost_centers','books_t', 'data', 'books', 'buttons', 'history', 'banks', 'ledgers', 'currencies', 'orgCurrency', 'revision_number', 'currNumber', 'editUrl', 'indexUrl', 'editUrlString','locations'));

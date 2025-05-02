@@ -705,8 +705,7 @@ class VoucherController extends Controller
         })
         ->toArray();
         // pass authenticate user's org locations
-        $locations = ErpStore::where('organization_id',Helper::getAuthenticatedUser()->organization_id)->get();
-        // dd($locations,Helper::getAuthenticatedUser()->organization_id);
+        $locations = Helper::getStoreLocation(Helper::getAuthenticatedUser()->organization_id);
         return view('voucher.create_voucher', compact('cost_centers','allledgers', 'currencies', 'orgCurrency', 'cost_centers', 'bookTypes', 'lastVoucher','allowedCVGroups','exlucdeJVGroups','locations'));
     }
 
@@ -795,7 +794,7 @@ class VoucherController extends Controller
             ];
         })
         ->toArray();
-        $locations = ErpStore::where('organization_id',Helper::getAuthenticatedUser()->organization_id)->get();
+        $locations = Helper::getStoreLocation(Helper::getAuthenticatedUser()->organization_id);
       return view('voucher.edit_voucher', compact('cost_centers','groups', 'orgCurrency', 'currencies', 'cost_centers', 'bookTypes', 'data', 'books', 'buttons', 'history', 'revision_number', 'currNumber','approvalHistory','ref_view_route','allowedCVGroups','exlucdeJVGroups','locations'));
     }
 

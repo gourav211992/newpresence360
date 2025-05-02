@@ -2928,6 +2928,19 @@ class Helper
 
             return $validatedData;
         }
+
+        //get active location
+        public static function getStoreLocation($org_ids){
+            $query = ErpStore::where('status', ConstantHelper::ACTIVE);
+
+            if (is_array($org_ids)) {
+                $query->whereIn('organization_id', $org_ids);
+            } else {
+                $query->where('organization_id', $org_ids);
+            }
+
+            return $query->get();
+        }
 }
 
 

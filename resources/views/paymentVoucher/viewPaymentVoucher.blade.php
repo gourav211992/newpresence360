@@ -454,12 +454,12 @@
 
                                                 </div>
                                                 <div class="row align-items-center mb-1">
-                                                    <div class="col-md-2">
+                                                    <div class="col-md-3">
                                                         <label class="form-label">Location <span
                                                                 class="text-danger">*</span></label>
                                                     </div>
 
-                                                    <div class="col-md-4">
+                                                    <div class="col-md-5">
                                                         <select id="locations" class="form-select select2" name="location">
                                                             <option disabled value="" selected>Select Locations</option>
                                                             @foreach ($locations as $location)

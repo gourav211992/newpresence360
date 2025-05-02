@@ -132,7 +132,7 @@ class CostCenterController extends Controller
     }
     public function getLocation(Request $r){
         $organizations = $r->organizations;
-        $location = ErpStore::whereIn('organization_id',$organizations)->get();
+        $location = Helper::getStoreLocation($organizations);
         return response()->json($location);
     }
 }
