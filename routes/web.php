@@ -2124,6 +2124,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
 
 
     Route::get('cashflow-statement/{page?}', [CashflowReportController::class, 'index'])->name('finance.cashflow');
+    Route::post('/cashflow/export', [CashflowReportController::class, 'export'])->name('cashflow.export');
     Route::post('/cashflow/add-scheduler', [CashflowReportController::class, 'addScheduler'])->name('finance.cashflow.add.scheduler');
     Route::get('tds-report', [TDSReportController::class, 'index'])->name('finance.tds');
 

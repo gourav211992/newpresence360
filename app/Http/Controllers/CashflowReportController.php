@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\CashflowExport;
 use App\Helpers\ConstantHelper;
 use Illuminate\Http\Request;
 use App\Models\Voucher;
@@ -15,6 +16,7 @@ use App\Models\Address;
 use PDF;
 use App\Models\Currency;
 use App\Models\AuthUser;
+use Maatwebsite\Excel\Facades\Excel;
 
 class CashflowReportController extends Controller
 {
@@ -322,6 +324,27 @@ class CashflowReportController extends Controller
         }
 
         return Response::json(['success' => 'Scheduler Added Successfully!']);
+    }
+
+    public function export(Request $request)
+    {
+        // dd($request->all());
+        // Decode JSON arrays back into objects/arrays
+        // $payment_made = json_decode($request->payment_made);
+        // $payment_received = json_decode($request->payment_received);
+        $data = $request->all();
+        $data['organization_id'] = Helper::getAuthenticatedUser()->organization_id;
+        $data['createdBy'] = Helper::getAuthenticatedUser()->name;
+        $organization = Organization::find($data['organization_id']);
+        $data['currency'] = Currency::find($organization?->currency_id)?->name;
+        $data['in_words'] = Helper::numberToWords(abs($data['closing']));
+
+        return Excel::download(
+            new CashflowExport(
+                $data
+            ),
+            'cashflow-statement.xlsx'
+        );
     }
     
 }

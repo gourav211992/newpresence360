@@ -455,6 +455,24 @@
         </div>
     
     </div>
+    {{-- for customized excel --}}
+    <form id="customExcelExportForm"  action="{{ route('cashflow.export') }}" method="POST">
+        @csrf
+        <input type="hidden" name="opening" value="{{ $opening }}">
+        <input type="hidden" name="closing" value="{{ $closing }}">
+        <input type="hidden" name="fy" value="{{ $fy }}">
+        <input type="hidden" name="organization_id" value="{{ $organization_id }}">
+        
+        <!-- Serialize complex arrays to JSON -->
+        <input type="hidden" name="payment_made" value="{{ json_encode($payment_made) }}">
+        <input type="hidden" name="payment_made_t" value="{{ number_format($payment_made_t, 2) }}">
+        <input type="hidden" name="payment_received" value="{{ json_encode($payment_received) }}">
+        <input type="hidden" name="payment_received_t" value="{{ number_format($payment_received_t, 2) }}">
+    
+        {{-- <button type="submit" class="btn btn-success">
+            <i data-feather="file-text"></i> Export Excel
+        </button> --}}
+    </form>
 </div>
     @endsection
 @section('scripts')
@@ -520,9 +538,12 @@
                                 extend: 'excel',
                                 text: feather.icons['file'].toSvg({ class: 'font-small-4 me-50' }) + 'Excel',
                                 className: 'dropdown-item',
-                                exportOptions: {
-                                    columns: [0, 1, 2] // Adjusted to match your table: #, Particulars, Total Amount
-                                }
+                                // exportOptions: {
+                                //     columns: [0, 1, 2] // Adjusted to match your table: #, Particulars, Total Amount
+                                // }
+                                action: function (e, dt, node, config) {
+                                        document.getElementById('customExcelExportForm').submit();
+                                    }
                             },
                             {
                                 extend: 'pdf',
