@@ -37,8 +37,7 @@ class CashflowReportController extends Controller
             $organization_id = Helper::getAuthenticatedUser()->organization_id;
 
 
-        $payment_made = Voucher::where('reference_service', ConstantHelper::PAYMENTS_SERVICE_ALIAS)
-            ->where('organization_id', $organization_id)
+        $payment_made = Voucher::withDefaultGroupCompanyOrg()->where('reference_service', ConstantHelper::PAYMENTS_SERVICE_ALIAS)
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
             ->whereBetween('document_date', [$startDate, $endDate])
             ->with('items.ledger') // assuming each item has a ledger relation
@@ -46,7 +45,7 @@ class CashflowReportController extends Controller
             ->flatMap(function ($voucher) {
 
                 return $voucher->items->where('debit_amt_org', '>', 0)->map(function ($item) use ($voucher) {
-                    $pay = PaymentVoucher::find($voucher->reference_doc_id);
+                    $pay = PaymentVoucher::withDefaultGroupCompanyOrg()->find($voucher->reference_doc_id);
                     return (object)[
                         'voucher_id'    => $voucher->id,
                         'voucher_no' => $voucher->voucher_no,
@@ -60,8 +59,7 @@ class CashflowReportController extends Controller
             })->values()->all();
 
 
-        $payment_made_t = Voucher::where('reference_service', ConstantHelper::PAYMENTS_SERVICE_ALIAS)
-            ->where('organization_id', $organization_id)
+        $payment_made_t = Voucher::withDefaultGroupCompanyOrg()->where('reference_service', ConstantHelper::PAYMENTS_SERVICE_ALIAS)
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
             ->whereBetween('document_date', [$startDate, $endDate])
             ->with('items.ledger') // assuming each item has a ledger relation
@@ -72,8 +70,7 @@ class CashflowReportController extends Controller
             })->sum('debit_amt_org');
 
 
-        $opening_payment_made =  Voucher::where('reference_service', ConstantHelper::PAYMENTS_SERVICE_ALIAS)
-            ->where('organization_id', $organization_id)
+        $opening_payment_made =  Voucher::withDefaultGroupCompanyOrg()->where('reference_service', ConstantHelper::PAYMENTS_SERVICE_ALIAS)
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
             ->where('document_date', '<', $startDate)
             ->with('items') // we just need items, ledger is not needed for sum
@@ -85,15 +82,14 @@ class CashflowReportController extends Controller
 
 
 
-        $payment_received = Voucher::where('reference_service', ConstantHelper::RECEIPTS_SERVICE_ALIAS)
-            ->where('organization_id', $organization_id)
+        $payment_received = Voucher::withDefaultGroupCompanyOrg()->where('reference_service', ConstantHelper::RECEIPTS_SERVICE_ALIAS)
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
             ->whereBetween('document_date', [$startDate, $endDate])
             ->with('items.ledger') // assuming each item has a ledger relation
             ->get()
             ->flatMap(function ($voucher) {
                 return $voucher->items->where('credit_amt_org', '>', 0)->map(function ($item) use ($voucher) {
-                    $pay = PaymentVoucher::find($voucher->reference_doc_id);
+                    $pay = PaymentVoucher::withDefaultGroupCompanyOrg()->find($voucher->reference_doc_id);
                     return (object) [
                         'voucher_id'    => $voucher->id,
                         'voucher_no' => $voucher->voucher_no,
@@ -106,8 +102,7 @@ class CashflowReportController extends Controller
                 });
             })->values()->all();
 
-        $payment_received_t = Voucher::where('reference_service', ConstantHelper::RECEIPTS_SERVICE_ALIAS)
-            ->where('organization_id', $organization_id)
+        $payment_received_t = Voucher::withDefaultGroupCompanyOrg()->where('reference_service', ConstantHelper::RECEIPTS_SERVICE_ALIAS)
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
             ->whereBetween('document_date', [$startDate, $endDate])
             ->with('items.ledger') // assuming each item has a ledger relation
@@ -117,8 +112,7 @@ class CashflowReportController extends Controller
                 return $voucher->items->where('credit_amt_org', '>', 0);
             })->sum('credit_amt_org');
 
-        $opening_payment_received =  Voucher::where('reference_service', ConstantHelper::RECEIPTS_SERVICE_ALIAS)
-            ->where('organization_id', $organization_id)
+        $opening_payment_received =  Voucher::withDefaultGroupCompanyOrg()->where('reference_service', ConstantHelper::RECEIPTS_SERVICE_ALIAS)
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
             ->where('document_date', '<', $startDate)
             ->with('items') // we just need items, ledger is not needed for sum
@@ -159,7 +153,7 @@ class CashflowReportController extends Controller
             ->flatMap(function ($voucher) {
 
                 return $voucher->items->where('debit_amt_org', '>', 0)->map(function ($item) use ($voucher) {
-                    $pay = PaymentVoucher::find($voucher->reference_doc_id);
+                    $pay = PaymentVoucher::withDefaultGroupCompanyOrg()->find($voucher->reference_doc_id);
                     return (object)[
                         'voucher_id'    => $voucher->id,
                         'voucher_no' => $voucher->voucher_no,
@@ -205,7 +199,7 @@ class CashflowReportController extends Controller
             ->get()
             ->flatMap(function ($voucher) {
                 return $voucher->items->where('credit_amt_org', '>', 0)->map(function ($item) use ($voucher) {
-                    $pay = PaymentVoucher::find($voucher->reference_doc_id);
+                    $pay = PaymentVoucher::withDefaultGroupCompanyOrg()->find($voucher->reference_doc_id);
                     return (object) [
                         'voucher_id'    => $voucher->id,
                         'voucher_no' => $voucher->voucher_no,

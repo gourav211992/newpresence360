@@ -83,59 +83,83 @@ class TrialBalanceController extends Controller
 
         // Get Reserves & Surplus
         $profitLoss = Helper::getReservesSurplus($startDate,$endDate, $organizations, 'trialBalance',$currency,$r->cost_center_id);
-
+// dd($profitLoss);
         $trialData = Helper::getGroupsData($groups, $startDate, $endDate, $organizations,$currency,$r->cost_center_id);
         $grandDebitTotal = 0;
         $grandCreditTotal = 0;
+        $grandClosingTotal = 0;
+        // dd($trialData);
         foreach ($trialData as $trialGroup) {
 
             $total_debit = $trialGroup->total_debit;
             $total_credit = $trialGroup->total_credit;
 
-            $opening = $trialGroup->opening;
-            $opening_type = '';
+            $opening = $trialGroup->open;
+            $opening_type = $trialGroup->opening_type;
             $closingText = '';
-            $closing = $total_debit - $total_credit;
-
+            $closing = $opening+($total_debit-$total_credit);
+// dd($closing);
             if ($closing != 0) {
                 $closingText = $closing > 0 ? 'Dr' : 'Cr';
             }
             $closing = $closing > 0 ? $closing : -$closing;
 
-            if ($trialGroup->name == "Liabilities") {
-                if ($profitLoss['closing_type'] == $trialGroup->opening_type) {
-                    $opening_type = $trialGroup->opening_type;
-                    $opening = $opening + $profitLoss['closingFinal'];
-                } else {
-                    $openingDiff = $opening - $profitLoss['closingFinal'];
-                    if ($openingDiff != 0) {
-                        $openingDiff = $openingDiff > 0 ? $openingDiff : -$openingDiff;
-                        if ($opening > $profitLoss['closingFinal']) {
-                            $opening_type = $trialGroup->opening_type;
-                        } else {
-                            $opening_type = $profitLoss['closing_type'];
-                        }
-                        $opening = $openingDiff;
-                    }
-                }
+            // if ($trialGroup->name == "Liabilities") {
+            //     // dump($closing);
+            //     if ($profitLoss['closing_type'] == $trialGroup->opening_type) {
+            //         $opening_type = $trialGroup->opening_type;
+            //         $opening = $opening + $profitLoss['closingFinal'];
+            //     } else {
+            //         $openingDiff = $opening - $profitLoss['closingFinal'];
+            //         if ($openingDiff != 0) {
+            //             $openingDiff = $openingDiff > 0 ? $openingDiff : -$openingDiff;
+            //             if ($opening > $profitLoss['closingFinal']) {
+            //                 $opening_type = $trialGroup->opening_type;
+            //             } else {
+            //                 $opening_type = $profitLoss['closing_type'];
+            //             }
+            //             $opening = $openingDiff;
+            //         }
+            //     }
 
-                if ($opening_type == $closingText) {
-                    $closing = $opening + $closing;
-                } else {
-                    $closingDiff = $opening - $closing;
-                    if ($closingDiff != 0) {
-                        $closingDiff = $closingDiff > 0 ? $closingDiff : -$closingDiff;
-                        if ($opening > $closing) {
-                            $closingText = $opening_type;
-                        }
-                        $closing = $closingDiff;
-                    }
-                }
-            }
+                // if ($opening_type == $closingText) {
+                //     $closing = $opening + $closing;
+                // } 
+                // else {
+                //     $closingDiff = $opening - $closing;
+                //     dd($closing,'here');
+                //     if ($closingDiff != 0) {
+                //         $closingDiff = $closingDiff > 0 ? $closingDiff : -$closingDiff;
+                //         if ($opening > $closing) {
+                //             $closingText = $opening_type;
+                //         }
+                //         $closing = $closingDiff;
+                //     }
+                // }
+                // dd($closing);/
+            // }
+
+            // let close = parseFloat(data['data'][i].open + (data['data'][i].total_debit-data['data'][i].total_credit));
+            // let closeType="";
+            // if(close<0)
+            // closeType = "Cr";
+            // else 
+            // closeType = "Dr";
+
+            //     openingDrTotal+= parseFloat(data['data'][i].open);
+            
+            //     closingCrTotal+= parseFloat(closing);
 
             $grandDebitTotal = $grandDebitTotal + $total_debit;
+            $grandClosingTotal = $opening + $total_debit + $total_credit;
+            if($grandClosingTotal<0)
+            {
+                $closing_type = "Cr";
+            }else {
+                $closing_type = "Dr";
+            }
+            // $closing_type = /
             $grandCreditTotal = $grandCreditTotal + $total_credit;
-
             $data[] = [$trialGroup->name, '', '', Helper::formatIndianNumber($opening) . $opening_type, Helper::formatIndianNumber($total_debit), Helper::formatIndianNumber($total_credit), Helper::formatIndianNumber($closing) . $closingText];
 
             if ($r->level == 2 || $r->level == 3) {
@@ -190,8 +214,9 @@ class TrialBalanceController extends Controller
                 }
             }
         }
+        // dd('stop');
 
-        $data[] = ['', '', '', 'Grand Total', Helper::formatIndianNumber($grandDebitTotal), Helper::formatIndianNumber($grandCreditTotal), '', ''];
+        $data[] = ['', '', 'Grand Total','', Helper::formatIndianNumber($grandDebitTotal), Helper::formatIndianNumber($grandCreditTotal), Helper::formatIndianNumber($grandClosingTotal) . $closing_type];
 
         $organizationName = DB::table('organizations')->where('id', $r->organization_id)->value('name');
         return Excel::download(new TrialBalanceReportExport($organizationName, $dateRange, $data), 'tiralBalanceReport.xlsx');
@@ -343,7 +368,7 @@ class TrialBalanceController extends Controller
         ->with('organizations', function ($orgQuery) use($orgIds) {
             $orgQuery -> whereIn('id', $orgIds);
         })->select('id', 'name')->get();
-        $cost_centers = CostCenterOrgLocations::where('organization_id', Helper::getAuthenticatedUser()->organization_id)
+        $cost_centers = CostCenterOrgLocations::withDefaultGroupCompanyOrg()
         ->with(['costCenter' => function ($query) {
             $query->where('status', 'active');
         }])
@@ -388,7 +413,7 @@ class TrialBalanceController extends Controller
             
         
         }
-        $cost_centers = CostCenterOrgLocations::where('organization_id', Helper::getAuthenticatedUser()->organization_id)
+        $cost_centers = CostCenterOrgLocations::withDefaultGroupCompanyOrg()
         ->with(['costCenter' => function ($query) {
             $query->where('status', 'active');
         }])
@@ -406,7 +431,7 @@ class TrialBalanceController extends Controller
 
         $dateRange = \Carbon\Carbon::parse($startDate)->format('d-m-Y') . " to " . \Carbon\Carbon::parse($endDate)->format('d-m-Y');
         $date2 = \Carbon\Carbon::parse($startDate)->format('jS-F-Y') . ' to ' . \Carbon\Carbon::parse($endDate)->format('jS-F-Y');
-
+// dd(;'here');
         return view('trialBalance.view-trial-balance', compact('cost_centers','companies', 'organizationId', 'id','date2','dateRange'));
     }
 
@@ -459,6 +484,7 @@ class TrialBalanceController extends Controller
         $profitLoss = Helper::getReservesSurplus($startDate,$endDate,$organizations, 'trialBalance', $currency,$r->cost_center_id);
 
         $data = Helper::getGroupsData($groups, $startDate, $endDate, $organizations, $currency,$r->cost_center_id);
+        dd($data);
         return response()->json(['currency' => $currency,'data' => $data, 'type' => 'group', 'startDate' => date('d-M-Y', strtotime($startDate)), 'endDate' => date('d-M-Y', strtotime($endDate)), 'profitLoss' => $profitLoss, 'groups' => $groups]);
     }
 

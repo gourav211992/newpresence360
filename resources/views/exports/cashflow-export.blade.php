@@ -78,10 +78,11 @@
             <td colspan="6"><strong>Payment Made</strong></td>
         </tr>
         @foreach ($payment_made as $index => $item)
+        {{-- {{ dd($item) }} --}}
             <tr>
                 <td></td>
                 <td></td>
-                <td>{{ \Carbon\Carbon::parse($item->date)->format('d-m-Y') }}</td>
+                <td>{{ \Carbon\Carbon::parse($item->document_date)->format('d-m-Y') }}</td>
                 <td>{{ $item->ledger_name }}</td>
                 <td>{{ $item->payment_mode }}</td>
                 <td>{{ $item->bank_name }}</td>
@@ -98,7 +99,7 @@
             <tr>
                 <td></td>
                 <td></td>
-                <td>{{ \Carbon\Carbon::parse($item->date)->format('d-m-Y') }}</td>
+                <td>{{ \Carbon\Carbon::parse($item->document_date)->format('d-m-Y') }}</td>
                 <td>{{ $item->ledger_name }}</td>
                 <td>{{ $item->payment_mode }}</td>
                 <td>{{ $item->bank_name }}</td>

@@ -204,7 +204,7 @@ class PaymentVoucherController extends Controller
         }
 
         // Retrieve vouchers based on organization_id and include series with levels
-        $data = PaymentVoucher::whereIn("organization_id", $organizations)
+        $data = PaymentVoucher::withDefaultGroupCompanyOrg()
             ->with([
                 'series' => function ($d) {
                     $d->select('id', 'book_name');
@@ -1335,7 +1335,7 @@ class PaymentVoucherController extends Controller
         if ($ledger && $group) {
             $ledger = (int) $ledger;
             $ledger_group = (int)$group;
-            $data = Voucher::where("organization_id", Helper::getAuthenticatedUser()->organization_id)
+            $data = Voucher::withDefaultGroupCompanyOrg()
                 ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
                 ->withWhereHas('items', function ($i) use ($ledger, $doc_type, $ledger_group) {
                     $i->where('ledger_id', $ledger)

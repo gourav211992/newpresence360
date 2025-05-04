@@ -306,7 +306,7 @@ class ProfitLossController extends Controller
             
         
         }
-        $cost_centers = CostCenterOrgLocations::where('organization_id', Helper::getAuthenticatedUser()->organization_id)->with('costCenter')->get()->map(function ($item) {
+        $cost_centers = CostCenterOrgLocations::withDefaultGroupCompanyOrg()->with('costCenter')->get()->map(function ($item) {
             $item->where('status', 'active');
            
             return [
