@@ -468,19 +468,15 @@ Route::middleware(['user.auth'])->group(function () {
             Route::get('create', 'create')->name('create');
             Route::post('store', 'store')->name('store');
             Route::get('change-item-code', 'changeItemCode')->name('item.code');
-            Route::get('change-item-attr', 'changeItemAttr')->name('item.attr.change');
             Route::get('get-item-attribute', 'getItemAttribute')->name('item.attr');
             Route::get('add-item-row', 'addItemRow')->name('item.row');
-            Route::get('get-overhead', 'getOverhead')->name('get.overhead');
             Route::get('get-item-detail', 'getItemDetail')->name('get.itemdetail');
             Route::get('get-item-detail2', 'getItemDetail2')->name('get.itemdetail2');
             Route::get('get-doc-no', 'getDocNumber')->name('doc.no');
             Route::get('edit/{id}', 'edit')->name('edit');
             Route::post('update/{id}', 'update')->name('update');
             # get bom item cost child item
-            Route::get('get-item-cost', 'getItemCost')->name('get.item.cost');
             Route::get('/{id}/pdf', 'generatePdf')->name('generate-pdf');
-            Route::delete('/{id}', 'destroy')->name('destroy');
             Route::get('get-posting', 'getPostingDetails')->name('posting.get');
             Route::get('post-mo', 'postMo')->name('posting.post');
             Route::get('get-pwo', 'getPwo')->name('get.pwo');
@@ -1908,7 +1904,9 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::get('/psv/{id}/pdf/{pattern}', [ErpPSVController::class, 'generatePdf'])->name('psv.generate-pdf');
     Route::get('/psv/multi-stores-location', [ErpPSVController::class, 'getLocationsWithMultipleStores'])->name('psv.multi-store-location');
     Route::get('/psv/report', [ErpPSVController::class, 'materialIssueReport'])->name('psv.report');
-
+    Route::get('/psv/posting/get', [ErpPSVController::class, 'getPostingDetails'])->name('psv.posting.get');
+    Route::post('/psv/post', [ErpPSVController::class, 'postPsv'])->name('psv.post');
+    Route::post('/psv/import', [ErpPSVController::class, 'import'])->name('psv.import');
 
      //Production Slip
      Route::get('/production-slip', [ErpProductionSlipController::class, 'index'])->name('production.slip.index');
@@ -1939,7 +1937,6 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         Route::get('/stores/searchShelves', 'searchShelves')->name('store.searchShelves');
         Route::get('/stores/searchBins', 'searchBins')->name('store.searchBins');
 
-        Route::get('/{id}', 'show')->name('store.show');
         Route::get('/{id}/edit', 'edit')->name('store.edit');
         Route::put('/{id}', 'update')->name('store.update');
         Route::delete('/{id}', 'destroy')->name('store.destroy');
@@ -1949,6 +1946,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
 
         Route::get('/store/racks-bins', 'getStoreRacksAndBins')->name('store.racksAndBins');
         Route::get('/rack/shelfs', 'getRackShelfs')->name('store.rack.shelfs');
+        Route::get('get-sub-store', 'getSubStore')->name('get.sub.store');
 
     });
 
@@ -2201,6 +2199,9 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         'edit' => 'finance.fixed-asset.split.edit',
         'update' => 'finance.fixed-asset.split.update',
     ]);
+    Route::post('fixed-asset/split/approval', [SplitController::class, 'documentApproval'])->name('finance.fixed-asset.split.approval');
+    Route::post('fixed-asset/split', [SplitController::class, 'index'])->name('finance.fixed-asset.split.filter');
+    
 
 
     Route::resource('asset-category',AssetCategoryController::class);

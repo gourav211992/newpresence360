@@ -25,6 +25,10 @@
                     </div>
                     <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
                         <div class="form-group breadcrumb-right">
+                            @if($buttons['approve'])
+                            <button type="button" class="btn btn-primary btn-sm" id="approved-button" name="action" value="approved"><i data-feather="check-circle"></i> Approve</button>
+                            <button type="button" id="reject-button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg> Reject</button>
+                    @endif
                             <a href="{{ route('finance.fixed-asset.split.index') }}"> <button
                                     class="btn btn-secondary btn-sm"><i data-feather="arrow-left-circle"></i> Back</button>
                             </a>
@@ -59,12 +63,21 @@
                                                         </div>
 
 
-                                                        <div class="col-md-6 text-sm-end" hidden>
-                                                            <span
-                                                                class="badge rounded-pill badge-light-secondary forminnerstatus">
-                                                                Status : <span class="text-success">Approved</span>
+                                                        @php
+                                                            use App\Helpers\Helper;
+                                                        @endphp
+                                                        <div class="col-md-6 text-sm-end">
+                                                            <span class="badge rounded-pill {{App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$data->document_status] ?? ''}} forminnerstatus">
+                                                                <span class="text-dark">Status</span>
+                                                                 : <span class="{{App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS[$data->document_status] ?? ''}}">
+                                                                    @if ($data->document_status == App\Helpers\ConstantHelper::APPROVAL_NOT_REQUIRED)
+                                                                    Approved
+                                                                @else
+                                                                    {{ ucfirst($data->document_status) }}
+                                                                @endif
                                                             </span>
-                                                        </div>
+                                                            </span>        
+                                                    </div>
 
                                                     </div>
                                                 </div>
@@ -111,14 +124,10 @@
                                                     </div>
                                                 </div>
                                             </div>
+                                            @include('partials.approval-history', ['document_status' =>$data->document_status, 'revision_number' => $data->revision_number]); 
+                                        
 
-
-                                            <div class="col-md-4">
-
-                                                {{-- History Code --}}
-
-                                            </div>
-
+                                            
                                         </div>
                                     </div>
                                 </div>
@@ -477,7 +486,44 @@
     <div class="sidenav-overlay"></div>
     <div class="drag-target"></div>
 
-
+    <div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+           <div class="modal-content">
+              <form class="ajax-input-form" method="POST" action="{{ route('finance.fixed-asset.split.approval') }}" data-redirect="{{ route('finance.fixed-asset.split.index') }}" enctype='multipart/form-data'>
+                 @csrf
+                 <input type="hidden" name="action_type" id="action_type">
+                 <input type="hidden" name="id" value="{{$data->id ?? ''}}">
+                 <div class="modal-header">
+                    <div>
+                       <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="popupTitle">
+                          Approve Application
+                       </h4>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                 </div>
+                 <div class="modal-body pb-2">
+                    <div class="row mt-1">
+                       <div class="col-md-12">
+                          <div class="mb-1">
+                             <label class="form-label">Remarks {{-- <span class="text-danger">*</span> --}}</label>
+                             <textarea name="remarks" class="form-control"></textarea>
+                          </div>
+                          <div class="mb-1">
+                             <label class="form-label">Upload Document</label>
+                             <input type="file" id="ap_file" name="attachment[]" multiple class="form-control" />
+                          </div>
+                       </div>
+                    </div>
+                 </div>
+                 <div class="modal-footer justify-content-center">  
+                    <button type="reset" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button> 
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                 </div>
+              </form>
+           </div>
+        </div>
+     </div>
+  
 
     <div class="modal fade text-start alertbackdropdisabled" id="amendmentconfirm" tabindex="-1"
         aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
@@ -930,6 +976,17 @@
         }
 
         $(document).on('input change', '.asset-code-input,.asset-name-input, .quantity-input, .current-value-input', updateSubAssetCodes);
+        $(document).on('click', '#approved-button', (e) => {
+            let actionType = 'approve';
+            $("#approveModal").find("#action_type").val(actionType);
+            $("#approveModal").modal('show');
+            });
+
+            $(document).on('click', '#reject-button', (e) => {
+            let actionType = 'reject';
+            $("#approveModal").find("#action_type").val(actionType);
+            $("#approveModal").modal('show');
+            });
     </script>
     <!-- END: Content-->
 @endsection
