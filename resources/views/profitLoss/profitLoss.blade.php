@@ -389,7 +389,7 @@
         });
     }
     function exportPLLevel(level,type='excel'){
-        var obj={ date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),'_token':'{!!csrf_token()!!}',level:level};
+        var obj={ date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),'_token':'{!!csrf_token()!!}',level:level,currency:$('#currency').val()};
         var selectedValues = $('#organization_id').val() || [];
         var filteredValues = selectedValues.filter(function(value) {
             return value !== null && value.trim() !== '';

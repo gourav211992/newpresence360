@@ -27,9 +27,9 @@ class TrialBalanceController extends Controller
     public function updateLedgerOpening(Request $r)
     { ///// temp method to reset opening
         DB::table('erp_item_details')
-            ->whereIn('ledger_id', Ledger::pluck('id'))
+            ->whereIn('ledger_id', Ledger::where('status', 1)->pluck('id'))
             ->orderBy('document_date')
-            ->limit(Ledger::count())
+            ->limit(Ledger::where('status', 1)->count())
             ->update(['opening' => 0, 'opening_type' => null]);
     }
 
@@ -185,7 +185,7 @@ class TrialBalanceController extends Controller
             $currency = $r->currency;
         };
         $organizationName = DB::table('organizations')->where('id', $r->organization_id)->value('name');
-        $ledgerName = Ledger::where('id', $r->ledger_id)->value('name');
+        $ledgerName = Ledger::where('id', $r->ledger_id)->where('status', 1)->value('name');
 
         $dates = explode(' to ', $r->date);
         $startDate = date('Y-m-d', strtotime($dates[0]));
@@ -343,6 +343,7 @@ class TrialBalanceController extends Controller
             $query->whereNull('organization_id')
                   ->orWhere('organization_id', $id);
         })
+        ->where('status', 1)
         ->select('id', 'name')
         ->orderBy('name', 'asc')
         ->get();
@@ -518,7 +519,7 @@ class TrialBalanceController extends Controller
             ->where('group_id', Helper::getAuthenticatedUser()->organization_id)
             ->get();
         $organization = DB::table('organizations')->where('id', Helper::getAuthenticatedUser()->organization_id)->value('name');
-        $ledger = Ledger::where('id', $id)->value('name');
+        $ledger = Ledger::where('id', $id)->where('status', 1)->value('name');
         // Determine the date range
         if ($r->date) {
             $dates = explode(' to ', $r->date);
