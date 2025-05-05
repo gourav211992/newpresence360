@@ -390,7 +390,7 @@ class FinancialPostingHelper
 
     public static function getDocumentPostedVoucher(int $documentId, string $serviceAlias) 
     {
-        $voucher = Voucher::withDefaultGroupCompanyOrg()->with('items') -> where('reference_service', $serviceAlias) -> where('reference_doc_id', $documentId) -> first();
+          $voucher = Voucher::withDefaultGroupCompanyOrg()->with('items') -> where('reference_service', $serviceAlias) -> where('reference_doc_id', $documentId) -> first();
         if (!isset($voucher)) {
             return array(
                 'status' => false,
@@ -718,7 +718,7 @@ class FinancialPostingHelper
     public static function postVoucher(array $details) 
     {
             //Post Voucher
-            $exitingVoucher = Voucher::withDefaultGroupCompanyOrg()->where('reference_service', $details['voucher_header']['reference_service']) -> where('reference_doc_id', $details['voucher_header']['reference_doc_id']) -> first();
+             $exitingVoucher = Voucher::withDefaultGroupCompanyOrg()->where('reference_service', $details['voucher_header']['reference_service']) -> where('reference_doc_id', $details['voucher_header']['reference_doc_id']) -> first();
             if ($exitingVoucher) {
                 return array(
                     'message' => 'Voucher already posted',
@@ -4347,6 +4347,15 @@ class FinancialPostingHelper
         $vendorLedger = Ledger::find($vendorLedgerId);
         $vendorLedgerGroup = Group::find($vendorLedgerGroupId);
 
+        //Vendor Ledger account not found
+        if (!isset($vendorLedger) || !isset($vendorLedgerGroup)) {
+            return array(
+                'status' => false,
+                'message' => self::ERROR_PREFIX.'Vendor Account not setup',
+                'data' => []
+            );
+        }
+
         //Status to check if all ledger entries were properly set
         $ledgerErrorStatus = null;
 
@@ -5155,6 +5164,7 @@ class FinancialPostingHelper
             'book_id' => $glPostingBookId,
             'date' => $document -> document_date,
             'amount' => $totalCreditAmount,
+            'location'=> $document->location ?? null,
             'currency_id' => $document->currency_id,
             'currency_code' => $document->currencyCode,
             'org_currency_id' => $document->org_currency_id,
@@ -5280,7 +5290,7 @@ public static function receiptVoucherPosting(int $bookId, int $documentId, strin
                 'data' => []
             );
         }
-        $document = PaymentVoucher::withDefaultGroupCompanyOrg()->find($documentId);
+         $document = PaymentVoucher::withDefaultGroupCompanyOrg()->find($documentId);
         $vendors = $document->details;
         $vocuherdata=$document;
         if (!isset($document)) {
@@ -5404,6 +5414,7 @@ public static function receiptVoucherPosting(int $bookId, int $documentId, strin
             'book_id' => $glPostingBookId,
             'date' => $document -> document_date,
             'amount' => $totalCreditAmount,
+            'location'=> $document->location ?? null,
             'currency_id' => $document->currency_id,
             'currency_code' => $document->currencyCode,
             'org_currency_id' => $document->org_currency_id,
@@ -5910,7 +5921,6 @@ public static function receiptVoucherPosting(int $bookId, int $documentId, strin
                     'debit_amt' => $post['debit_amount'],
                     'credit_amt' => $post['credit_amount'],
                     'cost_center_id' => $document?->cost_center_id ?? null,
-                    'location'=> $document->location ?? null,
                     'debit_amt_org' => $debitAmtOrg,
                     'credit_amt_org' => $creditAmtOrg,
                     'debit_amt_comp' => $debitAmtComp,

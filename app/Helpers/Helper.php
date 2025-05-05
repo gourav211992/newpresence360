@@ -518,9 +518,12 @@ class Helper
 
     public static function getGroupsData($groups, $startDate, $endDate, $organizations, $currency = 'org',$cost=null)
     {
+        $profitLoss = Helper::getReservesSurplus($startDate, $endDate, $organizations, 'trialBalance', $currency, $cost);
+
         $fy = self::getFinancialYear($startDate);
                     
         foreach ($groups as $master) {
+            
             $allChildIds = $master->getAllChildIds();
             $allChildIds[] = $master->id;
             $non_carry = Helper::getNonCarryGroups();
@@ -530,15 +533,17 @@ class Helper
             $carry=1;
             
           
-            $ledgers = Ledger::where(function ($query) use ($allChildIds) {
+            $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
                 $query->whereIn('ledger_group_id', $allChildIds)
                     ->orWhere(function ($subQuery) use ($allChildIds) {
                         foreach ($allChildIds as $child) {
                             $subQuery->orWhereJsonContains('ledger_group_id',(string)$child);
                         }
                     });
-            })->whereIn('organization_id', $organizations)
-                ->pluck('id')->toArray();
+            })->where(function ($q) use ($organizations) {
+                $q->whereIn('organization_id', $organizations)
+                      ->orWhereNull('organization_id');
+            })->pluck('id')->toArray();
                
            
                 $transactions = ItemDetail::whereIn('ledger_parent_id', $allChildIds)
@@ -549,8 +554,11 @@ class Helper
                 ->whereHas('voucher', function ($query) use ($organizations,$startDate,$endDate) {
                     $query->whereBetween('document_date', [$startDate, $endDate]);
                     $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
-                    $query->whereIn('organization_id', $organizations);
-
+                    $query->withDefaultGroupCompanyOrg();
+                    $query->where(function ($q) use ($organizations) {
+                        $q->whereIn('organization_id', $organizations)
+                              ->orWhereNull('organization_id');
+                    });
                     
                 })
                 ->get(); // Fetch results before summing
@@ -558,8 +566,8 @@ class Helper
               
             
             
-          $creditField = "credit_amt_{$currency}";
-          $debitField = "debit_amt_{$currency}";
+            $creditField = "credit_amt_{$currency}";
+            $debitField = "debit_amt_{$currency}";
             $totalMasterCredit = $transactions->sum(fn($t) => self::removeCommas($t->$creditField));
             $totalMasterDebit = $transactions->sum(fn($t) => self::removeCommas($t->$debitField));
            
@@ -578,21 +586,34 @@ class Helper
                     if(!$carry)
                     $query->where('document_date', '>=', $fy['start_date']);
                     $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
-                    $query->whereIn('organization_id', $organizations);
-                })
+                    $query->withDefaultGroupCompanyOrg();
+                    $query->where(function ($q) use ($organizations) {
+                        $q->whereIn('organization_id', $organizations)
+                              ->orWhereNull('organization_id');
+                    });
+                 })
                 ->selectRaw("SUM(debit_amt_{$currency}) as total_debit, SUM(credit_amt_{$currency}) as total_credit")
                 ->first();
             
+                
                 $opening = $openingData->total_debit - $openingData->total_credit ?? 0;
-                $opening_type = ($openingData->total_debit > $openingData->total_credit) ? 'Dr' : 'Cr';
+                if($master->name=="Liabilities")
+                {
+                    if($profitLoss['closing_type']=="Dr")
+                    $opening = $profitLoss['closingFinal'] + $opening;
+                    else if($profitLoss['closing_type']=="Cr")
+                    $opening = $profitLoss['closingFinal'] - $opening;
+                
+                }
+                $opening_type = $opening < 0 ? 'Cr' : 'Dr';
                 $open = $openingData->total_debit - $openingData->total_credit;
                 $closingText = '';
                 $closing = $open + $totalMasterDebit - $totalMasterCredit;
                 if ($closing != 0) {
-                    $closingText = $closing > 0 ? 'Dr' : 'Cr';
+                    $closingText = $closing < 0 ? 'Cr' : 'Dr';
                 }
-                
-
+            
+            
 
             // Adding calculated totals to master group
             $master->group_id = $master->id;
@@ -616,15 +637,17 @@ class Helper
             $allChildIds = $master->getAllChildIds();
             $allChildIds[] = $master->id;
 
-            $ledgers = Ledger::where(function ($query) use ($allChildIds) {
+            $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
                 $query->whereIn('ledger_group_id', $allChildIds)
                     ->orWhere(function ($subQuery) use ($allChildIds) {
                         foreach ($allChildIds as $child) {
                             $subQuery->orWhereJsonContains('ledger_group_id',(string)$child);
                         }
                     });
-            })->whereIn('organization_id', $organizations)
-                ->pluck('id')->toArray();
+            })->where(function ($q) use ($organizations) {
+                $q->whereIn('organization_id', $organizations)
+                      ->orWhereNull('organization_id');
+            })->pluck('id')->toArray();
 
 
             $transactions = ItemDetail::whereIn('ledger_id', $ledgers)
@@ -632,8 +655,12 @@ class Helper
                 ->whereIn('ledger_parent_id',$allChildIds)
                 ->whereHas('voucher', function ($query) use ($organizations,$startDate,$endDate) {
                     $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
-                    $query->whereIn('organization_id', $organizations);
-                    $query->whereBetween('document_date', [$startDate, $endDate]);
+                    $query->withDefaultGroupCompanyOrg();
+                    $query->where(function ($q) use ($organizations) {
+                        $q->whereIn('organization_id', $organizations)
+                              ->orWhereNull('organization_id');
+                    });
+                  $query->whereBetween('document_date', [$startDate, $endDate]);
                 })
                 ->when($cost, function ($query) use ($cost) {
                     $query->where('cost_center_id', $cost);
@@ -655,7 +682,11 @@ class Helper
                 ->whereHas('voucher', function ($query) use($organizations,$startDate) {
                     $query->where('document_date', '<', $startDate);
                     $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
-                    $query->whereIn('organization_id', $organizations);
+                    $query->withDefaultGroupCompanyOrg();
+                    $query->where(function ($q) use ($organizations) {
+                        $q->whereIn('organization_id', $organizations)
+                              ->orWhereNull('organization_id');
+                    });
                 })
                 ->selectRaw("SUM(debit_amt_{$currency}) as total_debit, SUM(credit_amt_{$currency}) as total_credit")
                 ->first();
@@ -819,15 +850,17 @@ class Helper
         $childrens = $group->getAllChildIds();
         $childrens[] = $group->id;
 
-        $data = Ledger::where(function ($query) use ($childrens) {
+        $data = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($childrens) {
             $query->whereIn('ledger_group_id', $childrens)
                 ->orWhere(function ($subQuery) use ($childrens) {
                     foreach ($childrens as $child) {
                         $subQuery->orWhereJsonContains('ledger_group_id',(string)$child);
                     }
                 });
-        })->whereIn('organization_id', $organizations)
-            ->select('id', 'name','ledger_group_id')
+        })->where(function ($q) use ($organizations) {
+            $q->whereIn('organization_id', $organizations)
+                  ->orWhereNull('organization_id');
+        })->select('id', 'name','ledger_group_id')
             ->withSum([
                 'details as details_sum_debit_amt' => function ($query) use ($startDate, $endDate,$childrens,$cost) {
                     $query->whereIn('ledger_parent_id', $childrens)
@@ -884,7 +917,11 @@ class Helper
                    ->whereHas('voucher', function ($query) use($organizations,$startDate) {
                         $query->where('document_date', '<', $startDate);
                         $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
-                        $query->whereIn('organization_id', $organizations);
+                        $query->withDefaultGroupCompanyOrg();
+                        $query->where(function ($q) use ($organizations) {
+                            $q->whereIn('organization_id', $organizations)
+                                  ->orWhereNull('organization_id');
+                        });
                     })
                     ->selectRaw("SUM(debit_amt_{$currency}) as total_debit, SUM(credit_amt_{$currency}) as total_credit")
                     ->first();
@@ -1722,12 +1759,14 @@ class Helper
             $data = self::getGroupsData($datas, $startDate, $endDate, $organizations, $currency,$cost);
         } else {
             $type = 'ledger';
-            $data = Ledger::where(function ($query) use ($group_id) {
+            $data = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($group_id) {
                 $query->whereJsonContains('ledger_group_id', (string) $group_id)
                       ->orWhere('ledger_group_id', $group_id);
             })
-            ->whereIn('organization_id', $organizations)
-            ->select('id', 'name')
+            ->where(function ($query) use ($organizations) {
+                $query->whereIn('organization_id', $organizations)
+                      ->orWhereNull('organization_id');
+            })->select('id', 'name')
             ->with([
                 'details' => function ($query) use ($startDate, $endDate, $group_id,$cost) {
                     $query->where('ledger_parent_id', $group_id)
@@ -1782,7 +1821,11 @@ class Helper
                     if(!$carry)
                     $query->where('document_date', '>=', $fy['start_date']);
                     $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
-                    $query->whereIn('organization_id', $organizations);
+                    $query->withDefaultGroupCompanyOrg();
+                    $query->where(function ($q) use ($organizations) {
+                        $q->whereIn('organization_id', $organizations)
+                              ->orWhereNull('organization_id');
+                    });
                 })
                 ->selectRaw("SUM(debit_amt_{$currency}) as total_debit, SUM(credit_amt_{$currency}) as total_credit")
                 ->first();
@@ -1861,15 +1904,17 @@ class Helper
                 $allChildIds = $master->getAllChildIds();
                 $allChildIds[] = $master->id;
 
-                $ledgers = Ledger::where(function ($query) use ($allChildIds) {
+                $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
                 $query->whereIn('ledger_group_id', $allChildIds)
                     ->orWhere(function ($subQuery) use ($allChildIds) {
                         foreach ($allChildIds as $child) {
                             $subQuery->orWhereJsonContains('ledger_group_id',(string)$child);
                         }
                     });
-            })->whereIn('organization_id', $organizations)
-                ->pluck('id')->toArray();
+            })->where(function ($q) use ($organizations) {
+                $q->whereIn('organization_id', $organizations)
+                      ->orWhereNull('organization_id');
+            })->pluck('id')->toArray();
                 $non_carry = Helper::getNonCarryGroups();
                 $fy = self::getFinancialYear($startDate);
               
@@ -1886,7 +1931,11 @@ class Helper
                 })
                 ->whereHas('voucher', function ($query) use ($organizations,$startDate,$endDate,$carry,$fy)  {
                     $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
-                        $query->whereIn('organization_id', $organizations);
+                    $query->withDefaultGroupCompanyOrg();
+                    $query->where(function ($q) use ($organizations) {
+                        $q->whereIn('organization_id', $organizations)
+                              ->orWhereNull('organization_id');
+                    });
                         $query->whereBetween('document_date', [$startDate, $endDate]);
 
                     })->get();
@@ -1909,7 +1958,11 @@ class Helper
                     //if(!$carry)
                     //$query->where('document_date', '>=', $fy['start_date']);
                     $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
-                    $query->whereIn('organization_id', $organizations);
+                    $query->withDefaultGroupCompanyOrg();
+                    $query->where(function ($q) use ($organizations) {
+                        $q->whereIn('organization_id', $organizations)
+                              ->orWhereNull('organization_id');
+                    });
                 })->get();
                     
                 $totalCreditOpen +=$transactionsOpen->sum(fn($t) => self::removeCommas($t->$creditField));

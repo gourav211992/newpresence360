@@ -92,24 +92,15 @@ class TrialBalanceController extends Controller
             $total_credit = $trialGroup->total_credit;
 
             $opening = $trialGroup->open;
-            $opening_type = $trialGroup->opening_type;
+            $opening_type = $opening < 0 ? 'Cr' : 'Dr';
             $closingText = '';
             $closing = $opening + ($total_debit - $total_credit);
             if ($closing != 0) {
-                $closingText = $closing > 0 ? 'Dr' : 'Cr';
+                $closingText = $closing < 0 ? 'Cr' : 'Dr';
             }
             $closing = $closing > 0 ? $closing : -$closing;
 
-            if ($trialGroup->name == "Liabilities") {
-                $closingText = $profitLoss['closing_type'];
-                $closing = $profitLoss['closingFinal'];
-                if ($closingText == "Cr") {
-                    $grandClosingTotal -= $closing;
-                } else {
-                    $grandClosingTotal += $closing;
-                }
-            }
-
+            
             $grandDebitTotal = $grandDebitTotal + $total_debit;
             $grandClosingTotal += $opening + ($total_debit - $total_credit);
 
@@ -347,7 +338,15 @@ class TrialBalanceController extends Controller
 
     public function get_org_ledgers($id)
     {
-        $data = Ledger::where('organization_id', $id)->select('id', 'name')->orderBy('name', 'asc')->get();
+        $data = Ledger::withDefaultGroupCompanyOrg()
+        ->where(function ($query) use ($id) {
+            $query->whereNull('organization_id')
+                  ->orWhere('organization_id', $id);
+        })
+        ->select('id', 'name')
+        ->orderBy('name', 'asc')
+        ->get();
+        
         return response()->json($data);
     }
 
