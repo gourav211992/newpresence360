@@ -188,7 +188,6 @@ class LedgerController extends Controller
     {
 
         $authOrganization = Helper::getAuthenticatedUser()->organization;
-        dd($authOrganization);
         $organizationId = $authOrganization->id;
         $companyId = $authOrganization ?-> company_id;
         $groupId = $authOrganization ?-> group_id;
@@ -246,6 +245,20 @@ class LedgerController extends Controller
                 'max:255',
             ],
         ]);
+        $existingName = Ledger::withDefaultGroupCompanyOrg()
+        ->where('code', $request->name)
+        ->first();
+
+        $existingCode = Ledger::withDefaultGroupCompanyOrg()
+            ->where('code', $request->code)
+            ->first();
+            if ($existingName) {
+                return back()->withErrors(['name' => 'The name has already been taken for this organization, company, and group.'])->withInput();
+            }
+            
+            if ($existingCode) {
+                return back()->withErrors(['code' => 'The code has already been taken for this organization, company, and group.'])->withInput();
+            }
         $request->merge([
             'ledger_group_id' => isset($request->ledger_group_id) ? json_encode($request->ledger_group_id) : null,
         ]);
