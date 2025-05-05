@@ -199,21 +199,21 @@ class LedgerController extends Controller
                 'required',
                 'string',
                 'max:255',
-                Helper::uniqueRuleWithConditions('erp_ledgers', [
-                    'organization_id' => $organizationId,
-                    'company_id' => $companyId,
-                    'group_id' => $groupId
-                ], null, 'id', false),
+                Rule::unique('erp_ledgers', 'code')->where(function ($query) use ($organizationId, $companyId, $groupId) {
+                    return $query->where('organization_id', $organizationId)
+                                 ->where('company_id', $companyId)
+                                 ->where('group_id', $groupId);
+                }),
             ],
             'name' => [
                 'required',
                 'string',
                 'max:255',
-                Helper::uniqueRuleWithConditions('erp_ledgers', [
-                    'organization_id' => $organizationId,
-                    'company_id' => $companyId,
-                    'group_id' => $groupId
-                ]),
+                Rule::unique('erp_ledgers', 'name')->where(function ($query) use ($organizationId, $companyId, $groupId) {
+                    return $query->where('organization_id', $organizationId)
+                                 ->where('company_id', $companyId)
+                                 ->where('group_id', $groupId);
+                }),
             ],
             'tax_type' => [
                 'nullable',

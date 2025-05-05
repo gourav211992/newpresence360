@@ -66,8 +66,18 @@
 													<td>{{$d?->document_date}}</td>
 													<td>{{$d?->quantity}}</td>
 													<td>{{$d?->capitalize_date}}</td>
-													<td><span class="badge rounded-pill badge-light-success badgeborder-radius">{{$d->document_status}}</span></td>
-													<td class="tableactionnew">
+													<td>
+                            @php $statusClasss = App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$d->document_status??"draft"];  @endphp
+                            <span
+                                class='badge rounded-pill {{ $statusClasss }} badgeborder-radius'>
+                                @if ($d->document_status == App\Helpers\ConstantHelper::APPROVAL_NOT_REQUIRED)
+                                    Approved
+                                @else
+                                    {{ ucfirst($d->document_status) }}
+                                @endif
+                            </span>
+                        </td>
+                      <td class="tableactionnew">
 														<div class="dropdown">
 															<button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
 																<i data-feather="more-vertical"></i>
@@ -113,7 +123,10 @@
 	 
     <div class="modal modal-slide-in fade filterpopuplabel" id="filter">
 		<div class="modal-dialog sidebar-sm">
-			<form class="add-new-record modal-content pt-0"> 
+			<form class="add-new-record modal-content pt-0" method="POST"
+      action="{{ route('finance.fixed-asset.split.filter') }}" enctype="multipart/form-data">
+
+      @csrf
 				<div class="modal-header mb-1">
 					<h5 class="modal-title" id="exampleModalLabel">Apply Filter</h5>
 					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">×</button>
@@ -122,35 +135,42 @@
 					<div class="mb-1">
 						  <label class="form-label" for="fp-range">Select Date</label>
 <!--                        <input type="text" id="fp-default" class="form-control flatpickr-basic" placeholder="YYYY-MM-DD" />-->
-						  <input type="text" id="fp-range" class="form-control flatpickr-range bg-white" placeholder="YYYY-MM-DD to YYYY-MM-DD" />
+						  <input type="text" id="fp-range" name="date" value="{{request('date')}}" class="form-control flatpickr-range bg-white" placeholder="YYYY-MM-DD to YYYY-MM-DD" />
 					</div>
 					
 					<div class="mb-1">
 						<label class="form-label">Asset Code</label>
-						<select class="form-select">
-							<option>Select</option>
+						<select class="form-select" name="filter_asset">
+              <option>Select</option>
+              @foreach($assetCodes as $assetCode)
+                <option value="{{ $assetCode->id }}">{{ $assetCode->asset_code }}</option>
+              @endforeach
 						</select>
 					</div> 
                     
                     <div class="mb-1">
 						<label class="form-label">Ledger Name</label>
-						<select class="form-select">
+						<select class="form-select" name="filter_ledger">
 							<option>Select</option> 
+              @foreach($ledgers as $ledger)
+                <option value="{{ $ledger->id }}">{{ $ledger->name }}</option>
+              @endforeach
 						</select>
 					</div> 
                     
-                    <div class="mb-1">
+            <div class="mb-1">
 						<label class="form-label">Status</label>
-						<select class="form-select">
-							<option>Select</option>
-							<option>Active</option>
-							<option>Inactive</option>
+						<select class="form-select" name="filter_status">
+              <option>Select</option>
+              @foreach (App\Helpers\ConstantHelper::DOCUMENT_STATUS as $key => $status)
+                <option value="{{ $status }}">{{ ucfirst($status) }}</option>
+              @endforeach
 						</select>
 					</div> 
 					 
 				</div>
 				<div class="modal-footer justify-content-start">
-					<button type="button" class="btn btn-primary data-submit mr-1">Apply</button>
+					<button type="submit" class="btn btn-primary data-submit mr-1">Apply</button>
 					<button type="reset" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
 				</div>
 			</form>
@@ -258,33 +278,7 @@
     });
   }
 
-  // Add New record
-  // ? Remove/Update this code as per your requirements ?
-  var count = 101;
-  $('.data-submit').on('click', function () {
-    var $new_name = $('.add-new-record .dt-full-name').val(),
-      $new_post = $('.add-new-record .dt-post').val(),
-      $new_email = $('.add-new-record .dt-email').val(),
-      $new_date = $('.add-new-record .dt-date').val(),
-      $new_salary = $('.add-new-record .dt-salary').val();
-
-    if ($new_name != '') {
-      dt_basic.row
-        .add({
-          responsive_id: null,
-          id: count,
-          full_name: $new_name,
-          post: $new_post,
-          email: $new_email,
-          start_date: $new_date,
-          salary: '$' + $new_salary,
-          status: 5
-        })
-        .draw();
-      count++;
-      $('.modal').modal('hide');
-    }
-  });
+  
 
   // Delete Record
   $('.datatables-basic tbody').on('click', '.delete-record', function () {

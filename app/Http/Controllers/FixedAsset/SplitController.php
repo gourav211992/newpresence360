@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\FixedAsset;
+use Exception;
 
 use App\Http\Controllers\Controller;
 use App\Helpers\Helper;
@@ -19,7 +20,7 @@ class SplitController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         $parentURL = "fixed-asset_split";
 
@@ -27,9 +28,33 @@ class SplitController extends Controller
         if (count($servicesBooks['services']) == 0) {
             return redirect()->route('/');
         }
-        $data=FixedAssetSplit::withDefaultGroupCompanyOrg()->orderBy('id','desc')->get();
+        $data=FixedAssetSplit::withDefaultGroupCompanyOrg()->orderBy('id','desc');
+        if($request->filter_asset)
+        $data=$data->where('asset_id',$request->filter_asset);
+        if($request->filter_ledger)
+        $data=$data->where('ledger_id',$request->filter_ledger);
+        if($request->filter_status)
+        $data=$data->where('document_status',$request->filter_status);
+        if ($request->date) {
+            $dates = explode(' to ', $request->date);
+            $start = date('Y-m-d', strtotime($dates[0]));
+            $end = date('Y-m-d', strtotime($dates[1]));
+            $data = $data->whereDate('document_date', '>=', $start)
+                ->whereDate('document_date', '<=', $end);
+        }
         
-        return view('fixed-asset.split.index',compact('data'));
+        
+        
+        
+        
+        
+        $data=$data->get();
+        $assetCodes = FixedAssetSplit::withDefaultGroupCompanyOrg()->pluck('asset_id')->unique();
+        $assetCodes = FixedAssetRegistration::withDefaultGroupCompanyOrg()->whereIn('id', $assetCodes)->get();
+        $ledgers = FixedAssetSplit::withDefaultGroupCompanyOrg()->pluck('ledger_id')->unique();
+        $ledgers = Ledger::withDefaultGroupCompanyOrg()->whereIn('id', $ledgers)->get();
+        
+        return view('fixed-asset.split.index',compact('data','assetCodes','ledgers',));
     }
 
     /**
@@ -222,7 +247,17 @@ class SplitController extends Controller
             return redirect()->route('/');
         }
         $data = FixedAssetSplit::withDefaultGroupCompanyOrg()->findOrFail($id);
-        return view('fixed-asset.split.show', compact('data'));
+        $revision_number = $data->revision_number;
+        $userType = Helper::userCheck();
+        
+        $buttons = Helper::actionButtonDisplay($data->book_id,$data->document_status , $data->id, $data->current_value, 
+        $data->approval_level, $data -> created_by ?? 0, $userType['type'], $revision_number);
+        $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$data->document_status] ?? '';
+        $revNo = $data->revision_number;
+        $approvalHistory = Helper::getApprovalHistory($data->book_id, $data->id, $revNo,$data->current_value,$data->created_by);
+
+        
+        return view('fixed-asset.split.show', compact('data', 'buttons', 'docStatusClass', 'approvalHistory'));
         
     }
 
@@ -248,5 +283,41 @@ class SplitController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+    public function documentApproval(Request $request)
+    {
+        $request->validate([
+            'remarks' => 'nullable|string|max:255',
+            'attachment' => 'nullable'
+        ]);
+        DB::beginTransaction();
+        try {
+            $doc = FixedAssetSplit::find($request->id);
+            $bookId = $doc->book_id; 
+            $docId = $doc->id;
+            $docValue = $doc->current_value;
+            $remarks = $request->remarks;
+            $attachments = $request->file('attachments');
+            $currentLevel = $doc->approval_level;
+            $revisionNumber = $doc->revision_number ?? 0;
+            $actionType = $request->action_type; // Approve or reject
+            $modelName = get_class($doc);
+            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
+            $doc->approval_level = $approveDocument['nextLevel'];
+            $doc->document_status = $approveDocument['approvalStatus'];
+            $doc->save();
+
+            DB::commit();
+            return response()->json([
+                'message' => "Document $actionType successfully!",
+                'data' => $doc,
+            ]);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => "Error occurred while $actionType",
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }
