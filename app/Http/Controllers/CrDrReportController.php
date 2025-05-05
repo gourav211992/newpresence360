@@ -58,7 +58,7 @@ class CrDrReportController extends Controller
                                 $subQuery->orWhereJsonContains('ledger_group_id', (string)$child);
                             }
                         });
-                })->get();
+                })->where('status', 1)->get();
 
                 $ages_all = [$request->age0 ?? 30, $request->age1 ?? 60, $request->age2 ?? 90, $request->age3 ?? 120, $request->age4 ?? 180];
                 if (!is_null($ledger_groups)) $customers = self::get_ledgers_data($ledger_groups, $ages_all, 'debit', $request->ledger, $start, $end);
@@ -71,7 +71,7 @@ class CrDrReportController extends Controller
                                 $subQuery->orWhereJsonContains('ledger_group_id', (string)$child);
                             }
                         });
-                })->get();
+                })->where('status', 1)->get();
 
                 $ages_all = [$request->age0 ?? 30, $request->age1 ?? 60, $request->age2 ?? 90, $request->age3 ?? 120, $request->age4 ?? 180];
                 if (!is_null($ledger_groups)) $customers = self::get_ledgers_data($ledger_groups, $ages_all, 'debit', $request->ledger, $start, $end);
@@ -109,8 +109,8 @@ class CrDrReportController extends Controller
                                 $subQuery->orWhereJsonContains('ledger_group_id', (string)$child);
                             }
                         });
-                })->get();
-
+                })->where('status', 1)->get();
+// dd($all_ledgers);
                 if (!is_null($ledger_groups)) $vendors = self::get_ledgers_data($ledger_groups, $ages_all, 'credit', $request->ledger, $start, $end);
             } else if (isset($group->id)) {
                 $ledger_groups = [$group->id];
@@ -122,7 +122,7 @@ class CrDrReportController extends Controller
                                 $subQuery->orWhereJsonContains('ledger_group_id', (string)$child);
                             }
                         });
-                })->get();
+                })->where('status', 1)->get();
 
                 if (!is_null($ledger_groups)) $vendors = self::get_ledgers_data($ledger_groups, $ages_all, 'credit', $request->ledger, $start, $end);
             }
@@ -168,7 +168,7 @@ class CrDrReportController extends Controller
 
         foreach ($ledger_groups as $group) {
             $ledgers = Ledger::withDefaultGroupCompanyOrg()->where('ledger_group_id', $group)
-                ->orWhereJsonContains('ledger_group_id', (string)$group)->pluck('id')->toArray();
+                ->orWhereJsonContains('ledger_group_id', (string)$group)->where('status', 1)->pluck('id')->toArray();
             if ($ledgers) {
                 $vouchers = Voucher::withDefaultGroupCompanyOrg()->withWhereHas('items', function ($query) use ($ledgers, $group, $type, $filter) {
                     $query->whereIn('ledger_id', $ledgers);
@@ -289,7 +289,7 @@ class CrDrReportController extends Controller
                                     $subQuery->orWhereJsonContains('ledger_group_id', (string)$child);
                                 }
                             });
-                    })->pluck('id')->toArray();
+                    })->where('status', 1)->pluck('id')->toArray();
 
 
                     $vouchers = Voucher::withDefaultGroupCompanyOrg()->withWhereHas('items', function ($query) use ($childs, $type, $ledgers) {
@@ -498,7 +498,7 @@ class CrDrReportController extends Controller
                         $subQuery->orWhereJsonContains('ledger_group_id', (string)$child);
                     }
                 });
-        })->get();
+        })->where('status', 1)->get();
         return response()->json(['data' => $all_ledgers, 'status' => 200, 'message' => 'fetched']);
     }
 

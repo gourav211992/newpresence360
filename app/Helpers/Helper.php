@@ -4,8 +4,8 @@ namespace App\Helpers;
 
 use App\Models\AmendmentWorkflow;
 use App\Models\ApprovalWorkflow;
-use Illuminate\Validation\Rule;
 use App\Models\AuthUser;
+use Illuminate\Validation\Rule;
 use App\Models\Address;
 use App\Models\Bom;
 use App\Models\Book;
@@ -544,7 +544,7 @@ class Helper
             })->where(function ($q) use ($organizations) {
                 $q->whereIn('organization_id', $organizations)
                       ->orWhereNull('organization_id');
-            })->pluck('id')->toArray();
+            })->where('status', 1)->pluck('id')->toArray();
                
            
                 $transactions = ItemDetail::whereIn('ledger_parent_id', $allChildIds)
@@ -648,7 +648,7 @@ class Helper
             })->where(function ($q) use ($organizations) {
                 $q->whereIn('organization_id', $organizations)
                       ->orWhereNull('organization_id');
-            })->pluck('id')->toArray();
+            })->where('status', 1)->pluck('id')->toArray();
 
 
             $transactions = ItemDetail::whereIn('ledger_id', $ledgers)
@@ -858,7 +858,7 @@ class Helper
                         $subQuery->orWhereJsonContains('ledger_group_id',(string)$child);
                     }
                 });
-        })->where(function ($q) use ($organizations) {
+        })->where('status', 1)->where(function ($q) use ($organizations) {
             $q->whereIn('organization_id', $organizations)
                   ->orWhereNull('organization_id');
         })->select('id', 'name','ledger_group_id')
@@ -1767,7 +1767,7 @@ class Helper
             ->where(function ($query) use ($organizations) {
                 $query->whereIn('organization_id', $organizations)
                       ->orWhereNull('organization_id');
-            })->select('id', 'name')
+            })->where('status', 1)->select('id', 'name')
             ->with([
                 'details' => function ($query) use ($startDate, $endDate, $group_id,$cost) {
                     $query->where('ledger_parent_id', $group_id)
@@ -1915,7 +1915,7 @@ class Helper
             })->where(function ($q) use ($organizations) {
                 $q->whereIn('organization_id', $organizations)
                       ->orWhereNull('organization_id');
-            })->pluck('id')->toArray();
+            })->where('status', 1)->pluck('id') ->where('status', 1)->toArray();
                 $non_carry = Helper::getNonCarryGroups();
                 $fy = self::getFinancialYear($startDate);
               
@@ -2318,85 +2318,89 @@ class Helper
         return false;
     }
 
-    public static function createRevisionHistory($modelObj, $headerColumn = null, $headerId = [], $detailColumn = null, $detailId = [])
+   public static function createRevisionHistory($modelObj, $headerColumn = null, $headerId = [], $detailColumn = null, $detailId = [])
     {
-        $arr = [];
+        try{
+            $arr = [];
 
-        foreach ($modelObj as $modelOb) {
-            $modelData = $modelOb->getOriginal();
-            $modelData['source_id'] = $modelData['id'];
-            if (isset($headerColumn) && count($headerId)) {
-                $sourceHeaderId = $modelData[$headerColumn];
-                $matchingItem = array_filter($headerId, function ($item) use ($sourceHeaderId) {
-                    return $item['source_id'] === $sourceHeaderId;
-                });
+            foreach ($modelObj as $modelOb) {
+                $modelData = $modelOb->getOriginal();
+                $modelData['source_id'] = $modelData['id'];
+                if (isset($headerColumn) && count($headerId)) {
+                    $sourceHeaderId = $modelData[$headerColumn];
+                    $matchingItem = array_filter($headerId, function ($item) use ($sourceHeaderId) {
+                        return $item['source_id'] === $sourceHeaderId;
+                    });
 
-                $sourceHeaderHistoryId = !empty($matchingItem) ? reset($matchingItem)['history_id'] : null;
-                $modelData[$headerColumn] = $sourceHeaderHistoryId;
-            }
+                    $sourceHeaderHistoryId = !empty($matchingItem) ? reset($matchingItem)['history_id'] : null;
+                    $modelData[$headerColumn] = $sourceHeaderHistoryId;
+                }
 
-            if (isset($detailColumn) && count($detailId)) {
-                $sourceHeaderId = $modelData[$detailColumn];
-                $matchingItem = array_filter($detailId, function ($item) use ($sourceHeaderId) {
-                    return $item['source_id'] === $sourceHeaderId;
-                });
-                $sourceHeaderHistoryId = !empty($matchingItem) ? reset($matchingItem)['history_id'] : null;
-                $modelData[$detailColumn] = $sourceHeaderHistoryId;
-            }
+                if (isset($detailColumn) && count($detailId)) {
+                    $sourceHeaderId = $modelData[$detailColumn];
+                    $matchingItem = array_filter($detailId, function ($item) use ($sourceHeaderId) {
+                        return $item['source_id'] === $sourceHeaderId;
+                    });
+                    $sourceHeaderHistoryId = !empty($matchingItem) ? reset($matchingItem)['history_id'] : null;
+                    $modelData[$detailColumn] = $sourceHeaderHistoryId;
+                }
 
-            unset($modelData['id']);
-            $ModelName = $modelOb ? get_class($modelOb) : '';
-            $HistoryModel = $ModelName . 'History';
-            $HistoryModelInstance = resolve($HistoryModel);
+                unset($modelData['id']);
+                $ModelName = $modelOb ? get_class($modelOb) : '';
+                $HistoryModel = $ModelName . 'History';
+                $HistoryModelInstance = resolve($HistoryModel);
 
-            if (isset($modelData['attachment']) && empty($modelData['attachment'])) {
-                $modelData['attachment'] = json_encode([]);
-            } else if (isset($modelData['attachment'])) {
-                $modelData['attachment'] = json_encode($modelData['attachment']);
-            }
+                if (isset($modelData['attachment']) && empty($modelData['attachment'])) {
+                    $modelData['attachment'] = json_encode([]);
+                } else if (isset($modelData['attachment'])) {
+                    $modelData['attachment'] = json_encode($modelData['attachment']);
+                }
 
-            $insertedHistoryId = $HistoryModelInstance::insertGetId($modelData);
-            array_push($arr, ['source_id' => $modelData['source_id'], 'history_id' => $insertedHistoryId]);
+                $insertedHistoryId = $HistoryModelInstance::insertGetId($modelData);
+                array_push($arr, ['source_id' => $modelData['source_id'], 'history_id' => $insertedHistoryId]);
 
-            /*Media backup*/
-            if (method_exists($modelOb, 'getDocuments') && $modelOb->getDocuments()->count()) {
-                foreach ($modelOb->getDocuments() as $Document) {
-                    $media = $HistoryModelInstance::where('id', $insertedHistoryId)->first();
-                    $media->media()->create([
-                        'uuid' => (string) Str::uuid(),
-                        'model_name' => class_basename($media),
-                        'collection_name' => $Document->collection_name,
-                        'name' => $Document->name,
-                        'file_name' => $Document->file_name,
-                        'mime_type' => $Document->mime_type,
-                        'disk' => $Document->disk,
-                        'size' => $Document->size
-                    ]);
+                /*Media backup*/
+                if (method_exists($modelOb, 'getDocuments') && $modelOb->getDocuments()->count()) {
+                    foreach ($modelOb->getDocuments() as $Document) {
+                        $media = $HistoryModelInstance::where('id', $insertedHistoryId)->first();
+                        $media->media()->create([
+                            'uuid' => (string) Str::uuid(),
+                            'model_name' => class_basename($media),
+                            'collection_name' => $Document->collection_name,
+                            'name' => $Document->name,
+                            'file_name' => $Document->file_name,
+                            'mime_type' => $Document->mime_type,
+                            'disk' => $Document->disk,
+                            'size' => $Document->size
+                        ]);
+                    }
+                }
+
+                //Address backup
+                if (method_exists($modelOb, 'addresses') && $modelOb->addresses()->count()) {
+                    foreach ($modelOb->addresses as $address) {
+                        ErpAddress::create([
+                            'addressable_id' => $insertedHistoryId,
+                            'addressable_type' => $HistoryModelInstance::class,
+                            'country_id' => $address->country_id,
+                            'state_id' => $address->state_id,
+                            'city_id' => $address->city_id,
+                            'address' => $address->address,
+                            'type' => $address->type,
+                            'pincode' => $address->pincode,
+                            'phone' => $address->phone,
+                            'fax_number' => $address->fax_number,
+                            'is_billing' => $address->is_billing,
+                            'is_shipping' => $address->is_shipping
+                        ]);
+                    }
                 }
             }
-
-            //Address backup
-            if (method_exists($modelOb, 'addresses') && $modelOb->addresses()->count()) {
-                foreach ($modelOb->addresses as $address) {
-                    ErpAddress::create([
-                        'addressable_id' => $insertedHistoryId,
-                        'addressable_type' => $HistoryModelInstance::class,
-                        'country_id' => $address->country_id,
-                        'state_id' => $address->state_id,
-                        'city_id' => $address->city_id,
-                        'address' => $address->address,
-                        'type' => $address->type,
-                        'pincode' => $address->pincode,
-                        'phone' => $address->phone,
-                        'fax_number' => $address->fax_number,
-                        'is_billing' => $address->is_billing,
-                        'is_shipping' => $address->is_shipping
-                    ]);
-                }
-            }
+            return $arr;
+        } catch (Exception $e) {
+            $error = $e->getMessage();
+            Log::error("documentAmendment Error: $error");
         }
-
-        return $arr;
     }
 
     /*Check after amendment again approval request we need or not*/
@@ -2996,20 +3000,7 @@ class Helper
             return $query->get();
         }
 
-            /**
-             * Returns a unique validation rule for any table with optional conditions.
-             *
-             * @param string $table
-             * @param array $conditions (e.g., ['organization_id' => 1, 'company_id' => 2])
-             * @param int|null $ignoreId (optional)
-             * @param string $ignoreColumn (default: 'id')
-             * @return \Illuminate\Validation\Rules\Unique
-             */
-            public static function uniqueRuleWithConditions(string $table,
-            array $conditions = [],
-            int $ignoreId = null,
-            string $ignoreColumn = 'id',
-            bool $checkDeletedAt = true
+         public static function uniqueRuleWithConditions(string $table,array $conditions = [],int $ignoreId = null,string $ignoreColumn = 'id',bool $checkDeletedAt = true
             )
             {
                 $rule = Rule::unique($table)->where(function ($query) use ($conditions, $checkDeletedAt) {

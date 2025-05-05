@@ -20,7 +20,10 @@ use App\Models\CostCenterOrgLocations;
 class ProfitLossController extends Controller
 {
     public function exportPLLevel(Request $r){
-
+        $r = (object) array_merge($r['obj'], [
+            'type' => $r['type'] ?? null,
+            'auth_type' => $r['auth_type'] ?? null,
+        ]);
         $dateRange = $r->date;
         $currency="org";
         if ($r->currency!="") {
@@ -75,7 +78,6 @@ class ProfitLossController extends Controller
         $directIncomeLedgers=[];
         $closingLedgers=[];
         $indirectIncomeLedgers=[];
-
         foreach ($plData as $pl) {
             if($pl->name == "Opening Stock"){
                 $purchase=$pl->closing + $purchase;
@@ -212,9 +214,9 @@ class ProfitLossController extends Controller
             $loopLength=Helper::checkCount($indirectExpenseLedgers)>Helper::checkCount($indirectIncomeLedgers) ? Helper::checkCount($indirectExpenseLedgers) : Helper::checkCount($indirectIncomeLedgers);
             for ($i=0; $i <$loopLength ; $i++) {
                 $secName1=$indirectExpenseLedgers->get($i)->name ?? '';
-                $secAmount1=$indirectExpenseLedgers->get($i)->closing ?? 0;
+                $secAmount1=$indirectExpenseLedgers->get($i)->details_sum_debit_amt ?? 0;
                 $secName2=$indirectIncomeLedgers->get($i)->name ?? 0;
-                $secAmount2=$indirectIncomeLedgers->get($i)->closing ?? 0;
+                $secAmount2=$indirectIncomeLedgers->get($i)->details_sum_debit_amt ?? 0;
                 $data[] = ['',$secName1, Helper::formatIndianNumber($secAmount1),'','',$secName2, Helper::formatIndianNumber($secAmount2)];
             }
             $data[] = ['Net Profit','', Helper::formatIndianNumber($netProfit),'','Net Loss','', Helper::formatIndianNumber($netLoss)];
@@ -446,6 +448,7 @@ class ProfitLossController extends Controller
                   });
         })
         ->whereIn('organization_id', $organizations)
+        ->where('status', 1)
         ->select('id', 'name','ledger_group_id')
         ->withSum(['details as details_sum_debit_amt' => function ($query) use ($startDate, $endDate,$childrens,$cost) {
                         $query->whereIn('ledger_parent_id',$childrens);
