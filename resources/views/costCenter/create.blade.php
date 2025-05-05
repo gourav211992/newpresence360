@@ -90,6 +90,9 @@
                                                     <div class="col-md-5">
                                                         <input type="text" name="name" class="form-control"
                                                             required />
+                                                            @error('name')
+                                                        <span class="alert alert-danger">{{ $message }}</span>
+                                                            @enderror
                                                     </div>
                                                 </div>
 

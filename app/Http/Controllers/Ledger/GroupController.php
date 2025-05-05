@@ -91,9 +91,24 @@ class GroupController extends Controller
      */
     public function store(Request $request)
     {
+        $authOrganization = Helper::getAuthenticatedUser()->organization;
+        $organizationId = $authOrganization->id;
+        $companyId = $authOrganization ?-> company_id;
+        $groupId = $authOrganization ?-> group_id;
+
         // Validate the request data
         $request->validate([
-            'name' => 'required|string|max:255',
+            // 'name' => 'required|string|max:255',
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Helper::uniqueRuleWithConditions('erp_groups', [
+                    'organization_id' => $organizationId,
+                    'company_id' => $companyId,
+                    'group_id' => $groupId
+                ], null, 'id', false),
+            ],
         ]);
 
         $groups = Group::where('name', $request->name)
@@ -174,8 +189,23 @@ else{
      */
     public function update(Request $request, string $id)
     {
+        $authOrganization = Helper::getAuthenticatedUser()->organization;
+        $organizationId = $authOrganization->id;
+        $companyId = $authOrganization ?-> company_id;
+        $groupId = $authOrganization ?-> group_id;
+
         $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            // 'name' => ['required', 'string', 'max:255'],
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Helper::uniqueRuleWithConditions('erp_groups', [
+                    'organization_id' => $organizationId,
+                    'company_id' => $companyId,
+                    'group_id' => $groupId
+                ], null, 'id', false),
+            ],
         ]);
      $groups = Group::where('name', $request->name)
     ->where('id', '!=', $id) // Correcting 'whereNot' to 'where'

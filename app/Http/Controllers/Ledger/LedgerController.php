@@ -187,7 +187,10 @@ class LedgerController extends Controller
     public function store(Request $request)
     {
 
-        $organizationId = Helper::getAuthenticatedUser()->organization->id;
+        $authOrganization = Helper::getAuthenticatedUser()->organization;
+        $organizationId = $authOrganization->id;
+        $companyId = $authOrganization ?-> company_id;
+        $groupId = $authOrganization ?-> group_id;
 
         // Validate the request data
         $request->validate([
@@ -195,17 +198,21 @@ class LedgerController extends Controller
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('erp_ledgers')->where(function ($query) use ($organizationId) {
-                    return $query->where('organization_id', $organizationId)->whereNull('deleted_at');
-                }),
+                Helper::uniqueRuleWithConditions('erp_ledgers', [
+                    'organization_id' => $organizationId,
+                    'company_id' => $companyId,
+                    'group_id' => $groupId
+                ], null, 'id', false),
             ],
             'name' => [
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('erp_ledgers')->where(function ($query) use ($organizationId) {
-                    return $query->where('organization_id', $organizationId)->whereNull('deleted_at');
-                })
+                Helper::uniqueRuleWithConditions('erp_ledgers', [
+                    'organization_id' => $organizationId,
+                    'company_id' => $companyId,
+                    'group_id' => $groupId
+                ]),
             ],
             'tax_type' => [
                 'nullable',
@@ -375,30 +382,31 @@ class LedgerController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $organizationId = Helper::getAuthenticatedUser()->organization->id;
+        $authOrganization = Helper::getAuthenticatedUser()->organization;
+        $organizationId = $authOrganization->id;
+        $companyId = $authOrganization ?-> company_id;
+        $groupId = $authOrganization ?-> group_id;
 
         $request->validate([
             'code' => [
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('erp_ledgers')
-                    ->where(function ($query) use ($organizationId) {
-                        return $query->where('organization_id', $organizationId)
-                            ->whereNull('deleted_at');
-                    })
-                    ->ignore($id), // Ignore the current record
+                Helper::uniqueRuleWithConditions('erp_ledgers', [
+                    'organization_id' => $organizationId,
+                    'company_id' => $companyId,
+                    'group_id' => $groupId
+                ], $id, 'id', false),
             ],
             'name' => [
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('erp_ledgers')
-                    ->where(function ($query) use ($organizationId) {
-                        return $query->where('organization_id', $organizationId)
-                            ->whereNull('deleted_at');
-                    })
-                    ->ignore($id), // Ignore the current record
+                Helper::uniqueRuleWithConditions('erp_ledgers', [
+                    'organization_id' => $organizationId,
+                    'company_id' => $companyId,
+                    'group_id' => $groupId
+                ],$id),
             ],
             'tax_type' => [
                 'nullable',

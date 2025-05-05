@@ -495,15 +495,13 @@
                                                     </div>
 
                                                     <div class="col-md-5 mb-1 mb-sm-0">
-                                                        <select class="form-control select2" name="cost_center_id" id="cost_center_id">
-                                                            @foreach ($cost_centers as $cost)
-                                                                {{-- Show only cost centers of the selected location OR the already selected one --}}
-                                                                @if(collect($locationCostCenters)->pluck('id')->contains($cost['id']) || $cost['id'] == $data->cost_center_id)
-                                                                    <option value="{{ $cost['id'] }}" @if($cost['id'] == $data->cost_center_id) selected @endif>
-                                                                        {{ $cost['name'] }}
-                                                                    </option>
-                                                                @endif
-                                                            @endforeach
+                                                        <select class="costCenter form-control select2" name="cost_center_id" id="cost_center_id">
+                                                            @foreach ($locationCostCenters as $value)
+                                                            <option value="{{ $value['id'] }}" 
+                                                                @if($value['id'] == $item->cost_center_id) selected @endif>
+                                                                {{ $value['name'] }}
+                                                            </option>
+                                                        @endforeach
                                                         </select>
                                                     </div>
                                                 </div>
@@ -2133,10 +2131,12 @@ function showToast(icon, title) {
     let costCenterSet = new Map();
 
     selectedLocationIds.forEach(locId => {
-        let centers = locationCostCentersMap[locId] || [];
-        centers.forEach(center => {
-            costCenterSet.set(center.id, center.name);
-        });
+        let centersObj = locationCostCentersMap[locId] || {};
+            let centers = Object.values(centersObj); // Convert to array
+            console.log(centers,'here');
+            centers.forEach(center => {
+                costCenterSet.set(center.id, center.name);
+            });
     });
 
     // Get the div

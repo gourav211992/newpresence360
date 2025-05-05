@@ -1529,10 +1529,12 @@
     let costCenterSet = new Map();
 
     selectedLocationIds.forEach(locId => {
-        let centers = locationCostCentersMap[locId] || [];
-        centers.forEach(center => {
-            costCenterSet.set(center.id, center.name);
-        });
+        let centersObj = locationCostCentersMap[locId] || {};
+            let centers = Object.values(centersObj);
+            console.log(centers);
+            centers.forEach(center => {
+                costCenterSet.set(center.id, center.name);
+            });
     });
 
     // Get the div
