@@ -245,6 +245,21 @@ class LedgerController extends Controller
                 'max:255',
             ],
         ]);
+        $existingName = Ledger::withDefaultGroupCompanyOrg()
+        ->where('code', $request->name)
+        ->first();
+
+        $existingCode = Ledger::withDefaultGroupCompanyOrg()
+            ->where('code', $request->code)
+            ->first();
+
+            if ($existingName) {
+                return back()->withErrors(['name' => 'The name has already been taken.'])->withInput();
+            }
+            
+            if ($existingCode) {
+                return back()->withErrors(['code' => 'The code has already been taken.'])->withInput();
+            }
         $request->merge([
             'ledger_group_id' => isset($request->ledger_group_id) ? json_encode($request->ledger_group_id) : null,
         ]);
@@ -439,6 +454,24 @@ class LedgerController extends Controller
                 'max:255',
             ],
         ]);
+        $existingName = Ledger::withDefaultGroupCompanyOrg()
+        ->where('name', $request->name)
+        ->where('id', '!=', $id)
+        ->first();
+    
+
+        $existingCode = Ledger::withDefaultGroupCompanyOrg()
+        ->where('code', $request->code)
+        ->where('id', '!=', $id)
+        ->first();
+            
+            if ($existingName) {
+                return back()->withErrors(['name' => 'The name has already been taken.'])->withInput();
+            }
+            
+            if ($existingCode) {
+                return back()->withErrors(['code' => 'The code has already been taken.'])->withInput();
+            }
         
 
         $request->merge([

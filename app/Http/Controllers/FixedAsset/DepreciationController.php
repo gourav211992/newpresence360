@@ -48,7 +48,7 @@ class DepreciationController extends Controller
         $parentURL = "fixed-asset_depreciation";
         $organization = Helper::getAuthenticatedUser()->organization;
         $financialYear = Helper::getFinancialYear(Carbon::now()
-        //->subYear()
+        ->subYear()
         ->format('Y-m-d'));
          $dep_type = $organization->dep_type; 
         

@@ -42,7 +42,7 @@ class SplitController extends Controller
             $data = $data->whereDate('document_date', '>=', $start)
                 ->whereDate('document_date', '<=', $end);
         }
-        
+
         
         
         
@@ -255,6 +255,7 @@ class SplitController extends Controller
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$data->document_status] ?? '';
         $revNo = $data->revision_number;
         $approvalHistory = Helper::getApprovalHistory($data->book_id, $data->id, $revNo,$data->current_value,$data->created_by);
+        
 
         
         return view('fixed-asset.split.show', compact('data', 'buttons', 'docStatusClass', 'approvalHistory'));

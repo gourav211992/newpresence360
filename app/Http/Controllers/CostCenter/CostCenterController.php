@@ -65,6 +65,13 @@ class CostCenterController extends Controller
             ],
             // 'name' => 'required|string|max:255|unique:erp_cost_centers,name',
         ]);
+        $existingName = CostCenter::withDefaultGroupCompanyOrg()
+        ->where('name', $request->name)
+        ->first();
+     
+            if ($existingName) {
+                return back()->withErrors(['name' => 'The name has already been taken.'])->withInput();
+            }
 
         // Find the organization based on the user's organization_id
         // $organization = Organization::where('id', Helper::getAuthenticatedUser()->organization_id)->first();
@@ -129,6 +136,15 @@ class CostCenterController extends Controller
             ],
             // 'name' => ['required', 'string', 'max:255', Rule::unique('erp_cost_groups')->ignore($id)],
         ]);
+        $existingName = CostCenter::withDefaultGroupCompanyOrg()
+        ->where('name', $request->name)
+        ->where('id', '!=', $id)
+        ->first();
+     
+            if ($existingName) {
+                return back()->withErrors(['name' => 'The name has already been taken.'])->withInput();
+            }
+        
 
         $update = CostCenter::find($id);
         $update->update($request->all());

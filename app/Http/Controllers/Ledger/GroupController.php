@@ -110,7 +110,17 @@ class GroupController extends Controller
                 ], null, 'id', false),
             ],
         ]);
+        $existingName = Group::withDefaultGroupCompanyOrg()
+        ->where('name', $request->name)
+        ->first();
+    
 
+            
+            if ($existingName) {
+                return back()->withErrors(['name' => 'The name has already been taken.'])->withInput();
+            }
+            
+        
         $groups = Group::where('name', $request->name)
     ->where(function ($query) {
         $query->whereNull('organization_id')
@@ -207,6 +217,16 @@ else{
                 ], null, 'id', false),
             ],
         ]);
+        $existingName = Group::withDefaultGroupCompanyOrg()
+        ->where('name', $request->name)
+        ->where('id', '!=', $id)
+        ->first();
+     
+            if ($existingName) {
+                return back()->withErrors(['name' => 'The name has already been taken.'])->withInput();
+            }
+            
+           
      $groups = Group::where('name', $request->name)
     ->where('id', '!=', $id) // Correcting 'whereNot' to 'where'
     ->where(function ($query) {
