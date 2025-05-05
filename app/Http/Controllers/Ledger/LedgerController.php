@@ -188,6 +188,7 @@ class LedgerController extends Controller
     {
 
         $authOrganization = Helper::getAuthenticatedUser()->organization;
+        dd($authOrganization);
         $organizationId = $authOrganization->id;
         $companyId = $authOrganization ?-> company_id;
         $groupId = $authOrganization ?-> group_id;
