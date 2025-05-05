@@ -506,14 +506,12 @@
                                                     </div>
 
                                                     <div class="col-md-5 mb-1 mb-sm-0">
-                                                        <select class="form-control select2" name="cost_center_id" id="cost_center_id">
-                                                            @foreach ($cost_centers as $cost)
-                                                                {{-- Show only cost centers of the selected location OR the already selected one --}}
-                                                                @if(collect($locationCostCenters)->pluck('id')->contains($cost['id']) || $cost['id'] == $data->cost_center_id)
-                                                                    <option value="{{ $cost['id'] }}" @if($cost['id'] == $data->cost_center_id) selected @endif>
-                                                                        {{ $cost['name'] }}
-                                                                    </option>
-                                                                @endif
+                                                        <select class="costCenter form-control select2" name="cost_center_id" id="cost_center_id">
+                                                            @foreach ($locationCostCenters as $value)
+                                                            <option value="{{ $value['id'] }}" 
+                                                                @if($value['id'] == $data->cost_center_id) selected @endif>
+                                                                {{ $value['name'] }}
+                                                            </option>
                                                             @endforeach
                                                         </select>
                                                     </div>
@@ -2123,40 +2121,6 @@ $('#applyBtn').on('click', function (e) {
                 }
             }
         });
- //
- $('#locations').on('change', function () {
-    let selectedLocationIds = $(this).val();
-
-    // Ensure selectedLocationIds is always an array
-    if (!Array.isArray(selectedLocationIds)) {
-        selectedLocationIds = selectedLocationIds ? [selectedLocationIds] : [];
-    }
-
-    let costCenterSet = new Map();
-
-    selectedLocationIds.forEach(locId => {
-        let centers = locationCostCentersMap[locId] || [];
-        centers.forEach(center => {
-            costCenterSet.set(center.id, center.name);
-        });
-    });
-
-    // Get the div
-    let $costCenterRow = $('#costCenterRow');
-    let $dropdown = $('.costCenter');
-
-    // Show or hide the row based on availability
-    if (costCenterSet.size > 0) {
-        $costCenterRow.show();
-        $dropdown.empty();
-        costCenterSet.forEach((name, id) => {
-            $dropdown.append(`<option value="${id}">${name}</option>`);
-        });
-    } else {
-        $costCenterRow.hide();
-        $dropdown.empty();
-    }
-}); 
            
     </script>
 @endsection

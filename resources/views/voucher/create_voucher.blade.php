@@ -219,7 +219,7 @@
 
                                                     <div class="col-md-4">
                                                         <select id="locations" class="form-select select2"
-                                                            name="location">
+                                                            name="location" data-row="${rowCount + 1}">
                                                             <option disabled value="" selected>Select Locations
                                                             </option>
                                                             @foreach ($locations as $location)
@@ -358,8 +358,8 @@
                                                                     <input type="hidden" name="ledger_id[]"
                                                                         type="hidden" id="ledger_id1" class="ledgers" />
                                                                     <!--<input placeholder="Line Notes" type="text"
-                                                                                                                                                                                                class="form-control mw-100 mt-50"
-                                                                                                                                                                                                name="notes1" />-->
+                                                                                                                                                                                                    class="form-control mw-100 mt-50"
+                                                                                                                                                                                                    name="notes1" />-->
                                                                 </td>
                                                                 <td>
                                                                     <select required id="groupSelect1"
@@ -870,7 +870,7 @@
                     $('.ledgerGroup').each(function(index) {
                         let ledgerGroup = $(this).val(); // Get the value of the select/input
                         let ledger_id = $(this).data(
-                        'ledger'); // Get the ledger ID from data attribute
+                            'ledger'); // Get the ledger ID from data attribute
 
                         if (ledgerGroup !== "") {
                             preGroups.push({
@@ -1203,6 +1203,58 @@
 
         }
 
+        function populateCostCenterDropdowns() {
+            let selectedLocationIds = $('#locations').val();
+
+            // Ensure selectedLocationIds is always an array
+            if (!Array.isArray(selectedLocationIds)) {
+                selectedLocationIds = selectedLocationIds ? [selectedLocationIds] : [];
+            }
+
+            // Collect unique cost centers for all selected locations
+            let costCenterSet = new Map();
+
+            selectedLocationIds.forEach(locId => {
+                let centersObj = locationCostCentersMap[locId] || {};
+                let centers = Object.values(centersObj); // Convert to array
+                centers.forEach(center => {
+                    costCenterSet.set(center.id, center.name);
+                });
+            });
+
+            // Update all .costCenter selects
+            $('.costCenter').each(function() {
+                let $dropdown = $(this);
+                $dropdown.empty();
+                // $dropdown.append('<option value="">Select Cost Center</option>');
+                costCenterSet.forEach((name, id) => {
+                    $dropdown.append(`<option value="${id}">${name}</option>`);
+                });
+            });
+        }
+
+        function populateSingleCostCenterDropdown($dropdown) {
+            let selectedLocationIds = $('#locations').val();
+
+            if (!Array.isArray(selectedLocationIds)) {
+                selectedLocationIds = selectedLocationIds ? [selectedLocationIds] : [];
+            }
+
+            let costCenterSet = new Map();
+            selectedLocationIds.forEach(locId => {
+                let centersObj = locationCostCentersMap[locId] || {};
+                let centers = Object.values(centersObj);
+                centers.forEach(center => {
+                    costCenterSet.set(center.id, center.name);
+                });
+            });
+
+            $dropdown.empty();
+            costCenterSet.forEach((name, id) => {
+                $dropdown.append(`<option value="${id}">${name}</option>`);
+            });
+        }
+
         function calculate_cr_dr() {
             $('#org_currency_exg_rate').val($('#orgExchangeRate').val());
             const exchangeRate = parseFloat($('#orgExchangeRate').val()) ||
@@ -1367,6 +1419,8 @@
 
                 updateRowNumbers();
                 document.querySelector('#item-details-body').insertAdjacentHTML('beforeend', newRow);
+                // Populate cost centers for the new row's dropdown
+                populateSingleCostCenterDropdown($(`#cost_center_id${rowCount + 1}`));
                 calculate_cr_dr();
 
 
@@ -1470,12 +1524,12 @@
                                 },
                                 error: function(xhr) {
                                     let errorMessage =
-                                    'Error fetching group items.'; // Default message
+                                        'Error fetching group items.'; // Default message
 
                                     if (xhr.responseJSON && xhr.responseJSON
                                         .error) {
                                         errorMessage = xhr.responseJSON
-                                        .error; // Use API error message if available
+                                            .error; // Use API error message if available
                                     }
                                     showToast("error", errorMessage);
                                 }
@@ -1997,40 +2051,14 @@
 
         }
         $(document).on('change', '.costCenter', function() {
-            var selectedValue = $(this).val(); // Get the selected cost center value
-            $('.costCenter').val(selectedValue); // Set the same value for all dropdowns
+            // Just read the selected value (you can process if needed)
+            var selectedValue = $(this).val();
+            console.log('Selected Cost Center:', selectedValue);
+
         });
 
         $('#locations').on('change', function() {
-            let selectedLocationIds = $(this).val();
-
-            // Ensure selectedLocationIds is always an array
-            if (!Array.isArray(selectedLocationIds)) {
-                selectedLocationIds = selectedLocationIds ? [selectedLocationIds] : [];
-            }
-
-            // Collect unique cost centers for all selected locations
-            let costCenterSet = new Map();
-
-            selectedLocationIds.forEach(locId => {
-                let centers = locationCostCentersMap[locId] || [];
-                console.log(centers);
-                centers.forEach(center => {
-                    costCenterSet.set(center.id, center.name);
-                });
-            });
-
-
-            // Update all .costCenter selects
-            $('.costCenter').each(function() {
-                let $dropdown = $(this);
-                $dropdown.empty();
-                // $dropdown.append('<option value="">Select Cost Center</option>');
-
-                costCenterSet.forEach((name, id) => {
-                    $dropdown.append(`<option value="${id}">${name}</option>`);
-                });
-            });
+            populateCostCenterDropdowns();
         });
     </script>
 @endsection
