@@ -126,12 +126,17 @@ class PaymentVoucherController extends Controller
         $group_id[] = $ledger_group->id;
 
         $data = Ledger::withDefaultGroupCompanyOrg()
-            ->where(function ($query) use ($group_id) {
+        ->where(function ($query) use ($group_id) {
+            $query->where(function ($q) use ($group_id) {
                 foreach ($group_id as $id) {
-                    $query->orWhereJsonContains('ledger_group_id', (string) $id);
+                    $q->orWhereJsonContains('ledger_group_id', (string) $id);
                 }
-            })
-            ->orWhereIn('ledger_group_id', $group_id);
+    
+                $q->orWhereIn('ledger_group_id', $group_id);
+            });
+    
+            $query->where('status', 1);
+        });
 
 
 
@@ -141,10 +146,10 @@ class PaymentVoucherController extends Controller
             $data = $data->where('code', 'LIKE', "%{$r->keyword}%");
         }
 
-        $data = $data->select('id', 'name', 'code');
+        $data = $data->select('id', 'name', 'code','status');
 
 
-        $data = $data->where('status', 1);
+        // $data = $data->where('status', 1);
         if ($r->ids) {
             $ids = array_map('intval', $r->ids);
         }
