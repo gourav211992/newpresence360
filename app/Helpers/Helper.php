@@ -767,7 +767,7 @@ class Helper
 
 
 
-        $data = Voucher::whereIn('id', $itemVouchers)
+        $data = Voucher::withDefaultGroupCompanyOrg()->whereIn('id', $itemVouchers)
             ->where('organization_id', $organization_id)
             ->whereNotNull('approvalStatus')
             ->whereBetween('document_date', [$startDate, $endDate])

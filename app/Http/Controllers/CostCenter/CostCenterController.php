@@ -67,6 +67,8 @@ class CostCenterController extends Controller
                             [
                                 'organization_id' => $map['organization_id'],
                                 'location_id' => $map['location_id'],
+                                'group_id' => $map['group_id'] ?? null,
+                                'company_id' => $map['company_id'] ?? null,
                                 'cost_center_id' => $costCenter->id,
                             ]
                         );

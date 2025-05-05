@@ -44,8 +44,8 @@ class CrDrReportController extends Controller
 
         $customers = [];
         $all_ledgers = [];
-        $group = Group::where('organization_id', Helper::getAuthenticatedUser()->organization_id)->where('name', $group_name)->first() ?: Group::whereNull('organization_id')->where('name', $group_name)->first();
-        $drp_group = Group::where('organization_id', Helper::getAuthenticatedUser()->organization_id)->where('name', ConstantHelper::RECEIVABLE)->first() ?: Group::whereNull('organization_id')->where('name', ConstantHelper::RECEIVABLE)->first();
+        $group = Group::withDefaultGroupCompanyOrg()->where('name', $group_name)->first() ?: Group::whereNull('organization_id')->where('name', $group_name)->first();
+        $drp_group = Group::withDefaultGroupCompanyOrg()->where('name', ConstantHelper::RECEIVABLE)->first() ?: Group::whereNull('organization_id')->where('name', ConstantHelper::RECEIVABLE)->first();
 
         if ($group) {
             $ledger_groups = $group->children->pluck('id');
@@ -95,8 +95,8 @@ class CrDrReportController extends Controller
 
         $group_name = Group::find($request->group)->name ?? ConstantHelper::PAYABLE;
         $vendors = [];
-        $group = Group::where('organization_id', Helper::getAuthenticatedUser()->organization_id)->where('name', $group_name)->first() ?: Group::whereNull('organization_id')->where('name', $group_name)->first();
-        $drp_group = Group::where('organization_id', Helper::getAuthenticatedUser()->organization_id)->where('name', ConstantHelper::PAYABLE)->first() ?: Group::whereNull('organization_id')->where('name', ConstantHelper::PAYABLE)->first();
+        $group = Group::withDefaultGroupCompanyOrg()->where('name', $group_name)->first() ?: Group::whereNull('organization_id')->where('name', $group_name)->first();
+        $drp_group = Group::withDefaultGroupCompanyOrg()->where('name', ConstantHelper::PAYABLE)->first() ?: Group::whereNull('organization_id')->where('name', ConstantHelper::PAYABLE)->first();
 
         if ($group) {
             $ledger_groups = $group->children->pluck('id');
@@ -170,7 +170,7 @@ class CrDrReportController extends Controller
             $ledgers = Ledger::withDefaultGroupCompanyOrg()->where('ledger_group_id', $group)
                 ->orWhereJsonContains('ledger_group_id', (string)$group)->pluck('id')->toArray();
             if ($ledgers) {
-                $vouchers = Voucher::withWhereHas('items', function ($query) use ($ledgers, $group, $type, $filter) {
+                $vouchers = Voucher::withDefaultGroupCompanyOrg()->withWhereHas('items', function ($query) use ($ledgers, $group, $type, $filter) {
                     $query->whereIn('ledger_id', $ledgers);
                     if (!empty($filter)) {
                         $query->where('ledger_id', $filter);
@@ -178,7 +178,7 @@ class CrDrReportController extends Controller
                     $query->where('ledger_parent_id', $group);
                     $query->where($type . '_amt_org', '>', 0);
                 })
-                    ->where('organization_id', $organization_id)
+                    // ->where('organization_id', $organization_id)
                     ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED);
 
                 if (!empty($start) && !empty($end)) {
@@ -237,12 +237,12 @@ class CrDrReportController extends Controller
 
                 foreach ($l_ledger as $customer) {
                     $ledger = $customer->ledger_id;
-                    $voucher = Voucher::withWhereHas('items', function ($query) use ($ledger, $group, $type) {
+                    $voucher = Voucher::withDefaultGroupCompanyOrg()->withWhereHas('items', function ($query) use ($ledger, $group, $type) {
                         $query->where('ledger_id', $ledger);
                         $query->where('ledger_parent_id', $group);
                         $query->where($type . '_amt_org', '>', 0);
                     })
-                        ->where('organization_id', $organization_id)
+                    
                         ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED);
 
                     if (!empty($start) && !empty($end)) {
@@ -292,12 +292,12 @@ class CrDrReportController extends Controller
                     })->pluck('id')->toArray();
 
 
-                    $vouchers = Voucher::withWhereHas('items', function ($query) use ($childs, $type, $ledgers) {
+                    $vouchers = Voucher::withDefaultGroupCompanyOrg()->withWhereHas('items', function ($query) use ($childs, $type, $ledgers) {
                         $query->whereIn('ledger_parent_id', $childs);
                         $query->whereIn('ledger_id', $ledgers);
                         $query->where($type . '_amt_org', '>', 0);
                     })
-                        ->where('organization_id', $organization_id)
+                        // ->where('organization_id', $organization_id)
                         ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED);
 
                     if (!empty($start) && !empty($end)) {
@@ -535,7 +535,7 @@ class CrDrReportController extends Controller
                     'days_diff' => 0
                 ];
                 foreach ($items as $item) {
-                    $d_date = Voucher::find($item->voucher_id)->document_date;
+                    $d_date = Voucher::withDefaultGroupCompanyOrg()->find($item->voucher_id)->document_date;
                     $totals->document_date = $d_date;
                     $totals->ledger_parent_id = $item->ledger_parent_id;
                     $totals->ledger_id = $item->ledger_id;
@@ -569,7 +569,7 @@ class CrDrReportController extends Controller
 
         foreach ($vendors as $vendor) {
             $ages = self::getAgedReceipts([$vendor->id], $ages_all, $doc_types, $start, $end);
-            $voucher = Voucher::find($vendor->id);
+            $voucher = Voucher::withDefaultGroupCompanyOrg()->find($vendor->id);
             $bill_no = "";
             $view_route = "";
             if ($voucher->reference_service != null) {
@@ -1012,12 +1012,12 @@ class CrDrReportController extends Controller
         $credit_days = $credit_days ?? 0;
         $doc_types = $type === 'debit' ? [ConstantHelper::RECEIPTS_SERVICE_ALIAS, 'Receipt'] : [ConstantHelper::PAYMENTS_SERVICE_ALIAS, 'Payment'];
         $cus_type = $type === 'debit' ? 'customer' : 'vendor';
-        $vouchers = Voucher::withWhereHas('items', function ($query) use ($ledger, $group, $type) {
+        $vouchers = Voucher::withDefaultGroupCompanyOrg()->withWhereHas('items', function ($query) use ($ledger, $group, $type) {
             $query->where('ledger_id', $ledger);
             $query->where('ledger_parent_id', $group);
             $query->where($type . '_amt_org', '>', 0);
         })
-            ->where('organization_id', $organization_id)
+            // ->where('organization_id', $organization_id)
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED);
 
         if (!empty($start) && !empty($end)) {
@@ -1087,7 +1087,7 @@ class CrDrReportController extends Controller
         $credit_days = $credit_days ?? 0;
         $doc_types = $type === 'debit' ? [ConstantHelper::RECEIPTS_SERVICE_ALIAS, 'Receipt'] : [ConstantHelper::PAYMENTS_SERVICE_ALIAS, 'Payment'];
         $cus_type = $type === 'debit' ? 'customer' : 'vendor';
-        $vouchers = Voucher::withWhereHas('items', function ($query) use ($ledger, $group, $type) {
+        $vouchers = Voucher::withDefaultGroupCompanyOrg()->withWhereHas('items', function ($query) use ($ledger, $group, $type) {
             $query->where('ledger_id', $ledger);
             $query->where('ledger_parent_id', $group);
             $query->where($type . '_amt_org', '>', 0);
@@ -1128,12 +1128,12 @@ class CrDrReportController extends Controller
         $credit_days = $credit_days ?? 0;
         $doc_types = $type === 'debit' ? [ConstantHelper::RECEIPTS_SERVICE_ALIAS, 'Receipt'] : [ConstantHelper::PAYMENTS_SERVICE_ALIAS, 'Payment'];
         $cus_type = $type === 'debit' ? 'customer' : 'vendor';
-        $vouchers = Voucher::withWhereHas('items', function ($query) use ($ledger, $group, $type) {
+        $vouchers = Voucher::withDefaultGroupCompanyOrg()->withWhereHas('items', function ($query) use ($ledger, $group, $type) {
             $query->where('ledger_id', $ledger);
             $query->where('ledger_parent_id', $group);
             $query->where($type . '_amt_org', '>', 0);
         })
-            ->where('organization_id', $organization_id)
+            // ->where('organization_id', $organization_id)
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED);
 
         if (!empty($start) && !empty($end)) {

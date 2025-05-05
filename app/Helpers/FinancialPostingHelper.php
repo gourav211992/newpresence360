@@ -390,7 +390,7 @@ class FinancialPostingHelper
 
     public static function getDocumentPostedVoucher(int $documentId, string $serviceAlias) 
     {
-        $voucher = Voucher::with('items') -> where('reference_service', $serviceAlias) -> where('reference_doc_id', $documentId) -> first();
+        $voucher = Voucher::withDefaultGroupCompanyOrg()->with('items') -> where('reference_service', $serviceAlias) -> where('reference_doc_id', $documentId) -> first();
         if (!isset($voucher)) {
             return array(
                 'status' => false,
@@ -718,7 +718,7 @@ class FinancialPostingHelper
     public static function postVoucher(array $details) 
     {
             //Post Voucher
-            $exitingVoucher = Voucher::where('reference_service', $details['voucher_header']['reference_service']) -> where('reference_doc_id', $details['voucher_header']['reference_doc_id']) -> first();
+            $exitingVoucher = Voucher::withDefaultGroupCompanyOrg()->where('reference_service', $details['voucher_header']['reference_service']) -> where('reference_doc_id', $details['voucher_header']['reference_doc_id']) -> first();
             if ($exitingVoucher) {
                 return array(
                     'message' => 'Voucher already posted',
@@ -5018,7 +5018,7 @@ class FinancialPostingHelper
                 'data' => []
             );
         }
-        $document = PaymentVoucher::find($documentId);
+        $document = PaymentVoucher::withDefaultGroupCompanyOrg()->find($documentId);
         $vendors = $document->details;
         $vocuherdata=$document;
         if (!isset($document)) {
@@ -5280,7 +5280,7 @@ public static function receiptVoucherPosting(int $bookId, int $documentId, strin
                 'data' => []
             );
         }
-        $document = PaymentVoucher::find($documentId);
+        $document = PaymentVoucher::withDefaultGroupCompanyOrg()->find($documentId);
         $vendors = $document->details;
         $vocuherdata=$document;
         if (!isset($document)) {
@@ -5910,6 +5910,7 @@ public static function receiptVoucherPosting(int $bookId, int $documentId, strin
                     'debit_amt' => $post['debit_amount'],
                     'credit_amt' => $post['credit_amount'],
                     'cost_center_id' => $document?->cost_center_id ?? null,
+                    'location'=> $document->location ?? null,
                     'debit_amt_org' => $debitAmtOrg,
                     'credit_amt_org' => $creditAmtOrg,
                     'debit_amt_comp' => $debitAmtComp,

@@ -4,16 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\DefaultGroupCompanyOrg;
+
 
 class CostCenterOrgLocations extends Model
 {
-    use HasFactory;
+    use HasFactory,DefaultGroupCompanyOrg;
 
     protected $table = 'erp_cost_center_org_locations';
 
     protected $fillable = [
         'cost_center_id',
         'location_id',
+        'company_id',
+        'group_id',
         'organization_id',
     ];
 

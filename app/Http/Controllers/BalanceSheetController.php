@@ -183,7 +183,7 @@ $endDate = $endDate->format('Y-m-d');
         
         }
         
-        $cost_centers = CostCenterOrgLocations::where('organization_id', Helper::getAuthenticatedUser()->organization_id)
+        $cost_centers = CostCenterOrgLocations::withDefaultGroupCompanyOrg()
         ->with(['costCenter' => function ($query) {
             $query->where('status', 'active');
         }])
