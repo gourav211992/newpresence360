@@ -69,13 +69,18 @@
             <td></td>
             <td></td>
             <td></td>
-            <td>{{ $opening_balance }}</td>
+            <td align="right">{{ number_format($opening_balance, 2) }}</td>
         </tr>
 
         <!-- Payment Made Section -->
         <tr>
             <td>2.</td>
-            <td colspan="6"><strong>Payment Made</strong></td>
+            <td colspan="5"><strong>Payment Made</strong></td>
+            {{-- <td></td> --}}
+            {{-- <td></td> --}}
+            {{-- <td></td> --}}
+            {{-- <td></td> --}}
+            <td align="right">{{ number_format($payment_made_t, 2) }}</td>
         </tr>
         @foreach ($payment_made as $index => $item)
         {{-- {{ dd($item) }} --}}
@@ -86,14 +91,16 @@
                 <td>{{ $item->ledger_name }}</td>
                 <td>{{ $item->payment_mode }}</td>
                 <td>{{ $item->bank_name }}</td>
-                <td>{{ number_format($item->amount, 2) }}</td>
+                <td align="right">{{ number_format($item->amount, 2) }}</td>
             </tr>
         @endforeach
 
         <!-- Payment Received Section -->
         <tr>
             <td>3.</td>
-            <td colspan="6"><strong>Payment Received</strong></td>
+            <td colspan="5"><strong>Payment Received</strong></td>
+            <td align="right">{{ number_format($payment_received_t, 2) }}</td>
+
         </tr>
         @foreach ($payment_received as $index => $item)
             <tr>
@@ -103,7 +110,7 @@
                 <td>{{ $item->ledger_name }}</td>
                 <td>{{ $item->payment_mode }}</td>
                 <td>{{ $item->bank_name }}</td>
-                <td>{{ number_format($item->amount, 2) }}</td>
+                <td align="right">{{ number_format($item->amount, 2) }}</td>
             </tr>
         @endforeach
 
@@ -111,7 +118,7 @@
         <tr>
             <td></td>
             <td colspan="3"><strong>Amount In Words:</strong> {{ $in_words }}</td>
-            <td colspan="3" align="right"><strong>Closing Balance:</strong> {{ number_format($closing_balance, 2) }}
+            <td colspan="3" align="right"><strong>Closing Balance: &nbsp;&nbsp; </strong> &nbsp;&nbsp;&nbsp; {{ number_format($closing_balance, 2) }}
             </td>
         </tr>
 

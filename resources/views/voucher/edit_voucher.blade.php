@@ -1424,7 +1424,59 @@ return false;
 function rate_change(){
     $('.voucher_details').hide();
 
-}        
+}
+ 
+function populateCostCenterDropdowns() {
+            let selectedLocationIds = $('#locations').val();
+
+            // Ensure selectedLocationIds is always an array
+            if (!Array.isArray(selectedLocationIds)) {
+                selectedLocationIds = selectedLocationIds ? [selectedLocationIds] : [];
+            }
+
+            // Collect unique cost centers for all selected locations
+            let costCenterSet = new Map();
+
+            selectedLocationIds.forEach(locId => {
+                let centersObj = locationCostCentersMap[locId] || {};
+                let centers = Object.values(centersObj); // Convert to array
+                centers.forEach(center => {
+                    costCenterSet.set(center.id, center.name);
+                });
+            });
+
+            // Update all .costCenter selects
+            $('.costCenter').each(function() {
+                let $dropdown = $(this);
+                $dropdown.empty();
+                // $dropdown.append('<option value="">Select Cost Center</option>');
+                costCenterSet.forEach((name, id) => {
+                    $dropdown.append(`<option value="${id}">${name}</option>`);
+                });
+            });
+        }
+
+        function populateSingleCostCenterDropdown($dropdown) {
+            let selectedLocationIds = $('#locations').val();
+
+            if (!Array.isArray(selectedLocationIds)) {
+                selectedLocationIds = selectedLocationIds ? [selectedLocationIds] : [];
+            }
+
+            let costCenterSet = new Map();
+            selectedLocationIds.forEach(locId => {
+                let centersObj = locationCostCentersMap[locId] || {};
+                let centers = Object.values(centersObj);
+                centers.forEach(center => {
+                    costCenterSet.set(center.id, center.name);
+                });
+            });
+
+            $dropdown.empty();
+            costCenterSet.forEach((name, id) => {
+                $dropdown.append(`<option value="${id}">${name}</option>`);
+            });
+        }
 function calculate_cr_dr() {
             $('#org_currency_exg_rate').val($('#orgExchangeRate').val());
             const exchangeRate = parseFloat($('#orgExchangeRate').val()) ||
@@ -1588,6 +1640,8 @@ function calculate_cr_dr() {
                 document.querySelector('#item-details-body').insertAdjacentHTML('beforeend',
                     newRow);
                 calculate_cr_dr();
+                // Populate cost centers for the new row's dropdown
+                populateSingleCostCenterDropdown($(`#cost_center_id${rowCount + 1}`));
                  updateRowNumbers();
    
 
@@ -2290,40 +2344,14 @@ $(document).on('click', '#cancelButton', (e) => {
 });
 
 $(document).on('change', '.costCenter', function() {
-            var selectedValue = $(this).val(); // Get the selected cost center value
-            $('.costCenter').val(selectedValue); // Set the same value for all dropdowns
+            // Just read the selected value (you can process if needed)
+            var selectedValue = $(this).val();
+            console.log('Selected Cost Center:', selectedValue);
+
         });
-        
-        $('#locations').on('change', function () {
-            let selectedLocationIds = $(this).val();
 
-// Ensure selectedLocationIds is always an array
-if (!Array.isArray(selectedLocationIds)) {
-    selectedLocationIds = selectedLocationIds ? [selectedLocationIds] : [];
-}
-
-// Collect unique cost centers for all selected locations
-let costCenterSet = new Map();
-
-selectedLocationIds.forEach(locId => {
-    let centers = locationCostCentersMap[locId] || [];
-    console.log(centers);
-    centers.forEach(center => {
-        costCenterSet.set(center.id, center.name);
-    });
-});
-
-
-    // Update all .costCenter selects
-    $('.costCenter').each(function () {
-        let $dropdown = $(this);
-        $dropdown.empty();
-        // $dropdown.append('<option value="">Select Cost Center</option>');
-
-        costCenterSet.forEach((name, id) => {
-            $dropdown.append(`<option value="${id}">${name}</option>`);
+        $('#locations').on('change', function() {
+            populateCostCenterDropdowns();
         });
-    });
-});
     </script>
 @endsection

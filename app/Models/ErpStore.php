@@ -91,7 +91,10 @@ class ErpStore extends Model
 
     public function getCostCentersAttribute()
     {
-        return CostCenter::all()->filter(function ($costCenter) {
+        return CostCenter::where('status', 'active')
+        ->orderByDesc('id') 
+        ->get() 
+        ->filter(function ($costCenter) {
             return in_array($this->id, $costCenter->locations ?? []);
         });
     }

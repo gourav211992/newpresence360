@@ -18,7 +18,9 @@ class CashflowExport implements FromView, WithStyles
         return view('exports.cashflow-export', [
             'opening_balance' => $this->data['opening'],
             'payment_made' => $this->data['payment_made'],
+            'payment_made_t' => $this->data['payment_made_t'],
             'payment_received' => $this->data['payment_received'],
+            'payment_received_t' => $this->data['payment_received_t'],
             'closing_balance' => $this->data['closing'],
             'organization_id' => $this->data['organization_id'],
             'createdBy' => $this->data['createdBy'],

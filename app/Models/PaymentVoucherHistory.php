@@ -22,7 +22,7 @@ class PaymentVoucherHistory extends Model
 
     public function ledger()
     {
-        return $this->belongsTo(Ledger::class, 'ledger_id');
+        return $this->belongsTo(Ledger::class, 'ledger_id')->where('status', 1);
     }
 
     public function bank()

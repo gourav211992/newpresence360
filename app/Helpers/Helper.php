@@ -4,6 +4,7 @@ namespace App\Helpers;
 
 use App\Models\AmendmentWorkflow;
 use App\Models\ApprovalWorkflow;
+use Illuminate\Validation\Rule;
 use App\Models\AuthUser;
 use App\Models\Address;
 use App\Models\Bom;
@@ -2994,6 +2995,38 @@ class Helper
 
             return $query->get();
         }
+
+            /**
+             * Returns a unique validation rule for any table with optional conditions.
+             *
+             * @param string $table
+             * @param array $conditions (e.g., ['organization_id' => 1, 'company_id' => 2])
+             * @param int|null $ignoreId (optional)
+             * @param string $ignoreColumn (default: 'id')
+             * @return \Illuminate\Validation\Rules\Unique
+             */
+            public static function uniqueRuleWithConditions(string $table,
+            array $conditions = [],
+            int $ignoreId = null,
+            string $ignoreColumn = 'id',
+            bool $checkDeletedAt = true
+            )
+            {
+                $rule = Rule::unique($table)->where(function ($query) use ($conditions, $checkDeletedAt) {
+                    foreach ($conditions as $column => $value) {
+                        $query->where($column, $value);
+                    }
+                    if ($checkDeletedAt) {
+                        $query->whereNull('deleted_at');
+                    }
+                });
+        
+                if ($ignoreId) {
+                    $rule->ignore($ignoreId, $ignoreColumn);
+                }
+        
+                return $rule;
+            }
 }
 
 
