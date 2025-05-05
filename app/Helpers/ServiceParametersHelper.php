@@ -247,6 +247,45 @@ class ServiceParametersHelper
         ],
         
     ];
+    const PSV_SERVICE_PARAMETERS = [
+        [
+            "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
+            "applicable_values" => ["0"], //All possible values
+            "default_value" => ["0"], //Default selected value(s)
+            'is_multiple' => true, // Whether or not to allow multiple selection
+            'service_level_visibility' => true, // Whether or not to show this parameter in UI
+        ],
+        [
+            "name" => self::REFERENCE_FROM_SERIES_PARAM,
+            "applicable_values" => [],
+            "default_value" => [],
+            'is_multiple' => true,
+            'service_level_visibility' => false
+        ],
+        
+        [
+            "name" => self::BACK_DATE_ALLOW_PARAM,
+            "applicable_values" => self::BACK_DATE_ALLOW_PARAM_VALUES,
+            "default_value" => ['yes'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+        [
+            "name" => self::FUTURE_DATE_ALLOW_PARAM,
+            "applicable_values" => self::FUTURE_DATE_ALLOW_PARAM_VALUES,
+            "default_value" => ['yes'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+        [
+            "name" => self::GOODS_SERVICES_PARAM,
+            "applicable_values" => self::GOODS_SERVICES_PARAM_VALUES,
+            "default_value" => ['Goods'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+        
+    ];
     const SR_SERVICE_PARAMETERS = [
         [
             "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
@@ -1099,6 +1138,23 @@ class ServiceParametersHelper
             'type' => self::GL_PARAMETERS
         ]
     ];
+    const SPLIT_SERVICE_PARAMETERS = [
+        [
+            "name" => self::BACK_DATE_ALLOW_PARAM,
+            "applicable_values" => self::BACK_DATE_ALLOW_PARAM_VALUES,
+            "default_value" => ['yes'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+        [
+            "name" => self::FUTURE_DATE_ALLOW_PARAM,
+            "applicable_values" => self::FUTURE_DATE_ALLOW_PARAM_VALUES,
+            "default_value" => ['yes'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ]
+       
+    ];
     const PO_SERVICE_PARAMETERS = [
         [
             "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
@@ -1367,8 +1423,8 @@ class ServiceParametersHelper
     const PB_SERVICE_PARAMETERS = [
         [
             "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
-            "applicable_values" => ["0", ConstantHelper::MRN_SERVICE_ALIAS], //All possible values
-            "default_value" => ["0", ConstantHelper::MRN_SERVICE_ALIAS], //Default selected value(s)
+            "applicable_values" => [ConstantHelper::MRN_SERVICE_ALIAS], //All possible values
+            "default_value" => [ConstantHelper::MRN_SERVICE_ALIAS], //Default selected value(s)
             'is_multiple' => true, // Whether or not to allow multiple selection
             'service_level_visibility' => true
         ],
@@ -2057,18 +2113,20 @@ class ServiceParametersHelper
         ConstantHelper::PWO_SERVICE_ALIAS => self::PWO_SERVICE_PARAMETERS,
         ConstantHelper::TR_SERVICE_ALIAS => self::TR_SERVICE_PARAMETERS,
         ConstantHelper::RC_SERVICE_ALIAS => self::RC_SERVICE_PARAMETERS,
+        ConstantHelper::PSV_SERVICE_ALIAS => self::PSV_SERVICE_PARAMETERS,
 
         ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS => self::DN_SERVICE_PARAMETERS,
         ConstantHelper::SI_SERVICE_ALIAS => self::SINV_SERVICE_PARAMETERS,
         ConstantHelper::LEASE_INVOICE_SERVICE_ALIAS => self::LEASE_INV_SERVICE_PARAMETERS,
         ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS => self::DN_CUM_INVOICE_SERVICE_PARAMETERS,
-    ConstantHelper::PI_SERVICE_ALIAS => self::PI_SERVICE_PARAMETERS,
+        ConstantHelper::PI_SERVICE_ALIAS => self::PI_SERVICE_PARAMETERS,
         ConstantHelper::BOM_SERVICE_ALIAS => self::BOM_SERVICE_PARAMETERS,
         ConstantHelper::MO_SERVICE_ALIAS => self::MO_SERVICE_PARAMETERS,
         ConstantHelper::PAYMENT_VOUCHER_RECEIPT => self::PV_SERVICE_PARAMETERS,
         ConstantHelper::PAYMENTS_SERVICE_ALIAS => self::PV_SERVICE_PARAMETERS,
         ConstantHelper::RECEIPTS_SERVICE_ALIAS => self::PV_SERVICE_PARAMETERS,
         ConstantHelper::FIXED_ASSET_DEPRECIATION => self::ASSET_SERVICE_PARAMETERS,
+        ConstantHelper::FIXED_ASSET_SPLIT => self::SPLIT_SERVICE_PARAMETERS,
         ConstantHelper::PO_SERVICE_ALIAS => self::PO_SERVICE_PARAMETERS,
         ConstantHelper::GATE_ENTRY_SERVICE_ALIAS => self::GATE_ENTRY_SERVICE_PARAMETERS,
         ConstantHelper::SUPPLIER_INVOICE_SERVICE_ALIAS => self::SUPPLIER_INVOICE_SERVICE_PARAMETERS,

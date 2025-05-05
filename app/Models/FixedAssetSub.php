@@ -16,10 +16,11 @@ class FixedAssetSub extends Model
     {
         return $this->belongsTo(FixedAssetRegistration::class, 'parent_id');
     }
-    public static function generateSubAssets($parentId, $assetCode, $quantity, $totalValue)
+    public static function generateSubAssets($parentId, $assetCode, $quantity, $totalValue,$salvageValue)
     {
         $subAssets = [];
         $unitValue = $totalValue / $quantity;
+        $salvageValueUnit = $salvageValue / $quantity;
         
         for ($i = 1; $i <= $quantity; $i++) {
             $subAssets[] = self::create([
@@ -27,18 +28,20 @@ class FixedAssetSub extends Model
                 'sub_asset_code' => $assetCode .'-'. sprintf('%02d', $i),
                 'current_value' => $unitValue,
                 'current_value_after_dep'=> $unitValue,
+                'salvage_value' => $salvageValueUnit,
             ]);
         }
         
         return $subAssets;
     }
-    public static function regenerateSubAssets($parentId, $assetCode, $quantity, $totalValue)
+    public static function regenerateSubAssets($parentId, $assetCode, $quantity, $totalValue,$salvageValue)
 {
     // Delete all existing sub-assets with the same parent_id
     self::where('parent_id', $parentId)->delete();
 
     $subAssets = [];
     $unitValue = $totalValue / $quantity;
+    $salvageValueUnit = $salvageValue / $quantity;
     
     for ($i = 1; $i <= $quantity; $i++) {
         $subAssets[] = self::create([
@@ -46,6 +49,7 @@ class FixedAssetSub extends Model
             'sub_asset_code' => $assetCode . '-' . sprintf('%02d', $i),
             'current_value' => $unitValue,
             'current_value_after_dep'=> $unitValue,
+            'salvage_value' => $salvageValueUnit,
         ]);
     }
     

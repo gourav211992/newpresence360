@@ -48,7 +48,7 @@ class DepreciationController extends Controller
         $parentURL = "fixed-asset_depreciation";
         $organization = Helper::getAuthenticatedUser()->organization;
         $financialYear = Helper::getFinancialYear(Carbon::now()
-        ->subYear()
+        //->subYear()
         ->format('Y-m-d'));
          $dep_type = $organization->dep_type; 
         
@@ -84,10 +84,11 @@ public function store(DepreciationRequest $request)
     $user = Helper::getAuthenticatedUser();
     $status = Helper::checkApprovalRequired($request->book_id);
     $additionalData = [
-        'created_by' => $user->id,
+        'created_by' => $user->auth_user_id,
         'type' => get_class($user),
         'organization_id' => $user->organization->id,
         'group_id' => $user->organization->group_id,
+        'revision_number' => 0,
         'company_id' => $user->organization->company_id,
         'assets' => json_encode($request->assets),
         'currency_id' => $user?->organization?->currency_id,

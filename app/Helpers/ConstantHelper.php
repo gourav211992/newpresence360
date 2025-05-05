@@ -446,7 +446,7 @@ class ConstantHelper
         self::SHARING_POLICY_HYBRID => 'Hybrid',
     ];
     //Service Labels
-        const SERVICE_LABEL = [self::SO_SERVICE_ALIAS => "Sales Order", self::SI_SERVICE_ALIAS => "Tax Invoice", self::SQ_SERVICE_ALIAS => "Sales Quotation", self::SR_SERVICE_ALIAS => "Sales Return",self::DELIVERY_CHALLAN_SERVICE_ALIAS => "Delivery Note", self::BOM_SERVICE_ALIAS => "Bill Of Material" , self::PO_SERVICE_ALIAS => "Purchase Order" , self::SUPPLIER_INVOICE_SERVICE_ALIAS => "Supplier Invoice" , self::PI_SERVICE_ALIAS => "Purchase Indent" , self:: MRN_SERVICE_ALIAS => "MRN" , self::EXPENSE_SERVICE_ALIAS => "Expense" , self::PB_SERVICE_ALIAS => "Purchase Bills", self::MATERIAL_ISSUE_SERVICE_ALIAS_NAME => "Material Issue", self::MATERIAL_RETURN_SERVICE_ALIAS_NAME => "Material Return", self::JO_SERVICE_ALIAS => "Job Order"];
+        const SERVICE_LABEL = [self::SO_SERVICE_ALIAS => "Sales Order", self::SI_SERVICE_ALIAS => "Tax Invoice", self::SQ_SERVICE_ALIAS => "Sales Quotation", self::SR_SERVICE_ALIAS => "Sales Return",self::DELIVERY_CHALLAN_SERVICE_ALIAS => "Delivery Note", self::BOM_SERVICE_ALIAS => "Bill Of Material" , self::PO_SERVICE_ALIAS => "Purchase Order" , self::SUPPLIER_INVOICE_SERVICE_ALIAS => "Supplier Invoice" , self::PI_SERVICE_ALIAS => "Purchase Indent" , self:: MRN_SERVICE_ALIAS => "MRN" , self:: GATE_ENTRY_SERVICE_ALIAS => "Gate Entry" , self::EXPENSE_SERVICE_ALIAS => "Expense" , self::EXPENSE_ADVISE_SERVICE_ALIAS => 'Expense Advise', self::PURCHASE_RETURN_SERVICE_ALIAS => "Purchase Return", self::PB_SERVICE_ALIAS => "Purchase Bill", self::MATERIAL_ISSUE_SERVICE_ALIAS_NAME => "Material Issue", self::MATERIAL_RETURN_SERVICE_ALIAS_NAME => "Material Return", self::JO_SERVICE_ALIAS => "Job Order"];
 
     //Service Alias
     const MO_SERVICE_ALIAS = 'mo'; # Manufacturing Order
@@ -495,6 +495,7 @@ class ConstantHelper
     const RECEIPTS_SERVICE_ALIAS = 'receipts';
 
     const RC_SERVICE_ALIAS = "rc";
+    const PSV_SERVICE_ALIAS = "psv";
     const LAND_PARCEL = 'land-parcel';
     const LEGAL_FILE = 'legal-file';
 
@@ -553,6 +554,7 @@ class ConstantHelper
 
     const FIXEDASSET = 'fixed-asset';
     const FIXED_ASSET_DEPRECIATION = 'depreciation';
+    const FIXED_ASSET_SPLIT = 'fixed-asset-split';
 
     const STAKEHOLDER_INTERACTION = 'stakeholder-interaction';
     const COMPLAINT_MANAGEMENT = 'complaint';
@@ -611,6 +613,7 @@ class ConstantHelper
         self::PAYMENTS_SERVICE_ALIAS=>self::PAYMENTS_SERVICE_ALIAS,
         self::RECEIPTS_SERVICE_ALIAS=>self::RECEIPTS_SERVICE_ALIAS,
         self::FIXED_ASSET_DEPRECIATION=>self::FIXED_ASSET_DEPRECIATION,
+        self::FIXED_ASSET_SPLIT=>self::FIXED_ASSET_SPLIT,
         self::SR_SERVICE_ALIAS=>self::CREDIT_Note,
     ];
 
@@ -679,6 +682,7 @@ class ConstantHelper
         self::LEGAL => 'Legal',
         self::FIXEDASSET => 'FixedAssetRegistration',
         self::FIXED_ASSET_DEPRECIATION => 'FixedAssetDepreciation',
+        self::FIXED_ASSET_SPLIT => 'FixedAssetSplit',
 
 
         self::ITEM_SERVICE_ALIAS => 'Item',
@@ -714,6 +718,7 @@ class ConstantHelper
         self::RELATION_MANAGEMENT => 'ErpInvestorRelationManagement',
         self::GOV_RELATION_MANAGEMENT => 'ErpGovRelationManagement',
         self::RC_SERVICE_ALIAS => 'ErpRateContract',
+        self::PSV_SERVICE_ALIAS => 'ErpPsvHeader',
 
     ];
     const CV_ALLOWED_GROUPS=['Cash-in-Hand', 'Bank Accounts', 'Bank OD A/c', 'Bank OCC A/c'];
@@ -760,6 +765,7 @@ class ConstantHelper
         self::SI_SERVICE_ALIAS => 'sale.invoice.edit',
         self::SR_SERVICE_ALIAS => 'sale.return.edit',
         self::RC_SERVICE_ALIAS => 'rate.contract.edit',
+        self::PSV_SERVICE_ALIAS => 'psv.edit',
     ];
     const PWO_DOC_TYPES = [self::PWO_SERVICE_ALIAS];
     const SALE_INVOICE_DOC_TYPES = [self::SI_SERVICE_ALIAS, self::LEASE_INVOICE_SERVICE_ALIAS, self::DELIVERY_CHALLAN_SERVICE_ALIAS, self::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS];
@@ -824,7 +830,8 @@ class ConstantHelper
     const ERP_SUB_STORE_LOCATION_TYPES = [
         self::STOCKK,
         self::SHOP_FLOOR,
-        self::OTHER
+        self::VENDOR,
+        self::OTHER,
     ];
 
     const ERP_QTY_TYPES = [

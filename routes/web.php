@@ -1,6 +1,7 @@
 <?php
 
 use App\Helpers\Helper;
+use App\Http\Controllers\ErpPSVController;
 use App\Http\Controllers\OverheadMasterController;
 use App\Http\Controllers\TDSReportController;
 use App\Http\Controllers\DPRTemplateController;
@@ -28,6 +29,7 @@ use App\Http\Controllers\UserSignatureController;
 use App\Http\Controllers\CrDrReportController;
 use App\Http\Controllers\FixedAsset\SetupController;
 use App\Http\Controllers\FixedAsset\DepreciationController;
+use App\Http\Controllers\FixedAsset\SplitController;
 use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\AssetCategoryController;
 
@@ -143,7 +145,8 @@ use App\Http\Controllers\EInvoiceServiceController;
 use App\Http\Controllers\GstValidationController;
 use App\Http\Controllers\Finance\GstrController;
 use App\Http\Controllers\WarehouseStructureController;
-use App\Http\Controllers\SpliteHandlerController;
+use App\Http\Controllers\WarehouseMappingController;
+use App\Http\Controllers\WarehouseItemMappingController;
 
 //Reports
 use App\Http\Controllers\Report\TransactionReportController;
@@ -172,6 +175,7 @@ Route::get('/assign-menu', function () {
     }
     return Helper::setMenuAccessToEmployee($menuName, $menuAlias, $serviceIds);
 });
+
 
 Route::get('/testing', [TestingController::class, 'testing']);
 
@@ -327,6 +331,7 @@ Route::middleware(['user.auth'])->group(function () {
         Route::get('/create', 'create')->name('vendor.create');
         Route::post('/', 'store')->name('vendor.store');
         Route::post('/generate-item-code', 'generateItemCode')->name('generate-vendor-code');
+        Route::get('/check-gst', 'checkGst')->name('check-gst');
         Route::get('/search', 'getVendor')->name('vendors.search');
         Route::get('/import', 'showImportForm')->name('vendors.import');
         Route::post('/import', 'import')->name('vendors.import.post');
@@ -1284,6 +1289,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         Route::get('/report', 'Report')->name('report');
         Route::get('/report/filter', 'getReportFilter')->name('report.filter');
         Route::post('/add-scheduler', 'addScheduler')->name('add.scheduler');
+        Route::get('/order/report', 'gateEntryReport')->name('order.report');
 
         /*Remove data*/
         Route::delete('remove-dis-item-level', 'removeDisItemLevel')->name('remove.item.dis');
@@ -1298,6 +1304,13 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         ->group(function () {
             Route::post('material-receipt', 'mrn')->name('material-receipt');
         });
+
+    Route::prefix('document-approval')
+    ->name('document.approval.')
+    ->controller(DocumentApprovalController::class)
+    ->group(function () {
+        Route::post('gate-entry', 'gateEntry')->name('gate-entry');
+    });
 
     // # All type documents Amendements
     // Route::prefix('amendement')
@@ -1363,6 +1376,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
             Route::get('/report', 'Report')->name('report');
             Route::get('/report/filter', 'getReportFilter')->name('report.filter');
             Route::post('/add-scheduler', 'addScheduler')->name('add.scheduler');
+            Route::get('/order/report', 'expenseAdviseReport')->name('order.report');
 
             /*Remove data*/
             Route::delete('remove-dis-item-level', 'removeDisItemLevel')->name('remove.item.dis');
@@ -1420,6 +1434,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
             Route::get('/report', 'Report')->name('report');
             Route::get('/report/filter', 'getReportFilter')->name('report.filter');
             Route::post('/add-scheduler', 'addScheduler')->name('add.scheduler');
+            Route::get('/order/report', 'purchaseBillReport')->name('order.report');
 
             /*Remove data*/
             Route::delete('remove-dis-item-level', 'removeDisItemLevel')->name('remove.item.dis');
@@ -1478,6 +1493,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
             Route::get('/report', 'Report')->name('report');
             Route::get('/report/filter', 'getReportFilter')->name('report.filter');
             Route::post('/add-scheduler', 'addScheduler')->name('add.scheduler');
+            Route::get('/order/report', 'purchaseReturnReport')->name('order.report');
 
             /*Remove data*/
             Route::delete('remove-dis-item-level', 'removeDisItemLevel')->name('remove.item.dis');
@@ -1487,6 +1503,13 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
             Route::post('send-mail', 'prMail')->name('prMail');
 
         });
+
+    Route::prefix('document-approval')
+        ->name('document.approval.')
+        ->controller(DocumentApprovalController::class)
+        ->group(function () {
+            Route::post('purchase-return', 'purchaseReturn')->name('purchase-return');
+    });
 
     // Material Request routes
     Route::prefix('material-request')
@@ -1604,6 +1627,43 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         Route::get('/edit/{id}', 'edit')->name('edit');
         Route::post('/update/{id}', 'update')->name('update');
         Route::get('/delete/{id}', 'delete')->name('delete');
+        Route::post('/delete-level', 'deleteLevel')->name('delete-level');
+    });
+
+    // Warehouse Mapping Routes
+    Route::prefix('warehouse-mappings')
+    ->name('warehouse-mapping.')
+    ->controller(WarehouseMappingController::class)
+    ->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/create', 'create')->name('create');
+        Route::post('/', 'store')->name('store');
+        Route::get('/edit/{id}', 'edit')->name('edit');
+        Route::post('/update/{id}', 'update')->name('update');
+        Route::get('/delete/{id}', 'delete')->name('delete');
+        Route::get('/sub-stores', 'getSubStores')->name('get.sub-stores');
+        Route::get('/levels', 'getLevels')->name('get.levels');
+        Route::get('/level-parents', 'getLevelParents')->name('get.level-parents');
+        Route::get('/get-parents', 'getParents')->name('get.parents');
+        Route::post('/delete-details', 'deleteDetails')->name('delete-details');
+    });
+
+    // Warehouse Item Mapping Routes
+    Route::prefix('warehouse-item-mappings')
+    ->name('warehouse-item-mapping.')
+    ->controller(WarehouseItemMappingController::class)
+    ->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->name('store');
+        Route::get('/delete/{id}', 'delete')->name('delete');
+        Route::get('/sub-stores', 'getSubStores')->name('get.sub-stores');
+        Route::get('/details', 'getDetails')->name('get.details');
+        Route::get('/existing-details', 'getMappingData')->name('get.existing-details');
+        Route::get('/get-sub-categories', 'getSubCategories')->name('get.sub-categories');
+        Route::get('/get-items', 'getItems')->name('get.items');
+        Route::get('/get-structure-details', 'getStructureDetails')->name('get.structure-details');
+        Route::get('/get-childs', 'getChilds')->name('get.childs');
+        Route::post('/delete-details', 'deleteDetails')->name('delete-details');
     });
 
     Route::prefix('product-sections')->controller(ProductSectionController::class)->group(function () {
@@ -1639,6 +1699,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         Route::put('/{id}', 'update')->name('stations.update');
         Route::delete('/{id}', 'destroy')->name('stations.destroy');
         Route::delete('/substation/{id}', 'deleteSubstation')->name('substation.delete');
+        Route::get('/stocking/get/by-sub-store', 'getStockingStationsOfSubStore')->name('stations.stocking.get.subStore');
 
     });
 
@@ -1818,7 +1879,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::get('/material-issue/mo/get/items', [ErpMaterialIssueController::class, 'getMoItemsForPulling'])->name('material.issue.pull.items');
     Route::get('/material-issue/{id}/pdf/{pattern}', [ErpMaterialIssueController::class, 'generatePdf'])->name('material.issue.generate-pdf');
     Route::get('/material-issue/multi-stores-location', [ErpMaterialIssueController::class, 'getLocationsWithMultipleStores'])->name('material.issue.multi-store-location');
-    Route::get('/material-issue/report', [ErpMaterialIssueController::class, 'materialIssueReport'])->name('material.issue.report');
+    Route::get('/mireport', [ErpMaterialIssueController::class, 'materialIssueReport'])->name('mi.report');
 
 
     Route::get('/material-return', [ErpMaterialReturnController::class, 'index'])->name('material.return.index');
@@ -1833,7 +1894,20 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::get('/material-return/report', [ErpMaterialReturnController::class, 'materialReturnReport'])->name('material.return.report');
 
 
-
+    //PSV
+    Route::get('/psv', [ErpPSVController::class, 'index'])->name('psv.index');
+    Route::get('/psv/create', [ErpPSVController::class, 'create'])->name('psv.create');
+    Route::get('/psv/report', [ErpPSVController::class, 'report'])->name('psv.report');
+    Route::get('/psv/filter', [ErpPSVController::class, 'filter'])->name('psv.filter');
+    Route::post('/psv/store', [ErpPSVController::class, 'store'])->name('psv.store');
+    Route::get('/psv/edit/{id}', [ErpPSVController::class, 'edit'])->name('psv.edit');
+    Route::post('/psv/revoke', [ErpPSVController::class, 'revokePSV'])->name('psv.revoke');
+    Route::get('/psv/vendor/stores', [ErpPSVController::class, 'getVendorStores'])->name('psv.vendor.stores');
+    Route::get('/psv/mo/process/mo', [ErpPSVController::class, 'processPulledItems'])->name('psv.process.items');
+    Route::get('/psv/mo/get/items', [ErpPSVController::class, 'getMoItemsForPulling'])->name('psv.pull.items');
+    Route::get('/psv/{id}/pdf/{pattern}', [ErpPSVController::class, 'generatePdf'])->name('psv.generate-pdf');
+    Route::get('/psv/multi-stores-location', [ErpPSVController::class, 'getLocationsWithMultipleStores'])->name('psv.multi-store-location');
+    Route::get('/psv/report', [ErpPSVController::class, 'materialIssueReport'])->name('psv.report');
 
 
      //Production Slip
@@ -2064,6 +2138,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::get('fixed-asset/registration/amendment/{id}', [RegistrationController::class, 'amendment'])->name('finance.fixed-asset.registration.amendment');
     Route::post('fixed-asset/registration/approval', [RegistrationController::class, 'documentApproval'])->name('finance.fixed-asset.registration.approval');
     Route::get('fixed-asset/sub_asset', [RegistrationController::class, 'subAsset'])->name('finance.fixed-asset.sub_asset');
+    Route::get('fixed-asset/sub_asset_details', [RegistrationController::class, 'subAssetDetails'])->name('finance.fixed-asset.sub_asset_details');
     Route::get('fixed-asset/getLedgerGroups', [RegistrationController::class, 'getLedgerGroups'])->name('finance.fixed-asset.getLedgerGroups');
     Route::get('fixed-asset/fetch-grn-data', [RegistrationController::class, 'fetchGrnData'])->name('finance.fixed-asset.fetch.grn.data');
 
@@ -2118,13 +2193,22 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         'update' => 'finance.fixed-asset.depreciation.update',
         'destroy' => 'finance.fixed-asset.depreciation.destroy',
     ]);
+    Route::resource('fixed-asset/split', SplitController::class)->names([
+        'index' => 'finance.fixed-asset.split.index',
+        'create' => 'finance.fixed-asset.split.create',
+        'store' => 'finance.fixed-asset.split.store',
+        'show' => 'finance.fixed-asset.split.show',
+        'edit' => 'finance.fixed-asset.split.edit',
+        'update' => 'finance.fixed-asset.split.update',
+    ]);
 
 
     Route::resource('asset-category',AssetCategoryController::class);
 
 
     Route::get('cashflow-statement/{page?}', [CashflowReportController::class, 'index'])->name('finance.cashflow');
-    Route::post('/cashflow/export', [CashflowReportController::class, 'export'])->name('cashflow.export');
+        Route::post('/cashflow/export', [CashflowReportController::class, 'export'])->name('cashflow.export');
+
     Route::post('/cashflow/add-scheduler', [CashflowReportController::class, 'addScheduler'])->name('finance.cashflow.add.scheduler');
     Route::get('tds-report', [TDSReportController::class, 'index'])->name('finance.tds');
 
@@ -2277,7 +2361,3 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
 
 
 Route::post('/validate-gst', [GstValidationController::class, 'validateGstNumber']);
-
-Route::get('/get-splite',[SpliteHandlerController::class, 'index']);
-
-Route::get('/add-splite', [SpliteHandlerController::class, 'addSplite'])->name('splite.add');

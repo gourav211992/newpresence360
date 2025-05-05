@@ -123,7 +123,7 @@ public function store(FixedAssetRegistrationRequest $request)
         : $request->document_status;
 
     $additionalData = [
-        'created_by' => $user->id,
+        'created_by' => $user->auth_user_id,
         'type' => get_class($user),
         'organization_id' => $user->organization->id,
         'group_id' => $user->organization->group_id,
@@ -141,7 +141,7 @@ public function store(FixedAssetRegistrationRequest $request)
 
     try {
         $asset = FixedAssetRegistration::create($data);
-        FixedAssetSub::generateSubAssets($asset->id, $asset->asset_code, $asset->quantity, $asset->current_value);
+        FixedAssetSub::generateSubAssets($asset->id, $asset->asset_code, $asset->quantity, $asset->current_value, $asset->salvage_value);
 
         if ($asset->document_status == ConstantHelper::SUBMITTED) {
             Helper::approveDocument($request->book_id, $asset->id, $asset->revision_number, "", null, 1, 'submit', 0, get_class($asset));
@@ -316,7 +316,7 @@ public function store(FixedAssetRegistrationRequest $request)
         if ($asset->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED || $asset->approvalStatus == ConstantHelper::APPROVED) {
             Helper::approveDocument($asset->book_id, $asset->id, $asset->revision_number,"",null, 1, 'approve', 0, get_class($asset));
         }
-        FixedAssetSub::regenerateSubAssets($asset->id,$asset->asset_code,$asset->quantity,$asset->current_value);
+        FixedAssetSub::regenerateSubAssets($asset->id,$asset->asset_code,$asset->quantity,$asset->current_value,$asset->salvage_value);
         DB::commit();
         return redirect()->route("finance.fixed-asset.registration.index")->with('success', 'Asset updated successfully!');
     } catch (\Exception $e) {
@@ -362,13 +362,23 @@ public function store(FixedAssetRegistrationRequest $request)
     public function subAsset(Request $request)
     {
         $Id = $request->input('id');
-        $sub_asset = FixedAssetSub::where('parent_id',$Id);
+        $sub_asset = FixedAssetSub::where('parent_id',$Id)->with('asset');
 
         if ($sub_asset->count()>0) {
          
             return response()->json($sub_asset->get());
         }
 
+        return response()->json([], 404);
+    }
+    public function subAssetDetails(Request $request)
+    {
+        $Id = $request->input('id');
+        $sub_asset_id = $request->input('sub_asset_id');
+        $sub_asset = FixedAssetSub::where('parent_id',$Id)->where('id',$sub_asset_id)->with('asset')->first();
+        if ($sub_asset) {
+            return response()->json($sub_asset);
+        }
         return response()->json([], 404);
     }
     public function fetchGrnData(Request $request)
