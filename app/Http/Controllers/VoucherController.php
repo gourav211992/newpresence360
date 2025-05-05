@@ -499,6 +499,7 @@ class VoucherController extends Controller
             $allChildIds = Helper::getChildLedgerGroupsByNameArray($allowedNames);
         
             $data = Ledger::withDefaultGroupCompanyOrg()
+                ->where('status', 1)
                 ->where('name', 'like', '%' . $r->keyword . '%')
                 ->where(function ($query) use ($allChildIds) {
                     // First: match plain integer values
@@ -519,33 +520,36 @@ class VoucherController extends Controller
                             }
                         });
                 });
-            }
+        }
         
-            else if ($book == ConstantHelper::JOURNAL_VOUCHER) {
-                $excludeNames = ConstantHelper::JV_EXCLUDE_GROUPS;
-                $allChildIds = Helper::getChildLedgerGroupsByNameArray($excludeNames);
-            
-                $data = Ledger::withDefaultGroupCompanyOrg()
-                    ->where('name', 'like', '%' . $r->keyword . '%')
+        else if ($book == ConstantHelper::JOURNAL_VOUCHER) {
+            $excludeNames = ConstantHelper::JV_EXCLUDE_GROUPS;
+            $allChildIds = Helper::getChildLedgerGroupsByNameArray($excludeNames);
+        
+            $data = Ledger::withDefaultGroupCompanyOrg()
+                ->where('status', 1)
+                ->where('name', 'like', '%' . $r->keyword . '%')
                     // Exclude plain integer match
-                    ->whereNotIn('ledger_group_id', $allChildIds)
+                ->whereNotIn('ledger_group_id', $allChildIds)
                     // Exclude JSON array match
-                    ->where(function ($query) use ($allChildIds) {
-                        $i = 0;
-                        $count = count($allChildIds);
+                ->where(function ($query) use ($allChildIds) {
+                    $i = 0;
+                    $count = count($allChildIds);
+        
+                    while ($i < $count) {
+                        $child = (string)$allChildIds[$i];
             
-                        while ($i < $count) {
-                            $child = (string)$allChildIds[$i];
-            
-                            $query->whereJsonDoesntContain('ledger_group_id', $child);
-                            $i++;
-                        }
-                    });
-            }
-            
-            else{
-               $data = Ledger::withDefaultGroupCompanyOrg()->where('name', 'like', '%' . $r->keyword . '%');
-                }
+                        $query->whereJsonDoesntContain('ledger_group_id', $child);
+                        $i++;
+                    }
+                });
+        }
+        
+        else {
+            $data = Ledger::withDefaultGroupCompanyOrg()
+                ->where('status', 1)
+                ->where('name', 'like', '%' . $r->keyword . '%');
+        }
         
         $data = $data->select('id as value', 'name as label', 'cost_center_id')->get()->toArray();
         return response()->json($data);
