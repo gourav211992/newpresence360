@@ -465,9 +465,9 @@
         
         <!-- Serialize complex arrays to JSON -->
         <input type="hidden" name="payment_made" value="{{ json_encode($payment_made) }}">
-        <input type="hidden" name="payment_made_t" value="{{ number_format($payment_made_t, 2) }}">
+        <input type="hidden" name="payment_made_t" value="{{ $payment_made_t }}">
         <input type="hidden" name="payment_received" value="{{ json_encode($payment_received) }}">
-        <input type="hidden" name="payment_received_t" value="{{ number_format($payment_received_t, 2) }}">
+        <input type="hidden" name="payment_received_t" value="{{ $payment_received_t }}">
     
         {{-- <button type="submit" class="btn btn-success">
             <i data-feather="file-text"></i> Export Excel

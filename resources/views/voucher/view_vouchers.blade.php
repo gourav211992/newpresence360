@@ -287,9 +287,7 @@
                     feather
                         .replace(); // Re-initialize feather icons if needed (for custom icons like edit)
                 },
-                order: [
-                    [0, 'desc']
-                ], // Default ordering by the first column (Date)
+                order: [[0, 'asc']], // Default ordering by the first column (Date)
                 dom: '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-3 withoutheadbuttin dt-action-buttons text-end"B><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
                 lengthMenu: [7, 10, 25, 50, 75, 100], // Options for number of rows to show
                 buttons: [{
