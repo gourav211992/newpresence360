@@ -29,7 +29,7 @@ class PaymentVoucherDetails extends Model
             return $this->morphTo(__FUNCTION__, 'party_type', 'party_id');
         }
         public function ledger(){
-            return $this->belongsTo(Ledger::class, 'ledger_id');
+            return $this->belongsTo(Ledger::class, 'ledger_id')->where('status', 1);
         }
         public function ledger_group()
     {

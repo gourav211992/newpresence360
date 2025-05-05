@@ -47,9 +47,23 @@ class CostCenterController extends Controller
      */
     public function store(Request $request)
     {
+        $authOrganization = Helper::getAuthenticatedUser()->organization;
+        $organizationId = $authOrganization->id;
+        $companyId = $authOrganization ?-> company_id;
+        $groupId = $authOrganization ?-> group_id;
         // Validate the request data
         $request->validate([
-            'name' => 'required|string|max:255|unique:erp_cost_centers,name',
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Helper::uniqueRuleWithConditions('erp_cost_centers', [
+                    'organization_id' => $organizationId,
+                    'company_id' => $companyId,
+                    'group_id' => $groupId
+                ], null, 'id', false),
+            ],
+            // 'name' => 'required|string|max:255|unique:erp_cost_centers,name',
         ]);
 
         // Find the organization based on the user's organization_id
@@ -98,8 +112,22 @@ class CostCenterController extends Controller
      */
     public function update(Request $request, string $id)
     {
+        $authOrganization = Helper::getAuthenticatedUser()->organization;
+        $organizationId = $authOrganization->id;
+        $companyId = $authOrganization ?-> company_id;
+        $groupId = $authOrganization ?-> group_id;
         $request->validate([
-            'name' => ['required', 'string', 'max:255', Rule::unique('erp_cost_groups')->ignore($id)],
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Helper::uniqueRuleWithConditions('erp_cost_centers', [
+                    'organization_id' => $organizationId,
+                    'company_id' => $companyId,
+                    'group_id' => $groupId
+                ], $id, 'id', false),
+            ],
+            // 'name' => ['required', 'string', 'max:255', Rule::unique('erp_cost_groups')->ignore($id)],
         ]);
 
         $update = CostCenter::find($id);

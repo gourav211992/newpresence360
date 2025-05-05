@@ -100,7 +100,7 @@ class Ledger extends Model
 
     public function parent()
     {
-        return $this->belongsTo(Ledger::class, 'parent_ledger_id');
+        return $this->belongsTo(Ledger::class, 'parent_ledger_id')->where('status', 1);
     }
     public function getLedgerGroupIdArray()
 {

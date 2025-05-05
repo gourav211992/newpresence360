@@ -25,7 +25,7 @@ class Group extends Model
 
     public function ledgers()
     {
-        return $this->hasMany(Ledger::class, 'ledger_group_id', 'id');
+        return $this->hasMany(Ledger::class, 'ledger_group_id', 'id')->where('status', 1);
     }
 
     // Relationship to get the parent group
