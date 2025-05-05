@@ -143,6 +143,7 @@ use App\Http\Controllers\EInvoiceServiceController;
 use App\Http\Controllers\GstValidationController;
 use App\Http\Controllers\Finance\GstrController;
 use App\Http\Controllers\WarehouseStructureController;
+use App\Http\Controllers\SpliteHandlerController;
 
 //Reports
 use App\Http\Controllers\Report\TransactionReportController;
@@ -171,7 +172,6 @@ Route::get('/assign-menu', function () {
     }
     return Helper::setMenuAccessToEmployee($menuName, $menuAlias, $serviceIds);
 });
-
 
 Route::get('/testing', [TestingController::class, 'testing']);
 
@@ -2277,3 +2277,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
 
 
 Route::post('/validate-gst', [GstValidationController::class, 'validateGstNumber']);
+
+Route::get('/get-splite',[SpliteHandlerController::class, 'index']);
+
+Route::get('/add-splite', [SpliteHandlerController::class, 'addSplite'])->name('splite.add');
