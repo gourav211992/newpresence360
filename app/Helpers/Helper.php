@@ -3000,24 +3000,44 @@ class Helper
             return $query->get();
         }
 
-         public static function uniqueRuleWithConditions(string $table,array $conditions = [],int $ignoreId = null,string $ignoreColumn = 'id',bool $checkDeletedAt = true
-            )
-            {
-                $rule = Rule::unique($table)->where(function ($query) use ($conditions, $checkDeletedAt) {
-                    foreach ($conditions as $column => $value) {
-                        $query->where($column, $value);
-                    }
-                    if ($checkDeletedAt) {
-                        $query->whereNull('deleted_at');
-                    }
-                });
-        
-                if ($ignoreId) {
-                    $rule->ignore($ignoreId, $ignoreColumn);
+         public static function uniqueRuleWithConditions(string $table,array $conditions = [],int $ignoreId = null,string $ignoreColumn = 'id',bool $checkDeletedAt = true)
+        {
+            $rule = Rule::unique($table)->where(function ($query) use ($conditions, $checkDeletedAt) {
+                foreach ($conditions as $column => $value) {
+                    $query->where($column, $value);
                 }
-        
-                return $rule;
+                if ($checkDeletedAt) {
+                    $query->whereNull('deleted_at');
+                }
+            });
+    
+            if ($ignoreId) {
+                $rule->ignore($ignoreId, $ignoreColumn);
             }
+    
+            return $rule;
+        }
+
+        public static function getAllFinancialYear(): mixed
+        {
+            $financialYears = ErpFinancialYear::withDefaultGroupCompanyOrg()->get();
+        
+            if ($financialYears->isNotEmpty()) {
+                return $financialYears->map(function ($financialYear) {
+                    $startYear = \Carbon\Carbon::parse($financialYear->start_date)->format('Y');
+                    $endYearShort = \Carbon\Carbon::parse($financialYear->end_date)->format('y'); // last 2 digits
+                    return [
+                        'id' => $financialYear->id,
+                        'alias' => $financialYear->alias,
+                        'start_date' => $financialYear->start_date,
+                        'end_date' => $financialYear->end_date,
+                        'range' => $startYear . '-' . $endYearShort // e.g., 2024-25
+                    ];
+                });
+            }
+        
+            return null;
+        }
 }
 
 
