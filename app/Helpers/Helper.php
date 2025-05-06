@@ -2076,7 +2076,9 @@ class Helper
 
         if ($saleInd > $purchaseInd) {
             $overAllTotal = $saleInd;
-            $netProfit = $saleInd - $indExpTotal;
+            //$netProfit = $saleInd - $indExpTotal;
+            $netProfit = ($grossProfit + $indirectIncome) - $indirectExpense;
+            
             $netLoss = 0;
         } else {
             $overAllTotal = $purchaseInd;

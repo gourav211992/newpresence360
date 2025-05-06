@@ -602,8 +602,7 @@ class PaymentVoucherController extends Controller
             $buttons['cancel'] = false;
 
         if ($data->document_status === ConstantHelper::POSTED)
-            $buttons['amend'] = false;
-
+            $buttons['amend'] = false;       
 
         $revision_number = $data->revision_number;
         $revNo = $data->revision_number;

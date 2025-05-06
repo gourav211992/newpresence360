@@ -686,6 +686,7 @@ class ConstantHelper
         self::FIXEDASSET => 'FixedAssetRegistration',
         self::FIXED_ASSET_DEPRECIATION => 'FixedAssetDepreciation',
         self::FIXED_ASSET_SPLIT => 'FixedAssetSplit',
+        self::FIXED_ASSET_MERGER => 'FixedAssetMerger',
 
 
         self::ITEM_SERVICE_ALIAS => 'Item',
