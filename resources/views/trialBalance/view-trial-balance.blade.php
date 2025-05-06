@@ -93,13 +93,13 @@
 													</tr>
 												</thead>
                                                 <tbody id="tableData"></tbody>
-												<tfoot hidden>
+												<tfoot>
 													<tr>
 														<td class="text-center">Grand Total</td>
-                                                        <td id="openingAmt">0</td>
+                                                        <td id="openingAmt"></td>
                                                         <td id="crd_total">0</td>
                                                         <td id="dbt_total">0</td>
-                                                        <td id="closingAmt">0</td>
+                                                        <td id="closingAmt"></td>
 													</tr>
 												</tfoot>
 											</table>
@@ -372,8 +372,8 @@
                             }
                         }
 
-                        $('#openingAmt').text(openingTotalDiff.toLocaleString('en-IN')+openingTotalType);
-                        $('#closingAmt').text(closingTotalDiff.toLocaleString('en-IN')+closingTotalType);
+                        // $('#openingAmt').text(openingTotalDiff.toLocaleString('en-IN')+openingTotalType);
+                        // $('#closingAmt').text(closingTotalDiff.toLocaleString('en-IN')+closingTotalType);
                         $('#tableData').empty().append(html);
                         calculate_cr_dr();
 
@@ -430,7 +430,7 @@
                 }
             });
 
-        $('#openingAmt').text(Math.abs(opening_total).toLocaleString('en-IN') + ' ' + (opening_total >= 0 ? 'Dr' : 'Cr'));
+        // $('#openingAmt').text(Math.abs(opening_total).toLocaleString('en-IN') + ' ' + (opening_total >= 0 ? 'Dr' : 'Cr'));
 
         // Closing balance
         let closing_total = 0;
@@ -451,7 +451,7 @@
         });
       
 
-        $('#closingAmt').text(Math.abs(closing_total).toLocaleString('en-IN') + ' ' + (closing_total >= 0 ? 'Dr' : 'Cr'));
+        // $('#closingAmt').text(Math.abs(closing_total).toLocaleString('en-IN') + ' ' + (closing_total >= 0 ? 'Dr' : 'Cr'));
         $('.urls').each(function () {
         let currentHref = $(this).attr('href') || '';
         let baseUrl = currentHref.split('?')[0]; // remove old query params if any

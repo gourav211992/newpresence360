@@ -127,10 +127,14 @@ class CashflowReportController extends Controller
         $scheduler = CashflowScheduler::where('organization_id',$organization_id)->latest()->first();
         $users =  Helper::getOrgWiseUserAndEmployees($organization_id);
         if($page==="print"){
+            if ($request->range) {
+                $dates = explode(' to ', $request->range);
+                $startDate = date('Y-m-d', strtotime($dates[0]));
+                $endDate = date('Y-m-d', strtotime($dates[1]));
+            }
         $createdBy= Helper::getAuthenticatedUser()->auth_user_id;
         $fileName = 'Cashflow Statment' . date('Y-m-d') . '.pdf';
-        return self::print($startDate,$endDate,$organization_id,$createdBy)->stream($fileName);
-        
+        return self::print($startDate,$endDate,$organization_id,$createdBy)->stream($fileName);        
         }
 
         else{
@@ -239,7 +243,7 @@ class CashflowReportController extends Controller
         $fy = self::formatWithOrdinal($startDate);
         else
         $fy = self::formatWithOrdinal($startDate) . ' to ' . self::formatWithOrdinal($endDate);
-
+       
         $companies = Helper::getAuthenticatedUser()->access_rights_org;
         $startDate = date('d-m-Y', strtotime($startDate));
         $endDate = date('d-m-Y', strtotime($endDate));
@@ -253,6 +257,7 @@ class CashflowReportController extends Controller
         $created_by = AuthUser::find($createdBy)->name;
         $currency = Currency::find($organization?->currency_id)?->name;
         $in_words = Helper::numberToWords(abs($closing)); 
+        // dd($fy);
             $pdf = PDF::loadView('pdf.cashflow', [
             'created_by' => $created_by,
             'opening' => $opening,

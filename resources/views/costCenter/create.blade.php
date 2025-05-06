@@ -59,13 +59,15 @@
                                                     <div class="col-md-5">
                                                         <select id="organizations" class="form-select select2" onchange="getLocations()" name="organizations[]" multiple>
                                                             @foreach ($companies as $organization)
-                                                            <option value="{{ $organization->organization->id }}">
-                                                                {{ $organization->organization->name }}
-                                                            </option>
-                                                        @endforeach 
+                                                                <option value="{{ $organization->organization->id }}"
+                                                                    @if (in_array($organization->organization->id, old('organizations', [])))
+                                                                        selected
+                                                                    @endif>
+                                                                    {{ $organization->organization->name }}
+                                                                </option>
+                                                            @endforeach
                                                         </select>
-                                                    </div>
-                                                    
+                                                    </div>                                                    
                                                 </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
@@ -74,7 +76,7 @@
                                                     </div>
 
                                                     <div class="col-md-5">
-                                                        <select id="locations" class="form-select select2" name="locations[]" multiple>
+                                                        <select id="locations" class="form-select select2" name="locations[]" multiple required>
                                                         </select>
                                                     </div>
                                                     
@@ -89,7 +91,7 @@
 
                                                     <div class="col-md-5">
                                                         <input type="text" name="name" class="form-control"
-                                                            required />
+                                                            required value="{{ old('name') }}" />
                                                             @error('name')
                                                         <span class="alert alert-danger">{{ $message }}</span>
                                                             @enderror
