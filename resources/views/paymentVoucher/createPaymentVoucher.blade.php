@@ -353,7 +353,8 @@
 
                                                     <div class="col-md-5">
                                                         <select id="locations" class="form-select"
-                                                            name="location">
+                                                            name="location" required>
+                                                            <option disabled value="" selected>Select Location</option>
                                                             @foreach ($locations as $location)
                                                                 <option value="{{ $location->id }}">
                                                                     {{ $location->store_name }}</option>

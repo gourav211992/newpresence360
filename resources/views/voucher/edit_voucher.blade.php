@@ -289,6 +289,7 @@
 
                                                     <div class="col-md-6">
                                                         <select id="locations" class="form-select" name="location">
+                                                            <option disabled value="" selected>Select Location</option>
                                                             @foreach ($locations as $location)
                                                             <option value="{{ $location->id }}"
                                                                 {{ (isset($data->location) && $data->location == $location->id) ? 'selected' : '' }}>
