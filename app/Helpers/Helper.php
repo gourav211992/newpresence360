@@ -601,9 +601,9 @@ class Helper
                 if($master->name=="Liabilities")
                 {
                     if($profitLoss['closing_type']=="Dr")
-                    $opening = $profitLoss['closingFinal'] + $opening;
+                    $opening = $opening + $profitLoss['closingFinal'];
                     else if($profitLoss['closing_type']=="Cr")
-                    $opening = $profitLoss['closingFinal'] - $opening;
+                    $opening = $opening - $profitLoss['closingFinal'];
                 
                 }
                 $opening_type = $opening < 0 ? 'Cr' : 'Dr';

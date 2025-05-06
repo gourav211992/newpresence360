@@ -124,7 +124,7 @@ $assets_group = Group::where('name', 'Assets')
                 }
 
                 if ($assetsGroupId) {
-                    $assetsLedgerData=Helper::getBalanceSheetLedgers($assetsGroupId, $startDate, $endDate,$organizations,$currency,$r->cost_center_id);
+                    $assetsLedgerData=Helper::getBalanceSheetLedgers($assetsGroupId, $startDate, $endDate,$organizations,$currency,$r->cost_center_id)->values();
                 }
 
                 $loopLengthLevel2=Helper::checkCount($liabilitiesLedgerData)>Helper::checkCount($assetsLedgerData) ? Helper::checkCount($liabilitiesLedgerData) : Helper::checkCount($assetsLedgerData);
@@ -137,8 +137,9 @@ $assets_group = Group::where('name', 'Assets')
                         $ledgerName1=$liabilitiesLedgerData->get($j)->name ?? '';
                         $ledgerClosing1=$liabilitiesLedgerData->get($j)->closing ?? 0;
                     }
-                    $ledgerName2=$assetsLedgerData->get($j)->name ?? '';
-                    $ledgerClosing2=$assetsLedgerData->get($j)->closing ?? 0;
+                    
+                    $ledgerName2=$assetsLedgerData[$j]->name ?? '';
+                    $ledgerClosing2=$assetsLedgerData[$j]->closing ?? 0;
                     $data[] = ['',$ledgerName1, Helper::formatIndianNumber($ledgerClosing1),'','',$ledgerName2, Helper::formatIndianNumber($ledgerClosing2),''];
                 }
 
