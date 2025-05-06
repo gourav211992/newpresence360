@@ -222,7 +222,7 @@ class ProfitLossController extends Controller
             $data[] = ['Net Profit','', Helper::formatIndianNumber($netProfit),'','Net Loss','', Helper::formatIndianNumber($netLoss)];
             $data[] = ['Total','', Helper::formatIndianNumber($overAllTotal),'','Total','', Helper::formatIndianNumber($overAllTotal)];
             if($r->type=="pdf")
-            return Excel::download(new PLLevel2ReportExport($organizationName, $dateRange, $data), 'plLevel2Report.pdf',\Maatwebsite\Excel\Excel::DOMPDF);
+            return Excel::download(new PLLevel2ReportExport($organizationName, $dateRange, $data), 'plLevel2Report.pdf',\Maatwebsite\Excel\Excel::DOMPDF,);
             else
             return Excel::download(new PLLevel2ReportExport($organizationName, $dateRange, $data), 'plLevel2Report.xlsx');
         
