@@ -284,6 +284,8 @@
                                                     <div class="col-md-6">
                                                         <input type="date" class="form-control" name="date"
                                                             id="date" required value="{{ $data->document_date }}"
+                                                            min="{{ $fyear['start_date'] }}" 
+                                                        max="{{ $fyear['end_date'] }}"
                                                              />
                                                     </div>
                                                 </div>

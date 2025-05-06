@@ -206,9 +206,14 @@
                                                                 class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-4">
-                                                        <input type="date" class="form-control" id="date"
-                                                            name="date" required value="{{ date('Y-m-d') }}"
-                                                            max="{{ date('Y-m-d') }}" />
+                                                        <input type="date" 
+                                                        class="form-control" 
+                                                        id="date"
+                                                        name="date" 
+                                                        required
+                                                        value="{{ date('Y-m-d') }}"
+                                                        min="{{ $fyear['start_date'] }}" 
+                                                        max="{{ $fyear['end_date'] }}" />
                                                     </div>
                                                 </div>
                                                 <div class="row align-items-center mb-1">

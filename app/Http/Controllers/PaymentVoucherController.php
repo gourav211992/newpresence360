@@ -360,8 +360,8 @@ class PaymentVoucherController extends Controller
     ->toArray();
         // pass authenticate user's org locations
         $locations = Helper::getStoreLocation(Helper::getAuthenticatedUser()->organization_id);
-
-        return view('paymentVoucher.createPaymentVoucher', compact('cost_centers','books_t', 'books', 'banks', 'ledgers', 'currencies', 'orgCurrency', 'type', 'storeUrl', 'redirectUrl','locations'));
+        $fyear = Helper::getFinancialYear(date('Y-m-d'));
+        return view('paymentVoucher.createPaymentVoucher', compact('cost_centers','books_t', 'books', 'banks', 'ledgers', 'currencies', 'orgCurrency', 'type', 'storeUrl', 'redirectUrl','locations','fyear'));
     }
 
     /**
@@ -681,11 +681,12 @@ class PaymentVoucherController extends Controller
 
 
         $locations = Helper::getStoreLocation(Helper::getAuthenticatedUser()->organization_id);
+        $fyear = Helper::getFinancialYear(date('Y-m-d'));
 
         if ($data->document_status == ConstantHelper::DRAFT)
-            return view('paymentVoucher.editPaymentVoucher', compact('cost_centers','books_t', 'data', 'books', 'buttons', 'history', 'banks', 'ledgers', 'currencies', 'orgCurrency', 'revision_number', 'currNumber', 'editUrl', 'indexUrl', 'editUrlString','locations'));
+            return view('paymentVoucher.editPaymentVoucher', compact('cost_centers','books_t', 'data', 'books', 'buttons', 'history', 'banks', 'ledgers', 'currencies', 'orgCurrency', 'revision_number', 'currNumber', 'editUrl', 'indexUrl', 'editUrlString','locations','fyear'));
         else
-            return view('paymentVoucher.viewPaymentVoucher', compact('cost_centers', 'data','books_t', 'books', 'buttons', 'history', 'banks', 'ledgers', 'currencies', 'orgCurrency', 'revision_number', 'currNumber', 'editUrl', 'indexUrl', 'editUrlString', 'approvalHistory', 'cc_users', 'to_users', 'to_user_mail', 'to_type','locations'));
+            return view('paymentVoucher.viewPaymentVoucher', compact('cost_centers', 'data','books_t', 'books', 'buttons', 'history', 'banks', 'ledgers', 'currencies', 'orgCurrency', 'revision_number', 'currNumber', 'editUrl', 'indexUrl', 'editUrlString', 'approvalHistory', 'cc_users', 'to_users', 'to_user_mail', 'to_type','locations','fyear'));
     }
 
 
