@@ -36,6 +36,7 @@
                                     <table class="datatables-basic table myrequesttablecbox tableistlastcolumnfixed">
                                         <thead>
                                             <tr>
+                                                <th>Sr. No</th>
                                                 <th>Date</th>
                                                 <th>Document Type</th>
                                                 <th>Series</th>
@@ -53,7 +54,7 @@
                                                 use App\Helpers\Helper;
                                             @endphp
 
-                                            @foreach ($data as $item)
+                                            @foreach ($data as $index=>$item)
                                                 @php
                                                     $mainBadgeClass = match ($item->approvalStatus) {
                                                         'approved' => 'success',
@@ -65,6 +66,7 @@
                                                     };
                                                 @endphp
                                                 <tr>
+                                                    <td>{{ $index+1 }}</td>
                                                     <td class="fw-bolder text-nowrap text-dark">
                                                         {{ date('d-m-Y', strtotime($item->document_date)) }}</td>
                                                     <td class="text-nowrap">{{ $item->series->service->name ?? '-' }}</td>
