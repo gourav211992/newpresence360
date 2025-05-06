@@ -152,7 +152,8 @@
                                                     <div class="col-md-5">
                                                         <input type="date" class="form-control" name="date"
                                                             id="date" required value="{{ date('Y-m-d') }}"
-                                                            max="{{ date('Y-m-d') }}" />
+                                                            min="{{ $fyear['start_date'] }}" 
+                                                        max="{{ $fyear['end_date'] }}" />
                                                     </div>
 
                                                 </div>
@@ -189,7 +190,8 @@
                                                     <div class="col-md-5">
                                                         <input type="date" class="form-control" name="payment_date"
                                                             id="payment_date" required value="{{ date('Y-m-d') }}"
-                                                            max="{{ date('Y-m-d') }}" />
+                                                            min="{{ $fyear['start_date'] }}" 
+                                                        max="{{ $fyear['end_date'] }}" />
                                                     </div>
                                                 </div>
 
