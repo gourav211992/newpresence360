@@ -2050,11 +2050,15 @@
 
         }
         $(document).on('change', '.costCenter', function() {
-            // Just read the selected value (you can process if needed)
-            var selectedValue = $(this).val();
-            console.log('Selected Cost Center:', selectedValue);
+            var selectedValue = $(this).val(); // Get the selected cost center value
+            $('.costCenter').val(selectedValue); // Set the same value for all dropdowns
+
 
         });
+        // $(document).on('change', '.costCenter', function() {
+        //     var selectedValue = $(this).val(); // Get the selected cost center value
+        //     $('.costCenter').val(selectedValue); // Set the same value for all dropdowns
+        // });
 
         $('#locations').on('change', function() {
             populateCostCenterDropdowns();
