@@ -321,7 +321,7 @@
                                             <span id="name${data['liabilitiesData'][i].id}">${data['liabilitiesData'][i].name}</span>
                                         </td>
                                         <td>&nbsp;</td>
-                                        <td class="text-end liabilitiesAmount">${parseFloat(data['reservesSurplus']).toLocaleString('en-IN')}</td>
+                                        <td class="text-end liabilitiesAmount">${formatValue(data['reservesSurplus'])}</td>
                                     </tr>`;
                             } else{
                                 html +=`<tr class="trail-bal-tabl-none" id="${data['liabilitiesData'][i].id}">
@@ -334,7 +334,7 @@
                                             </a>
                                         </td>
                                         <td>&nbsp;</td>
-                                        <td class="text-end liabilitiesAmount">${parseFloat(data['liabilitiesData'][i].closing).toLocaleString('en-IN')}</td>
+                                        <td class="text-end liabilitiesAmount">${formatValue(data['liabilitiesData'][i].closing)}</td>
                                     </tr>`;
                             }
                         }
@@ -356,7 +356,7 @@
                                             </a>
                                         </td>
                                         <td>&nbsp;</td>
-                                        <td class="text-end assetsAmount">${parseFloat(data['assetsData'][i].closing).toLocaleString('en-IN')}</td>
+                                        <td class="text-end assetsAmount">${formatValue(data['assetsData'][i].closing)}</td>
                                     </tr>`;
                         }
                         $('#assetsDiv').empty().append(html);
@@ -390,29 +390,26 @@
             });
             let liabilities_sum = 0;
             $('.liabilitiesAmount').each(function() {
-                const value = parseNumberWithCommas($(this).text()) || 0;
+                const value = parseAmountWithBrackets($(this).text()) || 0;
                 liabilities_sum = parseFloat(parseFloat(liabilities_sum + value).toFixed(2));
             });
-            $('#liabilities_total').text(liabilities_sum.toLocaleString('en-IN'));
+            $('#liabilities_total').text(formatValue(liabilities_sum));
 
             let assets_sum = 0;
             $('.assetsAmount').each(function() {
-                const value = parseNumberWithCommas($(this).text()) || 0;
+                const value = parseAmountWithBrackets($(this).text()) || 0;
                 assets_sum = parseFloat(parseFloat(assets_sum + value).toFixed(2));
             });
-            $('#assets_total').text(assets_sum.toLocaleString('en-IN'));
+            $('#assets_total').text(formatValue(assets_sum));
         }
 
-        function parseNumberWithCommas(str) {
-            return parseFloat(str.replace(/,/g, ""));
-        }
-
+        
         $(document).on('click', '.expand', function() {
             const id = $(this).attr('data-id');
             if ($('#name' + id).text()=="Reserves & Surplus") {
                 let html= `<tr class="pandlosssubaccount parent-${id}">
                             <td>Profit & Loss</td>
-                            <td class="text-end">${parseFloat(reservesSurplusValue).toLocaleString('en-IN')}</td>
+                            <td class="text-end">${formatValue(reservesSurplusValue)}</td>
                             <td>&nbsp;</td>
                         </tr>`;
                 $('#' + id).closest('tr').after(html);
@@ -445,7 +442,7 @@
                                                         <i data-feather='arrow-right'></i>${data['data'][i].name}
                                                     </a>
                                                 </td>
-                                                <td class="text-end">${parseFloat(data['data'][i].closing).toLocaleString('en-IN')}</td>
+                                                <td class="text-end">${formatValue(data['data'][i].closing)}</td>
                                                 <td>&nbsp;</td>
                                             </tr>`;
                                 }
@@ -534,7 +531,7 @@
                                 if ($('#name' + data['id']).text()=="Reserves & Surplus") {
                                     let html = `<tr class="pandlosssubaccount parent-${data['id']}">
                                                 <td>Profit & Loss</td>
-                                                <td class="text-end">${parseFloat(reservesSurplusValue).toLocaleString('en-IN')}</td>
+                                                <td class="text-end">${formatValue(reservesSurplusValue)}</td>
                                                 <td>&nbsp;</td>
                                             </tr>`;
                                     $('#' + data['id']).closest('tr').after(html);
@@ -549,7 +546,7 @@
                                                                 <i data-feather='arrow-right'></i>${data['data'][i].name}
                                                             </a>
                                                         </td>
-                                                        <td class="text-end">${parseFloat(data['data'][i].closing).toLocaleString('en-IN')}</td>
+                                                        <td class="text-end">${formatValue(data['data'][i].closing)}</td>
                                                         <td>&nbsp;</td>
                                                     </tr>`;
                                         }
@@ -693,5 +690,28 @@
     }
 
 });
+function formatValue(value){
+        value = parseFloat(value);
+        if (value < 0) {
+            return "(" + Math.abs(value,2).toLocaleString('en-IN') + ")";
+        } else {
+            return value.toLocaleString('en-IN');
+        }
+    }
+    function parseAmountWithBrackets(text) {
+    text = text.trim();
+    let isNegative = text.startsWith('(') && text.endsWith(')');
+    if (isNegative) {
+        text = text.replace(/[()]/g, '');
+    }
+
+    let value = parseNumberWithCommas(text) || 0;
+    return isNegative ? -value : value;
+}
+function parseNumberWithCommas(str) {
+            return parseFloat(str.replace(/,/g, ""));
+        }
+
+
 </script>
 @endsection

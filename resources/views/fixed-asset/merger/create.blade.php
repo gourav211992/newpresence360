@@ -50,6 +50,7 @@
                             <input type="hidden" name="doc_suffix" id="doc_suffix">
                             <input type="hidden" name="doc_no" id="doc_no">
                             <input type="hidden" name="document_status" id="document_status" value="">
+                            <input type="hidden" name="dep_type" id="depreciation_type" value="{{$dep_type}}">
                             <div class="col-12">
 
 
@@ -309,25 +310,28 @@
                                             </div>
                                             <div class="card-body">
                                                 <div class="row">
-
-
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Category <span
                                                                     class="text-danger">*</span></label>
-                                                            <select class="form-select select2">
-                                                                <option>Select</option>
-                                                                <option selected>IT Asset</option>
-                                                            </select>
-                                                        </div>
+                                                                    <select class="form-select select2" name="category_id" id="category" required>
+                                                                        <option value="" {{ old('category') ? '' : 'selected' }}>Select</option>
+                                                                        @foreach($categories as $category)
+                                                                            <option value="{{ $category->id }}" {{ old('category') == $category->id ? 'selected' : '' }}>
+                                                                                {{ $category->name }}
+                                                                            </option>
+                                                                        @endforeach
+                                                                    </select>
+                                                                    </div>
                                                     </div>
 
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Asset Name <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control"
-                                                                value="Laptop HP" />
+                                                            <input type="text" class="form-control" name="asset_name"
+                                                                id="asset_name"
+                                                                value="{{ old('asset_name') }}" required />
                                                         </div>
                                                     </div>
 
@@ -335,7 +339,9 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Asset Code <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" value="ASS001" />
+                                                            <input type="text" class="form-control" name="asset_code"
+                                                                id="asset_code" value="{{ old('asset_code') }}"
+                                                                required />
                                                         </div>
                                                     </div>
 
@@ -344,8 +350,9 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Quantity <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" value="1"
-                                                                disabled />
+                                                            <input type="text" class="form-control" name="quantity"
+                                                                id="quantity" value="{{ old('quantity') }}"
+                                                                readonly />
                                                         </div>
                                                     </div>
 
@@ -353,10 +360,18 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Ledger <span
                                                                     class="text-danger">*</span></label>
-                                                            <select class="form-select select2">
-                                                                <option>Select</option>
-                                                                <option selected>Laptop</option>
+                                                            <select class="form-select select2" name="ledger_id"
+                                                                id="ledger" required>
+                                                                <option value=""
+                                                                    {{ old('ledger') ? '' : 'selected' }}>Select</option>
+                                                                @foreach ($ledgers as $ledger)
+                                                                    <option value="{{ $ledger->id }}"
+                                                                        {{ old('ledger') == $ledger->id ? 'selected' : '' }}>
+                                                                        {{ $ledger->name }}
+                                                                    </option>
+                                                                @endforeach
                                                             </select>
+
                                                         </div>
                                                     </div>
 
@@ -364,10 +379,9 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Ledger Group <span
                                                                     class="text-danger">*</span></label>
-                                                            <select class="form-select select2">
-                                                                <option>Select</option>
-                                                                <option selected>Laptop</option>
-                                                            </select>
+                                                            <select class="form-select select2" name="ledger_group_id"
+                                                                id="ledger_group" required>
+                                                                </select>
                                                         </div>
                                                     </div>
 
@@ -375,8 +389,9 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Capitalize Date <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="date" class="form-control" disabled
-                                                                value="2025-04-01" />
+                                                            <input type="date" class="form-control"
+                                                                name="capitalize_date" id="capitalize_date"
+                                                                value="{{ old('capitalize_date') }}" min="{{$financialStartDate}}" max="{{$financialEndDate}}" required />
                                                         </div>
                                                     </div>
 
@@ -384,31 +399,32 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Maint. Schedule <span
                                                                     class="text-danger">*</span></label>
-                                                            <select class="form-select">
-                                                                <option>Select</option>
-                                                                <option>Yearly</option>
-                                                                <option>Monthly</option>
-                                                                <option>Weekly</option>
+                                                            <select class="form-select" name="maintenance_schedule"
+                                                                id="maintenance_schedule" required>
+                                                                <option value="" {{ old('maintenance_schedule') == '' ? 'selected' : '' }}>Select</option>
+                                                                <option value="weekly" {{ old('maintenance_schedule') == 'Weekly' ? 'selected' : '' }}>Weekly</option>
+                                                                <option value="monthly" {{ old('maintenance_schedule') == 'Monthly' ? 'selected' : '' }}>Monthly</option>
+                                                                <option value="quarterly" {{ old('maintenance_schedule') == 'Quarterly' ? 'selected' : '' }}>Quarterly</option>
+                                                                <option value="semi-annually" {{ old('maintenance_schedule') == 'Semi-Annually' ? 'selected' : '' }}>Semi-Annually</option>
+                                                                <option value="annually" {{ old('maintenance_schedule') == 'Annually' ? 'selected' : '' }}>Annually</option>
                                                             </select>
                                                         </div>
                                                     </div>
-
-
-
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Dep. Method <span
-                                                                    class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" value="SLM"
-                                                                disabled />
+                                                            <label class="form-label">Dep. Method <span class="text-danger">*</span></label>
+                                                            <input type="text" name="depreciation_method" id="depreciation_method" class="form-control" value="{{$dep_method}}" readonly /> 
                                                         </div>
                                                     </div>
+                                                    
 
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Est. Useful life (yrs) <span
+                                                            <label class="form-label">Est. Useful Life (yrs) <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" value="10" />
+                                                            <input type="text" class="form-control" name="useful_life"
+                                                                id="useful_life" value="{{ old('useful_life') }}" oninput="updateDepreciationValues()"
+                                                                required />
                                                         </div>
                                                     </div>
 
@@ -416,61 +432,59 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Salvage Value <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" disabled class="form-control" />
+                                                            <input type="text" class="form-control"
+                                                                name="salvage_value" id="salvage_value" readonly
+                                                                value="{{ old('salvage_value') }}" required />
                                                         </div>
                                                     </div>
 
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Dep % <span
-                                                                    class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" value="10"
-                                                                disabled />
+                                                            <label class="form-label">Dep % <span class="text-danger">*</span></label>
+                                                            <input type="number" class="form-control" id="depreciation_rate" name="depreciation_percentage" readonly /> 
+                                                            <input type="hidden" value="{{$dep_percentage}}" id="depreciation_percentage" /> 
+                                                            <input type="hidden" id="depreciation_rate_year" name="depreciation_percentage_year" /> 
+                                                     
                                                         </div>
-                                                    </div>
-
-
+                                                    </div>  
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Total Dep. <span
-                                                                    class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" value="1000"
-                                                                disabled />
+                                                            <label class="form-label">Total Dep. <span class="text-danger">*</span></label>
+                                                            <input type="number" id="total_depreciation" name="total_depreciation" class="form-control" value="0" readonly /> 
                                                         </div>
                                                     </div>
+                                                    
+                                                   
+
 
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Current Value <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" value="10000"
-                                                                disabled />
+                                                            <input type="text" class="form-control" required
+                                                                name="current_value" id="current_value"
+                                                                value="{{ old('current_value') }}" readonly />
                                                         </div>
                                                     </div>
-
-
-
                                                 </div>
-
-
                                             </div>
                                         </div>
 
                                     </div>
                                 </div>
 
-                            </form>
+                        </form>
 
 
-                            </div>
                     </div>
-                    <!-- Modal to add new record -->
-
-                </section>
-
-
             </div>
+            <!-- Modal to add new record -->
+
+            </section>
+
+
         </div>
+    </div>
     </div>
     <!-- END: Content-->
 
@@ -710,6 +724,113 @@
                 "@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach"
             );
         @endif
+        $('#category').on('change',function(){
+           
+           var category_id = $(this).val();
+           if(category_id){
+               $.ajax({
+                   type:"GET",
+                   url:"{{route('finance.fixed-asset.setup.category')}}?category_id="+category_id,
+                   success:function(res){
+                       if(res){
+                           $('#ledger').val(res.ledger_id).select2();
+                           $('#ledger').trigger('change');
+                           $('#ledger_group').val(res.ledger_group_id).select2();
+                           $('#maintenance_schedule').val(res.maintenance_schedule);
+                           $('#useful_life').val(res.expected_life_years);
+                           updateDepreciationValues();
+                          
+                       }
+                   }
+               });
+           }
+       });
+       $('#ledger').change(function() {
+            let groupDropdown = $('#ledger_group');
+            $.ajax({
+                url: '{{ route('finance.fixed-asset.getLedgerGroups') }}',
+                method: 'GET',
+                data: {
+                    ledger_id: $(this).val(),
+                    _token: $('meta[name="csrf-token"]').attr(
+                        'content') // CSRF token
+                },
+                success: function(response) {
+                    groupDropdown.empty(); // Clear previous options
+
+                    response.forEach(item => {
+                        groupDropdown.append(
+                            `<option value="${item.id}">${item.name}</option>`
+                        );
+                    });
+
+                },
+                error: function() {
+                    showToast('error','Error fetching group items.');
+                }
+            });
+
+        });
+        function updateDepreciationValues() {
+    let depreciationType = document.getElementById("depreciation_type").value;
+    let currentValue = parseFloat(document.getElementById("current_value").value) || 0;
+    let depreciationPercentage = parseFloat(document.getElementById("depreciation_percentage").value) || 0;
+    let usefulLife = parseFloat(document.getElementById("useful_life").value) || 0;
+    let method = document.getElementById("depreciation_method").value;
+
+    // Ensure all required values are provided
+    if (!depreciationType || !currentValue || !depreciationPercentage || !usefulLife || !method) {
+        return;
+    }
+    
+
+    // Determine financial date based on depreciation type
+    let financialDate;
+    let financialEnd = new Date("{{$financialEndDate}}");
+    
+    
+    // Extract the financial year-end month and day
+    let financialEndMonth = financialEnd.getMonth(); 
+    let financialEndDay = financialEnd.getDate();
+    let devidend = 1; 
+
+    switch (depreciationType) {
+       case 'half_yearly':
+            devidend = 2; // Adjust dividend for half-yearly
+            break;
+
+        case 'quarterly':
+            devidend = 4; // Adjust dividend for quarterly
+            break;
+
+        case 'monthly':
+            devidend = 12; // Adjust dividend for monthly
+            break;
+
+    }
+
+    let salvageValue = (currentValue * (depreciationPercentage / 100)).toFixed(2);
+
+    let depreciationRate = 0;
+    if (method === "SLM") {
+        depreciationRate = ((((currentValue - salvageValue) / usefulLife) / currentValue)*100).toFixed(2);
+    } else if (method === "WDV") {
+        depreciationRate = ((1 - Math.pow(salvageValue / currentValue, 1 / usefulLife))*100).toFixed(2);
+    }
+
+    let totalDepreciation = 0;
+    document.getElementById("salvage_value").value = salvageValue;
+    console.log("dep_rate"+depreciationRate+"devidend"+devidend);
+    document.getElementById("depreciation_rate").value = depreciationRate;
+    document.getElementById("depreciation_rate_year").value = depreciationRate;
+    document.getElementById("total_depreciation").value = totalDepreciation;
+}
+$(document).on('input change', '#useful_life, .quantity-input, .current-value-input', updateSubAssetCodes);
+   
+
+
+
+
     </script>
     <!-- END: Content-->
 @endsection
