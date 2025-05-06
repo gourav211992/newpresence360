@@ -61,7 +61,7 @@
                                     </div>
                                     <div
                                         class="col-md-8 text-sm-end pofilterboxcenter mb-0 d-flex flex-wrap align-items-center justify-content-sm-end">
-                                        <a id="printButton" href="{{route('finance.cashflow',['print'])}}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 me-25"><i data-feather='printer'></i> Print</a>
+                                        <a id="printButton"    href="{{ route('finance.cashflow', 'print') }}?range={{ $range }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 me-25"><i data-feather='printer'></i> Print</a>
                                      
                                         <button data-bs-toggle="modal" data-bs-target="#filter"
                                             class="btn btn-warning btn-sm mb-50 mb-sm-0 me-25"><i data-feather="filter"></i>

@@ -76,7 +76,7 @@
                                                     </div>
 
                                                     <div class="col-md-5">
-                                                        <select id="locations" class="form-select select2" name="locations[]" multiple>
+                                                        <select id="locations" class="form-select select2" name="locations[]" multiple required>
                                                         </select>
                                                     </div>
                                                     
@@ -90,7 +90,7 @@
                                                     </div>
 
                                                     <div class="col-md-5">
-                                                        <input type="text" name="name" class="form-control" required value="{{ $data->name }}"/>
+                                                        <input type="text" name="name" class="form-control" required value="{{ old('name') ?? $data->name }}"/>
                                                         @error('name')
                                                             <span class="alert alert-danger">{{ $message }}</span>
                                                         @enderror
