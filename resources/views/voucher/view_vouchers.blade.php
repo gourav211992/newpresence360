@@ -102,7 +102,7 @@
                                                  
 
 
-                                                    <td>
+                                                    <td class="text-nowrap">
                                                         {{ $item->remarks ?? '-' }}
                                                     </td>
 

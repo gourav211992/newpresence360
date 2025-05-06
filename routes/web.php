@@ -30,6 +30,7 @@ use App\Http\Controllers\CrDrReportController;
 use App\Http\Controllers\FixedAsset\SetupController;
 use App\Http\Controllers\FixedAsset\DepreciationController;
 use App\Http\Controllers\FixedAsset\SplitController;
+use App\Http\Controllers\FixedAsset\MergerController;
 use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\AssetCategoryController;
 
@@ -2170,7 +2171,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         'update' => 'finance.fixed-asset.maintenance.update',
     ]);
     Route::get('fixed-asset/setup/category', [SetupController::class, 'category'])->name('finance.fixed-asset.setup.category');
-
+    
     Route::resource('fixed-asset/setup', SetupController::class)->names([
         'index' => 'finance.fixed-asset.setup.index',
         'create' => 'finance.fixed-asset.setup.create',
@@ -2203,10 +2204,18 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         'edit' => 'finance.fixed-asset.split.edit',
         'update' => 'finance.fixed-asset.split.update',
     ]);
+
     Route::post('fixed-asset/split/approval', [SplitController::class, 'documentApproval'])->name('finance.fixed-asset.split.approval');
     Route::post('fixed-asset/split/filter', [SplitController::class, 'index'])->name('finance.fixed-asset.split.filter');
+    Route::get('fixed-asset/split/filter', [SplitController::class, 'index'])->name('finance.fixed-asset.split.filter');
     
-
+ Route::resource('fixed-asset/merger', MergerController::class)->names([
+        'index' => 'finance.fixed-asset.merger.index',
+        'create' => 'finance.fixed-asset.merger.create',
+        'store' => 'finance.fixed-asset.merger.store',
+        'show' => 'finance.fixed-asset.merger.show',
+        'update' => 'finance.fixed-asset.merger.update',
+    ]);
 
     Route::resource('asset-category',AssetCategoryController::class);
 

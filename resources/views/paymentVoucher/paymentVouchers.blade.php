@@ -42,10 +42,9 @@
                                             <th>Bank/Ledger Name</th>
                                             <th>Cost Center</th>
                                             <th>Currency</th>
-                                            <th>Amount (INR)</th>
+                                            <th class="text-end">Amount (INR)</th>
                                             <th>Document</th>
-                                            <th>Approval Status</th>
-                                            <th>Action</th>
+                                            <th class="text-end">Status</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -66,19 +65,20 @@
                                             @endphp
                                             <tr>
                                                 <td>{{ $index+1 }}</td>
-                                                <td class="fw-bolder text-dark">{{ date('d-m-Y',strtotime($item->document_date)) }}</td>
+                                                <td class="fw-bolder text-dark text-nowrap">{{ date('d-m-Y',strtotime($item->document_date)) }}</td>
                                                 {{-- <td>{{ ucfirst($item->document_type) }}</td> --}}
-                                                <td>{{ $item->voucher_no }}</td>
-                                                <td>{{ $item->payment_type=="Bank" ? $item->bank->name : $item->ledger->name }}</td>
-                                                <td>{{ $item?->costCenter?->name}}</td>
-                                                <td>{{ $item->currency->name.' ('.$item->currency->short_name.')' }}</td>
-                                                <td style="text-align: end;">{{ Helper::formatIndianNumber($item->amount) }}</td>
-                                                <td>@if($item->document)<a href="voucherPaymentDocuments/{{$item->document}}" target="_blank">View Doc</a>@endif</td>
-                                                <td>
-                                                    @php $statusClasss = App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$item->document_status??"draft"];  @endphp
-                                                    <span class='badge rounded-pill {{$statusClasss}} badgeborder-radius'>@if($item->document_status==App\Helpers\ConstantHelper::APPROVAL_NOT_REQUIRED) Approved @else {{ucfirst($item->document_status)}} @endif</span>
-                                                    </td>
+                                                <td class="text-nowrap">{{ $item->voucher_no }}</td>
+                                                <td class="text-nowrap">{{ $item->payment_type=="Bank" ? $item->bank->name : $item->ledger->name }}</td>
+                                                <td class="text-nowrap">{{ $item?->costCenter?->name}}</td>
+                                                <td class="text-nowrap">{{ $item->currency->name.' ('.$item->currency->short_name.')' }}</td>
+                                                <td class="text-nowrap" style="text-align: end;">{{ Helper::formatIndianNumber($item->amount) }}</td>
+                                                <td class="text-nowrap">@if($item->document)<a href="voucherPaymentDocuments/{{$item->document}}" target="_blank">View Doc</a>@endif</td>
                                                 <td class="tableactionnew">
+                                                    <div class="d-flex align-items-center justify-content-end">
+                                                    @php $statusClasss = App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$item->document_status??"draft"];  @endphp
+                                                    
+                                                    <span class='badge rounded-pill {{$statusClasss}} badgeborder-radius'>@if($item->document_status==App\Helpers\ConstantHelper::APPROVAL_NOT_REQUIRED) Approved @else {{ucfirst($item->document_status)}} @endif</span>
+                                                    
                                                     <div class="dropdown">
                                                         <button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
                                                             <i data-feather="more-vertical"></i>
@@ -90,6 +90,7 @@
                                                             </a>
                                                         </div>
                                                     </div>
+                                                </div>
                                                 </td>
                                             </tr>
                                         @endforeach
