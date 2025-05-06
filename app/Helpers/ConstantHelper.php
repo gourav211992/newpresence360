@@ -555,6 +555,7 @@ class ConstantHelper
     const FIXEDASSET = 'fixed-asset';
     const FIXED_ASSET_DEPRECIATION = 'depreciation';
     const FIXED_ASSET_SPLIT = 'fixed-asset-split';
+    const FIXED_ASSET_MERGER = 'fixed-asset-merger';
 
     const STAKEHOLDER_INTERACTION = 'stakeholder-interaction';
     const COMPLAINT_MANAGEMENT = 'complaint';
@@ -614,7 +615,9 @@ class ConstantHelper
         self::RECEIPTS_SERVICE_ALIAS=>self::RECEIPTS_SERVICE_ALIAS,
         self::FIXED_ASSET_DEPRECIATION=>self::FIXED_ASSET_DEPRECIATION,
         self::FIXED_ASSET_SPLIT=>self::FIXED_ASSET_SPLIT,
+        self::FIXED_ASSET_MERGER=>self::FIXED_ASSET_MERGER,
         self::SR_SERVICE_ALIAS=>self::CREDIT_Note,
+        self::PSV_SERVICE_ALIAS => self::JOURNAL_VOUCHER,
     ];
 
     //Service Alias Models Mapping

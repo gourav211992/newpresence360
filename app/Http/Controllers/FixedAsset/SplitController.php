@@ -28,6 +28,7 @@ class SplitController extends Controller
         if (count($servicesBooks['services']) == 0) {
             return redirect()->route('/');
         }
+
         $data=FixedAssetSplit::withDefaultGroupCompanyOrg()->orderBy('id','desc');
         if($request->filter_asset)
         $data=$data->where('asset_id',$request->filter_asset);
