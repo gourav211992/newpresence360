@@ -2200,7 +2200,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         'update' => 'finance.fixed-asset.split.update',
     ]);
     Route::post('fixed-asset/split/approval', [SplitController::class, 'documentApproval'])->name('finance.fixed-asset.split.approval');
-    Route::post('fixed-asset/split', [SplitController::class, 'index'])->name('finance.fixed-asset.split.filter');
+    Route::post('fixed-asset/split/filter', [SplitController::class, 'index'])->name('finance.fixed-asset.split.filter');
     
 
 

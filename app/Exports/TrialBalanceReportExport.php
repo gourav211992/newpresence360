@@ -46,7 +46,7 @@ class TrialBalanceReportExport implements FromArray, WithHeadings, WithTitle, Sh
 
         // Apply bold formatting to the last row only  
         $lastRow = $sheet->getHighestRow(); // Get the highest row number with data  
-        $sheet->getStyle('A' . $lastRow . ':G' . $lastRow)->getFont()->setBold(true); // Last row only
+        //$sheet->getStyle('A' . $lastRow . ':G' . $lastRow)->getFont()->setBold(true); // Last row only
     }   
 
     public function title(): string  

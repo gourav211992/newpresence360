@@ -288,8 +288,7 @@
                                                     </div>
 
                                                     <div class="col-md-6">
-                                                        <select id="locations" class="form-select select2" name="location">
-                                                            <option disabled value="" selected>Select Locations</option>
+                                                        <select id="locations" class="form-select" name="location">
                                                             @foreach ($locations as $location)
                                                             <option value="{{ $location->id }}"
                                                                 {{ (isset($data->location) && $data->location == $location->id) ? 'selected' : '' }}>

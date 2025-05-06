@@ -93,7 +93,7 @@
 													</tr>
 												</thead>
                                                 <tbody id="tableData"></tbody>
-												<tfoot>
+												<tfoot hidden>
 													<tr>
 														<td class="text-center">Grand Total</td>
                                                         <td id="openingAmt">0</td>

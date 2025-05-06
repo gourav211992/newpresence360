@@ -1915,7 +1915,7 @@ class Helper
             })->where(function ($q) use ($organizations) {
                 $q->whereIn('organization_id', $organizations)
                       ->orWhereNull('organization_id');
-            })->where('status', 1)->pluck('id') ->where('status', 1)->toArray();
+            })->where('status', 1)->pluck('id')->toArray();
                 $non_carry = Helper::getNonCarryGroups();
                 $fy = self::getFinancialYear($startDate);
               

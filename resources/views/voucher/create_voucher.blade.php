@@ -218,10 +218,8 @@
                                                     </div>
 
                                                     <div class="col-md-4">
-                                                        <select id="locations" class="form-select select2"
+                                                        <select id="locations" class="form-select"
                                                             name="location" data-row="${rowCount + 1}">
-                                                            <option disabled value="" selected>Select Locations
-                                                            </option>
                                                             @foreach ($locations as $location)
                                                                 <option value="{{ $location->id }}">
                                                                     {{ $location->store_name }}</option>

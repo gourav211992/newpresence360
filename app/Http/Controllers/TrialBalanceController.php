@@ -166,7 +166,7 @@ class TrialBalanceController extends Controller
             }
         }
         $grandClosingTotal = $grandClosingTotal > 0 ? $grandClosingTotal : -$grandClosingTotal;
-        $data[] = ['', '', 'Grand Total', '', Helper::formatIndianNumber($grandDebitTotal), Helper::formatIndianNumber($grandCreditTotal), Helper::formatIndianNumber($grandClosingTotal) . $closing_type];
+        //$data[] = ['', '', 'Grand Total', '', Helper::formatIndianNumber($grandDebitTotal), Helper::formatIndianNumber($grandCreditTotal), Helper::formatIndianNumber($grandClosingTotal) . $closing_type];
 
         $organizationName = DB::table('organizations')->where('id', $r->organization_id)->value('name');
         return Excel::download(new TrialBalanceReportExport($organizationName, $dateRange, $data), 'tiralBalanceReport.xlsx');
