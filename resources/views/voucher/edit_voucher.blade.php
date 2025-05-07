@@ -1994,8 +1994,8 @@ function calculate_cr_dr() {
                 dateInput.setAttribute("max", fyearEndDate);
                 // console.log('here',3);
             } else {
-                dateInput.setAttribute("min", fyearStartDate);
-                dateInput.setAttribute("max", fyearEndDate);
+                dateInput.setAttribute("min", today);
+                dateInput.setAttribute("max", today);
                 // console.log('here',4);
             }
         }

@@ -187,8 +187,64 @@ $('#costCenter').on('submit', function (e) {
 
     // Perform your custom update submit logic here (like AJAX)
 });
+
    
     </script>
+    <script>
+        $(document).ready(function () {
+            const redirectUrl = "{{ route('cost-center.index') }}";
+            $('#costCenter').on('submit', function (e) {
+                e.preventDefault();
+        
+                let form = $(this);
+                let submitBtn = $('#submitBtn');
+                submitBtn.prop('disabled', true);
+        
+                // Clear previous error messages
+                form.find('.alert.alert-danger').remove();
+        
+                $.ajax({
+                    url: form.attr('action'),
+                    method: 'POST', // Laravel treats PUT as POST with _method='PUT'
+                    data: form.serialize(),
+                    headers: {
+                        'X-CSRF-TOKEN': $('input[name="_token"]').val()
+                    },
+                    success: function (response) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Updated!',
+                            text: response.message ?? 'Cost Center updated successfully.',
+                            confirmButtonText: 'OK'
+                        }).then(() => {
+                            window.location.href = redirectUrl;
+                        });
+                    },
+                    error: function (xhr) {
+                        submitBtn.prop('disabled', false);
+        
+                        if (xhr.status === 422) {
+                            let errors = xhr.responseJSON.errors;
+                            $.each(errors, function (field, messages) {
+                                Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: messages[0],
+                                }); 
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Update Failed',
+                                text: 'Something went wrong. Please try again.',
+                            });
+                        }
+                    }
+                });
+            });
+        });
+        </script>
+        
     <!-- END: Content-->
     <!-- END: Content-->
 @endsection

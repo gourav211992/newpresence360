@@ -128,15 +128,23 @@ $assets_group = Group::where('name', 'Assets')
                 }
 
                 $loopLengthLevel2=Helper::checkCount($liabilitiesLedgerData)>Helper::checkCount($assetsLedgerData) ? Helper::checkCount($liabilitiesLedgerData) : Helper::checkCount($assetsLedgerData);
+                $profitLossInserted = false;
                 for ($j=0; $j <$loopLengthLevel2 ; $j++) {
-                    if ($secName1=="Reserves & Surplus") {
-                        $ledgerName1='Profit & Loss';
-                        $ledgerClosing1=$reservesSurplus;
-                    }
-                    else {
-                        $ledgerName1=$liabilitiesLedgerData->get($j)->name ?? '';
-                        $ledgerClosing1=$liabilitiesLedgerData->get($j)->closing ?? 0;
-                    }
+                    
+                        if ($secName1 === "Reserves & Surplus") {
+                            if ($profitLossInserted) {
+                                // Keep liabilities side empty for additional rows
+                                $ledgerName1 = '';
+                                $ledgerClosing1 = '';
+                            } else {
+                                $ledgerName1 = 'Profit & Loss';
+                                $ledgerClosing1 = $reservesSurplus;
+                                $profitLossInserted = true;
+                            }
+                        } else {
+                            $ledgerName1 = $liabilitiesLedgerData->get($j)->name ?? '';
+                            $ledgerClosing1 = $liabilitiesLedgerData->get($j)->closing ?? 0;
+                        }
                     
                     $ledgerName2=$assetsLedgerData[$j]->name ?? '';
                     $ledgerClosing2=$assetsLedgerData[$j]->closing ?? 0;
@@ -270,6 +278,7 @@ $assets_group = Group::where('name', 'Assets')
 
         $liabilitiesData=Helper::getBalanceSheetData($liabilities, $startDate, $endDate,$organizations,'liabilities',$currency,$r->cost_center_id);
         $assetsData=Helper::getBalanceSheetData($assets, $startDate, $endDate,$organizations,'assets',$currency,$r->cost_center_id);
+        // dd($reservesSurplus);
         return response()->json(['liabilitiesData'=>$liabilitiesData,'assetsData'=>$assetsData,'startDate'=>date('d-M-Y',strtotime($startDate)),'endDate'=>date('d-M-Y',strtotime($endDate)),'reservesSurplus'=>$reservesSurplus]);
     }
 
@@ -361,6 +370,7 @@ $endDate = $endDate->format('Y-m-d');
             $gData['data']=$data;
             $allData[]=$gData;
         }
+        // dd($allData);
 
         return response()->json(['data'=>$allData]);
     }

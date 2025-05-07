@@ -126,7 +126,7 @@
                                                         class="btn btn-secondary btn-sm">
                                                         <i data-feather="arrow-left-circle"></i> Back
                                                     </button>
-                                                    <button type="submit" class="btn btn-primary btn-sm ms-1">
+                                                    <button type="submit" id="submitBtn" class="btn btn-primary btn-sm ms-1">
                                                         <i data-feather="check-circle"></i> Create
                                                     </button>
                                                 </div>
@@ -183,7 +183,59 @@ $('#costCenter').on('submit', function () {
     // Store as JSON string
     $('#location_org_mappings').val(JSON.stringify(mappings));
 });
-    </script>
+$(document).ready(function () {
+    const redirectUrl = "{{ route('cost-center.index') }}";
+        $('#costCenter').on('submit', function (e) {
+            e.preventDefault(); // Prevent full page reload
+
+            let form = $(this);
+            let submitBtn = $('#submitBtn');
+            submitBtn.prop('disabled', true);
+
+            // Clear previous error messages
+            form.find('.alert.alert-danger').remove();
+
+            $.ajax({
+                url: form.attr('action'),
+                method: form.attr('method'),
+                data: form.serialize(),
+                success: function (response) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Created!',
+                        text: 'Cost Center created successfully.',
+                        confirmButtonText: 'OK'
+                    }).then(() => {
+                        form.trigger('reset');
+                        location.href = redirectUrl;
+                        
+                    });
+                },
+                error: function (xhr) {
+                    submitBtn.prop('disabled', false);
+
+                    if (xhr.status === 422) {
+                        // Validation errors
+                        let errors = xhr.responseJSON.errors;
+                        $.each(errors, function (field, messages) {
+                            Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: messages[0],
+                            });  
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Something went wrong. Please try again.',
+                        });
+                    }
+                }
+            });
+        });
+    });
+    </script> 
 
     <!-- END: Content-->
 
