@@ -164,6 +164,7 @@ class Helper
         $financialYear = ErpFinancialYear::withDefaultGroupCompanyOrg()
             ->where('start_date', '<=', $date)
             ->where('end_date', '>=', $date)
+            ->where('fy_status',ConstantHelper::FY_CURRENT_STATUS)
             ->first();
         if (isset($financialYear)) {
             return [
@@ -3045,18 +3046,22 @@ if ($grossProfit > 0 || $netProfit > 0) {
             $financialYears = ErpFinancialYear::withDefaultGroupCompanyOrg()->get();
         
             if ($financialYears->isNotEmpty()) {
-                return $financialYears->map(function ($financialYear) {
-                    $startYear = \Carbon\Carbon::parse($financialYear->start_date)->format('Y');
-                    $endYearShort = \Carbon\Carbon::parse($financialYear->end_date)->format('y'); // last 2 digits
-                    return [
-                        'id' => $financialYear->id,
-                        'alias' => $financialYear->alias,
-                        'start_date' => $financialYear->start_date,
-                        'end_date' => $financialYear->end_date,
-                        'range' => $startYear . '-' . $endYearShort // e.g., 2024-25
-                    ];
-                });
-            }
+                return $financialYears
+                    ->filter(function ($financialYear) {
+                        return \Carbon\Carbon::parse($financialYear->end_date)->isPast(); // Only past end dates
+                    })
+                    ->map(function ($financialYear) {
+                        $startYear = \Carbon\Carbon::parse($financialYear->start_date)->format('Y');
+                        $endYearShort = \Carbon\Carbon::parse($financialYear->end_date)->format('y'); // e.g., 24
+                        return [
+                            'id' => $financialYear->id,
+                            'alias' => $financialYear->alias,
+                            'start_date' => $financialYear->start_date,
+                            'end_date' => $financialYear->end_date,
+                            'range' => $startYear . '-' . $endYearShort
+                        ];
+                    })->values(); 
+            }            
         
             return null;
         }

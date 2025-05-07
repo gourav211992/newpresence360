@@ -282,6 +282,8 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('/search/ledger', [LedgerController::class,'getLedger'])->name('ledger.search');
     // closefy
     Route::get('/close-fy', [CloseFyController::class,'index'])->name('close-fy');
+    Route::post('/close-fy', [CloseFyController::class,'closeFy'])->name('post-closefy');
+    Route::post('/close-fy/store', [CloseFyController::class, 'update'])->name('close-fy.store');
     Route::post('/getFyInitialGroups', [CloseFyController::class,'getFyInitialGroups'])->name('getFyInitialGroups');
 
 

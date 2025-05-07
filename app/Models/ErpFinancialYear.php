@@ -16,6 +16,19 @@ class ErpFinancialYear extends Model
         'alias',
         'start_date',
         'end_date',
-        'status'
+        'status',
+        'fy_status',
+        'access_by',
+        'fy_close',
+        'fy_lock'
     ];
+
+    protected $casts = [
+        'access_by' => 'array',
+    ];
+
+    public function authorizedUsers()
+    {
+        return AuthUser::whereIn('id', $this->access_by ?? []);
+    }
 }

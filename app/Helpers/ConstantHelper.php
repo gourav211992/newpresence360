@@ -942,4 +942,8 @@ class ConstantHelper
         'INTRAB2C' => 'Intra - State supplies to unregistered persons'
     ];
 
+    const FY_CURRENT_STATUS = "current";
+    const FY_NEXT_STATUS = "next";
+    const FY_PREVIOUS_STATUS = "prev";
+    const FY_CLOSED_STATUS = "closed";
 }
