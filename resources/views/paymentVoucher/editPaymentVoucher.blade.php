@@ -500,7 +500,7 @@
                                                         <select class="costCenter form-control select2" name="cost_center_id" id="cost_center_id">
                                                             @foreach ($locationCostCenters as $value)
                                                             <option value="{{ $value['id'] }}" 
-                                                                @if($value['id'] == $item->cost_center_id) selected @endif>
+                                                                @if($value['id'] == $data->cost_center_id) selected @endif>
                                                                 {{ $value['name'] }}
                                                             </option>
                                                         @endforeach

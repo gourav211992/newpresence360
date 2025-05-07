@@ -1783,19 +1783,28 @@
 
             // Determine the max and min values for the date input
             const today = moment().format("YYYY-MM-DD");
+            const fyearStartDate = "{{ $fyear['start_date'] }}";
+            const fyearEndDate = "{{ $fyear['end_date'] }}";
+            // console.log('here',1,fyearStartDate, fyearEndDate);
 
             if (backDateAllowed && futureDateAllowed) {
-                dateInput.removeAttribute("min");
-                dateInput.removeAttribute("max");
+                // dateInput.removeAttribute("min");
+                // dateInput.removeAttribute("max");
+                // console.log('here',1,fyearStartDate, fyearEndDate);
+                dateInput.setAttribute("min", fyearStartDate);
+                dateInput.setAttribute("max", fyearEndDate);
             } else if (backDateAllowed) {
                 dateInput.setAttribute("max", today);
-                dateInput.removeAttribute("min");
+                dateInput.setAttribute("min", fyearStartDate);
+                // console.log('here',2);
             } else if (futureDateAllowed) {
                 dateInput.setAttribute("min", today);
-                dateInput.removeAttribute("max");
+                dateInput.setAttribute("max", fyearEndDate);
+                // console.log('here',3);
             } else {
                 dateInput.setAttribute("min", today);
                 dateInput.setAttribute("max", today);
+                // console.log('here',4);
             }
         }
 
