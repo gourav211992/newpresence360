@@ -148,6 +148,7 @@ use App\Http\Controllers\Finance\GstrController;
 use App\Http\Controllers\WarehouseStructureController;
 use App\Http\Controllers\WarehouseMappingController;
 use App\Http\Controllers\WarehouseItemMappingController;
+use App\Http\Controllers\CloseFy\CloseFyController;
 
 //Reports
 use App\Http\Controllers\Report\TransactionReportController;
@@ -279,6 +280,9 @@ Route::middleware(['user.auth'])->group(function () {
     Route::resource('ledgers', LedgerController::class)->except(['show']);
     Route::get('/ledgers/{ledgerId}/groups', [LedgerController::class, 'getLedgerGroups'])->name('ledgers.groups');;
     Route::get('/search/ledger', [LedgerController::class,'getLedger'])->name('ledger.search');
+    // closefy
+    Route::get('/close-fy', [CloseFyController::class,'index'])->name('close-fy');
+    Route::post('/getFyInitialGroups', [CloseFyController::class,'getFyInitialGroups'])->name('getFyInitialGroups');
 
 
 
