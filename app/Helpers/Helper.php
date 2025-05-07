@@ -3022,24 +3022,23 @@ if ($grossProfit > 0 || $netProfit > 0) {
             return $query->get();
         }
 
-         public static function uniqueRuleWithConditions(string $table,array $conditions = [],int $ignoreId = null,string $ignoreColumn = 'id',bool $checkDeletedAt = true
-            )
-            {
-                $rule = Rule::unique($table)->where(function ($query) use ($conditions, $checkDeletedAt) {
-                    foreach ($conditions as $column => $value) {
-                        $query->where($column, $value);
-                    }
-                    if ($checkDeletedAt) {
-                        $query->whereNull('deleted_at');
-                    }
-                });
-        
-                if ($ignoreId) {
-                    $rule->ignore($ignoreId, $ignoreColumn);
+         public static function uniqueRuleWithConditions(string $table,array $conditions = [],int $ignoreId = null,string $ignoreColumn = 'id',bool $checkDeletedAt = true)
+        {
+            $rule = Rule::unique($table)->where(function ($query) use ($conditions, $checkDeletedAt) {
+                foreach ($conditions as $column => $value) {
+                    $query->where($column, $value);
                 }
-        
-                return $rule;
+                if ($checkDeletedAt) {
+                    $query->whereNull('deleted_at');
+                }
+            });
+    
+            if ($ignoreId) {
+                $rule->ignore($ignoreId, $ignoreColumn);
             }
+    
+            return $rule;
+        }
 
         public static function getAllFinancialYear(): mixed
         {
