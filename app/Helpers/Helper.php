@@ -2002,107 +2002,127 @@ class Helper
         });
         return $data;
     }
-    public static function getPlGroupDetails($groups)
-    {
-        $totalSales = 0;
-        $totalPurchase = 0;
-        $saleInd = 0;
-        $purchaseInd = 0;
+   public static function getPlGroupDetails($groups)
+{
+    $totalSales = 0;
+    $totalPurchase = 0;
+    $saleInd = 0;
+    $purchaseInd = 0;
 
-        $indExpTotal = 0;
-        $indIncTotal = 0;
+    $indExpTotal = 0;
+    $indIncTotal = 0;
 
-        $opening = 0;
-        $purchase = 0;
-        $directExpense = 0;
-        $indirectExpense = 0;
-        $salesAccount = 0;
-        $directIncome = 0;
-        $indirectIncome = 0;
-        $grossProfit = 0;
-        $grossLoss = 0;
-        $subTotal = 0;
-        $overAllTotal = 0;
-        $netProfit = 0;
-        $netLoss = 0;
+    $opening = 0;
+    $purchase = 0;
+    $directExpense = 0;
+    $indirectExpense = 0;
+    $salesAccount = 0;
+    $directIncome = 0;
+    $indirectIncome = 0;
+    $grossProfit = 0;
+    $grossLoss = 0;
+    $subTotal = 0;
+    $overAllTotal = 0;
+    $netProfit = 0;
+    $netLoss = 0;
 
-        foreach ($groups as $group) {
-            if ($group->name == "Opening Stock") {
-                $totalPurchase = ($group->closing + $totalPurchase);
-                $opening= $group->closing;
-            }
-            if ($group->name == "Purchase Accounts") {
-                $totalPurchase = ($group->closing + $totalPurchase);
-                $purchase= $group->closing;
-            }
-            if ($group->name == "Direct Expenses") {
-                $totalPurchase = ($group->closing + $totalPurchase);
-                $directExpense = $group->closing;
-            }
-            if ($group->name == "Indirect Expenses") {
-                $purchaseInd = ($group->closing + $purchaseInd);
-                $indExpTotal =$group->closing;
-                $indirectExpense = $group->closing;
-            }
-            if ($group->name == "Sales Accounts") {
-                $totalSales = ($group->closing + $totalSales);
-                $salesAccount=$group->closing;
-            }
-            if ($group->name == "Direct Income") {
-                $totalSales=($group->closing + $totalSales);
-                $directIncome=$group->closing;
-            }
-            if ($group->name == "Indirect Income") {
-                $saleInd =($group->closing + $saleInd);
-                $indIncTotal=$group->closing;
-                $indirectIncome=$group->closing;
-            }
+    foreach ($groups as $group) {
+        if ($group->name == "Opening Stock") {
+            $totalPurchase += $group->closing;
+            $opening = $group->closing;
         }
-
-        $difference = $totalSales - $totalPurchase;
-        $diffVal = $difference < 0 ? -$difference : $difference;
-
-        if ($totalSales > $totalPurchase) {
-            $grossProfit = $diffVal;
-            $grossLoss = 0;
-            $subTotal = $totalSales;
-            $saleInd = $diffVal + $saleInd;
-        } else {
-            $grossLoss = $diffVal;
-            $grossProfit = 0;
-            $subTotal = $totalPurchase;
-            $purchaseInd = $diffVal + $purchaseInd;
+        if ($group->name == "Purchase Accounts") {
+            $totalPurchase += $group->closing;
+            $purchase = $group->closing;
         }
-
-        if ($saleInd > $purchaseInd) {
-            $overAllTotal = $saleInd;
-            //$netProfit = $saleInd - $indExpTotal;
-            $netProfit = ($grossProfit + $indirectIncome) - $indirectExpense;
-            
-            $netLoss = 0;
-        } else {
-            $overAllTotal = $purchaseInd;
-            $netLoss = $purchaseInd - $indIncTotal;
-            $netProfit = 0;
+        if ($group->name == "Direct Expenses") {
+            $totalPurchase += $group->closing;
+            $directExpense = $group->closing;
         }
-       
-        return [
-            'opening' => $opening,
-            'purchase' => $purchase,
-            'directExpense' => $directExpense,
-            'indirectExpense' => $indirectExpense,
-            'salesAccount' => $salesAccount,
-            'directIncome' => $directIncome,
-            'indirectIncome' => $indirectIncome,
-            'grossProfit' => $grossProfit,
-            'grossLoss' => $grossLoss,
-            'subTotal' => $subTotal,
-            'overAllTotal' => $overAllTotal,
-            'netProfit' => $netProfit,
-            'netLoss' => $netLoss
-        ];
+        if ($group->name == "Indirect Expenses") {
+            $purchaseInd += $group->closing;
+            $indExpTotal = $group->closing;
+            $indirectExpense = $group->closing;
+        }
+        if ($group->name == "Sales Accounts") {
+            $totalSales += $group->closing;
+            $salesAccount = $group->closing;
+        }
+        if ($group->name == "Direct Income") {
+            $totalSales += $group->closing;
+            $directIncome = $group->closing;
+        }
+        if ($group->name == "Indirect Income") {
+            $saleInd += $group->closing;
+            $indIncTotal = $group->closing;
+            $indirectIncome = $group->closing;
+        }
     }
 
+    $difference = $totalSales - $totalPurchase;
+    $diffVal = abs($difference);
+
+    // Correct Gross Profit/Loss Logic
+    if ($totalSales >= $totalPurchase) {
+        $grossProfit = $diffVal;
+        $grossLoss = 0;
+        $subTotal = $totalSales;
+        $saleInd += $grossProfit;
+    } else {
+        $grossLoss = $diffVal;
+        $grossProfit = 0;
+        $subTotal = $totalPurchase;
+        $purchaseInd += $grossLoss;
+    }
+
+    // Correct Net Profit/Loss Logic
+    if ($grossProfit > 0) {
+        $net = $grossProfit + $indirectIncome - $indirectExpense;
+        if ($net >= 0) {
+            $netProfit = $net;
+            $netLoss = 0;
+        } else {
+            $netProfit = 0;
+            $netLoss = abs($net);
+        }
+    } elseif ($grossLoss > 0) {
+        $net = $grossLoss + $indirectExpense - $indirectIncome;
+        if ($net >= 0) {
+            $netLoss = $net;
+            $netProfit = 0;
+        } else {
+            $netLoss = 0;
+            $netProfit = abs($net);
+        }
+    }
+
+    // Final overall total
+   $overAllTotal = max($saleInd, $purchaseInd); // optional fallback
+
+if ($grossProfit > 0 || $netProfit > 0) {
+    $overAllTotal = $saleInd;
+} elseif ($grossLoss > 0 || $netLoss > 0) {
+    $overAllTotal = $purchaseInd;
+}
+
+    return [
+        'salesInd' => $saleInd,
+        'purchaseInd' => $purchaseInd,
+        'opening' => $opening,
+        'purchase' => $purchase,
+        'directExpense' => $directExpense,
+        'indirectExpense' => $indirectExpense,
+        'salesAccount' => $salesAccount,
+        'directIncome' => $directIncome,
+        'indirectIncome' => $indirectIncome,
+        'grossProfit' => $grossProfit,
+        'grossLoss' => $grossLoss,
+        'subTotal' => $subTotal,
+        'overAllTotal' => $overAllTotal,
+        'netProfit' => $netProfit,
+        'netLoss' => $netLoss
+    ];
+}
 
     public static function getAuthenticatedUser()
     {
