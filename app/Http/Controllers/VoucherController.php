@@ -815,9 +815,8 @@ class VoucherController extends Controller
                 }
         
         
-        $voucherExists = Voucher::where('voucher_no', $numberPatternData['document_number'])->where('organization_id',Helper::getAuthenticatedUser()->organization_id)
-        ->where('group_id',Helper::getAuthenticatedUser()->organization->group_id)
-        ->exists();
+        $voucherExists = Voucher::withDefaultGroupCompanyOrg()->where('voucher_no', $numberPatternData['document_number'])
+        ->where('book_id',$request -> book_id)->exists();
 
         if ($voucherExists) {
             return redirect()
