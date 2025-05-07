@@ -380,8 +380,8 @@ class PaymentVoucherController extends Controller
 
 
 
-        $voucherExists = PaymentVoucher::where('voucher_no', $numberPatternData['document_number'])->where('organization_id',Helper::getAuthenticatedUser()->organization_id)
-        ->exists();
+        $voucherExists = PaymentVoucher::withDefaultGroupCompanyOrg()->where('voucher_no', $numberPatternData['document_number'])
+        ->where('book_id',$request -> book_id)->exists();
 
     if ($voucherExists) {
         return redirect()
