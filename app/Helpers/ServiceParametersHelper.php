@@ -284,6 +284,30 @@ class ServiceParametersHelper
             'is_multiple' => false,
             'service_level_visibility' => true
         ],
+        [
+            "name" => self::GL_POSTING_REQUIRED_PARAM,
+            "applicable_values" => self::GL_POSTING_REQUIRED_PARAM_VALUES,
+            "default_value" => ['no'],
+            'is_multiple' => false,
+            'service_level_visibility' => true,
+            'type' => self::GL_PARAMETERS
+        ],
+        [
+            "name" => self::GL_POSTING_SERIES_PARAM,
+            "applicable_values" => [],
+            "default_value" => [],
+            'is_multiple' => true,
+            'service_level_visibility' => false,
+            'type' => self::GL_PARAMETERS
+        ],
+        [
+            "name" => self::POST_ON_ARROVE_PARAM,
+            "applicable_values" => self::POST_ON_ARROVE_PARAM_VALUES,
+            "default_value" => ['no'],
+            'is_multiple' => false,
+            'service_level_visibility' => true,
+            'type' => self::GL_PARAMETERS
+        ]
         
     ];
     const SR_SERVICE_PARAMETERS = [
@@ -956,13 +980,6 @@ class ServiceParametersHelper
             "default_value" => ['manual'],
             'is_multiple' => false,
             'service_level_visibility' => true
-        ],
-        [
-            "name" => self::STATION_WISE_CONSUMPTION,
-            "applicable_values" => self::STATION_WISE_CONSUMPTION_VALUES,
-            "default_value" => ['no'],
-            'is_multiple' => false,
-            'service_level_visibility' => true
         ]
     ];
     const MO_SERVICE_PARAMETERS = [
@@ -1017,13 +1034,6 @@ class ServiceParametersHelper
             'is_multiple' => false,
             'service_level_visibility' => true,
             'type' => self::GL_PARAMETERS
-        ],
-        [
-            "name" => self::STATION_WISE_CONSUMPTION,
-            "applicable_values" => self::STATION_WISE_CONSUMPTION_VALUES,
-            "default_value" => ['yes'],
-            'is_multiple' => false,
-            'service_level_visibility' => true
         ]
     ];
     const COMMON_SERVICE_PARAMETERS = [
@@ -1787,13 +1797,6 @@ class ServiceParametersHelper
             "default_value" => ['manual'],
             'is_multiple' => false,
             'service_level_visibility' => true
-        ],
-        [
-            "name" => self::STATION_WISE_CONSUMPTION,
-            "applicable_values" => self::STATION_WISE_CONSUMPTION_VALUES,
-            "default_value" => ['no'],
-            'is_multiple' => false,
-            'service_level_visibility' => true
         ]
     ];
 
@@ -1893,13 +1896,6 @@ class ServiceParametersHelper
             "default_value" => ['yes'],
             'is_multiple' => false,
             'service_level_visibility' => true
-        ],
-        [
-            "name" => self::SO_TRACKING_REQUIRED,
-            "applicable_values" => self::SO_TRACKING_REQUIRED_VALUES,
-            "default_value" => ['no'],
-            'is_multiple' => false,
-            'service_level_visibility' => true
         ]
     ];
     const TR_SERVICE_PARAMETERS = [
@@ -1928,44 +1924,6 @@ class ServiceParametersHelper
             "name" => self::TAX_REQUIRED_PARAM,
             "applicable_values" => self::TAX_REQUIRED_PARAM_VALUES,
             "default_value" => ['no'],
-            'is_multiple' => false,
-            'service_level_visibility' => true
-        ]
-    ];
-
-    const PRODUCTION_SLIP_SERVICE_PARAMETERS = [
-        [
-            "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
-            "applicable_values" => ["0", ConstantHelper::PWO_SERVICE_ALIAS], //All possible values
-            "default_value" => ["0"], //Default selected value(s)
-            'is_multiple' => true, // Whether or not to allow multiple selection
-            'service_level_visibility' => true, // Whether or not to show this parameter in UI
-        ],
-        [
-            "name" => self::REFERENCE_FROM_SERIES_PARAM,
-            "applicable_values" => [],
-            "default_value" => [],
-            'is_multiple' => true,
-            'service_level_visibility' => false
-        ],
-        [
-            "name" => self::BACK_DATE_ALLOW_PARAM,
-            "applicable_values" => self::BACK_DATE_ALLOW_PARAM_VALUES,
-            "default_value" => ['no'],
-            'is_multiple' => false,
-            'service_level_visibility' => true
-        ],
-        [
-            "name" => self::FUTURE_DATE_ALLOW_PARAM,
-            "applicable_values" => self::FUTURE_DATE_ALLOW_PARAM_VALUES,
-            "default_value" => ['yes'],
-            'is_multiple' => false,
-            'service_level_visibility' => true
-        ],
-        [
-            "name" => self::TAX_REQUIRED_PARAM,
-            "applicable_values" => self::TAX_REQUIRED_PARAM_VALUES,
-            "default_value" => ['yes'],
             'is_multiple' => false,
             'service_level_visibility' => true
         ]
@@ -2055,7 +2013,7 @@ class ServiceParametersHelper
     const PSLIP_SERVICE_PARAMTERS = [
         [
             "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
-            "applicable_values" => ["0", ConstantHelper::PWO_SERVICE_ALIAS], //All possible values
+            "applicable_values" => ["0", ConstantHelper::MO_SERVICE_ALIAS], //All possible values
             "default_value" => ["0"], //Default selected value(s)
             'is_multiple' => true, // Whether or not to allow multiple selection
             'service_level_visibility' => true, // Whether or not to show this parameter in UI

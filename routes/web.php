@@ -26,11 +26,11 @@ use App\Http\Controllers\ErpPublicOutreachAndCommunicationController;
 use App\Http\Controllers\SubStoreController;
 use App\Http\Controllers\refined_index\IndexController;
 use App\Http\Controllers\UserSignatureController;
+use App\Http\Controllers\FixedAsset\MergerController;
 use App\Http\Controllers\CrDrReportController;
 use App\Http\Controllers\FixedAsset\SetupController;
 use App\Http\Controllers\FixedAsset\DepreciationController;
 use App\Http\Controllers\FixedAsset\SplitController;
-use App\Http\Controllers\FixedAsset\MergerController;
 use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\AssetCategoryController;
 
@@ -1151,7 +1151,6 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
             Route::get('change-item-code', 'changeItemCode')->name('item.code');
             Route::get('get-item-attribute', 'getItemAttribute')->name('item.attr');
             Route::get('add-item-row', 'addItemRow')->name('item.row');
-            Route::get('add-production-row', 'addProductionRow')->name('production.row');
             Route::get('add-instruction-row', 'addInstructionRow')->name('instruction.row');
             Route::get('get-item-detail', 'getItemDetail')->name('get.itemdetail');
             Route::get('get-doc-no', 'getDocNumber')->name('doc.no');
@@ -2167,7 +2166,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         'update' => 'finance.fixed-asset.maintenance.update',
     ]);
     Route::get('fixed-asset/setup/category', [SetupController::class, 'category'])->name('finance.fixed-asset.setup.category');
-    
+
     Route::resource('fixed-asset/setup', SetupController::class)->names([
         'index' => 'finance.fixed-asset.setup.index',
         'create' => 'finance.fixed-asset.setup.create',
@@ -2200,18 +2199,20 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         'edit' => 'finance.fixed-asset.split.edit',
         'update' => 'finance.fixed-asset.split.update',
     ]);
-
     Route::post('fixed-asset/split/approval', [SplitController::class, 'documentApproval'])->name('finance.fixed-asset.split.approval');
     Route::post('fixed-asset/split/filter', [SplitController::class, 'index'])->name('finance.fixed-asset.split.filter');
-    Route::get('fixed-asset/split/filter', [SplitController::class, 'index'])->name('finance.fixed-asset.split.filter');
     
- Route::resource('fixed-asset/merger', MergerController::class)->names([
+    Route::resource('fixed-asset/merger', MergerController::class)->names([
         'index' => 'finance.fixed-asset.merger.index',
         'create' => 'finance.fixed-asset.merger.create',
         'store' => 'finance.fixed-asset.merger.store',
         'show' => 'finance.fixed-asset.merger.show',
         'update' => 'finance.fixed-asset.merger.update',
     ]);
+    Route::post('fixed-asset/merger/approval', [MergerController::class, 'documentApproval'])->name('finance.fixed-asset.merger.approval');
+    Route::post('fixed-asset/merger/filter', [MergerController::class, 'index'])->name('finance.fixed-asset.merger.filter');
+   
+
 
     Route::resource('asset-category',AssetCategoryController::class);
 

@@ -15,7 +15,7 @@
                             <div class="breadcrumb-wrapper">
                                 <ol class="breadcrumb">
                                     <li class="breadcrumb-item"><a href="{{ route('/') }}">Home</a></li>
-                                    <li class="breadcrumb-item"><a href="{{ route('groups.index') }}">Groups</a>
+                                    <li class="breadcrumb-item"><a href="{{ route('ledger-groups.index') }}">Groups</a>
                                     </li>
                                     <li class="breadcrumb-item active">Add New</li>
                                 </ol>
