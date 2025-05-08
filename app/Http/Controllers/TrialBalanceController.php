@@ -60,20 +60,13 @@ class TrialBalanceController extends Controller
         }
 
         if ($r->group_id) {
-            $groups = Group::where(function ($query) use ($organizations, $r) {
-                $query->whereIn('organization_id', $organizations)
-                    ->orWhereNull('organization_id');
-            })
-                ->where('id', $r->group_id) // Ensuring the specific group_id condition
+            $groups = Group::where('id', $r->group_id) // Ensuring the specific group_id condition
                 ->select('id', 'name')
                 ->with('children.children') // Eager loading children and grandchildren
                 ->get();
         } else {
-            $groups = Group::where('status', 'active')
+            $groups = Helper::getGroupsQuery($organizations)
                 ->whereNull('parent_group_id')
-                ->where(function ($query) use ($organizations) {
-                    $query->whereIn('organization_id', $organizations)->orWhereNull('organization_id');
-                })
                 ->select('id', 'name')
                 ->with('children.children') // Ensures eager loading of children & grandchildren
                 ->get();
@@ -414,21 +407,12 @@ class TrialBalanceController extends Controller
         };
 
         if ($r->group_id) {
-            $groups = Group::where(function ($query) use ($organizations, $r) {
-                $query->whereIn('organization_id', $organizations)
-                    ->orWhereNull('organization_id');
-            })
-                ->where('id', $r->group_id) // Ensuring the specific group_id condition
+            $groups = Group::where('id', $r->group_id) // Ensuring the specific group_id condition
                 ->select('id', 'name')
                 ->with('children.children') // Eager loading children and grandchildren
                 ->get();
         } else {
-            $groups = Group::where('status', 'active')
-                ->whereNull('parent_group_id')
-                ->where(function ($query) use ($organizations) {
-                    $query->whereIn('organization_id', $organizations)->orWhereNull('organization_id');
-                })
-                ->select('id', 'name')
+            $groups = Helper::getGroupsQuery($organizations)->whereNull('parent_group_id')->select('id', 'name')
                 ->with('children.children') // Ensures eager loading of children & grandchildren
                 ->get();
         }

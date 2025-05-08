@@ -12,6 +12,7 @@ use App\Models\Group;
 use App\Models\Ledger;
 use App\Models\FixedAssetMerger;
 use Illuminate\Support\Facades\DB;
+use App\Helpers\FinancialPostingHelper;
 use Exception;
 
 
@@ -248,6 +249,46 @@ class MergerController extends Controller
                 'message' => "Error occurred while $actionType",
                 'error' => $e->getMessage(),
             ], 500);
+        }
+    }
+    public function getPostingDetails(Request $request)
+    {
+        try {
+        $data = FinancialPostingHelper::financeVoucherPosting((int)$request -> book_id ?? 0, $request -> document_id ?? 0, $request -> type ?? 'get');
+            return response() -> json([
+                'status' => 'success',
+                'data' => $data
+            ]);
+        } catch(Exception $ex) {
+            return response() -> json([
+                'status' => 'exception',
+                'message' => 'Some internal error occured',
+                'error' => $ex -> getMessage() . $ex -> getFile() . $ex -> getLine()
+            ]);
+        }
+    }
+
+    public function postInvoice(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+            $data = FinancialPostingHelper::financeVoucherPosting($request -> book_id ?? 0, $request -> document_id ?? 0, "post");
+            if ($data['status']) {
+                DB::commit();
+            } else {
+                DB::rollBack();
+            }
+            return response() -> json([
+                'status' => 'success',
+                'data' => $data
+            ]);
+        } catch(Exception $ex) {
+            DB::rollBack();
+            return response() -> json([
+                'status' => 'exception',
+                'message' => 'Some internal error occured',
+                'error' => $ex -> getMessage()
+            ]);
         }
     }
 }

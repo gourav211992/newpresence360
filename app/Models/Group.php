@@ -42,11 +42,14 @@ class Group extends Model
     public function children()
     {
         return $this->hasMany(Group::class, 'parent_group_id', 'id')
-                    ->where(function ($query) {
-                        $query->whereNull('organization_id')
-                              ->orWhere('organization_id',Helper::getAuthenticatedUser()->organization_id);
-                    });
+            ->where(function ($query) {
+                $query->where('edit', 0)
+                      ->orWhere(function ($q) {
+                          $q->withDefaultGroupCompanyOrg(); // Make sure this is a real scope
+                      });
+            });
     }
+    
 
 
     // Optionally, if you want to get all item details related to this group

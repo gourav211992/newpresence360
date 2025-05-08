@@ -496,6 +496,8 @@ class ConstantHelper
 
     const RC_SERVICE_ALIAS = "rc";
     const PSV_SERVICE_ALIAS = "psv";
+    const PL_SERVICE_ALIAS = "pl";
+    const PL_SERVICE_NAME = "Pick List";
     const LAND_PARCEL = 'land-parcel';
     const LEGAL_FILE = 'legal-file';
 
@@ -723,6 +725,7 @@ class ConstantHelper
         self::GOV_RELATION_MANAGEMENT => 'ErpGovRelationManagement',
         self::RC_SERVICE_ALIAS => 'ErpRateContract',
         self::PSV_SERVICE_ALIAS => 'ErpPsvHeader',
+        self::PL_SERVICE_ALIAS => 'ErpPlHeader',
 
     ];
     const CV_ALLOWED_GROUPS=['Cash-in-Hand', 'Bank Accounts', 'Bank OD A/c', 'Bank OCC A/c'];
@@ -770,6 +773,7 @@ class ConstantHelper
         self::SR_SERVICE_ALIAS => 'sale.return.edit',
         self::RC_SERVICE_ALIAS => 'rate.contract.edit',
         self::PSV_SERVICE_ALIAS => 'psv.edit',
+        self::PL_SERVICE_ALIAS => 'PL.layout',
     ];
     const PWO_DOC_TYPES = [self::PWO_SERVICE_ALIAS];
     const SALE_INVOICE_DOC_TYPES = [self::SI_SERVICE_ALIAS, self::LEASE_INVOICE_SERVICE_ALIAS, self::DELIVERY_CHALLAN_SERVICE_ALIAS, self::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS];

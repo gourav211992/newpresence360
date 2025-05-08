@@ -230,11 +230,11 @@ class ProfitLossController extends Controller
     }
 
     public function plGroup(){
-        $groups = Group::where('status','active')->where(function($q){
-            $q->where(function($sub){
-                $sub->whereNotNull('parent_group_id')->whereNull('organization_id');
-            })->orWhere('organization_id',Helper::getAuthenticatedUser()->organization_id);
-        })->select('id','name')->get();
+         $groups =  Helper::getGroupsQuery()->whereNotNull('parent_group_id')
+        ->select('id', 'name')
+        ->get();
+    
+    
 
         $plGroups=PLGroups::get();
         return view('profitLoss.groups',compact('groups','plGroups'));
@@ -432,7 +432,7 @@ class ProfitLossController extends Controller
         else 
         $carry=1;
         $plGroups=PLGroups::find($id);
-        $groupIds=Group::whereIn('id',$plGroups->group_ids)->get();
+        $groupIds= Helper::getGroupsQuery($organizations)->whereIn('id',$plGroups->group_ids)->get();
         $childrens=[];
         $childrens=array_merge($childrens,$plGroups->group_ids);
         foreach ($groupIds as $groupId) {
@@ -446,9 +446,8 @@ class ProfitLossController extends Controller
                         $subQuery->orWhereJsonContains('ledger_group_id',(string)$child);
                     }
                 });
-        })->where(function ($q) use ($organizations) {
-            $q->whereIn('organization_id', $organizations)
-                  ->orWhereNull('organization_id');
+        })->when(!empty($organizations), function ($query) use ($organizations) {
+            $query->whereIn('organization_id', $organizations);
         })->where('status', 1)
         ->select('id', 'name','ledger_group_id')
         ->withSum(['details as details_sum_debit_amt' => function ($query) use ($startDate, $endDate,$childrens,$cost) {

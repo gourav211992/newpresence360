@@ -139,6 +139,11 @@
                         </select>
                     </div>
                     
+                    @php
+                        $companies = $companies->unique(function ($item) {
+    return $item->organization->id;
+});
+                    @endphp
                     <div class="mb-1">
                                     <label class="form-label">Organization</label>
                                     <select id="organization_id" class="form-select select2" multiple>
