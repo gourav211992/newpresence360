@@ -113,6 +113,7 @@ class MergerController extends Controller
             'created_by' => $user->auth_user_id,
             'type' => get_class($user),
             'organization_id' => $user->organization->id,
+            'currency_id'=>$user->organization->currency_id,
             'group_id' => $user->organization->group_id,
             'company_id' => $user->organization->company_id,
             'document_status' => $status,
@@ -181,6 +182,7 @@ class MergerController extends Controller
         
         $buttons = Helper::actionButtonDisplay($data->book_id,$data->document_status , $data->id, $data->current_value, 
         $data->approval_level, $data -> created_by ?? 0, $userType['type'], $revision_number);
+        
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$data->document_status] ?? '';
         $revNo = $data->revision_number;
         $approvalHistory = Helper::getApprovalHistory($data->book_id, $data->id, $revNo,$data->current_value,$data->created_by);

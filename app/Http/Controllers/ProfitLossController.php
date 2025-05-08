@@ -446,35 +446,45 @@ class ProfitLossController extends Controller
                         $subQuery->orWhereJsonContains('ledger_group_id',(string)$child);
                     }
                 });
-        })->when(!empty($organizations), function ($query) use ($organizations) {
-            $query->whereIn('organization_id', $organizations);
         })->where('status', 1)
         ->select('id', 'name','ledger_group_id')
-        ->withSum(['details as details_sum_debit_amt' => function ($query) use ($startDate, $endDate,$childrens,$cost) {
+        ->withSum(['details as details_sum_debit_amt' => function ($query) use ($startDate, $endDate,$childrens,$cost,$organizations) {
                         $query->whereIn('ledger_parent_id',$childrens);
                         $query->when($cost, function ($query) use ($cost) {
                             $query->where('cost_center_id', $cost);
                         });
-                        $query->withwhereHas('voucher', function ($query) use($startDate,$endDate) {
+                        $query->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations) {
+                            $query->withDefaultGroupCompanyOrg();
+                            $query->when(!empty($organizations), function ($query) use ($organizations) {
+                                $query->whereIn('organization_id', $organizations);
+                            });   
                         $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
                         $query->whereBetween('document_date', [$startDate, $endDate]);
                         $query->orderBy('document_date', 'asc');
                     });
         }], "debit_amt_{$currency}")
-        ->withSum(['details as details_sum_credit_amt' => function ($query) use ($startDate, $endDate,$childrens,$cost) {
+        ->withSum(['details as details_sum_credit_amt' => function ($query) use ($startDate, $endDate,$childrens,$cost,$organizations) {
             $query->whereIn('ledger_parent_id',$childrens);
             $query->when($cost, function ($query) use ($cost) {
                 $query->where('cost_center_id', $cost);
             });
-            $query->withwhereHas('voucher', function ($query) use($startDate,$endDate) {
+            $query->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations) {
+                $query->withDefaultGroupCompanyOrg();
+                $query->when(!empty($organizations), function ($query) use ($organizations) {
+                    $query->whereIn('organization_id', $organizations);
+                });
                 $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
                 $query->whereBetween('document_date', [$startDate, $endDate]);
                 $query->orderBy('document_date', 'asc');
             });
         }], "credit_amt_{$currency}")
-        ->with(['details' => function ($query) use ($startDate, $endDate,$childrens) {
+        ->with(['details' => function ($query) use ($startDate, $endDate,$childrens,$organizations) {
             $query->whereIn('ledger_parent_id',$childrens);
-            $query->withwhereHas('voucher', function ($query) use($startDate,$endDate) {
+            $query->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations) {
+                $query->withDefaultGroupCompanyOrg();
+                $query->when(!empty($organizations), function ($query) use ($organizations) {
+                    $query->whereIn('organization_id', $organizations);
+                });
                 $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
                 $query->whereBetween('document_date', [$startDate, $endDate]);
                 $query->orderBy('document_date', 'asc');
@@ -494,7 +504,11 @@ class ProfitLossController extends Controller
                     ->when($cost, function ($query) use ($cost) {
                         $query->where('cost_center_id', $cost);
                     })->withwhereHas('voucher', function ($query) use($startDate,$carry,$fy,$organizations) {
-                    $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
+                        $query->withDefaultGroupCompanyOrg();
+                        $query->when(!empty($organizations), function ($query) use ($organizations) {
+                            $query->whereIn('organization_id', $organizations);
+                        });
+                        $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
                     $query->where('document_date', '<', $startDate);
                         if(!$carry)
                         $query->where('document_date', '>=', $fy['start_date']);

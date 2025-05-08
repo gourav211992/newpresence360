@@ -29,6 +29,10 @@
                             <button type="button" class="btn btn-primary btn-sm" id="approved-button" name="action" value="approved"><i data-feather="check-circle"></i> Approve</button>
                             <button type="button" id="reject-button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg> Reject</button>
                     @endif
+                    @if($buttons['post'])
+                        <button id="postButton" onclick="onPostVoucherOpen();" type="button" class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Post</button>
+                    @endif
+
                             <a href="{{ route('finance.fixed-asset.split.index') }}"> <button
                                     class="btn btn-secondary btn-sm"><i data-feather="arrow-left-circle"></i> Back</button>
                             </a>
@@ -485,7 +489,66 @@
 
     <div class="sidenav-overlay"></div>
     <div class="drag-target"></div>
-
+    <div class="modal fade text-start show" id="postvoucher" tabindex="-1" aria-labelledby="postVoucherModal" aria-modal="true" role="dialog">
+		<div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 1000px">
+			<div class="modal-content">
+				<div class="modal-header">
+					<div>
+                        <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="postVoucherModal"> Voucher Details</h4>
+                    </div>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<div class="row">
+                        <div class="col-md-3">
+                            <div class="mb-1">
+                                <label class="form-label">Series <span class="text-danger">*</span></label>
+                                <input id = "voucher_book_code" class="form-control" disabled="" >
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-1">
+                                <label class="form-label">Voucher No <span class="text-danger">*</span></label>
+                                <input id = "voucher_doc_no" class="form-control" disabled="" value="">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-1">
+                                <label class="form-label">Voucher Date <span class="text-danger">*</span></label>
+                                <input id = "voucher_date" class="form-control" disabled="" value="">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-1">
+                                <label class="form-label">Currency <span class="text-danger">*</span></label>
+                                <input id = "voucher_currency" class="form-control" disabled="" value="">
+                            </div>
+                        </div>
+						<div class="col-md-12">
+							<div class="table-responsive">
+								<table class="mt-1 table table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
+									<thead>
+										<tr>
+											<th>Type</th>
+											<th>Group</th>
+											<th>Leadger Code</th>
+											<th>Leadger Name</th>
+                                            <th class="text-end">Debit</th>
+                                            <th class="text-end">Credit</th>
+										</tr>
+									</thead>
+									<tbody id="posting-table"></tbody>
+								</table>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="text-end">
+					<button style="margin: 1%;" onclick = "postVoucher(this);" id="posting_button" type = "button" class="btn btn-primary btn-sm waves-effect waves-float waves-light">Submit</button>
+				</div>
+			</div>
+		</div>
+	</div>
     <div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
            <div class="modal-content">
@@ -987,6 +1050,117 @@
             $("#approveModal").find("#action_type").val(actionType);
             $("#approveModal").modal('show');
             });
+            function resetPostVoucher()
+        {
+            document.getElementById('voucher_doc_no').value = '';
+            document.getElementById('voucher_date').value = '';
+            document.getElementById('voucher_book_code').value = '';
+            document.getElementById('voucher_currency').value = '';
+            document.getElementById('posting-table').innerHTML = '';
+            document.getElementById('posting_button').style.display = 'none';
+        }
+
+        function onPostVoucherOpen(type = "not_posted")
+        {
+            // resetPostVoucher();
+            const apiURL = "{{route('finance.fixed-asset.split.posting.get')}}";
+            $.ajax({
+                url: apiURL + "?book_id=" + $("#book_id").val() + "&document_id=" + "{{isset($data) ? $data -> id : ''}}",
+                type: "GET",
+                dataType: "json",
+                success: function(data) {
+                    if (!data.data.status) {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: data.data.message,
+                            icon: 'error',
+                        });
+                        return;
+                    }
+                    const voucherEntries = data.data.data;
+                    var voucherEntriesHTML = ``;
+                    Object.keys(voucherEntries.ledgers).forEach((voucher) => {
+                        voucherEntries.ledgers[voucher].forEach((voucherDetail, index) => {
+                            voucherEntriesHTML += `
+                            <tr>
+                            <td>${voucher}</td>
+                            <td class="fw-bolder text-dark">${voucherDetail.ledger_group_code ? voucherDetail.ledger_group_code : ''}</td>
+                            <td>${voucherDetail.ledger_code ? voucherDetail.ledger_code : ''}</td>
+                            <td>${voucherDetail.ledger_name ? voucherDetail.ledger_name : ''}</td>
+                            <td class="text-end">${voucherDetail.debit_amount > 0 ? parseFloat(voucherDetail.debit_amount).toFixed(2) : ''}</td>
+                            <td class="text-end">${voucherDetail.credit_amount > 0 ? parseFloat(voucherDetail.credit_amount).toFixed(2) : ''}</td>
+                            </tr>
+                            `
+                        });
+                    });
+                    voucherEntriesHTML+= `
+                    <tr>
+                        <td colspan="4" class="fw-bolder text-dark text-end">Total</td>
+                        <td class="fw-bolder text-dark text-end">${voucherEntries.total_debit.toFixed(2)}</td>
+                        <td class="fw-bolder text-dark text-end">${voucherEntries.total_credit.toFixed(2)}</td>
+                    </tr>
+                    `;
+                    document.getElementById('posting-table').innerHTML = voucherEntriesHTML;
+                    document.getElementById('voucher_doc_no').value = voucherEntries.document_number;
+                    document.getElementById('voucher_date').value = moment(voucherEntries.document_date).format('D/M/Y');
+                    document.getElementById('voucher_book_code').value = voucherEntries.book_code;
+                    document.getElementById('voucher_currency').value = voucherEntries.currency_code;
+                    if (type === "posted") {
+                        document.getElementById('posting_button').style.display = 'none';
+                    } else {
+                        document.getElementById('posting_button').style.removeProperty('display');
+                    }
+                    $('#postvoucher').modal('show');
+                }
+            });
+
+        }
+
+        function postVoucher(element)
+        {
+            const bookId = "{{isset($data) ? $data -> book_id : ''}}";
+            const documentId = "{{isset($data) ? $data -> id : ''}}";
+            const postingApiUrl = "{{route('finance.fixed-asset.split.post')}}"
+            if (bookId && documentId) {
+                $.ajax({
+                    url: postingApiUrl,
+                    type: "POST",
+                    dataType: "json",
+                    contentType: "application/json", // Specifies the request payload type
+                    data: JSON.stringify({
+                        // Your JSON request data here
+                        book_id: bookId,
+                        document_id: documentId,
+                    }),
+                    success: function(data) {
+                        const response = data.data;
+                        if (response.status) {
+                            Swal.fire({
+                                title: 'Success!',
+                                text: response.message,
+                                icon: 'success',
+                            });
+                            location.reload();
+                        } else {
+                            Swal.fire({
+                                title: 'Error!',
+                                text: response.message,
+                                icon: 'error',
+                            });
+                        }
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: 'Some internal error occured',
+                            icon: 'error',
+                        });
+                    }
+                });
+
+            }
+        }
+
     </script>
     <!-- END: Content-->
 @endsection
