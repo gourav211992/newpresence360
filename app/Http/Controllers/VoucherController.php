@@ -588,6 +588,7 @@ class VoucherController extends Controller
         }
 
         // Retrieve vouchers based on organization_id and include series with levels
+        $fyear = Helper::getFinancialYear(date('Y-m-d'));
         $data =  Voucher::withDefaultGroupCompanyOrg()
         ->with([
             'documents:id,name',
@@ -620,7 +621,6 @@ class VoucherController extends Controller
                 ->whereDate('document_date', '<=', $end);
         }
         else{
-            $fyear = Helper::getFinancialYear(date('Y-m-d'));
             $data = $data->whereDate('document_date', '>=',$fyear['start_date'])
                 ->whereDate('document_date', '<=',$fyear['end_date']);
                 $start = $fyear['start_date'];
@@ -664,8 +664,8 @@ class VoucherController extends Controller
             ];
         })
         ->toArray();
-        
-        return view('voucher.view_vouchers', compact('cost_centers','bookTypes', 'mappings', 'organizationId', 'data', 'book_type', 'date', 'voucher_no', 'voucher_name','date2'));
+        $fyearLocked = $fyear['lock_fy'] == ConstantHelper::FY_NOT_LOCK_STATUS;
+        return view('voucher.view_vouchers', compact('cost_centers','bookTypes', 'mappings', 'organizationId', 'data', 'book_type', 'date', 'voucher_no', 'voucher_name','date2','fyearLocked'));
     }
 
     public function create()

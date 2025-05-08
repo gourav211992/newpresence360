@@ -25,6 +25,8 @@ class ErpFinancialYear extends Model
 
     protected $casts = [
         'access_by' => 'array',
+        'fy_close' => 'boolean',
+        'fy_lock' => 'boolean'
     ];
 
     public function authorizedUsers()

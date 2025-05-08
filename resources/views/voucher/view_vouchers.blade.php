@@ -25,8 +25,10 @@
                                 <div class="col-md-8 text-sm-end">
                                     <button class="btn btn-warning btn-sm mb-50 mb-sm-0" data-bs-target="#filter"
                             data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button>
-                        <a class="btn btn-primary btn-sm" href="{{ route('vouchers.create') }}"><i
-                                data-feather="plus-circle"></i> Add New</a>
+                                @if(isset($fyearLocked) && $fyearLocked)
+                                    <a class="btn btn-primary btn-sm" href="{{ route('vouchers.create') }}"><i
+                                    data-feather="plus-circle"></i> Add New</a>
+                                @endif
                                 </div>
                             </div>
                         </div>

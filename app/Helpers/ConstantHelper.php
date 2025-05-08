@@ -945,5 +945,7 @@ class ConstantHelper
     const FY_CURRENT_STATUS = "current";
     const FY_NEXT_STATUS = "next";
     const FY_PREVIOUS_STATUS = "prev";
-    const FY_CLOSED_STATUS = "closed";
+
+    const FY_NOT_CLOSED_STATUS = false;
+    const FY_NOT_LOCK_STATUS = false;
 }

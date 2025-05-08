@@ -2,7 +2,7 @@
 
 namespace App\Providers;
 
-use App\Helpers\Helper;  
+use App\Helpers\Helper;
 use App\Models\OrganizationMenu;
 use App\Models\OrganizationService;
 use Illuminate\Support\Facades\Auth;
@@ -25,7 +25,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         View::composer('*', function ($view) {
-           
+
             $user = Helper::getAuthenticatedUser();
             // dd($user);
             if ($user) {
@@ -36,23 +36,29 @@ class AppServiceProvider extends ServiceProvider
                     }])
                     ->where('group_id', $user->organization->group_id)
                     ->whereNull('parent_id')
-                    ->orderBy('sequence','ASC')->get(); 
-                    
-               
+                    ->orderBy('sequence','ASC')->get();
+
+
                 // Fetch user organization mappings
                 $mappings = $user -> access_rights_org;
 
                 // Fetch Organization Logo
                 $orgLogo = Helper::getOrganizationLogo($organizationId);
-                   
+
+                //financialyears
+                $fyears = Helper::getFinancialYears();
+                $c_fyear = Helper::getFinancialYear(date('Y-m-d'));
+
                 // Pass organization id and mappings
                 $view->with([
                     'authSessionUser' => $user,
                     'menues' => $menues,
-                    'organizations' => $mappings, 
+                    'organizations' => $mappings,
                     'organization_id' => $organizationId,
                     'orgLogo' => $orgLogo,
-                    'logedinUser'=> $user
+                    'logedinUser'=> $user,
+                    'fyears' => $fyears,
+                    'c_fyear' => $c_fyear['range']
                 ]);
             }
         });

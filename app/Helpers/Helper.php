@@ -161,16 +161,24 @@ class Helper
 
     public static function getFinancialYear(string $date): mixed
     {
+        $startDate = session('fyear_start_date') ?? $date;
+        $endDate = session('fyear_end_date') ?? $date;
         $financialYear = ErpFinancialYear::withDefaultGroupCompanyOrg()
-            ->where('start_date', '<=', $date)
-            ->where('end_date', '>=', $date)
-            ->where('fy_status',ConstantHelper::FY_CURRENT_STATUS)
+            ->where('start_date', '<=', $startDate)
+            ->where('end_date', '>=', $endDate)
+            // ->where('fy_close', ConstantHelper::FY_NOT_CLOSED_STATUS)
+            // ->where('fy_status',ConstantHelper::FY_CURRENT_STATUS)
             ->first();
+            $startYear = \Carbon\Carbon::parse($financialYear->start_date)->format('Y');
+            $endYearShort = \Carbon\Carbon::parse($financialYear->end_date)->format('y'); // e
         if (isset($financialYear)) {
             return [
                 'alias' => $financialYear->alias,
                 'start_date' => $financialYear->start_date,
                 'end_date' => $financialYear->end_date,
+                'lock_fy' => $financialYear->lock_fy,
+                'fy_close' => $financialYear->fy_close,
+                'range' => $startYear . '-' . $endYearShort,
             ];
         } else {
             return null;
@@ -333,12 +341,12 @@ class Helper
                  ConstantHelper::SR_SERVICE_ALIAS]);
                 $shouldCheckTransportDocForSi = false;
 
-                if ($serviceAlias === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS && isset($parameters) && 
+                if ($serviceAlias === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS && isset($parameters) &&
                     isset($parameters -> {ServiceParametersHelper::INVOICE_TO_FOLLOW_PARAM}))
                 {
                     $shouldCheckTransportDocForSi = $parameters -> {ServiceParametersHelper::INVOICE_TO_FOLLOW_PARAM}[0] == "no";
                 }
-                
+
                 if ($shouldCheckTransportDocForPrSr || $shouldCheckTransportDocForSi)
                 {
                     if (strlen($book -> book_code . '-' . $voucher_no) > EInvoiceHelper::TRANPORTER_DOC_NO_MAX_LIMIT)
@@ -523,18 +531,18 @@ class Helper
         $profitLoss = Helper::getReservesSurplus($startDate, $endDate, $organizations, 'trialBalance', $currency, $cost);
 
         $fy = self::getFinancialYear($startDate);
-                    
+
         foreach ($groups as $master) {
-            
+
             $allChildIds = $master->getAllChildIds();
             $allChildIds[] = $master->id;
             $non_carry = Helper::getNonCarryGroups();
             if(in_array($master->id,$non_carry))
             $carry=0;
-            else 
+            else
             $carry=1;
-            
-          
+
+
             $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
                 $query->whereIn('ledger_group_id', $allChildIds)
                     ->orWhere(function ($subQuery) use ($allChildIds) {
@@ -546,8 +554,8 @@ class Helper
                 $q->whereIn('organization_id', $organizations)
                       ->orWhereNull('organization_id');
             })->where('status', 1)->pluck('id')->toArray();
-               
-           
+
+
                 $transactions = ItemDetail::whereIn('ledger_parent_id', $allChildIds)
                 ->when($cost, function ($query) use ($cost) {
                     $query->where('cost_center_id', $cost);
@@ -561,23 +569,23 @@ class Helper
                         $q->whereIn('organization_id', $organizations)
                               ->orWhereNull('organization_id');
                     });
-                    
+
                 })
                 ->get(); // Fetch results before summing
 
-              
-            
-            
+
+
+
             $creditField = "credit_amt_{$currency}";
             $debitField = "debit_amt_{$currency}";
             $totalMasterCredit = $transactions->sum(fn($t) => self::removeCommas($t->$creditField));
             $totalMasterDebit = $transactions->sum(fn($t) => self::removeCommas($t->$debitField));
-           
-            
+
+
             // Get last closing of all ledgers for the master group
             // $lastClosingMaster = $transactions->pluck('closing')->last() ?? 0;
-                
-        
+
+
                 $openingData = ItemDetail::whereIn('ledger_parent_id', $allChildIds)
                 ->when($cost, function ($query) use ($cost) {
                     $query->where('cost_center_id', $cost);
@@ -596,8 +604,8 @@ class Helper
                  })
                 ->selectRaw("SUM(debit_amt_{$currency}) as total_debit, SUM(credit_amt_{$currency}) as total_credit")
                 ->first();
-            
-                
+
+
                 $opening = $openingData->total_debit - $openingData->total_credit ?? 0;
                 if($master->name=="Liabilities")
                 {
@@ -605,7 +613,7 @@ class Helper
                     $opening = $opening + $profitLoss['closingFinal'];
                     else if($profitLoss['closing_type']=="Cr")
                     $opening = $opening - $profitLoss['closingFinal'];
-                
+
                 }
                 $opening_type = $opening < 0 ? 'Cr' : 'Dr';
                 $open = $openingData->total_debit - $openingData->total_credit;
@@ -614,8 +622,8 @@ class Helper
                 if ($closing != 0) {
                     $closingText = $closing < 0 ? 'Cr' : 'Dr';
                 }
-            
-            
+
+
 
             // Adding calculated totals to master group
             $master->group_id = $master->id;
@@ -653,7 +661,7 @@ class Helper
 
 
             $transactions = ItemDetail::whereIn('ledger_id', $ledgers)
-           
+
                 ->whereIn('ledger_parent_id',$allChildIds)
                 ->whereHas('voucher', function ($query) use ($organizations,$startDate,$endDate) {
                     $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
@@ -667,9 +675,9 @@ class Helper
                 ->when($cost, function ($query) use ($cost) {
                     $query->where('cost_center_id', $cost);
                 })->get();
-           
+
             // Calculate totals for the master group
-        
+
             $creditField = "credit_amt_{$currency}";
             $debitField = "debit_amt_{$currency}";
 
@@ -692,10 +700,10 @@ class Helper
                 })
                 ->selectRaw("SUM(debit_amt_{$currency}) as total_debit, SUM(credit_amt_{$currency}) as total_credit")
                 ->first();
-            
+
                 $openingt = $openingData->total_debit - $openingData->total_credit ?? 0;
                 $opening =  $openingData->total_credit - $openingData->total_debit ?? 0;
-                
+
 
 
 
@@ -927,11 +935,11 @@ class Helper
                     })
                     ->selectRaw("SUM(debit_amt_{$currency}) as total_debit, SUM(credit_amt_{$currency}) as total_credit")
                     ->first();
-                
+
                     $openingt = $openingData->total_debit - $openingData->total_credit ?? 0;
                     $opening =  $openingData->total_credit - $openingData->total_debit ?? 0;
 
-                
+
 
                 if ($type == "liabilities") {
                     $ledger->closing = ($opening) + ($details_sum_credit_amt - $details_sum_debit_amt);
@@ -1744,17 +1752,17 @@ class Helper
         $non_carry = Helper::getNonCarryGroups();
         if(in_array($group_id,$non_carry))
         $carry=0;
-        else 
+        else
         $carry=1;
-    
+
         $fy = self::getFinancialYear($startDate);
-                    
+
         $groups = Group::where('parent_group_id',$group_id)->pluck('id');
 
         $datas = Group::whereIn('id',$groups)->get();
 
-    
-   
+
+
 
         if (self::checkCount($datas) > 0) {
             $type = 'group';
@@ -1779,7 +1787,7 @@ class Helper
                               $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
                               $query->orderBy('document_date', 'asc');
                              $query->whereBetween('document_date', [$startDate, $endDate]);
-                          
+
                           });
                 }
             ])->withSum([
@@ -1792,7 +1800,7 @@ class Helper
                         $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
                         $query->orderBy('document_date', 'asc');
                        $query->whereBetween('document_date', [$startDate, $endDate]);
-                    
+
                     });
                 }
             ], "debit_amt_{$currency}")
@@ -1806,13 +1814,13 @@ class Helper
                         $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
                         $query->orderBy('document_date', 'asc');
                        $query->whereBetween('document_date', [$startDate, $endDate]);
-                    
+
                     });
                 }
             ], "credit_amt_{$currency}")
             ->get()
             ->map(function ($ledger) use ($group_id,$organizations,$startDate,$endDate,$currency,$fy,$carry,$cost) {
-                
+
                 $openingData = ItemDetail::where('ledger_parent_id', $group_id)
                 ->when($cost, function ($query) use ($cost) {
                     $query->where('cost_center_id', $cost);
@@ -1831,29 +1839,29 @@ class Helper
                 })
                 ->selectRaw("SUM(debit_amt_{$currency}) as total_debit, SUM(credit_amt_{$currency}) as total_credit")
                 ->first();
-            
+
                 $opening = $openingData->total_debit - $openingData->total_credit ?? 0;
                 $opening_type = ($openingData->total_debit > $openingData->total_credit) ? 'Dr' : 'Cr';
-            
-            
+
+
                 // Set to 0 if the sum is null
                 $ledger->details_sum_debit_amt = $ledger->details_sum_debit_amt ?? 0;
                 $ledger->details_sum_credit_amt = $ledger->details_sum_credit_amt ?? 0;
                 $closing = $opening+($ledger->details_sum_debit_amt - $ledger->details_sum_credit_amt);
-        
+
                 $ledger->opening = abs($opening);
                 $ledger->open = $opening;
                 $ledger->closing = abs($closing);
                 $ledger->closing_type = $closing<0?"Cr":"Dr";
                 $ledger->opening_type = $opening_type;
                 $ledger->group_id = $group_id; // Default type if no details exist
-                
+
                 unset($ledger->details);
-        
+
                 return $ledger;
             });
-            
-            
+
+
       }
 
         return ['type' => $type, 'data' => $data,'date0'=>$startDate,'date1'=>$endDate];
@@ -1887,7 +1895,7 @@ class Helper
 
     public static function getPlGroupsData($startDate, $endDate, $organizations, $currency = "org",$cost=null,$type=null)
     {
-        
+
         $data = PLGroups::select('id', 'name', 'group_ids')->get()->map(function ($plGroup) use ($type,$cost,$startDate, $endDate, $organizations, $currency) {
             $groups = Group::whereIn('id', $plGroup->group_ids)
             ->where(function ($query) use ($organizations) {
@@ -1919,11 +1927,11 @@ class Helper
             })->where('status', 1)->pluck('id')->toArray();
                 $non_carry = Helper::getNonCarryGroups();
                 $fy = self::getFinancialYear($startDate);
-              
+
 
                 if(in_array($master->id,$non_carry))
                 $carry=0;
-                else 
+                else
                 $carry=1;
 
                 $transactions = ItemDetail::whereIn('ledger_id', $ledgers)
@@ -1946,9 +1954,9 @@ class Helper
                 // Calculate totals
                 $creditField = "credit_amt_{$currency}";
                 $debitField = "debit_amt_{$currency}";
-            
-               
-                
+
+
+
 
                 $transactionsOpen = ItemDetail::whereIn('ledger_id', $ledgers)
                 ->whereIn('ledger_parent_id',$allChildIds)
@@ -1966,7 +1974,7 @@ class Helper
                               ->orWhereNull('organization_id');
                     });
                 })->get();
-                    
+
                 $totalCreditOpen +=$transactionsOpen->sum(fn($t) => self::removeCommas($t->$creditField));
                 $totalDebitOpen += $transactionsOpen->sum(fn($t) => self::removeCommas($t->$debitField));
 
@@ -1981,7 +1989,7 @@ class Helper
             $plGroup->opening = $opening;
             $plGroup->totalCredit = $totalCredit;
             $plGroup->totalDebit = $totalDebit;
-           
+
 
 
 
@@ -1990,7 +1998,7 @@ class Helper
             $closing = $totalDebit - $totalCredit;
             else
             $closing = $opening + ($totalDebit - $totalCredit);
-                
+
             if ($closing != 0) {
                 $closingText = $closing > 0 ? 'Dr' : 'Cr';
             }
@@ -3033,18 +3041,18 @@ if ($grossProfit > 0 || $netProfit > 0) {
                     $query->whereNull('deleted_at');
                 }
             });
-    
+
             if ($ignoreId) {
                 $rule->ignore($ignoreId, $ignoreColumn);
             }
-    
+
             return $rule;
         }
 
-        public static function getAllFinancialYear(): mixed
+        public static function getAllPastFinancialYear(): mixed
         {
             $financialYears = ErpFinancialYear::withDefaultGroupCompanyOrg()->get();
-        
+
             if ($financialYears->isNotEmpty()) {
                 return $financialYears
                     ->filter(function ($financialYear) {
@@ -3058,12 +3066,55 @@ if ($grossProfit > 0 || $netProfit > 0) {
                             'alias' => $financialYear->alias,
                             'start_date' => $financialYear->start_date,
                             'end_date' => $financialYear->end_date,
-                            'range' => $startYear . '-' . $endYearShort
+                            'range' => $startYear . '-' . $endYearShort,
+                            'lock_fy' => $financialYear->lock_fy,
+                            'fy_close' => $financialYear->fy_close,
+                            'authorized_users' => $financialYear->authorizedUsers()->get()
                         ];
-                    })->values(); 
-            }            
-        
+                    })->values();
+            }
+
             return null;
+        }
+
+        public static function getFinancialYears()
+        {
+            $financialYears = ErpFinancialYear::withDefaultGroupCompanyOrg()->get();
+            if ($financialYears->isNotEmpty()) {
+                return $financialYears
+               ->map(function ($financialYear) {
+                    $startYear = \Carbon\Carbon::parse($financialYear->start_date)->format('Y');
+                    $endYearShort = \Carbon\Carbon::parse($financialYear->end_date)->format('y'); // e.g., 24
+                    return [
+                        'id' => $financialYear->id,
+                        'alias' => $financialYear->alias,
+                        'start_date' => $financialYear->start_date,
+                        'end_date' => $financialYear->end_date,
+                        'range' => $startYear . '-' . $endYearShort,
+                        'authorized_users' => $financialYear->authorizedUsers()->get()
+                    ];
+                })->values();
+            }
+
+            return null;
+        }
+
+        public static function getFyAuthorizedUsers(string $date): mixed
+        {
+            $financialYear = ErpFinancialYear::withDefaultGroupCompanyOrg()
+                ->where('start_date', '<=', $date)
+                ->where('end_date', '>=', $date)
+                ->where('fy_status',ConstantHelper::FY_CURRENT_STATUS)
+                // ->where('fy_close', ConstantHelper::FY_NOT_CLOSED_STATUS)
+                ->first();
+            if (isset($financialYear)) {
+                return [
+                    'alias' => $financialYear->alias,
+                    'authorized_users' => $financialYear->authorizedUsers()->get()
+                ];
+            } else {
+                return null;
+            }
         }
 }
 

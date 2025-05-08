@@ -21,14 +21,41 @@
                                                 <p>Apply the Basic Filter</p>
                                             </div>
                                             <div class="col-md-8 text-sm-end">
-                                                <button class="btn mt-25 btn-primary btn-sm" id="closeFyBtn" data-url="{{ route('post-closefy') }}" type="button">
-                                                    <i data-feather="x-circle"></i> Close F.Y
-                                                </button>
-                                                
-                                                <button class="btn mt-25 btn-danger btn-sm" type="submit"><i
-                                                        data-feather="lock"></i> Lock F.Y</button>
-                                                <button class="btn mt-25 btn-success btn-sm" type="submit"><i
-                                                        data-feather="unlock"></i> UnLock F.Y</button>
+                                                @if(isset($financialYear))
+
+                                                {{-- Show "Close F.Y" button only if FY is not already closed --}}
+                                                @if($financialYear['fy_close'] == false)
+                                                    <button class="btn mt-25 btn-primary btn-sm swal-action-btn"
+                                                            data-type="close"
+                                                            data-url="{{ route('post-closefy') }}"
+                                                            id="closeFyBtn"
+                                                            type="button">
+                                                        <i data-feather="x-circle"></i> Close F.Y
+                                                    </button>
+                                                @endif
+
+                                                {{-- Show "Lock F.Y" button only if it's currently unlocked --}}
+                                                @if($financialYear['lock_fy'] == false && $financialYear['fy_close'] == true)
+                                                    <button class="btn mt-25 btn-danger btn-sm swal-action-btn"
+                                                            data-type="lock"
+                                                            data-url="{{ route('close-fy.lock') }}"
+                                                            type="submit">
+                                                        <i data-feather="lock"></i> Lock F.Y
+                                                    </button>
+                                                @endif
+
+                                                {{-- Show "Unlock F.Y" button only if it's currently locked --}}
+                                                @if($financialYear['lock_fy'] == true && $financialYear['fy_close'] == true)
+                                                    <button class="btn mt-25 btn-success btn-sm swal-action-btn"
+                                                            data-type="unlock"
+                                                            data-url="{{ route('close-fy.lock') }}"
+                                                            type="submit">
+                                                        <i data-feather="unlock"></i> UnLock F.Y
+                                                    </button>
+                                                @endif
+
+                                            @endif
+
                                             </div>
                                         </div>
 
@@ -59,9 +86,9 @@
                                                         <label class="form-label">Select F.Y</label>
                                                         <select id="fyear_id" class="form-select select2">
                                                             <option value="">Select</option>
-                                                            @foreach ($fyears as $fyear)
+                                                            @foreach ($past_fyears as $fyear)
                                                                 <option value="{{ $fyear['id'] }}"
-                                                                    {{ $fyear['range'] == $current_range ? 'selected' : '' }}>
+                                                                    {{ $fyear['id'] == $fyearId ? 'selected' : '' }}>
                                                                     {{ $fyear['range'] }}
                                                                 </option>
                                                             @endforeach
@@ -73,7 +100,7 @@
                                                 <div class="col-md-6">
                                                     <div class="mt-sm-2 mb-sm-0">
                                                         <label class="mb-1">&nbsp;</label>
-														<button class="btn mt-25 btn-warning btn-sm waves-effect waves-float waves-light" onClick="filter()">
+														<button class="btn mt-25 btn-warning btn-sm waves-effect waves-float waves-light apply-filter">
 															<i
                                                                 data-feather="filter"></i> Run Report</button>
                                                     </div>
@@ -128,7 +155,7 @@
                                                     <thead>
                                                         <tr>
                                                             <th id="company_name"></th>
-                                                            <th width="300px">F.Y 2024-25 Closing Balance</th>
+                                                            <th width="300px" id="fy_range"></th>
                                                         </tr>
                                                     </thead>
                                                     {{-- <tbody>
@@ -231,9 +258,9 @@
                                                 <tbody>
                                                     <tr>
                                                         <td>1</td>
-                                                        {{-- {{ dd($employees[0]->authUser(),$employees[0]->authUser()->roles) }} --}}
+                                                        {{-- {{ dd($employees[0]->authUser(),$employees[0]->authUser()->roles, $authorized_users, $employees) }} --}}
                                                         <td>
-                                                            <select class="form-select mw-100 select2" id="authUser"
+                                                            <select class="form-select mw-100 select2" id="authorize"
                                                                 multiple>
                                                                 <option value="" disabled>Select</option>
                                                                 @foreach ($employees as $employee)
@@ -245,17 +272,19 @@
                                                                                 ->roles->pluck('name')
                                                                                 ->toArray()
                                                                             : [];
+                                                                            $isSelected = $employee->authUser() && $authorized_users && $authorized_users->contains('id', $employee->authUser()->id) ?? false;
+
                                                                     @endphp
                                                                     <option
                                                                         value="{{ $employee->authUser() ? $employee->authUser()->id : '' }}"
-                                                                        data-permissions='@json($permissions)'>
+                                                                        data-permissions='@json($permissions)' {{ $isSelected ? 'selected' : '' }}>
                                                                         {{ $employee->authUser() ? $employee->authUser()->name : 'N/A' }}
                                                                     </option>
                                                                 @endforeach
-                                                                {{-- <option>Select</option> 
-																			   <option>Nishu Garg</option> 
-																			   <option selected>Mahesh Bhatt</option> 
-																			   <option>Inder Singh</option> 
+                                                                {{-- <option>Select</option>
+																			   <option>Nishu Garg</option>
+																			   <option selected>Mahesh Bhatt</option>
+																			   <option>Inder Singh</option>
 																			   <option selected>Shivangi</option>  --}}
                                                             </select>
                                                         </td>
@@ -268,23 +297,24 @@
                                                         <td>
                                                             <a href="#" id="saveCloseFyBtn" class="text-primary"><i
                                                                 data-feather="plus-square"></i></a>
+                                                                <a href="#" id="deleteAuthorize" data-type="delete" data-url="{{ route('close-fy.delete-authuser') }}" class="text-danger swal-action-btn"><i data-feather="trash-2"></i></a>
                                                             </td>
                                                     </tr>
                                                     {{-- <tr>
 																		<td>2</td>
 																		<td>
 																		   <select class="form-select mw-100 select2" multiple>
-																			   <option>Select</option> 
-																			   <option>Nishu Garg</option> 
-																			   <option selected>Mahesh Bhatt</option> 
-																			   <option>Inder Singh</option> 
-																			   <option selected>Shivangi</option> 
-																		   </select> 
-																		</td> 
+																			   <option>Select</option>
+																			   <option>Nishu Garg</option>
+																			   <option selected>Mahesh Bhatt</option>
+																			   <option>Inder Singh</option>
+																			   <option selected>Shivangi</option>
+																		   </select>
+																		</td>
 																		 <td>
 																			<select class="form-select mw-100 select2" multiple disabled>
-																			   <option>Select</option>  
-																			   <option selected>Finance Admin</option> 
+																			   <option>Select</option>
+																			   <option selected>Finance Admin</option>
 																		   </select>
 																		 </td>
 																		<td><a href="#" class="text-danger"><i data-feather="trash-2"></i></a></td>
@@ -337,6 +367,14 @@
                 .get()
                 .join(', ')
             );
+            const selectedOption = $('#fyear_id option:selected');
+            const selectedValue = selectedOption.val()?.trim();
+
+            const selectedText = selectedValue !== "" ? selectedOption.text() : '{{ $current_range }}';
+
+            $('#fy_range').text(`F.Y ${selectedText} Closing Balance`);
+
+            // $('#fy_range').text(`F.Y ${selectedText || '{{ $current_range }}'} Closing Balance`);
 
 
             // Filter record
@@ -346,8 +384,8 @@
                 $('.collapse').click();
                 $('#tableData').html('');
                 let params = new URLSearchParams(window.location.search);
-                params.set('date', $('#fp-range').val());
-                params.set('cost_center_id', $('#cost_center_id').val());
+                params.set('fyear', $('#fyear_id').val());
+                // params.set('cost_center_id', $('#cost_center_id').val());
 
 
                 let newUrl = window.location.pathname + '?' + params.toString();
@@ -367,15 +405,21 @@
                         .join(', ')
                     );
                 }
+                const selectedOption = $('#fyear_id option:selected');
+                const selectedValue = selectedOption.val()?.trim();
+
+                const selectedText = selectedValue !== "" ? selectedOption.text() : '{{ $current_range }}';
+
+                $('#fy_range').text(`F.Y ${selectedText} Closing Balance`);
             })
 
             function getInitialGroups() {
 
 
                 var obj = {
-                    date: $('#fp-range').val(),
-                    cost_center_id: $('#cost_center_id').val(),
-                    currency: $('#currency').val(),
+                    fyear: $('#fyear_id').val(),
+                    // cost_center_id: $('#cost_center_id').val(),
+                    // currency: $('#currency').val(),
                     '_token': '{!! csrf_token() !!}'
                 };
                 var selectedValues = $('#organization_id').val() || [];
@@ -485,7 +529,7 @@
 												${data['data'][i].name}
 											</a>
 										</td>
-										
+
 										<td class="close_amt">${Math.abs(closing).toLocaleString('en-IN')} ${closingText}</td>
 									</tr>`;
                             }
@@ -717,7 +761,7 @@
 															${data['data'][i].name}
 														</a>
 													</td>
-													
+
 													<td>${parseFloat(closing < 0 ? -closing : closing).toLocaleString('en-IN')} ${closingText}</td>
 												</tr>`;
                                             }
@@ -741,7 +785,7 @@
 													<td style="padding-left: ${padding}px">
 														<i data-feather='arrow-right'></i>${data['data'][i].name}
 													</td>
-													
+
 													<td>${parseFloat(closing < 0 ? -closing : closing).toLocaleString('en-IN')} ${closingText}</td>
 												</tr>`;
                                             tot_debt += data['data'][i].details_sum_debit_amt;
@@ -858,7 +902,7 @@
 
                                         let html = `
 											<tr class="trail-sub-list-open parent-${data['id']}">
-												
+
 												<td>${parseFloat(reservesSurplus['closingFinal']).toLocaleString('en-IN')} ${reservesSurplus['closing_type']}</td>
 											</tr>`;
                                         $('#' + data['id']).closest('tr').after(html);
@@ -901,7 +945,7 @@
 																</a>
 																<span id="name${data['data'][i].id}">${data['data'][i].name}</span>
 															</td>
-															
+
 															<td>${parseFloat(reservesSurplus['closingFinal']).toLocaleString('en-IN')} ${reservesSurplus['closing_type']}</td>
 														</tr>`;
                                                     } else {
@@ -919,7 +963,7 @@
 																	${data['data'][i].name}
 																</a>
 															</td>
-													
+
 															<td>${parseFloat(closing < 0 ? -closing : closing).toLocaleString('en-IN')} ${closingText}</td>
 														</tr>`;
                                                     }
@@ -949,7 +993,7 @@
 															<td style="padding-left: ${padding}px">
 																<i data-feather='arrow-right'></i>${data['data'][i].name}
 															</td>
-															
+
 															<td>${parseFloat(closing < 0 ? -closing : closing).toLocaleString('en-IN')} ${closingText}</td>
 														</tr>`;
                                                     tot_debt += data['data'][i]
@@ -1135,118 +1179,112 @@
     </script>
     <script>
         $(document).ready(function() {
-            $('#authUser').select2();
+            $('#authorize').select2();
 
-            $('#authUser').on('change', function() {
-                let selectedOptions = $(this).find(':selected');
-                let permissionSelect = $(this).closest('tr').find('.permissions-box');
+function updatePermissionsBox(selectElement) {
+    let selectedOptions = selectElement.find(':selected');
+    console.log(selectedOptions);
+    let permissionSelect = selectElement.closest('tr').find('.permissions-box');
 
-                let permissions = [];
+    let permissions = [];
 
-                selectedOptions.each(function() {
-                    let perms = $(this).data('permissions');
-                    if (Array.isArray(perms)) {
-                        permissions = permissions.concat(perms);
-                    }
-                });
+    selectedOptions.each(function () {
+        let perms = $(this).data('permissions');
+        if (Array.isArray(perms)) {
+            permissions = permissions.concat(perms);
+        }
+    });
 
-                // Remove duplicates
-                permissions = [...new Set(permissions)];
+    // Remove duplicates
+    permissions = [...new Set(permissions)];
 
-                // Clear and populate permission box
-                permissionSelect.empty();
+    // Clear and populate permission box
+    permissionSelect.empty();
 
-                if (permissions.length > 0) {
-                    permissionSelect.prop('disabled', false);
-                    permissions.forEach(function(permission) {
-                        permissionSelect.append(`<option selected>${permission}</option>`);
-                    });
-                } else {
-                    permissionSelect.prop('disabled', true);
-                    permissionSelect.append(`<option>No Permissions</option>`);
-                }
-
-                permissionSelect.trigger('change');
-            });
+    if (permissions.length > 0) {
+        permissionSelect.prop('disabled', false);
+        permissions.forEach(function (permission) {
+            permissionSelect.append(`<option selected>${permission}</option>`);
         });
-		function filter() {
-    let fyearId = $('#fyear_id').val(); 
-    let organizationId = $('#organization_id').val(); 
-
-    let currentUrl = new URL(window.location.href);  // Get the current URL
-
-    // Add or update the fyear parameter
-    if (fyearId !== "") {
-        currentUrl.searchParams.set('fyear', fyearId);
     } else {
-        currentUrl.searchParams.delete('fyear');
+        permissionSelect.prop('disabled', true);
+        permissionSelect.append(`<option>No Permissions</option>`);
     }
 
-    // Add or update the organizationId parameter
-    if (organizationId && organizationId.length > 0) {
-        currentUrl.searchParams.set('organizationId', organizationId);
-    } else {
-        currentUrl.searchParams.delete('organizationId');
-    }
-
-    // Check if both are selected
-    let isValid = fyearId !== "" && organizationId && organizationId.length > 0;
-    if (isValid) {
-        // ✅ Now it redirects with updated URL
-        window.location.href = currentUrl.toString(); 
-    } else {
-        Swal.fire({
-            title: 'Not Valid Filters!',
-            text: "Please select both Financial Year and Organization to proceed.",
-            icon: 'error'
-        });
-    }
+    permissionSelect.trigger('change');
 }
+
+// Trigger once on page load
+updatePermissionsBox($('#authorize'));
+
+// Trigger on change
+$('#authorize').on('change', function () {
+    updatePermissionsBox($(this));
+});
+
+        });
 
     </script>
    <script>
-    document.getElementById('closeFyBtn').addEventListener('click', function () {
+    document.querySelectorAll('.swal-action-btn').forEach(button => {
+    button.addEventListener('click', function () {
+        let bodyData = {};
+        const actionType = this.getAttribute('data-type');
         const url = this.getAttribute('data-url');
-        const fyId = document.getElementById('fyear_id').value;
+        const fyValue = $('#fyear_id').val();
 
-
-        Swal.fire({
+        let swalOptions = {
             title: 'Are you sure?',
-            text: "You are about to close the Financial Year. This action cannot be undone!",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#3085d6',
             cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, close it!'
-        }).then((result) => {
+        };
+
+        if (actionType === 'close') {
+            swalOptions.text = "You are about to close the Financial Year. This action cannot be undone!";
+            swalOptions.confirmButtonText = 'Yes, close it!';
+
+        }
+        // else if (actionType === 'delete') {
+        //     swalOptions.text = "You are about to remove the authorized Users!";
+        //     swalOptions.confirmButtonText = 'Yes, remove it!';
+        //     // const selected = Array.from(document.getElementById('authorize').selectedOptions)
+        //     //     .map(option => option.value);
+
+        //               // console.log(bodyData);
+        // }
+        else if (actionType === 'lock') {
+            swalOptions.text = "Are you sure you want to lock the current Financial Year?";
+            swalOptions.confirmButtonText = 'Yes, lock it!';
+            bodyData.lock_fy = true; // equivalent to 1
+        }
+        else if (actionType === 'unlock') {
+            swalOptions.text = "Are you sure you want to unlock the current Financial Year?";
+            swalOptions.confirmButtonText = 'Yes, unlock it!';
+            bodyData.lock_fy = false; // equivalent to 0
+        }
+
+        if (fyValue && fyValue.trim() !== "") {
+                bodyData.fyear = fyValue;
+        }
+
+        Swal.fire(swalOptions).then((result) => {
             if (result.isConfirmed) {
-
-                    // if (!fyId) {
-                    //     Swal.fire({
-                    //     icon: 'warning',
-                    //     title: 'Warning!',
-                    //     text: ('Please select a Financial Year first.'),
-                    //     confirmButtonText: 'OK'
-                    // })
-                    // return;
-                    //     // toastr.warning('Please select a Financial Year first.');
-                    // }
-
-
                 fetch(url, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
-                    body: JSON.stringify({}) // Optional: pass FY ID here
+                    body: JSON.stringify(bodyData)
                 })
                 .then(response => response.json())
                 .then(data => {
                     Swal.fire({
                         icon: 'success',
-                        title: 'Created!',
-                        text: (data.message || 'Financial year closed successfully!'),
+                        title: 'Success!',
+                        text: data.message || 'Action completed successfully!',
                         confirmButtonText: 'OK'
                     }).then(() => {
                         setTimeout(() => location.reload(), 1000);
@@ -1254,23 +1292,25 @@
                 })
                 .catch(error => {
                     Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: 'Something went wrong while closing the FY.',
-                            });  
-                       
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Something went wrong.',
+                    });
                     console.error(error);
                 });
             }
         });
     });
+});
 </script>
 <script>
     document.getElementById('saveCloseFyBtn').addEventListener('click', function () {
-        event.preventDefault(); 
+        event.preventDefault();
+        let bodyData = {};
         // const selected = document.getElementById('authUser').value;
-        const url = "{{ route('close-fy.store') }}";
-        const selected = Array.from(document.getElementById('authUser').selectedOptions)
+        const url = "{{ route('close-fy.update-authuser') }}";
+        const fyear = null;
+        const selected = Array.from(document.getElementById('authorize').selectedOptions)
         .map(option => option.value);
         console.log(selected,'value');
 
@@ -1282,6 +1322,12 @@
         });
         return;
     }
+    bodyData.access_by = selected;
+    const fyValue = $('#fyear_id').val();
+
+    if (fyValue && fyValue.trim() !== "") {
+        bodyData.fyear = fyValue;
+    }
         // if (!selected) {
         //     Swal.fire({
         //         icon: 'warning',
@@ -1291,14 +1337,14 @@
         //     });
         //     return;
         // }
-    
+
         fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
             },
-            body: JSON.stringify({ access_by: selected })
+            body: JSON.stringify(bodyData)
         })
         .then(res => res.json())
         .then(data => {
@@ -1331,8 +1377,8 @@
         });
     });
     </script>
-    
 
 
-    
+
+
 @endsection

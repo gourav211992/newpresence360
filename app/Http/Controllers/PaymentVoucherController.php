@@ -209,6 +209,7 @@ class PaymentVoucherController extends Controller
         }
 
         // Retrieve vouchers based on organization_id and include series with levels
+        $fyear = Helper::getFinancialYear(date('Y-m-d'));
         $data = PaymentVoucher::withDefaultGroupCompanyOrg()
             ->with([
                 'series' => function ($d) {
@@ -250,7 +251,6 @@ class PaymentVoucherController extends Controller
             $end = date('Y-m-d', strtotime($dates[1]));
             $data = $data->whereDate('document_date', '>=', $start)->whereDate('document_date', '<=', $end);
         } else {
-            $fyear = Helper::getFinancialYear(date('Y-m-d'));
             $data = $data->whereDate('document_date', '>=', $fyear['start_date'])
                 ->whereDate('document_date', '<=', $fyear['end_date']);
                 $start = $fyear['start_date'];
@@ -298,8 +298,8 @@ class PaymentVoucherController extends Controller
             ];
         })
         ->toArray();
-
-        return view('paymentVoucher.paymentVouchers', compact('cost_centers','mappings', 'banks', 'ledgers', 'bank_id', 'ledger_id', 'organizationId', 'data', 'book_type', 'date', 'document_no', 'document_type', 'type', 'createRoute', 'editRouteString','date','date2'));
+        $fyearLocked = $fyear['lock_fy'] == ConstantHelper::FY_NOT_LOCK_STATUS;
+        return view('paymentVoucher.paymentVouchers', compact('cost_centers','mappings', 'banks', 'ledgers', 'bank_id', 'ledger_id', 'organizationId', 'data', 'book_type', 'date', 'document_no', 'document_type', 'type', 'createRoute', 'editRouteString','date','date2','fyearLocked'));
     }
 
     /**

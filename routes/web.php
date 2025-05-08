@@ -283,8 +283,12 @@ Route::middleware(['user.auth'])->group(function () {
     // closefy
     Route::get('/close-fy', [CloseFyController::class,'index'])->name('close-fy');
     Route::post('/close-fy', [CloseFyController::class,'closeFy'])->name('post-closefy');
-    Route::post('/close-fy/store', [CloseFyController::class, 'update'])->name('close-fy.store');
+    Route::post('/close-fy/update-authuser', [CloseFyController::class, 'updateFyAuthorizedUser'])->name('close-fy.update-authuser');
+    Route::post('/close-fy/delete-authuser', [CloseFyController::class, 'deleteFyAuthorizedUser'])->name('close-fy.delete-authuser');
+    Route::post('/close-fy/lock', [CloseFyController::class, 'lockUnlockFy'])->name('close-fy.lock');
     Route::post('/getFyInitialGroups', [CloseFyController::class,'getFyInitialGroups'])->name('getFyInitialGroups');
+    Route::post('/store-fy-session', [CloseFyController::class, 'storeFySession'])->name('store.fy.session');
+
 
 
 
@@ -2173,7 +2177,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         'update' => 'finance.fixed-asset.maintenance.update',
     ]);
     Route::get('fixed-asset/setup/category', [SetupController::class, 'category'])->name('finance.fixed-asset.setup.category');
-    
+
     Route::resource('fixed-asset/setup', SetupController::class)->names([
         'index' => 'finance.fixed-asset.setup.index',
         'create' => 'finance.fixed-asset.setup.create',
@@ -2210,7 +2214,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::post('fixed-asset/split/approval', [SplitController::class, 'documentApproval'])->name('finance.fixed-asset.split.approval');
     Route::post('fixed-asset/split/filter', [SplitController::class, 'index'])->name('finance.fixed-asset.split.filter');
     Route::get('fixed-asset/split/filter', [SplitController::class, 'index'])->name('finance.fixed-asset.split.filter');
-    
+
  Route::resource('fixed-asset/merger', MergerController::class)->names([
         'index' => 'finance.fixed-asset.merger.index',
         'create' => 'finance.fixed-asset.merger.create',
