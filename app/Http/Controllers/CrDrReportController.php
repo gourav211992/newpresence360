@@ -44,8 +44,8 @@ class CrDrReportController extends Controller
 
         $customers = [];
         $all_ledgers = [];
-        $group = Group::withDefaultGroupCompanyOrg()->where('name', $group_name)->first() ?: Group::whereNull('organization_id')->where('name', $group_name)->first();
-        $drp_group = Group::withDefaultGroupCompanyOrg()->where('name', ConstantHelper::RECEIVABLE)->first() ?: Group::whereNull('organization_id')->where('name', ConstantHelper::RECEIVABLE)->first();
+        $group = Helper::getGroupsQuery()->where('name', $group_name)->first();
+        $drp_group = Helper::getGroupsQuery()->where('name', ConstantHelper::RECEIVABLE)->first();
 
         if ($group) {
             $ledger_groups = $group->children->pluck('id');
@@ -95,8 +95,8 @@ class CrDrReportController extends Controller
 
         $group_name = Group::find($request->group)->name ?? ConstantHelper::PAYABLE;
         $vendors = [];
-        $group = Group::withDefaultGroupCompanyOrg()->where('name', $group_name)->first() ?: Group::whereNull('organization_id')->where('name', $group_name)->first();
-        $drp_group = Group::withDefaultGroupCompanyOrg()->where('name', ConstantHelper::PAYABLE)->first() ?: Group::whereNull('organization_id')->where('name', ConstantHelper::PAYABLE)->first();
+        $group = Helper::getGroupsQuery()->where('name', $group_name)->first();
+        $drp_group = Helper::getGroupsQuery()->where('name', ConstantHelper::PAYABLE)->first();
 
         if ($group) {
             $ledger_groups = $group->children->pluck('id');

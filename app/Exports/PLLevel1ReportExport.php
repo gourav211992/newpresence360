@@ -8,6 +8,8 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;  
 use Maatwebsite\Excel\Concerns\WithStyles;  
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;  
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
 
 class PLLevel1ReportExport implements FromArray, WithHeadings, WithTitle, ShouldAutoSize, WithStyles
 {
@@ -44,10 +46,27 @@ class PLLevel1ReportExport implements FromArray, WithHeadings, WithTitle, Should
         $sheet->getStyle('A1')->getFont()->setBold(true);  
         $sheet->getStyle('A3')->getFont()->setBold(true); 
         $sheet->getStyle('A5:E5')->getFont()->setBold(true);
-
+        $borderStyle = [
+            'borders' => [
+                'top' => [
+                    'borderStyle' => Border::BORDER_MEDIUM,
+                ],
+                'bottom' => [
+                    'borderStyle' => Border::BORDER_MEDIUM,
+                ],
+            ],
+        ];
+    
+        $sheet->getStyle('B10')->applyFromArray($borderStyle);
+        $sheet->getStyle('E10')->applyFromArray($borderStyle);
+    
         // Apply bold formatting to the last row only  
         $lastRow = $sheet->getHighestRow(); // Get the highest row number with data  
         $sheet->getStyle('A' . $lastRow . ':G' . $lastRow)->getFont()->setBold(true); // Last row only
+        $sheet->getStyle('B:B')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+        $sheet->getStyle('E:E')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+        
+    // Set border top and bottom for B10 and E10
     }   
 
     public function title(): string  

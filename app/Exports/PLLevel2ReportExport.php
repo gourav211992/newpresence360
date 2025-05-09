@@ -8,6 +8,11 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;  
 use Maatwebsite\Excel\Concerns\WithStyles;  
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use Maatwebsite\Excel\Events\BeforeExport;
+use PhpOffice\PhpSpreadsheet\Worksheet\PageSetup;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+
 
 class PLLevel2ReportExport implements FromArray, WithHeadings, WithTitle, ShouldAutoSize, WithStyles
 {
@@ -26,7 +31,6 @@ class PLLevel2ReportExport implements FromArray, WithHeadings, WithTitle, Should
     {  
         return $this->data;  
     }  
-
     public function headings(): array  
     {  
         return [ 
@@ -37,6 +41,15 @@ class PLLevel2ReportExport implements FromArray, WithHeadings, WithTitle, Should
             ['Particulars','', 'Amount','', 'Particulars','', 'Amount']  
         ];  
     }  
+    public function registerEvents(): array
+    {
+        return [
+            BeforeExport::class => function (BeforeExport $event) {
+                $event->writer->getDelegate()->getActiveSheet()->getPageSetup()
+                    ->setOrientation(PageSetup::ORIENTATION_LANDSCAPE);
+            },
+        ];
+    }
 
     public function styles(Worksheet $sheet)  
     {  
@@ -44,10 +57,28 @@ class PLLevel2ReportExport implements FromArray, WithHeadings, WithTitle, Should
         $sheet->getStyle('A1')->getFont()->setBold(true);  
         $sheet->getStyle('A3')->getFont()->setBold(true); 
         $sheet->getStyle('A5:G5')->getFont()->setBold(true);
+        $borderStyle = [
+            'borders' => [
+                'top' => [
+                    'borderStyle' => Border::BORDER_MEDIUM,
+                ],
+                'bottom' => [
+                    'borderStyle' => Border::BORDER_MEDIUM,
+                ],
+            ],
+        ];
+    
+        $sheet->getStyle('C16')->applyFromArray($borderStyle);
+        $sheet->getStyle('G16')->applyFromArray($borderStyle);
+    
+    
 
         // Apply bold formatting to the last row only  
         $lastRow = $sheet->getHighestRow(); // Get the highest row number with data  
         $sheet->getStyle('A' . $lastRow . ':G' . $lastRow)->getFont()->setBold(true); // Last row only
+        $sheet->getStyle('C:C')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+        $sheet->getStyle('G:G')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+      
     }   
 
     public function title(): string  

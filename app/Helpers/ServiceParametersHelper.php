@@ -208,6 +208,23 @@ class ServiceParametersHelper
             'service_level_visibility' => true
         ]
     ];
+    const FIXED_ASSET_SERVICE_PARAMETERS = [
+        [
+            "name" => self::BACK_DATE_ALLOW_PARAM,
+            "applicable_values" => self::BACK_DATE_ALLOW_PARAM_VALUES,
+            "default_value" => ['yes'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+        [
+            "name" => self::FUTURE_DATE_ALLOW_PARAM,
+            "applicable_values" => self::FUTURE_DATE_ALLOW_PARAM_VALUES,
+            "default_value" => ['yes'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+      
+    ];
     const RC_SERVICE_PARAMETERS = [
         [
             "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
@@ -1994,8 +2011,8 @@ class ServiceParametersHelper
     const MI_SERVICE_PARAMTERS = [
         [
             "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
-            "applicable_values" => ["0", ConstantHelper::MO_SERVICE_ALIAS, ConstantHelper::PWO_SERVICE_ALIAS, ConstantHelper::PI_SERVICE_ALIAS], //All possible values
-            "default_value" => ["0", ConstantHelper::MO_SERVICE_ALIAS, ConstantHelper::PWO_SERVICE_ALIAS, ConstantHelper::PI_SERVICE_ALIAS], //Default selected value(s)
+            "applicable_values" => ["0", ConstantHelper::MO_SERVICE_ALIAS, ConstantHelper::PI_SERVICE_ALIAS], //All possible values
+            "default_value" => ["0", ConstantHelper::MO_SERVICE_ALIAS, ConstantHelper::PI_SERVICE_ALIAS], //Default selected value(s)
             'is_multiple' => true, // Whether or not to allow multiple selection
             'service_level_visibility' => true, // Whether or not to show this parameter in UI
         ],
@@ -2147,9 +2164,10 @@ class ServiceParametersHelper
         ConstantHelper::PAYMENTS_SERVICE_ALIAS => self::PV_SERVICE_PARAMETERS,
         ConstantHelper::RECEIPTS_SERVICE_ALIAS => self::PV_SERVICE_PARAMETERS,
         ConstantHelper::FIXED_ASSET_DEPRECIATION => self::ASSET_SERVICE_PARAMETERS,
-        ConstantHelper::FIXED_ASSET_SPLIT => self::SPLIT_SERVICE_PARAMETERS,
-        ConstantHelper::FIXED_ASSET_MERGER => self::SPLIT_SERVICE_PARAMETERS,
+        ConstantHelper::FIXED_ASSET_SPLIT => self::PV_SERVICE_PARAMETERS,
+        ConstantHelper::FIXED_ASSET_MERGER => self::PV_SERVICE_PARAMETERS,
         ConstantHelper::PO_SERVICE_ALIAS => self::PO_SERVICE_PARAMETERS,
+        ConstantHelper::FIXED_ASSETS=>self::FIXED_ASSET_SERVICE_PARAMETERS,
         ConstantHelper::GATE_ENTRY_SERVICE_ALIAS => self::GATE_ENTRY_SERVICE_PARAMETERS,
         ConstantHelper::SUPPLIER_INVOICE_SERVICE_ALIAS => self::SUPPLIER_INVOICE_SERVICE_PARAMETERS,
         ConstantHelper::MRN_SERVICE_ALIAS => self::MRN_SERVICE_PARAMETERS,

@@ -110,12 +110,8 @@ class LedgerController extends Controller
                     ->make(true);
             }
 
-            $groups = Group::where('status', 'active')->where(function ($q) use ($user) {
-                $q->where(function ($sub) {
-                    $sub->whereNotNull('parent_group_id')->whereNull('organization_id');
-                })->orWhere('organization_id', Helper::getAuthenticatedUser()->organization_id);
-            })->select('id', 'name')->get();
-            $ledgers = Ledger::where('organization_id', Helper::getAuthenticatedUser()->organization_id)->select('id', 'name')->orderBy('id', 'desc')->get();
+            $groups = Helper::getGroupsQuery()->whereNotNull('parent_group_id')->select('id', 'name')->get();
+            $ledgers = Ledger::withDefaultGroupCompanyOrg()->select('id', 'name')->orderBy('id', 'desc')->get();
             $mappings = $user->access_rights_org;
 
             return view('ledgers.view_ledgers', compact('groups', 'ledgers', 'mappings', "organizationId"));
@@ -131,21 +127,13 @@ class LedgerController extends Controller
     public function create()
     {
         $costCenters = CostCenter::where('status', 'active')->where('organization_id', Helper::getAuthenticatedUser()->organization_id)->get();
-        $parentGroupIds = Group::whereNotNull('parent_group_id')
-        ->where(function ($query) {
-            $query->whereNull('organization_id')
-                  ->orWhere('organization_id', Helper::getAuthenticatedUser()->organization_id);
-        })
+        $parentGroupIds = Helper::getGroupsQuery()->whereNotNull('parent_group_id')
         ->pluck('parent_group_id')
         ->unique();
 
         $orgId = Helper::getAuthenticatedUser()->organization_id;
 
-        $groups = Group::where('status', 'active')
-            ->where(function ($q) use ($orgId) {
-                $q->whereNull('organization_id')
-                  ->orWhere('organization_id', $orgId);
-            })
+        $groups = Helper::getGroupsQuery()
             ->select('id', 'name', 'parent_group_id')
             ->get()
             ->reject(function ($g) use ($parentGroupIds, $orgId) {
@@ -157,9 +145,9 @@ class LedgerController extends Controller
         $group_name = "GST";
         $tds_group_name = "TDS";
         $tcs_group_name = "TCS";
-        $gst_group = Group::where('organization_id', Helper::getAuthenticatedUser()->organization_id)->where('name', $group_name)->first() ?: Group::whereNull('organization_id')->where('name', $group_name)->first();
-        $tds_group = Group::where('organization_id', Helper::getAuthenticatedUser()->organization_id)->where('name', $tds_group_name)->first() ?: Group::whereNull('organization_id')->where('name', $tds_group_name)->first();
-        $tcs_group = Group::where('organization_id', Helper::getAuthenticatedUser()->organization_id)->where('name', $tcs_group_name)->first() ?: Group::whereNull('organization_id')->where('name', $tcs_group_name)->first();
+        $gst_group = Helper::getGroupsQuery()->where('name', $group_name)->first();
+        $tds_group = Helper::getGroupsQuery()->where('name', $tds_group_name)->first();
+        $tcs_group = Helper::getGroupsQuery()->where('name', $tcs_group_name)->first();
         if (isset($gst_group->id))
             $gst_group_id = $gst_group->id;
         else
@@ -265,11 +253,7 @@ class LedgerController extends Controller
             'ledger_group_id' => isset($request->ledger_group_id) ? json_encode($request->ledger_group_id) : null,
         ]);
         $ledgerGroupIds = $request->ledger_group_id ?? [];
-        $groupNames = Group::whereIn('id', (array) json_decode($ledgerGroupIds))
-        ->where(function ($q) {
-            $q->where('organization_id', Helper::getAuthenticatedUser()->organization_id)
-              ->orWhereNull('organization_id');
-        })
+        $groupNames = Helper::getGroupsQuery()->whereIn('id', (array) json_decode($ledgerGroupIds))
         ->pluck('name')
         ->map(function ($name) {
             return strtolower(trim($name));
@@ -321,22 +305,13 @@ class LedgerController extends Controller
         }
         $costCenters = $costCenters->get();
 
-        $parentGroupIds = Group::whereNotNull('parent_group_id')
-            ->where(function ($query) use ($user) {
-                $query->whereNull('organization_id')
-                    ->orWhere('organization_id', $user->organization_id);
-            })
+        $parentGroupIds = Helper::getGroupsQuery()->whereNotNull('parent_group_id')
             ->pluck('parent_group_id')
             ->unique();
 
             $orgId = Helper::getAuthenticatedUser()->organization_id;
 
-            $groups = Group::where('status', 'active')
-                ->where(function ($q) use ($orgId) {
-                    $q->whereNull('organization_id')
-                      ->orWhere('organization_id', $orgId);
-                })
-                ->select('id', 'name', 'parent_group_id')
+            $groups = Helper::getGroupsQuery()->select('id', 'name', 'parent_group_id')
                 ->get()
                 ->reject(function ($g) use ($parentGroupIds, $orgId) {
                     // Check if the group is in parentGroupIds and if it belongs to the same org or is null
@@ -350,24 +325,9 @@ class LedgerController extends Controller
         $group_name = "GST";
         $tds_group_name = "TDS";
         $tcs_group_name = "TCS";
-
-        $gst_group = Group::where('organization_id', $user->organization_id)
-            ->where('name', $group_name)
-            ->first() ?: Group::whereNull('organization_id')
-            ->where('name', $group_name)
-            ->first();
-
-        $tds_group = Group::where('organization_id', $user->organization_id)
-            ->where('name', $tds_group_name)
-            ->first() ?: Group::whereNull('organization_id')
-            ->where('name', $tds_group_name)
-            ->first();
-
-        $tcs_group = Group::where('organization_id', $user->organization_id)
-            ->where('name', $tcs_group_name)
-            ->first() ?: Group::whereNull('organization_id')
-            ->where('name', $tcs_group_name)
-            ->first();
+        $gst_group = Helper::getGroupsQuery()->where('name', $group_name)->first();
+        $tds_group = Helper::getGroupsQuery()->where('name', $tds_group_name)->first();
+        $tcs_group = Helper::getGroupsQuery()->where('name', $tcs_group_name)->first();
 
         $gst_group_id = $gst_group->id ?? "null";
         $tds_group_id = $tds_group->id ?? "null";
@@ -479,11 +439,7 @@ class LedgerController extends Controller
             'ledger_group_id' => isset($request->ledger_group_id) ? json_encode($request->ledger_group_id) : null,
         ]);
         $ledgerGroupIds = $request->ledger_group_id ?? [];
-        $groupNames = Group::whereIn('id', (array) json_decode($ledgerGroupIds))
-        ->where(function ($q) {
-            $q->where('organization_id', Helper::getAuthenticatedUser()->organization_id)
-              ->orWhereNull('organization_id');
-        })
+        $groupNames = Helper::getGroupsQuery()->whereIn('id', (array) json_decode($ledgerGroupIds))
         ->pluck('name')
         ->map(function ($name) {
             return strtolower(trim($name));

@@ -69,7 +69,7 @@ class SetupController extends Controller
             ->get();
         
         $group_name = ConstantHelper::EXPENSES;
-        $group = Group::where('organization_id', Helper::getAuthenticatedUser()->organization_id)->where('name', $group_name)->first() ?: Group::whereNull('organization_id')->where('name', $group_name)->first();
+        $group = Helper::getGroupsQuery()->where('name', $group_name)->first();
         $allChildIds = $group->getAllChildIds();
         $allChildIds[] = $group->id;
         $dep_ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
@@ -83,7 +83,7 @@ class SetupController extends Controller
             
        
         $group_name = ConstantHelper::FIXED_ASSETS;
-        $group = Group::where('organization_id', Helper::getAuthenticatedUser()->organization_id)->where('name', $group_name)->first() ?: Group::whereNull('organization_id')->where('name', $group_name)->first();
+        $group = Helper::getGroupsQuery()->where('name', $group_name)->first();
         $allChildIds = $group->getAllChildIds();
         $allChildIds[] = $group->id;
         $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
@@ -176,7 +176,7 @@ class SetupController extends Controller
         $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()
             ->where('status', 'active')->get();
             $group_name = ConstantHelper::EXPENSES;
-            $group = Group::where('organization_id', Helper::getAuthenticatedUser()->organization_id)->where('name', $group_name)->first() ?: Group::whereNull('organization_id')->where('name', $group_name)->first();
+            $group = Helper::getGroupsQuery()->where('name', $group_name)->first();
             $allChildIds = $group->getAllChildIds();
             $allChildIds[] = $group->id;
             $dep_ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
@@ -190,7 +190,7 @@ class SetupController extends Controller
                 
            
             $group_name = ConstantHelper::FIXED_ASSETS;
-            $group = Group::where('organization_id', Helper::getAuthenticatedUser()->organization_id)->where('name', $group_name)->first() ?: Group::whereNull('organization_id')->where('name', $group_name)->first();
+            $group = Helper::getGroupsQuery()->where('name', $group_name)->first();
             $allChildIds = $group->getAllChildIds();
             $allChildIds[] = $group->id;
             $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
