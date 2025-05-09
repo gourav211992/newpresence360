@@ -1,6 +1,8 @@
 <?php
 
 namespace App\Http\Controllers;
+use App\Helpers\StationHelper;
+use Exception;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\DB;
 use App\Models\Station;
@@ -33,6 +35,9 @@ class StationController extends Controller
                 return '<span class="badge rounded-pill ' . ($row->status == 'active' ? 'badge-light-success' : 'badge-light-danger') . '">
                             ' . ucfirst($row->status) . '
                         </span>';
+            })
+            ->editColumn('is_consumption', function ($row) {
+                return ucfirst($row -> is_consumption);
             })
             ->addColumn('action', function ($row) {
                 $editUrl = route('stations.edit', $row->id);
@@ -311,5 +316,27 @@ class StationController extends Controller
     {
         $substations = Station::where('parent_id', $stationId)->WithDefaultGroupCompanyOrg()->get();
         return response()->json($substations);
+    }
+
+    public function getStockingStationsOfSubStore(Request $request)
+    {
+        try {
+            //Prepare request
+            $subStoreId = isset($request -> sub_store_id) ? $request -> sub_store_id : 0;
+            $selectedStationId = isset($request -> selected_id) ? $request -> selected_id : null;
+            $onlySelectedStationId = isset($request -> only_id) ? $request -> only_id : null;
+            //Retrieve stations
+            $stationsData = StationHelper::getStockingStationsForSubStore($subStoreId, $selectedStationId, $onlySelectedStationId);
+            return response() -> json([
+                'status' => 'success',
+                'data' => $stationsData['data'],
+                'message' => 'Station found'
+            ]);
+        } catch(Exception $ex) {
+            return response() -> json([
+                'status' => 'error',
+                'message' => $ex -> getMessage()
+            ], 500);
+        }
     }
 }

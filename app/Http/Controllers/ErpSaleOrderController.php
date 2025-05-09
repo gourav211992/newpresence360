@@ -149,11 +149,11 @@ class ErpSaleOrderController extends Controller
     public function create(Request $request)
     {
         $pathUrl = request()->segments()[0];
+        $redirectUrl = route('sale.order.index');
+        $orderType = ConstantHelper::SO_SERVICE_ALIAS;
         if ($pathUrl === 'sales-quotation') {
             $orderType = ConstantHelper::SQ_SERVICE_ALIAS;
-        }
-        if ($pathUrl === 'sales-order') {
-            $orderType = ConstantHelper::SO_SERVICE_ALIAS;
+            $redirectUrl = route('sale.quotation.index');
         }
         request() -> merge(['type' => $orderType]);
         $orderType = $request -> input('type', ConstantHelper::SO_SERVICE_ALIAS);
@@ -187,6 +187,7 @@ class ErpSaleOrderController extends Controller
             'departments' => $departments,
             'services' => $servicesBooks['services'],
             'selectedService'  => $firstService ?-> id ?? null,
+            'redirectUrl' => $redirectUrl
         ];
         return view('salesOrder.create_edit', $data);
     }
@@ -194,11 +195,11 @@ class ErpSaleOrderController extends Controller
     {
         try {
             $pathUrl = request()->segments()[0];
+            $orderType = ConstantHelper::SO_SERVICE_ALIAS;
+            $redirectUrl = route('sale.order.index');
             if ($pathUrl === 'sales-quotation') {
                 $orderType = ConstantHelper::SQ_SERVICE_ALIAS;
-            }
-            if ($pathUrl === 'sales-order') {
-                $orderType = ConstantHelper::SO_SERVICE_ALIAS;
+                $redirectUrl = route('sale.quotation.index');
             }
         request() -> merge(['type' => $orderType]);
         $servicesBooks = [];
@@ -303,7 +304,8 @@ class ErpSaleOrderController extends Controller
                     'docStatusClass' => $docStatusClass,
                     'shortClose' => $shortClose,
                     'maxFileCount' => isset($order -> mediaFiles) ? (10 - count($order -> media_files)) : 10,
-                    'services' => $servicesBooks['services']
+                    'services' => $servicesBooks['services'],
+                    'redirectUrl' => $redirectUrl
                 ];
                 return view('salesOrder.create_edit', $data);
             
@@ -759,7 +761,7 @@ class ErpSaleOrderController extends Controller
                                         'so_item_id' => $soItem -> id,
                                         'ted_type' => 'Tax',
                                         'ted_level' => 'D',
-                                        'ted_id' => $taxDetail['tax_id'],
+                                        'ted_id' => $taxDetail['id'],
                                     ],
                                     [
                                         'ted_group_code' => $taxDetail['tax_group'],
@@ -827,7 +829,18 @@ class ErpSaleOrderController extends Controller
                                     ErpSoItemDelivery::create($itemDeliveryRowData);
                                 }
                             }
-                        }
+                        } 
+                        // else {
+                        //     $itemDeliveryRowData = [
+                        //         'sale_order_id' => $saleOrder -> id,
+                        //         'so_item_id' => $soItem -> id,
+                        //         'ledger_id' => null,
+                        //         'qty' => $soItem -> order_qty,
+                        //         'invoice_qty' => 0,
+                        //         'delivery_date' => $soItem -> delivery_date
+                        //     ];
+                        //     ErpSoItemDelivery::updateOrCreate(['sale_order_id' => $saleOrder -> id, 'so_item_id' => $soItem -> id], $itemDeliveryRowData);
+                        // }
                         ErpSaleOrderTed::where([
                             'sale_order_id' => $saleOrder -> id,
                             'so_item_id' => $soItem -> id,
@@ -1022,8 +1035,10 @@ class ErpSaleOrderController extends Controller
                 }
                 DB::commit();
                 return response() -> json([
-                    'message' => ($request -> type == "sq" ? "Sale Quotation" : "Sale Order") . " created successfully",
-                    'redirect_url' => route('sale.order.index', ['type' => $request -> type])
+                    'message' => ($saleOrder -> document_type == ConstantHelper::SQ_SERVICE_ALIAS 
+                    ? "Sale Quotation" : "Sale Order") . " created successfully",
+                    'redirect_url' => ($saleOrder -> document_type == ConstantHelper::SQ_SERVICE_ALIAS
+                    ? route('sale.quotation.index') : route('sale.order.index'))
                 ]);
 
             
@@ -1202,7 +1217,7 @@ class ErpSaleOrderController extends Controller
             $customerItemDetails = ItemHelper::getCustomerItemDetails((int)$request -> item_id, (int) $request -> customer_id);
             $selectedUom = $request->uom_id ?? null;
             $totalStockData = InventoryHelper::totalInventoryAndStock($request->item_id, $request->selectedAttr ?? [], 
-            $selectedUom, $request->store_id ?? null, $request -> sub_store_id ?? null, $request -> so_item_id ?? null);
+            $selectedUom, $request->store_id ?? null, $request -> sub_store_id ?? null, $request -> so_item_id ?? null, $request -> station_id ?? null, $request -> stock_type ?? InventoryHelper::STOCK_TYPE_REGULAR, $request -> wip_station_id ?? null);
             if (isset($item)) {
                 $inventoryUomQty = $request->quantity ?? 0;
                 $requestUomId = $selectedUom;

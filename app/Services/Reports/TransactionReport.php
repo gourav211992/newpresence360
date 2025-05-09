@@ -16,6 +16,7 @@ class TransactionReport
     private $serviceAlias;
     public $reportName;
     public $filterRoute;
+    public $indexRoute;
     public $reportColumns;
     public $filters;
 
@@ -28,6 +29,9 @@ class TransactionReport
         //Set the report filter route
         $this -> filterRoute = isset(TransactionReportHelper::FILTER_ROUTES[$this -> serviceAlias]) ? 
         TransactionReportHelper::FILTER_ROUTES[$this -> serviceAlias] : '';
+        //Set the report filter route
+        $this -> indexRoute = isset(TransactionReportHelper::INDEX_ROUTES[$this -> serviceAlias]) ? 
+        TransactionReportHelper::INDEX_ROUTES[$this -> serviceAlias] : '';
         //Set the report columns
         $this -> reportColumns = isset(TransactionReportHelper::TABLE_HEADERS[$this -> serviceAlias]) ?
         TransactionReportHelper::TABLE_HEADERS[$this -> serviceAlias] : [];
@@ -64,6 +68,7 @@ class TransactionReport
         $filters = $this -> getBasicFilters(); // Get the Filters
         $reportName = $this -> reportName; // Report Name Label
         $filterRoute = $this -> filterRoute; // Filter Route (Query Function for each service/ table)
+        $indexRoute = $this -> indexRoute; // Index Route (For Breadcrumb)
         $tableHeadersColumn = $this -> reportColumns; //Columns or Headers for Table
         $autoCompleteFilters = $this -> filters;// Applicable Side filters
         $users = AuthUser::select('id', 'name', 'email') -> where('organization_id', $user -> organization_id) -> get();
@@ -74,6 +79,7 @@ class TransactionReport
             'reportName' => $reportName,
             'autoCompleteFilters' => $autoCompleteFilters,
             'filterRoute' => $filterRoute,
+            'indexRoute' => $indexRoute,
             'tableHeaders' => $tableHeadersColumn,
             'users' => $users
         ];

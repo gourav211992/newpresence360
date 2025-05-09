@@ -24,7 +24,7 @@
                                 <h2 class="content-header-title float-start mb-0">Create Job</h2>
                                 <div class="breadcrumb-wrapper">
                                     <ol class="breadcrumb">
-                                        <li class="breadcrumb-item"><a href="{{ route('recruitment.dashboard') }}">Home</a>
+                                        <li class="breadcrumb-item"><a href="{{ route('recruitment.hr-dashboard') }}">Home</a>
                                         </li>
                                         <li class="breadcrumb-item active">Edit</li>
                                     </ol>
@@ -119,11 +119,31 @@
 
                                                         <div class="form-check form-check-primary mt-25 mb-75">
                                                             <input type="radio" id="customColorRadio9" name="third_party_assessment"
-                                                                class="form-check-input" checked="" value="no" {{ $job->third_party_assessment == 'no' ? 'checked' : ''}}>
+                                                                class="form-check-input" value="no" {{ $job->third_party_assessment == 'no' ? 'checked' : ''}}>
                                                             <label class="form-check-label fw-bolder"
                                                                 for="customColorRadio9">No</label>
                                                         </div>
                                                     </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="row align-items-center mb-1" style="display: none" id="assessmentUrl">
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Assesment Link <span class="text-danger">*</span></label>
+                                                </div>
+
+                                                <div class="col-md-5">
+                                                    <input type="text" name="assessment_url" value="{{ $job->assessment_url }}" class="form-control"/>
+                                                </div>
+                                            </div>
+
+                                            <div class="row align-items-center mb-1">
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Last Apply Date</label>
+                                                </div>
+
+                                                <div class="col-md-5">
+                                                    <input type="date" name="last_apply_date" class="form-control" value="{{ $job->last_apply_date }}"/>
                                                 </div>
                                             </div>
 
@@ -742,7 +762,27 @@
         });
     }
 
+</script>
+<script>
+$(document).ready(function () {
+    // Initial check on page load
+    toggleAssessmentUrl();
 
+    // Listen for changes on the radio buttons
+    $('input[name="third_party_assessment"]').on('change', function () {
+        toggleAssessmentUrl();
+    });
+
+    function toggleAssessmentUrl() {
+        const value = $('input[name="third_party_assessment"]:checked').val();
+        console.log(value);
+        if (value === 'yes') {
+            $('#assessmentUrl').show();
+        } else {
+            $('#assessmentUrl').hide();
+        }
+    }
+});
 
 </script>
 @endsection

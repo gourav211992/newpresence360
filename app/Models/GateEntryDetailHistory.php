@@ -111,6 +111,11 @@ class GateEntryDetailHistory extends Model
         return $this->hasMany(MrnExtraAmountHistory::class, 'mrn_detail_history_id')->where('ted_level', 'D')->where('ted_type','Discount');
     }
 
+    public function gateEntryItemLocations()
+    {
+        return $this->hasMany(GateEntryItemLocation::class, 'detail_id');
+    }
+
     public function taxes()
     {
         return $this->hasMany(GateEntryTedHistory::class, 'detail_id')->where('ted_type','Tax');

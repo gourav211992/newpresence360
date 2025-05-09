@@ -101,7 +101,7 @@ class StoreController extends Controller
                     'contact_person'=>$validatedData['contact_person'],
                     'contact_phone_no'=>$validatedData['contact_phone_no'],
                     'contact_email'=>$validatedData['contact_email'],
-                    'store_location_type'=>$validatedData['store_location_type'],
+                    'store_location_type'=>ConstantHelper::STOCKK,
                     'status'=>$validatedData['status'],
                     'organization_id' => $validatedData['organization_id'],
                     'company_id'=> $organizations->company_id,
@@ -295,11 +295,6 @@ class StoreController extends Controller
             throw new \Exception('Bin IDs not found or invalid format');
         }
     }
-
-    public function show(ErpStore $store)
-    {
-        return view('procurement.store.show', compact('store'));
-    }
     
     public function edit($id)
     {
@@ -367,7 +362,6 @@ class StoreController extends Controller
                 'contact_person' => $validatedData['contact_person'],
                 'contact_phone_no' => $validatedData['contact_phone_no'],
                 'contact_email' => $validatedData['contact_email'],
-                'store_location_type'=>$validatedData['store_location_type'],
                 'status' => $validatedData['status'],
                 'organization_id' => $validatedData['organization_id'],
                 'company_id' => $organizations->company_id,
@@ -694,6 +688,18 @@ class StoreController extends Controller
             );
         } catch(Exception $ex) {
             throw new ApiGenericException($ex -> getMessage());
+        }
+    }
+    # Get Sub Store
+    public function getSubStore(Request $request)
+    {
+        try {
+            $storeId = $request->store_id;
+            $subStores = InventoryHelper::getAccesibleSubLocations($storeId ?? 0, null, [ConstantHelper::SHOP_FLOOR]);
+            return response()->json(['data' => $subStores, 'status' => 200, 'message' => "fetched!"]);
+        } catch (Exception $e) {
+            \Log::error('Error fetching sub stores:', ['error' => $e->getMessage()]);
+            return response()->json(['data' => [], 'status' => 500, 'message' => "An error occurred while fetching sub stores."]);
         }
     }
 

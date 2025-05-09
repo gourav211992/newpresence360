@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
 use App\Traits\DateFormatTrait;
 use App\Traits\DefaultGroupCompanyOrg;
@@ -103,5 +104,12 @@ class ErpRateContract extends Model
     public function isActive($vendorId)
     {
         return $this->where('document_status', 'approved')->orWhere('document_status', 'approval_not_required')->where('end_date', '>=', now())->orWhere('end_date', null)->where('start_date', '<=', now())->where('vendor_id', $vendorId)->exists();
+    }
+    public function getDocumentStatusAttribute()
+    {
+        if ($this->attributes['document_status'] == ConstantHelper::APPROVAL_NOT_REQUIRED) {
+            return ConstantHelper::APPROVED;
+        }
+        return $this->attributes['document_status'];
     }
 }

@@ -439,16 +439,17 @@ class ProfitLossController extends Controller
             $childrens=array_merge($childrens,$groupId->getAllChildIds());
         }
 
-        $data = Ledger::where( function($query) use ($childrens,$fy,$carry) {
+        $data = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($childrens) {
             $query->whereIn('ledger_group_id', $childrens)
-                  ->orWhere(function($subQuery) use ($childrens) {
-                      foreach ($childrens as $child) {
-                          $subQuery->orWhereJsonContains('ledger_group_id',(string)$child);
-                      }
-                  });
-        })
-        ->whereIn('organization_id', $organizations)
-        ->where('status', 1)
+                ->orWhere(function ($subQuery) use ($childrens) {
+                    foreach ($childrens as $child) {
+                        $subQuery->orWhereJsonContains('ledger_group_id',(string)$child);
+                    }
+                });
+        })->where(function ($q) use ($organizations) {
+            $q->whereIn('organization_id', $organizations)
+                  ->orWhereNull('organization_id');
+        })->where('status', 1)
         ->select('id', 'name','ledger_group_id')
         ->withSum(['details as details_sum_debit_amt' => function ($query) use ($startDate, $endDate,$childrens,$cost) {
                         $query->whereIn('ledger_parent_id',$childrens);

@@ -1,11 +1,11 @@
-<table class="datatables-basic table myrequesttablecbox"> 
+<table class="datatables-basic table myrequesttablecbox">
     <thead>
         <tr>
             <th>#</th>
-            <th>Supplier GSTIN/UIN</th>	
-            <th>Supplier Name</th>	
-            <th>Place Of Supply</th>	
-            <th>Taxable Value</th>	
+            <th>Supplier GSTIN/UIN</th>
+            <th>Supplier Name</th>
+            <th>Place Of Supply</th>
+            <th>Taxable Value</th>
             <th>Cess Amount</th>
         </tr>
     </thead>
@@ -15,9 +15,9 @@
                 <td>{{ $gstrData->firstItem() + $key }}</td>
                 <td>{{ $item->supplier_gstin ? $item->supplier_gstin : '-' }}</td>
                 <td>{{ $item->supplier_name ? $item->supplier_name : '-' }}</td>
-                <td>{{ $item->place_of_supply ? $item->pos.'-'.$item->place_of_supply : '-' }}</td> 
-                <td>{{ $item->taxable_amt }}</td> 
-                <td>{{ $item->cess }}</td> 
+                <td>{{ $item->place_of_supply ? $item->pos . '-' . $item->place_of_supply : '-' }}</td>
+                <td>{{ $item->taxable_amt ? number_format($item->taxable_amt, 2) : 0 }}</td>
+                <td>{{ $item->cess ? number_format($item->cess, 2) : 0 }}</td>
             </tr>
         @empty
             <tr>

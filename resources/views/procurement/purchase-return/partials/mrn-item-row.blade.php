@@ -2,7 +2,7 @@
     @php
         $rowCount = $key + 1;
         if($qtyTypeRequired && ($qtyTypeRequired == 'rejected')){
-            $availableQty =  $mrnItem->available_qty;
+            $availableQty =  $item->available_qty;
         } else{
             $availableQty =  \App\Helpers\ItemHelper::convertToAltUom($item->item_id, $item->uom_id, $item->available_qty ?? 0);
         }
@@ -58,24 +58,6 @@
                 @endif
             </select>
         </td>
-        <td>
-            <select class="form-select item-store" name="components[{{$rowCount}}][store_id]">
-                @foreach($locations as $erpStore)
-                    <option value="{{$erpStore->id}}">
-                        {{ucfirst($erpStore->store_name)}}
-                    </option>
-                @endforeach
-            </select>
-        </td>
-        @if($item->sub_store_id)
-            <td class="subStore">
-                <select class="form-select sub_store" name="components[{{$rowCount}}][sub_store_id]" readonly>
-                    <option value="{{ $item->sub_store_id }}">
-                        {{ $item?->subStore?->name }}
-                    </option>
-                </select>
-            </td>
-        @endif
         @if($qtyTypeRequired && ($qtyTypeRequired == 'rejected'))
             <td>
                 <input type="hidden" class="form-control mw-100 mrn_qty" name="components[{{$rowCount}}][mrn_qty]" value="{{($availableQty - $item->pr_qty)}}" />

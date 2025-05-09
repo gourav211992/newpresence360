@@ -25,10 +25,10 @@
                     </div>
                     <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
                         <div class="form-group breadcrumb-right">
-                            <button onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i
-                                    data-feather="arrow-left-circle"></i> Back</button>
-                            <button onClick="javascript: history.go(-1)" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i
-                                    data-feather="check-circle"></i> Submit</button>
+                            <button type="submit" form="fixed-asset-merger-form" class="btn btn-primary btn-sm"
+                            id="submit-btn">
+                            <i data-feather="check-circle"></i> Submit
+                        </button>
                         </div>
                     </div>
                 </div>
@@ -44,6 +44,7 @@
 
                             @csrf
                             <input type="hidden" name="sub_assets" id="sub_assets">
+                            <input type="hidden" name="asset_details" id="asset_details">
                             <input type="hidden" name="doc_number_type" id="doc_number_type">
                             <input type="hidden" name="doc_reset_pattern" id="doc_reset_pattern">
                             <input type="hidden" name="doc_prefix" id="doc_prefix">
@@ -147,9 +148,9 @@
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6 text-sm-end">
-                                                    <a href="#" class="btn btn-sm btn-outline-danger me-50">
+                                                    <a href="#" class="btn btn-sm btn-outline-danger me-50" id="delete">
                                                         <i data-feather="x-circle"></i> Delete</a>
-                                                    <a href="#" class="btn btn-sm btn-outline-primary">
+                                                    <a id="addNewRowBtn" class="btn btn-sm btn-outline-primary">
                                                         <i data-feather="plus"></i> Add New</a>
                                                 </div>
                                             </div>
@@ -172,8 +173,8 @@
                                                                 <th class="customernewsection-form">
                                                                     <div
                                                                         class="form-check form-check-primary custom-checkbox">
-                                                                        <input type="checkbox" class="form-check-input"
-                                                                            id="Email">
+                                                                        <input type="checkbox" class="form-check-input"  
+                                                                            id="checkAll">
                                                                         <label class="form-check-label"
                                                                             for="Email"></label>
                                                                     </div>
@@ -182,6 +183,7 @@
                                                                 <th width="500px">Sub Assets & Code</th>
                                                                 <th width="100px">Quantity</th>
                                                                 <th class="text-end">Current Value</th>
+                                                                <th width="200px">Last Dep. Date</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody class="mrntableselectexcel">
@@ -189,104 +191,41 @@
                                                                 <td class="customernewsection-form">
                                                                     <div
                                                                         class="form-check form-check-primary custom-checkbox">
-                                                                        <input type="checkbox" class="form-check-input"
+                                                                        <input type="checkbox" class="form-check-input row-check"
                                                                             id="Email">
                                                                         <label class="form-check-label"
                                                                             for="Email"></label>
                                                                     </div>
                                                                 </td>
-                                                                <td class="poprod-decpt"><input type="text"
-                                                                        value="ASS001" placeholder="Enter"
-                                                                        class="form-control mw-100 mb-25" /></td>
+                                                                <td class="poprod-decpt">   
+                                                                    <select id="asset_id_1" name="asset_id[]" data-id="1"
+                                                                    class="form-control mw-100 p_ledgerselecct select2 asset_id" required>
+                                                                    <option value="">Select</option>
+                                                                    @foreach ($assets as $asset)
+                                                                        <option value="{{ $asset->id }}">
+                                                                            {{ $asset->asset_code }} ({{ $asset->asset_name }})
+                                                                        </option>
+                                                                    @endforeach
+                                                                </select></td>
                                                                 <td class="poprod-decpt">
-                                                                    <select class="form-control mw-100 select2" multiple>
-                                                                        <option>Select</option>
-                                                                    </select>
+                                                                    <select id="sub_asset_id_1" name="sub_asset_id[]" data-id="1"
+                                                                        class="form-select mw-100 select2 sub_asset_id" multiple required>
+                                                                <option value="">Select</option>
+                                                                <!-- Will be filled via AJAX -->
+                                                            </select>
                                                                 </td>
-                                                                <td><input type="text" disabled value="1"
-                                                                        class="form-control mw-100" /></td>
-                                                                <td><input type="text" value="2000.00"
-                                                                        class="form-control mw-100 text-end" disabled />
+                                                                <td><input type="number" name="quantity[]" id="quantity_1" readonly data-id="1"
+                                                                        class="form-control mw-100 quantity" /></td>
+                                                                <td class="text-end"><input type="text" name="currentvalue[]" id="currentvalue_1" data-id="1"
+                                                                        class="form-control mw-100 text-end currentvalue" readonly/>
                                                                 </td>
+                                                                <td><input type="date" name="last_dep_date[]" id="last_dep_date_1" data-id="1"
+                                                                    class="form-control mw-100 last_dep_date" readonly/>
+                                                            </td>
                                                             </tr>
 
 
-                                                            <tr>
-                                                                <td class="customernewsection-form">
-                                                                    <div
-                                                                        class="form-check form-check-primary custom-checkbox">
-                                                                        <input type="checkbox" class="form-check-input"
-                                                                            id="Email">
-                                                                        <label class="form-check-label"
-                                                                            for="Email"></label>
-                                                                    </div>
-                                                                </td>
-                                                                <td class="poprod-decpt"><input type="text"
-                                                                        value="ASS001" placeholder="Enter"
-                                                                        class="form-control mw-100 mb-25" /></td>
-                                                                <td class="poprod-decpt">
-                                                                    <select class="form-control mw-100 select2" multiple>
-                                                                        <option>Select</option>
-                                                                    </select>
-                                                                </td>
-                                                                <td><input type="text" disabled value="1"
-                                                                        class="form-control mw-100" /></td>
-                                                                <td><input type="text" value="2000.00"
-                                                                        class="form-control mw-100 text-end" disabled />
-                                                                </td>
-                                                            </tr>
-
-                                                            <tr>
-                                                                <td class="customernewsection-form">
-                                                                    <div
-                                                                        class="form-check form-check-primary custom-checkbox">
-                                                                        <input type="checkbox" class="form-check-input"
-                                                                            id="Email">
-                                                                        <label class="form-check-label"
-                                                                            for="Email"></label>
-                                                                    </div>
-                                                                </td>
-                                                                <td class="poprod-decpt"><input type="text"
-                                                                        value="ASS001" placeholder="Enter"
-                                                                        class="form-control mw-100 mb-25" /></td>
-                                                                <td class="poprod-decpt">
-                                                                    <select class="form-control mw-100 select2" multiple>
-                                                                        <option>Select</option>
-                                                                    </select>
-                                                                </td>
-                                                                <td><input type="text" disabled value="1"
-                                                                        class="form-control mw-100" /></td>
-                                                                <td><input type="text" value="2000.00"
-                                                                        class="form-control mw-100 text-end" disabled />
-                                                                </td>
-                                                            </tr>
-
-                                                            <tr>
-                                                                <td class="customernewsection-form">
-                                                                    <div
-                                                                        class="form-check form-check-primary custom-checkbox">
-                                                                        <input type="checkbox" class="form-check-input"
-                                                                            id="Email">
-                                                                        <label class="form-check-label"
-                                                                            for="Email"></label>
-                                                                    </div>
-                                                                </td>
-                                                                <td class="poprod-decpt"><input type="text"
-                                                                        value="ASS001" placeholder="Enter"
-                                                                        class="form-control mw-100 mb-25" /></td>
-                                                                <td class="poprod-decpt">
-                                                                    <select class="form-control mw-100 select2" multiple>
-                                                                        <option>Select</option>
-                                                                    </select>
-                                                                </td>
-                                                                <td><input type="text" disabled value="1"
-                                                                        class="form-control mw-100" /></td>
-                                                                <td><input type="text" value="2000.00"
-                                                                        class="form-control mw-100 text-end" disabled />
-                                                                </td>
-                                                            </tr>
-
-
+                                                            
                                                         </tbody>
 
 
@@ -548,49 +487,7 @@
             genereateSubAssetRow(subAssetCode);
         });
 
-        function genereateSubAssetRow(code) {
-            let Current = $('#current_value_asset').val();
-            let subAssetId = $('#sub_asset_id').val();
-            let assetId = $('#asset_id').val();
-            let newRow = '';
-            newRow = `
-                <tr class="trselected">
-                <td class="customernewsection-form">
-                    <div class="form-check form-check-primary custom-checkbox">
-                        <input type="checkbox" class="form-check-input row-check">
-                        <label class="form-check-label"></label>
-                    </div>
-                </td>
-                <td class="poprod-decpt">
-                    <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-code-input" />
-                </td>
-                <td class="poprod-decpt">
-                    <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-name-input" />
-                </td>
-                <td class="poprod-decpt">
-                    <input type="text" required placeholder="Enter" disabled class="form-control mw-100 mb-25 sub-asset-code-input" />
-                </td>
-                <td>
-                    <input type="text" required disabled value="1" class="form-control mw-100 quantity-input" />
-                </td>
-                <td>
-                    <input type="text" required class="form-control mw-100 text-end current-value-input" max="${Current}" min="1" />
-                </td>
-            </tr>
-
-
-                `;
-            $(".mrntableselectexcel tr").removeClass('trselected');
-            $('.mrntableselectexcel').append(newRow);
-            updateSubAssetCodes();
-        }
-
-
-        $('#delete_new_sub_asset').on('click', function() {
-            $('.mrntableselectexcel .row-check:checked').closest('tr').remove();
-            updateSubAssetCodes();
-        });
-
+       
         function resetParametersDependentElements(data) {
             let backDateAllowed = false;
             let futureDateAllowed = false;
@@ -623,17 +520,18 @@
             const today = moment().format("YYYY-MM-DD");
 
             if (backDateAllowed && futureDateAllowed) {
-                dateInput.removeAttribute("min");
-                dateInput.removeAttribute("max");
+                dateInput.setAttribute("min","{{$financialStartDate}}");
+                dateInput.setAttribute("max","{{$financialEndDate}}");
             } else if (backDateAllowed) {
                 dateInput.setAttribute("max", today);
-                dateInput.removeAttribute("min");
+                dateInput.setAttribute("min","{{$financialStartDate}}");
             } else if (futureDateAllowed) {
                 dateInput.setAttribute("min", today);
-                dateInput.removeAttribute("max");
+                dateInput.setAttribute("max","{{$financialEndDate}}");
             } else {
                 dateInput.setAttribute("min", today);
                 dateInput.setAttribute("max", today);
+            
             }
         }
 
@@ -689,6 +587,30 @@
             e.preventDefault(); // Always prevent default first
 
             document.getElementById('document_status').value = 'submitted';
+            const allRows = [];
+
+    $('.mrntableselectexcel tr').each(function () {
+        const row = $(this);
+        const rowId = row.find('.asset_id').attr('data-id');
+        let sub_asset_codes = [];
+        row.find(`#sub_asset_id_${rowId} option:selected`).each(function () {
+            sub_asset_codes.push($(this).text());
+        });
+
+        const rowData = {
+            asset_id: row.find(`#asset_id_${rowId}`).val(),
+            sub_asset_id: row.find(`#sub_asset_id_${rowId}`).val(), // array from select2
+            quantity: row.find(`#quantity_${rowId}`).val(),
+            sub_asset_code :sub_asset_codes,
+            currentvalue: row.find(`#currentvalue_${rowId}`).val(),
+            last_dep_date: row.find(`#last_dep_date_${rowId}`).val(),
+        };
+
+        allRows.push(rowData);
+    });
+
+    $('#asset_details').val(JSON.stringify(allRows));
+
 
             this.submit();
         });
@@ -825,8 +747,236 @@
     document.getElementById("depreciation_rate_year").value = depreciationRate;
     document.getElementById("total_depreciation").value = totalDepreciation;
 }
-$(document).on('input change', '#useful_life, .quantity-input, .current-value-input', updateSubAssetCodes);
-   
+
+$(document).on('change', '.asset_id', function () {
+                let assetId = $(this).val();
+                
+                let row = $(this).data('id');
+                let subAssetSelect = $('#sub_asset_id_'+row);
+                
+                if(assetId!=""){
+                subAssetSelect.html('<option value="">Loading...</option>');
+
+                $.ajax({
+                    url: '{{ route('finance.fixed-asset.sub_asset') }}', // Update this route
+                    type: 'GET',
+                    data: {
+                        id: assetId
+                    },
+                    success: function(response) {
+                        subAssetSelect.html('<option value="">Select</option>');
+                        $.each(response, function(key, subAsset) {
+                            subAssetSelect.append(
+                                '<option value="' + subAsset.id + '">' + subAsset
+                                .sub_asset_code + '</option>'
+                            );
+                        });
+                          $('#last_dep_date_'+row).val(response[0].asset.last_dep_date);
+                    },
+                    error: function() {
+                        showToast('error', 'Failed to load sub-assets.');
+                    }
+                });
+                }else{
+                    subAssetSelect.empty();
+                }
+                refreshAssetSelects();
+                   
+            });
+
+            // On Sub-Asset change, get value and last dep date
+            $(document).on('change', '.sub_asset_id', function () {
+    let subAssetIds = $(this).val();
+    let row = $(this).data('id');
+    let assetId = $('#asset_id_'+row).val();
+    let totalCurrentValue = 0; // To accumulate values
+    let responsesReceived = 0; // Counter to check when all requests are done
+    if (subAssetIds && subAssetIds.length > 0) {
+        subAssetIds.forEach(function (subAssetId) {
+            $.ajax({
+                url: '{{ route('finance.fixed-asset.sub_asset_details') }}',
+                type: 'GET',
+                data: {
+                    id: assetId,
+                    sub_asset_id: subAssetId
+                },
+                success: function (response) {
+                    let currentValue = parseFloat(response.current_value_after_dep) || 0;
+                    totalCurrentValue += currentValue;
+                    responsesReceived++;
+                    if (responsesReceived === subAssetIds.length) {
+                        $('#currentvalue_'+row).val(totalCurrentValue.toFixed(2));
+                        $('#quantity_'+row).val(responsesReceived);
+                        updateSum();
+                   }
+                },
+                error: function () {
+                    showToast('error', 'Failed to load sub-asset details.');
+                    responsesReceived++;
+
+                    // Still check if all requests have completed (including failures)
+                    if (responsesReceived === subAssetIds.length) {
+                        $('#currentvalue_'+row).val(0);
+                        $('#quantity_'+row).val(0);
+                        updateSum();
+                    }
+                }
+            });
+        });
+    } else {
+        $('#currentvalue_'+row).val(0);
+    $('#quantity_'+row).val(0);
+                        updateSum();
+    }
+});
+ $('.select2').select2();
+
+            
+ function updateSum() {
+    let totalValue = 0;
+    let totalQuantity = 0;
+
+    $('.currentvalue').each(function () {
+        let value = parseFloat($(this).val()) || 0;
+        totalValue += value;
+    });
+
+    $('.quantity').each(function () {
+        let qty = parseFloat($(this).val()) || 0;
+        totalQuantity += qty;
+    });
+
+    // Example: Update totals in specific HTML elements
+    $('#current_value').val(totalValue.toFixed(2));
+    $('#quantity').val(totalQuantity);
+    updateDepreciationValues();
+
+
+}
+
+let rowCount = 1;
+
+$('#addNewRowBtn').on('click', function () {
+    rowCount++;
+    let newRow = `
+    <tr>
+        <td class="customernewsection-form">
+            <div class="form-check form-check-primary custom-checkbox">
+                <input type="checkbox" class="form-check-input row-check" id="Email_${rowCount}">
+                <label class="form-check-label" for="Email_${rowCount}"></label>
+            </div>
+        </td>
+        <td class="poprod-decpt">   
+            <select id="asset_id_${rowCount}" name="asset_id[]" data-id="${rowCount}"
+                class="form-control mw-100 p_ledgerselecct select2 asset_id" required>
+                <option value="">Select</option>
+             @foreach ($assets as $asset)
+                                                                        <option value="{{ $asset->id }}">
+                                                                            {{ $asset->asset_code }} ({{ $asset->asset_name }})
+                                                                        </option>
+                                                                    @endforeach
+                                                                    </select>
+        </td>
+        <td class="poprod-decpt">
+            <select id="sub_asset_id_${rowCount}" name="sub_asset_id[]" data-id="${rowCount}"
+                class="form-select mw-100 select2 sub_asset_id" multiple required>
+                <option value="">Select</option>
+                <!-- Will be filled via AJAX -->
+            </select>
+        </td>
+        <td><input type="number" name="quantity[]" id="quantity_${rowCount}" readonly data-id="${rowCount}"
+            class="form-control mw-100 quantity" /></td>
+        <td><input type="text" name="currentvalue[]" id="currentvalue_${rowCount}" data-id="${rowCount}"
+            class="form-control mw-100 text-end currentvalue" readonly /></td>
+        <td><input type="date" name="last_dep_date[]" id="last_dep_date_${rowCount}" data-id="${rowCount}"
+            class="form-control mw-100 last_dep_date" readonly /></td>
+    </tr>
+    `;
+
+    $('.mrntableselectexcel').append(newRow);
+    $(".select2").select2();
+    refreshAssetSelects();
+});
+function refreshAssetSelects() {
+    let selectedAssets = [];
+
+// Collect all selected asset values
+$('.asset_id').each(function () {
+    let val = $(this).val();
+    if (val) {
+        selectedAssets.push(val);
+    }
+});
+
+// Disable already selected options in other selects
+$('.asset_id').each(function () {
+    let currentSelect = $(this);
+    let currentVal = currentSelect.val();
+
+    currentSelect.find('option').each(function () {
+        let optionVal = $(this).val();
+
+        if (optionVal === "") return; // skip placeholder
+
+        if (selectedAssets.includes(optionVal) && optionVal !== currentVal) {
+            $(this).prop('disabled', true);
+        } else {
+            $(this).prop('disabled', false);
+        }
+    });
+});
+
+}
+
+
+ 
+$('#delete').on('click', function () {
+    let $rows = $('.mrntableselectexcel tr');
+    let $checked = $rows.find('.row-check:checked');
+
+    // Prevent deletion if only one row exists
+    if ($rows.length <= 1) {
+        showToast('error','At least one row is required.');
+        return;
+    }
+
+    // Prevent deletion if checked rows would remove all
+    if ($rows.length - $checked.length < 1) {
+        showToast('error','You must keep at least one row.');
+        return;
+    }
+
+    // Remove only the checked rows
+    $checked.closest('tr').remove();
+    updateSum();
+});
+$('#checkAll').on('change', function () {
+    let isChecked = $(this).is(':checked');
+    $('.mrntableselectexcel .row-check').prop('checked', isChecked);
+});
+
+function getAllRowsAsJson() {
+    const allRows = [];
+
+    $('.mrntableselectexcel tr').each(function () {
+        const row = $(this);
+        const rowId = row.find('.asset_id').attr('data-id');
+
+        const rowData = {
+            asset_id: row.find(`#asset_id_${rowId}`).val(),
+            sub_asset_id: row.find(`#sub_asset_id_${rowId}`).val(),
+            sub_asset_code :row.find(`#sub_asset_id_${rowId} option:selected`).text(),
+            quantity: row.find(`#quantity_${rowId}`).val(),
+            currentvalue: row.find(`#currentvalue_${rowId}`).val(),
+            last_dep_date: row.find(`#last_dep_date_${rowId}`).val(),
+        };
+
+        allRows.push(rowData);
+    });
+
+    return allRows;
+}
+
 
 
 

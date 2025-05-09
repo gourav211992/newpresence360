@@ -19,4 +19,16 @@ class MoItemAttribute extends Model
         'attribute_name',
         'attribute_value'
     ];
+
+    public function getAttrNameAttribute()
+    {
+        $attributeGroup = AttributeGroup::find($this -> attribute_name);
+        return $attributeGroup ?-> name ?? '';
+    }
+
+    public function getAttrValueAttribute()
+    {
+        $attribute = Attribute::find($this -> attribute_value);
+        return $attribute ?-> value ?? '';
+    }
 }

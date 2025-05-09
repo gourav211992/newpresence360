@@ -1,6 +1,7 @@
 <?php
 
 use App\Helpers\Helper;
+use App\Http\Controllers\ErpPlController;
 use App\Http\Controllers\ErpPSVController;
 use App\Http\Controllers\OverheadMasterController;
 use App\Http\Controllers\TDSReportController;
@@ -26,11 +27,11 @@ use App\Http\Controllers\ErpPublicOutreachAndCommunicationController;
 use App\Http\Controllers\SubStoreController;
 use App\Http\Controllers\refined_index\IndexController;
 use App\Http\Controllers\UserSignatureController;
+use App\Http\Controllers\FixedAsset\MergerController;
 use App\Http\Controllers\CrDrReportController;
 use App\Http\Controllers\FixedAsset\SetupController;
 use App\Http\Controllers\FixedAsset\DepreciationController;
 use App\Http\Controllers\FixedAsset\SplitController;
-use App\Http\Controllers\FixedAsset\MergerController;
 use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\AssetCategoryController;
 
@@ -148,7 +149,6 @@ use App\Http\Controllers\Finance\GstrController;
 use App\Http\Controllers\WarehouseStructureController;
 use App\Http\Controllers\WarehouseMappingController;
 use App\Http\Controllers\WarehouseItemMappingController;
-use App\Http\Controllers\CloseFy\CloseFyController;
 
 //Reports
 use App\Http\Controllers\Report\TransactionReportController;
@@ -216,7 +216,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('/sales-order/amend/{id}', [ErpSaleOrderController::class, 'amendmentSubmit'])->name('sale.order.amend');
     Route::get('/sales-order/bom/check', [ErpSaleOrderController::class, 'checkItemBomExists'])->name('sale.order.bom.check');
     Route::post('/sales-order/revoke', [ErpSaleOrderController::class, 'revokeSalesOrderOrQuotation'])->name('sale.order.revoke');
-    Route::get('/sales-order/get/customizable-bom', [ErpSaleOrderController::class, 'getProductionBomOfItem'])->name('sale.order.get.production.bom');
+    Route::post('/sales-order/get/customizable-bom', [ErpSaleOrderController::class, 'getProductionBomOfItem'])->name('sale.order.get.production.bom');
     Route::post('/sales-order/short-close', [ErpSaleOrderController::class, 'shortCloseSubmit'])->name('sale.order.get.shortClose.submit');
     Route::get('/sales-order/report', [ErpSaleOrderController::class, 'salesOrderReport'])->name('sale.order.report');
     Route::get('/sales-invoice/amend/{id}', [ErpSaleInvoiceController::class, 'amendmentSubmit'])->name('sale.invoice.amend');
@@ -280,9 +280,6 @@ Route::middleware(['user.auth'])->group(function () {
     Route::resource('ledgers', LedgerController::class)->except(['show']);
     Route::get('/ledgers/{ledgerId}/groups', [LedgerController::class, 'getLedgerGroups'])->name('ledgers.groups');;
     Route::get('/search/ledger', [LedgerController::class,'getLedger'])->name('ledger.search');
-    // closefy
-    Route::get('/close-fy', [CloseFyController::class,'index'])->name('close-fy');
-    Route::post('/getFyInitialGroups', [CloseFyController::class,'getFyInitialGroups'])->name('getFyInitialGroups');
 
 
 
@@ -1155,7 +1152,6 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
             Route::get('change-item-code', 'changeItemCode')->name('item.code');
             Route::get('get-item-attribute', 'getItemAttribute')->name('item.attr');
             Route::get('add-item-row', 'addItemRow')->name('item.row');
-            Route::get('add-production-row', 'addProductionRow')->name('production.row');
             Route::get('add-instruction-row', 'addInstructionRow')->name('instruction.row');
             Route::get('get-item-detail', 'getItemDetail')->name('get.itemdetail');
             Route::get('get-doc-no', 'getDocNumber')->name('doc.no');
@@ -1912,6 +1908,26 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::get('/psv/posting/get', [ErpPSVController::class, 'getPostingDetails'])->name('psv.posting.get');
     Route::post('/psv/post', [ErpPSVController::class, 'postPsv'])->name('psv.post');
     Route::post('/psv/import', [ErpPSVController::class, 'import'])->name('psv.import');
+    Route::get('/psv/itemList', [ErpPSVController::class, 'itemList'])->name('psv.itemlist');
+    Route::get('/psv/getAllItems', [ErpPSVController::class, 'getAllItems'])->name('psv.getAllItems');
+
+    //PL
+    Route::get('/pick-list', [ErpPlController::class, 'index'])->name('PL.index');
+    Route::get('/pick-list/create', [ErpPlController::class, 'create'])->name('PL.create');
+    Route::get('/pick-list/report', [ErpPlController::class, 'report'])->name('PL.report');
+    Route::get('/pick-list/filter', [ErpPlController::class, 'filter'])->name('PL.filter');
+    Route::post('/pick-list/store', [ErpPlController::class, 'store'])->name('PL.store');
+    Route::get('/pick-list/edit/{id}', [ErpPlController::class, 'edit'])->name('PL.edit');
+    Route::post('/pick-list/revoke', [ErpPlController::class, 'revokePL'])->name('PL.revoke');
+    Route::get('/pick-list/vendor/stores', [ErpPlController::class, 'getVendorStores'])->name('PL.vendor.stores');
+    Route::get('/pick-list/mo/process/mo', [ErpPlController::class, 'processPulledItems'])->name('PL.process.items');
+    Route::get('/pick-list/so/get/items', [ErpPlController::class, 'getSoItemsForPulling'])->name('PL.pull.items');
+    Route::get('/pick-list/{id}/pdf/{pattern}', [ErpPlController::class, 'generatePdf'])->name('PL.generate-pdf');
+    Route::get('/pick-list/multi-stores-location', [ErpPlController::class, 'getLocationsWithMultipleStores'])->name('PL.multi-store-location');
+    Route::get('/pick-list/report', [ErpPlController::class, 'materialIssueReport'])->name('PL.report');
+    Route::get('/pick-list/posting/get', [ErpPlController::class, 'getPostingDetails'])->name('PL.posting.get');
+    Route::post('/pick-list/post', [ErpPlController::class, 'postPL'])->name('PL.post');
+    Route::post('/pick-list/import', [ErpPlController::class, 'import'])->name('PL.import');
 
      //Production Slip
      Route::get('/production-slip', [ErpProductionSlipController::class, 'index'])->name('production.slip.index');
@@ -2171,7 +2187,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         'update' => 'finance.fixed-asset.maintenance.update',
     ]);
     Route::get('fixed-asset/setup/category', [SetupController::class, 'category'])->name('finance.fixed-asset.setup.category');
-    
+
     Route::resource('fixed-asset/setup', SetupController::class)->names([
         'index' => 'finance.fixed-asset.setup.index',
         'create' => 'finance.fixed-asset.setup.create',
@@ -2204,18 +2220,20 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         'edit' => 'finance.fixed-asset.split.edit',
         'update' => 'finance.fixed-asset.split.update',
     ]);
-
     Route::post('fixed-asset/split/approval', [SplitController::class, 'documentApproval'])->name('finance.fixed-asset.split.approval');
     Route::post('fixed-asset/split/filter', [SplitController::class, 'index'])->name('finance.fixed-asset.split.filter');
-    Route::get('fixed-asset/split/filter', [SplitController::class, 'index'])->name('finance.fixed-asset.split.filter');
     
- Route::resource('fixed-asset/merger', MergerController::class)->names([
+    Route::resource('fixed-asset/merger', MergerController::class)->names([
         'index' => 'finance.fixed-asset.merger.index',
         'create' => 'finance.fixed-asset.merger.create',
         'store' => 'finance.fixed-asset.merger.store',
         'show' => 'finance.fixed-asset.merger.show',
         'update' => 'finance.fixed-asset.merger.update',
     ]);
+    Route::post('fixed-asset/merger/approval', [MergerController::class, 'documentApproval'])->name('finance.fixed-asset.merger.approval');
+    Route::post('fixed-asset/merger/filter', [MergerController::class, 'index'])->name('finance.fixed-asset.merger.filter');
+   
+
 
     Route::resource('asset-category',AssetCategoryController::class);
 

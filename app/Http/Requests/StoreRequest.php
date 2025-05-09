@@ -56,11 +56,11 @@ class StoreRequest extends FormRequest
                 'string',
                 'regex:/^[a-zA-Z\s]+$/',
             ],
-            'store_location_type' => [
-                    'required', 
-                    'string',  
-                    Rule::in(ConstantHelper::ERP_STORE_LOCATION_TYPES), 
-                ],
+            // 'store_location_type' => [
+            //         'required', 
+            //         'string',  
+            //         Rule::in(ConstantHelper::ERP_STORE_LOCATION_TYPES), 
+            //     ],
             'contact_phone_no' => [
                 'string',
                 'nullable',

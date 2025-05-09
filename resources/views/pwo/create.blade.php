@@ -4,7 +4,6 @@
     @csrf
 <input type="hidden" name="show_attribute" value="0" id="show_attribute">
 <input type="hidden" name="so_item_ids" id="so_item_ids">
-<input type="hidden" name="so_tracking_required" id="so_tracking_required">
 <div class="app-content content ">
    <div class="content-overlay"></div>
    <div class="header-navbar-shadow"></div>
@@ -419,8 +418,6 @@ $(function(){
             //     // location.href = "{{route('pwo.index')}}";
             // },1500);
         }
-        let soTrackingRequired = parameters?.so_tracking_required || '';
-        $("#so_tracking_required").val(soTrackingRequired);
    }
    
 });

@@ -38,9 +38,9 @@
             <tr>
                 <td style="text-align: left;">
                     @if (isset($orgLogo) && $orgLogo)
-                        <img src="{!! $orgLogo !!}" alt="" height="40px" />
+                        <img src="{!! $orgLogo !!}" alt="" height="50px" />
                     @else
-                        <img src="{{$imagePath}}" height="40px" alt="">
+                        <img src="{{$imagePath}}" height="50px" alt="">
                     @endif
                 </td>
                 <td style="text-align: center; font-weight: bold; font-size: 18px;">

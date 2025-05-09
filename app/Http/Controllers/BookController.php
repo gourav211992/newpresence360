@@ -470,11 +470,11 @@ class BookController extends Controller
             'common_parameters',
             'gl_parameters',
             'patterns',
-            'levels' => function ($l) {
-                $l->with(['approvers']);
+            'levels' => function ($l) use($auth) {
+                $l->where('organization_id', $auth -> organization_id) -> with(['approvers']);
             },
-            'amendments' => function ($l) {
-                $l->with(['approvers']);
+            'amendments' => function ($l) use($auth) {
+                $l->where('organization_id', $auth -> organization_id) -> with(['approvers']);
             }
         ])->findOrFail($id);
         if (isset($book)) {

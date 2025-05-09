@@ -100,8 +100,8 @@ function updateTable(inventory_reports = [], columnVisibility = []) {
         `<th>Attributes</th>`, // Attributes
         `<th>Location</th>`, // Store
         `<th>Store</th>`,
-        `<th>Shelf</th>`, // Shelf
-        `<th>Bin</th>`, // Bin
+        `<th>Station</th>`, // Shelf
+        `<th>Stock Type</th>`, // Bin
         `<th class='text-end'>Confirmed Stock Qty</th> `, // Confirmed Stock Quantity
         `<th class='text-end'>Cost</th>`, // Confirmed Stock Cost
         `<th class='text-end'>Value</th>`, // Confirmed Stock Value
@@ -145,6 +145,7 @@ function updateTable(inventory_reports = [], columnVisibility = []) {
         let attributesHTML = ""; // Default value if attributes are not present or invalid
         let storeId = "";
         let subLocationId = "";
+        let stockType = "";
         let shelfId = "";
         let binId = "";
         let typeOfStockId = "";
@@ -167,6 +168,7 @@ function updateTable(inventory_reports = [], columnVisibility = []) {
             }
             storeId = $('#store').is(':checked') ? report?.store_id : '';
             subLocationId = $('#sub_location').is(':checked') ? report?.sub_store_id : '';
+            stockType = $('#stock_types').is(':checked') ? report?.stock_type : '';
             shelfId = $('#shelf').is(':checked') ? report?.shelf_id : '';
             binId = $('#bin').is(':checked') ? report?.bin_id : '';
             typeOfStockId = '';
@@ -189,7 +191,11 @@ function updateTable(inventory_reports = [], columnVisibility = []) {
             <input type="hidden" name="item_attributes" value='${JSON.stringify(attrId)}'/>
             <input type="hidden" name="type_of_stock_id" value='${typeOfStockId ? typeOfStockId : ''}'/>
             <button type="submit" style="border: none; background-color: #fff; color: #002bff;">
-                ${report?.item?.item_name ?? ""}
+                ${
+                    report?.stock_type === "W" && report?.wip_station_id
+                        ? `${report?.item?.item_name ?? ""} - ${report?.wip_station?.name ?? ""}`
+                        : `${report?.item?.item_name ?? ""}`
+                }
             </button>
             </form>
             </td>`,// Item Name
@@ -197,8 +203,10 @@ function updateTable(inventory_reports = [], columnVisibility = []) {
             `<td class='no-wrap'>${attributesHTML}</td>`, // Attributes
             `<td class='no-wrap'>${report?.location?.store_name ?? ""}</td>`, // Store
             `<td class='no-wrap'>${report?.store?.name ?? ""}</td>`, // Rack
-            `<td class='no-wrap'>${report?.shelf ?? ""}</td>`, // Shelf
-            `<td class='no-wrap'>${report?.bin ?? ""}</td>`, // Bin
+            `<td class='no-wrap'>${report?.station?.name ?? ""}</td>`, // Station
+            `<td class='no-wrap'>
+                ${stockType === "R" ? "Regular" : stockType === "W" ? "WIP" : ""}
+            </td>`, // Stock Type
             `<td class='text-end'>${report?.confirmed_stock ?? 0.00}</td>`, // Confirmed Stock Quantity
             `<td class='text-end'>${confirmedStockCost ?? '0.00'}</td>`, // Confirmed Stock Cost
             `<td class='text-end'>${report?.confirmed_stock_value ?? 0.00}</td>`, // Confirmed Stock Value
@@ -221,12 +229,12 @@ function updateTable(inventory_reports = [], columnVisibility = []) {
         tr.innerHTML = rowHTML;
         tbody.appendChild(tr);
 
-        tr.querySelector(".clickable-item")?.addEventListener("click", (e) => {
-            const itemId = e.target.getAttribute("item-id");
-            if (itemId) {
-                window.location.href = `/inventory-reports/get-stock-ledger-reports?item_id=${itemId}`;
-            }
-        });
+            tr.querySelector(".clickable-item")?.addEventListener("click", (e) => {
+                const itemId = e.target.getAttribute("item-id");
+                if (itemId) {
+                    window.location.href = `/inventory-reports/get-stock-ledger-reports?item_id=${itemId}`;
+                }
+            });
 
         feather.replace();
     });
@@ -396,8 +404,8 @@ function getColumnIndexById(columnId) {
         "attributes":5,
         "store": 6,
         "sub_location": 7,
-        "shelf": 8,
-        "bin": 9,
+        "station": 8,
+        "stock_types": 9,
         "confirmed-stock-qty": 10,
         "confirmed-stock-cost": 11,
         "confirmed-stock-value": 12,

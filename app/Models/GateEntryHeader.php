@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class GateEntryHeader extends Model
 {
-    use HasFactory, DateFormatTrait, SoftDeletes, DateFormatTrait, FileUploadTrait,DefaultGroupCompanyOrg;
+    use HasFactory, DateFormatTrait, SoftDeletes, FileUploadTrait,DefaultGroupCompanyOrg;
 
     protected $table = 'erp_gate_entry_headers';
 

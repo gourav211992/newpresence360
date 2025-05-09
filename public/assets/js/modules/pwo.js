@@ -48,7 +48,6 @@ $(document).on('change','#itemTable > thead .form-check-input',(e) => {
       if (itemIds.length) {
           itemIds.forEach(function(item,index) {
             let so_item_id = $(`#row_${item}`).find("[name*='[so_item_id]']").val() || '';
-            console.log(so_item_id);
             let selectedPiIds = localStorage.getItem('selectedSoItemIds');
             if(so_item_id && selectedPiIds) {
                 selectedPiIds = JSON.parse(selectedPiIds);
@@ -56,7 +55,7 @@ $(document).on('change','#itemTable > thead .form-check-input',(e) => {
                 localStorage.setItem('selectedSoItemIds', JSON.stringify(updatedIds));
 
             }
-            $(`#row_${item}`).remove();
+            $(`#row_${index+1}`).remove();
           });
       }
       if(editItemIds.length == 0 && itemIds.length == 0) {

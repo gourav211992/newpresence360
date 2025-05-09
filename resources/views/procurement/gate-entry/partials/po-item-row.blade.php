@@ -60,15 +60,6 @@
             </select>
         </td>
         <td>
-            <select class="form-select item-store" name="components[{{$rowCount}}][store_id]">
-                @foreach($locations as $erpStore)
-                    <option value="{{$erpStore->id}}">
-                        {{ucfirst($erpStore->store_name)}}
-                    </option>
-                @endforeach
-            </select>
-        </td>
-        <td>
             <input type="number" class="form-control mw-100 accepted_qty text-end checkNegativeVal" name="components[{{$rowCount}}][accepted_qty]"
             value="{{(($item->order_qty - $item->short_close_qty) - $item->ge_qty)}}" step="any" />
         </td>

@@ -15,6 +15,7 @@ use App\Models\Country;
 use App\Models\Currency;
 use App\Models\ErpInvoiceItem;
 use App\Models\ErpRateContract;
+use App\Models\ErpRateContractHistory;
 use App\Models\ErpRateContractItem;
 use App\Models\ErpRateContractItemAttribute;
 use App\Models\ErpRcOrganizationMapping;
@@ -138,10 +139,9 @@ class ErpRCController extends Controller
         // $stores = ErpStore::withDefaultGroupCompanyOrg()->where('store_location_type', ConstantHelper::STOCKK)->get();
         $stores = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
         $organization = Organization::where('id', $user->organization_id)->first();
-        // $departments = Department::where('organization_id', $organization->id)
-        //     ->where('status', ConstantHelper::ACTIVE)
-        //     ->get();
-        $organizations = Organization::where('status', ConstantHelper::ACTIVE)->get();
+        $userOrgs = $user->organizations->pluck('id')->toArray();
+        array_push($userOrgs,$user->organization_id);
+        $organizations = Organization::whereIn('id',$userOrgs)->where('status', ConstantHelper::ACTIVE)->get();
         $vendors = Vendor::where('organization_id', $user->organization_id)
             ->where('status', ConstantHelper::ACTIVE)
             ->get();
@@ -176,18 +176,18 @@ class ErpRCController extends Controller
         try {
             $user = Helper::getAuthenticatedUser();
             $users = AuthUser::where('organization_id', $user -> organization_id) -> where('status', ConstantHelper::ACTIVE) -> get();
-            // if (isset($request->revisionNumber)) {
-            //     $order = ErpRateContractHistory::with([ 'media_files'])->with('items', function ($query) {
-            //         $query->with([
-            //             'item' => function ($itemQuery) {
-            //                 $itemQuery->with(['specifications', 'alternateUoms.uom', 'uom']);
-            //             }
-            //         ]);
-            //     })
-            //         ->where('revision_number',$request->revisionNumber)
-            //         ->where('source_id', $id)->first();
-            //     $ogReturn = ErpRateContract::find($id);
-            // } else {
+            if (isset($request->revisionNumber)) {
+                $order = ErpRateContractHistory::with([ 'media_files'])->with('items', function ($query) {
+                    $query->with([
+                        'item' => function ($itemQuery) {
+                            $itemQuery->with(['specifications', 'alternateUoms.uom', 'uom']);
+                        }
+                    ]);
+                })
+                    ->where('revision_number',$request->revisionNumber)
+                    ->where('source_id', $id)->first();
+                $ogReturn = ErpRateContract::find($id);
+            } else {
                 $order = ErpRateContract::with([ 'media_files'])->with('items', function ($query) {
                     $query->with(['item_attributes'])->with([
                         'item' => function ($itemQuery) {
@@ -196,6 +196,7 @@ class ErpRCController extends Controller
                     ]);
                 })->find($id);
                 $ogReturn = $order;
+            }
             $parentURL = request()->segments()[0];
             $redirectUrl = route('rate.contract.index');
             if (isset($order)) {
@@ -212,8 +213,10 @@ class ErpRCController extends Controller
             $revision_number = $order->revision_number??null;
             $userType = Helper::userCheck();
             $totalValue = 0;
-            $organizations = Organization::where('status', ConstantHelper::ACTIVE)->get();
-
+            $userOrgs = $user->organizations->pluck('id')->toArray();
+            array_push($userOrgs,$user->organization_id);
+            $organizations = Organization::whereIn('id',$userOrgs)->where('status', ConstantHelper::ACTIVE)->get();
+        
             $buttons = Helper::actionButtonDisplay($order->book_id, $order->document_status, $order->id, $totalValue, $order->approval_level, $order->created_by ?? 0, $userType['type'], $revision_number);
             $type = ConstantHelper::RC_SERVICE_ALIAS;
             $books = Helper::getBookSeries($type)->get();
@@ -307,12 +310,12 @@ class ErpRCController extends Controller
             }
             $rateContract = null;
             if ($request -> rate_contract_id) { //Update
-
+                // dd($request->all());
                 $rateContract = ErpRateContract::find($request -> rate_contract_id);
                 $rateContract -> document_date = $request -> document_date ?? $rateContract -> document_date;
                 $rateContract -> start_date = $request -> start_date ?? $rateContract -> start_date;
                 $rateContract -> end_date = $request -> end_date ?? $rateContract -> end_date;
-                $rateContract -> payment_term_id = $request -> payment_terms_id ?? $rateContract -> payment_term_id;
+                $rateContract -> payment_term_id = isset($request -> payment_terms_id) ? $request->payment_terms_id : $rateContract -> payment_term_id;
                 $rateContract -> vendor_id = $request -> vendor_id ?? $rateContract -> vendor_id;
 
 
@@ -331,8 +334,8 @@ class ErpRCController extends Controller
                     $revisionData = [
                         ['model_type' => 'header', 'model_name' => 'ErpRateContract', 'relation_column' => ''],
                         ['model_type' => 'detail', 'model_name' => 'ErpRateContractItem', 'relation_column' => 'rate_contract_id'],
-                        ['model_type' => 'sub_detail', 'model_name' => 'ErpRateContractItemAttribute', 'relation_column' => 'rc_item_id'],
-                        ['model_type' => 'sub_detail', 'model_name' => 'ErpRcOrganizationMapping', 'relation_column' => 'rate_contract_id'],
+                        ['model_type' => 'detail', 'model_name' => 'ErpRcOrganizationMapping', 'relation_column' => 'rate_contract_id'],
+                        ['model_type' => 'sub_detail', 'model_name' => 'ErpRateContractItemAttribute', 'relation_column' => 'rate_contract_item_id'],
                     ];
                     $a = Helper::documentAmendment($revisionData, $rateContract->id);
                 }
@@ -548,7 +551,7 @@ class ErpRCController extends Controller
                     $rateContract->vendor_id = $request->vendor_id;
                     $rateContract->vendor_code = $vendor?->company_name;
                     $rateContract->applicable_organizations = isset($request->applicable_organization) ? json_encode($request->applicable_organization) : $rateContract->applicable_organizations;
-                    $rateContract->payment_term_id = isset($request->payment_term_id) ? $request->payment_term_id : null;
+                    $rateContract->payment_term_id = isset($request->payment_terms_id) ? $request->payment_terms_id : ($rateContract->payment_term_id??null);
                     // $rateContract->currency_id = $request->currency_id;
                     // $rateContract->currency_code = isset($request -> currency_id) ? $currency->short_name : null;
                     if(($rateContract -> document_status == ConstantHelper::APPROVED || $rateContract -> document_status == ConstantHelper::APPROVAL_NOT_REQUIRED) && $actionType == 'amendment')
@@ -561,18 +564,18 @@ class ErpRCController extends Controller
                         $rateContract->approval_level = 1;
                         $rateContract->revision_date = now();
                         $amendAfterStatus = $rateContract->document_status;
-                        $checkAmendment = Helper::checkAfterAmendApprovalRequired($request->book_id);
-                        if(isset($checkAmendment->approval_required) && $checkAmendment->approval_required) {
-                            $totalValue = $rateContract->grand_total_amount ?? 0;
-                            $amendAfterStatus = Helper::checkApprovalRequired($request->book_id,$totalValue);
-                        } else {
-                            $actionType = 'approve';
-                            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType, 0, $modelName);
-                        }
-                        if ($amendAfterStatus == ConstantHelper::SUBMITTED) {
-                            $actionType = 'submit';
-                            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType, 0, $modelName);
-                        }
+                        // $checkAmendment = Helper::checkAfterAmendApprovalRequired($request->book_id);
+                        // if(isset($checkAmendment->approval_required) && $checkAmendment->approval_required) {
+                        //     $totalValue = $rateContract->grand_total_amount ?? 0;
+                        //     $amendAfterStatus = Helper::checkApprovalRequired($request->book_id,$totalValue);
+                        // } else {
+                        //     $actionType = 'approve';
+                        //     $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType, 0, $modelName);
+                        // }
+                        // if ($amendAfterStatus == ConstantHelper::SUBMITTED) {
+                        //     $actionType = 'submit';
+                        //     $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType, 0, $modelName);
+                        // }
                         $rateContract->document_status = $amendAfterStatus;
                         $rateContract->save();
 
@@ -602,13 +605,13 @@ class ErpRCController extends Controller
                         $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType, 0, $modelName);
                     }
 
-                    if ($request->document_status == 'submitted') {
-                        $totalValue = $rateContract->total_amount ?? 0;
-                        $document_status = Helper::checkApprovalRequired($request->book_id,$totalValue);
-                        $rateContract->document_status = $document_status;
-                    } else {
-                        $rateContract->document_status = $request->document_status ?? ConstantHelper::DRAFT;
-                    }
+                    // if ($request->document_status == 'submitted') {
+                    //     $totalValue = $rateContract->total_amount ?? 0;
+                    //     $document_status = Helper::checkApprovalRequired($request->book_id,$totalValue);
+                    //     $rateContract->document_status = $document_status;
+                    // } else {
+                    //     $rateContract->document_status = $request->document_status ?? ConstantHelper::DRAFT;
+                    // }
                     $rateContract -> save();
                 }
                 $rateContract -> save();

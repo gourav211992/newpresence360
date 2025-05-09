@@ -35,8 +35,12 @@ class ErpMaterialIssueHeader extends Model
         'revision_date',
         'reference_number',
         'from_store_id',
+        'from_sub_store_id',
+        'from_station_id',
         'from_store_code',
         'to_store_id',
+        'to_sub_store_id',
+        'to_station_id',
         'to_store_code',
         'station_id',
         'department_id',
@@ -110,9 +114,25 @@ class ErpMaterialIssueHeader extends Model
     {
         return $this -> belongsTo(ErpStore::class, 'from_store_id');
     }
+    public function from_sub_store()
+    {
+        return $this -> belongsTo(ErpSubStore::class, 'from_sub_store_id');
+    }
+    public function from_station()
+    {
+        return $this -> belongsTo(Station::class, 'from_station_id');
+    }
     public function to_store()
     {
         return $this -> belongsTo(ErpStore::class, 'to_store_id');
+    }
+    public function to_sub_store()
+    {
+        return $this -> belongsTo(ErpSubStore::class, 'to_sub_store_id');
+    }
+    public function to_station()
+    {
+        return $this -> belongsTo(Station::class, 'to_station_id');
     }
     public function requester_name()
     {

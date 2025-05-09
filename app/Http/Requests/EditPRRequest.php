@@ -21,6 +21,8 @@ class EditPRRequest extends FormRequest
         $rules = [
             'book_id' => 'required',
             'document_number' => 'nullable|max:50', // Default rule for document_number
+            'header_store_id' => 'required',
+            'sub_store_id' => 'required',
             'vendor_id' => 'nullable',
             'currency_id' => 'nullable',
             'payment_term_id' => 'nullable',
@@ -61,6 +63,8 @@ class EditPRRequest extends FormRequest
     {
         return [
             'book_id.required' => 'The series is required.',
+            'header_store_id.required' => 'Location is required',
+            'sub_store_id.required' => 'Store is required',
             'supplier_invoice_no.required' => 'Supplier Invoice No is required.',
             'supplier_invoice_date.required' => 'Supplier Invoice Date is required.',
             'remarks.required' => 'Remark is required.',

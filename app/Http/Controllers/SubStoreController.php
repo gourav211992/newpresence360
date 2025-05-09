@@ -76,6 +76,7 @@ class SubStoreController extends Controller
                 'code' => $validatedData['code'], 
                 'name' => $validatedData['name'], 
                 'type'=>$validatedData['store_location_type'],
+                'station_wise_consumption'=>isset($request -> station_wise_consumption) ? 'yes' : 'no',
                 'status'=>$validatedData['status'],
             ];
             $erpSubStore->fill($data);
@@ -142,6 +143,7 @@ class SubStoreController extends Controller
                 'code' => $validatedData['code'],
                 'name' => $validatedData['name'],
                 'type'=>$validatedData['store_location_type'],
+                'station_wise_consumption'=>isset($request -> station_wise_consumption) ? 'yes' : 'no',
                 'status' => $validatedData['status'],
             ]);
             $newSelectedStoreIds = [];

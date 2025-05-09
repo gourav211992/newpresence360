@@ -59,7 +59,27 @@ class ErpRecruitmentJobCandidate extends Model
         );
     }
 
+    public function jobDetail()
+    {
+        return $this->hasOneThrough(
+            ErpRecruitmentJob::class,                 
+            ErpRecruitmentAssignedCandidate::class,   
+            'candidate_id',                           
+            'id',                                     
+            'id',                                     
+            'job_id'                                  
+        );
+    }
+
     public function assignedJob(){
         return $this->hasOne(ErpRecruitmentAssignedCandidate::class,'candidate_id');
+    }
+
+    public function scheduledInterview(){
+        return $this->hasOne(ErpRecruitmentJobInterview::class,'candidate_id');
+    }
+
+    public function referalDetail(){
+        return $this->hasOne(ErpRecruitmentJobReferral::class,'candidate_id');
     }
 }

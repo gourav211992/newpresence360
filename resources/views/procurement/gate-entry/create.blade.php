@@ -373,7 +373,6 @@
                                                                 <th width="240px">Item Name</th>
                                                                 <th>Attributes</th>
                                                                 <th>UOM</th>
-                                                                <th>Location</th>
                                                                 <th class="text-end">Qty</th>
                                                                 <th class="text-end">Rate</th>
                                                                 <th class="text-end">Value</th>
@@ -386,7 +385,7 @@
                                                         </tbody>
                                                         <tfoot>
                                                             <tr class="totalsubheadpodetail">
-                                                                <td colspan="8"></td>
+                                                                <td colspan="7"></td>
                                                                 <td class="text-end" id="totalItemValue">0.00</td>
                                                                 <td class="text-end" id="totalItemDiscount">0.00</td>
                                                                 {{--
@@ -395,7 +394,7 @@
                                                                 <td class="text-end" id="TotalEachRowAmount">0.00</td>
                                                             </tr>
                                                             <tr valign="top">
-                                                                <td colspan="7" rowspan="10">
+                                                                <td colspan="6" rowspan="10">
                                                                     <table class="table border" id="itemDetailDisplay">
                                                                         <tr>
                                                                             <td class="p-0">

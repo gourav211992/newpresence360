@@ -4,7 +4,6 @@
     @csrf
     <input type="hidden" name="show_attribute" value="0" id="show_attribute">
 <input type="hidden" name="so_item_ids" id="so_item_ids">
-<input type="hidden" name="so_tracking_required" id="so_tracking_required">
 <div class="app-content content ">
    <div class="content-overlay"></div>
    <div class="header-navbar-shadow"></div>
@@ -244,9 +243,7 @@
                                                     <th class="text-end">Quantity</th>
                                                     <th class="text-end">Conf Stock</th>
                                                     <th class="text-end">Unconf Stock</th>
-                                                    @if(strtolower($bom->so_tracking_required) == 'yes')
-                                                        <th>Order No.</th>
-                                                    @endif
+                                                    <th>Order No.</th>
                                                 </tr>
                                             </thead>
                                             <tbody class="mrntableselectexcel">
@@ -553,8 +550,6 @@ $(function(){
             //     // location.href = "{{route('pwo.index')}}";
             // },1500);
         }
-        let soTrackingRequired = parameters?.so_tracking_required || '';
-        $("#so_tracking_required").val(soTrackingRequired);
    }
 //    setServiceParameters
     function itemCodeChange(itemId) {

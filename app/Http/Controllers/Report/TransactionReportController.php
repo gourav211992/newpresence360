@@ -27,6 +27,7 @@ class TransactionReportController extends Controller
     public function emailReport(Request $request)
     {
         try{
+            $user = Helper::getAuthenticatedUser();
             // Validate email_to and email_cc
             $validator = Validator::make($request->all(), [
                 'email_to' => ['required', 'array', 'min:1'],
@@ -56,15 +57,18 @@ class TransactionReportController extends Controller
             $originalData = $request->input('displayedData');
             $appliedFilters = $request->input('filters');
 
+            $timestamp = now(); // or any Carbon instance
+            $string = $timestamp->format('Y_m_d_H_i_s');
+
             $blankSpaces = count($headers) - 1;
             $centerPosition = (int)floor($blankSpaces / 2);
-
-            $fileName = 'report.xlsx';
-            $filePath = storage_path('app/public/custom-report/' . $fileName);
-            $directoryPath = storage_path('app/public/custom-report');
+            $folderName = $request->input('folder_name');
+            $fileName = 'report_'.$string.'.xlsx';
+            $filePath = storage_path('app/public/'.$folderName.'/' . $fileName);
+            $directoryPath = storage_path('app/public/'.$folderName);
             $customHeader = array_merge(
                 array_fill(0, $centerPosition, ''),
-                ['Custom Report' ],
+                [$folderName.' Report' ],
                 array_fill(0, $blankSpaces - $centerPosition, '')
             );
 
@@ -85,19 +89,19 @@ class TransactionReportController extends Controller
 
             foreach($email_to as $email)
             {
-                $user = AuthUser::where('email', $email)
+                $mailUser = AuthUser::where('email', $email)
                 ->where('organization_id', Helper::getAuthenticatedUser()->organization_id)
                 ->where('status', ConstantHelper::ACTIVE)
                 ->first();
 
 
-                if (!$user) {
-                    $user = new AuthUser();
-                    $user->email = $email;
+                if (!$mailUser) {
+                    $mailUser = new AuthUser();
+                    $mailUser->email = $email;
                 }
 
-                $title = "Custom Report Generated";
-                $heading = "Custom Report";
+                $title = $folderName." Report Generated";
+                $heading = $folderName." Report";
 
                 $remarks = $request->remarks ?? null;
                 $mail_from = '';
@@ -105,18 +109,18 @@ class TransactionReportController extends Controller
                 $cc = implode(', ', $email_cc);
                 $bcc = null;
                 $attachment = $filePath ?? null;
-                // $name = $user->name;
+                $userName = $mailUser->name ?? 'User';
                 $description = <<<HTML
                 <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; padding: 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); font-family: Arial, sans-serif; line-height: 1.6;">
                     <tr>
                         <td>
                             <h2 style="color: #2c3e50; font-size: 24px; margin-bottom: 20px;">{$heading}</h2>
                             <p style="font-size: 16px; color: #555; margin-bottom: 20px;">
-                                Dear <strong style="color: #2c3e50;">user</strong>,
+                                Dear <strong style="color: #2c3e50;">{$userName}</strong>,
                             </p>
 
                             <p style="font-size: 15px; color: #333; margin-bottom: 20px;">
-                                We hope this email finds you well. Please find your inventory report attached below.
+                                We hope this email finds you well. Please find your {$folderName} report attached below.
                             </p>
                             <p style="font-size: 15px; color: #333; margin-bottom: 30px;">
                                 <strong>Remark:</strong> {$remarks}
@@ -128,7 +132,7 @@ class TransactionReportController extends Controller
                     </tr>
                 </table>
                 HTML;
-                self::sendMail($user,$title,$description,$cc,$bcc, $attachment,$mail_from,$mail_from_name);
+                self::sendMail($mailUser,$title,$description,$cc,$bcc, $attachment,$mail_from,$mail_from_name);
             }
             return response()->json([
                 'status' => 'success',

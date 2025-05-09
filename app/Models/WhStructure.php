@@ -21,6 +21,8 @@ class WhStructure extends Model
         'organization_id',
         'group_id',
         'company_id',
+        'store_id',
+        'sub_store_id',
         'name',
         'status',
         'created_by',
@@ -73,6 +75,16 @@ class WhStructure extends Model
     public function levels()
     {
         return $this->hasMany(WhLevel::class,'wh_structure_id');
+    }
+
+    public function store()
+    {
+        return $this -> belongsTo(ErpStore::class, 'store_id');
+    }
+
+    public function sub_store()
+    {
+        return $this -> belongsTo(ErpSubStore::class, 'sub_store_id');
     }
 
 }

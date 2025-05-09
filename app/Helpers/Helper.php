@@ -2076,7 +2076,7 @@ class Helper
     }
 
     // Correct Net Profit/Loss Logic
-    if ($grossProfit > 0) {
+    if ($grossProfit >= 0) {
         $net = $grossProfit + $indirectIncome - $indirectExpense;
         if ($net >= 0) {
             $netProfit = $net;
@@ -2085,7 +2085,7 @@ class Helper
             $netProfit = 0;
             $netLoss = abs($net);
         }
-    } elseif ($grossLoss > 0) {
+    } elseif ($grossLoss >= 0) {
         $net = $grossLoss + $indirectExpense - $indirectIncome;
         if ($net >= 0) {
             $netLoss = $net;
@@ -2099,9 +2099,9 @@ class Helper
     // Final overall total
    $overAllTotal = max($saleInd, $purchaseInd); // optional fallback
 
-if ($grossProfit > 0 || $netProfit > 0) {
+if ($grossProfit >= 0 || $netProfit >= 0) {
     $overAllTotal = $saleInd;
-} elseif ($grossLoss > 0 || $netLoss > 0) {
+} elseif ($grossLoss >= 0 || $netLoss >= 0) {
     $overAllTotal = $purchaseInd;
 }
 

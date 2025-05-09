@@ -3,7 +3,7 @@
 @section('content')
 
     <!-- BEGIN: Content-->
-    <form method="POST" data-completionFunction = "disableHeader" class="ajax-input-form sales_module_form rate_contract" action = "{{route('rate.contract.store')}}" data-redirect="{{ $redirect_url }}" id = "sale_invoice_form" enctype='multipart/form-data'>
+    <form method="POST" data-completionFunction = "disableHeader" class="ajax-input-form sales_module_form rate_contract" action = "{{route('rate.contract.store')}}" data-redirect="{{ $redirect_url }}" id = "rate_contract_form" enctype='multipart/form-data'>
 
     <div class="app-content content ">
         <div class="content-overlay"></div>
@@ -23,7 +23,7 @@
                         @if(!isset(request() -> revisionNumber))
                         <button type = "button" onclick="javascript: history.go(-1)" class="btn action_button btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>  
                             @if (isset($order) )
-                            @if($buttons['print'])
+                            <!-- @if($buttons['print'])
                             <button class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                         stroke-linecap="round" stroke-linejoin="round" class="feather feather-printer">
@@ -35,7 +35,7 @@
                                 </button>
                                 <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                                 </ul>
-                                @endif
+                                @endif -->
                                 @if($buttons['draft'])
                                     <button type="button" onclick = "submitForm('draft');" name="action" value="draft" class="btn action_button btn-outline-primary btn-sm mb-50 mb-sm-0" id="save-draft-button" name="action" value="draft"><i data-feather='save'></i>     <span class="button-text">Save as Draft</span>
                                     <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
@@ -946,16 +946,17 @@
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
+                        <div>
                         <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="myModalLabel17">Amend
-                        Material Return
+                            Rate Contract
                         </h4>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    <input type="hidden" name="action_type" id="action_type_main">
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <input type="hidden" name="action_type" id="action_type_main">
 
-                </div>
-                <div class="modal-body pb-2">
-                    <div class="row mt-1">
+                    </div>
+                    <div class="modal-body pb-2">
+                        <div class="row mt-1">
                         <div class="col-md-12">
                             <div class="mb-1">
                                 <label class="form-label">Remarks</label>
@@ -978,12 +979,14 @@
                         </div>
                     </div>
                     <div class="modal-footer justify-content-center">  
-                        <button type="button" class="btn btn-outline-secondary me-1" onclick = "closeModal('amendConfirmPopup');">Cancel</button> 
+                        <button type="button" class="btn btn-outline-secondary me-1">Cancel</button> 
                         <button type="button" class="btn btn-primary" onclick = "submitAmend();">Submit</button>
                     </div>
                 </div>
             </div>
-        </div>
+            </div>
+
+
     </form>
 
     <div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
@@ -1043,7 +1046,7 @@
           <div class="modal-body alertmsg text-center warning">
               <i data-feather='alert-circle'></i>
               <h2>Are you sure?</h2>
-              <p>Are you sure you want to <strong>Amend</strong> this <strong>Material Return</strong>?</p>
+              <p>Are you sure you want to <strong>Amend</strong> this <strong>Rate Contract</strong>?</p>
               <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
               <button type="button" data-bs-dismiss="modal" onclick = "amendConfirm();" class="btn btn-primary">Confirm</button>
           </div> 
@@ -1169,8 +1172,10 @@
                 });
             }
         })
+        
         $('.action_button').on('click', function() {
             var $btn = $(this);
+            var text = $(this).text();
             $btn.prop('disabled', true);
             $btn.find('.button-text').text('Processing...');
             $btn.find('.spinner-border').removeClass('d-none');
@@ -1178,7 +1183,7 @@
             // Simulate an AJAX request
             setTimeout(function() {
                 $btn.prop('disabled', false); // Re-enable button
-                $btn.find('.button-text').text('Submit'); // Restore text
+                $btn.find('.button-text').text(text); // Restore text
                 $btn.find('.spinner-border').addClass('d-none'); // Hide loader
             }, 3000); // 3-second delay (Replace with actual AJAX request)
         });
@@ -1727,7 +1732,7 @@
                     });
                     return;
                 }
-                if (!$('#currency_dropdown_' + (newIndex - 1)).val()) {
+                if (!$('#item_currency_' + (newIndex - 1)).val()) {
                     Swal.fire({
                         title: 'Error!',
                         text: 'Please select a currency for the previous row.',
@@ -1816,7 +1821,7 @@
                 <td><input type="text" id = "item_rate_${newIndex}" name = "item_rate[${newIndex}]" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);"/></td> 
                 <td><input type="text" id = "item_lead_${newIndex}" name = "item_lead[${newIndex}]" class="form-control mw-100 text-end" /></td> 
                 <td class='d-none'>
-                    <select class="form-select" name = "item_currency_id[]" id = "currency_dropdown_${newIndex}">
+                    <select class="form-select" name = "item_currency_id[]" id = "item_currency_${newIndex}">
                     ${currency}
                     </select> 
                 </td>
@@ -2864,9 +2869,9 @@
             //Disable header fields which cannot be changed
             disableHeader();
             //Set all documents
-            // order.media_files.forEach((mediaFile, mediaIndex) => {
-            //     appendFilePreviews(mediaFile.file_url, 'main_order_file_preview', mediaIndex, mediaFile.id, order.document_status == 'draft' ? false : true);
-            // });
+            order.media_files.forEach((mediaFile, mediaIndex) => {
+                appendFilePreviews(mediaFile.file_url, 'main_order_file_preview', mediaIndex, mediaFile.id, order.document_status == 'draft' ? false : true);
+            });
         }
         renderIcons();
         
@@ -4108,7 +4113,7 @@ function submitAmend()
     let remark = $("#amendConfirmPopup").find('[name="amend_remarks"]').val();
     $("#action_type_main").val("amendment");
     $("#amendConfirmPopup").modal('hide');
-    $("#sale_invoice_form").submit();
+    $("#rate_contract_form").submit();
 }
 
 let isProgrammaticChange = false; // Flag to prevent recursion
@@ -4924,7 +4929,7 @@ function checkVendorContracts(elementToReset = null) {
         if (attributesArray.length == 0) {
             return;
         }
-        let attributeUI = `<div data-bs-toggle="modal" onclick = "setItemAttributes('items_dropdown_${currentItemIndex}', ${currentItemIndex});" data-bs-target="#attribute" style = "white-space:nowrap; cursor:pointer;">`;
+        let attributeUI = `<div id="attribute_button_${currentItemIndex}" data-bs-toggle="modal" onclick = "setItemAttributes('items_dropdown_${currentItemIndex}', ${currentItemIndex});" data-bs-target="#attribute" style = "white-space:nowrap; cursor:pointer;">`;
         let maxCharLimit = 15;
         let attrTotalChar = 0;
         let total_selected = 0;

@@ -46,28 +46,43 @@ class TaxHelper
                     ->where('status', 'active')
                     ->get();
                   
-                foreach ($taxes as $taxDetail) {
-                    if ($taxCategory === 'GST') {
-                        if ($taxDetail->place_of_supply && $taxDetail->place_of_supply === $placeOfSupply) {
-                            continue;  
+                    foreach ($taxes as $taxDetail) {
+                        if ($taxCategory === 'GST') {
+                            if ($taxDetail->place_of_supply && $taxDetail->place_of_supply === $placeOfSupply) {
+                                $matches = ($transactionType === 'purchase')
+                                    ? $taxDetail->is_purchase
+                                    : $taxDetail->is_sale;
+                    
+                                if ($matches) {
+                                    $taxDetails[] = [
+                                        'id' => $taxDetail->id,
+                                        'applicability_type' => $taxGroup->applicability_type,
+                                        'tax_group' => $taxGroup->tax_group,
+                                        'tax_percentage' => $taxDetail->tax_percentage,
+                                        'tax_type' => $taxDetail->tax_type,
+                                        'tax_id' => $taxDetail->tax_id,
+                                        'tax_code' => $taxDetail->tax_code,
+                                    ];
+                                }
+                            }
+                        } else {
+                            $matches = ($transactionType === 'purchase')
+                                ? $taxDetail->is_purchase
+                                : $taxDetail->is_sale;
+                    
+                            if ($matches) {
+                                $taxDetails[] = [
+                                    'id' => $taxDetail->id,
+                                    'applicability_type' => $taxGroup->applicability_type,
+                                    'tax_group' => $taxGroup->tax_group,
+                                    'tax_percentage' => $taxDetail->tax_percentage,
+                                    'tax_type' => $taxDetail->tax_type,
+                                    'tax_id' => $taxDetail->tax_id,
+                                    'tax_code' => $taxDetail->tax_code,
+                                ];
+                            }
                         }
                     }
-                    $matches = ($transactionType === 'purchase') 
-                        ? $taxDetail->is_purchase 
-                        : $taxDetail->is_sale;
-
-                    if ($matches) {
-                        $taxDetails[] = [
-                            'id' => $taxDetail->id,
-                            'applicability_type' => $taxGroup->applicability_type,
-                            'tax_group' => $taxGroup->tax_group,
-                            'tax_percentage' => $taxDetail->tax_percentage,
-                            'tax_type' => $taxDetail->tax_type,
-                            'tax_id' => $taxDetail->tax_id,
-                            'tax_code' => $taxDetail->tax_code,
-                        ];
-                    }
-                }
             }
         }
 

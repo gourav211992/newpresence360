@@ -401,7 +401,7 @@
                                                                     <input type="text" class="form-control" name="pan_number" value="{{ $vendor->pan_number ?? '' }}">
                                                                 </div>
                                                                 <div class="col-md-3 d-flex align-items-center gap-1">
-                                                                    <input type="file" class="form-control" name="pan_attachment">
+                                                                    <input type="file" class="form-control" name="pan_attachment" onchange="simpleFileValidation(this)">
                                                                     @if(!empty($vendor->pan_attachment))
                                                                         <div class="mt-0">
                                                                             <a href="{{ Storage::url($vendor->pan_attachment) }}" target="_blank" download class="d-block file-link">
@@ -422,7 +422,7 @@
                                                                 </div>
                                                                 
                                                                 <div class="col-md-3 d-flex align-items-center gap-1">
-                                                                    <input type="file" class="form-control" name="tin_attachment">
+                                                                    <input type="file" class="form-control" name="tin_attachment" onchange="simpleFileValidation(this)">
                                                                     @if(!empty($vendor->tin_attachment))
                                                                         <div class="mt-0">
                                                                             <a href="{{ Storage::url($vendor->tin_attachment) }}" target="_blank" download class="d-block file-link">
@@ -442,7 +442,7 @@
                                                                     <input type="text" class="form-control" name="aadhar_number" value="{{ $vendor->aadhar_number ?? '' }}">
                                                                 </div>
                                                                 <div class="col-md-3 d-flex align-items-center gap-1">
-                                                                    <input type="file" class="form-control" name="aadhar_attachment">
+                                                                    <input type="file" class="form-control" name="aadhar_attachment" onchange="simpleFileValidation(this)">
                                                                     @if(!empty($vendor->aadhar_attachment))
                                                                         <div class="mt-0">
                                                                             <a href="{{ Storage::url($vendor->aadhar_attachment) }}" target="_blank" download class="d-block file-link">
@@ -537,7 +537,7 @@
                                                                     <label for="document-upload" class="form-label">Upload Documents</label>
                                                                 </div>
                                                                 <div class="col-md-3">
-                                                                    <input type="file" id="document-upload" class="form-control" name="other_documents[]" multiple>
+                                                                    <input type="file" id="document-upload" class="form-control" name="other_documents[]" multiple onchange="simpleFileValidation(this)">
                                                                     @if(!empty($vendor->other_documents))
                                                                         <div class="row mt-2">
                                                                             @if(is_array($vendor->other_documents))
@@ -958,7 +958,7 @@
                                                                         <label class="form-label">Upload Certificate</label>
                                                                     </div>
                                                                     <div class="col-md-6">
-                                                                        <input type="file" name="compliance[gst_certificate][]" multiple class="form-control">
+                                                                        <input type="file" name="compliance[gst_certificate][]" multiple class="form-control" onchange="simpleFileValidation(this)">
                                                                         @if(!empty($vendor->compliances) && $vendor->compliances->gst_certificate)
                                                                             <div class="row mt-2">
                                                                                 @if(is_array($vendor->compliances->gst_certificate))
@@ -1032,7 +1032,7 @@
                                                                         <label class="form-label">Upload Certificate</label>
                                                                     </div>
                                                                     <div class="col-md-6">
-                                                                        <input type="file" name="compliance[msme_certificate][]" multiple class="form-control">
+                                                                        <input type="file" name="compliance[msme_certificate][]" multiple class="form-control" onchange="simpleFileValidation(this)">
                                                                         @if(!empty($vendor->compliances) && $vendor->compliances->msme_certificate)
                                                                             <div class="row mt-2">
                                                                                 @if(is_array($vendor->compliances->msme_certificate))
@@ -1091,7 +1091,7 @@
                                                                                 </td>
 
                                                                                 <td>
-                                                                                    <div><input type="file" class="form-control mw-100" name="bank_info[{{ $index }}][cancel_cheque][]" multiple /></div>
+                                                                                    <div><input type="file" class="form-control mw-100" name="bank_info[{{ $index }}][cancel_cheque][]" multiple onchange="simpleFileValidation(this)" /></div>
                                                                                     @if(!empty($bankInfo->cancel_cheque))
                                                                                       <input type="hidden" name="bank_info[{{ $index }}][existing_cancel_cheque]" value="{{ $bankInfo->cancel_cheque }}">
                                                                                         <div class="mt-2">
@@ -1119,7 +1119,7 @@
                                                                                 <td>
                                                                                     <input type="radio"  name="bank_info[0][primary]" value="0" class="primary-radio">
                                                                                 </td>
-                                                                                <td><div><input type="file" class="form-control mw-100" name="bank_info[0][cancel_cheque][]" multiple /></div></td>
+                                                                                <td><div><input type="file" class="form-control mw-100" name="bank_info[0][cancel_cheque][]" multiple onchange="simpleFileValidation(this)" /></div></td>
                                                                                 <td>
                                                                                     <a href="#" class="text-primary add-bank-row"><i data-feather="plus-square" class="me-50"></i></a>
                                                                                     <a href="#" class="text-danger delete-bank-row"><i data-feather="trash-2" class="me-50"></i></a>
@@ -1258,12 +1258,12 @@
 
                                                          <div class="row align-items-center mb-1">
                                                             <div class="col-md-2"> 
-                                                                <label for="user" class="form-label">Locations</label>  
+                                                                <label for="user" class="form-label">Stores</label>  
                                                             </div>  
                                                             <div class="col-md-5"> 
                                                                 <select name="store_ids[]" multiple class="form-select select2">
                                                                     @foreach($stores as $store)
-                                                                        <option value="{{$store->id}}" {{in_array($store -> id, $selectedStoreIds) ? 'selected' : ''}}>{{$store->store_name}}</option>
+                                                                        <option value="{{$store->id}}" {{in_array($store -> id, $selectedStoreIds) ? 'selected' : ''}}>{{$store->name}}</option>
                                                                     @endforeach
                                                                 </select>
                                                             </div> 
@@ -1917,7 +1917,10 @@
             $template.find('input').each(function() {
                 let name = $(this).attr('name');
                 if ($(this).attr('type') !== 'file') {
+                $(this).val('');
+                } else {
                     $(this).val('');
+                    $(this).attr('onchange', 'simpleFileValidation(this)'); 
                 }
                 $(this).attr('name', name.replace(/\d+/, index - 1)); 
             });
@@ -1938,7 +1941,7 @@
                 method: 'GET',
                 success: function (data) {
                     if (data.status) {
-                        $row.find('.bank-name').val(data.data.BANK); // Bank Name only
+                        $row.find('.bank-name').val(data.data.BANK); 
                     } else {
                         $row.find('.bank-name').val('');
                         console.warn('Invalid IFSC code');
@@ -2194,5 +2197,46 @@ $(document).ready(function() {
             $('#enter_company_org_id').val('').trigger('change');
         }
     });
+</script>
+<script>
+    const ALLOWED_EXTENSIONS_SIMPLE = ['pdf', 'jpg', 'jpeg', 'png'];
+    const ALLOWED_MIME_TYPES_SIMPLE = ['application/pdf', 'image/jpeg', 'image/png'];
+    const MAX_FILE_SIZE_SIMPLE = 2048; 
+
+    function simpleFileValidation(element) {
+        const input = element;
+        const files = Array.from(input.files);
+        const dt = new DataTransfer();
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+            const fileSize = (file.size / 1024).toFixed(2); 
+
+            if (!ALLOWED_EXTENSIONS_SIMPLE.includes(fileExtension) || !ALLOWED_MIME_TYPES_SIMPLE.includes(file.type)) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Only PDF, JPG, JPEG, PNG files are allowed.',
+                    icon: 'error',
+                });
+                input.value = '';
+                return;
+            }
+
+            if (fileSize > MAX_FILE_SIZE_SIMPLE) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'File size must not exceed 2MB.',
+                    icon: 'error',
+                });
+                input.value = '';
+                return;
+            }
+
+            dt.items.add(file);
+        }
+
+        input.files = dt.files;
+    }
 </script>
 @endsection

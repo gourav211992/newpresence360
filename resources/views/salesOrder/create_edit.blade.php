@@ -3,7 +3,7 @@
 @section('content')
 
     <!-- BEGIN: Content-->
-    <form method="POST" data-completionFunction = "disableHeader" class="ajax-input-form sales_module_form sales_order" action = "{{route('sale.order.store')}}" data-redirect="{{ request() -> type == 'sq' ? route('sale.quotation.index') : route('sale.order.index') }}" id = "sale_order_form" enctype='multipart/form-data'>
+    <form method="POST" data-completionFunction = "disableHeader" class="ajax-input-form sales_module_form sales_order" action = "{{route('sale.order.store')}}" data-redirect="{{$redirectUrl}}" id = "sale_order_form" enctype='multipart/form-data'>
     <div class="app-content content ">
         <div class="content-overlay"></div>
         <div class="header-navbar-shadow"></div>
@@ -314,7 +314,7 @@
 
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Consignee Name</label>
+                                                            <label class="form-label">Consignee Name<span class="text-danger">*</span></label>
                                                             <input type="text" class="form-control" id = "consignee_name_input" name = "consignee_name" value = "{{isset($order) ? $order -> consignee_name : ''}}" /> 
                                                         </div>
                                                     </div> 
@@ -5417,8 +5417,11 @@ document.addEventListener('input', function (e) {
                 }
         $.ajax({
             url: "{{route('sale.order.get.production.bom')}}",
-            method: 'GET',
+            method: 'POST',
             dataType: 'json',
+            header : {
+                'X-CSRF-TOKEN': getCsrfToken()
+            },
             data: {
                 item_id: document.getElementById('items_dropdown_'+ itemIndex + '_value').value,
                 item_attributes : selectedItemAttr,

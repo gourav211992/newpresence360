@@ -77,7 +77,7 @@
                                                     <label class="form-label">Type<span class="text-danger">*</span></label>
                                                 </div>
                                                 <div class="col-md-5">
-                                                    <select name="store_location_type" class="form-select select2" id="store-location-type">
+                                                    <select name="store_location_type" class="form-select select2" id="store-location-type" oninput = "typeChange(this);">
                                                         @foreach ($storeLocationType as $option)
                                                             <option value="{{ $option }}" 
                                                                 {{$subStore->type == $option ? 'selected' : '' }}>
@@ -90,6 +90,14 @@
                                                     @enderror
                                                 </div>
                                             </div> 
+                                            <div class="row align-items-center mb-1 d-none" id = "station_wise_consumption_header">
+                                                <div class="col-md-3">
+                                                    <label class="form-label"> Station Wise Consumption <span class="text-danger">*</span></label>
+                                                </div>
+                                                <div class="col-md-5">
+                                                    <input type="checkbox" {{$subStore -> station_wise_consumption === 'yes' ? 'checked' : ''}} name="station_wise_consumption" id="station_wise_consumption_input" />
+                                                </div>
+                                            </div>
                                             <div class="row align-items-center mb-1">
                                                 <div class="col-md-3">
                                                     <label class="form-label">Parent Location(s)<span class="text-danger">*</span></label>
@@ -157,6 +165,21 @@
             });
         }
         applyCapsLock();
+    });
+    function typeChange(element)
+    {
+        let stationWiseFieldElement = document.getElementById('station_wise_consumption_header');
+        let stationWiseFieldInput = document.getElementById('station_wise_consumption_input');
+        if (element.value === "{{App\Helpers\ConstantHelper::SHOP_FLOOR}}") {
+            stationWiseFieldElement.classList.remove('d-none');
+        } else {
+            stationWiseFieldInput.checked = false;
+            stationWiseFieldElement.classList.add('d-none');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        typeChange(document.getElementById('store-location-type'));
     });
  </script>
 @endsection

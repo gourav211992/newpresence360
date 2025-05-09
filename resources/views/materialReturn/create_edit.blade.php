@@ -526,6 +526,20 @@
                                                                                 </td> 
                                                                             </tr> 
 
+                                                                            <tr id = "current_item_lot_no_row">
+                                                                                <td class="poprod-decpt">
+                                                                                    <div id ="current_item_lot_no">
+
+                                                                                    </div>
+                                                                                 </td>
+                                                                            </tr>
+                                                                            <tr id = "current_item_so_no_row">
+                                                                                <td class="poprod-decpt">
+                                                                                    <div id ="current_item_so_no">
+
+                                                                                    </div>
+                                                                                 </td>
+                                                                            </tr>
                                                                             
 
                                                                             <tr id = "current_item_qt_no_row"> 
@@ -2514,6 +2528,37 @@
                                  else {
                                         document.getElementById('current_item_stocks_row').style.display = "none";
                                     }
+                                    console.log("check",data);
+                                    const lotData = JSON.parse(document.getElementById(`item_lots_${itemRowId}`).value);
+                                    console.log('lot data ',lotData);
+                                    if (lotData) {
+                                    document.getElementById('current_item_lot_no_row').style.display = "table-row";
+                                    let lotHTML = `<strong style="font-size:11px; color : #6a6a6a;">Lot Number</strong> : `;
+                                    const soNoGroups = {};
+                                    lotData.forEach(lot => {
+                                        if (lot.so_lot_number) {
+                                            if (!soNoGroups[lot.so_lot_number]) {
+                                                soNoGroups[lot.so_lot_number] = 0;
+                                            }
+                                            soNoGroups[lot.so_lot_number] += Number(lot.lot_qty ?? 0);
+                                        }
+                                        lotHTML += `<span class="badge rounded-pill badge-light-primary"><strong>${lot?.lot_number}</strong>: <span>${lot?.lot_qty}</span></span>`
+                                    });
+                                    let soHTML = '';
+                                    if(Object.keys(soNoGroups).length > 0){
+                                        soHTML += `<strong style="font-size:11px; color : #6a6a6a;">SO Number</strong> : `;
+                                    }
+                                    for (const [soNo, totalQty] of Object.entries(soNoGroups)) {
+                                        soHTML += `<span class="badge rounded-pill badge-light-primary"><strong>${soNo}</strong> : ${totalQty}</span>`;
+                                    }
+
+                                    document.getElementById('current_item_lot_no').innerHTML = lotHTML;
+                                    document.getElementById('current_item_so_no').innerHTML = soHTML;
+                                    } 
+                                 else {
+                                        document.getElementById('current_item_lot_no_row').style.display = "none";
+                                    }
+
                             },
                             error: function(xhr) {
                                 console.error('Error fetching customer data:', xhr.responseText);

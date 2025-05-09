@@ -68,6 +68,19 @@ class GstrController extends Controller
 
         $masterData = self::masterData();
 
+        $types = ErpGstInvoiceType::on('mysql_master')
+        ->join("{$connection}.erp_gstr_compiled_data", 'erp_gstr_compiled_data.invoice_type_id', '=', 'erp_gst_invoice_types.id')
+        ->where("erp_gstr_compiled_data.supplier_gstin", $gstin)
+        ->whereBetween("erp_gstr_compiled_data.invoice_date", [$startDate, $endDate])
+        ->select('erp_gst_invoice_types.id', 'erp_gst_invoice_types.name')
+        ->where(function($q) use($request){
+            if($request->search){
+                $q->where('erp_gst_invoice_types.name', 'like', '%' . $request->search . '%');
+            }
+        })
+        ->groupBy('erp_gst_invoice_types.id')
+        ->get();
+
         return view('finance.gstr.index',[
             'pageLengths' => $pageLengths,
             'gstrInvoiceTypes' => $gstrInvoiceTypes,
@@ -76,7 +89,7 @@ class GstrController extends Controller
             'groups' => $masterData['groups'],
             'organizationData' => $masterData['organizations'],
             'companies' => $masterData['companies'],
-            'types' => $masterData['types'],
+            'types' => $types,
         ]);
     }
 
@@ -99,7 +112,11 @@ class GstrController extends Controller
         // $financialPeriod = self::currentFinancialYear(); 
 
         // Fetch all invoice types
-        $gstrInvoiceTypes = ErpGstInvoiceType::on('mysql_master')->get();
+        $gstrInvoiceTypes = ErpGstInvoiceType::on('mysql_master')->where(function($q) use($request){
+            if($request->search){
+                $q->where('name', 'like', '%' . $request->search . '%');
+            }
+        })->get();
 
         // Initialize the response array
         $arr = [
@@ -117,7 +134,10 @@ class GstrController extends Controller
         foreach ($gstrInvoiceTypes as $invoiceType) {
             $invoiceTypeName = strtolower($invoiceType->name);
             
-            $gstrCompiledData = GstrCompiledData::where('invoice_type_id', $invoiceType->id)
+            $gstrCompiledData = GstrCompiledData::where(function ($query) use ($request) {
+                    $this->filter($request,$query);
+                })
+                ->where('invoice_type_id', $invoiceType->id)
                 ->where('supplier_gstin', $supplierGstin)
                 ->whereBetween('erp_gstr_compiled_data.invoice_date', [$startDate, $endDate])
                 ->get();
@@ -165,12 +185,13 @@ class GstrController extends Controller
         $type = ErpGstInvoiceType::on('mysql_master')->where('id',$id)->first();
 
         $gstrData = GstrCompiledData::where(function($query) use($request){
-                    $this->filter($request,$query);
+                            $this->filter($request,$query);
                     
-                    if($request->has('search')){
-                        $query->where('erp_gstr_compiled_data.party_name', 'like', '%' . $request->search . '%')
-                            ->orWhere('erp_gstr_compiled_data.party_gstin', 'like', '%' . $request->search . '%');
-                    }
+                            if($request->has('search')){
+                                $query->where('erp_gstr_compiled_data.party_name', 'like', '%' . $request->search . '%')
+                                    ->orWhere('erp_gstr_compiled_data.party_gstin', 'like', '%' . $request->search . '%');
+                            }
+
             })
         ->whereBetween('erp_gstr_compiled_data.invoice_date', [$startDate, $endDate])
         ->where('invoice_type_id',$id)
@@ -240,7 +261,11 @@ class GstrController extends Controller
 
         $gstrExport = new GstrDetailExport();
         if ($id === 'all') {
-            $types = ErpGstInvoiceType::on('mysql_master')->get();
+            $types = ErpGstInvoiceType::on('mysql_master')->where(function($q) use($request){
+                        if($request->search){
+                            $q->where('erp_gst_invoice_types.name', 'like', '%' . $request->search . '%');
+                        }
+                    })->get();
 
             $zipFileName = "temp/finance/gstr1/{$gstin}_all_csvs.zip";
             $zipPath = public_path($zipFileName);

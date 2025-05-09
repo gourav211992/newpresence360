@@ -22,7 +22,7 @@
             <tr>
                 <!-- Organization Logo (Left) -->
                 <td style="vertical-align: top;">
-                    <img src="{{$orgLogo}}" height="20px" alt="">
+                    <img src="{{$orgLogo}}" height="50px" alt="">
                 </td>
 
                 <!--  MRN Text (Center) -->
@@ -379,7 +379,7 @@
                             </td>
                             <td
                                 style="vertical-align: top; padding:10px 3px; text-align:left; border: 1px solid #000; border-top: none; border-left: none;">
-                                <div style="width:200px;word-wrap:break-word;">
+                                <div style="max-width:180px;word-wrap:break-word;">
                                     <b> {{ @$val->item->item_name }}</b>
                                     @if(isset($val->attributes))
                                                     <br>

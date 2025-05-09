@@ -15,7 +15,7 @@
                                 <h2 class="content-header-title float-start mb-0">New Candidate</h2>
                                 <div class="breadcrumb-wrapper">
                                     <ol class="breadcrumb">
-                                        <li class="breadcrumb-item"><a href="index.html">Home</a>
+                                        <li class="breadcrumb-item"><a href="{{ route('recruitment.hr-dashboard') }}">Home</a>
                                         </li>
                                         <li class="breadcrumb-item active">Add New</li>
 
@@ -201,6 +201,18 @@
                                                 </div>
                                             </div>
 
+                                            <div class="row align-items-center mb-1">
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Refered By</label>
+                                                </div>
+
+                                                <div class="col-md-5">
+                                                    <select class="form-select select2" id="refered_by" name="refered_by">
+                                                        <option value="">Select</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+
                                         </div>
 
                                         <div class="col-md-3 border-start">
@@ -273,10 +285,44 @@
 @endsection
 @section('scripts')
 <script>
-$(document).ready(function() {
-    $("#skill").select2({
-        tags: true
+    $(document).ready(function() {
+        $("#skill").select2({
+            tags: true
+        });
     });
-});
+</script>
+
+<script>
+    $(document).ready(function() {
+        $('#refered_by').select2({
+            placeholder: "Select Employee...",
+            minimumInputLength: 2,
+            ajax: {
+                url: "{{ route('recruitment.fetch-employees') }}",
+                dataType: 'json',
+                data: function(params) {
+                    return {
+                        search: $.trim(params.term),
+                        page: params.page || 1
+                    };
+                },
+                processResults: function(data, params) {
+                    params.page = params.page || 1;
+                    return {
+                        results: data.data.map(function(employee) {
+                            return {
+                                id: employee.id,
+                                text: employee.name
+                            };
+                        }),
+                        pagination: {
+                            more: data.pagination.more
+                        }
+                    };
+                },
+                cache: true
+            }
+        });
+    });
 </script>
 @endsection

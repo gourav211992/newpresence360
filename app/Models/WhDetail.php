@@ -20,7 +20,16 @@ class WhDetail extends Model
     protected $fillable = [
         'name', 
         'wh_level_id', 
+        'store_id',
+        'sub_store_id',
+        'parent_id',
         'is_storage_point', 
+        'is_first_level', 
+        'is_last_level', 
+        'max_weight', 
+        'max_volume', 
+        'current_weight', 
+        'current_volume', 
         'status', 
         'created_by', 
         'updated_by',
@@ -57,5 +66,95 @@ class WhDetail extends Model
     {
         return $this->belongsTo(WhLevel::class, 'wh_level_id');
     }
+
+    public function store()
+    {
+        return $this -> belongsTo(ErpStore::class, 'store_id');
+    }
+
+    public function sub_store()
+    {
+        return $this -> belongsTo(ErpSubStore::class, 'sub_store_id');
+    }
+
+    public function parent()
+    {
+        return $this -> belongsTo(WhDetail::class, 'parent_id');
+    }
+    
+    public function getParentNamesAttribute()
+    {
+        $colors = [
+            'badge-light-primary',
+            'badge-light-success',
+            'badge-light-warning',
+            'badge-light-danger',
+            'badge-light-info',
+            'badge-light-dark',
+        ];
+
+        $badges = '';
+        $level = $this->parent;
+        $index = 0;
+
+        while ($level) {
+            $colorClass = $colors[$index % count($colors)]; // Cycle through colors
+            $badges .= '<span class="badge rounded-pill ' . $colorClass . ' badgeborder-radius" style="margin-right: 5px;">' 
+                    . $level->name . 
+                    '</span>';
+
+            $level = $level->parent;
+            $index++;
+        }
+
+        return $badges;
+    }
+
+    public function getParentNames()
+    {
+        $parents = [];
+        $level = $this->parent;
+
+        while ($level) {
+            $parents[] = [
+                'id' => $level->id,
+                'name' => $level->name,
+            ];
+            $level = $level->parent;
+        }
+
+        return $parents;
+    }
+
+    public function getLevelNamesAttribute()
+    {
+        $colors = [
+            'badge-light-primary',
+            'badge-light-success',
+            'badge-light-warning',
+            'badge-light-danger',
+            'badge-light-info',
+            'badge-light-dark',
+        ];
+
+        $badges = '';
+        $index = 0;
+
+        // Assuming you have a sub_store_id field available in $this
+        $levels = WhDetail::where('sub_store_id', $this->sub_store_id)
+            ->where('wh_level_id', $this->wh_level_id)
+            ->get();
+
+        foreach ($levels as $level) {
+            $colorClass = $colors[$index % count($colors)]; // Cycle through colors
+            $badges .= '<span class="badge rounded-pill ' . $colorClass . ' badgeborder-radius" style="margin-right: 5px;">' 
+                    . $level->name . 
+                    '</span>';
+            $index++;
+        }
+
+        return $badges;
+    }
+
 
 }

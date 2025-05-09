@@ -11,8 +11,6 @@ use App\Models\VendorItem;
 use App\Models\Vendor;
 use App\Models\ErpAddress;
 use App\Helpers\CurrencyHelper;
-use App\Models\BomProductionItem;
-use App\Models\ProductionRouteDetail;
 use stdClass;
 
 class ItemHelper  
@@ -282,7 +280,7 @@ class ItemHelper
             }
             if(!$costPrice) {
 
-                $vendorItem = $item->approvedVendors()
+                $vendorItem = $item->approvedVendors
                 ->where('vendor_id', $vendorId)
                 ->where('uom_id', $uomId)
                 ->first();
@@ -405,7 +403,8 @@ class ItemHelper
             } else {
                 $conversion = AlternateUOM::where('item_id', $itemId) -> where('uom_id', $altUomId) -> first();
                 if (isset($conversion)) {
-                    $altUomQty = round($baseQty / $conversion -> conversion_to_inventory, 2);
+                    // $altUomQty = round($baseQty / $conversion -> conversion_to_inventory, 2);
+                    $altUomQty = ($baseQty / $conversion -> conversion_to_inventory);
                 }
             }
         }
@@ -473,27 +472,6 @@ class ItemHelper
             return false;
         }
         return true;
-    }
-
-    public static function getStationSfItemDetails($productionRouteId = null, $stationId = null, $bomId = null) 
-    {
-        $data = [];
-        $prDetail = ProductionRouteDetail::where('production_route_id', $productionRouteId)
-        ->where('station_id', $stationId)
-        ->first();
-        $bomProductionItem = BomProductionItem::where('bom_id', $bomId)->where('station_id', $stationId)->first();
-        if($bomProductionItem) {
-            $data['pr_parent_id'] = $prDetail?->pr_parent_id;
-            $data['item_id'] = $bomProductionItem?->item_id;
-            $data['attributes'] = $bomProductionItem?->attributes;
-            $data['qty'] = $bomProductionItem?->qty ?? 1; 
-        } else {
-            $data['pr_parent_id'] = $prDetail?->pr_parent_id;
-            $data['item_id'] = $prDetail?->item_id;
-            $data['attributes'] = $prDetail?->attributes;
-            $data['qty'] = 1;
-        }
-        return $data;
     }
 
     public static function getCustomerItemDetails(int $itemId, int $customerId) : array

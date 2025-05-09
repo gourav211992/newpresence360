@@ -18,6 +18,7 @@ Route::middleware(['user.auth'])->group(function () {
     
     Route::controller(IndexController::class)->group(function () {
         Route::get('/dashboard', 'index')->name('recruitment.dashboard');
+        Route::get('/hr-dashboard', 'hrDashboard')->name('recruitment.hr-dashboard');
         Route::get('/fetch-employees', 'fetchEmployees')->name('recruitment.fetch-employees');
         Route::get('/fetch-emails', 'fetchEmails')->name('recruitment.fetch-emails');
     });
@@ -25,16 +26,18 @@ Route::middleware(['user.auth'])->group(function () {
     Route::controller(RequestController::class)->prefix('requests')->group(function () {
         Route::get('/', 'index')->name('recruitment.requests');
         Route::get('/for-approval', 'index')->name('recruitment.requests.for-approval');
-        Route::get('/assigned-candidate', 'index')->name('recruitment.requests.assigned-candidate');
-        Route::get('/interview-scheduled', 'index')->name('recruitment.requests.interview-scheduled');
+        Route::get('/assigned-candidate', 'assignedCandidateList')->name('recruitment.requests.assigned-candidate');
+        Route::get('/interview-scheduled', 'jobInterviewList')->name('recruitment.requests.interview-scheduled');
         Route::get('/create', 'create')->name('recruitment.requests.create');
         Route::get('/edit/{id}', 'edit')->name('recruitment.requests.edit');
         Route::get('/show/{id}', 'show')->name('recruitment.requests.show');
+        Route::get('/job-view/{id}', 'jobView')->name('recruitment.requests.job-view');
     });
 
     Route::controller(JobController::class)->prefix('jobs')->group(function () {
         Route::get('/', 'index')->name('recruitment.jobs');
-        Route::get('/assigned-candidate', 'index')->name('recruitment.jobs.assigned-candidate');
+        Route::get('/assigned-candidate', 'getAssignedCandidateList')->name('recruitment.jobs.assigned-candidate');
+        Route::get('/interview-scheduled', 'getJobInterviewList')->name('recruitment.jobs.interview-scheduled');
         Route::get('/create', 'create')->name('recruitment.jobs.create');
         Route::get('/edit/{id}', 'edit')->name('recruitment.jobs.edit');
         Route::get('/show/{id}', 'show')->name('recruitment.jobs.show');
@@ -42,6 +45,7 @@ Route::middleware(['user.auth'])->group(function () {
         Route::get('/candidates/{id}', 'candidates')->name('recruitment.jobs.candidates');
         Route::get('/candidate-detail/{id}/{jobId}', 'candidateDetail')->name('recruitment.jobs.candidate-detail');
         Route::get('/fetch-candidates/{jobId}/{status}', 'fetchCandidates')->name('recruitment.jobs.fetch-candidates');
+        Route::get('/candidate-interview-detail/{id}/{jobId}', 'candidateInterviewDetail')->name('recruitment.jobs.candidate-interview-detail');
     });
 
     Route::controller(JobCandidateController::class)->prefix('job-candidates')->group(function () {
@@ -49,6 +53,26 @@ Route::middleware(['user.auth'])->group(function () {
         Route::get('/create', 'create')->name('recruitment.job-candidates.create');
         Route::get('/edit/{id}', 'edit')->name('recruitment.job-candidates.edit');
         Route::get('/show/{id}', 'show')->name('recruitment.job-candidates.show');
+    });
+
+    Route::controller(ReferalController::class)->prefix('my-referal')->group(function () {
+        Route::get('/', 'index')->name('recruitment.my-referal');
+        Route::get('/show/{id}/{jobId}', 'show')->name('recruitment.my-referal.show');
+    });
+
+    Route::controller(InternalJobController::class)->prefix('internal-jobs')->group(function () {
+        Route::get('/', 'index')->name('recruitment.internal-jobs');
+        Route::get('/apply/{jobId}', 'apply')->name('recruitment.internal-jobs.apply');
+    });
+
+    Route::controller(AssessmentController::class)->prefix('assessments')->group(function () {
+        Route::get('/', 'index')->name('recruitment.assessments');
+        Route::get('/result', 'result')->name('recruitment.assessments.result');
+    });
+
+    Route::controller(HrRequestController::class)->prefix('request-hr')->group(function () {
+        Route::get('/', 'index')->name('recruitment.request-hr');
+        Route::get('/show/{id}', 'show')->name('recruitment.request-hr.show');
     });
 
     Route::group(['middleware' => ['apiresponse']], function () {
@@ -64,12 +88,28 @@ Route::middleware(['user.auth'])->group(function () {
             Route::put('/{id}', 'update')->name('recruitment.jobs.update');
             Route::delete('/remove-panel/{id}/{roundId}', 'removePanel')->name('recruitment.jobs.remove-panel');
             Route::post('/update-candidate-status', 'updateCandidateStatus')->name('recruitment.jobs.update-candidate-status');
+            Route::post('/recruitment.jobs.scheduled-interview/{id}', 'updateCandidateStatus')->name('recruitment.jobs.scheduled-interview');
+            Route::post('/update-status/{id}', 'updateStatus')->name('recruitment.jobs.update-status');
+        });
+
+        Route::controller(JobInterviewController::class)->prefix('jobs-interviews')->group(function () {
+            Route::post('/scheduled/{jobId}', 'scheduled')->name('recruitment.jobs-interviews.scheduled');
+            Route::post('/feedback', 'feedback')->name('recruitment.jobs-interviews.feedback');
+            Route::post('/hr-feedback', 'hrFeedback')->name('recruitment.jobs-interviews.hr-feedback');
         });
 
         Route::controller(JobCandidateController::class)->prefix('job-candidates')->group(function () {
             Route::post('/store', 'store')->name('recruitment.job-candidates.store');
             Route::put('/{id}', 'update')->name('recruitment.job-candidates.update');
             Route::delete('/destroy/{id}', 'destroy')->name('recruitment.job-candidates.destroy');
+        });
+
+        Route::controller(InternalJobController::class)->prefix('internal-jobs')->group(function () {
+            Route::post('/store-referrals/{jobId}', 'storeReferrals')->name('recruitment.internal-jobs.store-referrals');
+        });
+
+        Route::controller(ReferalController::class)->prefix('my-referal')->group(function () {
+            Route::post('/applied-for-job/{jobId}', 'appliedForJob')->name('recruitment.my-referal.applied-for-job');
         });
     });
 });

@@ -58,16 +58,6 @@
          </select>
       </td>
       <td>
-         <select class="form-select item-store" name="components[{{$rowCount}}][store_id]">
-               @foreach($locations as $erpStore)
-                  <option value="{{$erpStore->id}}"
-                    {{ $item->store_id == $erpStore->id ? 'selected' : '' }}>
-                    {{ ucfirst($erpStore->store_name) }}
-                  </option>
-               @endforeach
-         </select>
-      </td>
-      <td>
          <input type="number" class="form-control mw-100 text-end accepted_qty" name="components[{{$rowCount}}][accepted_qty]" value="{{$item->accepted_qty}}" step="any" />
       </td>
       <td><input type="number" name="components[{{$rowCount}}][rate]" value="{{$item->rate}}" class="form-control mw-100 text-end rate checkNegativeVal" /></td>

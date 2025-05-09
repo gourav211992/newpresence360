@@ -23,9 +23,9 @@
                 <!-- Organization Logo (Left) -->
                 <td style="vertical-align: top;">
                     @if (isset($orgLogo) && $orgLogo)
-                        <img src="{!! $orgLogo !!}" alt="" height="20px" />
+                        <img src="{!! $orgLogo !!}" alt="" height="50px" />
                     @else
-                        <img src="{{$imagePath}}" height="20px" alt="">
+                        <img src="{{$imagePath}}" height="50px" alt="">
                     @endif
                 </td>
 
@@ -325,122 +325,124 @@
                 </td>
             </tr>
             @php
-                                                $taxBracket = [];
+                $taxBracket = [];
                 $totalCGSTValue = 0.00;
                 $totalSGSTValue = 0.00;
                 $totalIGSTValue = 0.00;
                 $totalTaxValue = 0.00;
             @endphp
             @foreach($exp->items as $key => $val)
-                        <tr>
-                            <td
-                                style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: center;">
-                                {{ $key + 1 }}
-                            </td>
-                            <td
-                                style="vertical-align: top; padding:10px 3px; text-align:left; border: 1px solid #000; border-top: none; border-left: none;">
-                                <b> {{ @$val->item->item_name }}</b>
-                                @if(isset($val->attributes))
-                                                <br>
-                                                @php
-                                                    $arrr = $val->attributes ? $val->attributes()->whereNotNull('attr_value')->pluck('attr_value')->all() : [];
-
-                                                    $first = true;
-                                                @endphp
-                                                @foreach($val->item->itemAttributes as $itemAttribute)
-                                                    @if(count($arrr))
-
-                                                        @foreach ($itemAttribute->attributes() as $value)
-                                                            @if (in_array($value->id, $arrr))
-                                                                @if (!$first)
-                                                                    {{','}}
-                                                                @endif
-                                                                {{$value->attributeGroup->name}}:{{ucfirst($value->value)}}
-                                                                @php
-                                                                    $first = false;
-                                                                @endphp
-                                                            @endif
-                                                        @endforeach
-
-                                                    @endif
-                                                @endforeach
-                                                <br>
-                                @endif
-                                @if(isset($val->specifications))
-                                    @foreach($val->specifications as $data)
-                                        @if(isset($data->value))
-                                            {{$data->specification_name}}:{{$data->value}}<br>
-                                        @endif
-                                    @endforeach
-                                @endif
-                                {{ @$val->item_code }}<br />
-                                {{@$val->remark}}
-                            </td>
-                            <td
-                                style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
-                                {{ @$val->hsn_code }}
-                            </td>
-                            <td
-                                style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
-                                {{@$val->accepted_qty}}
-                            </td>
-                            <td
-                                style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
-                                {{@$val->uom->name}}
-                            </td>
-                            <td
-                                style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
-                                {{@$val->rate}}
-                            </td>
-                            @php
-                                $total = $val->accepted_qty * $val->rate;
-                            @endphp
-                            <td
-                                style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
-                                {{number_format($total, 2) }}
-                            </td>
-                            <td
-                                style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none;  text-align: right;">
-                                {{number_format($val->discount_amount + $val->header_discount_amount, 2)}}
-                            </td>
-                            @php
-                                $total = $val->accepted_qty * $val->rate;
-                                $netValue = $total - ($val->discount_amount + $val->header_discount_amount);
-                            @endphp
-                            <td
-                                style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none;  text-align: right;">
-                                {{number_format($netValue, 2)}}
-                            </td>
-                            <td
-                                style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: right;">
+                <tr>
+                    <td
+                        style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: center;">
+                        {{ $key + 1 }}
+                    </td>
+                    <td
+                        style="vertical-align: top; padding:10px 3px; text-align:left; border: 1px solid #000; border-top: none; border-left: none;">
+                        <div style="max-width:180px;word-wrap:break-word;">
+                            <b> {{ @$val->item->item_name }}</b>
+                            @if(isset($val->attributes))
+                                <br>
                                 @php
-                                    if (count($val->taxes)) {
-                                        foreach ($val->taxes as $taxs) {
-                                            $taxName = $taxs->ted_name . " " . number_format($taxs->ted_percentage, 2) . " %";
-                                            if (isset($taxBracket[$taxName])) {
-                                                $taxBracket[$taxName][0] += $taxs->ted_amount;
-                                                $taxBracket[$taxName][1] += $taxs->assesment_amount;
-                                            } else {
-                                                $taxBracket[$taxName][0] = $taxs->ted_amount;
-                                                $taxBracket[$taxName][1] = $taxs->assesment_amount;
-                                            }
+                                    $arrr = $val->attributes ? $val->attributes()->whereNotNull('attr_value')->pluck('attr_value')->all() : [];
 
-                                        }
-                                    }
-                                    $totalCGSTValue += $val->cgst_value['value'];
-                                    $totalSGSTValue += $val->sgst_value['value'];
-                                    $totalIGSTValue += $val->igst_value['value'];
-                                    $totalTaxValue = $totalCGSTValue + $totalIGSTValue + $totalSGSTValue;
-
+                                    $first = true;
                                 @endphp
-                                {{-- {{isset($val?->taxes?->first()->ted_amount) ? $val->taxes->first()->ted_amount : "NA"}} --}}
-                                {{ number_format($val->cgst_value['value'] + $val->sgst_value['value'] + $val->igst_value['value'], 2) }}
-                            </td>
-                            <td
-                                style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none;  text-align: center;">
-                                {{ $val?->hsn?->tax?->tax_group ?? 'NA' }}
-                            </td>
-                        </tr>
+                                @foreach($val->item->itemAttributes as $itemAttribute)
+                                    @if(count($arrr))
+
+                                        @foreach ($itemAttribute->attributes() as $value)
+                                            @if (in_array($value->id, $arrr))
+                                                @if (!$first)
+                                                    {{','}}
+                                                @endif
+                                                {{$value->attributeGroup->name}}:{{ucfirst($value->value)}}
+                                                @php
+                                                    $first = false;
+                                                @endphp
+                                            @endif
+                                        @endforeach
+
+                                    @endif
+                                @endforeach
+                                <br>
+                            @endif
+                            @if(isset($val->specifications))
+                                @foreach($val->specifications as $data)
+                                    @if(isset($data->value))
+                                        {{$data->specification_name}}:{{$data->value}}<br>
+                                    @endif
+                                @endforeach
+                            @endif
+                            {{ @$val->item_code }}<br />
+                            {{@$val->remark}}
+                        </div>
+                    </td>
+                    <td
+                        style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
+                        {{ @$val->hsn_code }}
+                    </td>
+                    <td
+                        style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
+                        {{@$val->accepted_qty}}
+                    </td>
+                    <td
+                        style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
+                        {{@$val->uom->name}}
+                    </td>
+                    <td
+                        style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
+                        {{@$val->rate}}
+                    </td>
+                    @php
+                        $total = $val->accepted_qty * $val->rate;
+                    @endphp
+                    <td
+                        style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
+                        {{number_format($total, 2) }}
+                    </td>
+                    <td
+                        style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none;  text-align: right;">
+                        {{number_format($val->discount_amount + $val->header_discount_amount, 2)}}
+                    </td>
+                    @php
+                        $total = $val->accepted_qty * $val->rate;
+                        $netValue = $total - ($val->discount_amount + $val->header_discount_amount);
+                    @endphp
+                    <td
+                        style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none;  text-align: right;">
+                        {{number_format($netValue, 2)}}
+                    </td>
+                    <td
+                        style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: right;">
+                        @php
+                            if (count($val->taxes)) {
+                                foreach ($val->taxes as $taxs) {
+                                    $taxName = $taxs->ted_name . " " . number_format($taxs->ted_percentage, 2) . " %";
+                                    if (isset($taxBracket[$taxName])) {
+                                        $taxBracket[$taxName][0] += $taxs->ted_amount;
+                                        $taxBracket[$taxName][1] += $taxs->assesment_amount;
+                                    } else {
+                                        $taxBracket[$taxName][0] = $taxs->ted_amount;
+                                        $taxBracket[$taxName][1] = $taxs->assesment_amount;
+                                    }
+
+                                }
+                            }
+                            $totalCGSTValue += $val->cgst_value['value'];
+                            $totalSGSTValue += $val->sgst_value['value'];
+                            $totalIGSTValue += $val->igst_value['value'];
+                            $totalTaxValue = $totalCGSTValue + $totalIGSTValue + $totalSGSTValue;
+
+                        @endphp
+                        {{-- {{isset($val?->taxes?->first()->ted_amount) ? $val->taxes->first()->ted_amount : "NA"}} --}}
+                        {{ number_format($val->cgst_value['value'] + $val->sgst_value['value'] + $val->igst_value['value'], 2) }}
+                    </td>
+                    <td
+                        style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none;  text-align: center;">
+                        {{ $val?->hsn?->tax?->tax_group ?? 'NA' }}
+                    </td>
+                </tr>
             @endforeach
         </table>
 

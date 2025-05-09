@@ -27,7 +27,6 @@
             padding: 8px;
         }
         .tooltip-inner { text-align: left}
-        .subStore { display: none; }
     </style>
 @endsection
 @section('content')
@@ -148,14 +147,15 @@
                                                         </select>
                                                     </div>
                                                 </div>
-                                                <!-- <div class="row align-items-center mb-1">
+                                                <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Reference No </label>
+                                                        <label class="form-label">Store <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="text" name="reference_number" class="form-control">
+                                                        <select class="form-select sub_store" id="sub_store_id" name="sub_store_id">
+                                                        </select>
                                                     </div>
-                                                </div> -->
+                                                </div>
                                                 <div class="row align-items-center mb-1 d-none" id="reference_from">
                                                     <div class="col-md-3">
                                                         <label class="form-label">
@@ -373,8 +373,6 @@
                                                                 <th width="240px">Item Name</th>
                                                                 <th>Attributes</th>
                                                                 <th>UOM</th>
-                                                                <th>Location</th>
-                                                                <th class="subStore">Store</th>
                                                                 <th class="text-end">Qty</th>
                                                                 <th class="text-end">Rate</th>
                                                                 <th class="text-end">Value</th>
@@ -387,13 +385,13 @@
                                                         </tbody>
                                                         <tfoot>
                                                             <tr class="totalsubheadpodetail">
-                                                                <td class="dynamic-colspan"></td>
+                                                                <td colspan="7"></td>
                                                                 <td class="text-end" id="totalItemValue">0.00</td>
                                                                 <td class="text-end" id="totalItemDiscount">0.00</td>
                                                                 <td class="text-end" id="TotalEachRowAmount">0.00</td>
                                                             </tr>
                                                             <tr valign="top">
-                                                                <td rowspan="10" class="dynamic-summary-colspan">
+                                                                <td rowspan="10" colspan="7">
                                                                     <table class="table border" id="itemDetailDisplay">
                                                                         <tr>
                                                                             <td class="p-0">
@@ -421,7 +419,7 @@
                                                                         </tr>
                                                                     </table>
                                                                 </td>
-                                                                <td colspan="6">
+                                                                <td colspan="7">
                                                                     <table class="table border mrnsummarynewsty">
                                                                         <tr>
                                                                             <td colspan="2" class="p-0">
@@ -899,8 +897,6 @@
         $(document).on('click','#addNewItemBtn', (e) => {
             // for component item code
             let storeLocation = $('.header_store_id').val();
-            updateItemStores();
-            getSubStores(storeLocation);
             var supplierName = $('#vendor_name').val();
             // for component item code
             if(!checkBasicFilledDetail()) {
@@ -1007,8 +1003,6 @@
                         getItemDetail(closestTr);
                         getItemCostPrice($input.closest('tr'));
                         let storeLocation = $('.header_store_id').val();
-                        updateItemStores();
-                        getSubStores(storeLocation, itemId);
                         return false;
                     },
                     change: function(event, ui) {
@@ -1293,7 +1287,7 @@
                 });
                 let uomId = $(currentTr).find("[name*='[uom_id]']").val() || '';
                 let qty = $(currentTr).find("[name*='[accepted_qty]']").val() || '';
-                let storeId = $(currentTr).find("[name*='store_id']").val() || '';
+                let storeId = $(currentTr).find("[name*='header_store_id']").val() || '';
                 let subStoreId = $(currentTr).find("[name*='sub_store_id']").val() || '';
 
                 let actionUrl = '{{route("purchase-return.get.itemdetail")}}'+'?item_id='+itemId+'&mrn_header_id='+mrnHeaderId+'&mrn_detail_id='+mrnDetailId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&store_id='+storeId+'&sub_store_id='+subStoreId;
@@ -1706,19 +1700,6 @@
                         $('.supplier_invoice_date').val(supplier_invoice_date);
                         $('.transporter_name').val(transporter_name);
                         $('.vehicle_no').val(vehicle_no);
-                        if(subStoreCount){
-                            // Show subStore header and cell
-                            $(".subStore").show();
-                            // Set colspan to 9
-                            $("td.dynamic-colspan").attr("colspan", 9);
-                            $("td.dynamic-summary-colspan").attr("colspan", 7);
-                        } else{
-                            // Hide subStore header and cell
-                            $(".subStore").hide();
-                            // Set colspan to 8
-                            $("td.dynamic-colspan").attr("colspan", 8);
-                            $("td.dynamic-summary-colspan").attr("colspan", 6);
-                        }
                         $("#itemTable .mrntableselectexcel").empty().append(data.data.pos);
                         initializeAutocomplete2(".comp_item_code");
                         $("#poModal").modal('hide');
@@ -1729,8 +1710,7 @@
                         $(".editAddressBtn").addClass('d-none');
                         let locationId = $("[name='header_store_id']").val();
                         getLocation(locationId);
-                        getSubStores(locationId, item='');
-
+                        
                         if(finalDiscounts.length) {
                             let rows = '';
                             finalDiscounts.forEach(function(item,index) {

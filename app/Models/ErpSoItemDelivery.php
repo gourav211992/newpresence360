@@ -19,4 +19,8 @@ class ErpSoItemDelivery extends Model
         'invoice_qty',
         'delivery_date',
     ];
+    public function item()
+    {
+        return $this->belongsTo(ErpSoItem::class, 'so_item_id');
+    }
 }

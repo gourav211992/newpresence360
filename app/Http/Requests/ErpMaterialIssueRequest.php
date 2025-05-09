@@ -28,16 +28,15 @@ class ErpMaterialIssueRequest extends FormRequest
         return [
             'material_issue_id' => 'numeric|integer',
             'book_id' => 'required|numeric|integer|exists:erp_books,id',
-            'document_no' => ['required',Rule::unique('erp_material_issue_header', 'document_number')
-            ->ignore($this->material_issue_id, 'id')
-            ->where('book_id', $this -> book_id)],
+            'document_no' => ['required'],
             'document_date' => 'required|date',
             'reference_no' => 'nullable|string',
             'issue_type' => 'required|string',
-            'store_from_id' => 'required|numeric|integer|exists:erp_stores,id',
+            'store_from_id' => 'required|numeric|integer',
+            'sub_store_from_id' => 'required|numeric|integer',
             'item_id.*' => 'required|numeric|integer',
-            'item_qty.*' => 'required|numeric|min:1',
-            'item_rate.*' => 'required|numeric|min:0',
+            'item_qty.*' => 'required|numeric|min:0.000001',
+            'item_rate.*' => 'required|numeric',
             'final_remarks' => 'nullable|string|max:255'
         ];
     }
@@ -102,7 +101,10 @@ class ErpMaterialIssueRequest extends FormRequest
                 $fromSubStoreId = isset($this -> item_sub_store_from[$itemKey]) ? $this -> item_sub_store_from[$itemKey] : null;
                 $toSubStoreId = isset($this -> item_sub_store_to[$itemKey]) ? $this -> item_sub_store_to[$itemKey] : null;
 
-                if ($fromStoreId == $toStoreId && $fromSubStoreId == $toSubStoreId)
+                $fromStationId = isset($this -> item_station_from[$itemKey]) ? $this -> item_station_from[$itemKey] : null;
+                $toStationId = isset($this -> item_station_to[$itemKey]) ? $this -> item_station_to[$itemKey] : null;
+
+                if ($fromStoreId == $toStoreId && $fromSubStoreId == $toSubStoreId && $fromStationId === $toStationId)
                 {
                     $validator->errors()->add("item_code." . $itemKey, "To and From location cannot be same");
                 }

@@ -119,7 +119,7 @@ class CustomerRequest extends FormRequest
             'pan_number' => ['nullable', 'string', 'regex:/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/'],
             'tin_number' => 'nullable|string|regex:/^\d{10}$/',
             'aadhar_number' => 'nullable|string|regex:/^\d{12}$/',
-            'currency_id' => 'nullable|exists:mysql_master.currency,id',
+            'currency_id' => 'required|exists:mysql_master.currency,id',
             'opening_balance' => 'nullable|numeric|min:0',
             'pricing_type' => 'nullable|string|max:255',
             'credit_limit' => 'nullable|numeric|min:0',

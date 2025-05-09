@@ -54,25 +54,6 @@
          </select>
       </td>
       <td>
-         <select class="form-select item-store" name="components[{{$rowCount}}][store_id]">
-               @foreach($locations as $erpStore)
-                  <option value="{{$erpStore->id}}"
-                    {{ $item->store_id == $erpStore->id ? 'selected' : '' }}>
-                    {{ ucfirst($erpStore->store_name) }}
-                  </option>
-               @endforeach
-         </select>
-      </td>
-      @if(isset($item->sub_store_id) && $item->sub_store_id)
-            <td class="subStore">
-                <select class="form-select sub_store" name="components[{{$rowCount}}][sub_store_id]" readonly>
-                    <option value="{{ $item->sub_store_id }}">
-                        {{ $item?->subStore?->name }}
-                    </option>
-                </select>
-            </td>
-        @endif
-      <td>
          <input type="number" class="form-control mw-100 text-end order_qty" name="components[{{$rowCount}}][order_qty]" value="{{$item->order_qty}}" step="any" @readonly(true)/>
       </td>
       <td>

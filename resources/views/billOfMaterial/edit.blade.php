@@ -241,11 +241,6 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                                                     </button>
                                                 </li>
                                                 <li class="nav-item" role="presentation">
-                                                    <button class="nav-link fs-5" id="production-items-tab" data-bs-toggle="tab" data-bs-target="#production-items" type="button" role="tab" aria-controls="production-items" aria-selected="false">
-                                                        Production
-                                                    </button>
-                                                </li>
-                                                <li class="nav-item" role="presentation">
                                                     <button class="nav-link fs-5" id="instruction-items-tab" data-bs-toggle="tab" data-bs-target="#instruction-items" type="button" role="tab" aria-controls="instruction-items" aria-selected="false">
                                                         Instruction
                                                     </button>
@@ -259,12 +254,6 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                                         <i data-feather="x-circle"></i> Delete</a>
                                         <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary tab-action d-none" data-tab="raw-materials">
                                         <i data-feather="plus"></i> Add Component</a>
-    
-                                        <a href="javascript:;" class="btn btn-sm btn-outline-danger me-50 tab-action d-none" id="deleteProductionBtn" data-tab="production-items">
-                                            <i data-feather="x-circle"></i> Delete</a>
-                                            <a href="javascript:;" id="addNewProductionBtn" class="btn btn-sm btn-outline-primary tab-action d-none" data-tab="production-items">
-                                            <i data-feather="plus"></i> Add Product</a>
-
                                         <a href="javascript:;" class="btn btn-sm btn-outline-danger me-50 tab-action d-none" id="deleteInstructionBtn" data-tab="instruction-items">
                                             <i data-feather="x-circle"></i> Delete</a>
                                             <a href="javascript:;" id="addNewInstructionBtn" class="btn btn-sm btn-outline-primary tab-action d-none" data-tab="instruction-items">
@@ -365,31 +354,6 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                                                 </tfoot>
                                             </table>
                                             </div>
-                                    </div>
-                                    <div class="tab-pane fade" id="production-items" role="tabpanel" aria-labelledby="product-details-tab">
-                                        <div class="table-responsive pomrnheadtffotsticky">
-                                        <table id="itemTable2" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
-                                            <thead>
-                                                <tr>
-                                                    <th>
-                                                        <div class="form-check form-check-primary custom-checkbox">
-                                                            <input type="checkbox" class="form-check-input" id="Email">
-                                                            <label class="form-check-label" for="Email"></label>
-                                                        </div>
-                                                    </th>
-                                                    <th width="300px">Station</th>
-                                                    <th width="150px">Product Code</th>
-                                                    <th width="300px">Product Name</th>
-                                                    <th>Attributes</th>
-                                                    <th >UOM</th>
-                                                    <th class="text-end">Qty</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody class="mrntableselectexcel">
-                                                @include('billOfMaterial.partials.production-edit-row')
-                                            </tbody>
-                                        </table>
-                                        </div>
                                     </div>
                                     <div class="tab-pane fade" id="instruction-items" role="tabpanel" aria-labelledby="product-details-tab">
                                         <div class="table-responsive pomrnheadtffotsticky">
@@ -953,15 +917,6 @@ $(function(){
             }
 
        }
-
-       if (parameters.station_wise_consumption && parameters.station_wise_consumption.includes('yes')) {
-            $("#production-items-tab").removeClass('d-none');
-            $("#production-items").removeClass('d-none');
-        } else {
-           $("#production-items-tab").addClass('d-none');
-           $("#production-items").addClass('d-none');
-       }
-
         let reference_from_service = parameters.reference_from_service;
         if(reference_from_service.length) {
             let c_bom = '{{\App\Helpers\ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS}}';
@@ -1319,69 +1274,6 @@ $(selector).autocomplete({
     }
 });
 }
-// Add Production
-$(document).on('click', '#addNewProductionBtn', (e) => {
-    let rowsLength = $("#itemTable2 > tbody > tr").length;
-    let type = '{{ $servicesBooks['services'][0]?->alias }}';
-    let itemCode = $("#item_code").val();
-    let selectedAttrRequired = false; 
-    let a = $("select[name*='[attr_name]']").filter(function () {
-        return !$(this).val();
-    });
-    if(a.length) {
-        selectedAttrRequired = true;
-    }
-    if(!$(".heaer_item").length) {
-      selectedAttrRequired = true;
-    }
-    let head_item_id = $("#head_item_id").val();
-    let itemObj = {
-      item_code : itemCode,
-      item_id : head_item_id,
-      selectedAttrRequired : selectedAttrRequired
-    };
-
-    if($("[name*='attributes[1][attr_group_id]']").length == 0 && itemCode) {
-      itemObj.selectedAttrRequired = false;
-    }
-
-    let headerSelectedAttr = [];
-    if($(".heaer_item").find("input[name*='[attr_group_id]']").length) {
-        $(".heaer_item").find("input[name*='[attr_group_id]']").each(function(index1,item){
-            let attr_group_id = $(item).val();
-            let attr_val = $(`select[name="attributes[${index1+1}][attr_group_id][${attr_group_id}][attr_name]"]`).val();
-            headerSelectedAttr.push({
-                'attr_name' : attr_group_id,
-                'attr_value' : attr_val || ''
-            });
-        });
-    }
-
-    let actionUrl = '{{route("bill.of.material.production.row")}}'+'?count='+rowsLength+'&item='+JSON.stringify(itemObj)+'&header_attr='+JSON.stringify(headerSelectedAttr)+'&type='+type; 
-    fetch(actionUrl).then(response => {
-        return response.json().then(data => {
-            if (data.status == 200) {
-                if (rowsLength) {
-                    $("#itemTable2 > tbody > tr:last").after(data.data.html);
-                } else {
-                    $("#itemTable2 > tbody").html(data.data.html);
-                }
-                initializeAutocomplete3(".comp_item_code");
-                initializeStationAutocomplete();
-                $("#itemTable2 > tbody").find("[name*='[qty]']").attr('readonly', false);
-                $("#itemTable2 > tbody > tr:last").val('1');
-            } else if(data.status == 422) {
-               Swal.fire({
-                    title: 'Error!',
-                    text: data.message || 'An unexpected error occurred.',
-                    icon: 'error',
-                });
-            } else {
-               console.log("Someting went wrong!");
-            }
-        });
-    });
-});
 
 $(document).on('click', '#addNewInstructionBtn', (e) => {
     let rowsLength = $("#itemTable3 > tbody > tr").length;
@@ -1433,6 +1325,7 @@ $(document).on('click', '#addNewInstructionBtn', (e) => {
                 }
                 initializeInstructionStationAutocomplete();
                 initializeInstructionProductSectionAutocomplete();
+                feather.replace();
             } else if(data.status == 422) {
                Swal.fire({
                     title: 'Error!',
@@ -1538,11 +1431,7 @@ function getItemAttribute(itemId, rowCount, selectedAttr, tr){
                    $("#attribute").modal('show');
                    $(".select2").select2();
                   }
-                  if(currentTab === 'production-items') {
-                      $(tr).find("[name*='[qty]']").attr('readonly', false);
-                    } else {
-                      qtyEnabledDisabled();
-                  }
+                  qtyEnabledDisabled();
             }
         });
     });
@@ -1968,19 +1857,6 @@ function initializeInstructionProductSectionAutocomplete() {
 function initializeStationAutocomplete() {
     $("[name*='product_station']").autocomplete({
         source: function (request, response) {
-            let selectedIds = [];
-            let currentTab = document.querySelector(".nav-link.active").getAttribute("data-bs-target").replace("#", "");
-            if(currentTab === 'production-items') {
-                if ($("#itemTable2 tbody").find('tr').length) {
-                    $("#itemTable2 tbody tr").each(function() {
-                        let stationInput = $(this).find("[name*='[station_id]']");
-                        let stationId = stationInput.val();
-                        if (stationId) {
-                            selectedIds.push(stationId);
-                        }
-                    });
-                }
-            }
             $.ajax({
                 url: '/search',
                 method: 'GET',
@@ -1989,7 +1865,6 @@ function initializeStationAutocomplete() {
                     q: request.term,
                     type: 'station',
                     production_route_id: $("[name='production_route_id']").val() || '',
-                    selectedIds : JSON.stringify(selectedIds)
                 },
                 success: function (data) {
                     const mappedData = $.map(data, function (item) {

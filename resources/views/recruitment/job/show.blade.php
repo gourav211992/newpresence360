@@ -14,7 +14,7 @@
                             <h2 class="content-header-title float-start mb-0">Job View</h2>
                             <div class="breadcrumb-wrapper">
                                 <ol class="breadcrumb">
-                                    <li class="breadcrumb-item"><a href="{{ route('recruitment.dashboard') }}">Home</a>
+                                    <li class="breadcrumb-item"><a href="{{ route('recruitment.hr-dashboard') }}">Home</a>
                                     </li>
                                     <li class="breadcrumb-item active">View</li>
                                 </ol>
@@ -53,8 +53,6 @@
                                                     <h6 class="mt-1 font-small-3"><span style="color: #999">Submitted
                                                             on: <span
                                                                 class="badge rounded-pill badge-light-secondary rounded me-1">{{ $job->created_at ? App\Helpers\CommonHelper::dateFormat($job->created_at) : '' }}</span>
-                                                            Last Updated: <span
-                                                                class="badge rounded-pill badge-light-secondary rounded">05-11-2024</span></span>
                                                     </h6>
                                                 </div>
                                             </div>
@@ -78,23 +76,33 @@
                                 
                                         <ul class="nav nav-tabs border-bottom loandetailhistory mb-0">
                                             <li class="nav-item">
-                                                <a class="nav-link active candidate-tab" href="#assigned" id="assigned" onclick="fetchCandidateList('assigned')">
+                                                <a class="nav-link active candidate-tab" href="#assigned" id="assigned" onclick="fetchCandidateList('{{ App\Helpers\CommonHelper::ASSIGNED }}')">
                                                     New Candidates ({{ $job->newCanidatesCount }})
                                                 </a>
                                             </li>
                                             <li class="nav-item">
-                                                <a class="nav-link candidate-tab" id="qualified" href="#qualified" onclick="fetchCandidateList('qualified')">
+                                                <a class="nav-link candidate-tab" id="qualified" href="#qualified" onclick="fetchCandidateList('{{ App\Helpers\CommonHelper::QUALIFIED }}')">
                                                     Qualified ({{ $job->qualifiedCanidatesCount }})                                                
                                                 </a>
                                             </li>
                                             <li class="nav-item">
-                                                <a class="nav-link candidate-tab" id="not-qualified" href="#not-qualified" onclick="fetchCandidateList('not-qualified')">
+                                                <a class="nav-link candidate-tab" id="not-qualified" href="#not-qualified" onclick="fetchCandidateList('{{ App\Helpers\CommonHelper::NOT_QUALIFIED }}')">
                                                     Not Qualified({{ $job->notqualifiedCanidatesCount }})
                                                 </a>
                                             </li>
                                             <li class="nav-item">
-                                                <a class="nav-link candidate-tab" id="onhold" href="#onhold" onclick="fetchCandidateList('onhold')">
+                                                <a class="nav-link candidate-tab" id="onhold" href="#onhold" onclick="fetchCandidateList('{{ App\Helpers\CommonHelper::ONHOLD }}')">
                                                     On Hold({{ $job->onholdCanidatesCount }})
+                                                </a>
+                                            </li>
+                                            <li class="nav-item">
+                                                <a class="nav-link candidate-tab" id="scheduled" href="#scheduled" onclick="fetchCandidateList('{{ App\Helpers\CommonHelper::SCHEDULED }}')">
+                                                    Scheduled({{ $job->scheduledInterviewCount }})
+                                                </a>
+                                            </li>
+                                            <li class="nav-item">
+                                                <a class="nav-link candidate-tab" id="selected" href="#selected" onclick="fetchCandidateList('{{ App\Helpers\CommonHelper::SELECTED }}')">
+                                                    Selected({{ $job->selectedCandidateCount }})
                                                 </a>
                                             </li>
                                         </ul>
@@ -168,8 +176,6 @@
 
                                     </div>
                                 </div>
-
-
                                 <div class="card">
                                     <div class="card-body customernewsection-form">
 
@@ -199,7 +205,7 @@
                                                     <div class="timeline-event">
                                                         <div
                                                             class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                            @if($log->log_type == App\Helpers\CommonHelper::CANDIDATE)
+                                                            @if($log->log_type == App\Helpers\CommonHelper::CANDIDATE || $log->log_type == App\Helpers\CommonHelper::INTERVIEW)
                                                                 <h6>{{ $log->candidate_name }}</h6>
                                                             @else
                                                                 <h6>{{ $log->action_by_name }}</h6>
@@ -217,19 +223,11 @@
 
                                     </div>
                                 </div>
-
-
                             </div>
-
-
                         </div>
                     </div>
                 </div>
-                <!-- Modal to add new record -->
-
             </section>
-
-
         </div>
     </div>
 </div>
@@ -255,44 +253,25 @@
 </div>
 
 {{-- Status Modal --}}
-<div class="modal fade" id="status-modal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div>
-                    <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="status-modal-title"></h4>
-                    <p class="mb-0 fw-bold voucehrinvocetxt mt-0" id="status-modal-description"></p>
-                </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form role="post-data" method="POST" id="status-form" action="" redirect="{{route('recruitment.jobs.show',['id' => $job->id]) }}">
-                <div class="modal-body pb-2">
-                        <div class="row mt-1">
-                            <div class="col-md-12">
-                                <div class="mb-1">
-                                    <input type="hidden" name="status" class="form-control" value="" id="status-input">
-                                    <input type="hidden" name="candidate_id" class="form-control" value="" id="candidate-id-input">
-                                    <input type="hidden" name="job_id" class="form-control" value="{{ $job->id }}" id="job-id-input">
-                                </div>
+@include('recruitment.partials.modal.status-modal',[
+    'job' => $job
+])
 
-                                <div class="mb-1">
-                                    <label class="form-label">Remarks <span class="text-danger">*</span></label>
-                                    <textarea class="form-control" name="log_message"></textarea>
-                                </div>
+{{-- Schedule Interview --}}
+@include('recruitment.partials.modal.schedule-interview',[
+    'job' => $job,
+])
 
-                            </div>
+{{-- Feedback --}}
+{{-- @include('recruitment.partials.modal.feedback',[
+    'job' => $job
+]) --}}
 
-                        </div>
-                    </div>
+{{-- Feedback --}}
+@include('recruitment.partials.modal.hr-feedback',[
+    'job' => $job
+])
 
-                    <div class="modal-footer justify-content-center">
-                        <button type="reset" class="btn btn-outline-secondary me-1" data-bs-dismiss="modal" aria-label="Close">Cancel</button>
-                        <button type="button" class="btn btn-primary" data-request="ajax-submit" data-target="[role=post-data]">Submit</button>
-                    </div>
-            </form>
-        </div>
-    </div>
-</div>
 @endsection
 
 @section('scripts')
@@ -313,7 +292,7 @@
             url: url,
             type: 'GET',
             data: {
-                page : 'job-view'
+                page : 'job-view-hr'
             },
             success: function(response) {
                 $('#newcand').html(response); // You can adjust this to target the right tab
@@ -323,7 +302,11 @@
 
                 const firstCandidateId = $('#newcand .employee-boxnew').first().attr('id').replace('candSec', '');
                 if (firstCandidateId) {
-                    fetchCandidateDetail(firstCandidateId, jobId); // Show the details of the first candidate
+                    if(status == 'scheduled' || status == 'selected'){
+                        fetchCandidateInterviewDetail(firstCandidateId, jobId, status); // Show the details of the first candidate
+                    }else{
+                        fetchCandidateDetail(firstCandidateId, jobId); // Show the details of the first candidate
+                    }
                     $('#candSec' + firstCandidateId).addClass('active'); // Highlight the first candidate
                 }
 
@@ -332,6 +315,41 @@
                 console.error('Failed to load candidates for status:', status);
             }
         });
+    }
+
+    function fetchCandidateInterviewDetail(id, jobId, status) {
+        // Remove active from all
+        $('.employee-boxnew').removeClass('active');
+
+        // Add active to the selected candidate block
+        $('#candSec' + id).addClass('active');
+
+        if (id !== '') {
+            const url = '{{ route("recruitment.jobs.candidate-interview-detail", [":id", ":jobId"]) }}'
+                .replace(':id', id)
+                .replace(':jobId', jobId);
+
+            $.ajax({
+                url: url,
+                type: 'GET',
+                data: {
+                    page : 'job-view-hr',
+                    status : status
+                },
+                success: function(response) {
+                    $('#emp-detail-div').html(response);
+                    // Re-render Feather icons after DOM update
+                    if (typeof feather !== 'undefined') {
+                        feather.replace();
+                    }
+                },
+                error: function(xhr) {
+                    console.error('Error fetching job requests.');
+                }
+            });
+        } else {
+            $('#emp-detail-div').html('');
+        }
     }
 
     function fetchCandidateDetail(id, jobId) {
@@ -350,7 +368,7 @@
                 url: url,
                 type: 'GET',
                 data: {
-                    page : 'job-view'
+                    page : 'job-view-hr'
                 },
                 success: function(response) {
                     $('#emp-detail-div').html(response);
@@ -401,6 +419,30 @@
 
         // Show the modal
         const modal = new bootstrap.Modal(document.getElementById('status-modal'));
+        modal.show();
+    }
+
+    function setScheduleInterviewModal(status,candidateId) {
+        document.getElementById('interview-candidate-id').value = candidateId;
+        
+        // Show the modal
+        const modal = new bootstrap.Modal(document.getElementById('schedule-interview-modal'));
+        modal.show();
+    }
+
+    // function setFeedbackModal(interviewId) {
+    //     document.getElementById('interview-id').value = interviewId;
+        
+    //     // Show the modal
+    //     const modal = new bootstrap.Modal(document.getElementById('feedback'));
+    //     modal.show();
+    // }
+
+    function setHrFeedbackModal(interviewId) {
+        document.getElementById('interview-id').value = interviewId;
+        
+        // Show the modal
+        const modal = new bootstrap.Modal(document.getElementById('feedback'));
         modal.show();
     }
 </script>

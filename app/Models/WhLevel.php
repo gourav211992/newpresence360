@@ -18,8 +18,11 @@ class WhLevel extends Model
     use HasFactory, SoftDeletes, DateFormatTrait, FileUploadTrait, DefaultGroupCompanyOrg, Deletable;
     protected $table = 'erp_wh_levels';
     protected $fillable = [
-        'name', 
+        'name',
+        'level', 
         'parent_id', 
+        'store_id',
+        'sub_store_id',
         'wh_structure_id', 
         'status', 
         'created_by', 
@@ -53,14 +56,39 @@ class WhLevel extends Model
         });
     }
 
-    public function whStructure()
-    {
-        return $this->belongsTo(WhStructure::class, 'wh_structure_id');
-    }
-
     public function details()
     {
         return $this->hasMany(WhDetail::class,'wh_level_id');
+    }
+    
+    public function storagePointDetails()
+    {
+        return $this->hasMany(WhDetail::class,'wh_level_id');
+    }
+
+    public function store()
+    {
+        return $this -> belongsTo(ErpStore::class, 'store_id');
+    }
+
+    public function sub_store()
+    {
+        return $this -> belongsTo(ErpSubStore::class, 'sub_store_id');
+    }
+
+    public function sub_store_parent()
+    {
+        return $this -> belongsTo(ErpSubStoreParent::class, 'sub_store_id');
+    }
+
+    public function parent()
+    {
+        return $this->belongsTo(WhLevel::class, 'parent_id');
+    }
+
+    public function children()
+    {
+        return $this->hasMany(WhLevel::class, 'parent_id');
     }
 
 }

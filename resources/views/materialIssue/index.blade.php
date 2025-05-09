@@ -50,10 +50,11 @@
                                                 <th>Doc No.</th>
                                                 <th>Issue Type</th>
                                                 <th>From Location</th>
+                                                <th>From Store</th>
                                                 <th>To Location</th>
+                                                <th>To Store</th>
                                                 <th>Requester Type</th>
                                                 <th>Rev No</th>
-                                                <th>Ref No</th>
                                                 <th>Items</th>
                                                 <th>Curr</th>
                                                 <th class = "numeric-alignment">Item Value</th>
@@ -183,7 +184,15 @@
                $(td).addClass('no-wrap');
             }
         },
+        { data: 'from_sub_store_code', name: 'from_store_code', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+               $(td).addClass('no-wrap');
+            }
+        },
         { data: 'to_store_code', name: 'to_store_code', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+               $(td).addClass('no-wrap');
+            }
+        },
+        { data: 'to_sub_store_code', name: 'to_store_code', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('no-wrap');
             }
         },
@@ -195,7 +204,6 @@
                $(td).addClass('no-wrap');
             }
         },
-        { data: 'reference_number', name: 'reference_number', render: renderData},
         { data: 'items_count', name: 'items_count', render: renderData },
         { data: 'curr_name', name: 'curr_name', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('no-wrap');

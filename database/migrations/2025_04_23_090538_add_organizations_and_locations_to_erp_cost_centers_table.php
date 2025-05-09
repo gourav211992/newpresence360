@@ -11,7 +11,7 @@ return new class extends Migration
     Schema::table('erp_cost_centers', function (Blueprint $table) {
         $table->json('organizations')->nullable()->after('id');
         $table->json('locations')->nullable()->after('organizations');
-        //$table->dropForeign(['cost_group_id']);
+        $table->dropForeign(['cost_group_id']);
  });
 }
 

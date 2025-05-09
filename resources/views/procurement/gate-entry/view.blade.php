@@ -1,6 +1,11 @@
 @extends('layouts.app')
+@section('styles')
+    <style>
+        .tooltip-inner { text-align: left}
+    </style>
+@endsection
 @section('content')
-    <form id="mrnEditForm" class="ajax-input-form" method="POST" action="{{ route('gate-entry.update', $mrn->id) }}" data-redirect="/gate-entrys" enctype="multipart/form-data">
+    <form id="mrnEditForm" class="ajax-input-form" method="POST" action="{{ route('gate-entry.update', $mrn->id) }}" data-redirect="/gate-entries" enctype="multipart/form-data">
         @csrf
         <input type="hidden" name="tax_required" id="tax_required" value="">
         <div class="app-content content ">
@@ -12,11 +17,12 @@
                         <div class="content-header-left col-md-6 mb-2">
                             <div class="row breadcrumbs-top">
                                 <div class="col-12">
-                                    <h2 class="content-header-title float-start mb-0">Material Receipt</h2>
+                                    <h2 class="content-header-title float-start mb-0">
+                                        {{$servicesBooks['services'][0]->name ?? "Gate Entry"}}
+                                    </h2>
                                     <div class="breadcrumb-wrapper">
                                         <ol class="breadcrumb">
-                                            <li class="breadcrumb-item">
-                                                <a href="/">Home</a>
+                                            <li class="breadcrumb-item"><a href="/">Home</a>
                                             </li>
                                             <li class="breadcrumb-item active">View</li>
                                         </ol>
@@ -26,6 +32,7 @@
                         </div>
                         <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
                             <div class="form-group breadcrumb-right">
+                                <input type="hidden" name="document_status" value="{{$mrn->document_status}}" id="document_status">
                                 <button type="button" onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0">
                                     <i data-feather="arrow-left-circle"></i> Back
                                 </button>
@@ -49,8 +56,8 @@
                                                 </div>
                                             </div>
                                             <div class="col-md-6 text-sm-end">
-                                                <span class="badge rounded-pill badge-light-secondary forminnerstatus">
-                                                Status : <span class="{{$docStatusClass}}">{{ucfirst($mrn->display_status)}}</span>
+                                                <span class="badge rounded-pill badge-light-{{$mrn->display_status === 'Posted' ? 'info' : 'secondary'}} forminnerstatus">
+                                                    <span class = "text-dark" >Status</span> : <span class="{{$docStatusClass}}">{{$mrn->display_status}}</span>
                                                 </span>
                                             </div>
                                         </div>
@@ -67,7 +74,7 @@
                                                 </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Gate Entry No <span class="text-danger">*</span></label>
+                                                        <label class="form-label">Document No <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
                                                         <input type="text" class="form-control" readonly value="{{@$mrn->document_number}}" id="document_number">
@@ -75,20 +82,35 @@
                                                 </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Gate Entry Date <span class="text-danger">*</span></label>
+                                                        <label class="form-label">Document Date <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="date" id="document_date" name="document_date" class="form-control" value="{{date('Y-m-d')}}" >
+                                                        <input type="date" name="document_date" class="form-control" value="{{ $mrn->document_date }}" >
                                                     </div>
                                                 </div>
                                                 <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Location <span class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <select class="form-select header_store_id" id="header_store_id" name="header_store_id">
+                                                            @foreach($locations as $erpStore)
+                                                                <option value="{{$erpStore->id}}"
+                                                                    {{ $mrn->store_id == $erpStore->id ? 'selected' : '' }}>
+                                                                    {{ ucfirst($erpStore->store_name) }}
+                                                                </option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <!-- <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Reference No </label>
                                                     </div>
                                                     <div class="col-md-5">
                                                         <input type="text" name="reference_number" value="{{@$mrn->reference_number}}" class="form-control">
                                                     </div>
-                                                </div>
+                                                </div> -->
                                             </div>
                                             {{-- Approval History Section --}}
                                             @include('partials.approval-history', ['document_status' => $mrn->document_status, 'revision_number' => $revision_number])
@@ -142,50 +164,45 @@
                                                     </div>
                                                 </div>
                                                 <div class="row">
-                                                    <div class="col-md-6">
-                                                        <div class="customer-billing-section">
-                                                            <p>Shipping Details</p>
+                                                    <div class="col-md-4">
+                                                        <div class="customer-billing-section h-100">
+                                                            <p>Vendor Address</p>
                                                             <div class="bilnbody">
                                                                 <div class="genertedvariables genertedvariablesnone">
-                                                                    <label class="form-label w-100" style="display: {{ count($mrn->items) > 0 ? 'none' : 'block' }};">
-                                                                        Select Shipping Address <span class="text-danger">*</span>
-                                                                        <a href="javascript:;" class="float-end font-small-2 editAddressBtn" data-type="shipping">
-                                                                            <i data-feather='edit-3'></i> Edit
-                                                                        </a>
-                                                                    </label>
-                                                                    <div class="mrnaddedd-prim shipping_detail">
-                                                                        @if($mrn->latestShippingAddress())
-                                                                            {{$mrn->latestShippingAddress()->display_address}}
-                                                                            <input type="hidden" name="shipping_address" id="shipping_address" value="{{$mrn->latestShippingAddress()->display_address}}">
+                                                                    <label class="form-label w-100">Vendor Address <span class="text-danger">*</span> <a href="javascript:;" class="float-end font-small-2 editAddressBtn d-none" data-type="billing"><i data-feather='edit-3'></i> Edit</a></label>
+                                                                    <div class="mrnaddedd-prim billing_detail">
+                                                                        @if($mrn->latestBillingAddress())
+                                                                        {{$mrn->latestBillingAddress()->display_address}}
                                                                         @else
-                                                                            {{$mrn->shippingAddress?->display_address}}
-                                                                            <input type="hidden" name="shipping_address" id="shipping_address" value="{{$mrn->shippingAddress?->display_address}}">
+                                                                        {{$mrn->bill_address?->display_address}}
                                                                         @endif
                                                                     </div>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div class="col-md-6">
+                                                    <div class="col-md-4">
                                                         <div class="customer-billing-section h-100">
-                                                            <p>Billing Details</p>
+                                                            <p>Billing Address</p>
                                                             <div class="bilnbody">
                                                                 <div class="genertedvariables genertedvariablesnone">
-                                                                    <label class="form-label w-100" style="display: {{ count($mrn->items) > 0 ? 'none' : 'block' }};">
-                                                                        Select Billing Address <span class="text-danger">*</span>
-                                                                        <a href="javascript:;" class="float-end font-small-2 editAddressBtn" data-type="billing">
-                                                                            <i data-feather='edit-3'></i> Edit
-                                                                        </a>
+                                                                    <label class="form-label w-100">Billing Address <span class="text-danger">*</span>
+                                                                        {{-- <a href="javascript:;" class="float-end font-small-2 editAddressBtn" data-type="billing"><i data-feather='edit-3'></i> Edit</a> --}}
                                                                     </label>
-                                                                    <div class="mrnaddedd-prim billing_detail">
-                                                                        @if($mrn->latestBillingAddress())
-                                                                            {{$mrn->latestBillingAddress()->display_address}}
-                                                                            <input type="hidden" name="billing_address" id="billing_address" value="{{$mrn->latestBillingAddress()->display_address}}">
-                                                                        @else
-                                                                            {{$mrn->billingAddress?->display_address}}
-                                                                            <input type="hidden" name="billing_address" id="billing_address" value="{{$mrn->billingAddress?->display_address}}">
-                                                                        @endif
-                                                                    </div>
+                                                                    <div class="mrnaddedd-prim org_address">{{$orgAddress}}</div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="customer-billing-section h-100">
+                                                            <p>Delivery Address</p>
+                                                            <div class="bilnbody">
+                                                                <div class="genertedvariables genertedvariablesnone">
+                                                                    <label class="form-label w-100">Delivery Address <span class="text-danger">*</span>
+                                                                        {{-- <a href="javascript:;" class="float-end font-small-2 editAddressBtn" data-type="billing"><i data-feather='edit-3'></i> Edit</a> --}}
+                                                                    </label>
+                                                                    <div class="mrnaddedd-prim delivery_address">{{$deliveryAddress}}</div>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -205,11 +222,10 @@
                                             </div>
                                             <div class="card-body">
                                                 <div class="row">
-                                                    <div class="col-md-3">
+                                                    <!-- <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">
                                                                 Gate Entry No.
-                                                                <!-- <span class="text-danger">*</span> -->
                                                             </label>
                                                             <input type="text" name="gate_entry_no"
                                                                 class="form-control bg-white" value="{{@$mrn->gate_entry_no}}"
@@ -220,13 +236,12 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">
                                                                 Gate Entry Date
-                                                                <!-- <span class="text-danger">*</span> -->
                                                             </label>
                                                             <input type="date" name="gate_entry_date" value="{{date('Y-m-d', strtotime($mrn->gate_entry_date))}}"
                                                                 class="form-control bg-white gate-entry" id="datepicker2"
                                                                 placeholder="Enter Gate Entry Date">
                                                         </div>
-                                                    </div>
+                                                    </div> -->
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">
@@ -234,7 +249,7 @@
                                                                 <!-- <span class="text-danger">*</span> -->
                                                             </label>
                                                             <input type="text" name="eway_bill_no" value="{{@$mrn->eway_bill_no}}"
-                                                                class="form-control bg-white"
+                                                                class="form-control"
                                                                 placeholder="Enter Eway Bill No.">
                                                         </div>
                                                     </div>
@@ -245,7 +260,7 @@
                                                                 <!-- <span class="text-danger">*</span> -->
                                                             </label>
                                                             <input type="text" name="consignment_no" value="{{@$mrn->consignment_no}}"
-                                                                class="form-control bg-white"
+                                                                class="form-control"
                                                                 placeholder="Enter Consignment No.">
                                                         </div>
                                                     </div>
@@ -255,7 +270,7 @@
                                                             Supplier Invoice No.
                                                             </label>
                                                             <input type="text" name="supplier_invoice_no" value="{{@$mrn->supplier_invoice_no}}"
-                                                                class="form-control bg-white"
+                                                                class="form-control"
                                                                 placeholder="Enter Supplier Invoice No.">
                                                         </div>
                                                     </div>
@@ -266,7 +281,7 @@
                                                                 <!-- <span class="text-danger">*</span> -->
                                                             </label>
                                                             <input type="date" name="supplier_invoice_date" value="{{date('Y-m-d', strtotime($mrn->supplier_invoice_date))}}"
-                                                                class="form-control bg-white gate-entry" id="datepicker3"
+                                                                class="form-control gate-entry" id="datepicker3"
                                                                 placeholder="Enter Supplier Invoice Date">
                                                         </div>
                                                     </div>
@@ -276,7 +291,7 @@
                                                             Transporter Name
                                                             </label>
                                                             <input type="text" name="transporter_name" value="{{@$mrn->transporter_name}}"
-                                                                class="form-control bg-white"
+                                                                class="form-control"
                                                                 placeholder="Enter Transporter Name">
                                                         </div>
                                                     </div>
@@ -284,11 +299,15 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">
                                                                 Vehicle No.
-                                                                <!-- <span class="text-danger">*</span> -->
+                                                                <i class="ml-2 fas fa-info-circle text-primary"
+                                                                data-bs-toggle="tooltip"
+                                                                data-bs-html="true"
+                                                                title="Format:<br>[A-Z]{2} – 2 uppercase letters (e.g., 'MH')<br>[0-9]{2} – 2 digits (e.g., '12')<br>[A-Z]{0,3} – 0 to 3 uppercase letters (e.g., 'AB', 'ABZ')<br>[0-9]{4} – 4 digits (e.g., '1234')"></i>
                                                             </label>
-                                                            <input type="text" name="vehicle_no" value="{{@$mrn->vehicle_no}}"
-                                                                class="form-control bg-white"
-                                                                placeholder="Enter Vehicle No.">
+                                                            <input type="text" name="vehicle_no"
+                                                            class="form-control vehicle_no"
+                                                            value="{{@$mrn->vehicle_no}}"
+                                                            placeholder="Enter Vehicle No." />
                                                         </div>
                                                     </div>
                                                 </div>
@@ -302,7 +321,7 @@
                                             <div class="row">
                                                 <div class="col-md-6">
                                                     <div class="newheader ">
-                                                        <h4 class="card-title text-theme">Gate Entry Item Wise Detail</h4>
+                                                        <h4 class="card-title text-theme">Item Wise Detail</h4>
                                                         <p class="card-text">Fill the details</p>
                                                     </div>
                                                 </div>
@@ -326,17 +345,16 @@
                                                                         <label class="form-check-label" for="Email"></label>
                                                                     </div>
                                                                 </th>
-                                                                <th width="200px">Item</th>
+                                                                <th width="150px">Item Code</th>
+                                                                <th width="240px">Item Name</th>
                                                                 <th>Attributes</th>
                                                                 <th>UOM</th>
-                                                                <th>Recpt Qty</th>
-                                                                <th>Acpt. Qty</th>
-                                                                <th>Rej. Qty</th>
+                                                                <th class="text-end">Qty</th>
                                                                 <th class="text-end">Rate</th>
                                                                 <th class="text-end">Value</th>
                                                                 <th>Discount</th>
                                                                 <th class="text-end">Total</th>
-                                                                <th width="100px">Action</th>
+                                                                <th width="50px">Action</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody class="mrntableselectexcel">
@@ -344,7 +362,7 @@
                                                         </tbody>
                                                         <tfoot>
                                                             <tr class="totalsubheadpodetail">
-                                                                <td colspan="8"></td>
+                                                                <td colspan="7"></td>
                                                                 <td class="text-end" id="totalItemValue">
                                                                     {{@$mrn->items->sum('basic_value')}}
                                                                 </td>
@@ -356,54 +374,37 @@
                                                                 </td>
                                                             </tr>
                                                             <tr valign="top">
-                                                                <td colspan="9" rowspan="10">
-                                                                    <table class="table border" id="itemDetailDisplay">
-                                                                        <tr>
-                                                                            <td class="p-0">
-                                                                                <h6 class="text-dark mb-0 bg-light-primary py-1 px-50"><strong>Item Details</strong></h6>
-                                                                            </td>
-                                                                        </tr>
-                                                                        <tr>
-                                                                            <td class="poprod-decpt">
-                                                                                <span class="poitemtxt mw-100"><strong>Name</strong>:</span>
-                                                                            </td>
-                                                                        </tr>
-                                                                        <tr>
-                                                                            <td class="poprod-decpt">
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>HSN</strong>:</span>
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Color</strong>:</span>
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Size</strong>:</span>
-                                                                            </td>
-                                                                        </tr>
-                                                                        <tr>
-                                                                            <td class="poprod-decpt">
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Inv. UOM</strong>: </span>
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Qty.</strong>:</span>
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Exp. Date</strong>: </span>
-                                                                            </td>
-                                                                        </tr>
-                                                                        <tr>
-                                                                            <td class="poprod-decpt">
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Ava. Stock</strong>: </span>
-                                                                            </td>
-                                                                        </tr>
-                                                                        <tr>
-                                                                            <td class="poprod-decpt">
-                                                                                <span class="badge rounded-pill badge-light-secondary"><strong>Remarks</strong>: </span>
-                                                                            </td>
-                                                                        </tr>
+                                                                <td colspan="6" rowspan="10">
+                                                                    <table class="table border">
+                                                                        <tbody id="itemDetailDisplay">
+                                                                            <tr>
+                                                                                <td class="p-0">
+                                                                                    <h6 class="text-dark mb-0 bg-light-primary py-1 px-50"><strong>Item Details</strong></h6>
+                                                                                </td>
+                                                                            </tr>
+                                                                            <tr>
+                                                                            </tr>
+                                                                            <tr>
+                                                                            </tr>
+                                                                            <tr>
+                                                                            </tr>
+                                                                            <tr>
+                                                                            </tr>
+                                                                            <tr>
+                                                                            </tr>
+                                                                        </tbody>
                                                                     </table>
                                                                 </td>
-                                                                <td colspan="4">
+                                                                <td colspan="5">
                                                                     <table class="table border mrnsummarynewsty">
                                                                         <tr>
                                                                             <td colspan="2" class="p-0">
                                                                                 <h6 class="text-dark mb-0 bg-light-primary py-1 px-50 d-flex justify-content-between">
-                                                                                    <strong>MRN Summary</strong>
+                                                                                    <strong>Document Summary</strong>
                                                                                     <div class="addmendisexpbtn">
                                                                                         <button type="button" class="btn p-25 btn-sm btn-outline-secondary summaryTaxBtn">{{-- <i data-feather="plus"></i> --}} Tax</button>
-                                                                                        <button class="btn p-25 btn-sm btn-outline-secondary summaryDisBtn"><i data-feather="plus"></i> Discount</button>
-                                                                                        <button class="btn p-25 btn-sm btn-outline-secondary summaryExpBtn"><i data-feather="plus"></i> Expenses</button>
+                                                                                        <button type="button" class="btn p-25 btn-sm btn-outline-secondary summaryDisBtn"><i data-feather="plus"></i> Discount</button>
+                                                                                        <button type="button" class="btn p-25 btn-sm btn-outline-secondary summaryExpBtn"><i data-feather="plus"></i> Expenses</button>
                                                                                     </div>
                                                                                 </h6>
                                                                             </td>
@@ -511,6 +512,7 @@
             <div class="modal-dialog  modal-dialog-centered" style="max-width: 700px">
             </div>
         </div>
+        @include('procurement.gate-entry.partials.amendement-modal', ['id' => $mrn->id])
     </form>
 
     {{-- Attribute popup --}}
@@ -559,12 +561,17 @@
                             <tr>
                                 <td>#</td>
                                 <td>
-                                    <input type="text" id="new_item_dis_name" class="form-control mw-100" />
+                                    <label class="form-label">Type<span class="text-danger">*</span></label>
+                                    <input type="text" id="new_item_dis_name_select" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+                                    <input type = "hidden" id = "new_item_discount_id" />
+                                    <input type = "hidden" id = "new_item_dis_name" />
                                 </td>
                                 <td>
+                                    <label class="form-label">Percentage <span class="text-danger">*</span></label>
                                     <input step="any" type="number" id="new_item_dis_perc" class="form-control mw-100" />
                                 </td>
                                 <td>
+                                    <label class="form-label">Value <span class="text-danger">*</span></label>
                                     <input step="any" type="number" id="new_item_dis_value" class="form-control mw-100" />
                                 </td>
                                 <td>
@@ -725,7 +732,7 @@
                 <div class="modal-body alertmsg text-center warning">
                     <i data-feather='alert-circle'></i>
                     <h2>Are you sure?</h2>
-                    <p>Are you sure you want to <strong>Amendment</strong> this <strong>MRN</strong>? After Amendment this action cannot be undone.</p>
+                    <p>Are you sure you want to <strong>Amendment</strong> this <strong>Document</strong>? After Amendment this action cannot be undone.</p>
                     <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" id="amendmentSubmit" class="btn btn-primary">Confirm</button>
                 </div>
@@ -733,46 +740,214 @@
         </div>
     </div>
 
+    <!-- GL Posting Modal -->
+    <div class="modal fade text-start show" id="postvoucher" tabindex="-1" aria-labelledby="postVoucherModal" aria-modal="true" role="dialog">
+		<div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 1000px">
+			<div class="modal-content">
+				<div class="modal-header">
+					<div>
+                        <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="postVoucherModal"> Voucher Details</h4>
+                    </div>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<div class="row">
+                        <div class="col-md-3">
+                            <div class="mb-1">
+                                <label class="form-label">Series <span class="text-danger">*</span></label>
+                                <input id = "voucher_book_code" class="form-control" disabled="" >
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-1">
+                                <label class="form-label">Voucher No <span class="text-danger">*</span></label>
+                                <input id = "voucher_doc_no" class="form-control" disabled="" value="">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-1">
+                                <label class="form-label">Voucher Date <span class="text-danger">*</span></label>
+                                <input id = "voucher_date" class="form-control" disabled="" value="">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-1">
+                                <label class="form-label">Currency <span class="text-danger">*</span></label>
+                                <input id = "voucher_currency" class="form-control" disabled="" value="">
+                            </div>
+                        </div>
+						<div class="col-md-12">
+							<div class="table-responsive">
+								<table class="mt-1 table table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
+									<thead>
+										<tr>
+											<th>Type</th>
+											<th>Group</th>
+											<th>Leadger Code</th>
+											<th>Leadger Name</th>
+                                            <th class="text-end">Debit</th>
+                                            <th class="text-end">Credit</th>
+										</tr>
+									</thead>
+									<tbody id="posting-table"></tbody>
+								</table>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="text-end">
+					<button style="margin: 1%;" onclick = "postVoucher(this);" id="posting_button" type = "button" class="btn btn-primary btn-sm waves-effect waves-float waves-light">Submit</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
 @endsection
 @section('scripts')
     <script type="text/javascript">
         var actionUrlTax = '{{route("gate-entry.tax.calculation")}}';
     </script>
-    <script type="text/javascript" src="{{asset('assets/js/modules/mrn.js')}}"></script>
+    <script type="text/javascript" src="{{asset('assets/js/modules/gate-entry.js')}}"></script>
     <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
     <script>
-        @if($mrn->document_status != 'draft')
-            $(':input').prop('readonly', true);
-            $('select').not('.amendmentselect select').prop('disabled', true);
-            $("#deleteBtn").remove();
-            $("#addNewItemBtn").remove();
-            $(".editAddressBtn").remove();
-            $(document).on('show.bs.modal', function (e) {
-                if(e.target.id != 'approveModal') {
-                    $(e.target).find('.modal-footer').remove();
-                    $('select').not('.amendmentselect select').prop('disabled', true);
-                }
-                if(e.target.id == 'approveModal') {
-                    $(e.target).find(':input').prop('readonly', false);
-                    $(e.target).find('select').prop('readonly', false);
-                }
-                $('.add-contactpeontxt').remove();
-                let text = $(e.target).find('thead tr:first th:last').text();
-                if(text.includes("Action")){
-                    $(e.target).find('thead tr').each(function() {
-                        $(this).find('th:last').remove();
-                    });
-                    $(e.target).find('tbody tr').each(function() {
-                        $(this).find('td:last').remove();
-                    });
-                }
-            });
+        /*Clear local storage*/
+        setTimeout(() => {
+            localStorage.removeItem('deletedItemDiscTedIds');
+            localStorage.removeItem('deletedHeaderDiscTedIds');
+            localStorage.removeItem('deletedHeaderExpTedIds');
+            localStorage.removeItem('deletedItemLocationIds');
+            localStorage.removeItem('deletedMrnItemIds');
+        },0);
+        @if($buttons['amend'] && intval(request('amendment') ?? 0))
+
+        @else
+            @if(($mrn->document_status != 'draft') && ($mrn->document_status != 'rejected'))
+                $(':input').prop('readonly', true);
+                $('textarea[name="amend_remark"], input[type="file"][name="amend_attachment[]"]').prop('readonly', false).prop('disabled', false);
+                $('select').not('.amendmentselect select').prop('disabled', true);
+                $("#deleteBtn").remove();
+                $("#addNewItemBtn").remove();
+                $(".editAddressBtn").remove();
+                $("#add_new_item_dis").remove();
+                $(".deleteItemDiscountRow").remove();
+                $("#add_new_head_dis").remove();
+                $(".deleteSummaryDiscountRow").remove();
+                $("#add_new_head_exp").remove();
+                $(".deleteExpRow").remove();
+                $(document).on('show.bs.modal', function (e) {
+                    if(e.target.id != 'approveModal') {
+                        if(e.target.id != 'shortCloseModal') {
+                            $(e.target).find('.modal-footer').remove();
+                        }
+                        $('select').not('.amendmentselect select').prop('disabled', true);
+                    }
+                    if(e.target.id == 'approveModal') {
+                        $(e.target).find(':input').prop('readonly', false);
+                        $(e.target).find('select').prop('readonly', false);
+                    }
+                    $('.add-contactpeontxt').remove();
+                    let text = $(e.target).find('thead tr:first th:last').text();
+                    if(text.includes("Action")){
+                        $(e.target).find('thead tr').each(function() {
+                            $(this).find('th:last').remove();
+                        });
+                        $(e.target).find('tbody tr').each(function() {
+                            $(this).find('td:last').remove();
+                        });
+                    }
+                });
+            @endif
         @endif
 
+        // Change BookId
+        $(document).on('change','#book_id', (e) => {
+            let bookId = e.target.value;
+            if (bookId) {
+                getDocNumberByBookId(bookId);
+            } else {
+                $("#document_number").val('');
+                $("#book_id").val('');
+                $("#document_number").attr('readonly', false);
+            }
+        });
+
+        function getDocNumberByBookId(bookId) {
+            let document_date = $("[name='document_date']").val();
+            let actionUrl = '{{route("book.get.doc_no_and_parameters")}}'+'?book_id='+bookId+'&document_date='+document_date;
+            fetch(actionUrl).then(response => {
+                return response.json().then(data => {
+                    // console.log(data.data);
+                    if (data.status == 200) {
+
+                        const parameters = data.data.parameters;
+                        // console.log('parameters', parameters);
+                        setServiceParameters(parameters);
+
+                        if(parameters?.tax_required.some(val => val.toLowerCase() === 'yes')) {
+                            $("#tax_required").val(parameters?.tax_required[0]);
+                        } else {
+                            $("#tax_required").val("");
+                        }
+                        setTableCalculation();
+                    }
+                    if(data.status == 404) {
+                        $("#book_code").val('');
+                        $("#document_number").val('');
+                        $("#tax_required").val("");
+                        const docDateInput = $("[name='document_date']");
+                        docDateInput.removeAttr('min');
+                        docDateInput.removeAttr('max');
+                        docDateInput.val(new Date().toISOString().split('T')[0]);
+                    }
+                });
+            });
+        }
+
+        /*for trigger on edit cases*/
+        setTimeout(() => {
+            let bookId = $("#book_id").val();
+            getDocNumberByBookId(bookId);
+        },1000);
+
+        /*Set Service Parameter*/
+        function setServiceParameters(parameters) {
+            /*Date Validation*/
+            const docDateInput = $("[name='document_date']");
+            let isFeature = false;
+            let isPast = false;
+            if (parameters.future_date_allowed && parameters.future_date_allowed.includes('yes')) {
+                let futureDate = new Date();
+                futureDate.setDate(futureDate.getDate() /*+ (parameters.future_date_days || 1)*/);
+                // docDateInput.val(futureDate.toISOString().split('T')[0]);
+                docDateInput.attr("min", new Date().toISOString().split('T')[0]);
+                isFeature = true;
+            } else {
+                isFeature = false;
+                docDateInput.attr("max", new Date().toISOString().split('T')[0]);
+            }
+            if (parameters.back_date_allowed && parameters.back_date_allowed.includes('yes')) {
+                let backDate = new Date();
+                backDate.setDate(backDate.getDate() /*- (parameters.back_date_days || 1)*/);
+                // docDateInput.val(backDate.toISOString().split('T')[0]);
+                // docDateInput.attr("max", "");
+                isPast = true;
+            } else {
+                isPast = false;
+                docDateInput.attr("min", new Date().toISOString().split('T')[0]);
+            }
+            /*Date Validation*/
+            if(isFeature && isPast) {
+                docDateInput.removeAttr('min');
+                docDateInput.removeAttr('max');
+            }
+
+        /*Reference from*/
+        }
 
         /*Vendor drop down*/
         function initializeAutocomplete1(selector, type) {
             $(selector).autocomplete({
+                minLength: 0,
                 source: function(request, response) {
                     $.ajax({
                         url: '/search',
@@ -797,9 +972,7 @@
                         }
                     });
                 },
-                minLength: 0,
                 select: function(event, ui) {
-                    console.log(ui.item);
                     var $input = $(this);
                     var itemName = ui.item.value;
                     var itemId = ui.item.id;
@@ -808,42 +981,7 @@
                     $input.val(itemName);
                     $("#vendor_id").val(itemId);
                     $("#vendor_code").val(itemCode);
-                    let actionUrl = "{{route('gate-entry.get.address')}}"+'?id='+itemId;
-                    fetch(actionUrl).then(response => {
-                        return response.json().then(data => {
-                            if(data.status == 200) {
-                                let curOption = `<option value="${data.data.currency.id}">${data.data.currency.name}</option>`;
-                                let termOption = `<option value="${data.data.paymentTerm.id}">${data.data.paymentTerm.name}</option>`;
-                                $('[name="currency_id"]').empty().append(curOption);
-                                $('[name="payment_term_id"]').empty().append(termOption);
-                                $("#shipping_id").val(data.data.shipping.id);
-                                $("#billing_id").val(data.data.billing.id);
-                                $(".shipping_detail").text(data.data.shipping.display_address);
-                                $(".billing_detail").text(data.data.billing.display_address);
-                                $("#hidden_state_id").val(data.data.shipping.state.id);
-                                $("#hidden_country_id").val(data.data.shipping.country.id);
-                            } else {
-                                if(data.data.error_message) {
-                                    $input.val('');
-                                    $("#vendor_id").val('');
-                                    $("#vendor_code").val('');
-                                    $("#hidden_state_id").val('');
-                                    $("#hidden_country_id").val('');
-                                    // $("#vendor_id").trigger('blur');
-                                    $("select[name='currency_id']").empty().append('<option value="">Select</option>');
-                                    $("select[name='payment_term_id']").empty().append('<option value="">Select</option>');
-                                    $(".shipping_detail").text('-');
-                                    $(".billing_detail").text('-');
-                                    Swal.fire({
-                                        title: 'Error!',
-                                        text: data.data.error_message,
-                                        icon: 'error',
-                                    });
-                                    return false;
-                                }
-                            }
-                        });
-                    });
+                    vendorOnChange(itemId);
                     return false;
                 },
                 change: function(event, ui) {
@@ -859,6 +997,69 @@
             });
         }
         initializeAutocomplete1("#vendor_name");
+        function vendorOnChange(vendorId) {
+            let store_id = $("[name='header_store_id']").val() || '';
+            let actionUrl = "{{route('gate-entry.get.address')}}"+'?id=' + vendorId+'&store_id='+store_id;
+            fetch(actionUrl).then(response => {
+                return response.json().then(data => {
+                    if(data.data?.currency_exchange?.status == false) {
+                        $("#vendor_name").val('');
+                        $("#vendor_id").val('');
+                        $("#vendor_code").val('');
+                        $("#hidden_state_id").val('');
+                        $("#hidden_country_id").val('');
+                        // $("#vendor_id").trigger('blur');
+                        $("select[name='currency_id']").empty().append('<option value="">Select</option>');
+                        $("select[name='payment_term_id']").empty().append('<option value="">Select</option>');
+                        $(".shipping_detail").text('-');
+                        $(".billing_detail").text('-');
+                        Swal.fire({
+                            title: 'Error!',
+                            text: data.data?.currency_exchange.message,
+                            icon: 'error',
+                        });
+                        return false;
+                    }
+                    if(data.status == 200) {
+                    $("#vendor_name").val(data?.data?.vendor?.company_name);
+                    $("#vendor_id").val(data?.data?.vendor?.id);
+                    $("#vendor_code").val(data?.data?.vendor.vendor_code);
+                    let curOption = `<option value="${data.data.currency.id}">${data.data.currency.name}</option>`;
+                    let termOption = `<option value="${data.data.paymentTerm.id}">${data.data.paymentTerm.name}</option>`;
+                    $('[name="currency_id"]').empty().append(curOption);
+                    $('[name="payment_term_id"]').empty().append(termOption);
+                    $("#shipping_id").val(data.data.shipping.id);
+                    $("#billing_id").val(data.data.billing.id);
+                    // $(".shipping_detail").text(data.data.shipping.display_address);
+                    $(".billing_detail").text(data.data.billing.display_address);
+                    $(".delivery_address").text(data.data.delivery_address);
+                    $(".org_address").text(data.data.org_address);
+
+                    $("#hidden_state_id").val(data.data.shipping.state.id);
+                    $("#hidden_country_id").val(data.data.shipping.country.id);
+                    } else {
+                        if(data.data.error_message) {
+                            $("#vendor_name").val('');
+                            $("#vendor_id").val('');
+                            $("#vendor_code").val('');
+                            $("#hidden_state_id").val('');
+                            $("#hidden_country_id").val('');
+                            // $("#vendor_id").trigger('blur');
+                            $("select[name='currency_id']").empty().append('<option value="">Select</option>');
+                            $("select[name='payment_term_id']").empty().append('<option value="">Select</option>');
+                            // $(".shipping_detail").text('-');
+                            $(".billing_detail").text('-');
+                            Swal.fire({
+                                title: 'Error!',
+                                text: data.data.error_message,
+                                icon: 'error',
+                            });
+                            return false;
+                        }
+                    }
+                });
+            });
+        }
 
         /*Add New Row*/
         // for component item code
@@ -945,14 +1146,16 @@
                         rowCount : rowCount
                     }).toString();
                     getItemDetail(closestTr);
-                    // taxHidden(queryParams);
                     setTimeout(() => {
                         if(ui.item.is_attr) {
                             $input.closest('tr').find('.attributeBtn').trigger('click');
                         } else {
-                            $input.closest('tr').find('[name*="[accepted_qty]"]').focus();
+                            $input.closest('tr').find('.attributeBtn').trigger('click');
+                            $input.closest('tr').find('[name*="[order_qty]"]').focus();
                         }
                     }, 100);
+                    initializeStationAutocomplete();
+                    getItemCostPrice($input.closest('tr'));
                     return false;
                 },
                 change: function(event, ui) {
@@ -1045,31 +1248,6 @@
             });
         });
 
-        function taxHidden(queryParams)
-        {
-            let actionUrl = '{{route("gate-entry.tax.calculation")}}';
-            let urlWithParams = `${actionUrl}?${queryParams}`;
-            fetch(urlWithParams).then(response => {
-                return response.json().then(data => {
-                    if (data.status == 200) {
-                        $(`#itemTable #row_${data.data.rowCount}`).find("[name*='t_type']").remove();
-                        $(`#itemTable #row_${data.data.rowCount}`).find("[name*='t_perc']").remove();
-                        $(`#itemTable #row_${data.data.rowCount}`).find("[name*='t_value']").remove();
-                        $(`#itemTable #row_${data.data.rowCount}`).find("[name*='item_total_cost']").after(data.data.html);
-                        setTableCalculation();
-
-                    } else {
-                        Swal.fire({
-                            title: 'Error!',
-                            text: data.error || 'An unexpected error occurred.',
-                            icon: 'error',
-                        });
-                        return false;
-                    }
-                });
-            });
-        }
-
         /*Delete Row*/
         $(document).on('click','#deleteBtn', (e) => {
             let itemIds = [];
@@ -1084,16 +1262,16 @@
                     poItemIds.push({ index: trIndex + 1, po_detail_id: po_detail_id });
                 }
             });
-            if (poItemIds.length) {
-                e.preventDefault();
-                let rowNumbers = poItemIds.map(item => item.index).join(", ");
-                Swal.fire({
-                    title: 'Error!',
-                    text: `You cannot delete mrn item(s) at row(s): ${rowNumbers}`,
-                    icon: 'error',
-                });
-                return false;
-            }
+            // if (poItemIds.length) {
+            //     e.preventDefault();
+            //     let rowNumbers = poItemIds.map(item => item.index).join(", ");
+            //     Swal.fire({
+            //         title: 'Error!',
+            //         text: `You cannot delete mrn item(s) at row(s): ${rowNumbers}`,
+            //         icon: 'error',
+            //     });
+            //     return false;
+            // }
 
             $('#itemTable > tbody .form-check-input').each(function() {
                 if ($(this).is(":checked")) {
@@ -1218,31 +1396,31 @@
                     return response.json().then(data => {
                         if (data.status == 200) {
                             $("#itemDetailDisplay").html(data.data.html);
-                            var approvedStockLedger = data.data.checkApprovedQuantity;
-                            if ((approvedStockLedger['code'] == 200) && (approvedStockLedger['status'] == 'error')) {
-                                let approved_stock = approvedStockLedger['approvedStock'];
-                                let receipt_qty = $(currentTr).find("[name*='[order_qty]']").val() || '';
-                                let rejQtyElement = $(currentTr).find("[name*='[rejected_qty]']");  // Get the jQuery object, not the value
-                                let rejQty = rejQtyElement.val() || '';  // Get the value of the rejected_qty input
-                                if (qty < approved_stock) {
-                                    if (qtyElement.length > 0) {  // Ensure the element was found
-                                        qtyElement.val(receipt_qty);  // Set the value of qtyElement (jQuery object)
-                                        rejQtyElement.val(0.00);  // Set the value of qtyElement (jQuery object)
-                                    } else {
-                                        Swal.fire({
-                                            title: 'Error!',
-                                            text: "Accepted quantity input not found",
-                                            icon: 'error',
-                                        });
-                                    }
-                                } else {
-                                    Swal.fire({
-                                        title: 'Error!',
-                                        text: "Accepted quantity is higher than the approved stock.",
-                                        icon: 'error',
-                                    });
-                                }
-                            }
+                            // var approvedStockLedger = data.data.checkApprovedQuantity;
+                            // if ((approvedStockLedger['code'] == 200) && (approvedStockLedger['status'] == 'error')) {
+                            //     let approved_stock = approvedStockLedger['approvedStock'];
+                            //     let receipt_qty = $(currentTr).find("[name*='[order_qty]']").val() || '';
+                            //     let rejQtyElement = $(currentTr).find("[name*='[rejected_qty]']");  // Get the jQuery object, not the value
+                            //     let rejQty = rejQtyElement.val() || '';  // Get the value of the rejected_qty input
+                            //     if (qty < approved_stock) {
+                            //         if (qtyElement.length > 0) {  // Ensure the element was found
+                            //             qtyElement.val(receipt_qty);  // Set the value of qtyElement (jQuery object)
+                            //             rejQtyElement.val(0.00);  // Set the value of qtyElement (jQuery object)
+                            //         } else {
+                            //             Swal.fire({
+                            //                 title: 'Error!',
+                            //                 text: "Accepted quantity input not found",
+                            //                 icon: 'error',
+                            //             });
+                            //         }
+                            //     } else {
+                            //         Swal.fire({
+                            //             title: 'Error!',
+                            //             text: "Accepted quantity is higher than the approved stock.",
+                            //             icon: 'error',
+                            //         });
+                            //     }
+                            // }
                         }
                     });
                 });
@@ -1428,6 +1606,7 @@
             let rowCount = e.target.closest('div').getAttribute('data-row-count');
             $('#store-row-id').val(rowCount);
             let qty = Number($("#itemTable #row_"+rowCount).find("[name*='[accepted_qty]']").val());
+            let store_id = Number($("#itemTable #row_" + rowCount).find("[name*='[store_id]']").val());
             if(!qty) {
                 Swal.fire({
                     title: 'Error!',
@@ -1446,12 +1625,7 @@
                                     <td>1</td>
                                     <td>
                                         <input type="hidden" name="row_count" value="${rowCount}" id="row_count">
-                                        <select class="form-select mw-100 select2 item_store_code" id="erp_store_id_1" name="components[${rowCount}][erp_store][1][erp_store_id]" data-id="1">
-                                        <option value="">Select</option>
-                                        @foreach ($erpStores as $key => $val)<option value="{{ $val->id }}" {{ $key === 0 ? 'selected' : '' }}>{{ $val->store_code }}</option>@endforeach
-                                        </select>
-                                    </td>
-                                    <td>
+                                        <input type="hidden" value="${store_id}" name="components[${rowCount}][erp_store][1][erp_store_id]" data-id="1"/>
                                         <select class="form-select mw-100 select2 item_rack_code" id="erp_rack_id_1" name="components[${rowCount}][erp_store][1][erp_rack_id]" data-id="1">
                                         <option value="">Select</option>
                                         </select>
@@ -1474,7 +1648,8 @@
                                 </tr>`;
                 $("#deliveryScheduleModal").find('.display_delivery_row').remove();
                 $("#deliveryScheduleModal").find('#deliveryFooter').before(rowHtml);
-                $('[name="components[1][erp_store][1][erp_store_id]"').trigger('change');
+                loadStoreDropdowns(store_id, rowCount);
+                // $('[name="components[1][erp_store][1][erp_store_id]"').trigger('change');
             } else {
                 if($("#itemTable #row_"+rowCount).find("[name*=store_qty]").length) {
                     $(".display_delivery_row").remove(); // Remove all rows if present
@@ -1483,7 +1658,9 @@
                     $('.display_delivery_row').not(':first').remove();
                     $(".display_delivery_row").find("[name*=store_qty]").val('');
                 }
-
+                let rackVal = '';
+                let shelfVal = '';
+                let binVal = '';
                 // Iterate over each store_qty field to build dynamic rows
                 $("#itemTable #row_" + rowCount).find("[name*=store_qty]").each(function(index, item) {
                     let storeVal = $(item).closest('td').find(`[name="components[${rowCount}][erp_store][${index+1}][erp_store_id]"]`).val();
@@ -1493,7 +1670,10 @@
                     let storeQty = $(item).closest('td').find(`[name="components[${rowCount}][erp_store][${index+1}][store_qty]"]`).val();
                     // console.log('store rack shelf', storeVal, rackVal, shelfVal, binVal);
                     // Trigger the change event after setting values to ensure racks, shelves, etc. are updated
-                    $(`#erp_store_id_${index+1}`).val(storeVal).trigger('change');
+                    // $(`#erp_store_id_${index+1}`).val(storeVal).trigger('change');
+                    // $(`#erp_rack_id_${index+1}`).val(rackVal);
+                    // $(`#erp_shelf_id_${index+1}`).val(shelfVal);
+                    // $(`#erp_bin_id_${index+1}`).val(binVal);
                     $(`#erp_rack_id_${index+1}`).val(rackVal);
                     $(`#erp_shelf_id_${index+1}`).val(shelfVal);
                     $(`#erp_bin_id_${index+1}`).val(binVal);
@@ -1503,11 +1683,7 @@
                                     <td>${index + 1}</td>
                                     <td>
                                         <input type="hidden" name="row_count" value="${rowCount}" id="row_count">
-                                        <select class="form-select mw-100 select2 item_store_code" id="erp_store_id_${index+1}" name="components[${rowCount}][erp_store][${index+1}][erp_store_id]" data-id="${index+1}">
-                                            @foreach ($erpStores as $key => $val)<option value="{{ $val->id }}" ${storeVal == '{{ $val->id }}' ? 'selected' : ''}>{{ $val->store_code }}</option>@endforeach
-                                        </select>
-                                    </td>
-                                    <td>
+                                        <input type="hidden" value="${store_id}" name="components[${rowCount}][erp_store][${index+1}][erp_store_id]" data-id="${index+1}"/>
                                         <select class="form-select mw-100 select2 item_rack_code" id="erp_rack_id_${index+1}" name="components[${rowCount}][erp_store][${index+1}][erp_rack_id]" data-id="${index+1}">
                                             <!-- Dynamically populated racks -->
                                         </select>
@@ -1543,13 +1719,102 @@
 
                 // Trigger change event to re-populate dependent dropdowns after the rows are added
                 $("#itemTable #row_" + rowCount).find("[name*=store_qty]").each(function(index, item) {
-                    $(`#erp_store_id_${index+1}`).trigger('change');
+                    count = index + 1;
+                    loadStoreDropdowns(store_id, count, rackVal, shelfVal, binVal);
+                    // $(`#erp_store_id_${index+1}`).trigger('change');
                 });
             }
             $("#deliveryScheduleTable").find('#deliveryFooter #total').attr('qty',qty);
             $("#deliveryScheduleModal").modal('show');
             totalScheduleQty();
         });
+
+        function loadStoreDropdowns(store_id, rowCount, rackVal, shelfVal, binVal) {
+            if (store_id) {
+                let erp_rack_id = rackVal || $(`#erp_rack_id_${rowCount}`)
+            .val();
+                let erp_shelf_id = shelfVal || $(`#erp_shelf_id_${rowCount}`)
+            .val();
+                let erp_bin_id = binVal || $(`#erp_bin_id_${rowCount}`)
+            .val();
+                // console.log('erp_rack_id---->>', erp_rack_id, erp_shelf_id, erp_bin_id);
+
+                var data = {
+                    store_code_id: store_id
+                };
+
+                $.ajax({
+                    type: 'POST',
+                    data: data,
+                    url: '/gate-entrys/get-store-racks',
+                    success: function(data) {
+                        $('#erp_rack_id_' + rowCount).empty();
+                        $.each(data.storeRacks, function(key, value) {
+                            $('#erp_rack_id_' + rowCount).append('<option value="' + key + '">' +
+                                value + '</option>');
+                            if (erp_rack_id && key == erp_rack_id) {
+                                $(`#erp_rack_id_${rowCount}`).val(
+                                erp_rack_id); // Set the selected rack value
+                            } else {
+                                erp_rack_id = key;
+                            }
+                        });
+
+                        // Empty and populate the bins dropdown
+                        $('#erp_bin_id_' + rowCount).empty();
+                        $.each(data.storeBins, function(key, value) {
+                            // Append bin options and maintain the selected value if it matches the provided or default value
+                            $('#erp_bin_id_' + rowCount).append('<option value="' + key + '">' + value +
+                                '</option>');
+                            if (erp_bin_id && key == erp_bin_id) {
+                                $(`#erp_bin_id_${rowCount}`).val(
+                                erp_bin_id); // Set the selected bin value
+                            }
+                        });
+
+                        // If a rack is selected, load shelves for the selected rack
+                        if (erp_rack_id) {
+                            loadShelvesForRack(rowCount, erp_rack_id, rackVal, shelfVal, binVal);
+                        }
+                    }
+                });
+            }
+        }
+
+        function loadShelvesForRack(rowKey, rack_code_id, rackVal, shelfVal, binVal) {
+            let erp_shelf_id = shelfVal || $(`#erp_shelf_id_${rowKey}`).val(); // Use shelfVal if provided, else fallback to form value
+            let erp_bin_id = binVal || $(`#erp_bin_id_${rowKey}`).val(); // Maintain the bin value as well
+
+            var data = {
+                rack_code_id: rack_code_id
+            };
+
+            $.ajax({
+                type: 'POST',
+                data: data,
+                url: '/gate-entrys/get-rack-shelfs',
+                success: function(data) {
+                    // Clear the shelf dropdown and populate it with new options
+                    $('#erp_shelf_id_' + rowKey).empty();
+                    $.each(data.storeShelfs, function(key, value) {
+                        $('#erp_shelf_id_' + rowKey).append('<option value="' + key + '">' + value +
+                            '</option>');
+                        if (erp_shelf_id && key == erp_shelf_id) {
+                            $(`#erp_shelf_id_${rowKey}`).val(
+                            erp_shelf_id); // Set the selected shelf value
+                        }
+                    });
+
+                    // Trigger change event for shelf dropdown after population
+                    $('#erp_shelf_id_' + rowKey).trigger('change');
+
+                    // After shelves are loaded, set the selected bin value as well
+                    if (erp_bin_id) {
+                        $(`#erp_bin_id_${rowKey}`).val(erp_bin_id); // Set the selected bin value correctly
+                    }
+                }
+            });
+        }
 
         /*Total delivery schedule qty*/
         function totalScheduleQty()
@@ -1564,6 +1829,8 @@
         // addTaxItemRow add row
         $(document).on('click', '.addTaxItemRow', (e) => {
             let rowCount = $('#deliveryScheduleModal .display_delivery_row').find('#row_count').val();
+            let store_id = Number($("#itemTable #row_" + rowCount).find("[name*='[store_id]']").val());
+            let store_code = $("#itemTable #row_" + rowCount).find("[name*='[erp_store_code]']").val();
             let qty = 0.00;
             $("#deliveryScheduleTable [name*='[store_qty]']").each(function(index, item) {
                 qty = qty + Number($(item).val());
@@ -1597,15 +1864,11 @@
             }
             if(qty != itemQty) {
                 let tblRowCount = $('#deliveryScheduleModal .display_delivery_row').length + 1;
+                // let store_id = Number($("#itemTable #row_" + rowCount).find("[name*='[store_id]']").val());
                 let rowHtml = `<tr class="display_delivery_row">
                                     <td>${tblRowCount}</td>
                                     <td>
-                                        <input type="hidden" name="row_count" value="${rowCount}" id="row_count">
-                                        <select class="form-select mw-100 select2 item_store_code" id="erp_store_id_${tblRowCount}" name="components[${rowCount}][erp_store][${tblRowCount}][erp_store_id]"  data-id="${tblRowCount}">
-                                        @foreach ($erpStores as $key => $val)<option value="{{ $val->id }}" {{ $key === 0 ? 'selected' : '' }}>{{ $val->store_code }}</option>@endforeach
-                                        </select>
-                                    </td>
-                                    <td>
+                                        <input type="hidden" value="${store_id}" name="components[${rowCount}][erp_store][${tblRowCount}][erp_store_id]" data-id="${tblRowCount}"/>
                                         <select class="form-select mw-100 select2 item_rack_code" id="erp_rack_id_${tblRowCount}" name="components[${rowCount}][erp_store][${tblRowCount}][erp_rack_id]"  data-id="${tblRowCount}">
                                         </select>
                                     </td>
@@ -1624,7 +1887,8 @@
                                 </td>
                                 </tr>`;
                 $("#deliveryScheduleModal").find('.display_delivery_row:last').after(rowHtml);
-                $('#erp_store_id_'+tblRowCount).trigger('change');
+                loadStoreDropdowns(store_id, tblRowCount);
+                // $('#erp_store_id_'+tblRowCount).trigger('change');
             } else {
                 Swal.fire({
                     title: 'Error!',
@@ -1639,7 +1903,21 @@
         /*itemDeliveryScheduleSubmit */
         $(document).on('click', '.itemDeliveryScheduleSubmit', (e) => {
             let rowCount = $('#deliveryScheduleModal .display_delivery_row').find('#row_count').val();
-            console.log(rowCount);
+            // console.log(rowCount);
+            let qty = 0.00;
+            $("#deliveryScheduleTable [name*='[store_qty]']").each(function(index, item) {
+                qty = qty + Number($(item).val());
+            });
+            let itemQty = Number($('#deliveryScheduleModal #deliveryFooter #total').attr('qty'));
+            // console.log('itemQty------>>',rowCount, qty, itemQty);
+            if (qty < itemQty) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Store quantity can not be less than accepted quantity.',
+                    icon: 'error',
+                });
+                return false;
+            }
             let hiddenHtml = '';
             $("#deliveryScheduleTable .display_delivery_row").each(function(index,item){
                 let storeId = $(item).find("[name*='erp_store_id']").val();
@@ -1665,6 +1943,11 @@
 
         /*Remove delivery row*/
         $(document).on('click', '.deleteItemDeliveryRow', (e) => {
+            let id = e.target.getAttribute('data-index');
+            // let id = $(`.display_discount_row`).find(`.deleteItemDeliveryRow`).getAttribute('data-index');
+            console.log('id----->>', id);
+
+            let dataRowId = Number(e.target.getAttribute('data-row-count'));
             if($(e.target).closest('tbody').find('.display_delivery_row').length ==1) {
                 Swal.fire({
                     title: 'Error!',
@@ -1674,6 +1957,13 @@
                 return false;
             }
             $(e.target).closest('tr').remove();
+            let ids = JSON.parse(localStorage.getItem('deletedItemLocationIds')) || [];
+            console.log('ids----->>', ids);
+
+            if (!ids.includes(id)) {
+                ids.push(id);
+            }
+            localStorage.setItem('deletedItemLocationIds', JSON.stringify(ids));
             totalScheduleQty();
         });
 
@@ -1701,7 +1991,7 @@
         $(document).on('change', '.item_store_code', function() {
             var rowKey = $(this).data('id');
             var store_code_id = $(this).val();
-            console.log('rowKey', rowKey);
+            // console.log('rowKey', rowKey);
             $('#erp_store_id_'+rowKey).val(store_code_id).select2();
 
             var data = {
@@ -1889,25 +2179,11 @@
         });
 
         $(document).on('click', '#amendmentSubmit', (e) => {
-            let actionUrl = "{{ route('gate-entry.amendment.submit', $mrn->id) }}";
-            fetch(actionUrl).then(response => {
-                return response.json().then(data => {
-                    if (data.status == 200) {
-                        Swal.fire({
-                            title: 'Success!',
-                            text: data.message,
-                            icon: 'success'
-                        });
-                    } else {
-                        Swal.fire({
-                            title: 'Error!',
-                            text: data.message,
-                            icon: 'error'
-                        });
-                    }
-                    location.reload();
-                });
-            });
+            let url = new URL(window.location.href);
+            url.search = '';
+            url.searchParams.set('amendment', 1);
+            let amendmentUrl = url.toString();
+            window.location.replace(amendmentUrl);
         });
 
         // # Revision Number On Chage
@@ -1940,6 +2216,329 @@
                 e.preventDefault();
                 $("#mrnEditForm").submit();
             }
+        });
+
+        function resetPostVoucher()
+        {
+            document.getElementById('voucher_doc_no').value = '';
+            document.getElementById('voucher_date').value = '';
+            document.getElementById('voucher_book_code').value = '';
+            document.getElementById('voucher_currency').value = '';
+            document.getElementById('posting-table').innerHTML = '';
+            document.getElementById('posting_button').style.display = 'none';
+        }
+
+        function onPostVoucherOpen(type = "not_posted")
+        {
+            // resetPostVoucher();
+            const apiURL = "{{route('gate-entry.posting.get')}}";
+            let urlType = '';
+            if(type == "not_posted"){
+                urlType = "get";
+            } else{
+                urlType = "view";
+            }
+            $.ajax({
+                url: apiURL + "?book_id=" + $("#book_id").val() + "&document_id=" + "{{isset($mrn) ? $mrn -> id : ''}}"  + "&type=" + urlType,
+                type: "GET",
+                dataType: "json",
+                success: function(data) {
+                    if (!data.data.status) {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: data.data.message,
+                            icon: 'error',
+                        });
+                        return;
+                    }
+                    const voucherEntries = data.data.data;
+                    var voucherEntriesHTML = ``;
+                    Object.keys(voucherEntries.ledgers).forEach((voucher) => {
+                        voucherEntries.ledgers[voucher].forEach((voucherDetail, index) => {
+                            voucherEntriesHTML += `
+                            <tr>
+                            <td>${voucher}</td>
+                            <td class="fw-bolder text-dark">${voucherDetail.ledger_group_code ? voucherDetail.ledger_group_code : ''}</td>
+                            <td>${voucherDetail.ledger_code ? voucherDetail.ledger_code : ''}</td>
+                            <td>${voucherDetail.ledger_name ? voucherDetail.ledger_name : ''}</td>
+                            <td class="text-end">${voucherDetail.debit_amount > 0 ? parseFloat(voucherDetail.debit_amount).toFixed(2) : ''}</td>
+                            <td class="text-end">${voucherDetail.credit_amount > 0 ? parseFloat(voucherDetail.credit_amount).toFixed(2) : ''}</td>
+                            </tr>
+                            `
+                        });
+                    });
+                    voucherEntriesHTML+= `
+                    <tr>
+                        <td colspan="4" class="fw-bolder text-dark text-end">Total</td>
+                        <td class="fw-bolder text-dark text-end">${voucherEntries.total_debit.toFixed(2)}</td>
+                        <td class="fw-bolder text-dark text-end">${voucherEntries.total_credit.toFixed(2)}</td>
+                    </tr>
+                    `;
+                    document.getElementById('posting-table').innerHTML = voucherEntriesHTML;
+                    document.getElementById('voucher_doc_no').value = voucherEntries.document_number;
+                    document.getElementById('voucher_date').value = moment(voucherEntries.document_date).format('D/M/Y');
+                    document.getElementById('voucher_book_code').value = voucherEntries.book_code;
+                    document.getElementById('voucher_currency').value = voucherEntries.currency_code;
+                    if (type === "posted") {
+                        document.getElementById('posting_button').style.display = 'none';
+                    } else {
+                        document.getElementById('posting_button').style.removeProperty('display');
+                    }
+                    $('#postvoucher').modal('show');
+                }
+            });
+
+        }
+
+        function postVoucher(element)
+        {
+            const bookId = "{{isset($mrn) ? $mrn -> book_id : ''}}";
+            const documentId = "{{isset($mrn) ? $mrn -> id : ''}}";
+            const postingApiUrl = "{{route('gate-entry.post')}}"
+            if (bookId && documentId) {
+                $.ajax({
+                    url: postingApiUrl,
+                    type: "POST",
+                    dataType: "json",
+                    contentType: "application/json", // Specifies the request payload type
+                    data: JSON.stringify({
+                        // Your JSON request data here
+                        book_id: bookId,
+                        document_id: documentId,
+                    }),
+                    success: function(data) {
+                        const response = data.data;
+                        if (response.status) {
+                            Swal.fire({
+                                title: 'Success!',
+                                text: response.message,
+                                icon: 'success',
+                            });
+                            location.reload();
+                        } else {
+                            Swal.fire({
+                                title: 'Error!',
+                                text: response.message,
+                                icon: 'error',
+                            });
+                        }
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: 'Some internal error occured',
+                            icon: 'error',
+                        });
+                    }
+                });
+
+            }
+        }
+
+        function initializeAutocompleteTED(selector, idSelector, nameSelector, type, percentageVal) {
+            $("#" + selector).autocomplete({
+                source: function(request, response) {
+                    $.ajax({
+                        url: '/search',
+                        method: 'GET',
+                        dataType: 'json',
+                        data: {
+                            q: request.term,
+                            type:type,
+                        },
+                        success: function(data) {
+                            response($.map(data, function(item) {
+                                return {
+                                    id: item.id,
+                                    label: `${item.name}`,
+                                    percentage: `${item.percentage}`,
+                                };
+                            }));
+                        },
+                        error: function(xhr) {
+                            console.error('Error fetching customer data:', xhr.responseText);
+                        }
+                    });
+                },
+                minLength: 0,
+                select: function(event, ui) {
+                    var $input = $(this);
+                    var itemName = ui.item.label;
+                    var itemId = ui.item.id;
+                    var itemPercentage = ui.item.percentage;
+
+                    $input.val(itemName);
+                    $("#" + idSelector).val(itemId);
+                    $("#" + nameSelector).val(itemName);
+                    $("#" + percentageVal).val(itemPercentage).trigger('keyup');
+                    return false;
+                },
+                change: function(event, ui) {
+                    if (!ui.item) {
+                        $(this).val("");
+                        $("#" + idSelector).val("");
+                        $("#" + nameSelector).val("");
+                    }
+                }
+            }).focus(function() {
+                if (this.value === "") {
+                    $(this).autocomplete("search", "");
+                }
+            });
+        }
+
+        // Function to initialize the product section autocomplete
+        function initializeStationAutocomplete() {
+            $("[name*='store_section']").autocomplete({
+                source: function (request, response) {
+                    $.ajax({
+                        url: '/search',
+                        method: 'GET',
+                        dataType: 'json',
+                        data: {
+                            q: request.term,
+                            type: 'store'
+                        },
+                        success: function (data) {
+                            const mappedData = $.map(data, function (item) {
+                                return {
+                                    id: item.id,
+                                    label: item.store_code,
+                                };
+                            });
+                            response(mappedData);
+
+                        },
+                        error: function (xhr) {
+                            console.error('Error fetching data:', xhr.responseText);
+                        }
+                    });
+                },
+                minLength: 0,
+                select: function (event, ui) {
+                    $(this).val(ui.item.label);
+                    $(this).closest('td').find("[name*='[store_id]']").val(ui.item.id);
+                    $(this).closest('td').find("[name*='[erp_store_code]']").val(ui.item.label);
+                    return false;
+                },
+                change: function (event, ui) {
+                    if (!ui.item) {
+                    $(this).val("");
+                    $(this).closest('td').find("[name*='[store_id]']").val("");
+                    $(this).closest('td').find("[name*='[erp_store_code]']").val("");
+                    }
+                },
+                // appendTo: "#addSectionItemPopup"
+            }).focus(function () {
+                if (this.value === "") {
+                    $(this).closest('td').find("[name*='[store_id]']").val("");
+                    $(this).closest('td').find("[name*='[erp_store_code]']").val("");
+                    $(this).autocomplete("search", "");
+                }
+            });
+        }
+
+        function initializeAutocompleteTED(selector, idSelector, nameSelector, type, percentageVal) {
+            $("#" + selector).autocomplete({
+                source: function(request, response) {
+                    $.ajax({
+                        url: '/search',
+                        method: 'GET',
+                        dataType: 'json',
+                        data: {
+                            q: request.term,
+                            type:type,
+                        },
+                        success: function(data) {
+                            response($.map(data, function(item) {
+                                return {
+                                    id: item.id,
+                                    label: `${item.name}`,
+                                    percentage: `${item.percentage}`,
+                                };
+                            }));
+                        },
+                        error: function(xhr) {
+                            console.error('Error fetching customer data:', xhr.responseText);
+                        }
+                    });
+                },
+                minLength: 0,
+                select: function(event, ui) {
+                    var $input = $(this);
+                    var itemName = ui.item.label;
+                    var itemId = ui.item.id;
+                    var itemPercentage = ui.item.percentage;
+
+                    $input.val(itemName);
+                    $("#" + idSelector).val(itemId);
+                    $("#" + nameSelector).val(itemName);
+                    $("#" + percentageVal).val(itemPercentage).trigger('keyup');
+                    return false;
+                },
+                change: function(event, ui) {
+                    if (!ui.item) {
+                        $(this).val("");
+                        $("#" + idSelector).val("");
+                        $("#" + nameSelector).val("");
+                    }
+                }
+            }).focus(function() {
+                if (this.value === "") {
+                    $(this).autocomplete("search", "");
+                }
+            });
+        }
+
+        // Get Item Rate
+        function getItemCostPrice(currentTr)
+        {
+            let vendorId = $("#vendor_id").val();
+            let currencyId = $("select[name='currency_id']").val();
+            let transactionDate = $("input[name='document_date']").val();
+            let itemId = $(currentTr).find("input[name*='[item_id]']").val();
+            let attributes = '';
+            let uomId = $(currentTr).find("select[name*='[uom_id]']").val();
+            let queryParams = new URLSearchParams({
+                vendor_id: vendorId,
+                currency_id: currencyId,
+                transaction_date: transactionDate,
+                item_id: itemId,
+                attributes: attributes,
+                uom_id: uomId
+            });
+            let actionUrl = '{{ route("items.get.cost") }}'+'?'+queryParams.toString();
+            fetch(actionUrl).then(response => {
+                return response.json().then(data => {
+                    if(data.status == 200) {
+                        let cost = data?.data?.cost || 0;
+                        $(currentTr).find("input[name*='[rate]']").val(cost);
+                    }
+                });
+            });
+        }
+
+        // Revoke Document
+        $(document).on('click', '#revokeButton', (e) => {
+            let actionUrl = '{{ route("gate-entry.revoke.document") }}'+ '?id='+'{{$mrn->id}}';
+            fetch(actionUrl).then(response => {
+                return response.json().then(data => {
+                    if(data.status == 'error') {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: data.message,
+                            icon: 'error',
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'Success!',
+                            text: data.message,
+                            icon: 'success',
+                        });
+                    }
+                    location.reload();
+                });
+            });
         });
     </script>
 @endsection

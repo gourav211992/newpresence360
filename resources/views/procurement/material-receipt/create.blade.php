@@ -140,6 +140,15 @@
                                                         </select>
                                                     </div>
                                                 </div>
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Store <span class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <select class="form-select sub_store" id="sub_store_id" name="sub_store_id">
+                                                        </select>
+                                                    </div>
+                                                </div>
                                                 <!-- <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Reference No </label>
@@ -389,8 +398,6 @@
                                                                 <th width="240px">Item Name</th>
                                                                 <th>Attributes</th>
                                                                 <th>UOM</th>
-                                                                <th>Location</th>
-                                                                <th class="subStore">Store</th>
                                                                 <th class="text-end">Recpt Qty</th>
                                                                 <th class="text-end">Acpt. Qty</th>
                                                                 <th class="text-end">Rej. Qty</th>
@@ -405,7 +412,7 @@
                                                         </tbody>
                                                         <tfoot>
                                                             <tr class="totalsubheadpodetail">
-                                                                <td class="dynamic-colspan"></td>
+                                                                <td colspan="9"></td>
                                                                 <td class="text-end" id="totalItemValue">0.00</td>
                                                                 <td class="text-end" id="totalItemDiscount">0.00</td>
                                                                 {{--
@@ -414,7 +421,7 @@
                                                                 <td class="text-end" id="TotalEachRowAmount">0.00</td>
                                                             </tr>
                                                             <tr valign="top">
-                                                                <td rowspan="10" class="dynamic-summary-colspan">
+                                                                <td rowspan="10" colspan="8">
                                                                     <table class="table border" id="itemDetailDisplay">
                                                                         <tr>
                                                                             <td class="p-0">
@@ -680,8 +687,8 @@
             </div>
         </div>
     </div>
-    {{-- Item Locations --}}
-    @include('procurement.material-receipt.partials.item-location-modal')
+    {{-- Storage Points --}}
+    @include('procurement.material-receipt.partials.storage-point-modal')
     {{-- Taxes --}}
     @include('procurement.material-receipt.partials.tax-detail-modal')
 @endsection
@@ -932,9 +939,14 @@
 
         /*Add New Row*/
         $(document).on('click','#addNewItemBtn', (e) => {
-            let storeLocation = $('.header_store_id').val();
-            updateItemStores();
-            getSubStores(storeLocation);
+            if(!checkBasicFilledDetail()) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Please fill header detail first',
+                    icon: 'error',
+                });
+                return false;
+            }
             if(!checkVendorFilledDetail()) {
                 Swal.fire({
                     title: 'Error!',
@@ -1023,9 +1035,6 @@
 
                         getItemDetail(closestTr);
                         getItemCostPrice($input.closest('tr'));
-                        let storeLocation = $('.header_store_id').val();
-                        updateItemStores();
-                        getSubStores(storeLocation, itemId);
                         return false;
                     },
                     change: function(event, ui) {
@@ -1307,35 +1316,44 @@
         });
 
         function getItemDetail(currentTr) {
-            let pName = $(currentTr).find("[name*='component_item_name']").val();
-            let itemId = $(currentTr).find("[name*='item_id']").val();
-            let poHeaderId = $(currentTr).find("[name*='purchase_order_id']").val();
-            let poDetailId = $(currentTr).find("[name*='po_detail_id']").val();
+            const $row = $(currentTr);
+            let pName = $row.find("[name*='component_item_name']").val();
+            let itemId = $row.find("[name*='item_id']").val();
+            let poHeaderId = $row.find("[name*='purchase_order_id']").val();
+            let poDetailId = $row.find("[name*='po_detail_id']").val();
             let remark = '';
-            if($(currentTr).find("[name*='remark']")) {
-                remark = $(currentTr).find("[name*='remark']").val() || '';
+            if($row.find("[name*='remark']")) {
+                remark = $row.find("[name*='remark']").val() || '';
             }
 
             if (itemId) {
                 let selectedAttr = [];
-                $(currentTr).find("[name*='attr_name']").each(function(index, item) {
+                $row.find("[name*='attr_name']").each(function(index, item) {
                     if($(item).val()) {
                         selectedAttr.push($(item).val());
                     }
                 });
-                let uomId = $(currentTr).find("[name*='[uom_id]']").val() || '';
-                let qty = $(currentTr).find("[name*='[accepted_qty]']").val() || '';
-                let headerId = $(currentTr).find("[name*='mrn_header_id']").val() ?? '';
-                let detailId = $(currentTr).find("[name*='mrn_detail_id']").val() ?? '';
-                let itemStoreData = JSON.parse($(currentTr).find("[id*='components_stores_data']").val() || "[]");
-                let actionUrl = '{{route("material-receipt.get.itemdetail")}}'+'?item_id='+itemId+'&purchase_order_id='+poHeaderId+'&po_detail_id='+poDetailId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&itemStoreData='+JSON.stringify(itemStoreData)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&headerId='+headerId+'&detailId='+detailId;
+                let uomId = $row.find("[name*='[uom_id]']").val() || '';
+                let qty = $row.find("[name*='[accepted_qty]']").val() || '';
+                let headerId = $row.find("[name*='mrn_header_id']").val() ?? '';
+                let detailId = $row.find("[name*='mrn_detail_id']").val() ?? '';
+                let actionUrl = '{{route("material-receipt.get.itemdetail")}}'+'?item_id='+itemId+'&purchase_order_id='+poHeaderId+'&po_detail_id='+poDetailId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&headerId='+headerId+'&detailId='+detailId;
                 fetch(actionUrl).then(response => {
                     return response.json().then(data => {
                         if(data.status == 200) {
-                            // let itemStoreData = JSON.parse($(currentTr).find("[id*='components_stores_data']").val() || "[]");
-                            // console.log('itemStoreData....', itemStoreData);
-                            // ledgerStock(currentTr, itemId, selectedAttr, itemStoreData);
+                            const storagePoints = data.storagePoints?.data || [];
+                            
+                            // Store in global map (if needed for other logic)
+                            itemStorageMap[itemId] = storagePoints;
+
+                             // Update the modal or display section
                             $("#itemDetailDisplay").html(data.data.html);
+
+                            // Store directly in the current row's hidden input
+                            const hiddenInput = $row.find("input[name*='[storage_points]']");
+                            if (hiddenInput.length) {
+                                hiddenInput.val(JSON.stringify(storagePoints));
+                            }
                         }
                     });
                 });
@@ -2337,8 +2355,7 @@
                         $(".editAddressBtn").addClass('d-none');
                         let locationId = $("[name='header_store_id']").val();
                         getLocation(locationId);
-                        getSubStores(locationId, item='');
-
+                        
                         if(finalDiscounts.length) {
                             let rows = '';
                             finalDiscounts.forEach(function(item,index) {
@@ -2656,7 +2673,6 @@
                         }
                         let locationId = $("[name='header_store_id']").val();
                         getLocation(locationId);
-                        // getSubStores(locationId, item='');
                         updateImportItemData(data.status);
                         setTimeout(() => {
                             setTableCalculation();

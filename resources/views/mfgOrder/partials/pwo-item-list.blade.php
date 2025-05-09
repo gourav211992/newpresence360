@@ -26,6 +26,7 @@
         <td>{{$pwoItem->pwo?->book_code ?? ''}}</td>
         <td>{{$pwoItem->pwo?->document_number ?? ''}}</td>
         <td>{{$pwoItem->pwo?->getFormattedDate('document_date')  ?? ''}}</td>
+        <td>{{$pwoItem->pwo?->location?->name  ?? ''}}</td>
         <td>{{$pwoItem?->item?->item_code ?? ''}}</td>
         <td>{{$pwoItem?->item?->item_name ?? ''}}</td>
         <td>{!! $html ? $html : '' !!}</td>

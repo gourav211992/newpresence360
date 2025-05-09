@@ -7,8 +7,8 @@
         <a class="nav-link {{ \Request::route()->getName() == 'recruitment.jobs.assigned-candidate' ? 'active' : '' }}" href="{{ route('recruitment.jobs.assigned-candidate') }}">Candidate Assigned
             &nbsp;<span>({{ $candidatesCount }})</span></a>
     </li>
-    {{-- <li class="nav-item">
-        <a class="nav-link" data-bs-toggle="tab" href="#Scheduled">Interview Scheduled
-            &nbsp;<span>(5)</span></a>
-    </li> --}}
+    <li class="nav-item">
+        <a class="nav-link {{ \Request::route()->getName() == 'recruitment.jobs.interview-scheduled' ? 'active' : '' }}" href="{{ route('recruitment.jobs.interview-scheduled') }}">Interview Scheduled
+            &nbsp;<span>({{ $interviewCount }})</span></a>
+    </li>
 </ul>

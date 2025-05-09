@@ -161,7 +161,7 @@ class PiItem extends Model
         return max(($this -> indent_qty) - $this -> mi_qty, 0);
     }
 
-    public function getAvlStock($storeId = null)
+    public function getAvlStock($storeId, $subStoreId = null, $stationId = null)
     {
         $selectedAttributeIds = [];
         $itemAttributes = $this -> item_attributes_array();
@@ -172,7 +172,7 @@ class PiItem extends Model
                 }
             }
         }
-        $stocks = InventoryHelper::totalInventoryAndStock($this -> item_id, $selectedAttributeIds,$this -> uom_id,$storeId,null,null);
+        $stocks = InventoryHelper::totalInventoryAndStock($this -> item_id, $selectedAttributeIds,$this -> uom_id,$storeId,$subStoreId,NULL,$stationId);
         $stockBalanceQty = 0;
         if (isset($stocks) && isset($stocks['confirmedStocks'])) {
             $stockBalanceQty = $stocks['confirmedStocks'];

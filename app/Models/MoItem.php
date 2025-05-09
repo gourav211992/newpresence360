@@ -5,8 +5,6 @@ namespace App\Models;
 use App\Helpers\InventoryHelper;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Helpers\ConstantHelper;
-use App\Helpers\Helper;
 use App\Traits\DateFormatTrait;
 
 class MoItem extends Model
@@ -35,10 +33,6 @@ class MoItem extends Model
         'mi_balance_qty',
         'value'
     ];
-    
-    // public $referencingRelationships = [
-    //     'vendor' => 'vendor_id',
-    // ];
 
     public function getValueAttribute()
     {
@@ -85,6 +79,7 @@ class MoItem extends Model
     {
         return $this->belongsTo(MfgOrder::class,'mo_id');
     }
+    
     public function header()
     {
         return $this->belongsTo(MfgOrder::class,'mo_id');
@@ -129,7 +124,7 @@ class MoItem extends Model
     {
         return $this -> getAttribute('qty') - $this -> getAttribute('mi_qty');
     }
-    public function getAvlStock($storeId)
+    public function getAvlStock($storeId, $subStoreId = null, $stationId = null)
     {
         $selectedAttributeIds = [];
         $itemAttributes = $this -> item_attributes_array();
@@ -140,7 +135,9 @@ class MoItem extends Model
                 }
             }
         }
-        $stocks = InventoryHelper::totalInventoryAndStock($this -> item_id, $selectedAttributeIds,$this -> uom_id,$storeId,null,null);
+        $stockType = $this -> getAttribute('rm_type') == 'sf' ? InventoryHelper::STOCK_TYPE_WIP : InventoryHelper::STOCK_TYPE_REGULAR; 
+        $wipStationId = $stockType == InventoryHelper::STOCK_TYPE_WIP ? $this -> getAttribute('station_id') : null;
+        $stocks = InventoryHelper::totalInventoryAndStock($this -> item_id, $selectedAttributeIds,$this -> uom_id,$storeId, $subStoreId, null, $stationId, $stockType, $wipStationId);
         $stockBalanceQty = 0;
         if (isset($stocks) && isset($stocks['confirmedStocks'])) {
             $stockBalanceQty = $stocks['confirmedStocks'];

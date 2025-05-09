@@ -21,9 +21,9 @@
             <tr>
                 <td style="vertical-align: top;">
                     @if (isset($orgLogo))
-                        <img src="{!! $orgLogo !!}" alt="" height="20px" />
+                        <img src="{!! $orgLogo !!}" alt="" height="50px" />
                     @else
-                        <img src="{{$imagePath}}" height="20px" alt="">
+                        <img src="{{$imagePath}}" height="50px" alt="">
                     @endif
                 </td>
                 <td style="text-align: right; vertical-align: bottom; font-weight: bold; font-size: 18px;">

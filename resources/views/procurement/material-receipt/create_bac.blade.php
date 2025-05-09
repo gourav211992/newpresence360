@@ -1,4 +1,35 @@
 @extends('layouts.app')
+@section('styles')
+    <style>
+        #poModal .table-responsive {
+            overflow-y: auto;
+            max-height: 300px; /* Set the height of the scrollable body */
+            position: relative;
+        }
+
+        #poModal .po-order-detail {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        #poModal .po-order-detail thead {
+            position: sticky;
+            top: 0; /* Stick the header to the top of the table container */
+            background-color: white; /* Optional: Make sure header has a background */
+            z-index: 1; /* Ensure the header stays above the body content */
+        }
+        #poModal .po-order-detail th {
+            background-color: #f8f9fa; /* Optional: Background for the header */
+            text-align: left;
+            padding: 8px;
+        }
+        #poModal .po-order-detail td {
+            padding: 8px;
+        }
+        .tooltip-inner { text-align: left}
+        .subStore { display: none; }
+    </style>
+@endsection
 @section('content')
     @php
         $routeName = $servicesBooks['services'][0]->alias ??  "material-receipt";
@@ -96,27 +127,27 @@
                                                 </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Store Location <span class="text-danger">*</span></label>
+                                                        <label class="form-label">Location <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
                                                         <select class="form-select header_store_id" id="header_store_id" name="header_store_id">
                                                             @foreach($locations as $erpStore)
                                                                 <option value="{{$erpStore->id}}"
                                                                     {{ old('header_store_id', $selectedStoreId ?? '') == $erpStore->id ? 'selected' : '' }}>
-                                                                    {{ ucfirst($erpStore->store_code) }}
+                                                                    {{ ucfirst($erpStore->store_name) }}
                                                                 </option>
                                                             @endforeach
                                                         </select>
                                                     </div>
                                                 </div>
-                                                <div class="row align-items-center mb-1">
+                                                <!-- <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Reference No </label>
                                                     </div>
                                                     <div class="col-md-5">
                                                         <input type="text" name="reference_number" class="form-control">
                                                     </div>
-                                                </div>
+                                                </div> -->
                                                 <div class="row align-items-center mb-1 d-none" id="reference_from">
                                                     <div class="col-md-3">
                                                         <label class="form-label">
@@ -128,6 +159,7 @@
                                                             <i data-feather="plus-square"></i>
                                                             Outstanding PO
                                                         </button>
+                                                        <input type="hidden" name="module_type" id="module_type" class="module_type" value="po">
                                                     </div>
                                                 </div>
                                             </div>
@@ -172,36 +204,39 @@
                                                     </div>
                                                 </div>
                                                 <div class="row">
-                                                    <div class="col-md-6">
-                                                        <div class="customer-billing-section">
-                                                            <p>Shipping Details</p>
+                                                    <div class="col-md-4">
+                                                        <div class="customer-billing-section h-100">
+                                                            <p>Vendor Address</p>
                                                             <div class="bilnbody">
                                                                 <div class="genertedvariables genertedvariablesnone">
-                                                                    <label class="form-label w-100">
-                                                                        Select Shipping Address <span class="text-danger">*</span>
-                                                                        <a href="javascript:;" class="float-end font-small-2 editAddressBtn" id="editShippingAddressBtn" data-type="shipping">
-                                                                            <i data-feather='edit-3'></i> Edit
-                                                                        </a>
-                                                                    </label>
-                                                                    <div class="mrnaddedd-prim shipping_detail">-</div>
-                                                                    <input type="hidden" name="shipping_address" id="shipping_address">
+                                                                    <label class="form-label w-100">Vendor Address <span class="text-danger">*</span> <a href="javascript:;" class="float-end font-small-2 editAddressBtn" data-type="billing"><i data-feather='edit-3'></i> Edit</a></label>
+                                                                    <div class="mrnaddedd-prim billing_detail">-</div>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div class="col-md-6">
+                                                    <div class="col-md-4">
                                                         <div class="customer-billing-section h-100">
-                                                            <p>Billing Details</p>
+                                                            <p>Billing Address</p>
                                                             <div class="bilnbody">
                                                                 <div class="genertedvariables genertedvariablesnone">
-                                                                    <label class="form-label w-100">
-                                                                        Select Billing Address <span class="text-danger">*</span>
-                                                                        <a href="javascript:;" class="float-end font-small-2 editAddressBtn" id="editBillingAddressBtn" data-type="billing">
-                                                                            <i data-feather='edit-3'></i> Edit
-                                                                        </a>
+                                                                    <label class="form-label w-100">Billing Address <span class="text-danger">*</span>
+                                                                        {{-- <a href="javascript:;" class="float-end font-small-2 editAddressBtn" data-type="billing"><i data-feather='edit-3'></i> Edit</a> --}}
                                                                     </label>
-                                                                    <div class="mrnaddedd-prim billing_detail">-</div>
-                                                                    <input type="hidden" name="billing_address" id="billing_address">
+                                                                    <div class="mrnaddedd-prim org_address">-</div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="customer-billing-section h-100">
+                                                            <p>Delivery Address</p>
+                                                            <div class="bilnbody">
+                                                                <div class="genertedvariables genertedvariablesnone">
+                                                                    <label class="form-label w-100">Delivery Address <span class="text-danger">*</span>
+                                                                        {{-- <a href="javascript:;" class="float-end font-small-2 editAddressBtn" data-type="billing"><i data-feather='edit-3'></i> Edit</a> --}}
+                                                                    </label>
+                                                                    <div class="mrnaddedd-prim delivery_address">-</div>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -227,8 +262,8 @@
                                                                 Gate Entry No.
                                                                 <!-- <span class="text-danger">*</span> -->
                                                             </label>
-                                                            <input type="text" name="gate_entry_no"
-                                                                class="form-control bg-white"
+                                                            <input type="text" name="gate_entry_no" id="gate_entry_no"
+                                                                class="form-control bg-white gate_entry_no"
                                                                 placeholder="Enter Gate Entry no">
                                                         </div>
                                                     </div>
@@ -239,7 +274,7 @@
                                                                 <!-- <span class="text-danger">*</span> -->
                                                             </label>
                                                             <input type="date" name="gate_entry_date"
-                                                                class="form-control bg-white gate-entry" id="datepicker2"
+                                                                class="form-control bg-white gate-entry gate_entry_date" id="datepicker2"
                                                                 placeholder="Enter Gate Entry Date">
                                                         </div>
                                                     </div>
@@ -250,7 +285,7 @@
                                                                 <!-- <span class="text-danger">*</span> -->
                                                             </label>
                                                             <input type="text" name="eway_bill_no"
-                                                                class="form-control bg-white"
+                                                                class="form-control bg-white eway_bill_no"
                                                                 placeholder="Enter Eway Bill No.">
                                                         </div>
                                                     </div>
@@ -261,7 +296,7 @@
                                                                 <!-- <span class="text-danger">*</span> -->
                                                             </label>
                                                             <input type="text" name="consignment_no"
-                                                                class="form-control bg-white"
+                                                                class="form-control bg-white consignment_no"
                                                                 placeholder="Enter Consignment No.">
                                                         </div>
                                                     </div>
@@ -271,7 +306,7 @@
                                                             Supplier Invoice No.
                                                             </label>
                                                             <input type="text" name="supplier_invoice_no"
-                                                                class="form-control bg-white"
+                                                                class="form-control bg-white supplier_invoice_no"
                                                                 placeholder="Enter Supplier Invoice No.">
                                                         </div>
                                                     </div>
@@ -282,7 +317,7 @@
                                                                 <!-- <span class="text-danger">*</span> -->
                                                             </label>
                                                             <input type="date" name="supplier_invoice_date"
-                                                                class="form-control bg-white gate-entry" id="datepicker3"
+                                                                class="form-control bg-white gate-entry supplier_invoice_date" id="datepicker3"
                                                                 placeholder="Enter Supplier Invoice Date">
                                                         </div>
                                                     </div>
@@ -292,7 +327,7 @@
                                                             Transporter Name
                                                             </label>
                                                             <input type="text" name="transporter_name"
-                                                                class="form-control bg-white"
+                                                                class="form-control bg-white transporter_name"
                                                                 placeholder="Enter Transporter Name">
                                                         </div>
                                                     </div>
@@ -300,11 +335,14 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">
                                                                 Vehicle No.
-                                                                <!-- <span class="text-danger">*</span> -->
+                                                                <i class="ml-2 fas fa-info-circle text-primary"
+                                                                data-bs-toggle="tooltip"
+                                                                data-bs-html="true"
+                                                                title="Format:<br>[A-Z]{2} – 2 uppercase letters (e.g., 'MH')<br>[0-9]{2} – 2 digits (e.g., '12')<br>[A-Z]{0,3} – 0 to 3 uppercase letters (e.g., 'AB', 'ABZ')<br>[0-9]{4} – 4 digits (e.g., '1234')"></i>
                                                             </label>
                                                             <input type="text" name="vehicle_no"
-                                                                class="form-control bg-white"
-                                                                placeholder="Enter Vehicle No.">
+                                                            class="form-control vehicle_no"
+                                                            placeholder="Enter Vehicle No." />
                                                         </div>
                                                     </div>
                                                 </div>
@@ -317,16 +355,21 @@
                                         <div class="border-bottom mb-2 pb-25">
                                             <div class="row">
                                                 <div class="col-md-6">
-                                                    <div class="newheader ">
+                                                    <div class="newheader">
                                                         <h4 class="card-title text-theme">Item Wise Detail</h4>
                                                         <p class="card-text">Fill the details</p>
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6 text-sm-end">
+                                                    <button type="button" id="importItem" class="btn btn-sm btn-outline-primary importItem" onclick="openImportItemModal('create', '')">
+                                                        <i data-feather="upload"></i> Import Item
+                                                    </button>
                                                     <a href="javascript:;" id="deleteBtn" class="btn btn-sm btn-outline-danger me-50">
-                                                    <i data-feather="x-circle"></i> Delete</a>
+                                                        <i data-feather="x-circle"></i> Delete
+                                                    </a>
                                                     <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary">
-                                                    <i data-feather="plus"></i> Add New Item</a>
+                                                        <i data-feather="plus"></i> Add New Item
+                                                    </a>
                                                 </div>
                                             </div>
                                         </div>
@@ -347,6 +390,7 @@
                                                                 <th>Attributes</th>
                                                                 <th>UOM</th>
                                                                 <th>Location</th>
+                                                                <th class="subStore">Store</th>
                                                                 <th class="text-end">Recpt Qty</th>
                                                                 <th class="text-end">Acpt. Qty</th>
                                                                 <th class="text-end">Rej. Qty</th>
@@ -361,7 +405,7 @@
                                                         </tbody>
                                                         <tfoot>
                                                             <tr class="totalsubheadpodetail">
-                                                                <td colspan="10"></td>
+                                                                <td class="dynamic-colspan"></td>
                                                                 <td class="text-end" id="totalItemValue">0.00</td>
                                                                 <td class="text-end" id="totalItemDiscount">0.00</td>
                                                                 {{--
@@ -370,7 +414,7 @@
                                                                 <td class="text-end" id="TotalEachRowAmount">0.00</td>
                                                             </tr>
                                                             <tr valign="top">
-                                                                <td colspan="9" rowspan="10">
+                                                                <td rowspan="10" class="dynamic-summary-colspan">
                                                                     <table class="table border" id="itemDetailDisplay">
                                                                         <tr>
                                                                             <td class="p-0">
@@ -509,6 +553,8 @@
             </div>
         </div>
     </form>
+    {{-- Item upload modal --}}
+    @include('partials.import-item-modal')
     {{-- Attribute popup --}}
     <div class="modal fade" id="attribute" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
         <div class="modal-dialog  modal-dialog-centered">
@@ -580,26 +626,26 @@
                     <div class="table-responsive-md customernewsection-form">
                         <table id="eachRowDiscountTable" class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail">
                             <thead>
-                            <tr>
-                                <th>S.No</th>
-                                <th width="150px">Discount Name</th>
-                                <th>Discount %</th>
-                                <th>Discount Value</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr id="disItemFooter">
-                            <input type="hidden" name="row_count" id="row_count" value="1">
-                            <td colspan="2"></td>
-                            <td class="text-dark"><strong>Total</strong></td>
-                            <td class="text-dark text-end"><strong id="total">0.00</strong></td>
-                            <td></td>
-                        </tr>
-                        </tbody>
+                                <tr>
+                                    <th>S.No</th>
+                                    <th width="150px">Discount Name</th>
+                                    <th>Discount %</th>
+                                    <th>Discount Value</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr id="disItemFooter">
+                                    <input type="hidden" name="row_count" id="row_count" value="1">
+                                    <td colspan="2"></td>
+                                    <td class="text-dark"><strong>Total</strong></td>
+                                    <td class="text-dark text-end"><strong id="total">0.00</strong></td>
+                                    <td></td>
+                                </tr>
+                            </tbody>
                         </table>
                     </div>
-                    </div>
+                </div>
                 <div class="modal-footer justify-content-center">
                     <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button>
                     <button type="button" class="btn btn-primary itemDiscountSubmit">Submit</button>
@@ -643,7 +689,9 @@
     <script type="text/javascript">
         let actionUrlTax = '{{route("material-receipt.tax.calculation")}}';
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/mrn.js')}}"></script>
+    <script type="text/javascript" src="{{asset('assets/js/modules/import-item.js')}}"></script>
     <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
     <script>
         $(document).on('change','#book_id',(e) => {
@@ -767,6 +815,7 @@
         /*Vendor drop down*/
         function initializeAutocomplete1(selector, type) {
             $(selector).autocomplete({
+                minLength: 0,
                 source: function(request, response) {
                     $.ajax({
                         url: '/search',
@@ -791,7 +840,6 @@
                         }
                     });
                 },
-                minLength: 0,
                 select: function(event, ui) {
                     var $input = $(this);
                     var itemName = ui.item.value;
@@ -801,66 +849,11 @@
                     $input.val(itemName);
                     $("#vendor_id").val(itemId);
                     $("#vendor_code").val(itemCode);
-                    let document_date = $("[name='document_date']").val();
-                    let actionUrl = "{{route('material-receipt.get.address')}}"+'?id='+itemId+'&document_date='+document_date;
-                    fetch(actionUrl).then(response => {
-                        return response.json().then(data => {
-                            if(data.data?.currency_exchange?.status == false) {
-                                $input.val('');
-                                $("#vendor_id").val('');
-                                $("#vendor_code").val('');
-                                $("#hidden_state_id").val('');
-                                $("#hidden_country_id").val('');
-                                $("select[name='currency_id']").empty().append('<option value="">Select</option>');
-                                $("select[name='payment_term_id']").empty().append('<option value="">Select</option>');
-                                $(".shipping_detail").text('-');
-                                $(".billing_detail").text('-');
-                                Swal.fire({
-                                    title: 'Error!',
-                                    text: data.data?.currency_exchange.message,
-                                    icon: 'error',
-                                });
-                                return false;
-                            }
-                            if(data.status == 200) {
-                                let curOption = `<option value="${data.data.currency.id}">${data.data.currency.name}</option>`;
-                                let termOption = `<option value="${data.data.paymentTerm.id}">${data.data.paymentTerm.name}</option>`;
-                                $('[name="currency_id"]').empty().append(curOption);
-                                $('[name="payment_term_id"]').empty().append(termOption);
-                                $("#shipping_id").val(data.data.shipping.id);
-                                $("#billing_id").val(data.data.billing.id);
-                                $(".shipping_detail").text(data.data.shipping.display_address);
-                                $(".billing_detail").text(data.data.billing.display_address);
-                                $("#shipping_address").val(data.data.shipping.display_address);
-                                $("#billing_address").val(data.data.billing.display_address);
-
-                                $("#hidden_state_id").val(data.data.shipping.state.id);
-                                $("#hidden_country_id").val(data.data.shipping.country.id);
-                            }  else {
-                                if(data.data.error_message) {
-                                    $input.val('');
-                                    $("#vendor_id").val('');
-                                    $("#vendor_code").val('');
-                                    $("#hidden_state_id").val('');
-                                    $("#hidden_country_id").val('');
-                                    // $("#vendor_id").trigger('blur');
-                                    $("select[name='currency_id']").empty().append('<option value="">Select</option>');
-                                    $("select[name='payment_term_id']").empty().append('<option value="">Select</option>');
-                                    $(".shipping_detail").text('-');
-                                    $(".billing_detail").text('-');
-                                    Swal.fire({
-                                        title: 'Error!',
-                                        text: data.data.error_message,
-                                        icon: 'error',
-                                    });
-                                    return false;
-                                }
-                            }
-                        });
-                    });
+                    vendorOnChange(itemId);
                     return false;
                 },
                 change: function(event, ui) {
+                    console.log("changess!");
                     if (!ui.item) {
                         $(this).val("");
                         $(this).attr('data-name', '');
@@ -874,17 +867,74 @@
         }
         initializeAutocomplete1("#vendor_name");
 
+        function vendorOnChange(vendorId) {
+            let store_id = $("[name='header_store_id']").val() || '';
+            let actionUrl = "{{route('material-receipt.get.address')}}"+'?id='+vendorId+'&store_id='+store_id;
+            fetch(actionUrl).then(response => {
+                return response.json().then(data => {
+                    if(data.data?.currency_exchange?.status == false) {
+                        $("#vendor_name").val('');
+                        $("#vendor_id").val('');
+                        $("#vendor_code").val('');
+                        $("#hidden_state_id").val('');
+                        $("#hidden_country_id").val('');
+                        // $("#vendor_id").trigger('blur');
+                        $("select[name='currency_id']").empty().append('<option value="">Select</option>');
+                        $("select[name='payment_term_id']").empty().append('<option value="">Select</option>');
+                        // $(".shipping_detail").text('-');
+                        $(".billing_detail").text('-');
+                        Swal.fire({
+                            title: 'Error!',
+                            text: data.data?.currency_exchange.message,
+                            icon: 'error',
+                        });
+                        return false;
+                    }
+                    if(data.status == 200) {
+                        $("#vendor_name").val(data?.data?.vendor?.company_name);
+                        $("#vendor_id").val(data?.data?.vendor?.id);
+                        $("#vendor_code").val(data?.data?.vendor.vendor_code);
+                        let curOption = `<option value="${data.data.currency.id}">${data.data.currency.name}</option>`;
+                        let termOption = `<option value="${data.data.paymentTerm.id}">${data.data.paymentTerm.name}</option>`;
+                        $('[name="currency_id"]').empty().append(curOption);
+                        $('[name="payment_term_id"]').empty().append(termOption);
+                        $("#shipping_id").val(data.data.shipping.id);
+                        $("#billing_id").val(data.data.billing.id);
+                        $(".billing_detail").text(data.data.billing.display_address);
+                        $(".delivery_address").text(data.data.delivery_address);
+                        $(".org_address").text(data.data.org_address);
+
+                        $("#hidden_state_id").val(data.data.shipping.state.id);
+                        $("#hidden_country_id").val(data.data.shipping.country.id);
+                    } else {
+                        if(data.data.error_message) {
+                            $("#vendor_name").val('');
+                            $("#vendor_id").val('');
+                            $("#vendor_code").val('');
+                            $("#hidden_state_id").val('');
+                            $("#hidden_country_id").val('');
+                            // $("#vendor_id").trigger('blur');
+                            $("select[name='currency_id']").empty().append('<option value="">Select</option>');
+                            $("select[name='payment_term_id']").empty().append('<option value="">Select</option>');
+                            // $(".shipping_detail").text('-');
+                            $(".billing_detail").text('-');
+                            Swal.fire({
+                                title: 'Error!',
+                                text: data.data.error_message,
+                                icon: 'error',
+                            });
+                            return false;
+                        }
+                    }
+                });
+            });
+        }
+
         /*Add New Row*/
         $(document).on('click','#addNewItemBtn', (e) => {
-            // for component item code
-            // if(!checkBasicFilledDetail()) {
-            //     Swal.fire({
-            //         title: 'Error!',
-            //         text: 'Please fill all the header details first',
-            //         icon: 'error',
-            //     });
-            //     return false;
-            // }
+            let storeLocation = $('.header_store_id').val();
+            updateItemStores();
+            getSubStores(storeLocation);
             if(!checkVendorFilledDetail()) {
                 Swal.fire({
                     title: 'Error!',
@@ -924,7 +974,6 @@
                                         hsn_id:item.hsn?.id,
                                         hsn_code:item.hsn?.code,
                                         alternate_u_o_ms:item.alternate_u_o_ms,
-
                                     };
                                 }));
                             },
@@ -947,13 +996,14 @@
                         $input.attr('data-name', itemName);
                         $input.attr('data-code', itemCode);
                         $input.attr('data-id', itemId);
-                        $input.val(itemCode);
+
                         let closestTr = $input.closest('tr');
                         closestTr.find('[name*=item_id]').val(itemId);
                         closestTr.find('[name*=item_code]').val(itemCode);
                         closestTr.find('[name*=item_name]').val(itemN);
                         closestTr.find('[name*=hsn_id]').val(hsnId);
                         closestTr.find('[name*=hsn_code]').val(hsnCode);
+                        $input.val(itemCode);
                         let uomOption = `<option value=${uomId}>${uomName}</option>`;
                         if(ui.item?.alternate_u_o_ms) {
                             for(let alterItem of ui.item.alternate_u_o_ms) {
@@ -970,8 +1020,12 @@
                                 $input.closest('tr').find('[name*="[order_qty]"]').val('').focus();
                             }
                         }, 100);
+
                         getItemDetail(closestTr);
                         getItemCostPrice($input.closest('tr'));
+                        let storeLocation = $('.header_store_id').val();
+                        updateItemStores();
+                        getSubStores(storeLocation, itemId);
                         return false;
                     },
                     change: function(event, ui) {
@@ -1065,6 +1119,17 @@
             });
             if (itemIds.length) {
                 itemIds.forEach(function(item,index) {
+                    let poItemHiddenId = $(`#row_${item}`).find("input[name*='[po_item_hidden_ids]']").val();
+
+                    if(poItemHiddenId) {
+                        let idsToRemove = poItemHiddenId.split(',');
+                        let selectedPoIds = localStorage.getItem('selectedPoIds');
+                        if(selectedPoIds) {
+                            selectedPoIds = JSON.parse(selectedPoIds);
+                            let updatedIds = selectedPoIds.filter(id => !idsToRemove.includes(id));
+                            localStorage.setItem('selectedPoIds', JSON.stringify(updatedIds));
+                        }
+                    }
                     $(`#row_${item}`).remove();
                 });
             } else {
@@ -1076,9 +1141,12 @@
             }
             if(!$("tr[id*='row_']").length) {
                 $("#itemTable > thead .form-check-input").prop('checked',false);
-                $(".poSelect").prop('disabled',false);
+                $("select[name='currency_id']").prop('disabled', false);
+                $("select[name='payment_term_id']").prop('disabled', false);
                 $(".editAddressBtn").removeClass('d-none');
                 $("#vendor_name").prop('readonly',false);
+                $(".header_store_id").prop('disabled', false);
+                getLocation();
             }
             setTableCalculation();
         });
@@ -1981,43 +2049,67 @@
             });
         }
 
+        window.onload = function () {
+            localStorage.removeItem('selectedPoIds');
+        };
 
         function getPurchaseOrders()
         {
+            let selectedPoIds = localStorage.getItem('selectedPoIds') ?? '[]';
+            selectedPoIds = JSON.parse(selectedPoIds);
+            selectedPoIds = encodeURIComponent(JSON.stringify(selectedPoIds));
+
+            let document_date = $("[name='document_date']").val() || '';
             let header_book_id = $("#book_id").val() || '';
+            let store_id = $("#header_store_id").val() || '';
             let series_id = $("#book_id_qt_val").val() || '';
             let document_number = $("#document_no_input_qt").val() || '';
             let item_id = $("#item_id_qt_val").val() || '';
             let vendor_id = $("#vendor_id_qt_val").val() || '';
             let type = '{{ request()->route("type") }}';
+            let item_search = $("#item_name_search").val();
+            let module_type = $(".module_type").val() || '';
             let actionUrl = '{{ route("material-receipt.get.po", ["type" => ":type"]) }}'.replace(':type', type);
-            let fullUrl = `${actionUrl}?series_id=${encodeURIComponent(series_id)}&document_number=${encodeURIComponent(document_number)}&item_id=${encodeURIComponent(item_id)}&vendor_id=${encodeURIComponent(vendor_id)}&header_book_id=${encodeURIComponent(header_book_id)}`;
+            let fullUrl = `${actionUrl}?series_id=${encodeURIComponent(series_id)}
+            &document_number=${encodeURIComponent(document_number)}
+            &store_id=${encodeURIComponent(store_id)}
+            &item_id=${encodeURIComponent(item_id)}
+            &vendor_id=${encodeURIComponent(vendor_id)}
+            &header_book_id=${encodeURIComponent(header_book_id)}
+            &selected_po_ids=${selectedPoIds}
+            &document_date=${document_date}
+            &item_search=${item_search}
+            &module_type=${module_type}`;
             fetch(fullUrl).then(response => {
                 return response.json().then(data => {
                     $(".po-order-detail #poDataTable").empty().append(data.data.pis);
+                    $('.select2').select2({
+                        dropdownParent: $('#poModal') // Ensure dropdown is rendered inside the modal
+                    });
                 });
             });
         }
 
         /*Checkbox for po/si item list*/
         $(document).on('change','.po-order-detail > thead .form-check-input',(e) => {
-        if (e.target.checked) {
-            $(".po-order-detail > tbody .form-check-input").each(function(){
-                $(this).prop('checked',true);
-            });
-        } else {
-            $(".po-order-detail > tbody .form-check-input").each(function(){
-                $(this).prop('checked',false);
-            });
-        }
-        });
-        $(document).on('change','.po-order-detail > tbody .form-check-input',(e) => {
-            if(!$(".po-order-detail > tbody .form-check-input:not(:checked)").length) {
-                $('.po-order-detail > thead .form-check-input').prop('checked', true);
+            if (e.target.checked) {
+                $(".po-order-detail > tbody .form-check-input").each(function(){
+                    $(this).prop('checked',true);
+                });
             } else {
-                $('.po-order-detail > thead .form-check-input').prop('checked', false);
+                $(".po-order-detail > tbody .form-check-input").each(function(){
+                    $(this).prop('checked',false);
+                });
             }
         });
+
+        // $(document).on('change','.po-order-detail > tbody .form-check-input',(e) => {
+        //     if(!$(".po-order-detail > tbody .form-check-input:not(:checked)").length) {
+        //         $('.po-order-detail > thead .form-check-input').prop('checked', true);
+        //     } else {
+        //         $('.po-order-detail > thead .form-check-input').prop('checked', false);
+        //     }
+        // });
 
         function getSelectedPoIDS()
         {
@@ -2026,6 +2118,15 @@
                 ids.push($(this).val());
             });
             return ids;
+        }
+
+        function getSelectedPoTypes()
+        {
+            let moduleTypes = [];
+            $('.po_item_checkbox:checked').each(function() {
+                moduleTypes.push($(this).attr('data-module')); // Corrected: Get attribute value instead of setting it
+            });
+            return moduleTypes;
         }
 
         $(document).on('click', '.poProcess', (e) => {
@@ -2039,6 +2140,10 @@
                 });
                 return false;
             }
+
+            let moduleTypes = getSelectedPoTypes();
+
+            $("[name='po_item_ids']").val(ids);
 
             // for component item code
             function initializeAutocomplete2(selector, type) {
@@ -2108,21 +2213,7 @@
                             }
                         }
                         $input.closest('tr').find('[name*=uom_id]').append(uomOption);
-
-                        let price = 0;
-                        let transactionType = 'collection';
-                        let partyCountryId = $("#hidden_country_id").val();
-                        let partyStateId = $("#hidden_state_id").val();
-                        let rowCount = Number($($input).closest('tr').attr('data-index'));
-                        let queryParams = new URLSearchParams({
-                            price: price,
-                            item_id: itemId,
-                            transaction_type: transactionType,
-                            party_country_id: partyCountryId,
-                            party_state_id: partyStateId,
-                            rowCount : rowCount
-                        }).toString();
-                        // taxHidden(queryParams);
+                        $input.closest('tr').find("input[name*='attr_group_id']").remove();
                         setTimeout(() => {
                             if(ui.item.is_attr) {
                                 $input.closest('tr').find('.attributeBtn').trigger('click');
@@ -2131,6 +2222,7 @@
                                 $input.closest('tr').find('[name*="[qty]"]').val('').focus();
                             }
                         }, 100);
+                        getItemCostPrice($input.closest('tr'));
                         return false;
                     },
                     change: function(event, ui) {
@@ -2147,38 +2239,105 @@
                     }
                 });
             }
+
+            let currencyId = $("select[name='currency_id']").val();
+            let transactionDate = $("input[name='document_date']").val() || '';
+            let groupItems = [];
+            $('tr[data-group-item]').each(function () {
+                let groupItemData = $(this).data('group-item');
+                groupItems.push(groupItemData);
+            });
+
+            groupItems = JSON.stringify(groupItems);
             ids = JSON.stringify(ids);
+            moduleTypes = JSON.stringify(moduleTypes);
             let type = '{{ request()->route("type") }}'; // Dynamically fetch the `type` from the current route
             let actionUrl = '{{ route("material-receipt.process.po-item") }}'
-            .replace(':type', type) + '?ids=' + ids;
+            .replace(':type', type)
+            + '?ids=' + encodeURIComponent(ids)
+            + '&moduleTypes=' + moduleTypes
+            + '&currency_id=' + encodeURIComponent(currencyId)
+            + '&d_date=' + encodeURIComponent(transactionDate)
+            + '&groupItems=' + encodeURIComponent(groupItems);
+
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if(data.status == 200) {
+                        vendorOnChange(data?.data?.vendor?.id);
+                        $(".header_store_id").prop('disabled', true);
+                        let newIds = getSelectedPoIDS();
+                        let existingIds = localStorage.getItem('selectedPoIds');
+                        if (existingIds) {
+                            existingIds = JSON.parse(existingIds);
+                            const mergedIds = Array.from(new Set([...existingIds, ...newIds]));
+                            localStorage.setItem('selectedPoIds', JSON.stringify(mergedIds));
+                        } else {
+                            localStorage.setItem('selectedPoIds', JSON.stringify(newIds));
+                        }
+
+                        let existingIdsUpdate = JSON.parse(localStorage.getItem('selectedPoIds'));
+                        $("[name='po_item_ids']").val(existingIdsUpdate.join(','));
+
+                        let module_type = data?.data?.moduleType || '';
                         let vendor = data?.data?.vendor || '';
                         let finalDiscounts = data?.data?.finalDiscounts;
                         let finalExpenses = data?.data?.finalExpenses;
-
-                        if(vendor) {
-                            $("#vendor_name").val(vendor.display_name).prop('readonly',true);
-                            $("#vendor_id").val(vendor.id);
-                            $("#vendor_code").val(vendor.vendor_code);
-
-                            let curOption = `<option value="${vendor.currency.id}">${vendor.currency.name}</option>`;
-                            let termOption = `<option value="${vendor.paymentTerm.id}">${vendor.paymentTerm.name}</option>`;
-                            $('[name="currency_id"]').empty().append(curOption).prop('readonly',true);
-                            $('[name="payment_term_id"]').empty().append(termOption).prop('readonly',true);
-                            $("#shipping_id").val(vendor.shipping.id);
-                            $("#billing_id").val(vendor.billing.id);
-                            $(".shipping_detail").text(vendor.shipping.display_address);
-                            $(".billing_detail").text(vendor.billing.display_address);
-                            $("#hidden_state_id").val(vendor.shipping.state.id);
-                            $("#hidden_country_id").val(vendor.shipping.country.id);
-                            $(".editAddressBtn").addClass('d-none');
+                        let subStoreCount = data?.data?.subStoreCount;
+                        let poOrder = data?.data?.purchaseOrder;
+                        let gateEntry = data?.data?.gateEntry;
+                        let purchaseOrder = data?.data?.purchaseOrder;
+                        let supplier_invoice_no = '';
+                        let supplier_invoice_date = '';
+                        let gate_entry_no = '';
+                        let gate_entry_date = '';
+                        if(gateEntry && (purchaseOrder.gate_entry_required == 'yes')){
+                            gate_entry_no = gateEntry.document_number;
+                            gate_entry_date = gateEntry.document_date;
+                            eway_bill_no = gateEntry.eway_bill_no;
+                            consignment_no = gateEntry.consignment_no;
+                            supplier_invoice_no = gateEntry.supplier_invoice_no;
+                            supplier_invoice_date = gateEntry.supplier_invoice_date;
+                            transporter_name = gateEntry.transporter_name;
+                            vehicle_no = gateEntry.vehicle_no;
+                            $('.gate_entry_no').val(gate_entry_no);
+                            $('.gate_entry_date').val(gate_entry_date);
+                            $('.eway_bill_no').val(eway_bill_no);
+                            $('.consignment_no').val(consignment_no);
+                            $('.supplier_invoice_no').val(supplier_invoice_no);
+                            $('.supplier_invoice_date').val(supplier_invoice_date);
+                            $('.transporter_name').val(transporter_name);
+                            $('.vehicle_no').val(vehicle_no);
+                        } else if(purchaseOrder.type == 'supplier-invoice'){
+                            supplier_invoice_no = purchaseOrder.document_number;
+                            supplier_invoice_date = purchaseOrder.document_date;
+                            $('.gate_entry_no').val();
+                            $('.gate_entry_date').val();
+                            $('.supplier_invoice_no').val(supplier_invoice_no);
+                            $('.supplier_invoice_date').val(supplier_invoice_date);
+                        } else{
+                            $('.gate_entry_no').val();
+                            $('.gate_entry_date').val();
+                            $('.supplier_invoice_no').val();
+                            $('.supplier_invoice_date').val();
                         }
-                        $("#itemTable .mrntableselectexcel").empty().append(data.data.pos);
+                        if ($("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length) {
+                            $("#itemTable .mrntableselectexcel tr[id*='row_']:last").after(data.data.pos);
+                        } else {
+                            $("#itemTable .mrntableselectexcel").empty().append(data.data.pos);
+                        }
+                        $(".module_type").val(module_type);
+
                         initializeAutocomplete2(".comp_item_code");
                         $("#poModal").modal('hide');
-                        $(".poSelect").prop('disabled',true);
+                        // $(".poSelect").prop('disabled',true);
+                        $(".importItem").prop('disabled',true);
+                        $("select[name='currency_id']").prop('disabled', true);
+                        $("select[name='payment_term_id']").prop('disabled', true);
+                        $("#vendor_name").prop('readonly',true);
+                        $(".editAddressBtn").addClass('d-none');
+                        let locationId = $("[name='header_store_id']").val();
+                        getLocation(locationId);
+                        getSubStores(locationId, item='');
 
                         if(finalDiscounts.length) {
                             let rows = '';
@@ -2242,7 +2401,9 @@
                             $("#summaryExpTable tbody").find('.display_summary_exp_row').remove();
                             $("#summaryExpTable tbody").find('#expSummaryFooter').before(rows);
                         }
-                        setTableCalculation();
+                        setTimeout(() => {
+                            setTableCalculation();
+                        },500);
                     }
                     if(data.status == 422) {
                         $(".editAddressBtn").removeClass('d-none');
@@ -2341,9 +2502,188 @@
                     if(data.status == 200) {
                         let cost = data?.data?.cost || 0;
                         $(currentTr).find("input[name*='[rate]']").val(cost);
+                        setTableCalculation();
                     }
                 });
             });
         }
+
+        function getLocation(locationId = '')
+        {
+            let actionUrl = '{{ route("store.get") }}'+'?location_id='+locationId;
+            fetch(actionUrl).then(response => {
+                return response.json().then(data => {
+                    if(data.status == 200) {
+                        let options = '';
+                        data.data.locations.forEach(function(location) {
+                            options+= `<option value="${location.id}">${location.store_code}</option>`;
+                        });
+                        $("[name='header_store_id']").empty().append(options);
+                    } else {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: data.message,
+                            icon: 'error',
+                        });
+                    }
+                });
+            });
+        }
+
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip()
+            $("td.dynamic-colspan").attr("colspan", 11);
+            $("td.dynamic-summary-colspan").attr("colspan", 10);
+        })
+
+        $(document).on('click', '.processImportedBtn', (e) => {
+            function initializeAutocomplete2(selector, type) {
+                $(selector).autocomplete({
+                    minLength: 0,
+                    source: function(request, response) {
+                        let selectedAllItemIds = [];
+                        $("#itemTable tbody [id*='row_']").each(function(index,item) {
+                            if(Number($(item).find('[name*="[item_id]"]').val())) {
+                                selectedAllItemIds.push(Number($(item).find('[name*="[item_id]"]').val()));
+                            }
+                        });
+                        $.ajax({
+                            url: '/search',
+                            method: 'GET',
+                            dataType: 'json',
+                            data: {
+                                q: request.term,
+                                type:'goods_item_list',
+                                selectedAllItemIds : JSON.stringify(selectedAllItemIds)
+                            },
+                            success: function(data) {
+                                response($.map(data, function(item) {
+                                    return {
+                                        id: item.id,
+                                        label: `${item.item_name} (${item.item_code})`,
+                                        code: item.item_code || '',
+                                        item_id: item.id,
+                                        item_name:item.item_name,
+                                        uom_name:item.uom?.name,
+                                        uom_id:item.uom_id,
+                                        hsn_id:item.hsn?.id,
+                                        hsn_code:item.hsn?.code,
+                                        alternate_u_o_ms:item.alternate_u_o_ms,
+                                        is_attr:item.item_attributes_count,
+                                    };
+                                }));
+                            },
+                            error: function(xhr) {
+                                console.error('Error fetching customer data:', xhr.responseText);
+                            }
+                        });
+                    },
+                    select: function(event, ui) {
+                        let $input = $(this);
+                        let itemCode = ui.item.code;
+                        let itemName = ui.item.value;
+                        let itemN = ui.item.item_name;
+                        let itemId = ui.item.item_id;
+                        let uomId = ui.item.uom_id;
+                        let uomName = ui.item.uom_name;
+                        let hsnId = ui.item.hsn_id;
+                        let hsnCode = ui.item.hsn_code;
+                        $input.attr('data-name', itemName);
+                        $input.attr('data-code', itemCode);
+                        $input.attr('data-id', itemId);
+                        $input.closest('tr').find('[name*="[item_id]"]').val(itemId);
+                        $input.closest('tr').find('[name*=item_code]').val(itemCode);
+                        $input.closest('tr').find('[name*=item_name]').val(itemN);
+                        $input.closest('tr').find('[name*=hsn_id]').val(hsnId);
+                        $input.closest('tr').find('[name*=hsn_code]').val(hsnCode);
+                        $input.val(itemCode);
+                        let uomOption = `<option value=${uomId}>${uomName}</option>`;
+                        if(ui.item?.alternate_u_o_ms) {
+                            for(let alterItem of ui.item.alternate_u_o_ms) {
+                            uomOption += `<option value="${alterItem.uom_id}" ${alterItem.is_purchasing ? 'selected' : ''}>${alterItem.uom?.name}</option>`;
+                            }
+                        }
+                        $input.closest('tr').find('[name*=uom_id]').append(uomOption);
+                        $input.closest('tr').find("input[name*='attr_group_id']").remove();
+                        setTimeout(() => {
+                            if(ui.item.is_attr) {
+                                $input.closest('tr').find('.attributeBtn').trigger('click');
+                            } else {
+                                $input.closest('tr').find('.attributeBtn').trigger('click');
+                                $input.closest('tr').find('[name*="[qty]"]').val('').focus();
+                            }
+                        }, 100);
+                        getItemCostPrice($input.closest('tr'));
+                        return false;
+                    },
+                    change: function(event, ui) {
+                        if (!ui.item) {
+                            $(this).val("");
+                                // $('#itemId').val('');
+                            $(this).attr('data-name', '');
+                            $(this).attr('data-code', '');
+                        }
+                    }
+                }).focus(function() {
+                    if (this.value === "") {
+                        $(this).autocomplete("search", "");
+                    }
+                });
+            }
+
+            let currencyId = $("select[name='currency_id']").val();
+            let transactionDate = $("input[name='document_date']").val() || '';
+            let actionUrl = '{{ route("material-receipt.process.import-item") }}';
+
+            fetch(actionUrl).then(response => {
+                return response.json().then(data => {
+                    console.log(actionUrl, data);
+                    
+                    if(data.status == 200) {
+                        $(".header_store_id").prop('disabled', true);
+                        initializeAutocomplete2(".comp_item_code");
+                        $("#importItemModal").modal('hide');
+                        $(".importItem").prop('disabled',true);
+                        $(".poSelect").prop('disabled',true);
+                        $("select[name='currency_id']").prop('disabled', true);
+                        $("select[name='payment_term_id']").prop('disabled', true);
+                        $("#vendor_name").prop('readonly',true);
+                        $(".editAddressBtn").addClass('d-none');
+                        if ($("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length) {
+                            $("#itemTable .mrntableselectexcel tr[id*='row_']:last").after(data.data.pos);
+                        } else {
+                            $("#itemTable .mrntableselectexcel").empty().append(data.data.pos);
+                        }
+                        let locationId = $("[name='header_store_id']").val();
+                        getLocation(locationId);
+                        // getSubStores(locationId, item='');
+                        updateImportItemData(data.status);
+                        setTimeout(() => {
+                            setTableCalculation();
+                        },500);
+
+                    }
+                    if(data.status == 422) {
+                        updateImportItemData(data.status);
+                        $(".editAddressBtn").removeClass('d-none');
+                        $("#vendor_name").val('').prop('readonly',false);
+                        $("#vendor_id").val('');
+                        $("#vendor_code").val('');
+                        $("#hidden_state_id").val('');
+                        $("#hidden_country_id").val('');
+                        $("select[name='currency_id']").empty().append('<option value="">Select</option>').prop('readonly',false);
+                        $("select[name='payment_term_id']").empty().append('<option value="">Select</option>').prop('readonly',false);
+                        $(".shipping_detail").text('-');
+                        $(".billing_detail").text('-');
+                        Swal.fire({
+                            title: 'Error!',
+                            text: data.message,
+                            icon: 'error',
+                        });
+                        return false;
+                    }
+                });
+            });
+        });
     </script>
 @endsection

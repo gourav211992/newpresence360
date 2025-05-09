@@ -10,7 +10,7 @@
                 <div class="content-header-left col-md-5 mb-2">
                     <div class="row breadcrumbs-top">
                         <div class="col-12">
-                            <h2 class="content-header-title float-start mb-0">Split Asset</h2>
+                            <h2 class="content-header-title float-start mb-0">Merger Asset</h2>
                             <div class="breadcrumb-wrapper">
                                 <ol class="breadcrumb">
                                     <li class="breadcrumb-item"><a href="index.html">Home</a></li>  
@@ -23,7 +23,7 @@
                 <div class="content-header-right text-sm-end col-md-7 mb-50 mb-sm-0">
                     <div class="form-group breadcrumb-right">
                         <button class="btn btn-warning btn-sm mb-50 mb-sm-0" data-bs-target="#filter" data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button> 
-						<a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{ route('finance.fixed-asset.split.create') }}"><i data-feather="plus-circle"></i> Add New</a> 
+						<a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{ route('finance.fixed-asset.merger.create') }}"><i data-feather="plus-circle"></i> Add New</a> 
                     </div>
                 </div>
             </div>
@@ -47,7 +47,7 @@
 												<th>Asset Name</th>
 												<th>Asset Code</th>
 												<th>Ledger Name</th>
-												<th>Split Date</th> 
+												<th>Merger Date</th> 
 												<th>Qty</th>
 												<th>Cap. Date</th>
 												<th>Status</th>
@@ -60,8 +60,8 @@
 													<td>{{$key+1}}</td>
 													<td class="fw-bolder text-dark">{{$d?->book?->book_code}}</td>
 													<td>{{$d?->document_number}}</td>
-													<td>{{$d?->asset?->asset_name}}</td>
-													<td>{{$d?->asset?->asset_code}}</td>
+													<td>{{$d?->asset_name}}</td>
+													<td>{{$d?->asset_code}}</td>
 													<td>{{$d?->ledger?->name}}</td>
 													<td>{{$d?->document_date}}</td>
 													<td>{{$d?->quantity}}</td>
@@ -83,7 +83,7 @@
 																<i data-feather="more-vertical"></i>
 															</button>
 															<div class="dropdown-menu dropdown-menu-end">
-																<a class="dropdown-item" href="{{ route('finance.fixed-asset.split.show', $d->id) }}">
+																<a class="dropdown-item" href="{{ route('finance.fixed-asset.merger.show', $d->id) }}">
 																	<i data-feather="edit" class="me-50"></i>
 																	<span>View Detail</span>
 																</a>
@@ -124,7 +124,7 @@
     <div class="modal modal-slide-in fade filterpopuplabel" id="filter">
 		<div class="modal-dialog sidebar-sm">
 			<form class="add-new-record modal-content pt-0" method="POST"
-      action="{{ route('finance.fixed-asset.split.filter') }}" enctype="multipart/form-data">
+      action="{{ route('finance.fixed-asset.merger.filter') }}" enctype="multipart/form-data">
      @csrf
 				<div class="modal-header mb-1">
 					<h5 class="modal-title" id="exampleModalLabel">Apply Filter</h5>

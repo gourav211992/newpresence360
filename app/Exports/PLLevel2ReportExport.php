@@ -8,8 +8,6 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;  
 use Maatwebsite\Excel\Concerns\WithStyles;  
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use Maatwebsite\Excel\Events\BeforeExport;
-use PhpOffice\PhpSpreadsheet\Worksheet\PageSetup;
 
 class PLLevel2ReportExport implements FromArray, WithHeadings, WithTitle, ShouldAutoSize, WithStyles
 {
@@ -28,6 +26,7 @@ class PLLevel2ReportExport implements FromArray, WithHeadings, WithTitle, Should
     {  
         return $this->data;  
     }  
+
     public function headings(): array  
     {  
         return [ 
@@ -38,15 +37,6 @@ class PLLevel2ReportExport implements FromArray, WithHeadings, WithTitle, Should
             ['Particulars','', 'Amount','', 'Particulars','', 'Amount']  
         ];  
     }  
-    public function registerEvents(): array
-    {
-        return [
-            BeforeExport::class => function (BeforeExport $event) {
-                $event->writer->getDelegate()->getActiveSheet()->getPageSetup()
-                    ->setOrientation(PageSetup::ORIENTATION_LANDSCAPE);
-            },
-        ];
-    }
 
     public function styles(Worksheet $sheet)  
     {  

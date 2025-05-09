@@ -30,6 +30,8 @@
     @include('layouts.partials.header')
 
     @include('layouts.partials.v2.left-sidebar')
+        {{-- @include('recruitment.partials.side-menu') --}}
+
 
     @yield('content')
 

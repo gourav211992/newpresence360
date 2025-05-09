@@ -18,7 +18,7 @@
                             <div class="row breadcrumbs-top">
                                 <div class="col-12">
                                     <h2 class="content-header-title float-start mb-0">
-                                        {{$servicesBooks['services'][0]->name ?? "Material Receipt"}}
+                                        {{$servicesBooks['services'][0]->name ?? "Gate Entry"}}
                                     </h2>
                                     <div class="breadcrumb-wrapper">
                                         <ol class="breadcrumb">
@@ -32,7 +32,7 @@
                         </div>
                         <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
                             <div class="form-group breadcrumb-right">
-                                <input type="hidden" name="document_status" value="draft" id="document_status">
+                                <input type="hidden" name="document_status" value="{{$mrn->document_status}}" id="document_status">
                                 <button type="button" onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0">
                                     <i data-feather="arrow-left-circle"></i> Back
                                 </button>
@@ -129,7 +129,7 @@
                                                 </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Store Location <span class="text-danger">*</span></label>
+                                                        <label class="form-label">Location <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
                                                         <select class="form-select header_store_id" id="header_store_id" name="header_store_id">
@@ -388,7 +388,6 @@
                                                                 <th width="240px">Item Name</th>
                                                                 <th>Attributes</th>
                                                                 <th>UOM</th>
-                                                                <th>Store</th>
                                                                 <th class="text-end">Qty</th>
                                                                 <th class="text-end">Rate</th>
                                                                 <th class="text-end">Value</th>
@@ -402,7 +401,7 @@
                                                         </tbody>
                                                         <tfoot>
                                                             <tr class="totalsubheadpodetail">
-                                                                <td colspan="8"></td>
+                                                                <td colspan="7"></td>
                                                                 <td class="text-end" id="totalItemValue">
                                                                     {{@$mrn->items->sum('basic_value')}}
                                                                 </td>
@@ -414,7 +413,7 @@
                                                                 </td>
                                                             </tr>
                                                             <tr valign="top">
-                                                                <td colspan="7" rowspan="10">
+                                                                <td colspan="6" rowspan="10">
                                                                     <table class="table border">
                                                                         <tbody id="itemDetailDisplay">
                                                                             <tr>
@@ -552,6 +551,7 @@
             <div class="modal-dialog  modal-dialog-centered" style="max-width: 700px">
             </div>
         </div>
+        @include('procurement.gate-entry.partials.amendement-modal', ['id' => $mrn->id])
     </form>
 
     {{-- Attribute popup --}}
@@ -1301,16 +1301,16 @@
                     poItemIds.push({ index: trIndex + 1, po_detail_id: po_detail_id });
                 }
             });
-            if (poItemIds.length) {
-                e.preventDefault();
-                let rowNumbers = poItemIds.map(item => item.index).join(", ");
-                Swal.fire({
-                    title: 'Error!',
-                    text: `You cannot delete mrn item(s) at row(s): ${rowNumbers}`,
-                    icon: 'error',
-                });
-                return false;
-            }
+            // if (poItemIds.length) {
+            //     e.preventDefault();
+            //     let rowNumbers = poItemIds.map(item => item.index).join(", ");
+            //     Swal.fire({
+            //         title: 'Error!',
+            //         text: `You cannot delete mrn item(s) at row(s): ${rowNumbers}`,
+            //         icon: 'error',
+            //     });
+            //     return false;
+            // }
 
             $('#itemTable > tbody .form-check-input').each(function() {
                 if ($(this).is(":checked")) {
@@ -1435,31 +1435,31 @@
                     return response.json().then(data => {
                         if (data.status == 200) {
                             $("#itemDetailDisplay").html(data.data.html);
-                            var approvedStockLedger = data.data.checkApprovedQuantity;
-                            if ((approvedStockLedger['code'] == 200) && (approvedStockLedger['status'] == 'error')) {
-                                let approved_stock = approvedStockLedger['approvedStock'];
-                                let receipt_qty = $(currentTr).find("[name*='[order_qty]']").val() || '';
-                                let rejQtyElement = $(currentTr).find("[name*='[rejected_qty]']");  // Get the jQuery object, not the value
-                                let rejQty = rejQtyElement.val() || '';  // Get the value of the rejected_qty input
-                                if (qty < approved_stock) {
-                                    if (qtyElement.length > 0) {  // Ensure the element was found
-                                        qtyElement.val(receipt_qty);  // Set the value of qtyElement (jQuery object)
-                                        rejQtyElement.val(0.00);  // Set the value of qtyElement (jQuery object)
-                                    } else {
-                                        Swal.fire({
-                                            title: 'Error!',
-                                            text: "Accepted quantity input not found",
-                                            icon: 'error',
-                                        });
-                                    }
-                                } else {
-                                    Swal.fire({
-                                        title: 'Error!',
-                                        text: "Accepted quantity is higher than the approved stock.",
-                                        icon: 'error',
-                                    });
-                                }
-                            }
+                            // var approvedStockLedger = data.data.checkApprovedQuantity;
+                            // if ((approvedStockLedger['code'] == 200) && (approvedStockLedger['status'] == 'error')) {
+                            //     let approved_stock = approvedStockLedger['approvedStock'];
+                            //     let receipt_qty = $(currentTr).find("[name*='[order_qty]']").val() || '';
+                            //     let rejQtyElement = $(currentTr).find("[name*='[rejected_qty]']");  // Get the jQuery object, not the value
+                            //     let rejQty = rejQtyElement.val() || '';  // Get the value of the rejected_qty input
+                            //     if (qty < approved_stock) {
+                            //         if (qtyElement.length > 0) {  // Ensure the element was found
+                            //             qtyElement.val(receipt_qty);  // Set the value of qtyElement (jQuery object)
+                            //             rejQtyElement.val(0.00);  // Set the value of qtyElement (jQuery object)
+                            //         } else {
+                            //             Swal.fire({
+                            //                 title: 'Error!',
+                            //                 text: "Accepted quantity input not found",
+                            //                 icon: 'error',
+                            //             });
+                            //         }
+                            //     } else {
+                            //         Swal.fire({
+                            //             title: 'Error!',
+                            //             text: "Accepted quantity is higher than the approved stock.",
+                            //             icon: 'error',
+                            //         });
+                            //     }
+                            // }
                         }
                     });
                 });

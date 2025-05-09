@@ -22,7 +22,7 @@
             <tr>
                 <!-- Organization Logo (Left) -->
                 <td style="vertical-align: top;">
-                    <img src="{{$orgLogo}}" height="20px" alt="">
+                    <img src="{{$orgLogo}}" height="50px" alt="">
                 </td>
 
                 <!--  {{$type}} Text (Center) -->
