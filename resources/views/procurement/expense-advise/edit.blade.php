@@ -25,7 +25,7 @@
                         </div>
                         <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
                             <div class="form-group breadcrumb-right">
-                                <input type="hidden" name="document_status" value="draft" id="document_status">
+                                <input type="hidden" name="document_status" value="{{$mrn->document_status}}" id="document_status">
                                 <button type="button" onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0">
                                     <i data-feather="arrow-left-circle"></i> Back
                                 </button>
@@ -470,6 +470,7 @@
             <div class="modal-dialog  modal-dialog-centered" style="max-width: 700px">
             </div>
         </div>
+        @include('procurement.expense-advise.partials.amendement-modal', ['id' => $mrn->id])
     </form>
 
     {{-- Attribute popup --}}
@@ -829,18 +830,9 @@
                 return response.json().then(data => {
                     // console.log(data.data);
                     if (data.status == 200) {
-                        $("#book_code").val(data.data.book_code);
-                        if(!data.data.doc.document_number) {
-                            $("#document_number").val('');
-                        }
-                        $("#document_number").val(data.data.doc.document_number);
-                        if(data.data.doc.type == 'Manually') {
-                            $("#document_number").attr('readonly', false);
-                        } else {
-                            $("#document_number").attr('readonly', true);
-                        }
+
                         const parameters = data.data.parameters;
-                        console.log('parameters', parameters);
+                        // console.log('parameters', parameters);
                         setServiceParameters(parameters);
 
                         if(parameters?.tax_required.some(val => val.toLowerCase() === 'yes')) {
@@ -878,7 +870,7 @@
             if (parameters.future_date_allowed && parameters.future_date_allowed.includes('yes')) {
                 let futureDate = new Date();
                 futureDate.setDate(futureDate.getDate() /*+ (parameters.future_date_days || 1)*/);
-                //docDateInput.val(futureDate.toISOString().split('T')[0]);
+                // docDateInput.val(futureDate.toISOString().split('T')[0]);
                 docDateInput.attr("min", new Date().toISOString().split('T')[0]);
                 isFeature = true;
             } else {
@@ -888,7 +880,7 @@
             if (parameters.back_date_allowed && parameters.back_date_allowed.includes('yes')) {
                 let backDate = new Date();
                 backDate.setDate(backDate.getDate() /*- (parameters.back_date_days || 1)*/);
-                //docDateInput.val(backDate.toISOString().split('T')[0]);
+                // docDateInput.val(backDate.toISOString().split('T')[0]);
                 // docDateInput.attr("max", "");
                 isPast = true;
             } else {
@@ -901,35 +893,7 @@
                 docDateInput.removeAttr('max');
             }
 
-            /*Reference from*/
-            let reference_from_service = parameters.reference_from_service;
-            if(reference_from_service.length) {
-                let mrn = '{{\App\Helpers\ConstantHelper::MRN_SERVICE_ALIAS}}';
-                if(reference_from_service.includes(mrn)) {
-                    $("#reference_from").removeClass('d-none');
-                } else {
-                    $("#reference_from").addClass('d-none');
-                }
-                if(reference_from_service.includes('d')) {
-                    $("#addNewItemBtn").removeClass('d-none');
-                } else {
-                    $("#addNewItemBtn").addClass('d-none');
-                }
-            } else {
-                Swal.fire({
-                    title: 'Error!',
-                    text: "Please update first reference from service param.",
-                    icon: 'error',
-                });
-                setTimeout(() => {
-                    location.href = '{{route("expense-adv.index")}}';
-                },1500);
-            }
-            setTimeout(() => {
-                if($("tr[id*='row_']").length) {
-                    setTableCalculation();
-                }
-            },100);
+        /*Reference from*/
         }
 
         /*Vendor drop down*/
@@ -1219,16 +1183,16 @@
                     poItemIds.push({ index: trIndex + 1, po_detail_id: po_detail_id });
                 }
             });
-            if (poItemIds.length) {
-                e.preventDefault();
-                let rowNumbers = poItemIds.map(item => item.index).join(", ");
-                Swal.fire({
-                    title: 'Error!',
-                    text: `You cannot delete expense-advise item(s) at row(s): ${rowNumbers}`,
-                    icon: 'error',
-                });
-                return false;
-            }
+            // if (poItemIds.length) {
+            //     e.preventDefault();
+            //     let rowNumbers = poItemIds.map(item => item.index).join(", ");
+            //     Swal.fire({
+            //         title: 'Error!',
+            //         text: `You cannot delete expense-advise item(s) at row(s): ${rowNumbers}`,
+            //         icon: 'error',
+            //     });
+            //     return false;
+            // }
             if (soItemIds.length) {
                 e.preventDefault();
                 let rowNumbers = soItemIds.map(item => item.index).join(", ");

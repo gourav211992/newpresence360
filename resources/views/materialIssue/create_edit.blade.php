@@ -145,7 +145,7 @@
                                                         </div> 
                                                      </div>
 
-                                                     <div class="row align-items-center mb-1 lease-hidden">
+                                                     <div class="row align-items-center lease-hidden">
                                                         <div class="col-md-3"> 
                                                             <label class="form-label">Issue Type<span class="text-danger">*</span></label>  
                                                         </div>  
@@ -155,129 +155,8 @@
                                                             </select>
                                                         </div>
                                                     </div>
-
-                                                    <input type = "hidden" name = "requester_type" value = "{{isset($order) ? $order -> requester_type : 'Department'}}" id = "requester_type_input" />
-
-                                                    <div class="row align-items-center mb-1 lease-hidden">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label" id = "from_location_header_label">From Location<span class="text-danger">*</span></label>  
-                                                        </div>  
-
-                                                        <div class="col-md-5">  
-                                                            <select class="form-select disable_on_edit" name = "store_from_id" id = "store_from_id_input" oninput = "onHeaderStoreChange(this, 'from');">
-                                                                @foreach ($stores as $store)
-                                                                    <option value = "{{$store -> id}}" {{isset($order) ? ($order -> from_store_id == $store -> id ? 'selected' : '') : ''}} data-name = "{{$store -> store_name}}">{{$store -> store_name}}</option> 
-                                                                @endforeach
-                                                            </select>
-                                                        </div>
-                                                    </div>
-                                                    
-                                                    <div class="row align-items-center mb-1 lease-hidden location_transfer" style = "display:none;">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">To Location<span class="text-danger">*</span></label>  
-                                                        </div>  
-
-                                                        <div class="col-md-5">  
-                                                            <select class="form-select disable_on_edit" name = "store_to_id" id = "store_to_id_input" oninput = "onHeaderStoreChange(this, 'to');">
-                                                            <option store-type = "" value = "" disabled selected>Select</option>
-                                                                @foreach ($stores as $store)
-                                                                    <option store-type = "{{$store -> store_location_type}}" value = "{{$store -> id}}" {{isset($order) ? ($order -> to_store_id == $store -> id ? 'selected' : '') : ''}} data-name = "{{$store -> store_name}}">{{$store -> store_name}}</option> 
-                                                                @endforeach
-                                                            </select>
-                                                        </div>
-                                                    </div>
-
-                                                    <div class="row align-items-center mb-1 lease-hidden sub_contracting" style = "display:none;">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Vendor<span class="text-danger">*</span></label>  
-                                                        </div>  
-
-                                                        <div class="col-md-5">  
-                                                            <select class="form-select disable_on_edit" name = "vendor_id" id = "vendor_id_input" oninput = "onVendorChange(this);">
-                                                            <option value = "" disabled selected>Select</option>
-                                                                @foreach ($vendors as $vendor)
-                                                                    <option value = "{{$vendor -> id}}" {{isset($order) ? ($order -> vendor_id == $vendor -> id ? 'selected' : '') : ''}} >{{$vendor -> company_name}}</option> 
-                                                                @endforeach
-                                                            </select>
-                                                        </div>
-                                                    </div>
-
-                                                    <div class="row align-items-center mb-1 sub_contracting" style = "display:none;">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Vendor Location<span class="text-danger">*</span></label>  
-                                                        </div>  
-
-                                                        <div class="col-md-5">  
-                                                            <select class="form-select disable_on_edit" name = "vendor_store_id" id = "vendor_store_id_input">
-                                                            <option value = "" disabled selected>Select</option>
-                                                            </select>
-                                                        </div>
-                                                    </div>
-                                                    @if (!isset($order))
-                                                    <div class="row align-items-center mb-1 consumption" style = "display:none;" id = "department_id_header">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Department</label>  
-                                                        </div>  
-
-                                                        <div class="col-md-5">  
-                                                            <select class="form-select disable_on_edit" name = "department_id" id = "department_id_input">
-                                                            @foreach ($departments as $department)
-                                                                <option {{$selectedDepartmentId == $department -> id ? 'selected' : ''}} value = "{{$department -> id}}">{{$department -> name}}</option>
-                                                            @endforeach
-                                                            </select>
-                                                        </div>
-                                                    </div>
-                                                    <div class="row align-items-center mb-1 consumption" style = "display:none;" id = "user_id_header">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Requester</label>  
-                                                        </div>  
-
-                                                        <div class="col-md-5">  
-                                                            <input type = "text" class="form-control mw-100 ledgerselecct ui-autocomplete-input" id = "user_id_dropdown" placeholder="Select">
-                                                            </input>
-                                                            <input type = "hidden" value = "" name = "user_id" id = "user_id_input" ></input>
-                                                        </div>
-                                                    </div>
-                                                    @endif
-
-                                                    <div class="row align-items-center mb-1 {{isset($order) && $order -> station_id ? '' : 'd-none'}}" id = "station_id_header">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Station</label>  
-                                                        </div>  
-                                                        <div class="col-md-5">  
-                                                            <select class="form-select disable_on_edit" name = "station_id" id = "station_id_input">
-                                                            <option value = '' >Select</option>
-                                                            @foreach ($stations as $station)
-                                                                <option {{isset($order) && $order -> station_id == $station -> id ? 'selected' : ''}} value = "{{$station -> id}}">{{$station -> name}}</option>
-                                                            @endforeach
-                                                            </select>
-                                                        </div>
-                                                    </div>
-
-                                                    <div class="row align-items-center mb-1" id = "selection_section" style = "display:none;"> 
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Reference From</label>  
-                                                        </div>
-                                                            <div class="col-auto action-button" id = "mfg_order_selection"> 
-                                                                <button onclick = "openHeaderPullModal();" disabled type = "button" id = "select_mfg_button" data-bs-toggle="modal" data-bs-target="#rescdule" class="btn btn-outline-primary btn-sm mb-0"><i data-feather="plus-square"></i>
-                                                                MFG Order
-                                                            </button>
-                                                            </div>
-                                                            <div class="col-auto action-button" id = "pwo_order_selection"> 
-                                                                <button onclick = "openHeaderPullModal('pwo');" disabled type = "button" id = "select_pwo_button" data-bs-toggle="modal" data-bs-target="#rescdulePwo" class="btn btn-outline-primary btn-sm mb-0"><i data-feather="plus-square"></i>
-                                                                PWO
-                                                            </button>
-                                                            </div>
-                                                            <div class="col-auto action-button" id = "pi_order_selection"> 
-                                                                <button onclick = "openHeaderPullModal('pi');" disabled type = "button" id = "select_pi_button" data-bs-toggle="modal" data-bs-target="#rescdulePi" class="btn btn-outline-primary btn-sm mb-0"><i data-feather="plus-square"></i>
-                                                                Purchase Indent
-                                                            </button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                            
-                                            
-                                                    @if(isset($order) && ($order -> document_status !== "draft"))
+                                        </div> 
+                                        @if(isset($order) && ($order -> document_status !== "draft"))
                             @if((isset($approvalHistory) && count($approvalHistory) > 0) || isset($revision_number))
                            <div class="col-md-4">
                                <div class="step-custhomapp bg-light p-1 customerapptimelines customerapptimelinesapprovalpo">
@@ -341,9 +220,229 @@
                            </div>
                            @endif
                            @endif
-                                        </div> 
+                            
                                 </div>
                             </div>
+
+                            
+                            </div>
+                            <div class="col-md-12" id = "general_information_tab">
+									<div class="card">
+										
+                                    <div class="card-body">
+
+                                    @if (!isset($order))
+                                    <div class="row align-items-center flex-wrap">
+    <!-- Requester Type (Hidden Input) -->
+    <input type="hidden" name="requester_type" value="{{ isset($order) ? $order->requester_type : 'Department' }}" id="requester_type_input" />
+
+    <!-- From Location -->
+    <div class="col-md-2 mb-2">
+        <label class="form-label" id="from_location_header_label">From Location<span class="text-danger">*</span></label>
+        <select class="form-select disable_on_edit" name="store_from_id" id="store_from_id_input" oninput="onHeaderStoreChange(this, 'from');">
+            @foreach ($stores as $store)
+                <option value="{{ $store->id }}" {{ isset($order) ? ($order->from_store_id == $store->id ? 'selected' : '') : '' }} data-name="{{ $store->store_name }}">{{ $store->store_name }}</option>
+            @endforeach
+        </select>
+    </div>
+
+    <div class="col-md-2 mb-2 from_sub_store_dependent">
+        <label class="form-label" id="from_store_header_label">From Store<span class="text-danger">*</span></label>
+        <select class="form-select disable_on_edit" name="sub_store_from_id" id="sub_store_from_id_input" oninput = "headerSubStoreChange(this, 'from')">
+            
+        </select>
+    </div>
+
+    <div class="col-md-2 mb-2 d-none" id = "from_station_header_label">
+        <label class="form-label" >From Station<span class="text-danger">*</span></label>
+        <select class="form-select disable_on_edit" name="station_from_id" id="station_from_id_input">
+            
+        </select>
+    </div>
+
+    <!-- To Location -->
+    <div class="col-md-2 mb-2 location_transfer" style="display:none;">
+        <label class="form-label">To Location<span class="text-danger">*</span></label>
+        <select class="form-select disable_on_edit" name="store_to_id" id="store_to_id_input" oninput="onHeaderStoreChange(this, 'to');">
+            <option value="" disabled selected>Select</option>
+            @foreach ($stores as $store)
+                <option store-type="{{ $store->store_location_type }}" value="{{ $store->id }}" {{ isset($order) ? ($order->to_store_id == $store->id ? 'selected' : '') : '' }} data-name="{{ $store->store_name }}">{{ $store->store_name }}</option>
+            @endforeach
+        </select>
+    </div>
+
+    <div class="col-md-2 mb-2 sub_loc_transfer location_transfer to_sub_store_dependent d-none">
+        <label class="form-label" id="to_store_header_label">To Store<span class="text-danger">*</span></label>
+        <select class="form-select disable_on_edit" name="sub_store_to_id" id="sub_store_to_id_input" oninput = "headerSubStoreChange(this, 'to')">
+            
+        </select>
+    </div>
+
+    <div class="col-md-2 mb-2 d-none" id="to_station_header_label">
+        <label class="form-label" >To Station<span class="text-danger">*</span></label>
+        <select class="form-select disable_on_edit" name="station_to_id" id="station_to_id_input">
+            
+        </select>
+    </div>
+
+    <!-- Vendor -->
+    <div class="col-md-2 mb-2 sub_contracting d-none">
+        <label class="form-label">Vendor<span class="text-danger">*</span></label>
+        <select class="form-select disable_on_edit" name="vendor_id" id="vendor_id_input" oninput="onVendorChange(this);">
+            <option value="" disabled selected>Select</option>
+            @foreach ($vendors as $vendor)
+                <option value="{{ $vendor->id }}" {{ isset($order) ? ($order->vendor_id == $vendor->id ? 'selected' : '') : '' }}>{{ $vendor->company_name }}</option>
+            @endforeach
+        </select>
+    </div>
+
+    <!-- Vendor Location -->
+    <div class="col-md-2 mb-2 sub_contracting d-none">
+        <label class="form-label">Vendor Store<span class="text-danger">*</span></label>
+        <select class="form-select disable_on_edit" name="vendor_store_id" id="vendor_store_id_input">
+            <option value="" disabled selected>Select</option>
+        </select>
+    </div>
+
+    
+    <!-- Department -->
+    <div class="col-md-2 mb-2 consumption d-none" id="department_id_header">
+        <label class="form-label">Department</label>
+        <select class="form-select disable_on_edit" name="department_id" id="department_id_input">
+            @foreach ($departments as $department)
+                <option {{ $selectedDepartmentId == $department->id ? 'selected' : '' }} value="{{ $department->id }}">{{ $department->name }}</option>
+            @endforeach
+        </select>
+    </div>
+
+    <!-- Requester -->
+    <div class="col-md-2 mb-2 consumption d-none" id="user_id_header">
+        <label class="form-label">Requester</label>
+        <input type="text" class="form-control mw-100 ledgerselecct ui-autocomplete-input" id="user_id_dropdown" placeholder="Select">
+        <input type="hidden" value="" name="user_id" id="user_id_input">
+    </div>
+
+</div>
+
+                                    @else
+                                    <div class="row align-items-center flex-wrap">
+    <!-- Requester Type (Hidden Input) -->
+    <input type="hidden" name="requester_type" value="{{ isset($order) ? $order->requester_type : 'Department' }}" id="requester_type_input" />
+
+    <!-- From Location -->
+    <div class="col-md-2 mb-2">
+        <label class="form-label" id="from_location_header_label">From Location<span class="text-danger">*</span></label>
+        <select class="form-select disable_on_edit" name="store_from_id" id="store_from_id_input" oninput="onHeaderStoreChange(this, 'from');">
+            @foreach ($stores as $store)
+                <option value="{{ $store->id }}" {{ isset($order) ? ($order->from_store_id == $store->id ? 'selected' : '') : '' }} data-name="{{ $store->store_name }}">{{ $store->store_name }}</option>
+            @endforeach
+        </select>
+    </div>
+
+    <div class="col-md-2 mb-2 from_sub_store_dependent">
+        <label class="form-label" id="from_store_header_label">From Store<span class="text-danger">*</span></label>
+        <select class="form-select disable_on_edit" name="sub_store_from_id" id="sub_store_from_id_input" oninput = "headerSubStoreChange(this, 'from')">
+            <option value = "{{$order -> from_sub_store_id}}" >{{$order ?-> from_sub_store ?-> name}}</option>
+        </select>
+    </div>
+
+    <div class="col-md-2 mb-2 {{$order -> from_station_id ? '' : 'd-none'}}" id = "from_station_header_label">
+        <label class="form-label" >From Station<span class="text-danger">*</span></label>
+        <select class="form-select disable_on_edit" name="station_from_id" id="station_from_id_input">
+        <option value = "{{$order -> from_station_id}}" >{{$order ?-> from_station ?-> name}}</option>
+        </select>
+    </div>
+
+    <!-- To Location -->
+    <div class="col-md-2 mb-2 location_transfer" style="{{$order -> to_store_id ? '' : 'display:none;'}}">
+        <label class="form-label">To Location<span class="text-danger">*</span></label>
+        <select class="form-select disable_on_edit" name="store_to_id" id="store_to_id_input" oninput="onHeaderStoreChange(this, 'to');">
+            <option value="" disabled selected>Select</option>
+            @foreach ($stores as $store)
+                <option store-type="{{ $store->store_location_type }}" value="{{ $store->id }}" {{ isset($order) ? ($order->to_store_id == $store->id ? 'selected' : '') : '' }} data-name="{{ $store->store_name }}">{{ $store->store_name }}</option>
+            @endforeach
+        </select>
+    </div>
+
+    <div class="col-md-2 mb-2 sub_loc_transfer location_transfer to_sub_store_dependent {{$order -> to_sub_store_id ? '' : 'd-none'}}">
+        <label class="form-label" id="to_store_header_label">To Store<span class="text-danger">*</span></label>
+        <select class="form-select disable_on_edit" name="sub_store_to_id" id="sub_store_to_id_input" oninput = "headerSubStoreChange(this, 'to')">
+            <option value = "{{$order -> sub_store_id}}" >{{$order -> to_sub_store ?-> name}}</option>
+        </select>
+    </div>
+
+    <div class="col-md-2 mb-2 {{$order -> to_station_id ? '' : 'd-none'}}" id="to_station_header_label">
+        <label class="form-label" >To Station<span class="text-danger">*</span></label>
+        <select class="form-select disable_on_edit" name="station_to_id" id="station_to_id_input">
+            <option value = "{{$order -> to_station_id}}">{{$order -> to_station ?-> name}}</option>
+        </select>
+    </div>
+
+    <!-- Vendor -->
+    <div class="col-md-2 mb-2 sub_contracting {{$order -> issue_type === 'Sub Contracting' ? '' : 'd-none'}}">
+        <label class="form-label">Vendor<span class="text-danger">*</span></label>
+        <select class="form-select disable_on_edit" name="vendor_id" id="vendor_id_input" oninput="onVendorChange(this);">
+            <option value="" disabled selected>Select</option>
+            @foreach ($vendors as $vendor)
+                <option value="{{ $vendor->id }}" {{ isset($order) ? ($order->vendor_id == $vendor->id ? 'selected' : '') : '' }}>{{ $vendor->company_name }}</option>
+            @endforeach
+        </select>
+    </div>
+
+    <!-- Vendor Location -->
+    <div class="col-md-2 mb-2 sub_contracting {{$order -> issue_type === 'Sub Contracting' ? '' : 'd-none'}}">
+        <label class="form-label">Vendor Store<span class="text-danger">*</span></label>
+        <select class="form-select disable_on_edit" name="vendor_store_id" id="vendor_store_id_input">
+            <option value="{{$order -> to_sub_store_id}}" >{{$order -> to_sub_store ?-> name}}</option>
+        </select>
+    </div>
+
+    
+    <!-- Department -->
+    <div class="col-md-2 mb-2 consumption {{$order -> issue_type === 'Consumption' && $order -> requester_type === 'Department' ? '' : 'd-none'}}" id="department_id_header">
+        <label class="form-label">Department</label>
+        <select class="form-select disable_on_edit" name="department_id" id="department_id_input">
+            @foreach ($departments as $department)
+                <option {{ $selectedDepartmentId == $department->id ? 'selected' : '' }} value="{{ $department->id }}">{{ $department->name }}</option>
+            @endforeach
+        </select>
+    </div>
+
+    <!-- Requester -->
+    <div class="col-md-2 mb-2 consumption {{$order -> issue_type === 'Consumption' && $order -> requester_type === 'User' ? '' : 'd-none'}}" id="user_id_header">
+        <label class="form-label">Requester</label>
+        <input type="text" class="form-control mw-100 ledgerselecct ui-autocomplete-input" id="user_id_dropdown" placeholder="Select" value = "{{$order -> requester ?-> name}}">
+        <input type="hidden" value="{{$order -> user_id}}" name="user_id" id="user_id_input">
+    </div>
+
+</div>
+
+                                    @endif
+
+<!-- Buttons Row -->
+<div class="row align-items-center" id="selection_section">
+    <div class="col-auto action-button" id="mfg_order_selection">
+        <button onclick="openHeaderPullModal();" disabled type="button" id="select_mfg_button" class="btn btn-outline-primary btn-sm mb-0">
+            <i data-feather="plus-square"></i> MFG Order
+        </button>
+    </div>
+    <div class="col-auto action-button" id="pwo_order_selection">
+        <button onclick="openHeaderPullModal('pwo');" disabled type="button" id="select_pwo_button" class="btn btn-outline-primary btn-sm mb-0">
+            <i data-feather="plus-square"></i> PWO
+        </button>
+    </div>
+    <div class="col-auto action-button" id="pi_order_selection">
+        <button onclick="openHeaderPullModal('pi');" disabled type="button" id="select_pi_button" class="btn btn-outline-primary btn-sm mb-0">
+            <i data-feather="plus-square"></i> Purchase Indent
+        </button>
+    </div>
+</div>
+
+</div>
+
+								
+								</div>
+                            
                             
                             <div class="card">
 								 <div class="card-body customernewsection-form"> 
@@ -380,10 +479,7 @@
                                                                     <th width="240px">Item Name</th>
                                                                     <th>Attributes</th>
                                                                     <th>UOM</th>
-                                                                    <th width="180px" class = "sub_location from_sub_store_dependent">From Store</th>
-                                                                    <th width="180px" class = "sub_location to_sub_store_dependent">To Store</th>
-                                                                    <th width="180px" class = "consumption consumption_dept" id = "department_item_heading" style = "display:none;">Department</th>
-                                                                    <th width="180px" class = "consumption consumption_user" id = "user_item_heading" style = "display:none;">Requester</th>
+                                                                    <th>Stock Type</th>
                                                                     <th class = "numeric-alignment">Qty</th>
                                                                     <th class = "numeric-alignment">Rate</th>
                                                                     <th class = "numeric-alignment">Value</th>
@@ -425,43 +521,26 @@
                                                                             <select class="form-select" name = "uom_id[]" id = "uom_dropdown_{{$orderItemIndex}}"> 
                                                                             </select> 
                                                                         </td>
-                                                                        <td class = "sub_location from_sub_store_dependent">
-
-                                                            <select class="form-select" style = "min-width:100%;" name = "item_sub_store_from[{{$orderItemIndex}}]" id = "item_sub_store_from_{{$orderItemIndex}}" oninput = "getStoresData(this);">
-                                                                @foreach ($fromSubStores as $fromSubStore)
-                                                                    <option value = "{{$fromSubStore -> id}}" {{$orderItem -> from_sub_store_id === $fromSubStore -> id ? 'selected' : ''}}>{{$fromSubStore -> name}}</option>
-                                                                @endforeach
-                                                            </select>
-                </td>
-                <td class = "sub_location to_sub_store_dependent">
-
-                <select class="form-select" style = "min-width:100%;" name = "item_sub_store_to[{{$orderItemIndex}}]" id = "item_sub_store_to_{{$orderItemIndex}}" oninput = "getStoresData(this);">
-                                                                @foreach ($toSubStores as $toSubStore)
-                                                                    <option value = "{{$toSubStore -> id}}" {{$orderItem -> to_sub_store_id === $toSubStore -> id ? 'selected' : ''}}>{{$toSubStore -> name}}</option>
-                                                                @endforeach
-                                                            </select>
-                </td>
-                <input type = "hidden" value = "{{$orderItem -> to_store_id}}" name = "item_store_to[{{$orderItemIndex}}]" />
-                <input type = "hidden" value = "{{$orderItem -> from_store_id}}" name = "item_store_from[{{$orderItemIndex}}]" />
-
-                                                                        <td class = "consumption consumption_user">
-                                                                        <div class="d-flex">
-                                                                        <select class="form-select" name = "item_user_id[{{$orderItemIndex}}]" id = "item_user_id_input_{{$orderItemIndex}}" style = "min-width:85%;">
-                                                                            @foreach ($requesters as $user)
-                                                                                <option value = "{{$user -> id}}" "{{$orderItem -> user_id == $user -> id ? 'selected' : ''}}">{{$user -> name}}</option> 
-                                                                            @endforeach
-                                                                        </select>
-                                                                        </div>
+                                                                        <td>
+                                                                            <select class="form-select" name = "stock_type[]" id = "stock_type_{{$orderItemIndex}}" oninput = "getStoresData({{$orderItemIndex}})"> 
+                                                                                @foreach ($stockTypes as $stockType)
+                                                                                    <option value = "{{$stockType -> value}}" {{$orderItem -> stock_type === $stockType -> value ? 'selected' : ''}} >{{$stockType -> label}}</option>
+                                                                                @endforeach
+                                                                            </select> 
                                                                         </td>
-                                                                        <td class = "consumption consumption_dept">
-                                                                        <div class="d-flex">
-                                                                        <select class="form-select" name = "item_department_id[{{$orderItemIndex}}]" id = "item_department_id_{{$orderItemIndex}}" style = "min-width:85%;">
-                                                                            @foreach ($departments as $department)
-                                                                                <option value = "{{$department -> id}}" "{{$orderItem -> department_id == $department -> id ? 'selected' : ''}}">{{$department -> name}}</option> 
-                                                                            @endforeach
-                                                                        </select>
-                                                                        </div>
-                                                                        </td>
+                                                                        @if ($orderItem -> stock_type === 'W' && isset($orderItem->wip_station_id))
+                                                                            <input type = 'hidden' name = 'wip_station_id[{{$orderItemIndex}}]' value = '{{$orderItem->wip_station_id}}' id = "wip_station_id_{{$orderItemIndex}}"/>
+                                                                        @endif
+                                                                        <input type="hidden" name = "item_sub_store_from[{{$orderItemIndex}}]" id = "item_sub_store_from_{{$orderItemIndex}}" value = "{{$orderItem -> from_sub_store_id}}"/>
+                                                                        <input type="hidden" name = "item_sub_store_to[{{$orderItemIndex}}]" id = "item_sub_store_to_{{$orderItemIndex}}" value = "{{$orderItem -> to_sub_store_id}}"/>
+
+                                                                        <input type="hidden" value = "{{$order -> from_station_id}}" name = "item_station_from[{{$orderItemIndex}}]" id = "item_station_from_{{$orderItemIndex}}" />
+                                                                        <input type="hidden" value = "{{$order -> to_staiton_id}}" name = "item_station_to[{{$orderItemIndex}}]" id = "item_station_to_{{$orderItemIndex}}" />
+                
+                                                                        <input type = "hidden" value = "{{$orderItem -> to_store_id}}" name = "item_store_to[{{$orderItemIndex}}]" />
+                                                                        <input type = "hidden" value = "{{$orderItem -> from_store_id}}" name = "item_store_from[{{$orderItemIndex}}]" />
+
+                                                                        
                                                                         <td><input type="text" id = "item_qty_{{$orderItemIndex}}" value = "{{$orderItem -> issue_qty}}" name = "item_qty[{{$orderItemIndex}}]" oninput = "changeItemQty(this, {{$orderItemIndex}});" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" max = "{{$orderItem -> max_qty_attribute}}"/></td>
                                                                         <td><input type="text" id = "item_rate_{{$orderItemIndex}}" value = "{{$orderItem -> rate}}" readonly name = "item_rate[{{$orderItemIndex}}]" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);"/></td> 
                                                                         <td><input type="text" id = "item_value_{{$orderItemIndex}}" value = "{{$orderItem -> total_item_amount}}" readonly class="form-control mw-100 text-end item_values_input" /></td>
@@ -518,14 +597,6 @@
                                                                                     </div>
                                                                                 </td> 
                                                                             </tr> 
-
-                                                                            <tr id = "current_item_lot_no_row">
-                                                                                <td class="poprod-decpt">
-                                                                                    <div id ="current_item_lot_no">
-
-                                                                                    </div>
-                                                                                 </td>
-                                                                            </tr>
                                                                             
                                                                             <tr id = "current_item_inventory"> 
                                                                                 <td class="poprod-decpt">
@@ -534,6 +605,22 @@
                                                                                     </div>
                                                                                 </td> 
                                                                             </tr> 
+                                                                            
+                                                                            <tr id = "current_item_lot_no_row">
+                                                                                <td class="poprod-decpt">
+                                                                                    <div id ="current_item_lot_no">
+
+                                                                                    </div>
+                                                                                 </td>
+                                                                            </tr>
+                                                                            <tr id = "current_item_so_no_row">
+                                                                                <td class="poprod-decpt">
+                                                                                    <div id ="current_item_so_no">
+
+                                                                                    </div>
+                                                                                 </td>
+                                                                            </tr>
+                                                                            
 
                                                                             <tr id = "current_item_qt_no_row"> 
                                                                                 <td class="poprod-decpt">
@@ -833,82 +920,6 @@
             }
         });
 
-        initializeAutocompleteStores("new_rack_code_input", "new_rack_id_input", 'store_rack', 'rack_code');
-        initializeAutocompleteStores("new_shelf_code_input", "new_shelf_id_input", 'rack_shelf', 'shelf_code');
-        initializeAutocompleteStores("new_bin_code_input", "new_bin_id_input", 'shelf_bin', 'bin_code');
-
-        function initializeAutocompleteStores(selector, siblingSelector, type, labelField) {
-            $("#" + selector).autocomplete({
-                source: function(request, response) {
-                    let dataPayload = {
-                        q:request.term,
-                        type : type
-                    };
-                    if (type == "store_rack") {
-                        dataPayload.store_id = $("#new_store_id_input").val()
-                    }
-                    if (type == "rack_shelf") {
-                        dataPayload.rack_id = $("#new_rack_id_input").val()
-                    }
-                    if (type == "shelf_bin") {
-                        dataPayload.shelf_id = $("#new_shelf_id_input").val()
-                    }
-                    $.ajax({
-                        url: '/search',
-                        method: 'GET',
-                        dataType: 'json',
-                        data: dataPayload,
-                        success: function(data) {
-                            response($.map(data, function(item) {
-                                return {
-                                    id: item.id,
-                                    label: item[labelField],
-                                };
-                            }));
-                        },
-                        error: function(xhr) {
-                            console.error('Error fetching customer data:', xhr.responseText);
-                        }
-                    });
-                },
-                minLength: 0,
-                select: function(event, ui) {
-                    var $input = $(this);
-                    var itemCode = ui.item.label;
-                    var itemId = ui.item.id;
-                    $input.val(itemCode);
-                    $("#" + siblingSelector).val(itemId);
-                    return false;
-                },
-                change: function(event, ui) {
-                    if (!ui.item) {
-                        $(this).val("");
-                    }
-                }
-            }).focus(function() {
-                if (this.value === "") {
-                    $(this).autocomplete("search", "");
-                }
-            });
-    }
-
-    function resetStoreFields()
-    {
-        $("#new_store_id_input").val("")
-        $("#new_store_code_input").val("")
-
-        $("#new_rack_id_input").val("")
-        $("#new_rack_code_input").val("")
-
-        $("#new_shelf_id_input").val("")
-        $("#new_shelf_code_input").val("")
-
-        $("#new_bin_id_input").val("")
-        $("#new_bin_code_input").val("")
-
-        $("#new_location_qty").val("")
-    }
-
 
         function onChangeSeries(element)
         {
@@ -1152,8 +1163,6 @@
                     setItemAttributes('items_dropdown_' + index, index);
 
                     onItemClick(index);
-                    setFromLocationStoreOnItem(response.item.id, index);
-                    setToLocationStoreOnItem(response.item.id, index);
                     
                 }).catch(error => {
                     console.log("Error : ", error);
@@ -1223,14 +1232,23 @@
 
         function addItemRow()
         {
+            let checkLoc = checkSameLocationCondition();
+            if (!checkLoc) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'From and To Location cannot be same',
+                    icon: 'error',
+                });
+                return;
+            }
             var docType = $("#service_id_input").val();
             var invoiceToFollow = $("#service_id_input").val() == "yes";
             const tableElementBody = document.getElementById('item_header');
             const previousElements = document.getElementsByClassName('item_header_rows');
             const newIndex = previousElements.length ? previousElements.length : 0;
             if (newIndex == 0) {
-                let addRow = $('#series_id_input').val() && $("#order_no_input").val() &&  $('#order_no_input').val() && $('#order_date_input').val() && $("#issue_type_input").val() && 
-                $("#store_from_id_input").val() && ($("#store_to_id_input").val() || ($("#vendor_id_input").val() && $("#vendor_store_id_input").val()) || $("#issue_type_input").val() == 'Consumption' || $("#issue_type_input").val() == 'Sub Location Transfer' );
+                let addRow = $('#series_id_input').val() && $("#order_no_input").val() && $('#order_no_input').val() && $('#order_date_input').val() && $("#issue_type_input").val() && 
+                $("#store_from_id_input").val() && $("#sub_store_from_id_input") && ($("#store_to_id_input").val() || ($("#vendor_id_input").val() && $("#vendor_store_id_input").val()) || $("#issue_type_input").val() == 'Consumption' || $("#issue_type_input").val() == 'Sub Location Transfer' );
                 if (!addRow) {
                 Swal.fire({
                     title: 'Error!',
@@ -1256,40 +1274,17 @@
             newItemRow.onclick = function () {
                 onItemClick(newIndex);
             };
-            var headerFromStoreId = $("#store_from_id_input").val();
-            var headerToStoreId = $("#store_to_id_input").val();
-            var headerFromStoreCode = $("#store_from_id_input").attr("data-name");
-            var headerToStoreCode = $("#store_to_id_input").attr("data-name");
-            var storesFrom = @json($stores);
-            var storesTo = @json($stores);
-            var storesFromHTML = ``;
-            var storesToHTML = ``;
-            storesFrom.forEach(store => {
-                if (store.id == headerFromStoreId) {
-                    storesFromHTML += `<option value = "${store.id}" selected>${store.store_name}</option>`
-                } else {
-                    storesFromHTML += `<option value = "${store.id}">${store.store_name}</option>`
-                }
-            });
-            storesTo.forEach(store => {
-                if (store.id == headerToStoreId) {
-                    storesToHTML += `<option value = "${store.id}" selected>${store.store_name}</option>`
-                } else {
-                    storesToHTML += `<option value = "${store.id}">${store.store_name}</option>`
-                }
-            });
-            const selectedUserId = $("#user_id_input").val();
-            const selectedDeptId = $("#department_id_input").val();
+            const selectedUserId = $("#user_id_input").val() ? $("#user_id_input").val() : '';
+            const selectedDeptId = $("#department_id_input").val() ? $("#department_id_input").val() : '';
 
-            let fromSubStoresHTML = ``;
-            currentFromSubStoreArray.forEach(fromSubStore => {
-                fromSubStoresHTML += `<option value = ${fromSubStore.id}> ${fromSubStore.name} </option>`;
-            });
+            const storeIdTo = $("#store_to_id_input").val() ? $("#store_to_id_input").val() : '';
+            const storeIdFrom = $("#store_from_id_input").val() ? $("#store_from_id_input").val() : '';
 
-            let toSubStoresHTML = ``;
-            currentToSubStoreArray.forEach(toSubStore => {
-                toSubStoresHTML += `<option value = ${toSubStore.id}> ${toSubStore.name} </option>`;
-            });
+            const subStoreFromId = $("#sub_store_from_id_input").val() ? $("#sub_store_from_id_input").val() : '';
+            const subStoreToId = $("#sub_store_to_id_input").val() ? $("#sub_store_to_id_input").val() : '';
+
+            const stationFromId = $("#station_from_id_input").val() ? $("#station_from_id_input").val() : '';
+            const stationToId = $("#station_to_id_input").val() ? $("#station_to_id_input").val() : '';
 
             newItemRow.innerHTML = `
             <tr id = "item_row_${newIndex}">
@@ -1315,39 +1310,26 @@
                    <select class="form-select" name = "uom_id[]" id = "uom_dropdown_${newIndex}">
                    </select> 
                </td>
-               <td class = "sub_location from_sub_store_dependent">
+               <td>
+                    <select class="form-select" name = "stock_type[]" id = "stock_type_${newIndex}" oninput = "getStoresData(${newIndex})"> 
+                        @foreach ($stockTypes as $stockType)
+                            <option value = "{{$stockType -> value}}" >{{$stockType -> label}}</option>
+                        @endforeach
+                    </select> 
+                </td>
+               <input type = "hidden" name = "item_sub_store_from[${newIndex}]" id = "item_sub_store_from_${newIndex}" value = "${subStoreFromId}" />
+               <input type = "hidden" name = "item_sub_store_to[${newIndex}]" id = "item_sub_store_from_${newIndex}" value = "${subStoreToId}" />
+               
+                
+                <input type = "hidden" value = "${storeIdTo}" name = "item_store_to[${newIndex}]" />
+                <input type = "hidden" value = "${storeIdFrom}" name = "item_store_from[${newIndex}]" />
 
-                <select class="form-select" style = "min-width:100%;" name = "item_sub_store_from[${newIndex}]" id = "item_sub_store_from_${newIndex}" oninput = "getStoresData(this);">
-                                                               
-                                                            </select>
-                </td>
-                <td class = "sub_location to_sub_store_dependent">
+                <input type="hidden" value = "${stationFromId}" name = "item_station_from[${newIndex}]" id = "item_station_from_${newIndex}" />
+                <input type="hidden" value = "${stationToId}" name = "item_station_to[${newIndex}]" id = "item_station_to_${newIndex}" />
 
-                <select class="form-select" style = "min-width:100%;" name = "item_sub_store_to[${newIndex}]" id = "item_sub_store_to_${newIndex}" oninput = "onItemToStoreChange(this, ${newIndex});">
-                                                                
-                                                            </select>
-                </td>
-                <input type = "hidden" value = "${$("#store_to_id_input").val()}" name = "item_store_to[${newIndex}]" />
-                <input type = "hidden" value = "${$("#store_from_id_input").val()}" name = "item_store_from[${newIndex}]" />
+                <input type = "hidden" value = "${selectedDeptId}" name = "item_department_id[${newIndex}]" id = "item_user_id_input_${newIndex}" />
+                <input type = "hidden" value = "${selectedUserId}" name = "item_user_id[${newIndex}]" id = "item_department_id_input_${newIndex}" />
 
-                <td class = "consumption consumption_dept">
-                <div class="d-flex">
-                <select class="form-select" name = "item_department_id[${newIndex}]" id = "item_department_id_${newIndex}" style = "min-width:85%;">
-                    @foreach ($departments as $department)
-                        <option ${selectedDeptId == "{{$department -> id}}" ? 'selected' : ''} value = "{{$department -> id}}">{{$department -> name}}</option> 
-                    @endforeach
-                </select>
-                </div>
-                </td>
-                <td class = "consumption consumption_user">
-                <div class="d-flex">
-                <select class="form-select" name = "item_user_id[${newIndex}]" id = "item_user_id_${newIndex}" style = "min-width:85%;">
-                    @foreach ($requesters as $user)
-                        <option ${selectedUserId == "{{$user -> id}}" ? 'selected' : ''} value = "{{$user -> id}}">{{$user -> name}}</option> 
-                    @endforeach
-                </select>
-                </div>
-                </td>
                <td><input type="text" id = "item_qty_${newIndex}" name = "item_qty[${newIndex}]" oninput = "changeItemQty(this, ${newIndex});" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);"/></td>
                <td><input type="text" id = "item_rate_${newIndex}" readonly name = "item_rate[]" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);"/></td> 
                <td><input type="text" id = "item_value_${newIndex}" readonly class="form-control mw-100 text-end item_values_input" /></td>
@@ -1377,9 +1359,7 @@
             uomCodeInput.addEventListener('input', function() {
                 checkStockData(newIndex);
             });
-            onIssueTypeChange(document.getElementById('issue_type_input'), false);
-            toSubStoreDependencyRender();
-            fromSubStoreDependencyRender();
+
         }
 
         function deleteItemRows()
@@ -1556,7 +1536,6 @@
 
             getStoresData(index, element.value);
 
-            // assignDefaultToLocationArray(index);
         }
 
         
@@ -1712,6 +1691,9 @@
                                 selectedAttr : selectedItemAttr,
                                 store_id: $("#store_from_id_input").val(),
                                 sub_store_id : $("#item_sub_store_from_" + itemRowId).val(),
+                                station_id : $("#item_station_from_" + itemRowId).val(),
+                                stock_type : $("#stock_type_" + itemRowId).val(),
+                                wip_station_id : $("#wip_station_id_"+ itemRowId).length ? $("#wip_station_id_"+ itemRowId).val() : '',
                                 service_alias : 'mi',
                                 header_id : "{{isset($order) ? $order -> id : ''}}",
                                 detail_id : $("#item_row_" + itemRowId).attr('data-detail-id')
@@ -1743,19 +1725,35 @@
                                     <span class="badge rounded-pill badge-light-primary"><strong>Pending Stocks</strong>: <span id = "item_category">${data?.stocks?.pendingStockAltUom}</span></span>
                                     `;
                                     var inputQtyBox = document.getElementById('item_qty_' + itemRowId);
-                                    inputQtyBox.setAttribute('max-stock',data.stocks.confirmedStockAltUom);
+                                    if (inputQtyBox) {
+                                        inputQtyBox.setAttribute('max-stock',data.stocks.confirmedStockAltUom);
+                                    }
                                     } 
                                  else {
                                         document.getElementById('current_item_stocks_row').style.display = "none";
                                     }
 
-                                    if (data?.lot_details) {
+                                    if (data?.lot_details && data?.lot_details && data.lot_details.length > 0) {
                                     document.getElementById('current_item_lot_no_row').style.display = "table-row";
                                     let lotHTML = `<strong style="font-size:11px; color : #6a6a6a;">Lot Number</strong> : `;
+                                    let soHTML = `<strong style="font-size:11px; color : #6a6a6a;">SO Number</strong> : `;
+                                    const soNoGroups = {};
                                     data?.lot_details.forEach(lot => {
-                                        lotHTML += `<span class="badge rounded-pill badge-light-primary"><strong>${lot?.lot_number}</strong>: <span>${lot?.quantity}</span></span>`
+                                        if (lot.so_no) {
+                                            if (!soNoGroups[lot.so_no]) {
+                                                soNoGroups[lot.so_no] = 0;
+                                            }
+                                            soNoGroups[lot.so_no] += Number(lot.quantity ?? 0);
+                                        }
+                                        lotHTML += `<span class="badge rounded-pill badge-light-primary"><strong>${lot?.lot_number}</strong>: <span>${lot?.lot_qty}</span></span>`
                                     });
+
+                                    for (const [soNo, totalQty] of Object.entries(soNoGroups)) {
+                                        soHTML += `<span class="badge rounded-pill badge-light-primary"><strong>${soNo}</strong> : ${totalQty}</span>`;
+                                    }
+
                                     document.getElementById('current_item_lot_no').innerHTML = lotHTML;
+                                    document.getElementById('current_item_so_no').innerHTML = soHTML;
                                     } 
                                  else {
                                         document.getElementById('current_item_lot_no_row').style.display = "none";
@@ -1861,7 +1859,10 @@
                                 header_id : "{{isset($order) ? $order -> id : null}}",
                                 detail_id : itemDetailId,
                                 store_id: $("#store_from_id_input").val(),
-                                sub_store_id : $("#item_sub_store_from_" + itemRowId).val()
+                                sub_store_id : $("#item_sub_store_from_" + itemRowId).val(),
+                                station_id : $("item_station_from_" + itemRowId).val(),
+                                stock_type : $("#stock_type_" + itemRowId).val(),
+                                wip_station_id : $("#wip_station_id_"+ itemRowId).length ? $("#wip_station_id_"+ itemRowId).val() : ''
                             },
                             success: function(data) {
                                 if (data?.stores && data?.stores?.records && data?.stores?.records?.length > 0 && data.stores.code == 200) {
@@ -2156,115 +2157,6 @@
             disableHeader();
             //Item Discount
             order.items.forEach((item, itemIndex) => {
-                //Item Locations
-                var itemLocations = [];
-                var itemLocationsTo = [];
-                item.from_item_locations.forEach((itemLoc, itemLocIndex) => {
-                    itemLocations.push({
-                        store_id : itemLoc.store_id,
-                        store_code : itemLoc.store_code,
-                        rack_id : itemLoc.rack_id,
-                        rack_code : itemLoc.rack_code,
-                        shelf_id : itemLoc.shelf_id,
-                        shelf_code : itemLoc.shelf_code,
-                        bin_id : itemLoc.bin_id,
-                        bin_code : itemLoc.bin_code,
-                        qty : itemLoc.quantity
-                    });
-                });
-
-                //Assign HTML also while retrieving data
-                let racksHTML = `<option disabled>Select</option>`;
-                let binsHTML = `<option disabled>Select</option>`;
-                if (item.to_item_locations && item.to_item_locations.length > 0) { // Only add if qty is greater than 0
-                    let racksPromise = $.ajax({
-                        url: "{{ route('store.racksAndBins') }}",
-                        type: "GET",
-                        dataType: "json",
-                        data: {
-                            store_id: item.to_item_locations[0].store_id
-                        }
-                    });
-
-                    racksPromise.then(data => {
-                        let racksHTML = `<option value = "" disabled >Select</option>`;
-                        let binsHTML = `<option value = "" disabled >Select</option>`;
-
-                        if (data.data.racks) {
-                            data.data.racks.forEach(rack => {
-                                racksHTML += `<option value='${rack.id}'>${rack.rack_code}</option>`;
-                            });
-                        }
-                        if (data.data.bins) {
-                            data.data.bins.forEach(bin => {
-                                binsHTML += `<option value='${bin.id}'>${bin.bin_code}</option>`;
-                            });
-                        }
-
-                        let shelfPromises = item.to_item_locations.map(itemLoc => {
-                            let shelfsHTML = `<option value="" disabled>Select</option>`;
-
-                            if (itemLoc.rack_id) {
-                                return $.ajax({
-                                    url: "{{ route('store.rack.shelfs') }}",
-                                    type: "GET",
-                                    dataType: "json",
-                                    data: {
-                                        rack_id: itemLoc.rack_id
-                                    }
-                                }).then(shelfData => {
-                                    if (shelfData.data.shelfs) {
-                                        shelfData.data.shelfs.forEach(shelf => {
-                                            shelfsHTML += `<option value='${shelf.id}'>${shelf.shelf_code}</option>`;
-                                        });
-                                    }
-
-                                    itemLocationsTo.push({
-                                        store_id: itemLoc.store_id,
-                                        store_code: itemLoc.store_code,
-                                        rack_id: itemLoc.rack_id,
-                                        rack_code: itemLoc.rack_code,
-                                        rack_html: racksHTML,
-                                        shelf_id: itemLoc.shelf_id,
-                                        shelf_code: itemLoc.shelf_code,
-                                        shelf_html: shelfsHTML,
-                                        bin_id: itemLoc.bin_id,
-                                        bin_code: itemLoc.bin_code,
-                                        bin_html: binsHTML,
-                                        qty: itemLoc.quantity
-                                    });
-                                });
-                            } else {
-                                itemLocationsTo.push({
-                                    store_id: itemLoc.store_id,
-                                    store_code: itemLoc.store_code,
-                                    rack_id: itemLoc.rack_id,
-                                    rack_code: itemLoc.rack_code,
-                                    rack_html: racksHTML,
-                                    shelf_id: itemLoc.shelf_id,
-                                    shelf_code: itemLoc.shelf_code,
-                                    shelf_html: shelfsHTML,
-                                    bin_id: itemLoc.bin_id,
-                                    bin_code: itemLoc.bin_code,
-                                    bin_html: binsHTML,
-                                    qty: itemLoc.quantity
-                                });
-                                return Promise.resolve(); // Resolve immediately if no AJAX call is needed
-                            }
-                        });
-
-                        return Promise.all(shelfPromises);
-                    }).then(() => {
-                        console.log("All AJAX calls completed. Now executing final task.");
-                        // document.getElementById('data_stores_to_' + itemIndex).setAttribute('data-stores', encodeURIComponent(JSON.stringify(itemLocationsTo)))
-                    }).catch(error => {
-                        console.error("An error occurred:", error);
-                        // document.getElementById('data_stores_to_' + itemIndex).setAttribute('data-stores', encodeURIComponent(JSON.stringify(itemLocationsTo)))
-                    });
-                }
-                // document.getElementById('data_stores_' + itemIndex).setAttribute('data-stores', encodeURIComponent(JSON.stringify(itemLocations)))
-                openStoreLocationModal(itemIndex);
-
                 itemUomsHTML = ``;
                 if (item.item.uom && item.item.uom.id) {
                     itemUomsHTML += `<option selected value = '${item.item.uom.id}' ${item.item.uom.id == item.uom_id ? "selected" : ""}>${item.item.uom.alias}</option>`;
@@ -2281,11 +2173,22 @@
             //Disable header fields which cannot be changed
             disableHeader();
             //Set all documents
-            // order.media_files.forEach((mediaFile, mediaIndex) => {
-            //     appendFilePreviews(mediaFile.file_url, 'main_order_file_preview', mediaIndex, mediaFile.id, order.document_status == 'draft' ? false : true);
-            // });
+            order.media_files.forEach((mediaFile, mediaIndex) => {
+                appendFilePreviews(mediaFile.file_url, 'main_order_file_preview', mediaIndex, mediaFile.id, order.document_status == 'draft' ? false : true);
+            });
+            //  //Update the header fields
+            // $("#store_from_id_input").val(order.from_store_id);
+            // $("#store_to_id_input").val(order.to_store_id);
+
+            // $("#sub_store_from_id_input").val(order.from_sub_store_id);
+            // $("#sub_store_to_id_input").val(order.to_sub_store_id);
+
+            // $("#station_from_id_input").val(order.from_station_id);
+            // $("#station_to_id_input").val(order.to_station_id);
+
+            renderIcons();
         }
-        renderIcons();
+       
         
         let finalAmendSubmitButton = document.getElementById("amend-submit-button");
 
@@ -2542,7 +2445,9 @@
                 $("#requester_type_input").val(requesterTypeParam);
                 // $("#issue_type_input").val(firstIssueType).trigger('input');
                 let editCase = "{{isset($order) ? 'false' : 'true'}}";
-                onIssueTypeChange(document.getElementById('issue_type_input'), editCase == 'false' ? false : true);
+                if (editCase != 'false')  {
+                    onIssueTypeChange(document.getElementById('issue_type_input'), editCase == 'false' ? false : true);
+                }
             }
         }
         requesterTypeParam = paramData?.requester_type?.[0];
@@ -2554,9 +2459,11 @@
         const bookId = document.getElementById('series_id_input').value;
         const bookCode = document.getElementById('book_code_input').value;
         const documentDate = document.getElementById('order_date_input').value;
-        const otherField = ($("#store_to_id_input").val() || ($("#vendor_id_input").val() && $("#vendor_store_id_input").val()) || ($("#issue_type_input").val() == 'Consumption' ));
+        const fromLocation = document.getElementById('store_from_id_input').value;
+        const fromLocationStore = document.getElementById('sub_store_from_id_input').value;
+        const otherField = (($("#vendor_id_input").val() && $("#vendor_store_id_input").val()) || ($("#issue_type_input").val() == 'Consumption' ) || ($("#issue_type_input").val() == 'Location Transfer') || ($("#issue_type_input").val() == 'Sub Location Transfer'));
 
-        if (bookId && bookCode && documentDate && otherField) {
+        if (bookId && bookCode && documentDate && fromLocation && fromLocationStore && otherField) {
         //     let siButton = document.getElementById('select_si_button');
         //     if (siButton) {
         //         siButton.disabled = false;
@@ -2593,6 +2500,22 @@
 
     function openHeaderPullModal(type = 'mo')
     {
+        let checkLoc = checkSameLocationCondition();
+        if (!checkLoc) {
+            Swal.fire({
+                title: 'Error!',
+                text: 'From and To Location cannot be same',
+                icon: 'error',
+            });
+            return;
+        }
+        if (type === 'mo') {
+            $("#rescdule").modal('show');
+        } else if (type === 'pwo') {
+            $("#rescdulePwo").modal('show');
+        } else {
+            $("#rescdulePi").modal('show');
+        }
         document.getElementById('qts_data_table').innerHTML = '';
         document.getElementById('qts_data_table_pwo').innerHTML = '';
         if (type == "pwo") {
@@ -2645,6 +2568,8 @@
         let targetTable = document.getElementById('qts_data_table');
         let requesterHTML = ``;
         let stationHTML = ``;
+        let soNoHTML = ``;
+        let subStoreHTML = ``;
         if (type == 'pwo') {
             targetTable = document.getElementById('qts_data_table_pwo');
         } else if (type == "pi") {
@@ -2685,22 +2610,30 @@
                 doc_type : type,
                 header_book_id : $("#series_id_input").val(),
                 store_id: $("#store_to_id_input").val(),
+                sub_store_id : $("#sub_store_to_id_input").val(),
                 store_id_from: $("#store_from_id_input").val(),
+                sub_store_id_from: $("#sub_store_from_id_input").val(),
                 selected_ids : selectedIds,
                 requester_type : $("#requester_type_input").val(),
                 requester_department_id : $("#department_id_input").val(),
                 requester_user_id : $("#user_id_input").val(),
-                station_id : $("#station_id_input").val()
+                station_id : $("#station_to_id_input").val()
             },
             success: function(data) {
                 if (Array.isArray(data.data) && data.data.length > 0) {
                         data.data.forEach((qt, qtIndex) => {
                             if (qt?.header?.requester_name) {
-                                requesterHTML = `<td>${qt?.header?.requester_name}</td>`
+                                requesterHTML = `<td>${qt?.header?.requester_name}</td>`;
                             }
-                            if (qt?.station_name) {
-                                stationHTML = `<td>${qt?.station_name}</td>`
+                            if (qt?.station_name || type == 'mo') {
+                                stationHTML = `<td>${qt?.station_name ? qt?.station_name : ''}</td>`;
                             }
+                            if (qt?.sub_store_code) {
+                                subStoreHTML = `<td>${qt?.sub_store_code}</td>`;
+                            }
+                            
+                            soNoHTML = `<td>${qt?.so_no}</td>`;
+                            
                             var attributesHTML = ``;
                             qt.attributes.forEach(attribute => {
                                 attributesHTML += `<span class="badge rounded-pill badge-light-primary" > ${attribute.attribute_name} : ${attribute.attribute_value} </span>`;
@@ -2716,9 +2649,12 @@
                                     <td>${qt?.header?.document_number}</td>
                                     <td>${qt?.header?.document_date}</td>
                                     <td>${qt?.[departmentOrStoreKey]}</td>
+                                    ${subStoreHTML}
                                     ${requesterHTML}
                                     ${stationHTML}
+                                    <td>${qt?.so_no ? qt?.so_no : ''}</td>
                                     <td>${qt?.item_code}</td>
+                                    <td>${qt?.item_name}</td>
                                     <td>${attributesHTML}</td>
                                     <td>${qt?.uom?.name}</td>
                                     <td>${qt?.qty}</td>
@@ -2813,12 +2749,31 @@
                 success: function(data) {
                     const currentOrders = data.data;
                     let currentOrderIndexVal = document.getElementsByClassName('item_header_rows').length;
+
                     currentOrders.forEach((currentOrder, currentOrderIndex) => {
                         if (currentOrder) { //Set all data
-                            //
-                            if (currentOrderIndex == 0 && openPullType == 'mo') {
-                                $("#station_id_input").val(currentOrder.station_id);
+                            //set the location and sub store 
+                            if (!$("#store_to_id_input").val()) {
+                                $("#store_to_id_input").val(currentOrder.store_id);
                             }
+                            if (!$("#sub_store_to_id_input").val()) {
+                                $("#sub_store_to_id_input").val(currentOrder?.sub_store_id);
+                            }
+                            if (!$("#station_to_id_input").val()) {
+                                $("#staiton_to_id_input").val(currentOrder?.station_id);
+                            }
+                            //
+
+                            const storeIdTo = $("#store_to_id_input").val() ? $("#store_to_id_input").val() : '';
+                            const storeIdFrom = $("#store_from_id_input").val() ? $("#store_from_id_input").val() : '';
+
+                            const subStoreFromId = $("#sub_store_from_id_input").val() ? $("#sub_store_from_id_input").val() : '';
+                            const subStoreToId = $("#sub_store_to_id_input").val() ? $("#sub_store_to_id_input").val() : '';
+
+                            const stationFromId = $("#station_from_id_input").val() ? $("#station_from_id_input").val() : '';
+                            const stationToId = $("#station_to_id_input").val() ? $("#station_to_id_input").val() : '';
+
+                            
                         //Disable Header
                             disableHeader();
                             //Basic Details
@@ -2831,6 +2786,14 @@
                             // deleteItemRows();
                             if (true) {
                                 currentOrder.items.forEach((item, itemIndex) => {
+                                    let selectedStockType = 'R';
+                                    if (openPullType == 'mo') {
+                                        if (item?.rm_type && item?.rm_type === 'rm') {
+                                            selectedStockType = 'R';
+                                        } else if (item?.rm_type && item?.rm_type === 'sf') {
+                                            selectedStockType = 'W';
+                                        }
+                                    }
                                     // item.balance_qty = item.mi_balance_qty;
                                     if (item.avl_stock < item.mi_balance_qty){
                                         item.mi_balance_qty = item.avl_stock;
@@ -2862,222 +2825,110 @@
 
                                     let landLeasePullHtml = '';
 
-                                    
-                                
-                                //Reference from labels
-                                var referenceLabelFields = ``;
-                                // item.so_details.forEach((soDetail, index) => {
-                                //     referenceLabelFields += `<input type = "hidden" class = "reference_from_label_${currentOrderIndexVal}" value = "${soDetail.book_code + "-" + soDetail.document_number + " : " + soDetail.balance_qty}"/>`; 
-                                // });
+                                    //Reference from labels
+                                    var referenceLabelFields = ``;
 
-                                // var soItemIds = [];
-                                // item.so_details.forEach((soDetail) => {
-                                //     soItemIds.push(soDetail.id);
-                                // });
-                                var headerFromStoreId = $("#store_from_id_input").val();
-                                var headerToStoreId = $("#store_to_id_input").val();
-                                var headerFromStoreCode = $("#store_from_id_input").attr("data-name");
-                                var headerToStoreCode = $("#store_to_id_input").attr("data-name");
-                                var storesFrom = @json($stores);
-                                var storesTo = @json($stores);
-                                var storesFromHTML = ``;
-                                var storesToHTML = ``;
-                                storesFrom.forEach(store => {
-                                    if (store.id == headerFromStoreId) {
-                                        storesFromHTML += `<option value = "${store.id}" selected>${store.store_name}</option>`
-                                    } else {
-                                        storesFromHTML += `<option value = "${store.id}">${store.store_name}</option>`
+                                    let stockTypes = @json($stockTypes);
+                                    let stockTypeHTML = ``;
+                                    stockTypes.forEach(stockType => {
+                                        stockTypeHTML += `<option value = '${stockType.value}' ${selectedStockType == stockType.value ? 'selected' : ''}>${stockType.label}</option>`;
+                                    });
+
+                                    let wipStationIdHiddenInput = ``;
+                                    if (openPullType == 'mo') {
+                                        if (item?.station_id && item?.rm_type == 'sf') {
+                                            wipStationIdHiddenInput = `<input type = 'hidden' name = 'wip_station_id[${currentOrderIndexVal}]' value = '${item.station_id}' id = "wip_station_id_${currentOrderIndexVal}"/>`;
+                                        }
                                     }
-                                });
-                                storesTo.forEach(store => {
-                                    if (store.id == headerToStoreId) {
-                                        storesToHTML += `<option value = "${store.id}" selected>${store.store_name}</option>`
-                                    } else {
-                                        storesToHTML += `<option value = "${store.id}">${store.store_name}</option>`
+                                    
+                                    mainTableItem.innerHTML += `
+                                    <tr id = "item_row_${currentOrderIndexVal}" onclick = "onItemClick(${currentOrderIndexVal});" class = "item_header_rows" >
+                                            <td class="customernewsection-form">
+                                            <div class="form-check form-check-primary custom-checkbox">
+                                                <input type="checkbox" class="form-check-input item_row_checks" id="item_row_check_${currentOrderIndexVal}" del-index = "${currentOrderIndexVal}">
+                                                <label class="form-check-label" for="Email"></label>
+                                            </div> 
+                                        </td>
+                                            <td class="poprod-decpt"> 
+                                            <input readonly type="text" id = "items_dropdown_${currentOrderIndexVal}" name="item_code[${currentOrderIndexVal}]" placeholder="Select" class="form-control mw-100 ledgerselecct comp_item_code ui-autocomplete-input" autocomplete="off" data-name="${item?.item?.item_name}" data-code="${item?.item?.item_code}" data-id="${item?.item?.id}" hsn_code = "${item?.item?.hsn?.code}" item-name = "${item?.item?.item_name}" specs = '${JSON.stringify(item?.item?.specifications)}' attribute-array = '${JSON.stringify(item?.item_attributes_array)}'  value = "${item?.item?.item_code}" item-locations = "[]">
+                                            <input type = "hidden" name = "item_id[]" id = "items_dropdown_${currentOrderIndexVal}_value" value = "${item?.item_id}"></input>
+                                            <input type = "hidden" value = "${item?.id}" id = "${itemIdKeyId}_${currentOrderIndexVal}" name = "${itemIdKeyName}[${currentOrderIndexVal}]">
+
+                                        </td>
+                                        
+                                        <td class="poprod-decpt">
+                                                <input type="text" id = "items_name_${currentOrderIndexVal}" name = "item_name[${currentOrderIndexVal}]" class="form-control mw-100"   value = "${item?.item?.item_name}" readonly>
+                                            </td>
+                                        <td class="poprod-decpt" id='attribute_section_${currentOrderIndexVal}'> 
+                                            <button id = "attribute_button_${currentOrderIndexVal}" type = "button" data-bs-toggle="modal" onclick = "setItemAttributes('items_dropdown_${currentOrderIndexVal}', ${currentOrderIndexVal}, true);" data-bs-target="#attribute" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">Attributes</button>
+                                            <input type = "hidden" name = "attribute_value_${currentOrderIndexVal}" />
+                                            </td>
+                                        <td>
+                                            <select class="form-select" name = "uom_id[]" id = "uom_dropdown_${currentOrderIndexVal}">
+                                            </select> 
+                                        </td>
+                                        <td>
+                                            <select class="form-select" name = "stock_type[]" id = "stock_type_${currentOrderIndexVal}" readonly> 
+                                                ${stockTypeHTML}
+                                            </select> 
+                                        </td>
+                                        ${wipStationIdHiddenInput}
+                                        <input type="hidden" name = "item_sub_store_from[${currentOrderIndexVal}]" id = "item_sub_store_from_${currentOrderIndexVal}" value = "${subStoreFromId}" />
+                                        <input type="hidden" name = "item_sub_store_to[${currentOrderIndexVal}]" id = "item_sub_store_to_${currentOrderIndexVal}" value = "${subStoreToId}" />
+
+                                        <input type="hidden" value = "${stationFromId}" name = "item_station_from[${currentOrderIndexVal}]" id = "item_station_from_${currentOrderIndexVal}" />
+                                        <input type="hidden" value = "${stationToId}" name = "item_station_to[${currentOrderIndexVal}]" id = "item_station_to_${currentOrderIndexVal}" />
+
+                                        <input type = "hidden" value = "${storeIdTo}" name = "item_store_to[${currentOrderIndexVal}]" />
+                                        <input type = "hidden" value = "${storeIdFrom}" name = "item_store_from[${currentOrderIndexVal}]" />
+                                        <input type = "hidden" value = "${currentOrder?.user_id}" name = "item_user_id[${currentOrderIndexVal}]" id = "item_user_id_input_${currentOrderIndexVal}" />
+                                        <input type = "hidden" value = "${currentOrder?.department_id}" name = "item_user_id[${currentOrderIndexVal}]" id = "item_department_id_input_${currentOrderIndexVal}" />
+
+                                        <td><input type="text" id = "item_qty_${currentOrderIndexVal}" name = "item_qty[${currentOrderIndexVal}]" oninput = "changeItemQty(this, ${currentOrderIndexVal});" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" value = "${item?.mi_balance_qty}" max = "${item?.mi_balance_qty}"/></td>
+                                        <td><input type="text" id = "item_rate_${currentOrderIndexVal}" readonly name = "item_rate[]" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" value = "${item?.rate}"/></td> 
+                                        <td><input type="text" id = "item_value_${currentOrderIndexVal}" readonly class="form-control mw-100 text-end item_values_input" value = "${item?.mi_balance_qty * item?.rate}" /></td>
+                                        <td>
+                                        <div class="d-flex">
+                                                <div class="me-50 cursor-pointer" data-bs-toggle="modal" data-bs-target="#Remarks" onclick = "setItemRemarks('item_remarks_${currentOrderIndexVal}');">        
+                                                <span data-bs-toggle="tooltip" data-bs-placement="top" title="Remarks" class="text-primary"><i data-feather="file-text"></i></span></div>
+                                            </div>
+                                        <input type = "hidden" id = "item_remarks_${currentOrderIndexVal}" name = "item_remarks[${currentOrderIndexVal}]" />
+                                        </td>
+                                        
+                                        </tr>
+                                    `;
+                                    initializeAutocomplete1("items_dropdown_" + currentOrderIndexVal, currentOrderIndexVal);
+                                    renderIcons();
+                                    
+                                    var itemUomsHTML = ``;
+                                    if (item.item.uom && item.item.uom.id) {
+                                        itemUomsHTML += `<option value = '${item.item.uom.id}' ${item.item.uom.id == item.uom_id ? "selected" : ""}>${item.item.uom.alias}</option>`;
                                     }
-                                });
+                                    item.item.alternate_uoms.forEach(singleUom => {
+                                        itemUomsHTML += `<option value = '${singleUom.uom.id}' ${singleUom.uom.id == item.uom_id ? "selected" : ""} >${singleUom.uom?.alias}</option>`;
+                                    });
+                                    document.getElementById('uom_dropdown_' + currentOrderIndexVal).innerHTML = itemUomsHTML;
+                                    const qtyInput = document.getElementById('item_qty_' + currentOrderIndexVal);
 
-                                let fromSubStoresHTML = ``;
-                                currentFromSubStoreArray.forEach(fromSubStore => {
-                                    fromSubStoresHTML += `<option value = ${fromSubStore.id} ${fromSubStore.id == item?.sub_store_id ? 'selected' : ''}> ${fromSubStore.name} </option>`;
-                                });
-
-                                let toSubStoresHTML = ``;
-                                currentToSubStoreArray.forEach(toSubStore => {
-                                    toSubStoresHTML += `<option value = ${toSubStore.id}> ${toSubStore.name} </option>`;
-                                });
-
-
-                                // mainTableItem.innerHTML += `
-                                // <tr id = "item_row_${currentOrderIndexVal}">
-                                //     <td class="customernewsection-form">
-                                //     <div class="form-check form-check-primary custom-checkbox">
-                                //         <input type="checkbox" class="form-check-input item_row_checks" id="item_row_check_${currentOrderIndexVal}" del-index = "${currentOrderIndexVal}">
-                                //         <label class="form-check-label" for="Email"></label>
-                                //     </div> 
-                                // </td>
-                                //     <td class="poprod-decpt"> 
-                                //     <input readonly type="text" id = "items_dropdown_${currentOrderIndexVal}" name="item_code[${currentOrderIndexVal}]" placeholder="Select" class="form-control mw-100 ledgerselecct comp_item_code ui-autocomplete-input" autocomplete="off" data-name="${item?.item?.item_name}" data-code="${item?.item?.item_code}" data-id="${item?.item?.id}" hsn_code = "${item?.item?.hsn?.code}" item-name = "${item?.item?.item_name}" specs = '${JSON.stringify(item?.item?.specifications)}' attribute-array = '${JSON.stringify(item?.item_attributes_array)}'  value = "${item?.item?.item_code}" item-locations = "[]">
-                                //     <input type = "hidden" name = "item_id[]" id = "items_dropdown_${currentOrderIndexVal}_value" value = "${item?.item_id}"></input>
-                                //     <input type = "hidden" value = "${item?.so_item_id}" name = "so_item_id[${currentOrderIndexVal}]"
-                                // </td>
-                                
-                                // <td class="poprod-decpt">
-                                //         <input type="text" id = "items_name_${currentOrderIndexVal}" name = "item_name[${currentOrderIndexVal}]" class="form-control mw-100"  value = "${item?.item?.item_name}" readonly>
-                                //     </td>
-                                // <td class="poprod-decpt"> 
-                                //     <button id = "attribute_button_${currentOrderIndexVal}" type = "button" data-bs-toggle="modal"  ${item?.item_attributes_array?.length > 0 ? '' : 'disabled'} onclick = "setItemAttributes('items_dropdown_${currentOrderIndexVal}', ${currentOrderIndexVal});" data-bs-target="#attribute" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">Attributes</button>
-                                //     <input type = "hidden" name = "attribute_value_${currentOrderIndexVal}" />
-                                //     </td>
-                                // <td>
-                                //     <select class="form-select" name = "uom_id[]" id = "uom_dropdown_${currentOrderIndexVal}">
-                                //     </select> 
-                                // </td>
-                                // <td class = "location_transfer">
-                                //     <div class="d-flex">
-                                // <select class="form-select" name = "item_store_to[${currentOrderIndexVal}]" id = "item_store_to_${currentOrderIndexVal}" style = "min-width:85%;" >
-                                //     ${storesHTML}
-                                //     </select>
-                                //     <div id = "data_stores_to_${currentOrderIndexVal}" class="me-50 cursor-pointer item_locations_to" style = "margin-top:5px;"   onclick = "openToLocationModal(${currentOrderIndexVal})">        <span data-bs-toggle="tooltip" data-bs-placement="top" title="Location" class="text-primary"><i data-feather="map-pin"></i></span></div>
-                                //     </div>
-                                //     </td>
-                                
-                                //     <td><input type="text" id = "item_qty_${currentOrderIndexVal}" name = "item_qty[${currentOrderIndexVal}]" oninput = "changeItemQty(this, ${currentOrderIndexVal});" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" value = "${item.mi_balance_qty}" max = "${item.mi_balance_qty}"/></td>
-                                //     <td><input type="text" id = "item_rate_${currentOrderIndexVal}" name = "item_rate[${currentOrderIndexVal}]" oninput = "changeItemRate(this, '${currentOrderIndexVal}');" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" value = "${item.mi_balance_qty /1}"/></td> 
-                                //     <td><input type="text" id = "item_value_${currentOrderIndexVal}" disabled class="form-control mw-100 text-end item_values_input"  /></td>
-                                //     <td>
-                                //     <input type="text" id = "customers_dropdown_${currentOrderIndexVal}" name="customer_code[${currentOrderIndexVal}]" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input autocomplete="off" value = "${item?.so?.customer_code}" readonly>
-                                //     <input type = "hidden" name = "customer_id[${currentOrderIndexVal}]" id = "customers_dropdown_${currentOrderIndexVal}_value" value = "${item?.mo?.customer_id}"></input>
-                                //     </td>
-                                //     <td>
-                                //     <input class = "form-control mw-100" type = "text" name = "item_order_no[${currentOrderIndexVal}]" readonly value = "${item?.so?.document_number}" />
-                                //     </td>
-                                // <td>
-                                // <div class="d-flex">
-                                //         <div class="me-50 cursor-pointer" data-bs-toggle="modal" data-bs-target="#Remarks" onclick = "setItemRemarks('item_remarks_${currentOrderIndexVal}');">        
-                                //         <span data-bs-toggle="tooltip" data-bs-placement="top" title="Remarks" class="text-primary"><i data-feather="file-text"></i></span></div>
-                                //         <div class="me-50 cursor-pointer item_bundles" onclick = "assignDefaultBundleInfoArray(${currentOrderIndexVal}, true)" id = "item_bundles_${currentOrderIndexVal}" style = "display:none;">    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Details" class="text-primary"><i data-feather="info"></i></span>
-                                //     </div>
-                                // <input type = "hidden" id = "item_remarks_${currentOrderIndexVal}" name = "item_remarks[${currentOrderIndexVal}]" />
-                                // </td>
-                                
-                                // </tr>
-                                // `;
-                                mainTableItem.innerHTML += `
-                                <tr id = "item_row_${currentOrderIndexVal}" onclick = "onItemClick(${currentOrderIndexVal});" class = "item_header_rows" >
-                                        <td class="customernewsection-form">
-                                        <div class="form-check form-check-primary custom-checkbox">
-                                            <input type="checkbox" class="form-check-input item_row_checks" id="item_row_check_${currentOrderIndexVal}" del-index = "${currentOrderIndexVal}">
-                                            <label class="form-check-label" for="Email"></label>
-                                        </div> 
-                                    </td>
-                                        <td class="poprod-decpt"> 
-                                        <input readonly type="text" id = "items_dropdown_${currentOrderIndexVal}" name="item_code[${currentOrderIndexVal}]" placeholder="Select" class="form-control mw-100 ledgerselecct comp_item_code ui-autocomplete-input" autocomplete="off" data-name="${item?.item?.item_name}" data-code="${item?.item?.item_code}" data-id="${item?.item?.id}" hsn_code = "${item?.item?.hsn?.code}" item-name = "${item?.item?.item_name}" specs = '${JSON.stringify(item?.item?.specifications)}' attribute-array = '${JSON.stringify(item?.item_attributes_array)}'  value = "${item?.item?.item_code}" item-locations = "[]">
-                                        <input type = "hidden" name = "item_id[]" id = "items_dropdown_${currentOrderIndexVal}_value" value = "${item?.item_id}"></input>
-                                        <input type = "hidden" value = "${item?.id}" id = "${itemIdKeyId}_${currentOrderIndexVal}" name = "${itemIdKeyName}[${currentOrderIndexVal}]">
-
-                                    </td>
+                                    const itemCodeInput = document.getElementById('items_dropdown_' + currentOrderIndexVal);
+                                    const uomCodeInput = document.getElementById('uom_dropdown_' + currentOrderIndexVal);
+                                    const storeCodeInput = document.getElementById('item_store_from_' + currentOrderIndexVal);
+                                    itemCodeInput.addEventListener('input', function() {
+                                        checkStockData(currentOrderIndexVal);
+                                    });
+                                    uomCodeInput.addEventListener('input', function() {
+                                        checkStockData(currentOrderIndexVal);
+                                    });
+                                    currentOrderIndexVal += 1;
+                                    });
+                                } 
+                                for (let index = 0; index < currentOrderIndexVal; index++) {
+                                    getStoresData(index, document.getElementById('item_qty_' + index).value);
                                     
-                                    <td class="poprod-decpt">
-                                            <input type="text" id = "items_name_${currentOrderIndexVal}" name = "item_name[${currentOrderIndexVal}]" class="form-control mw-100"   value = "${item?.item?.item_name}" readonly>
-                                        </td>
-                                    <td class="poprod-decpt" id='attribute_section_${currentOrderIndexVal}'> 
-                                        <button id = "attribute_button_${currentOrderIndexVal}" type = "button" data-bs-toggle="modal" onclick = "setItemAttributes('items_dropdown_${currentOrderIndexVal}', ${currentOrderIndexVal}, true);" data-bs-target="#attribute" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">Attributes</button>
-                                        <input type = "hidden" name = "attribute_value_${currentOrderIndexVal}" />
-                                        </td>
-                                    <td>
-                                        <select class="form-select" name = "uom_id[]" id = "uom_dropdown_${currentOrderIndexVal}">
-                                        </select> 
-                                    </td>
-                                    <td class = "sub_location from_sub_store_dependent">
-
-                                    <select class="form-select" style = "min-width:100%;" name = "item_sub_store_from[${currentOrderIndexVal}]" id = "item_sub_store_from_${currentOrderIndexVal}" oninput = "getStoresData(this);">
-                                                                                    ${fromSubStoresHTML}
-                                                                                </select>
-                                    </td>
-                                    <td class = "sub_location to_sub_store_dependent">
-
-                                    <select class="form-select" style = "min-width:100%;" name = "item_sub_store_to[${currentOrderIndexVal}]" id = "item_sub_store_to_${currentOrderIndexVal}">
-                                                                                    ${toSubStoresHTML}
-                                                                                </select>
-                                    </td>
-                                    <input type = "hidden" value = "${$("#store_to_id_input").val()}" name = "item_store_to[${currentOrderIndexVal}]" />
-                                    <input type = "hidden" value = "${$("#store_from_id_input").val()}" name = "item_store_from[${currentOrderIndexVal}]" />
-
-                                        <td class = "consumption consumption_dept">
-                                        <div class="d-flex">
-                                        <select class="form-select" name = "item_department_id[${currentOrderIndexVal}]" id = "item_department_id_${currentOrderIndexVal}" style = "min-width:85%;">
-                                        <option value = "${currentOrder?.department_id}">${currentOrder?.department_name}</option> 
-                                        </select>
-                                        </div>
-                                        </td>
-                                        <td class = "consumption consumption_user">
-                                        <div class="d-flex">
-                                        <select class="form-select" name = "item_user_id[${currentOrderIndexVal}]" id = "item_user_id_${currentOrderIndexVal}" style = "min-width:85%;">
-                                            <option selected value = "${currentOrder?.user_id}">${currentOrder?.requester_name}</option> 
-                                        </select>
-                                        </div>
-                                        </td>
-                                    <td><input type="text" id = "item_qty_${currentOrderIndexVal}" name = "item_qty[${currentOrderIndexVal}]" oninput = "changeItemQty(this, ${currentOrderIndexVal});" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" value = "${item?.mi_balance_qty}" max = "${item?.mi_balance_qty}"/></td>
-                                    <td><input type="text" id = "item_rate_${currentOrderIndexVal}" readonly name = "item_rate[]" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" value = "${item?.rate}"/></td> 
-                                    <td><input type="text" id = "item_value_${currentOrderIndexVal}" readonly class="form-control mw-100 text-end item_values_input" value = "${item?.mi_balance_qty * item?.rate}" /></td>
-                                    <td>
-                                    <div class="d-flex">
-                                            <div class="me-50 cursor-pointer" data-bs-toggle="modal" data-bs-target="#Remarks" onclick = "setItemRemarks('item_remarks_${currentOrderIndexVal}');">        
-                                            <span data-bs-toggle="tooltip" data-bs-placement="top" title="Remarks" class="text-primary"><i data-feather="file-text"></i></span></div>
-                                        </div>
-                                    <input type = "hidden" id = "item_remarks_${currentOrderIndexVal}" name = "item_remarks[${currentOrderIndexVal}]" />
-                                    </td>
-                                    
-                                    </tr>
-                                `;
-                                initializeAutocomplete1("items_dropdown_" + currentOrderIndexVal, currentOrderIndexVal);
-                                renderIcons();
-                                
-                                var itemUomsHTML = ``;
-                                if (item.item.uom && item.item.uom.id) {
-                                    itemUomsHTML += `<option value = '${item.item.uom.id}' ${item.item.uom.id == item.uom_id ? "selected" : ""}>${item.item.uom.alias}</option>`;
+                                    setAttributesUI(index);
                                 }
-                                item.item.alternate_uoms.forEach(singleUom => {
-                                    itemUomsHTML += `<option value = '${singleUom.uom.id}' ${singleUom.uom.id == item.uom_id ? "selected" : ""} >${singleUom.uom?.alias}</option>`;
-                                });
-                                document.getElementById('uom_dropdown_' + currentOrderIndexVal).innerHTML = itemUomsHTML;
-                                const qtyInput = document.getElementById('item_qty_' + currentOrderIndexVal);
-
-                                const itemCodeInput = document.getElementById('items_dropdown_' + currentOrderIndexVal);
-                                const uomCodeInput = document.getElementById('uom_dropdown_' + currentOrderIndexVal);
-                                const storeCodeInput = document.getElementById('item_store_from_' + currentOrderIndexVal);
-                                itemCodeInput.addEventListener('input', function() {
-                                    checkStockData(currentOrderIndexVal);
-                                });
-                                uomCodeInput.addEventListener('input', function() {
-                                    checkStockData(currentOrderIndexVal);
-                                });
-                                // storeCodeInput.addEventListener('input', function() {
-                                //     checkStockData(currentOrderIndexVal);
-                                // });
-                                $("#issue_type_input").trigger("input");
-                                // assignDefaultToLocationArray(currentOrderIndexVal);
-                                currentOrderIndexVal += 1;
-                                });
-                            } 
-
-                            for (let index = 0; index < currentOrderIndexVal; index++) {
-                                getStoresData(index, document.getElementById('item_qty_' + index).value);
-                                
-                            }
-                            setAttributesUI(itemIndex);
-                            
-                            
-                            
-
                         }
-                    });
-
-                    onIssueTypeChange(document.getElementById('issue_type_input'), false);
-                    toSubStoreDependencyRender();
-                    fromSubStoreDependencyRender();
-                            
+                    });     
                 },
                 error: function(xhr) {
                     console.error('Error fetching customer data:', xhr.responseText);
@@ -3420,7 +3271,7 @@ document.addEventListener('input', function (e) {
         }
 
         // Limit to 2 decimal places
-        if (parts[1]?.length > 2) {
+        if (parts[1]?.length > 6) {
             value = parts[0] + '.' + parts[1].substring(0, 2);
         }
 
@@ -3534,124 +3385,16 @@ document.addEventListener('input', function (e) {
 
     function onHeaderStoreChange(element, type)
     {
-        const currentVal = element.value;
-        const issueTypeVal = $("#issue_type_input").val();
-        var otherVal = null;
-        if (type === "from") {
-            otherVal = $("#store_to_id_input").val();
-        } else {
-            otherVal = $("#store_from_id_input").val();
-        }
-        if (currentVal == otherVal && issueTypeVal != 'Sub Location Transfer') {
-            Swal.fire({
-                title: 'Error!',
-                text: 'From and To Location cannot be same',
-                icon: 'error',
-            });
-            element.value = "";
-            return;
-        }
         if (type === 'to') 
         {
-            let typeAttribute = element.options[element.selectedIndex].getAttribute('store-type');
-            if (typeAttribute == 'Shop floor')
-            {
-                $("#station_id_header").removeClass('d-none');
-            }
-            else
-            {
-                $("#station_id_header").addClass('d-none');
-            }
             onHeaderToLocationChange(element);
         } else {
             onHeaderFromLocationChange(element);
         }
         enableDisableQtButton();
     }
-    function onItemStoreChange(element, type, index)
-    {
-        const currentVal = element.value;
-        var otherVal = null;
-        if (type === "from") {
-            otherVal = $("#item_store_to_" + index).val();
-        } else {
-            otherVal = $("#item_store_from_" + index).val();
-        }
-        if (currentVal == otherVal) {
-            Swal.fire({
-                title: 'Error!',
-                text: 'From and To Location cannot be same',
-                icon: 'error',
-            });
-            element.value = "";
-            return;
-        }
-    }
-
-    function assignDefaultToLocationArray(itemIndex)
-    {
-        const storeElement = document.getElementById('data_stores_to_' + itemIndex);
-        var existingStoreArray = [];
-        if (storeElement.getAttribute('data-stores')) {
-            existingStoreArray = JSON.parse(decodeURIComponent(storeElement.getAttribute('data-stores')));
-        }
-        //Create
-        if (!existingStoreArray.length) {
-            const defaultStore = document.getElementById('item_store_to_' + itemIndex);
-            const defaultStoreId = defaultStore.value;
-            const defaultStoreCode = defaultStore.options[defaultStore.selectedIndex].text;
-            const qtyInput = document.getElementById('item_qty_' + itemIndex);
-            let racksHTML = `<option value = "" disabled selected>Select</option>`;
-            let binsHTML = `<option value = "" disabled selected>Select</option>`;
-            let shelfsHTML = `<option value = "" disabled selected>Select</option>`;
-
-            if (qtyInput && qtyInput.value > 0) { //Only add if qty is greater than 0
-                $.ajax({
-                    url: "{{ route('store.racksAndBins') }}",
-                    type: "GET",
-                    dataType: "json",
-                    data: {
-                        store_id : defaultStoreId
-                    },
-                    success: function(data) {
-                        if (data.data.racks) { // RACKS DATA IS PRESENT
-                            data.data.racks.forEach(rack => {
-                                racksHTML+= `<option value = '${rack.id}'>${rack.rack_code}</option>`;
-                            });
-                        }
-                        if (data.data.bins) { //BINS DATA IS PRESENT
-                            data.data.bins.forEach(bin => {
-                                binsHTML+= `<option value = '${bin.id}'>${bin.bin_code}</option>`;
-                            });
-                        }
-                        existingStoreArray.push({
-                            store_id : defaultStoreId,
-                            store_code : defaultStoreCode,
-                            rack_id : null,
-                            rack_code : '',
-                            rack_html : racksHTML,
-                            shelf_id : null,
-                            shelf_code : '',
-                            shelf_html : shelfsHTML,
-                            bin_id : null,
-                            bin_code : '',
-                            bin_html : binsHTML,
-                            qty : qtyInput.value
-                        });
-                        storeElement.setAttribute('data-stores', encodeURIComponent(JSON.stringify(existingStoreArray)));
-                        renderToLocationInTablePopup(itemIndex);
-                    },
-                    error : function(xhr){
-                        console.error('Error fetching customer data:', xhr.responseText);
-                        storeElement.setAttribute('data-stores', encodeURIComponent(JSON.stringify(existingStoreArray)));
-                        renderToLocationInTablePopup(itemIndex);
-                    }
-                });
-                
-            }
-        }
-        
-    }
+    
+    
 
     function renderToLocationInTablePopup(itemIndex, openModalFlag = false)
     {
@@ -3899,73 +3642,40 @@ document.addEventListener('input', function (e) {
 
     function resetIssueTypeFields()
     {
+        //Empty the from sub store value and HTML
+        // $("#sub_store_from_id_input").val();
+        // $("#sub_store_from_id_input").html('');
+        //Reset the To Location
         $("#store_to_id_input").val('');
+        //Empty the to sub store value and HTML
+        $("#sub_store_to_id_input").val('');
+        $("#sub_store_to_id_input").html('');
+        //Reset Vendor details
         $("#vendor_id_input").val('');
         $("#vendor_store_id_input").val('');
+        //Reset vendor details
         $("#department_id_input").val('');
         $("#user_id_dropdown").val('');
-        $("#station_id_input").val('');
-    }
-
-    function reloadLocationsDropdown(type)
-    {
-        let fromLocationHeader = document.getElementById("store_from_id_input");
-        let toLocationHeader = document.getElementById("store_to_id_input");
-        let locationHTML = ``;
-        $.ajax({
-            url: "{{ route('material.issue.multi-store-location') }}",
-            type: "GET",
-            data: {
-                type : type
-            },
-            dataType: "json",
-            success: function(data) {
-                if (data.status == 200) {
-                    data.data.forEach(loc => {
-                        locationHTML += `<option store-type = "${loc.store_location_type}" value = "${loc.id}">${loc.store_name}</option>`
-                    });
-                } else {
-                    locationHTML = ``;
-                }
-                fromLocationHeader.innerHTML = locationHTML;
-                toLocationHeader.innerHTML = locationHTML;
-                toLocationHeader.value = "";
-                applyIssueTypeChange(type);
-            },
-            error : function(xhr){
-                console.error('Error fetching customer data:', xhr.responseText);
-                fromLocationHeader.innerHTML = ``;
-                toLocationHeader.innerHTML = ``;
-                toLocationHeader.value = "";
-                applyIssueTypeChange(type);
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'No Stores found',
-                    icon: 'error',
-                });
-                return;
-            }
-        });
     }
 
     function onIssueTypeChange(element, resetDropdown = true)
     {
         const selectedType = element.value;
         if (resetDropdown == false) {
-            applyIssueTypeChange(selectedType)
+            //Do Nothing
         } else {
+            // Reset all the fields of general tab
             resetIssueTypeFields();
-            reloadLocationsDropdown(selectedType, selectedType, resetDropdown);
+            applyIssueTypeChange(selectedType);
         }
     }
 
     function applyIssueTypeChange(selectedType)
     {
         if (selectedType == 'Location Transfer') {
-            implementIssueTypeChange('.location_transfer, .sub_location','.sub_contracting, .consumption, .sub_loc_transfer');
+            implementIssueTypeChange('.location_transfer','.sub_contracting, .consumption, .sub_loc_transfer');
         } else if (selectedType == 'Sub Location Transfer') {
             implementIssueTypeChange('.sub_loc_transfer, .sub_location','.location_transfer, .consumption, .sub_contracting');
-        } else if (selectedType == 'Consumption') {
         } else if (selectedType == 'Sub Contracting') {
             implementIssueTypeChange('.sub_contracting, .sub_location','.location_transfer, .consumption, .sub_loc_transfer');
         } else if (selectedType == 'Consumption') {
@@ -3975,44 +3685,57 @@ document.addEventListener('input', function (e) {
 
     function implementIssueTypeChange(targetClasses, querySelectorOtherClasses)
     {
-        var targetElements = document.querySelectorAll(targetClasses);
-        for (let index = 0; index < targetElements.length; index++) {
-            targetElements[index].style.removeProperty("display");
-            targetElements[index].classList.remove("d-none");
-        }
         var otherElements = document.querySelectorAll(querySelectorOtherClasses);
         for (let index = 0; index < otherElements.length; index++) {
             otherElements[index].style.display = "none";
             otherElements[index].classList.add("d-none");
         }
-        $("#vendor_id_input").trigger('input');
-        if (targetClasses.includes('consumption')) {
-            if (requesterTypeParam == "Department") {
-                $("#user_id_header").css("display", "none");
-                $("#department_id_header").css("display", "");
+        var targetElements = document.querySelectorAll(targetClasses);
+        for (let index = 0; index < targetElements.length; index++) {
+            targetElements[index].style.removeProperty("display");
+            targetElements[index].classList.remove("d-none");
+        }
+        
+        $("#vendor_id_input").trigger(' ');
 
+        let userIdHeaderField = document.getElementById('user_id_header');
+        let departmentIdHeader = document.getElementById('department_id_header');
+
+        if (targetClasses.includes('consumption')) {
+            
+            if (requesterTypeParam == "Department") {
+
+                userIdHeaderField.classList.add('d-none');
+                departmentIdHeader.classList.remove('d-none');
+                
                 $(".consumption_user").css('display', 'none');
                 $(".consumption_dept").css('display', '');
             } else {
-                $("#user_id_header").css("display", "");
-                $("#department_id_header").css("display", "none");
+
+                userIdHeaderField.classList.remove('d-none');
+                departmentIdHeader.classList.add('d-none');
 
                 $(".consumption_user").css('display', '');
                 $(".consumption_dept").css('display', 'none');
             }
         } else {
-            $("#user_id_header").css("display", "none");
-            $("#department_id_header").css("display", "none");
+            userIdHeaderField.classList.add('d-none');
+            departmentIdHeader.classList.add('d-none');
+
             $(".consumption_user").css('display', 'none');
             $(".consumption_dept").css('display', 'none');
         }
         let fromLocationHeader = document.getElementById('from_location_header_label');
-        if (targetClasses.includes('sub_loc_transfer')) {
+        if (targetClasses.includes('sub_loc_transfer') ||targetClasses.includes('sub_contracting') ) {
             fromLocationHeader.innerHTML = `Location <span class="text-danger">*</span>`;
             $("#store_to_id_input").val($("#store_from_id_input").val()).trigger('input');
         } else {
             fromLocationHeader.innerHTML = `From Location <span class="text-danger">*</span>`;
         }
+
+        $("#store_from_id_input").trigger('input');
+        $("#store_to_id_input").trigger('input');
+
         enableDisableQtButton();
     }
 
@@ -4035,12 +3758,12 @@ document.addEventListener('input', function (e) {
                             if ("{{isset($order) && isset($order -> to_store_id)}}") {
                                 const vendorStoreId = "{{isset($order) ? $order -> to_store_id: ''}}";
                                 if (vendorStoreId == store.id) {
-                                    vendorIdInputHTML += `<option selected value = '${store.id}'>${store.store_name}</option>`;
+                                    vendorIdInputHTML += `<option selected value = '${store.id}'>${store.name}</option>`;
                                 } else {
-                                    vendorIdInputHTML += `<option value = '${store.id}'>${store.store_name}</option>`;
+                                    vendorIdInputHTML += `<option value = '${store.id}'>${store.name}</option>`;
                                 }
                             } else {
-                                vendorIdInputHTML += `<option value = '${store.id}'>${store.store_name}</option>`;
+                                vendorIdInputHTML += `<option value = '${store.id}'>${store.name}</option>`;
 
                             }
                         });
@@ -4111,21 +3834,39 @@ document.addEventListener('input', function (e) {
                 dependentFields[index].classList.add('d-none');
             }
         }
+        let headerSubStoreElement = document.getElementById('sub_store_to_id_input');
+        let headerSubStoreNewHTML = ``;
+        currentToSubStoreArray.forEach(subStore => {
+            headerSubStoreNewHTML += `<option value = "${subStore.id}"> ${subStore.name} </option>`
+        });
+        headerSubStoreElement.innerHTML = headerSubStoreNewHTML;
+        $("#" + headerSubStoreElement.id).val('').trigger('input');
     }
 
     function fromSubStoreDependencyRender() 
     {
-        let dependentFields = document.querySelectorAll('.from_sub_store_dependent');
-        for (let index = 0; index < dependentFields.length; index++) {
-            if (currentFromSubStoreArray.length > 0) {
-                dependentFields[index].classList.remove('d-none');
-            } else {
-                dependentFields[index].classList.add('d-none');
-            }
-        }
+        // console.log("IS THIS HERE ?");
+        // let dependentFields = document.querySelectorAll('.from_sub_store_dependent');
+        // for (let index = 0; index < dependentFields.length; index++) {
+        //     if (currentFromSubStoreArray.length > 0) {
+        //         dependentFields[index].classList.remove('d-none');
+        //     } else {
+        //         dependentFields[index].classList.add('d-none');
+        //     }
+        // }
+        let headerSubStoreElement = document.getElementById('sub_store_from_id_input');
+        let headerSubStoreNewHTML = ``;
+        currentFromSubStoreArray.forEach(subStore => {
+            headerSubStoreNewHTML += `<option value = "${subStore.id}"> ${subStore.name} </option>`
+        });
+        headerSubStoreElement.innerHTML = headerSubStoreNewHTML;
+        $("#" + headerSubStoreElement.id).val('').trigger('input');
     }
 
-    onHeaderFromLocationChange(document.getElementById('store_from_id_input'));
+    
+    @if (!isset($order))
+        onHeaderFromLocationChange(document.getElementById('store_from_id_input'));
+    @endif
 
     function onHeaderFromLocationChange(element)
     {
@@ -4137,7 +3878,7 @@ document.addEventListener('input', function (e) {
             dataType: 'json',
             data: {
                 store_id : storeId,
-                type : ['Stock', 'Shop floor']
+                types : ['Stock', 'Shop floor']
             },
             success: function(data) {
                 if (data.status === 200) {
@@ -4176,7 +3917,7 @@ document.addEventListener('input', function (e) {
             dataType: 'json', 
             data: {
                 store_id : storeId,
-                type : ['Stock', 'Shop floor', 'Other']
+                types : ['Stock', 'Shop floor', 'Other']
             },
             success: function(data) {
                 if (data.status === 200) {
@@ -4204,137 +3945,7 @@ document.addEventListener('input', function (e) {
             }
         });
     }
-    function setFromLocationStoreOnItem(itemId, itemIndex)
-    {
-        const fromLocId = $("#store_from_id_input").val();
-        $.ajax({
-            url: "{{route('subStore.get.from.stores')}}",
-            method: 'GET',
-            dataType: 'json', 
-            data: {
-                store_id : fromLocId,
-                item_id : itemId,
-                type : ['Stock', 'Shop floor']
-            },
-            success: function(data) {
-                if (data.status === 200) {
-                    currentFromSubStoreArray = data.data;
-                    fromSubStoreDependencyRender();
-                    renderStoreOnItemChange('from', itemIndex);
-                } else {
-                    currentFromSubStoreArray = [];
-                    fromSubStoreDependencyRender();
-                    Swal.fire({
-                        title: 'Error!',
-                        text: data.message,
-                        icon: 'error',
-                    });
-                }
-            },
-            error: function(xhr) {
-                console.error('Error fetching customer data:', xhr);
-                currentFromSubStoreArray = [];
-                fromSubStoreDependencyRender();
-                Swal.fire({
-                    title: 'Error!',
-                    text: xhr?.responseJSON?.message,
-                    icon: 'error',
-                });
-            }
-        });
-    }
-    function setToLocationStoreOnItem(itemId, itemIndex)
-    {
-        let toLocId = $("#store_to_id_input").val();
-        if ($("#issue_type_input").val() == 'Sub Contracting')
-        {
-            toLocId = $("#vendor_store_id_input").val();
-        }
-        $.ajax({
-            url: "{{route('subStore.get.from.stores')}}",
-            method: 'GET',
-            dataType: 'json', 
-            data: {
-                store_id : toLocId,
-                item_id : itemId,
-                type : ['Stock', 'Shop floor', 'Other']
-            },
-            success: function(data) {
-                if (data.status === 200) {
-                    currentToSubStoreArray = data.data;
-                    toSubStoreDependencyRender();
-                    renderStoreOnItemChange('to', itemIndex);
-                } else {
-                    currentToSubStoreArray = [];
-                    toSubStoreDependencyRender();
-                    Swal.fire({
-                        title: 'Error!',
-                        text: data.message,
-                        icon: 'error',
-                    });
-                }
-            },
-            error: function(xhr) {
-                console.error('Error fetching customer data:', xhr);
-                currentToSubStoreArray = [];
-                toSubStoreDependencyRender();
-                Swal.fire({
-                    title: 'Error!',
-                    text: xhr?.responseJSON?.message,
-                    icon: 'error',
-                });
-            }
-        });
-    }
-    function renderStoreOnItemChange(type = 'from', index)
-    {
-        let currentSubLocArray = [];
-        let targetDocument = null;
-        if (type === 'from') {
-            currentSubLocArray = currentFromSubStoreArray;
-            targetDocument = document.getElementById('item_sub_store_from_' + index);
-        } else {
-            currentSubLocArray = currentToSubStoreArray;
-            targetDocument = document.getElementById('item_sub_store_to_' + index);
-        }
-        let newInnerHTML = ``;
-        currentSubLocArray.forEach(subLoc => {
-            newInnerHTML += `<option value = "${subLoc.id}">${subLoc.name}</option>`
-        });
-        targetDocument.innerHTML = newInnerHTML;
-    }
 
-    function onItemFromStoreChange(element, index)
-    {
-        const currentVal = $("#store_from_id_input").val() + "-" + element.value;
-        const otherVal = $("#store_to_id_input").val() + "-" + $("#item_sub_store_to_" + index).val();
-        if (currentVal === otherVal)
-        {
-            element.value = "";
-            Swal.fire({
-                title: 'Error!',
-                text: "From and to Store cannot be same",
-                icon: 'error',
-            });
-            return;
-        }
-    }
-
-    function onItemToStoreChange(element, index)
-    {
-        const currentVal = $("#store_to_id_input").val() + "-" + element.value;
-        const otherVal = $("#store_from_id_input").val() + "-" + $("#item_sub_store_from_" + index).val();
-        if (currentVal === otherVal)
-        {
-            element.value = "";
-            Swal.fire({
-                title: 'Error!',
-                text: "From and to Store cannot be same",
-                icon: 'error',
-            });
-            return;
-        }
-    }
     function submitAttr(id) {
         var item_index = $('#attributes_table_modal').attr('item-index');
         onItemClick(item_index);
@@ -4379,9 +3990,8 @@ document.addEventListener('input', function (e) {
             }
             let short = false;
             total_atts += 1;
-            console.log(attrArr);
 
-            if(attrArr.short_name.length > 0)
+            if(attrArr?.short_name)
             {
                 short = true;
             }
@@ -4434,6 +4044,80 @@ document.addEventListener('input', function (e) {
             `;
         }
         
+    }
+
+    function headerSubStoreChange(element, type = 'from')
+    {
+        let currentOrder = @json(isset($order) ? $order : null);
+        let currentVal = element.value;
+        let selected_id = '';
+        let only_id = '';
+        let newTargetHTML = ``;
+        let targetElement = document.getElementById('station_from_id_input');
+        let targetElementHeader = document.getElementById('from_station_header_label');
+        if (type === 'to') {
+            targetElement = document.getElementById('station_to_id_input');
+            targetElementHeader = document.getElementById('to_station_header_label');
+        }
+        $.ajax({
+            url: "{{route('stations.stocking.get.subStore')}}",
+            method: 'GET',
+            dataType: 'json', 
+            data: {
+                sub_store_id : currentVal,
+                selected_id : selected_id,
+                only_id : only_id
+            },
+            success: function(data) {
+                if (data.status === 'success' && data.data.length > 0) {
+                    let newTargetHTML = ``;
+                    data.data.forEach(station => {
+                        newTargetHTML += `<option value = "${station.id}">${station.name}</option>`
+                    });
+                    targetElement.innerHTML = newTargetHTML;
+                    targetElementHeader.classList.remove('d-none');
+                    enableDisableQtButton();
+                } else {
+                    targetElement.innerHTML = newTargetHTML;
+                    targetElementHeader.classList.add('d-none');
+                    enableDisableQtButton();
+                }
+            },
+            error: function(xhr) {
+                targetElement.innerHTML = newTargetHTML;
+                targetElementHeader.classList.add('d-none');
+                enableDisableQtButton();
+            }
+        });
+    }
+
+    function checkSameLocationCondition()
+    {
+        const currentFromLocation = $("#store_from_id_input").val();
+        const currentToLocation = $("#store_to_id_input").val();
+
+        const currentFromStore = $("#sub_store_from_id_input").val();
+        const currentToStore = $("#sub_store_to_id_input").val();
+
+        const currentFromStation = $("#station_from_id_input").val();
+        const currentToStation = $("#station_to_id_input").val();
+
+        const fromPoint = currentFromLocation + "-" + currentFromStore + "-" + currentFromStation;
+        const toPoint = currentToLocation + "-" + currentToStore + "-" + currentToStation;
+
+        if (fromPoint == toPoint) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+    
+    function setSubStoreForSubContracting()
+    {
+        const issueType = $("#issue_type_input").val();
+        if (issueType === 'Sub Contracting') {
+            $("#sub_store_to_id_input").val($("#vendor_store_id_input").val());
+        }
     }
 
 </script>

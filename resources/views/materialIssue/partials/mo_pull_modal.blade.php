@@ -69,8 +69,11 @@
                                         <th>Document No.</th>
                                         <th>Document Date</th>
                                         <th>Location</th>
+                                        <th>Store</th>
                                         <th>Station</th>
-                                        <th>Item</th>
+                                        <th>SO No.</th>
+                                        <th>Item Code</th>
+                                        <th>Item Name</th>
                                         <th>Attributes</th>
                                         <th>UOM</th>
                                         <th>Quantity</th>

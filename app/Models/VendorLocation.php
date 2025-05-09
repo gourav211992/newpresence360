@@ -9,7 +9,7 @@ class VendorLocation extends Model
 {
     use HasFactory;
 
-    protected $table = 'erp_vendor_locations';
+    protected $table = 'erp_vendor_stores';
 
     protected $fillable = [
         'vendor_id',

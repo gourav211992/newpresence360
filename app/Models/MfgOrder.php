@@ -41,12 +41,8 @@ class MfgOrder extends Model
         'revision_date', 
         'remarks', 
         'approval_level',
-        'sf_item_id',
-        'sf_item_attributes',
-        'sf_qty'
+        'is_last_station'
     ];
-
-    protected $casts = ['sf_item_attributes' => 'array'];
 
     protected $appends = [
         'so_tracking_required'
@@ -164,11 +160,6 @@ class MfgOrder extends Model
         return $this->hasMany(MoProduct::class, 'mo_id');
     }
     
-    public function moProductions()
-    {
-        return $this->hasMany(MoProductionItem::class, 'mo_id');
-    }
-    
     public function moItems()
     {
         return $this->hasMany(MoItem::class, 'mo_id');
@@ -187,10 +178,5 @@ class MfgOrder extends Model
     public function item()
     {
         return $this->belongsTo(Item::class, 'item_id');
-    }
-
-    public function sfItem()
-    {
-        return $this->belongsTo(Item::class, 'sf_item_id');
     }
 }

@@ -2,13 +2,17 @@
 
 namespace App\Models;
 
+use App\Helpers\ConstantHelper;
+use App\Traits\DateFormatTrait;
+use App\Traits\DefaultGroupCompanyOrg;
+use App\Traits\FileUploadTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class GateEntryHeaderHistory extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, DateFormatTrait, SoftDeletes, FileUploadTrait, DefaultGroupCompanyOrg;
 
     protected $table = 'erp_gate_entry_headers_history';
 
@@ -91,12 +95,12 @@ class GateEntryHeaderHistory extends Model
 
     public function gateEntry()
     {
-        return $this->belongsTo(gateEntryHeader::class, 'header_id');
+        return $this->belongsTo(GateEntryHeader::class, 'header_id');
     }
 
     public function gateEntryHeader()
     {
-        return $this->belongsTo(gateEntryHeader::class);
+        return $this->belongsTo(GateEntryHeader::class);
     }
 
     public function book()
@@ -116,12 +120,12 @@ class GateEntryHeaderHistory extends Model
 
     public function items()
     {
-        return $this->hasMany(gateEntryDetailHistory::class, 'source_id');
+        return $this->hasMany(GateEntryDetailHistory::class, 'header_id');
     }
 
     public function attributes()
     {
-        return $this->hasMany(gateEntryAttributeHistory::class, 'source_id');
+        return $this->hasMany(GateEntryAttributeHistory::class, 'source_id');
     }
 
     public function mrn_ted()
@@ -181,6 +185,49 @@ class GateEntryHeaderHistory extends Model
     public function getTotalExpAssessmentAmountAttribute()
     {
         return ($this->total_item_amount + $this->total_taxes - $this->total_discount);
+    }
+
+    public function addresses()
+    {
+        return $this->morphMany(ErpAddress::class, 'addressable', 'addressable_type', 'addressable_id');
+    }
+    public function latestBillingAddress()
+    {
+        return $this->addresses()->where('type', 'billing')->latest()->first();
+    }
+
+    public function getDisplayStatusAttribute()
+    {
+        $status = str_replace('_', ' ', $this->document_status);
+        return ucwords($status);
+    }
+
+    public function getDocumentStatusAttribute()
+    {
+        if ($this->attributes['document_status'] == ConstantHelper::APPROVAL_NOT_REQUIRED) {
+            return ConstantHelper::APPROVED;
+        }
+        return $this->attributes['document_status'];
+    }
+
+    public function latestShippingAddress()
+    {
+        return $this->addresses()->where('type', 'shipping')->latest()->first();
+    }
+
+    public function media()
+    {
+        return $this->morphMany(GateEntryMedia::class, 'model');
+    }
+
+    public function erpStore()
+    {
+        return $this->belongsTo(ErpStore::class, 'store_id');
+    }
+
+    public function paymentTerm()
+    {
+        return $this->belongsTo(PaymentTerm::class,'payment_term_id');
     }
 }
 

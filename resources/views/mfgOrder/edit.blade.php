@@ -48,11 +48,11 @@
                     @if($buttons['revoke'])
                         <button id = "revokeButton" type="button" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i> Revoke</button>
                     @endif  
-                    @if($buttons['close'])
+                    {{-- @if($buttons['close'])
                     <button id="closeButton" type="button" class="btn btn-primary btn-sm mb-50 mb-sm-0">
                         <i data-feather="check-square"></i> Close
                     </button>                    
-                    @endif  
+                    @endif   --}}
 
                     @if($buttons['post'])
                         <button id="postButton" type = "button" class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Post</button>                   
@@ -210,13 +210,6 @@
                                                 </button>
                                             </li>
                                             @endif
-                                            @if($isProduction)
-                                            <li class="nav-item" role="presentation">
-                                                <button class="nav-link fs-5" id="production-items-tab" data-bs-toggle="tab" data-bs-target="#production-items" type="button" role="tab" aria-controls="production-items" aria-selected="false">
-                                                    Production
-                                                </button>
-                                            </li>
-                                            @endif
                                         </ul>
                                     </div>
                                 </div>
@@ -283,11 +276,10 @@
                                         <table id="itemTable2" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
                                             <thead>
                                                 <tr>
-                                                    @if(strtolower($bom->so_tracking_required) == 'yes')
-                                                        <th>Order No.</th>
-                                                    @endif
+                                                    <th>Order No.</th>
                                                     <th>Item Code</th>
                                                     <th>Item Name</th>
+                                                    <th>Item Type</th>
                                                     <th>Attributes</th>
                                                     <th>UOM</th>
                                                     <th class="text-end">Required Qty</th>
@@ -372,58 +364,7 @@
                                     </div>
                                 </div>
                                 @endif
-                                @if($isProduction)
-                                <div class="tab-pane fade" id="production-items" role="tabpanel" aria-labelledby="product-details-tab">
-                                    <div class="table-responsive pomrnheadtffotsticky">
-                                    <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
-                                        <thead>
-                                            <tr>
-                                                <th width="150px">Product Code</th>
-                                                <th width="300px">Product Name</th>
-                                                <th>Attributes</th>
-                                                <th >UOM</th>
-                                                <th class="text-end">Required Qty</th>
-                                                @if(!in_array($bom->document_status,[ConstantHelper::CLOSED, ConstantHelper::POSTED]))
-                                                    <th class="text-end">Available Stock</th>
-                                                @endif
-                                                <th class="text-end">Produced Qty</th>
-                                                @if(in_array($bom->document_status,[ConstantHelper::CLOSED, ConstantHelper::POSTED]))
-                                                    <th class="text-end">Rate</th>
-                                                    <th class="text-end">Value</th>
-                                                @endif
-                                                {{-- @if(!in_array($bom->document_status,[ConstantHelper::CLOSED, ConstantHelper::POSTED]))
-                                                <th class="text-end">To be Produced</th>
-                                                @endif --}}
-                                            </tr>
-                                        </thead>
-                                        <tbody class="mrntableselectexcel">
-                                            @include('mfgOrder.partials.production-item-row')
-                                        </tbody>
-                                        {{-- <tfoot>
-                                            <tr valign="top">
-                                                <td colspan="10">
-                                                <table class="table border" id="itemDetailTable">
-                                                    <tr>
-                                                        <td class="p-0">
-                                                            <h6 class="text-dark mb-0 bg-light-primary py-1 px-50"><strong>Item Details</strong></h6>
-                                                        </td>
-                                                    </tr>
-                                                    <tr class="item_detail_row">
-                                                        
-                                                    </tr>
-                                                    <tr class="item_detail_row">
-                                                        
-                                                    </tr>
-                                                </table>
-                                                </td>
-                                            </tr>
-                                        </tfoot> --}}
-                                    </table>
-                                    </div>
-                                </div>
-                                @endif
                             </div>
-
                         </div>
                     </div>
 
@@ -1332,45 +1273,6 @@ $(document).on('click', '.soProcess', (e) => {
             }
         });
     });
-});
-
-// Item Attribute
-$(document).on('click','.header_attr select[name*="[attr_name]"]', (e) => {
-    let notSelectedAttr = $("select[name*='[attr_name]']").filter(function () {
-        return !$(this).val();
-    });
-    if(!notSelectedAttr.length) {
-        let itemId = $("#head_item_id").val() || '';
-        let uomId = $("#head_uom_id").val() || '';
-        let headerSelectedAttr = [];
-        if($(".heaer_item").find("input[name*='[attr_group_id]']").length) {
-            $(".heaer_item").find("input[name*='[attr_group_id]']").each(function(index1,item){
-                let attr_group_id = $(item).val();
-                let attr_val = $(`select[name="attributes[${index1+1}][attr_group_id][${attr_group_id}][attr_name]"]`).val();
-                headerSelectedAttr.push({
-                    'attr_name' : attr_group_id,
-                    'attr_value' : attr_val || ''
-                });
-            });
-        }
-        let actionUrl = '{{route("mo.item.attr.change")}}'+'?item_id='+itemId+'&uom_id='+uomId+'&header_attr='+JSON.stringify(headerSelectedAttr); 
-        fetch(actionUrl).then(response => {
-            return response.json().then(data => {
-                if (data.status == 200) {
-                  $('tbody.mrntableselectexcel').html(data?.data?.component_html);
-                  let qty = Number($("input[name='quantity']").val()) || 1;
-                  updateItemsQty(qty);
-                  fetchItemDetails($("tr[id*='row_']").first());
-                } else {
-                    Swal.fire({
-                        title: 'Error!',
-                        text: data.message,
-                        icon: 'error',
-                    });
-                }
-            });
-        });
-    }
 });
 
 // Close modal

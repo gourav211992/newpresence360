@@ -41,10 +41,11 @@
                                         <thead>
                                             <tr>
                                                 <th>S.No</th>
-                                                <th>Name</th>
-                                                <th>Levels</th>
-                                                <th>Status</th>
-                                                <th>Action</th>
+                                                <th>LOCATION</th>
+                                                <th>WARE HOUSE</th>
+                                                <th>STRUCTURE</th>
+                                                <th>STATUS</th>
+                                                <th>ACTION</th>
                                             </tr>
                                         </thead>
                                         <tbody></tbody>
@@ -78,8 +79,12 @@ $(document).ready(function() {
             },
             columns: [
                 { data: 'DT_RowIndex', orderable: false, searchable: false },
-                { data: 'name', render: renderData },
-                { data: 'levels', render: renderData },
+                { data: 'store', render: renderData },
+                { data: 'sub_store', render: renderData },
+                { data: 'levels', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+                    $(td).addClass('no-wrap');
+                    }
+                },
                 { data: 'status', orderable: false },
                 { data: 'action', orderable: false, searchable: false }
             ],

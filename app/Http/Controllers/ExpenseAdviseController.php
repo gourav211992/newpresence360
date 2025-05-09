@@ -73,6 +73,7 @@ use DateTime;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\DB as FacadesDB;
 use Maatwebsite\Excel\Facades\Excel;
+use stdClass;
 
 class ExpenseAdviseController extends Controller
 {
@@ -95,6 +96,8 @@ class ExpenseAdviseController extends Controller
         $parentUrl = request() -> segments()[0];
 
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
+        $orderType = ConstantHelper::EXPENSE_ADVISE_SERVICE_ALIAS;
+        request() -> merge(['type' => $orderType]);
         if (request()->ajax()) {
             $user = Helper::getAuthenticatedUser();
             $organization = Organization::where('id', $user->organization_id)->first();
@@ -396,15 +399,6 @@ class ExpenseAdviseController extends Controller
                             $so_id = $poDetail->so_id;
                         }
                     }
-                    // if(isset($component['so_item_id']) && $component['so_item_id']){
-                    //     $soDetail =  ErpSoItem::find($component['so_item_id']);
-                    //     $so_detail_id = $soDetail->id ?? null;
-                    //     $saleOrderId = $soDetail->sale_order_id;
-                    //     if($soDetail){
-                    //         $soDetail->invoice_qty += $component['accepted_qty'];
-                    //         $soDetail->save();
-                    //     }
-                    // }
                     $inventory_uom_id = null;
                     $inventory_uom_code = null;
                     $inventory_uom_qty = 0.00;
@@ -432,7 +426,6 @@ class ExpenseAdviseController extends Controller
                     $expenseItemArr[] = [
                         'expense_header_id' => $expense->id,
                         'purchase_order_item_id' => (isset($component['po_detail_id']) && $component['po_detail_id']) ?? null,
-                        // 'sale_order_item_id' => (isset($component['so_item_id']) && $component['so_item_id']) ?? null,
                         'so_id' => $so_id,
                         'item_id' => $component['item_id'] ?? null,
                         'item_code' => $component['item_code'] ?? null,
@@ -529,7 +522,6 @@ class ExpenseAdviseController extends Controller
                     $expenseDetail->group_currency = $expenseItem['group_currency_id'];
                     $expenseDetail->exchange_rate_to_group_currency = $expenseItem['group_currency_exchange_rate'];
                     $expenseDetail->remark = $expenseItem['remark'];
-                    $expenseDetail->so_item_id = json_encode($expenseItem['so_item_id']); // Encode back to JSON
                     $expenseDetail->save();
                     $_key = $_key + 1;
                     $component = $request->all()['components'][$_key] ?? [];
@@ -796,6 +788,9 @@ class ExpenseAdviseController extends Controller
         $revisionNumbers = $approvalHistory->pluck('revision_number')->unique()->values()->all();
         $costCenters = CostCenter::where('organization_id', $user->organization_id)->get();
         $locations = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
+        $erpStores = ErpStore::where('organization_id', $user->organization_id)
+            ->orderBy('id', 'DESC')
+            ->get();
         return view($view, [
             'mrn' => $expense,
             'user' => $user,
@@ -807,7 +802,8 @@ class ExpenseAdviseController extends Controller
             'totalItemValue' => $totalItemValue,
             'revision_number' => $revision_number,
             'approvalHistory' => $approvalHistory,
-            'locations'=>$locations
+            'locations'=>$locations,
+            'erpStores' => $erpStores,
         ]);
     }
 
@@ -852,7 +848,8 @@ class ExpenseAdviseController extends Controller
                     ['model_type' => 'sub_detail', 'model_name' => 'ExpenseItemAttribute', 'relation_column' => 'expense_detail_id'],
                     ['model_type' => 'sub_detail', 'model_name' => 'ExpenseTed', 'relation_column' => 'expense_detail_id']
                 ];
-                $a = Helper::documentAmendment($revisionData, $id);
+                // $a = Helper::documentAmendment($revisionData, $id);
+                $this->amendmentSubmit($request, $id);
             }
 
             $keys = ['deletedItemDiscTedIds', 'deletedHeaderDiscTedIds', 'deletedHeaderExpTedIds', 'deletedExpenseItemIds'];
@@ -983,14 +980,6 @@ class ExpenseAdviseController extends Controller
                         if($poDetail){
                             $poDetail->grn_qty += floatval($component['accepted_qty']);
                             $poDetail->save();
-                        }
-                    }
-                    if(isset($component['so_item_id']) && $component['so_item_id']){
-                        $soDetail =  ErpSoItem::find($component['so_item_id']);
-                        $so_detail_id = $soDetail->id ?? null;
-                        if($soDetail){
-                            $soDetail->invoice_qty += $component['accepted_qty'];
-                            $soDetail->save();
                         }
                     }
                     $inventory_uom_id = null;
@@ -2076,9 +2065,9 @@ class ExpenseAdviseController extends Controller
 
             $revisionNumber = "Expense".$randNo;
             $expenseHeader->revision_number += 1;
-            $expenseHeader->status = "draft";
-            $expenseHeader->document_status = "draft";
-            $expenseHeader->save();
+            // $expenseHeader->status = "draft";
+            // $expenseHeader->document_status = "draft";
+            // $expenseHeader->save();
 
             /*Create document submit log*/
             if ($expenseHeader->document_status == ConstantHelper::SUBMITTED) {
@@ -2090,7 +2079,9 @@ class ExpenseAdviseController extends Controller
                 $revisionNumber = $expenseHeader->revision_number ?? 0;
                 $actionType = 'submit'; // Approve // reject // submit
                 $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType);
+                $expenseHeader->document_status = $approveDocument['approvalStatus'];
             }
+            $expenseHeader->save();
 
             DB::commit();
             return response()->json([
@@ -2254,10 +2245,19 @@ class ExpenseAdviseController extends Controller
         } else {
             $vendorId = $vendorId[0];
             $vendor = Vendor::find($vendorId);
-            $vendor->billing = $vendor->latestBillingAddress();
-            $vendor->shipping = $vendor->latestShippingAddress();
-            $vendor->currency = $vendor->currency;
-            $vendor->paymentTerm = $vendor->paymentTerm;
+            if ($vendor) {
+                $vendor->billing = $vendor->addresses()
+                    ->whereIn('type', ['billing', 'both'])
+                    ->latest()
+                    ->first();
+                $vendor->shipping = $vendor->addresses()
+                    ->whereIn('type', ['shipping', 'both'])
+                    ->latest()
+                    ->first();
+
+                $vendor->currency = $vendor->currency;
+                $vendor->paymentTerm = $vendor->paymentTerm;
+            }
         }
         $html = view('procurement.expense-advise.partials.po-item-row', ['poItems' => $poItems, 'costCenters' => $costCenters])->render();
         return response()->json(['data' => ['pos' => $html, 'vendor' => $vendor,'finalDiscounts' => $finalDiscounts,'finalExpenses' => $finalExpenses], 'status' => 200, 'message' => "fetched!"]);
@@ -2804,5 +2804,168 @@ class ExpenseAdviseController extends Controller
 
     }
 
+    public function expenseAdviseReport(Request $request)
+    {
+        $user = Helper::getAuthenticatedUser();
+        $pathUrl = route('expense-adv.index');
+        $orderType = ConstantHelper::EXPENSE_ADVISE_SERVICE_ALIAS;
+        $expenseAdvises = ExpenseHeader::with(['items'])
+            // ->where('document_type', $orderType)
+            ->bookViewAccess($pathUrl)
+            ->withDefaultGroupCompanyOrg()
+            ->withDraftListingLogic()
+            ->orderByDesc('id');
+
+        // Vendor Filter
+        $expenseAdvises = $expenseAdvises->when($request->vendor, function ($vendorQuery) use ($request) {
+            $vendorQuery->where('vendor_id', $request->vendor);
+        });
+
+        // PO No Filter
+        $expenseAdvises = $expenseAdvises->when($request->po_no, function ($poQuery) use ($request) {
+            $poQuery->where('purchase_order_id', $request->po_no);
+        });
+
+        // Document Status Filter
+        $expenseAdvises = $expenseAdvises->when($request->status, function ($docStatusQuery) use ($request) {
+            $searchDocStatus = [];
+            if ($request->status === ConstantHelper::DRAFT) {
+                $searchDocStatus = [ConstantHelper::DRAFT];
+            } else if ($request->status === ConstantHelper::SUBMITTED) {
+                $searchDocStatus = [ConstantHelper::SUBMITTED, ConstantHelper::PARTIALLY_APPROVED];
+            } else {
+                $searchDocStatus = [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED];
+            }
+            $docStatusQuery->whereIn('document_status', $searchDocStatus);
+        });
+
+        // Date Filters
+        $dateRange = $request->date_range ?? Carbon::now()->startOfMonth()->format('Y-m-d') . " to " . Carbon::now()->endOfMonth()->format('Y-m-d');
+        $expenseAdvises = $expenseAdvises->when($dateRange, function ($dateRangeQuery) use ($request, $dateRange) {
+            $dateRanges = explode('to', $dateRange);
+            if (count($dateRanges) == 2) {
+                $fromDate = Carbon::parse(trim($dateRanges[0]))->format('Y-m-d');
+                $toDate = Carbon::parse(trim($dateRanges[1]))->format('Y-m-d');
+                $dateRangeQuery->whereDate('document_date', ">=", $fromDate)->where('document_date', '<=', $toDate);
+            }
+        });
+
+        // Item Id Filter
+        // $materialReceipts = $materialReceipts->when($request->item_id, function ($itemQuery) use ($request) {
+        //     $itemQuery->withWhereHas('items', function ($itemSubQuery) use ($request) {
+        //         $itemSubQuery->where('item_id', $request->item_id)
+        //             // Compare Item Category
+        //             ->when($request->item_category_id, function ($itemCatQuery) use ($request) {
+        //                 $itemCatQuery->whereHas('item', function ($itemRelationQuery) use ($request) {
+        //                     $itemRelationQuery->where('category_id', $request->item_category_id)
+        //                         // Compare Item Sub Category
+        //                         ->when($request->item_sub_category_id, function ($itemSubCatQuery) use ($request) {
+        //                             $itemSubCatQuery->where('subcategory_id', $request->item_sub_category_id);
+        //                         });
+        //                 });
+        //             });
+        //     });
+        // });
+
+        $expenseAdvises->with([
+            'items' => function ($query) use ($request) {
+                $query
+                    ->when($request->item_id, function ($subQuery) use ($request) {
+                        $subQuery->where('item_id', $request->item_id);
+                    })
+                    ->when($request->so_no, function ($subQuery) use ($request) {
+                        $subQuery->where('so_id', $request->so_no);
+                    })
+                    ->whereHas('item', function ($q) use ($request) {
+                        $q->when($request->m_category_id, function ($subQ) use ($request) {
+                            $subQ->where('category_id', $request->m_category_id);
+                        });
+
+                        $q->when($request->m_subcategory_id, function ($subQ) use ($request) {
+                            $subQ->where('category_id', $request->m_subcategory_id);
+                        });
+                    });
+            },
+            'items.item',
+            'items.item.category',
+            'items.item.subCategory',
+            'vendor',
+            'items.so',
+            'po'
+        ])
+        ->where('organization_id', $user->organization_id);
+
+
+        $expenseAdvises = $expenseAdvises->get();
+        $processedExpenseAdvises = collect([]);
+
+        foreach ($expenseAdvises as $expenseAdvise) {
+            foreach ($expenseAdvise->items as $expenseAdviseItem) {
+                $reportRow = new stdClass();
+
+                // Header Details
+                $header = $expenseAdviseItem->expenseHeader;
+                $total_item_value = (($expenseAdviseItem?->rate ?? 0.00) * ($expenseAdviseItem?->accepted_qty ?? 0.00)) - ($expenseAdviseItem?->discount_amount ?? 0.00);
+                $reportRow->id = $expenseAdviseItem->id;
+                $reportRow->book_code = $header->book_code;
+                $reportRow->document_number = $header->document_number;
+                $reportRow->document_date = $header->document_date;
+                $reportRow->po_no = !empty($header->po?->book_code) && !empty($header->po?->document_number)
+                                    ? $header->po?->book_code . ' - ' . $header->po?->document_number
+                                    : '';
+                $reportRow->so_no = !empty($header->so?->book_code) && !empty($header->so?->document_number)
+                                    ? $header->so?->book_code . ' - ' . $header->so?->document_number
+                                    : '';
+                $reportRow->vendor_name = $header->vendor ?-> company_name;
+                $reportRow->vendor_rating = null;
+                $reportRow->category_name = $expenseAdviseItem->item ?->category ?-> name;
+                $reportRow->sub_category_name = $expenseAdviseItem->item ?->category ?-> name;
+                $reportRow->item_type = $expenseAdviseItem->item ?->type;
+                $reportRow->sub_type = null;
+                $reportRow->item_name = $expenseAdviseItem->item ?->item_name;
+                $reportRow->item_code = $expenseAdviseItem->item ?->item_code;
+
+                // Amount Details
+                $reportRow->receipt_qty = number_format($expenseAdviseItem->accepted_qty, 2);
+                $reportRow->store_name = $expenseAdviseItem?->erpStore?->store_name;
+                $reportRow->rate = number_format($expenseAdviseItem->rate);
+                $reportRow->basic_value = number_format($expenseAdviseItem->basic_value, 2);
+                $reportRow->item_discount = number_format($expenseAdviseItem->discount_amount, 2);
+                $reportRow->header_discount = number_format($expenseAdviseItem->header_discount_amount, 2);
+                $reportRow->item_amount = number_format($total_item_value, 2);
+
+                // Attributes UI
+                // $attributesUi = '';
+                // if (count($mrnItem->item_attributes) > 0) {
+                //     foreach ($mrnItem->item_attributes as $mrnAttribute) {
+                //         $attrName = $mrnAttribute->attribute_name;
+                //         $attrValue = $mrnAttribute->attribute_value;
+                //         $attributesUi .= "<span class='badge rounded-pill badge-light-primary' > $attrName : $attrValue </span>";
+                //     }
+                // } else {
+                //     $attributesUi = 'N/A';
+                // }
+                // $reportRow->item_attributes = $attributesUi;
+
+                // Document Status
+                $reportRow->status = $header->document_status;
+                $processedExpenseAdvises->push($reportRow);
+            }
+        }
+
+        return DataTables::of($processedExpenseAdvises)
+            ->addIndexColumn()
+            ->editColumn('status', function ($row) use ($orderType) {
+                $statusClass = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->status ?? ConstantHelper::DRAFT];
+                $displayStatus = ucfirst($row->status);
+                return "
+                    <div style='text-align:right;'>
+                        <span class='badge rounded-pill $statusClass'>$displayStatus</span>
+                    </div>
+                ";
+            })
+            ->rawColumns(['status'])
+            ->make(true);
+    }
 
 }

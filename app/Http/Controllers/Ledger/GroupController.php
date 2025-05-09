@@ -23,10 +23,7 @@ class GroupController extends Controller
      */
     public function index()
     {
-        $parentGroup = Group::whereNull("parent_group_id")->where(function($q){
-            $q->whereNull('organization_id');
-            $q->OrWhere('organization_id', Helper::getAuthenticatedUser()->organization_id);
-        })->with([
+        $parentGroup = Helper::getGroupsQuery()->whereNull("parent_group_id")->with([
             'parent' => function ($q) {
                 $q->select('id', 'name');
             }
@@ -73,10 +70,7 @@ class GroupController extends Controller
         }
         $allIds = array_unique($allIds);
         
-        $parents = Group::where(function($q){
-            $q->whereNull('organization_id');
-            $q->OrWhere('organization_id', Helper::getAuthenticatedUser()->organization_id);
-        })->whereNotIn('id',$allIds)
+        $parents = Helper::getGroupsQuery()->whereNotIn('id',$allIds)
         ->get();
 
 
@@ -121,12 +115,7 @@ class GroupController extends Controller
             }
             
         
-        $groups = Group::where('name', $request->name)
-    ->where(function ($query) {
-        $query->whereNull('organization_id')
-              ->orWhere('organization_id', Helper::getAuthenticatedUser()->organization_id);
-    })
-    ->count();
+        $groups = Helper::getGroupsQuery()->where('name', $request->name)->count();
 
         // Find the organization based on the user's organization_id
         // $organization = Organization::where('id', Helper::getAuthenticatedUser()->organization_id)->first();
@@ -178,10 +167,7 @@ else{
         }
         $allIds = array_unique($allIds);
         
-        $parents = Group::where(function($q){
-            $q->whereNull('organization_id');
-            $q->OrWhere('organization_id', Helper::getAuthenticatedUser()->organization_id);
-        })->whereNotIn('id',$allIds)
+        $parents = Helper::getGroupsQuery()->whereNotIn('id',$allIds)
         ->get();
 
 
@@ -227,12 +213,8 @@ else{
             }
             
            
-     $groups = Group::where('name', $request->name)
+     $groups = Helper::getGroupsQuery()->where('name', $request->name)
     ->where('id', '!=', $id) // Correcting 'whereNot' to 'where'
-    ->where(function ($query) {
-        $query->whereNull('organization_id')
-              ->orWhere('organization_id', Helper::getAuthenticatedUser()->organization_id);
-    })
     ->count();
 
 

@@ -82,7 +82,7 @@
                                                 </div>
                                             </div>
 
-                                            <div class="row align-items-center mb-1">
+                                            <!-- <div class="row align-items-center mb-1">
                                                 <div class="col-md-3">
                                                     <label class="form-label">Store Location Type<span class="text-danger">*</span></label>
                                                 </div>
@@ -98,7 +98,7 @@
                                                         <div class="invalid-feedback d-block">{{ $message }}</div>
                                                     @enderror
                                                 </div>
-                                            </div>
+                                            </div> -->
 
                                             <div class="row align-items-center mb-1">
                                                 <div class="col-md-3">

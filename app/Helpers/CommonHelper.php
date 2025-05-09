@@ -32,7 +32,7 @@ class CommonHelper
     ];
 
     
-    const INTERVIEW_SCHEDULED = 'interview-scheduled';
+    const SCHEDULED = 'scheduled';
     const ASSIGNED = 'assigned';
     const APPROVED_FORWARD = 'approved-forward';
     const FINAL_APPROVED = 'final-approved';
@@ -41,8 +41,6 @@ class CommonHelper
     const REVOKED = 'revoked';
     const QUALIFIED = 'qualified';
     const NOT_QUALIFIED = 'not-qualified';
-    const CANDIDATE_REJECTED = 'candidate-rejected';
-    const CANDIDATE_APPROVED = 'candidate-approved';
     const OPEN = 'open';
     const JOB = 'job';
 	const INTERVIEW = 'interview';
@@ -50,6 +48,10 @@ class CommonHelper
 	const REJECTED = 'rejected';
 	const PENDING = 'pending';
 	const CLOSED = 'closed';
+	const SELECTED = 'selected';
+	const INTERNAL = 'internal';
+	const SELF = 'self';
+	const REFER = 'refer';
 
     const JOB_REQUEST_STATUS = [
         self::APPROVED_FORWARD,
@@ -62,6 +64,20 @@ class CommonHelper
     const JOB_STATUS = [
         self::OPEN,
         self::CLOSED,
+    ];
+
+    const INTERVIEW_STATUS = [
+        self::SCHEDULED,
+        self::SELECTED,
+        self::REJECTED,
+        self::ONHOLD,
+    ];
+
+    const CANDIDATE_STATUS = [
+        self::ASSIGNED,
+        self::QUALIFIED,
+        self::NOT_QUALIFIED,
+        self::ONHOLD,
     ];
 
     const EMPLOYEMENT_TYPE = [
@@ -78,6 +94,12 @@ class CommonHelper
     public static function dateFormat($date)
     {
         $date = $date ? date('d-m-Y', strtotime($date)) : '';
+        return $date;
+    }
+
+    public static function timeFormat($date)
+    {
+        $date = $date ? date('h:i A', strtotime($date)) : '';
         return $date;
     }
 }

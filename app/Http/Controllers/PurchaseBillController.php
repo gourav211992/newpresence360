@@ -70,6 +70,7 @@ use Carbon\Carbon;
 use DateTime;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Maatwebsite\Excel\Facades\Excel;
+use stdClass;
 
 class PurchaseBillController extends Controller
 {
@@ -87,7 +88,8 @@ class PurchaseBillController extends Controller
     {
         $parentUrl = request() -> segments()[0];
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
-
+        $orderType = ConstantHelper::PB_SERVICE_ALIAS;
+        request() -> merge(['type' => $orderType]);
         if (request()->ajax()) {
             $user = Helper::getAuthenticatedUser();
             $organization = Organization::where('id', $user->organization_id)->first();
@@ -789,6 +791,9 @@ class PurchaseBillController extends Controller
             ->first();
         $orgAddress = $organizationAddress?->display_address;
         $costCenters = CostCenter::where('organization_id', $user->organization_id)->get();
+        $erpStores = ErpStore::where('organization_id', $user->organization_id)
+            ->orderBy('id', 'DESC')
+            ->get();
 
         return view($view, [
             'deliveryAddress'=> $deliveryAddress,
@@ -803,7 +808,8 @@ class PurchaseBillController extends Controller
             'totalItemValue' => $totalItemValue,
             'revision_number' => $revision_number,
             'approvalHistory' => $approvalHistory,
-            'locations'=> $locations
+            'locations'=> $locations,
+            'erpStores' => $erpStores
         ]);
     }
 
@@ -847,7 +853,8 @@ class PurchaseBillController extends Controller
                     ['model_type' => 'sub_detail', 'model_name' => 'PbItemAttribute', 'relation_column' => 'detail_id'],
                     ['model_type' => 'sub_detail', 'model_name' => 'PbTed', 'relation_column' => 'detail_id']
                 ];
-                $a = Helper::documentAmendment($revisionData, $id);
+                // $a = Helper::documentAmendment($revisionData, $id);
+                $this->amendmentSubmit($request, $id);
             }
 
             $keys = ['deletedItemDiscTedIds', 'deletedHeaderDiscTedIds', 'deletedHeaderExpTedIds', 'deletedPbItemIds'];
@@ -2206,8 +2213,8 @@ class PurchaseBillController extends Controller
 
             $revisionNumber = "PB" . $randNo;
             $pbHeader->revision_number += 1;
-            $pbHeader->document_status = "draft";
-            $pbHeader->save();
+            // $pbHeader->document_status = "draft";
+            // $pbHeader->save();
 
             /*Create document submit log*/
             if ($pbHeader->document_status == ConstantHelper::SUBMITTED) {
@@ -2219,7 +2226,9 @@ class PurchaseBillController extends Controller
                 $revisionNumber = $pbHeader->revision_number ?? 0;
                 $actionType = 'submit'; // Approve // reject // submit
                 $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType);
+                $pbHeader->document_status = $approveDocument['approvalStatus'];
             }
+            $pbHeader->save();
 
             DB::commit();
             return response()->json([
@@ -2762,5 +2771,176 @@ class PurchaseBillController extends Controller
 
     }
 
+    public function purchaseBillReport(Request $request)
+    {
+        $user = Helper::getAuthenticatedUser();
+        $pathUrl = route('purchase-bill.index');
+        $orderType = ConstantHelper::PB_SERVICE_ALIAS;
+        $purchaseBills = PbHeader::with(['items'])
+            // ->where('document_type', $orderType)
+            ->bookViewAccess($pathUrl)
+            ->withDefaultGroupCompanyOrg()
+            ->withDraftListingLogic()
+            ->orderByDesc('id');
+
+        // Vendor Filter
+        $purchaseBills = $purchaseBills->when($request->vendor, function ($vendorQuery) use ($request) {
+            $vendorQuery->where('vendor_id', $request->vendor);
+        });
+
+        // PO No Filter
+        $purchaseBills = $purchaseBills->when($request->mrn_no, function ($mrnQuery) use ($request) {
+            $mrnQuery->where('mrn_header_id', $request->mrn_no);
+        });
+
+        // Document Status Filter
+        $purchaseBills = $purchaseBills->when($request->status, function ($docStatusQuery) use ($request) {
+            $searchDocStatus = [];
+            if ($request->status === ConstantHelper::DRAFT) {
+                $searchDocStatus = [ConstantHelper::DRAFT];
+            } else if ($request->status === ConstantHelper::SUBMITTED) {
+                $searchDocStatus = [ConstantHelper::SUBMITTED, ConstantHelper::PARTIALLY_APPROVED];
+            } else {
+                $searchDocStatus = [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED];
+            }
+            $docStatusQuery->whereIn('document_status', $searchDocStatus);
+        });
+
+        // Date Filters
+        $dateRange = $request->date_range ?? Carbon::now()->startOfMonth()->format('Y-m-d') . " to " . Carbon::now()->endOfMonth()->format('Y-m-d');
+        $purchaseBills = $purchaseBills->when($dateRange, function ($dateRangeQuery) use ($request, $dateRange) {
+            $dateRanges = explode('to', $dateRange);
+            if (count($dateRanges) == 2) {
+                $fromDate = Carbon::parse(trim($dateRanges[0]))->format('Y-m-d');
+                $toDate = Carbon::parse(trim($dateRanges[1]))->format('Y-m-d');
+                $dateRangeQuery->whereDate('document_date', ">=", $fromDate)->where('document_date', '<=', $toDate);
+            }
+        });
+
+        // Item Id Filter
+        // $purchaseBills = $purchaseBills->when($request->item_id, function ($itemQuery) use ($request) {
+        //     $itemQuery->withWhereHas('items', function ($itemSubQuery) use ($request) {
+        //         $itemSubQuery->where('item_id', $request->item_id)
+        //             // Compare Item Category
+        //             ->when($request->item_category_id, function ($itemCatQuery) use ($request) {
+        //                 $itemCatQuery->whereHas('item', function ($itemRelationQuery) use ($request) {
+        //                     $itemRelationQuery->where('category_id', $request->item_category_id)
+        //                         // Compare Item Sub Category
+        //                         ->when($request->item_sub_category_id, function ($itemSubCatQuery) use ($request) {
+        //                             $itemSubCatQuery->where('subcategory_id', $request->item_sub_category_id);
+        //                         });
+        //                 });
+        //             });
+        //     });
+        // });
+
+        $purchaseBills->with([
+            'items' => function ($query) use ($request) {
+                $query
+                    ->when($request->item_id, function ($subQuery) use ($request) {
+                        $subQuery->where('item_id', $request->item_id);
+                    })
+                    ->when($request->so_no, function ($subQuery) use ($request) {
+                        $subQuery->where('so_id', $request->so_no);
+                    })
+                    ->whereHas('item', function ($q) use ($request) {
+                        $q->when($request->m_category_id, function ($subQ) use ($request) {
+                            $subQ->where('category_id', $request->m_category_id);
+                        });
+
+                        $q->when($request->m_subcategory_id, function ($subQ) use ($request) {
+                            $subQ->where('category_id', $request->m_subcategory_id);
+                        });
+                    });
+            },
+            'items.item',
+            'items.item.category',
+            'items.item.subCategory',
+            'vendor',
+            'items.so',
+            'mrn'
+        ])
+        ->where('organization_id', $user->organization_id);
+
+
+        $purchaseBills = $purchaseBills->get();
+        $processedPurchaseBills = collect([]);
+
+        foreach ($purchaseBills as $pb) {
+            foreach ($pb->items as $pbItem) {
+                $reportRow = new stdClass();
+
+                // Header Details
+                $header = $pbItem->header;
+                $total_item_value = (($pbItem?->rate ?? 0.00) * ($pbItem?->accepted_qty ?? 0.00)) - ($pbItem?->discount_amount ?? 0.00);
+                $reportRow->id = $pbItem->id;
+                $reportRow->book_code = $header->book_code;
+                $reportRow->document_number = $header->document_number;
+                $reportRow->document_date = $header->document_date;
+                $reportRow->mrn_no = !empty($header->mrn?->book_code) && !empty($header->mrn?->document_number)
+                                    ? $header->mrn?->book_code . ' - ' . $header->mrn?->document_number
+                                    : '';
+                $reportRow->ge_no = $header->gate_entry_no;
+                $reportRow->so_no = !empty($header->so?->book_code) && !empty($header->so?->document_number)
+                                    ? $header->so?->book_code . ' - ' . $header->so?->document_number
+                                    : '';
+                $reportRow->lot_no = $header->lot_no;
+                $reportRow->vendor_name = $header->vendor ?-> company_name;
+                $reportRow->vendor_rating = null;
+                $reportRow->category_name = $pbItem->item ?->category ?-> name;
+                $reportRow->sub_category_name = $pbItem->item ?->category ?-> name;
+                $reportRow->item_type = $pbItem->item ?->type;
+                $reportRow->sub_type = null;
+                $reportRow->item_name = $pbItem->item ?->item_name;
+                $reportRow->item_code = $pbItem->item ?->item_code;
+
+                // Amount Details
+                $reportRow->receipt_qty = number_format($pbItem->order_qty, 2);
+                $reportRow->accepted_qty = number_format($pbItem->accepted_qty, 2);
+                $reportRow->rejected_qty = number_format($pbItem->rejected_qty, 2);
+                $reportRow->pr_qty = number_format($pbItem->pr_qty, 2);
+                $reportRow->pr_rejected_qty = number_format($pbItem->pr_rejected_qty, 2);
+                $reportRow->purchase_bill_qty = number_format($pbItem->purchase_bill_qty, 2);
+                $reportRow->store_name = $pbItem?->erpStore?->store_name;
+                $reportRow->sub_store_name = $pbItem?->subStore?->name;
+                $reportRow->rate = number_format($pbItem->rate);
+                $reportRow->basic_value = number_format($pbItem->basic_value, 2);
+                $reportRow->item_discount = number_format($pbItem->discount_amount, 2);
+                $reportRow->header_discount = number_format($pbItem->header_discount_amount, 2);
+                $reportRow->item_amount = number_format($total_item_value, 2);
+
+                // Attributes UI
+                // $attributesUi = '';
+                // if (count($pbItem->item_attributes) > 0) {
+                //     foreach ($pbItem->item_attributes as $pbAttribute) {
+                //         $attrName = $pbAttribute->attribute_name;
+                //         $attrValue = $pbAttribute->attribute_value;
+                //         $attributesUi .= "<span class='badge rounded-pill badge-light-primary' > $attrName : $attrValue </span>";
+                //     }
+                // } else {
+                //     $attributesUi = 'N/A';
+                // }
+                // $reportRow->item_attributes = $attributesUi;
+
+                // Document Status
+                $reportRow->status = $header->document_status;
+                $processedPurchaseBills->push($reportRow);
+            }
+        }
+
+        return DataTables::of($processedPurchaseBills)
+            ->addIndexColumn()
+            ->editColumn('status', function ($row) use ($orderType) {
+                $statusClass = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->status ?? ConstantHelper::DRAFT];
+                $displayStatus = ucfirst($row->status);
+                return "
+                    <div style='text-align:right;'>
+                        <span class='badge rounded-pill $statusClass'>$displayStatus</span>
+                    </div>
+                ";
+            })
+            ->rawColumns(['item_attributes', 'status'])
+            ->make(true);
+    }
 
 }

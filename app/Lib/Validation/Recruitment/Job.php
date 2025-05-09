@@ -32,8 +32,16 @@ class Job
 			'status' => [
 				'required'
 			],
+			'last_apply_date' => [
+				'nullable','date'
+			],
 			'third_party_assessment' => [
 				'required'
+			],
+			'assessment_url' => [
+				'required_if:third_party_assessment,yes',
+				'nullable',
+				'url'
 			],
 			'publish_for' => [
 				'required'
@@ -102,6 +110,8 @@ class Job
 			'job_title_id.required' => 'Job title field is required!',
 			'status.required' => 'Status field is required!',
 			'third_party_assessment.required' => 'Third party assessment field is required!',
+			'assessment_url.required_if' => 'Assessment link field is required!',
+			'assessment_url.url' => 'The assessment link field must be a valid URL.',
 			'publish_for.required' => 'Publish for field is required!',
 			'industry_id.required' => 'Industry field is required!',
 			'work_mode.required' => 'Work mode field is required!',
@@ -167,6 +177,14 @@ class Job
 			'third_party_assessment' => [
 				'required'
 			],
+			'assessment_url' => [
+				'required_if:third_party_assessment,yes',
+				'nullable',
+				'url'
+			],
+			'last_apply_date' => [
+				'nullable','date'
+			],
 			'publish_for' => [
 				'required'
 			],
@@ -231,6 +249,8 @@ class Job
 			'job_title_id.required' => 'Job title field is required!',
 			'status.required' => 'Status field is required!',
 			'third_party_assessment.required' => 'Third party assessment field is required!',
+			'assessment_url.required_if' => 'Assessment link field is required!',
+			'assessment_url.url' => 'The assessment link field must be a valid URL.',
 			'publish_for.required' => 'Publish for field is required!',
 			'industry_id.required' => 'Industry field is required!',
 			'work_mode.required' => 'Work mode field is required!',

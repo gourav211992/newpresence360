@@ -544,8 +544,8 @@
                                                                     @if ($buttons['draft'])
 
                                                                     <div class="me-50 cursor-pointer"><span
-                                                                            data-bs-toggle="tooltip"
-                                                                            data-bs-placement="top" title="Delete"
+                                                                            
+                                                                            data-bs-placement="top" 
                                                                             class="text-danger remove-item"><i
                                                                                 data-feather="trash-2"></i></span>
                                                                     </div>
@@ -905,9 +905,6 @@
                 });
             }
 
-            //const targetInput = $(".ledgerselect").first(); // Target the first `.ledgerselect` element
-            //  targetInput.autocomplete("search", "example");
-            //$('.selectedCurrencyName').text("("+$('#org_currency_code').val()+")");
             if($('#currency_code').val()==""){
                 console.log('default');
             getExchangeRate();
@@ -923,7 +920,7 @@
                 const rowId = row.attr('id'); // Get the row ID
                 $('#item-details-body tr').removeClass('trselected');
                 row.addClass('trselected');
-                handleRowClick(rowId);
+                handleRowClick(row);
             });
 
 
@@ -1053,252 +1050,6 @@
         var costcenters = {!! json_encode($cost_centers) !!};
         var bookTypes = {!! json_encode($bookTypes) !!};
 
-        $(function() {
-            $(".ledgerselect").autocomplete({
-                source: function(request, response) {
-                    // get all pre selected ledgers
-                    var preLedgers = [];
-                    $('.ledgers').each(function() {
-                        if ($(this).val() != "") {
-                            preLedgers.push($(this).val());
-                        }
-                    });
-
-                    $.ajax({
-                        headers: {
-                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr(
-                                'content')
-                        },
-                        url: '{{ route('ledgers.search') }}',
-                        type: "POST",
-                        dataType: "json",
-                        data: {
-                            keyword: request.term,
-                            series: $('#book_type_id').val(),
-                            ids: preLedgers,
-                            '_token': '{!! csrf_token() !!}'
-                        },
-                        success: function(data) {
-                            response(
-                                data); // Pass the data to the response callback
-                        },
-                        error: function() {
-                            response(
-                                []); // Respond with an empty array in case of error
-                        }
-                    });
-                },
-                minLength: 0,
-                select: function(event, ui) {
-                    $(this).val(ui.item.label);
-
-                    // This function is called when an item is selected from the list
-                    console.log("Selected: " + ui.item.label + " with ID: " + ui.item
-                        .value);
-                    let ledgerId = ui.item.value; // The value of the selected ledger
-                    let rowId = $(this).data('id'); // The unique ID for the row
-
-                    console.log(`Selected Ledger ID: ${ledgerId}, Row ID: ${rowId}`);
-
-                    // Use rowId to target the corresponding group dropdown
-                    let groupDropdown = $(`#groupSelect${rowId}`);
-                    var preGroups = [];
-                    $('.ledgerGroup').each(function(index) {
-                        let ledgerGroup = $(this).val(); // Get the value of the select/input
-                        let ledger_id = $(this).data('ledger'); // Get the ledger ID from data attribute
-
-                        if (ledgerGroup !== "") {
-                            preGroups.push({
-                                ledger_id: ledger_id, // Ledger ID from data attribute
-                                ledgerGroup: ledgerGroup // Selected value
-                            });
-                        }
-                    });
-
-
-
-                    if (ledgerId) {
-                        $.ajax({
-                            url: '{{ route('voucher.getLedgerGroups') }}',
-                            method: 'GET',
-                            data: {
-                                    ids:preGroups,
-                                ledger_id: ledgerId,
-                                _token: $('meta[name="csrf-token"]').attr(
-                                    'content') // CSRF token
-                            },
-                            success: function(response) {
-                                groupDropdown.empty(); // Clear previous options
-
-                                response.forEach(item => {
-                                    groupDropdown.append(
-                                        `<option value="${item.id}">${item.name}</option>`
-                                    );
-                                    groupDropdown.removeAttr('style');
-                                });
-                                handleRowClick(rowId);
-                                groupDropdown.data('ledger',ledgerId);
-
-                            },
-                            error: function(xhr) {
-                                let errorMessage =
-                                'Error fetching group items.'; // Default message
-
-                                if (xhr.responseJSON && xhr.responseJSON.error) {
-                                    errorMessage = xhr.responseJSON
-                                    .error; // Use API error message if available
-                                }
-                                showToast("error", errorMessage);
-
-                                
-                            }
-                        });
-                    }
-
-
-
-                    // console.log(ui.item);
-
-                    // You can also perform other actions here
-                    const id = $(this).attr("data-id");
-                    // $('#ledger_id' + id).val(ui.item.value);
-                    // if (ui.item.cost_center_id != "") {
-                    //     console.log(ui.item.cost_center_id);
-                    //     $.each(costcenters, function(ckey, cvalue) {
-                    //         if (ui.item.cost_center_id == cvalue['value']) {
-                    //             $("#cost_center_name" + id).val(cvalue['label']);
-                    //             $("#cost_center_id" + id).val(cvalue['value']);
-                    //         }
-                    //     });
-                    // }
-
-                    return false;
-                },
-                change: function(event, ui) {
-                    // If the selected item is invalid (i.e., user has not selected from the list)
-                    if (!ui.item) {
-                        // Clear the input field
-                        $(this).val("");
-
-                        // You can also perform other actions here
-                        const id = $(this).attr("data-id");
-                        $('#ledger_id' + id).val('');
-                    }
-                },
-                focus: function(event, ui) {
-                    // Prevent value from being inserted on focus
-                    return false; // Prevents default behavior
-                },
-            }).focus(function() {
-                if (this.value == "") {
-                    $(this).autocomplete("search");
-                }
-                return false; // Prevents default behavior
-            });
-
-            // Monitor input field for empty state
-            $(".ledgerselect").on('input', function() {
-                const id = $(this).attr("data-id");
-                let grp = $(`#groupSelect${id}`).empty();
-                
-                var inputValue = $(this).val();
-                if (inputValue.trim() === '') {
-                    $('#ledger_id' + id).val('');
-                }
-            });
-
-            // $(".centerselecct").autocomplete({
-            //     source: costcenters,
-            //     minLength: 0,
-            //     select: function(event, ui) {
-            //         $(this).val(ui.item.label);
-
-            //         // This function is called when an item is selected from the list
-            //         console.log("Selected: " + ui.item.label + " with ID: " + ui.item
-            //             .value);
-            //         console.log(ui.item);
-            //         let ledgerId = ui.item.value;
-            //         console.log(ledgerId);
-
-            //         let groupDropdown = $(`#groupSelect${rowId}`);
-            //         var preGroups = [];
-            //         $('.ledgerGroup').each(function(index) {
-            //             let ledgerGroup = $(this).val(); // Get the value of the select/input
-            //             let ledger_id = $(this).data('ledger'); // Get the ledger ID from data attribute
-
-            //             if (ledgerGroup !== "") {
-            //                 preGroups.push({
-            //                     ledger_id: ledger_id, // Ledger ID from data attribute
-            //                     ledgerGroup: ledgerGroup // Selected value
-            //                 });
-            //             }
-            //         });
-
-
-
-            //         if (ledgerId) {
-            //             $.ajax({
-            //                 url: '{{ route('voucher.getLedgerGroups') }}',
-            //                 method: 'GET',
-            //                 data: {
-            //                     ids:preGroups,
-            //                     ledger_id: ledgerId,
-            //                     _token: $('meta[name="csrf-token"]').attr(
-            //                         'content') // CSRF token
-            //                 },
-            //                 success: function(response) {
-            //                     groupDropdown.empty(); // Clear previous options
-
-            //                     response.forEach(item => {
-            //                         groupDropdown.append(
-            //                             `<option value="${item.id}">${item.name}</option>`
-            //                         );
-            //                         groupDropdown.removeAttr('style');
-                                
-            //                     });
-            //                     groupDropdown.data('ledger',ledgerId);
-            //                     handleRowClick(rowId);
-
-            //                 },
-            //                 error: function(xhr) {
-            //                     let errorMessage =
-            //                     'Error fetching group items.'; // Default message
-
-            //                     if (xhr.responseJSON && xhr.responseJSON.error) {
-            //                         errorMessage = xhr.responseJSON
-            //                         .error; // Use API error message if available
-            //                     }
-            //                     showToast("error", errorMessage);
-
-                                
-            //                 }
-            //             });
-            //         }
-
-            //         // You can also perform other actions here
-            //         const id = $(this).attr("data-id");
-            //         $('#cost_center_id' + id).val(ui.item.value);
-
-            //         return false;
-            //     },
-            //     change: function(event, ui) {
-            //         // If the selected item is invalid (i.e., user has not selected from the list)
-            //         if (!ui.item) {
-            //             // Clear the input field
-            //             $(this).val("");
-
-            //             // You can also perform other actions here
-            //             const id = $(this).attr("data-id");
-            //             $('#cost_center_id' + id).val('');
-            //         }
-            //     }
-            // }).focus(function() {
-            //     if (this.value == "") {
-            //         $(this).autocomplete("search");
-            //     }
-            // });
-        });
-
         $(document).bind('ctrl+n', function() {
             document.getElementById('addnew').click();
         });
@@ -1365,7 +1116,7 @@ return false;
 
         $(document).on('input', '.dbt_amt, .crd_amt, .dbt_amt_inr, .crd_amt_inr,.remarks_', function() {
             const inVal = parseFloat(removeCommas($(this).val())) || 0;
-            const rowId = $(this).closest('tr').attr('id'); // Get the row ID
+            const rowId = $(this).closest('tr'); // Get the row ID
             const $row = $(this).closest('tr'); // Find the row of the current input
 
             if ($(this).hasClass('dbt_amt')) {
@@ -1421,12 +1172,18 @@ return false;
             }
         });
 
-        // Remove item row
-        $(document).on('click', '.remove-item', function() {
-    $(this).closest('tr').remove(); // Remove the entire row
+        $(document).on('click', '.remove-item', function () {
+    const $row = $(this).closest('tr');
+    const totalRows = $('#item-details-body tr').length;
+
+    if (totalRows <= 1) {
+        showToast("warning", "At least one row must remain."); // Optional toast/alert
+        return; // Don't remove
+    }
+
+    $row.remove(); // Remove the row
     updateRowNumbers();
-   
-    calculate_cr_dr(); // Call your custom function
+    calculate_cr_dr(); // Your custom function
 });
 
 function rate_change(){
@@ -1628,7 +1385,11 @@ function calculate_cr_dr() {
                     </td>
                    <td>
                         <select class="costCenter form-select mw-100" name="cost_center_id[]" id="cost_center_id${rowCount + 1}">
-                           
+                              @foreach ($locationCostCenters as $value)
+                                                                <option value="{{ $value['id'] }}" >
+                                                                    {{ $value['name'] }}
+                                                                </option>
+                                                            @endforeach
                         </select>
                     </td>
                     <td>
@@ -1636,278 +1397,39 @@ function calculate_cr_dr() {
                             id="hiddenRemarks_${rowCount + 1}" name="item_remarks[]" value="">
                     </td>
                     <td>
-                        <div class="d-flex">
-                            <div hidden class="me-50 cursor-pointer remark-btn" data-row-id="${rowCount + 1}" data-bs-toggle="modal"
-                                data-bs-target="#remarksModal"><span data-bs-toggle="tooltip" data-bs-placement="top" title="Remarks" class="text-primary"><i data-feather="file-text"></i></span></div>
-                            <div class="me-50 cursor-pointer"><span data-bs-toggle="tooltip" data-bs-placement="top" title="Delete" class="text-danger remove-item"><i data-feather="trash-2"></i></span></div>
-                        </div>
-                    </td>
+                                                                    @if ($buttons['draft'])
+
+                                                                    <div class="me-50 cursor-pointer"><span
+                                                                            
+                                                                            data-bs-placement="top" 
+                                                                            class="text-danger remove-item"><i
+                                                                                data-feather="trash-2"></i></span>
+                                                                    </div>
+                                                                    @endif
+                                                                </div>
+
+                                                            </td>
                 </tr>
                 `;
+                feather.replace();
 
                 document.querySelector('#item-details-body').insertAdjacentHTML('beforeend',
                     newRow);
+                    feather.replace();
+                    initializeLedgerAutocomplete(newRow);
                 calculate_cr_dr();
                 // Populate cost centers for the new row's dropdown
                 populateSingleCostCenterDropdown($(`#cost_center_id${rowCount + 1}`));
                  updateRowNumbers();
+                
+                 
    
 
-                feather.replace({
-                    width: 14,
-                    height: 14
-                });
-
-
-                $(".ledgerselect").autocomplete({
-                    source: function(request, response) {
-                        // get all pre selected ledgers
-                        var preLedgers = [];
-                        $('.ledgers').each(function() {
-                            if ($(this).val() != "") {
-                                preLedgers.push($(this).val());
-                            }
-                        });
-
-                        $.ajax({
-                            headers: {
-                                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr(
-                                    'content')
-                            },
-                            url: '{{ route('ledgers.search') }}',
-                            type: "POST",
-                            dataType: "json",
-                            data: {
-                                keyword: request.term,
-                                series: $('#book_type_id').val(),
-                                ids: preLedgers,
-                                '_token': '{!! csrf_token() !!}'
-                            },
-                            success: function(data) {
-                                response(
-                                    data); // Pass the data to the response callback
-                            },
-                            error: function() {
-                                response(
-                                    []
-                                ); // Respond with an empty array in case of error
-                            }
-                        });
-                    },
-                    minLength: 0,
-                    select: function(event, ui) {
-                        $(this).val(ui.item.label);
-
-                        // This function is called when an item is selected from the list
-                        console.log("Selected: " + ui.item.label + " with ID: " + ui.item
-                            .value);
-                        let ledgerId = ui.item.value; // The value of the selected ledger
-                        let rowId = $(this).data('id'); // The unique ID for the row
-
-                        console.log(`Selected Ledger ID: ${ledgerId}, Row ID: ${rowId}`);
-
-                        // Use rowId to target the corresponding group dropdown
-                        let groupDropdown = $(`#groupSelect${rowId}`);
-                        var preGroups = [];
-                    $('.ledgerGroup').each(function(index) {
-                        let ledgerGroup = $(this).val(); // Get the value of the select/input
-                        let ledger_id = $(this).data('ledger'); // Get the ledger ID from data attribute
-
-                        if (ledgerGroup !== "") {
-                            preGroups.push({
-                                ledger_id: ledger_id, // Ledger ID from data attribute
-                                ledgerGroup: ledgerGroup // Selected value
-                            });
-                        }
-                    });
-
-
-                        if (ledgerId) {
-                            $.ajax({
-                                url: '{{ route('voucher.getLedgerGroups') }}',
-                                method: 'GET',
-                                data: {
-                                    ids:preGroups,
-                                    ledger_id: ledgerId,
-                                    _token: $('meta[name="csrf-token"]').attr(
-                                        'content') // CSRF token
-                                },
-                                success: function(response) {
-                                    groupDropdown.empty(); // Clear previous options
-
-                                    response.forEach(item => {
-                                        groupDropdown.append(
-                                            `<option value="${item.id}">${item.name}</option>`
-                                        );
-                                    });
-                                    groupDropdown.removeAttr('style');
-                                
-                                    handleRowClick(rowId);
-                                    groupDropdown.data('ledger',ledgerId);
-
-                                },
-                                error: function(xhr) {
-                                let errorMessage =
-                                'Error fetching group items.'; // Default message
-
-                                if (xhr.responseJSON && xhr.responseJSON.error) {
-                                    errorMessage = xhr.responseJSON
-                                    .error; // Use API error message if available
-                                }
-                                showToast("error", errorMessage);
-
-                                
-                            }
-                            });
-                        }
-
-
-
-                        // console.log(ui.item);
-
-                        // You can also perform other actions here
-                        const id = $(this).attr("data-id");
-                        $('#ledger_id' + id).val(ui.item.value);
-                        // if (ui.item.cost_center_id != "") {
-                        //     console.log(ui.item.cost_center_id);
-                        //     $.each(costcenters, function(ckey, cvalue) {
-                        //         if (ui.item.cost_center_id == cvalue['value']) {
-                        //             $("#cost_center_name" + id).val(cvalue['label']);
-                        //             $("#cost_center_id" + id).val(cvalue['value']);
-                        //         }
-                        //     });
-                        // }
-
-                        return false;
-                    },
-                    change: function(event, ui) {
-                        // If the selected item is invalid (i.e., user has not selected from the list)
-                        if (!ui.item) {
-                            // Clear the input field
-                            $(this).val("");
-
-                            // You can also perform other actions here
-                            const id = $(this).attr("data-id");
-                            $('#ledger_id' + id).val('');
-                        }
-                    },
-                    focus: function(event, ui) {
-                        // Prevent value from being inserted on focus
-                        return false; // Prevents default behavior
-                    },
-                }).focus(function() {
-                    if (this.value == "") {
-                        $(this).autocomplete("search");
-                    }
-                    return false; // Prevents default behavior
-                });
-
-                // Monitor input field for empty state
-                $(".ledgerselect").on('input', function() {
-                    const id = $(this).attr("data-id");
-                let grp = $(`#groupSelect${id}`).empty();
-                
-                    var inputValue = $(this).val();
-                    if (inputValue.trim() === '') {
-                        $('#ledger_id' + id).val('');
-                    }
-                });
-
-                // $(".centerselecct").autocomplete({
-                //     source: costcenters,
-                //     minLength: 0,
-                //     select: function(event, ui) {
-                //         $(this).val(ui.item.label);
-
-                //         // This function is called when an item is selected from the list
-                //         console.log("Selected: " + ui.item.label + " with ID: " + ui.item
-                //             .value);
-                //         console.log(ui.item);
-                //         let ledgerId = ui.item.value;
-                //         console.log(ledgerId);
-
-                //         let groupDropdown = $(`#groupSelect${rowId}`);
-                //         var preGroups = [];
-                //     $('.ledgerGroup').each(function(index) {
-                //         let ledgerGroup = $(this).val(); // Get the value of the select/input
-                //         let ledger_id = $(this).data('ledger'); // Get the ledger ID from data attribute
-
-                //         if (ledgerGroup !== "") {
-                //             preGroups.push({
-                //                 ledger_id: ledger_id, // Ledger ID from data attribute
-                //                 ledgerGroup: ledgerGroup // Selected value
-                //             });
-                //         }
-                //     });
-
-
-
-                //         if (ledgerId) {
-                //             $.ajax({
-                //                 url: '{{ route('voucher.getLedgerGroups') }}',
-                //                 method: 'GET',
-                //                 data: {
-                //                     ids:preGroups,
-                //                     ledger_id: ledgerId,
-                //                     _token: $('meta[name="csrf-token"]').attr(
-                //                         'content') // CSRF token
-                //                 },
-                //                 success: function(response) {
-                //                     groupDropdown.empty(); // Clear previous options
-
-                //                     response.forEach(item => {
-                //                         groupDropdown.append(
-                //                             `<option value="${item.id}">${item.name}</option>`
-                //                         );
-                //                     });
-                //                     groupDropdown.removeAttr('style');
-                                
-                //                     handleRowClick(rowId);
-                //                     groupDropdown.data('ledger',ledgerId);
-
-                //                 },
-                //                 error: function(xhr) {
-                //                 let errorMessage =
-                //                 'Error fetching group items.'; // Default message
-
-                //                 if (xhr.responseJSON && xhr.responseJSON.error) {
-                //                     errorMessage = xhr.responseJSON
-                //                     .error; // Use API error message if available
-                //                 }
-                //                 showToast("error", errorMessage);
-
-                                
-                //             }
-                //             });
-                //         }
-
-                //         // You can also perform other actions here
-                //         const id = $(this).attr("data-id");
-                //         $('#cost_center_id' + id).val(ui.item.value);
-
-                //         return false;
-                //     },
-                //     change: function(event, ui) {
-                //         // If the selected item is invalid (i.e., user has not selected from the list)
-                //         if (!ui.item) {
-                //             // Clear the input field
-                //             $(this).val("");
-
-                //             // You can also perform other actions here
-                //             const id = $(this).attr("data-id");
-                //             $('#cost_center_id' + id).val('');
-                //         }
-                //     }
-                // }).focus(function() {
-                //     if (this.value == "") {
-                //         $(this).autocomplete("search");
-                //     }
-                // });
-
+              
             });
+            
         });
-
-        function getBooks() {
+            function getBooks() {
             $('#book_id').empty();
             $('#book_id').prepend('<option disabled selected value="">Select Series</option>');
 
@@ -2049,45 +1571,47 @@ function calculate_cr_dr() {
             });
         }
 
-        function handleRowClick(rowId) {
-            $('.voucher_details').show();
+function handleRowClick(rowElement) {
+    const $row = $(rowElement); // Accept DOM/jQuery row directly
 
-            const row = $(`#item-details-body tr#${rowId}`);
-            const ledgerName = row.find('td').eq(1).find('input[name^="ledger_name"]').val();
-            const debitAmount = row.find('td').eq(3).find('input').val();
-            //const debitAmountINR = row.find('td').eq(4).find('input').val();
-            const creditAmount = row.find('td').eq(4).find('input').val();
-            //const creditAmountINR = row.find('td').eq(6).find('input').val();
-            const compCurrency = $('#comp_currency_code').val() || ''; // If #curre is a <select> dropdown
-            const groupCurrency = $('#group_currency_code').val() || ''; // If #curre is a <select> dropdown
-            const baseCurrency = $('#org_currency_code').val() || ''; // If #curre is a <select> dropdown
-            const companyDebit = (debitAmount) * (parseFloat($('#comp_currency_exg_rate').val() || 1));
-            const companyCredit = (creditAmount) * (parseFloat($('#comp_currency_exg_rate').val() || 1));
-            const groupCredit = (creditAmount) * (parseFloat($('#group_currency_exg_rate').val() || 1));
-            const groupDebit = (debitAmount) * (parseFloat($('#group_currency_exg_rate').val() || 1));
-            const baseCredit = (creditAmount) * (parseFloat($('#org_currency_exg_rate').val() || 1));
-            const baseDebit = (debitAmount) * (parseFloat($('#org_currency_exg_rate').val() || 1));
+    $('.voucher_details').show();
 
+    const rowId = $row.data('row-id') || $row.attr('id') || ''; // fallback if needed
+    const ledgerName = $row.find('td').eq(1).find('input[name^="ledger_name"]').val();
+    const debitAmount = parseFloat($row.find('td').eq(3).find('input').val()) || 0;
+    const creditAmount = parseFloat($row.find('td').eq(4).find('input').val()) || 0;
 
+    const compCurrency = $('#comp_currency_code').val() || '';
+    const groupCurrency = $('#group_currency_code').val() || '';
+    const baseCurrency = $('#org_currency_code').val() || '';
 
-            const remark = $(`#hiddenRemarks_${rowId}`).val() ||
-                'No remarks available'; // Fetch the remark, default to 'No remarks available'
+    const compRate = parseFloat($('#comp_currency_exg_rate').val()) || 1;
+    const groupRate = parseFloat($('#group_currency_exg_rate').val()) || 1;
+    const baseRate = parseFloat($('#org_currency_exg_rate').val()) || 1;
 
-            $('#ledger_name_details').text(ledgerName || '-'); // Update ledger name
-            $('#company-currency').text(compCurrency); // Set company currency
-            $('#company-debit').text(formatIndianNumber(companyDebit.toFixed(2))); // Set company debit amount
-            $('#company-credit').text(formatIndianNumber(companyCredit.toFixed(2))); // Set company credit amount
-            $('#group-currency').text(groupCurrency); // Set group currency
-            $('#base-currency').text(baseCurrency); // Set group currency
-            $('#group-debit').text(formatIndianNumber(groupDebit.toFixed(2))); // Set group debit amount
-            $('#group-credit').text(formatIndianNumber(groupCredit.toFixed(2))); // Set group credit amount
-            $('#base-debit').text(formatIndianNumber(baseDebit.toFixed(2))); // Set group debit amount
-            $('#base-credit').text(formatIndianNumber(baseCredit.toFixed(2))); // Set group credit amount
-            $('#remarks').text(remark); // Set remarks in the voucher details section
-            $('#voucher-details-row').data('row-id', rowId); // Set row ID for the voucher details
+    const companyDebit = debitAmount * compRate;
+    const companyCredit = creditAmount * compRate;
+    const groupDebit = debitAmount * groupRate;
+    const groupCredit = creditAmount * groupRate;
+    const baseDebit = debitAmount * baseRate;
+    const baseCredit = creditAmount * baseRate;
 
-        }
-        $(document).on('click', '#amendmentSubmit', (e) => {
+    const remark = $(`#hiddenRemarks_${rowId}`).val() || 'No remarks available';
+
+    $('#ledger_name_details').text(ledgerName || '-');
+    $('#company-currency').text(compCurrency);
+    $('#company-debit').text(formatIndianNumber(companyDebit.toFixed(2)));
+    $('#company-credit').text(formatIndianNumber(companyCredit.toFixed(2)));
+    $('#group-currency').text(groupCurrency);
+    $('#base-currency').text(baseCurrency);
+    $('#group-debit').text(formatIndianNumber(groupDebit.toFixed(2)));
+    $('#group-credit').text(formatIndianNumber(groupCredit.toFixed(2)));
+    $('#base-debit').text(formatIndianNumber(baseDebit.toFixed(2)));
+    $('#base-credit').text(formatIndianNumber(baseCredit.toFixed(2)));
+    $('#remarks').text(remark);
+    $('#voucher-details-row').data('row-id', rowId);
+}
+$(document).on('click', '#amendmentSubmit', (e) => {
             let actionUrl = "{{ route('vouchers.amendment', $data->id) }}";
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
@@ -2367,5 +1891,123 @@ $(document).on('click', '#cancelButton', (e) => {
         $('#locations').on('change', function() {
             populateCostCenterDropdowns();
         });
+        
+
+$(document).on('input', '.ledgerselect', function () {
+    const currentRow = $(this).closest('tr');
+    let groupDropdown = currentRow.find('.ledgerGroup'); // group dropdown select
+    groupDropdown.empty();
+
+    const inputValue = $(this).val();
+    if (inputValue.trim() === '') {
+        currentRow.find('.ledger_id').val(''); // hidden input for selected ledger ID
+    }
+});
+function initializeLedgerAutocomplete(context) {
+    context.find(".ledgerselect").each(function () {
+        const $input = $(this);
+
+        // Avoid reinitializing if already done
+        if ($input.hasClass('ui-autocomplete-input')) {
+            $input.autocomplete("destroy");
+        }
+
+        $input.autocomplete({
+            source: function (request, response) {
+                let preLedgers = [];
+                $('.ledgerselect').each(function () {
+                    if ($(this).val() !== "") {
+                        preLedgers.push($(this).val());
+                    }
+                });
+
+                $.ajax({
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    url: '{{ route('ledgers.search') }}',
+                    type: "POST",
+                    dataType: "json",
+                    data: {
+                        keyword: request.term,
+                        series: $('#book_type_id').val(),
+                        ids: preLedgers
+                    },
+                    success: function (data) {
+                        response(data);
+                    },
+                    error: function () {
+                        response([]);
+                    }
+                });
+            },
+            minLength: 0,
+            select: function (event, ui) {
+                $input.val(ui.item.label);
+                const currentRow = $input.closest('tr');
+                const ledgerId = ui.item.value;
+                const groupDropdown = currentRow.find('.ledgerGroup');
+                const ledgerIdInput = currentRow.find('.ledgers');
+
+                let preGroups = [];
+                $('.ledgerGroup').each(function () {
+                    let ledgerGroup = $(this).val();
+                    let ledger_id = $(this).data('ledger');
+                    if (ledgerGroup !== "") {
+                        preGroups.push({ ledger_id, ledgerGroup });
+                    }
+                });
+
+                if (ledgerId) {
+                    $.ajax({
+                        url: '{{ route('voucher.getLedgerGroups') }}',
+                        method: 'GET',
+                        data: {
+                            ids: preGroups,
+                            ledger_id: ledgerId
+                        },
+                        success: function (response) {
+                            
+                            groupDropdown.empty();
+                            response.forEach(item => {
+                                groupDropdown.append(`<option value="${item.id}">${item.name}</option>`);
+                            });
+                            groupDropdown.removeAttr('style');
+                            groupDropdown.data('ledger', ledgerId);
+                            ledgerIdInput.val(ledgerId);
+                            
+                            handleRowClick(currentRow);
+                        },
+                        error: function (xhr) {
+                            let errorMessage = xhr.responseJSON?.error || 'Error fetching group items.';
+                            showToast("error", errorMessage);
+                        }
+                    });
+                }
+
+                return false;
+            },
+            change: function (event, ui) {
+                if (!ui.item) {
+                    $input.val('');
+                    const currentRow = $input.closest('tr');
+                    currentRow.find('.ledger_id').val('');
+                    currentRow.find('.ledgerGroup').empty();
+                }
+            },
+            focus: function () {
+                return false;
+            }
+        }).focus(function () {
+            if (this.value === "") {
+                $(this).autocomplete("search");
+            }
+        });
+    });
+}
+$(function () {
+    initializeLedgerAutocomplete($("#item-details-body"));
+});
+
     </script>
 @endsection

@@ -1003,49 +1003,6 @@ class VoucherController extends Controller
 
                 $item_remarks = $itemRemarks[$index] ?? "";
 
-                $opening = 0;
-                $closing = 0;
-                $openingType = null;
-                $closingType = null;
-
-                // Calculate the new Closing Balance and Closing Type
-                if ($debit > $credit) {
-                    $closingType = 'Dr';
-                } else {
-                    $closingType = 'Cr';
-                }
-                $closing = $debit - $credit;
-                $closing = $closing < 0 ? -$closing : $closing;
-
-
-                // Check if Ledger has already some transactions then calculate closing balance, closing type, opening balance and opening type with old transactions
-                $lastItemDetail = ItemDetail::where('ledger_id', $ledger_id)->orderBy('date', 'desc')->first();
-                if ($lastItemDetail) {
-
-                    // Calculate the new opening balance and type
-                    $opening = $lastItemDetail->closing;
-                    $openingType = $lastItemDetail->closing_type;
-
-                    // Calculate the new closing type and balance
-                    if ($lastItemDetail->closing > 0) {
-                        if ($lastItemDetail->closing_type == $closingType) {
-                            $closing = $closing + $lastItemDetail->closing;
-                        } else {
-                            $difference = $closing - $lastItemDetail->closing;
-                            if ($difference != 0) {
-                                $difference = $difference > 0 ? $difference : -$difference;
-                                if ($closing < $lastItemDetail->closing) {
-                                    $closingType = $lastItemDetail->closing_type;
-                                }
-                                $closing = $difference;
-                            } else {
-                                $closing = 0;
-                                $closingType = null;
-                            }
-                        }
-                    }
-                }
-
                 // Insert the new ItemDetail record
                 ItemDetail::create([
                     'voucher_id' => $voucherId,
@@ -1062,10 +1019,6 @@ class VoucherController extends Controller
                     'cost_center_id' => $cost_center_id,
                     'notes' => $request->$notename,
                     'date' => $request->date,
-                    'opening' => $opening,
-                    'closing' => $closing,
-                    'opening_type' => $openingType,
-                    'closing_type' => $closingType,
                     'organization_id' => $organization->id,
                     'group_id' => $organization->group_id,
                     'company_id' => $organization->group_id,
@@ -1177,11 +1130,6 @@ class VoucherController extends Controller
         if ($voucher->approvalStatus == ConstantHelper::APPROVAL_NOT_REQUIRED || $voucher->approvalStatus == ConstantHelper::APPROVED)  {
             Helper::approveDocument($voucher->book_id, $voucher->id, $voucher->revision_number, $voucher->remarks, $request->file('attachment'), 1, 'approve');
         }
-        // check existing records
-        $itemsDetails = ItemDetail::where('voucher_id', $id);
-        $lastDate = $itemsDetails->value('date');
-        $ledgers = $itemsDetails->pluck('ledger_id')->toArray();
-
         ItemDetail::where('voucher_id', $id)->delete();
 
         // Process item details
@@ -1221,97 +1169,26 @@ class VoucherController extends Controller
 
                 $item_remarks = $itemRemarks[$index] ?? "";
 
-                $ledgers[] = $ledger_id;
-                $update = new ItemDetail;
-
-                $update->voucher_id = $id;
-                $update->ledger_id = $ledger_id;
-                $update->debit_amt = $debitAmts[$index] ?? 0;
-                $update->credit_amt = $creditAmts[$index] ?? 0;
-                $update->cost_center_id = $cost_center_id;
-                $update->notes = $request->$notename;
-                $update->date = $request->date;
-                $update->debit_amt_org = $debitOrg;
-                $update->credit_amt_org = $creditOrg;
-                $update->debit_amt_comp = $debitComp;
-                $update->credit_amt_comp = $creditComp;
-                $update->debit_amt_group = $debitGroup;
-                $update->credit_amt_group = $creditGroup;
-                $update->ledger_parent_id = $parent_ledger_id;
-                $update->remarks = $item_remarks;
-
-                $update->opening = 0;
-                $update->closing = 0;
-                $update->opening_type = null;
-                $update->closing_type = null;
-                $update->save();
-            }
-        }
-
-        // Get the date after which we need to update the transactions
-        $carbonDate1 = Carbon::parse($lastDate);
-        $carbonDate2 = Carbon::parse($request->date);
-        // Compare the dates and get the older one
-        $olderDate = $carbonDate1->lt($carbonDate2) ? $carbonDate1 : $carbonDate2;
-
-        // Output the older date
-        $lastDate = $olderDate->format('Y-m-d');
-
-        // Update opening and closing after update
-        foreach ($ledgers as $ledger) {
-            ItemDetail::where('ledger_id', $ledger)->orderBy('date', 'asc')->whereDate('date', '>=', $lastDate)->each(function ($items) use ($ledger) {
-
-                $debit = $items->debit_amt;
-                $credit = $items->credit_amt;
-
-                $opening = 0;
-                $closing = 0;
-                $openingType = null;
-                $closingType = null;
-
-                // Calculate the new Closing Balance and Closing Type
-                if ($debit > $credit) {
-                    $closingType = 'Dr';
-                } else {
-                    $closingType = 'Cr';
-                }
-                $closing = $debit - $credit;
-                $closing = $closing < 0 ? -$closing : $closing;
-
-                // Retrieve the latest ItemDetail for the current ledger_id
-                $lastItemDetail = ItemDetail::where('ledger_id', $ledger)->whereDate('date', '<', $items->date)->orderBy('date', 'desc')->first();
-                if ($lastItemDetail) {
-                    // Calculate the new opening balance and type
-                    $opening = $lastItemDetail->closing;
-                    $openingType = $lastItemDetail->closing_type;
-
-                    // Calculate the new closing type and balance
-                    if ($lastItemDetail->closing > 0) {
-                        if ($lastItemDetail->closing_type == $closingType) {
-                            $closing = $closing + $lastItemDetail->closing;
-                        } else {
-                            $difference = $closing - $lastItemDetail->closing;
-                            if ($difference != 0) {
-                                $difference = $difference > 0 ? $difference : -$difference;
-                                if ($closing < $lastItemDetail->closing) {
-                                    $closingType = $lastItemDetail->closing_type;
-                                }
-                                $closing = $difference;
-                            } else {
-                                $closing = 0;
-                                $closingType = null;
-                            }
-                        }
-                    }
-                }
-
-                $items->update([
-                    'opening' => $opening,
-                    'closing' => $closing,
-                    'opening_type' => $openingType,
-                    'closing_type' => $closingType,
+                ItemDetail::create([
+                    'voucher_id' => $id,
+                    'ledger_id' => $ledger_id,
+                    'debit_amt' =>$debitAmts[$index] ?? 0,
+                    'credit_amt' => $creditAmts[$index] ?? 0,
+                    'debit_amt_org' => $debitOrg,
+                    'credit_amt_org' => $creditOrg,
+                    'debit_amt_comp' => $debitComp,
+                    'credit_amt_comp' => $creditComp,
+                    'debit_amt_group' => $debitGroup,
+                    'credit_amt_group' => $creditGroup,
+                    'ledger_parent_id' => $parent_ledger_id,
+                    'cost_center_id' => $cost_center_id,
+                    'remarks'=>$item_remarks,
+                    'notes' => $request->$notename,
+                    'date' => $request->date,
                 ]);
-            });
+            }
+        
+
         }
 
         return redirect()->route("vouchers.index")->with('success', 'Voucher updated successfully.');
@@ -1443,12 +1320,7 @@ class VoucherController extends Controller
 
             foreach ($allowedNames as $name) {
                 // Get all matching groups (org-specific and global)
-                $matchedGroups = Group::where('name', $name)
-                    ->where(function ($query) use ($organizationId) {
-                        $query->where('organization_id', $organizationId)
-                            ->orWhereNull('organization_id');
-                    })->get();
-
+                $matchedGroups = $group = Helper::getGroupsQuery()->where('name', $name)->get();
                 $groups = $groups->merge($matchedGroups);
             }
 

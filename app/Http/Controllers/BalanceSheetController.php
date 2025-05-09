@@ -57,28 +57,19 @@ class BalanceSheetController extends Controller
         }
         $organizationName=implode(",",DB::table('organizations')->whereIn('id',$organizations)->pluck('name')->toArray());
 
-        $liabilities_group = Group::where('name', 'Liabilities')
-    ->where(function ($query) use ($organizations) {
-        $query->whereIn('organization_id', $organizations)
-              ->orWhereNull('organization_id');
-    })
-    ->value('id');
+        $liabilities_group = Helper::getGroupsQuery($organizations)
+        ->where('name', 'Liabilities')->value('id');
 
-$assets_group = Group::where('name', 'Assets')
-    ->where(function ($query) use ($organizations) {
-        $query->whereIn('organization_id', $organizations)
-              ->orWhereNull('organization_id');
-    })
-    ->value('id');
+$assets_group = Helper::getGroupsQuery($organizations)->where('name', 'Assets')
+                ->value('id');
 
-        $liabilities=Group::where('parent_group_id',$liabilities_group)->where(function ($query) use ($organizations) {
-            $query->whereIn('organization_id', $organizations)
-                  ->orWhereNull('organization_id');
-        })->select('id','name')->get();
-        $assets=Group::where('parent_group_id',$assets_group)->where(function ($query) use ($organizations) {
-            $query->whereIn('organization_id', $organizations)
-                  ->orWhereNull('organization_id');
-        })->select('id','name')->get();
+        $liabilities= Helper::getGroupsQuery($organizations)
+        ->where('parent_group_id',$liabilities_group)
+        ->select('id','name')->get();
+        
+        $assets=Helper::getGroupsQuery($organizations)
+        ->where('parent_group_id',$assets_group)
+        ->select('id','name')->get();
 
         // Get Reserves & Surplus
         $reservesSurplus=Helper::getReservesSurplus($startDate,$endDate,$organizations,'balanceSheet',$currency,$r->cost_center_id);
@@ -225,13 +216,13 @@ $endDate = $endDate->format('Y-m-d');
             $financialYear = Helper::getFinancialYear(date('Y-m-d'));
             $startDate=$financialYear['start_date'];
             $today = Carbon::today();
-$endDate = Carbon::parse($financialYear['end_date']);
+            $endDate = Carbon::parse($financialYear['end_date']);
 
-if ($endDate->greaterThan($today)) {
-    $endDate = $today;
-}
+            if ($endDate->greaterThan($today)) {
+                $endDate = $today;
+            }
 
-$endDate = $endDate->format('Y-m-d');
+            $endDate = $endDate->format('Y-m-d');
         }
         else {
             $dates = explode(' to ', $r->date);
@@ -251,28 +242,22 @@ $endDate = $endDate->format('Y-m-d');
         if(count($organizations) == 0){
             $organizations[]=Helper::getAuthenticatedUser()->organization_id;
         }
-        $liabilities_group = Group::where('name', 'Liabilities')
-            ->where(function ($query) use ($organizations) {
-                $query->whereIn('organization_id', $organizations)
-                    ->orWhereNull('organization_id');
-            })
+        $liabilities_group =  Helper::getGroupsQuery($organizations)
+        ->where('name', "Liabilities")
+        ->value('id');
+
+            $assets_group = Helper::getGroupsQuery($organizations)->where('name', "Assets")
             ->value('id');
 
-$assets_group = Group::where('name', 'Assets')
-    ->where(function ($query) use ($organizations) {
-        $query->whereIn('organization_id', $organizations)
-              ->orWhereNull('organization_id');
-    })
-    ->value('id');
+        
+        $liabilities=Helper::getGroupsQuery($organizations)
+        ->where('parent_group_id',$liabilities_group)
+        ->select('id','name')->get();
 
-        $liabilities=Group::where('parent_group_id',$liabilities_group)->where(function ($query) use ($organizations) {
-            $query->whereIn('organization_id', $organizations)
-                  ->orWhereNull('organization_id');
-        })->select('id','name')->get();
-        $assets=Group::where('parent_group_id',$assets_group)->where(function ($query) use ($organizations) {
-            $query->whereIn('organization_id', $organizations)
-                  ->orWhereNull('organization_id');
-        })->select('id','name')->get();
+
+        $assets=Helper::getGroupsQuery($organizations)
+        ->where('parent_group_id',$assets_group)
+        ->select('id','name')->get();
 
         $reservesSurplus=Helper::getReservesSurplus($startDate,$endDate,$organizations,'balanceSheet',$currency,$r->cost_center_id);
 

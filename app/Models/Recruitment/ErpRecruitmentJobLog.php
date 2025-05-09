@@ -34,6 +34,10 @@ class ErpRecruitmentJobLog extends Model
         return $this->belongsTo(ErpRecruitmentJobCandidate::class, 'candidate_id');
     }
 
+    public function interview(){
+        return $this->belongsTo(ErpRecruitmentJobInterview::class, 'interview_id');
+    }
+
     public function getCandidateNameAttribute()
     {
         return optional($this->candidate)->name;

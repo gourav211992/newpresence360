@@ -18,6 +18,7 @@
                     <div class="row breadcrumbs-top">
                         <div class="col-12">
                             <h2 class="content-header-title float-start mb-0">{{$reportName}}</h2>
+                            <input type = 'hidden' value = "{{ $reportName }}" name = 'folder_name' id ="folder_name" />
                             <div class="breadcrumb-wrapper">
                                 <ol class="breadcrumb">
                                     <li class="breadcrumb-item"><a href="#l">Home</a></li>
@@ -219,7 +220,6 @@
     let dataTableCols = @json($tableHeaders);
     var columns = [];
     dataTableCols.forEach((colData) => {
-        console.log(colData);
         columns.push({
             data : colData.field,
             name : colData.field,
@@ -521,7 +521,9 @@ function sendEmailReport() {
             displayedHeaders: visibleHeaders,
             email_to : $("#email_to").val(),
             email_cc : $("#email_cc").val(),
-            filters : filters
+            remarks : $("#mail_remarks").val(),
+            filters : filters,
+            folder_name : $("#folder_name").val()
         })
     })
     .then(response => {
@@ -530,6 +532,9 @@ function sendEmailReport() {
     })
     .then(data => {
         document.getElementById('erp-overlay-loader').style.display = "none";
+        $('select[name="email_to[]"]').val([]).trigger('change');
+        $('select[name="email_cc[]"]').val(null).trigger('change');
+        $('textarea[name="remarks"]').val('');
 
         $("#settings").modal('hide');
         Swal.fire({

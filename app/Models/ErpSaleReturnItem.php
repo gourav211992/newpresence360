@@ -158,7 +158,7 @@ class ErpSaleReturnItem extends Model
     public function getCgstValueAttribute()
     {
         $tedRecords = ErpSaleReturnTed::where('sale_return_item_id', $this->id)
-            ->where('sale_return_id', $this->sale_invoice_id)
+            ->where('sale_return_id', $this->sale_return_id)
             ->where('ted_type', '=', 'Tax')
             ->where('ted_level', '=', 'D')
             ->where('ted_name', '=', 'CGST')
@@ -166,7 +166,7 @@ class ErpSaleReturnItem extends Model
 
         $tedRecord = ErpSaleReturnTed::with(['taxDetail'])
             ->where('sale_return_item_id', $this->id)
-            ->where('sale_return_id', $this->sale_invoice_id)
+            ->where('sale_return_id', $this->sale_return_id)
             ->where('ted_type', '=', 'Tax')
             ->where('ted_level', '=', 'D')
             ->where('ted_name', '=', 'CGST')
@@ -189,7 +189,7 @@ class ErpSaleReturnItem extends Model
         
             $tedRecord = ErpSaleReturnTed::with(['taxDetail'])
             ->where('sale_return_item_id', $this->id)
-            ->where('sale_return_id', $this->sale_invoice_id)
+            ->where('sale_return_id', $this->sale_return_id)
             ->where('ted_type', '=', 'Tax')
             ->where('ted_level', '=', 'D')
             ->where('ted_name', '=', 'SGST')
@@ -212,7 +212,7 @@ class ErpSaleReturnItem extends Model
         
             $tedRecord = ErpSaleReturnTed::with(['taxDetail'])
             ->where('sale_return_item_id', $this->id)
-            ->where('sale_return_id', $this->sale_invoice_id)
+            ->where('sale_return_id', $this->sale_return_id)
             ->where('ted_type', '=', 'Tax')
             ->where('ted_level', '=', 'D')
             ->where('ted_name', '=', 'IGST')
@@ -234,7 +234,7 @@ class ErpSaleReturnItem extends Model
         
             $tedRecord = ErpSaleReturnTed::with(['taxDetail'])
             ->where('sale_return_item_id', $this->id)
-            ->where('sale_return_id', $this->sale_invoice_id)
+            ->where('sale_return_id', $this->sale_return_id)
             ->where('ted_type', '=', 'Tax')
             ->where('ted_level', '=', 'D')
             ->where('ted_name', '=', 'CESS')

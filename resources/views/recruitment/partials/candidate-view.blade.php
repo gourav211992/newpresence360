@@ -6,7 +6,7 @@
                 {{ strtoupper(substr($candidate->name, 0, 1)) }}
             </div>
             <h2>{{ $candidate->name }}</h2>
-            <span>Sales Manager</span>
+            <span>{{ @$candidate->jobDetail->job_title_name }}</span>
 
             <div class="row justify-content-center">
                 <div class="col-md-5 col-6 pe-0">
@@ -64,7 +64,7 @@
                 </div>
 
                 <div class="col-md-12 mt-2 text-center">
-                    @if($page == 'job-view')
+                    @if($page == 'job-view-hr')
                         @if(in_array($candidate->assignedJob->status, ['assigned','onhold']))
                             <button class="btn btn-primary btn-primary-new  me-1  mb-50 mb-sm-0" onclick="setStatusModal('qualified','{{ $candidate->id }}')"><i
                                     data-feather="check-circle"></i> Qualified </button>
@@ -79,7 +79,10 @@
                                         Hold</button>
                                 </div>
                             @endif
-
+                        @elseif($candidate->assignedJob->status == 'qualified')
+                            <button class="btn btn-primary btn-primary-new  me-1  mb-50 mb-sm-0" onclick="setScheduleInterviewModal('interview-scheduled','{{ $candidate->id }}')">
+                                <i data-feather="calendar"></i>  Schedule Interview 
+                            </button>
                         @endif
                     @endif
                 </div>

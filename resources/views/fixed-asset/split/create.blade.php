@@ -606,17 +606,18 @@
             const today = moment().format("YYYY-MM-DD");
 
             if (backDateAllowed && futureDateAllowed) {
-                dateInput.removeAttribute("min");
-                dateInput.removeAttribute("max");
+                dateInput.setAttribute("min","{{$financialStartDate}}");
+                dateInput.setAttribute("max","{{$financialEndDate}}");
             } else if (backDateAllowed) {
                 dateInput.setAttribute("max", today);
-                dateInput.removeAttribute("min");
+                dateInput.setAttribute("min","{{$financialStartDate}}");
             } else if (futureDateAllowed) {
                 dateInput.setAttribute("min", today);
-                dateInput.removeAttribute("max");
+                dateInput.setAttribute("max","{{$financialEndDate}}");
             } else {
                 dateInput.setAttribute("min", today);
                 dateInput.setAttribute("max", today);
+            
             }
         }
 

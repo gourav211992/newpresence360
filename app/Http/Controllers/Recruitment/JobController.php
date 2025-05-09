@@ -4,10 +4,8 @@ namespace App\Http\Controllers\Recruitment;
 
 use App\Exceptions\ApiGenericException;
 use App\Helpers\CommonHelper;
-use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
 use App\Http\Controllers\Controller;
-use App\Models\CRM\ErpIndustry;
 use App\Models\ErpStore;
 use App\Models\Recruitment\ErpRecruitmentEducation;
 use App\Models\Recruitment\ErpRecruitmentIndustry;
@@ -18,14 +16,14 @@ use App\Models\Recruitment\ErpRecruitmentSkill;
 use App\Models\Recruitment\ErpRecruitmentWorkingHour;
 use Illuminate\Http\Request;
 use App\Lib\Validation\Recruitment\Job as Validator;
-use App\Lib\Validation\Recruitment\JobCandidate;
 use App\Models\Recruitment\ErpRecruitmentAssignedCandidate;
+use App\Models\Recruitment\ErpRecruitmentInterviewFeedback;
 use App\Models\Recruitment\ErpRecruitmentJob;
 use App\Models\Recruitment\ErpRecruitmentJobCandidate;
+use App\Models\Recruitment\ErpRecruitmentJobInterview;
 use App\Models\Recruitment\ErpRecruitmentJobLog;
 use App\Models\Recruitment\ErpRecruitmentJobNotification;
 use App\Models\Recruitment\ErpRecruitmentJobPanelAllocation;
-use App\Models\Recruitment\ErpRecruitmentJobRequestSkill;
 use App\Models\Recruitment\ErpRecruitmentJobSkill;
 use App\Models\Recruitment\ErpRecruitmentRound;
 use Carbon\Carbon;
@@ -36,8 +34,10 @@ class JobController extends Controller
     public function index(Request $request){
         $user = Helper::getAuthenticatedUser();
         $length = $request->length ? $request->length : CommonHelper::PAGE_LENGTH_10;
+        $masterData = self::masterData();
+        $summaryData = self::getJobSummary($request, $user);
 
-        $query = ErpRecruitmentJob::with('jobSkills')
+        $jobs = ErpRecruitmentJob::with('jobSkills')
                 ->withCount([
                     'panelAllocations as totalJobRounds' => function ($q) {
                         $q->select(\DB::raw('COUNT(DISTINCT round_id)'));
@@ -47,19 +47,127 @@ class JobController extends Controller
                 self::filter($request, $query);
             })
             ->where('created_by',$user->id)
-            ->where('created_by_type',$user->authenticable_type);
+            ->where('created_by_type',$user->authenticable_type)
+            ->whereDoesntHave('assignedCandidates')
+            ->orderBy('created_at','desc')->paginate($length);
+        
+        return view('recruitment.job.index',[
+            'jobs' => $jobs,
+            'jobTitles' => $masterData['jobTitles'],
+            'status' => CommonHelper::JOB_STATUS,
+            'skills' => $masterData['skills'],
+            'jobCount' => $summaryData['jobCount'],
+            'interviewCount' => $summaryData['interviewCount'],
+            'user' => $user,
+            'candidatesCount' => $summaryData['candidatesCount'],
+            'selectedCandidatesCount' => $summaryData['selectedCandidatesCount'],
+            'closedJobCount' => $summaryData['closedJobCount'],
+        ]);
+    }
 
-            if (\Request::route()->getName() == "recruitment.jobs.assigned-candidate") {
-                $query->whereHas('assignedCandidates');
-            } elseif (\Request::route()->getName() == "recruitment.jobs.interview-scheduled") {
-               
-            } else {
-                $query->whereDoesntHave('assignedCandidates');
-            }
-
-        $jobs = $query->orderBy('created_at','desc')->paginate($length);
+    public function getJobInterviewList(Request $request){
+        $user = Helper::getAuthenticatedUser();
+        $length = $request->length ? $request->length : CommonHelper::PAGE_LENGTH_10;
         $masterData = self::masterData();
+        $summaryData = self::getJobSummary($request, $user);
+        $startDate = Carbon::now()->startOfMonth(); // Start of the current month
+        $endDate = Carbon::now()->endOfMonth(); 
+        if ($request->has('date_range') && $request->date_range != '') {
+            $dates = explode(' to ', $request->date_range);
+            $startDate = $dates[0] ? Carbon::parse($dates[0])->startOfDay() : null;
+            $endDate = isset($dates[1]) ? Carbon::parse($dates[1])->startOfDay():  Carbon::parse($dates[0])->startOfDay();
+        }
+    
+        $jobInterviews = ErpRecruitmentJobInterview::with([
+                    'job' =>function($q) use($user){
+                        $q->select('id','job_id','job_title_id','status');
+                    },
+                    'candidate' =>function($q) use($user){
+                        $q->select('id','name');
+                    }
+                ])->where(function($query) use($request, $startDate, $endDate){
+                    if ($request->job_title) {
+                        $query->whereHas('job', function($q) use($request){
+                            $q->where('job_title_id',$request->job_title);
+                        }); 
+                    }
+    
+                    if ($request->status) {
+                        $query->where('status', $request->status);
+                    }
+    
+                    if ($request->search) {
+                        $query->where(function($q) use($request){
+                            $q->whereHas('candidate', function($q) use($request){
+                                $q->where('name','like', '%'.$request->search.'%');
+                            })
+                            ->orWhereHas('job', function($q) use($request){
+                                $q->where('job_id','like', '%'.$request->search.'%')
+                                ->orWhere('status', 'like', '%'.$request->search.'%');
+                            })                            
+                            ->orWhere('status', 'like', '%'.$request->search.'%');
+                        });
+                    }
+                    $query->whereBetween('date_time', [$startDate, $endDate]);
+                })
+                ->whereHas('job',function($q) use($user){
+                    $q->where('created_by',$user->id)
+                    ->where('created_by_type',$user->authenticable_type);
+                })
+                ->orderBy('date_time','desc')
+                ->paginate($length);
+        
+        return view('recruitment.job.interview-scheduled',[
+            'jobInterviews' => $jobInterviews,
+            'jobTitles' => $masterData['jobTitles'],
+            'status' => CommonHelper::INTERVIEW_STATUS,
+            'jobCount' => $summaryData['jobCount'],
+            'interviewCount' => $summaryData['interviewCount'],
+            'user' => $user,
+            'candidatesCount' => $summaryData['candidatesCount'],
+            'selectedCandidatesCount' => $summaryData['selectedCandidatesCount'],
+            'closedJobCount' => $summaryData['closedJobCount'],
+        ]);
+    }
 
+
+    public function getAssignedCandidateList(Request $request){
+        $user = Helper::getAuthenticatedUser();
+        $length = $request->length ? $request->length : CommonHelper::PAGE_LENGTH_10;
+        $masterData = self::masterData();
+        $summaryData = self::getJobSummary($request, $user);
+
+        $jobs = ErpRecruitmentJob::with('jobSkills')
+                ->withCount([
+                    'panelAllocations as totalJobRounds' => function ($q) {
+                        $q->select(\DB::raw('COUNT(DISTINCT round_id)'));
+                    },'assignedCandidates'
+                ])
+            ->where(function($query) use($request){
+                self::filter($request, $query);
+            })
+            ->where('created_by',$user->id)
+            ->where('created_by_type',$user->authenticable_type)
+            ->whereHas('assignedCandidates', function($q){
+                $q->where('status',CommonHelper::ASSIGNED);
+            })
+            ->orderBy('created_at','desc')->paginate($length);
+        
+        return view('recruitment.job.assgined-candidate',[
+            'jobs' => $jobs,
+            'jobTitles' => $masterData['jobTitles'],
+            'status' => CommonHelper::JOB_STATUS,
+            'skills' => $masterData['skills'],
+            'jobCount' => $summaryData['jobCount'],
+            'user' => $user,
+            'candidatesCount' => $summaryData['candidatesCount'],
+            'interviewCount' => $summaryData['interviewCount'],
+            'selectedCandidatesCount' => $summaryData['selectedCandidatesCount'],
+            'closedJobCount' => $summaryData['closedJobCount'],
+        ]);
+    }
+
+    private function getJobSummary($request, $user){
         $jobCount = ErpRecruitmentJob::where(function($query) use($request){
                 self::filter($request, $query);
             })
@@ -68,24 +176,51 @@ class JobController extends Controller
             ->whereDoesntHave('assignedCandidates')
             ->count();
 
+        $closedJobCount = ErpRecruitmentJob::where(function($query) use($request){
+                self::filter($request, $query);
+            })
+            ->where('created_by',$user->id)
+            ->where('created_by_type',$user->authenticable_type)
+            ->where('status',CommonHelper::CLOSED)
+            ->count();
+
         $candidatesCount = ErpRecruitmentJob::where(function($query) use($request){
                 self::filter($request, $query);
             })
             ->where('created_by',$user->id)
             ->where('created_by_type',$user->authenticable_type)
-            ->whereHas('assignedCandidates')
+            ->whereHas('assignedCandidates', function($q){
+                $q->where('status',CommonHelper::ASSIGNED);
+            })
             ->count();
 
+        $interviewCount = ErpRecruitmentJob::where(function($query) use($request){
+                self::filter($request, $query);
+            })
+            ->where('created_by',$user->id)
+            ->where('created_by_type',$user->authenticable_type)
+            ->whereHas('jobInterview', function($q){
+                    $q->where('status',CommonHelper::SCHEDULED);
+                })
+            ->count();
+
+        $selectedCandidatesCount = ErpRecruitmentJob::where(function($query) use($request){
+                self::filter($request, $query);
+            })
+            ->where('created_by',$user->id)
+            ->where('created_by_type',$user->authenticable_type)
+            ->whereHas('assignedCandidates', function($q){
+                $q->where('status',CommonHelper::SELECTED);
+            })
+            ->count();
         
-        return view('recruitment.job.index',[
-            'jobs' => $jobs,
-            'jobTitles' => $masterData['jobTitles'],
-            'status' => CommonHelper::JOB_STATUS,
-            'skills' => $masterData['skills'],
+        return [
             'jobCount' => $jobCount,
-            'user' => $user,
             'candidatesCount' => $candidatesCount,
-        ]);
+            'interviewCount' => $interviewCount,
+            'selectedCandidatesCount' => $selectedCandidatesCount,
+            'closedJobCount' => $closedJobCount,
+        ];
     }
 
     private function filter($request, $query){
@@ -223,6 +358,8 @@ class JobController extends Controller
             $job->organization_id = $user->organization_id;
             $job->status = $request->status;
             $job->third_party_assessment = $request->third_party_assessment;
+            $job->assessment_url = $request->third_party_assessment == 'yes' ? $request->assessment_url : NULL;
+            $job->last_apply_date = $request->last_apply_date ? $request->last_apply_date : NULL;
             $job->publish_for = $request->publish_for;
             $job->employement_type = $request->employement_type;
             $job->industry_id = $request->industry_id;
@@ -306,15 +443,15 @@ class JobController extends Controller
             }
 
             // ✅ Log the job creation
-            $jobRequestLog = new ErpRecruitmentJobLog();
-            $jobRequestLog->organization_id = $user->organization_id;
-            $jobRequestLog->job_id = $job->id;
-            $jobRequestLog->status = $job->status;
-            $jobRequestLog->log_type = CommonHelper::JOB; 
-            $jobRequestLog->log_message = 'Job created'; 
-            $jobRequestLog->action_by = $user->id;
-            $jobRequestLog->action_by_type = $user->authenticable_type;
-            $jobRequestLog->save();
+            $jobLog = new ErpRecruitmentJobLog();
+            $jobLog->organization_id = $user->organization_id;
+            $jobLog->job_id = $job->id;
+            $jobLog->status = $job->status;
+            $jobLog->log_type = CommonHelper::JOB; 
+            $jobLog->log_message = 'Job created'; 
+            $jobLog->action_by = $user->id;
+            $jobLog->action_by_type = $user->authenticable_type;
+            $jobLog->save();
             
             \DB::commit();
             return [
@@ -371,6 +508,8 @@ class JobController extends Controller
             $job->organization_id = $user->organization_id;
             $job->status = $request->status;
             $job->third_party_assessment = $request->third_party_assessment;
+            $job->assessment_url = $request->third_party_assessment == 'yes' ? $request->assessment_url : NULL;
+            $job->last_apply_date = $request->last_apply_date ? $request->last_apply_date : NULL;
             $job->publish_for = $request->publish_for;
             $job->employement_type = $request->employement_type;
             $job->industry_id = $request->industry_id;
@@ -457,20 +596,35 @@ class JobController extends Controller
                         $q->where('erp_recruitment_assigned_candidates.status', CommonHelper::NOT_QUALIFIED);
                     },'assignedCandidates as onholdCanidatesCount' => function ($q) {
                         $q->where('erp_recruitment_assigned_candidates.status', CommonHelper::ONHOLD);
+                    },'assignedCandidates as scheduledInterviewCount' => function ($q) {
+                        $q->where('erp_recruitment_assigned_candidates.status', CommonHelper::SCHEDULED);
+                    },'assignedCandidates as selectedCandidateCount' => function ($q) {
+                        $q->where('erp_recruitment_assigned_candidates.status', CommonHelper::SELECTED);
                     },'assignedCandidates as totalAssginedCandidate'
                 ])->find($id);
         
         $jobSkills = [];
+        $rounds = [];
         if ($job) {
             $jobSkills = $job->jobSkills->pluck('name')->toArray();
+            $rounds = ErpRecruitmentRound::whereHas('allocateRounds',function($q) use($job){
+                $q->where('job_id',$job->id);
+            })
+            ->select('id','name')
+            ->orderby('id','ASC')
+            ->get();
         }
 
-        $jobLogs = ErpRecruitmentJobLog::where('job_id',$id)->where('log_type',CommonHelper::CANDIDATE)->orderby('id','DESC')->get();
+        $jobLogs = ErpRecruitmentJobLog::where('job_id',$id)
+                    // ->where('log_type',CommonHelper::CANDIDATE)
+                    ->orderby('id','DESC')
+                    ->get();
         return view('recruitment.job.show',[
             'job' => $job,
             'jobSkills' => $jobSkills,
             'user' => $user,
             'jobLogs' => $jobLogs,
+            'rounds' => $rounds,
         ]);
     }
 
@@ -486,6 +640,7 @@ class JobController extends Controller
         $user = Helper::getAuthenticatedUser();
         $length = $request->length ? $request->length : CommonHelper::PAGE_LENGTH_10;
         $job = ErpRecruitmentJob::find($jobId);
+        $skillIds = $job->jobSkills()->pluck('skill_id')->toArray();
 
         $query = ErpRecruitmentJobCandidate::with('candidateSkills')
             ->where(function($query) use($request){
@@ -517,8 +672,10 @@ class JobController extends Controller
                     });
                 }
             })
-            ->where('created_by',$user->id)
-            ->where('created_by_type',$user->authenticable_type);
+            ->where('organization_id',$user->organization_id)
+            ->whereHas('candidateSkills', function ($q) use($skillIds) {
+                    $q->whereIn('skill_id', $skillIds);
+                });
 
         $candidates = $query->paginate($length);
         $assignedCandidateIds = ErpRecruitmentAssignedCandidate::where('job_id', $job->id)
@@ -583,6 +740,8 @@ class JobController extends Controller
             'assignedJob' => function($q) use($jobId){
                 $q->where('job_id',$jobId)
                 ->select('job_id','candidate_id','created_at','status');
+            },'jobDetail'  => function($q) use($jobId){
+                $q->select('erp_recruitment_job.id','erp_recruitment_job.job_title_id');
             }
         ])->find($id);
         
@@ -592,8 +751,79 @@ class JobController extends Controller
         ])->render();
     }
 
+    public function candidateInterviewDetail(Request $request, $id, $jobId){
+        $candidate = ErpRecruitmentJobCandidate::with([
+            'assignedJob' => function($q) use($jobId, $request){
+                $q->where('job_id',$jobId)
+                    ->where('status',$request->status)
+                    ->select('job_id','candidate_id','created_at','status');
+            },'jobDetail'  => function($q) use($jobId){
+                $q->select('erp_recruitment_job.id','erp_recruitment_job.job_title_id');
+            },
+        ])->find($id);
+        
+        $interviewDetail = ErpRecruitmentJobInterview::where('job_id', $jobId)
+                            ->where('candidate_id', $id)
+                            ->where('status',$request->status)
+                            ->first();
+        
+        $interviewRounds = ErpRecruitmentRound::with(['jobInterview' => function($q){
+                $q->select('id','round_id','status');
+            }])
+            ->whereHas('allocateRounds',function($q) use($jobId){
+                $q->where('job_id',$jobId);
+            })
+            ->select('id','name')
+            ->orderby('id','ASC')
+            ->get();
+
+        $feedbackLog = ErpRecruitmentInterviewFeedback::where('job_id',$jobId)
+                    ->where('candidate_id',$id)
+                    ->where('round_id',$interviewDetail->round_id)
+                    ->select('id','round_id','rating','behavior','skills','panel_id','remarks','created_at','attachment_path')
+                    ->orderby('id','DESC')
+                    ->get();
+        
+        $pendingRoundsCount = ErpRecruitmentRound::whereHas('allocateRounds', function($q) use($jobId) {
+                                $q->where('job_id', $jobId);
+                            })
+                            ->whereNotIn('id', function($q) use ($jobId, $id) {
+                                // Exclude rounds that already have feedback or are completed
+                                $q->select('round_id')
+                                ->from('erp_recruitment_job_interviews')
+                                ->where('job_id', $jobId)
+                                ->where('candidate_id', $id);
+                            })
+                            ->count();
+
+        $user = Helper::getAuthenticatedUser();
+       
+        $isPanelist = ErpRecruitmentJobPanelAllocation::where('job_id', $jobId)->where('panel_id', $user->id)->exists();
+        $hasGivenFeedback = false;
+        if ($isPanelist) {
+            $hasGivenFeedback = ErpRecruitmentInterviewFeedback::where('panel_id', $user->id)
+                ->where('interview_id', $interviewDetail->id)
+                ->exists();
+        }
+
+        return view('recruitment.partials.candidate-interview-detail', [
+            'candidate' => $candidate,
+            'interviewDetail' => $interviewDetail,
+            'page' => $request->page,
+            'interviewRounds' => $interviewRounds,
+            'feedbackLog' => $feedbackLog,
+            'status' => $request->status,
+            'pendingRoundsCount' => $pendingRoundsCount,
+            'hasGivenFeedback' => $hasGivenFeedback,
+        ])->render();
+    }
+
     public function fetchCandidates(Request $request,$jobId,$status){
-        $candidates = ErpRecruitmentJobCandidate::with('assignedJob')->whereHas('assignedJob',function($q) use($jobId,$status){
+        $candidates = ErpRecruitmentJobCandidate::with(['scheduledInterview' => function($q) use($jobId,$status){
+            $q->where('job_id',$jobId)
+                ->where('status',$status);
+        },'assignedJob'])
+        ->whereHas('assignedJob',function($q) use($jobId,$status){
             $q->where('job_id',$jobId)
             ->where('status',$status);
         })->get();
@@ -638,6 +868,41 @@ class JobController extends Controller
             \DB::commit();
             return [
                 'message' => "Candidate is $request->status",
+            ];
+        } catch (\Exception $e) {
+            \DB::rollback();
+            throw new ApiGenericException($e->getMessage());
+        }
+    }
+
+    public function updateStatus(Request $request,$id){
+        $validator = (new Validator($request))->updateStatus();
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        \DB::beginTransaction();
+        try {
+
+            $user = Helper::getAuthenticatedUser();
+            ErpRecruitmentJob::where('id',$id)
+                ->update([
+                    'status' => $request->status,
+                ]);
+
+            $jobRequestLog = new ErpRecruitmentJobLog();
+            $jobRequestLog->organization_id = $user->organization_id;
+            $jobRequestLog->job_id = $id;
+            $jobRequestLog->log_type = CommonHelper::JOB; 
+            $jobRequestLog->log_message = $request->log_message; 
+            $jobRequestLog->status = $request->status;
+            $jobRequestLog->action_by = $user->id;
+            $jobRequestLog->action_by_type = $user->authenticable_type;
+            $jobRequestLog->save();
+
+            \DB::commit();
+            return [
+                'message' => "Job is $request->status",
             ];
         } catch (\Exception $e) {
             \DB::rollback();

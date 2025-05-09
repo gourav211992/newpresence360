@@ -46,15 +46,15 @@
                                             class="form-control mw-100 ledgerselecct inventory_items" id="item"
                                             name="item" />
                                         </div>
-                                        <div class="col-md-1">
+                                        <div class="col-md-1" style="display:none;">
                                             <div class="mb-1 mb-sm-0">
                                                 <button type="button" class="btn btn-primary btn-md mb-0 waves-effect attributeBtn" style="background:#fff !important;border:1px solid #6e6b7b59 !important;color:black  !important;">Attributes</button>
                                             </div>
                                         </div>
-                                        <div class="col-md-1 location_id" style="display:none;">
+                                        <div class="col-md-2 location_id" style="display:none;">
                                             <div class="mb-1 mb-sm-0">
                                                 <select class="form-select mw-100 select2 store_code" name="location_id" id="location_id">
-                                                    <option value="">Location</option>
+                                                    <option value="">Select Location</option>
                                                     @foreach($erpStores as $val)
                                                         <option value="{{$val->id}}">
                                                             {{$val->store_name}}
@@ -63,17 +63,18 @@
                                                 </select>
                                             </div>
                                         </div>
-                                        <div class="col-md-1 store_id" style="display:none;">
+                                        <div class="col-md-2 store_id" style="display:none;">
                                             <div class="mb-1 mb-sm-0">
                                                 <select class="form-select mw-100 select2 rack_code" name="store_id" id="store_id">
-                                                    <option value="">Store</option>
+                                                    <option value="">Select Store</option>
                                                 </select>
                                             </div>
                                         </div>
-                                        <div class="col-md-1 shelf_id" style="display:none;">
+                                        <div class="col-md-2 stock_type" style="display:none;">
                                             <div class="mb-1 mb-sm-0">
-                                                <select class="form-select mw-100 select2 shelf_code" name="shelf_id" id="shelf_id">
-                                                    <option value="">Select Shelf</option>
+                                                <select class="form-select mw-100 select2 stock_type" name="stock_type" id="stock_type">
+                                                    <option value="R">Regular</option>
+                                                    <option value="W">WIP</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -182,6 +183,18 @@
                                         <div class="form-check form-check-secondary">
                                             <input type="checkbox" class="form-check-input" id="sub_location">
                                             <label class="form-check-label" for="sub_location">Store</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check form-check-secondary">
+                                            <input type="checkbox" class="form-check-input" id="station">
+                                            <label class="form-check-label" for="station">Station</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check form-check-secondary">
+                                            <input type="checkbox" class="form-check-input" id="stock_types">
+                                            <label class="form-check-label" for="stock_types">Stock Type</label>
                                         </div>
                                     </div>
 
@@ -376,6 +389,7 @@
             poReport: @json(route('inventory-report.report.filter')),
             addScheduler: @json(route('inventory-report.add.scheduler')),
         };
+        var subStoreLocType = @json($subStoreLocType);
 
         $(function() {
             $(".sortable").sortable();
@@ -475,7 +489,9 @@
                 if (storeId) {
                     $('#store_id').val(storeId).select2();
                     var data = {
-                        store_id: storeId
+                        store_id: storeId,
+                        type: subStoreLocType
+
                     };
                     $.ajax({
                         type: 'GET',
@@ -501,6 +517,12 @@
             $('#store_id').on('change', function() {
                 const subStoreId = $(this).val();
                 filterData.store_id = subStoreId;
+                updateFilterAndFetch();
+            });
+
+            $('#stock_type').on('change', function() {
+                const stockType = $(this).val();
+                filterData.stock_type = stockType;
                 updateFilterAndFetch();
             });
 
@@ -563,8 +585,8 @@
                     // Send the parameter when the checkbox is checked
                     sub_location_check = 1;
                     filterData.sub_location_check = sub_location_check;
-                    store_check = 1;
-                    filterData.store_check = store_check;
+                    sub_location_check = 1;
+                    filterData.sub_location_check = sub_location_check;
                     updateFilterAndFetch();
                     $('.store_id').css('display', 'block');
                 } else {
@@ -577,20 +599,21 @@
             });
 
             // Check Uncheck Bin
-            $('#bin').on('change', function() {
-                let bin_check = 0;
+            $('#stock_types').on('change', function() {
+                let stock_type_check = 0;
                 if ($(this).is(':checked')) {
                     // Send the parameter when the checkbox is checked
-                    bin_check = 1;
-                    filterData.bin_check = bin_check;
+                    stock_type_check = 1;
+                    filterData.stock_type_check = stock_type_check;
+                    filterData.stock_type = 'R';
                     updateFilterAndFetch();
-                    $('.bin_id').css('display', 'block');
+                    $('.stock_type').css('display', 'block');
                 } else {
                     // Handle the case where the checkbox is unchecked if needed
-                    bin_check = 0;
-                    filterData.bin_check = bin_check;
+                    stock_type_check = 0;
+                    filterData.stock_type_check = stock_type_check;
                     updateFilterAndFetch();
-                    $('.bin_id').css('display', 'none');
+                    $('.stock_type').css('display', 'none');
                 }
             });
 
@@ -905,6 +928,7 @@
                     formData.displayedHeaders = displayedHeaders;
                     formData.store_id = filterData.location_id;
                     formData.sub_store_id = filterData.store_id;
+                    formData.stock_type = filterData.stock_type;
 
                     $.ajax({
                         url: window.routes.addScheduler,

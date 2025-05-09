@@ -3,11 +3,14 @@
 namespace App\Helpers;
 use App\Models\Book;
 use App\Models\ErpProductionSlip;
+use App\Models\ErpPsvHeader;
 use App\Models\FixedAssetRegistration;
 use App\Models\ErpSaleReturn;
 use App\Models\LandLease;
 use App\Models\FixedAssetDepreciation;
 use App\Models\LandLeasePlot;
+use App\Models\FixedAssetSplit;
+use App\Models\FixedAssetMerger;
 
 use App\Models\StockLedger;
 use App\Models\Vendor;
@@ -64,9 +67,12 @@ class FinancialPostingHelper
     const COGS_ACCOUNT = 'COGS';
     const SALES_ACCOUNT = 'Sales';
     const STOCK_ACCOUNT = 'Stock';
+    const PHYSICAL_STOCK_VARIANCE_ACCOUNT = 'PSVA';
     const WIP_ACCOUNT = 'FG/WIP';
     const RM_ACCOUNT = 'RM';
     const CUSTOMER_ACCOUNT = 'Customer';
+    const OLD_ASSET = 'Old Asset';
+    const NEW_ASSET = 'New Asset';
     const PAYMENT_ACCOUNT = 'Payment';
     const VENDOR_ACCOUNT = 'Party';
 
@@ -113,6 +119,10 @@ class FinancialPostingHelper
         self::CUSTOMER_ACCOUNT => self::CREDIT,
         self::INTEREST_ACCOUNT => self::CREDIT,
     ];
+    const PSV_POSTING_ACCOUNT = [
+        self::STOCK_ACCOUNT => self::DEBIT,
+        self::PHYSICAL_STOCK_VARIANCE_ACCOUNT => self::CREDIT,
+    ];
     const PAYMENT_VOUCHER_RECEIPT_POSTING_ACCOUNT = [
         self::Bank_ACCOUNT => self::DEBIT,
         self::CUSTOMER_ACCOUNT => self::CREDIT,
@@ -120,6 +130,10 @@ class FinancialPostingHelper
     const FIXED_ASSET_DEPRECIATION_POSTING_ACCOUNT = [
         self::DEPRECIATION => self::DEBIT,
         self::ASSET => self::CREDIT,
+    ];
+    const FIXED_ASSET_SPLIT_MERGER_POSTING_ACCOUNT = [
+        self::NEW_ASSET => self::DEBIT,
+        self::OLD_ASSET => self::CREDIT,
     ];
 
     const LOAN_SETTLE_POSTING_ACCOUNT = [
@@ -148,7 +162,10 @@ class FinancialPostingHelper
         ConstantHelper::PAYMENTS_SERVICE_ALIAS => self::PAYMENT_VOUCHER_RECEIPT_POSTING_ACCOUNT,
         ConstantHelper::RECEIPTS_SERVICE_ALIAS => self::PAYMENT_VOUCHER_RECEIPT_POSTING_ACCOUNT,
         ConstantHelper::FIXED_ASSET_DEPRECIATION => self::FIXED_ASSET_DEPRECIATION_POSTING_ACCOUNT,
+        ConstantHelper::FIXED_ASSET_MERGER=>self::FIXED_ASSET_SPLIT_MERGER_POSTING_ACCOUNT,
+        ConstantHelper::FIXED_ASSET_SPLIT=>self::FIXED_ASSET_SPLIT_MERGER_POSTING_ACCOUNT,
         ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS => self::DN_CUM_INVOICE_SERVICE_POSTING_ACCOUNT,
+        ConstantHelper::PSV_SERVICE_ALIAS => self::PSV_POSTING_ACCOUNT,
     ];
 
     public static function financeVoucherPosting(int $bookId, int $documentId, string $type, bool $onApproval=false) 
@@ -319,6 +336,15 @@ class FinancialPostingHelper
                     'data' => []
                 );
             }
+        }else if ($serviceAlias === ConstantHelper::PSV_SERVICE_ALIAS) {
+            $entries = self::PsvVoucherDetails($documentId,"");
+            if (!$entries['status']) {
+                return array(
+                    'status' => false,
+                    'message' => $entries['message'],
+                    'data' => []
+                );
+            }
         }
         else if ($serviceAlias === ConstantHelper::PAYMENTS_SERVICE_ALIAS) {
             $entries = self::paymentInvoiceVoucherDetails($documentId,'');
@@ -362,6 +388,26 @@ class FinancialPostingHelper
         }
         else if ($serviceAlias === ConstantHelper::FIXED_ASSET_DEPRECIATION) {
             $entries = self::depVoucherDetails($documentId, $type);
+            if (!$entries['status']) {
+                return array(
+                    'status' => false,
+                    'message' => $entries['message'],
+                    'data' => []
+                );
+            }
+        }
+        else if ($serviceAlias === ConstantHelper::FIXED_ASSET_MERGER) {
+            $entries = self::fixedAssetMergerVoucherDetails($documentId, $type);
+            if (!$entries['status']) {
+                return array(
+                    'status' => false,
+                    'message' => $entries['message'],
+                    'data' => []
+                );
+            }
+        }
+        else if ($serviceAlias === ConstantHelper::FIXED_ASSET_SPLIT) {
+            $entries = self::fixedAssetSplitVoucherDetails($documentId, $type);
             if (!$entries['status']) {
                 return array(
                     'status' => false,
@@ -725,11 +771,21 @@ class FinancialPostingHelper
                     'status' => false
                 );
             }
+            $totalCreditAmount = 0;
+            $totalDebitAmount = 0;
             $details['voucher_header']['approvalStatus'] = $details['voucher_header']['document_status'];
             $voucher = Voucher::create($details['voucher_header']);
             foreach ($details['voucher_details'] as &$voucherDetail) {
                 $voucherDetail['voucher_id'] = $voucher -> id;
+                $totalCreditAmount += $voucherDetail['credit_amt'];
+                $totalDebitAmount += $voucherDetail['debit_amt'];
                 ItemDetail::create($voucherDetail);
+            }
+            if (round($totalDebitAmount,6) !== round($totalCreditAmount,6)) {
+                return array(
+                    'message' => 'Credit Amount does not match Debit Amount',
+                    'status' => false
+                );
             }
             //Create log
             $userData = Helper::userCheck();
@@ -805,13 +861,13 @@ class FinancialPostingHelper
                 'data' => []
             );
         }
-        $discountPostingParam = OrganizationBookParameter::where('book_id', $document -> book_id)
-        -> where('parameter_name', ServiceParametersHelper::GL_SEPERATE_DISCOUNT_PARAM) -> first();
-        if (isset($discountPostingParam)) {
-            $discountSeperatePosting = $discountPostingParam -> parameter_value[0] === "yes" ? true : false;
-        } else {
-            $discountSeperatePosting = false;
-        }
+        // $discountPostingParam = OrganizationBookParameter::where('book_id', $document -> book_id)
+        // -> where('parameter_name', ServiceParametersHelper::GL_SEPERATE_DISCOUNT_PARAM) -> first();
+        // if (isset($discountPostingParam)) {
+        //     $discountSeperatePosting = $discountPostingParam -> parameter_value[0] === "yes" ? true : false;
+        // } else {
+        $discountSeperatePosting = false;
+        // }
         //Status to check if all ledger entries were properly set
         $ledgerErrorStatus = null;
         foreach ($document -> items as $docItemKey => $docItem) {
@@ -1014,13 +1070,13 @@ class FinancialPostingHelper
             }
         }
         //Balance does not match
-        if (round($totalDebitAmount,6) !== round($totalCreditAmount,6)) {
-            return array(
-                'status' => false,
-                'message' => 'Credit Amount does not match Debit Amount',
-                'data' => []
-            );
-        }
+        // if (round($totalDebitAmount,6) !== round($totalCreditAmount,6)) {
+        //     return array(
+        //         'status' => false,
+        //         'message' => 'Credit Amount does not match Debit Amount',
+        //         'data' => []
+        //     );
+        // }
         //Get Header Details
         $book = Book::find($document -> book_id);
         $glPostingBookParam = OrganizationBookParameter::where('book_id', $book -> id) -> where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM) -> first();
@@ -1060,7 +1116,8 @@ class FinancialPostingHelper
             'voucherable_type' => $userData['user_type'],
             'voucherable_id' => $userData['user_id'],
             'document_status' => ConstantHelper::APPROVED,
-            'approvalLevel' => $document -> approval_level
+            'approvalLevel' => $document -> approval_level,
+            'location' => $document ?-> store_id
        ];
        $voucherDetails = self::generateVoucherDetailsArray($postingArray, $voucherHeader, $document);
         return array(
@@ -1114,13 +1171,13 @@ class FinancialPostingHelper
                 'data' => []
             );
         }
-        $discountPostingParam = OrganizationBookParameter::where('book_id', $document -> book_id)
-        -> where('parameter_name', ServiceParametersHelper::GL_SEPERATE_DISCOUNT_PARAM) -> first();
-        if (isset($discountPostingParam)) {
-            $discountSeperatePosting = $discountPostingParam -> parameter_value[0] === "yes" ? true : false;
-        } else {
+        // $discountPostingParam = OrganizationBookParameter::where('book_id', $document -> book_id)
+        // -> where('parameter_name', ServiceParametersHelper::GL_SEPERATE_DISCOUNT_PARAM) -> first();
+        // if (isset($discountPostingParam)) {
+        //     $discountSeperatePosting = $discountPostingParam -> parameter_value[0] === "yes" ? true : false;
+        // } else {
             $discountSeperatePosting = false;
-        }
+        // }
         //Status to check if all ledger entries were properly set
         $ledgerErrorStatus = null;
         foreach ($document -> items as $docItemKey => $docItem) {
@@ -1323,13 +1380,13 @@ class FinancialPostingHelper
             }
         }
         //Balance does not match
-        if (round($totalDebitAmount,6) !== round($totalCreditAmount,6)) {
-            return array(
-                'status' => false,
-                'message' => 'Credit Amount does not match Debit Amount',
-                'data' => []
-            );
-        }
+        // if (round($totalDebitAmount,6) !== round($totalCreditAmount,6)) {
+        //     return array(
+        //         'status' => false,
+        //         'message' => 'Credit Amount does not match Debit Amount',
+        //         'data' => []
+        //     );
+        // }
         //Get Header Details
         $book = Book::find($document -> book_id);
         $glPostingBookParam = OrganizationBookParameter::where('book_id', $book -> id) -> where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM) -> first();
@@ -1369,7 +1426,8 @@ class FinancialPostingHelper
             'voucherable_type' => $userData['user_type'],
             'voucherable_id' => $userData['user_id'],
             'document_status' => ConstantHelper::APPROVED,
-            'approvalLevel' => $document -> approval_level
+            'approvalLevel' => $document -> approval_level,
+            'location' => $document ?-> store_id
        ];
        $voucherDetails = self::generateVoucherDetailsArray($postingArray, $voucherHeader, $document);
         return array(
@@ -1426,12 +1484,12 @@ class FinancialPostingHelper
                 'data' => []
             );
         }
-        $discountPostingParam = OrganizationBookParameter::where('book_id', $document -> book_id) -> where('parameter_name', ServiceParametersHelper::GL_SEPERATE_DISCOUNT_PARAM) -> first();
-        if (isset($discountPostingParam)) {
-            $discountSeperatePosting = $discountPostingParam -> parameter_value[0] === "yes" ? true : false;
-        } else {
+        // $discountPostingParam = OrganizationBookParameter::where('book_id', $document -> book_id) -> where('parameter_name', ServiceParametersHelper::GL_SEPERATE_DISCOUNT_PARAM) -> first();
+        // if (isset($discountPostingParam)) {
+        //     $discountSeperatePosting = $discountPostingParam -> parameter_value[0] === "yes" ? true : false;
+        // } else {
             $discountSeperatePosting = false;
-        }
+        // }
         //Status to check if all ledger entries were properly set
         $ledgerErrorStatus = null;
         foreach ($document -> items as $docItemKey => $docItem) {
@@ -1632,13 +1690,13 @@ class FinancialPostingHelper
             }
         }
         //Balance does not match
-        if (number_format($totalDebitAmount,2) !== number_format($totalCreditAmount,2)) {
-            return array(
-                'status' => false,
-                'message' => 'Credit Amount does not match Debit Amount',
-                'data' => []
-            );
-        }
+        // if (number_format($totalDebitAmount,2) !== number_format($totalCreditAmount,2)) {
+        //     return array(
+        //         'status' => false,
+        //         'message' => 'Credit Amount does not match Debit Amount',
+        //         'data' => []
+        //     );
+        // }
         //Get Header Details
         $book = Book::find($document -> book_id);
         $glPostingBookParam = OrganizationBookParameter::where('book_id', $book -> id) -> where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM) -> first();
@@ -1678,7 +1736,8 @@ class FinancialPostingHelper
             'voucherable_type' => $userData['user_type'],
             'voucherable_id' => $userData['user_id'],
             'document_status' => ConstantHelper::APPROVED,
-            'approvalLevel' => $document -> approval_level
+            'approvalLevel' => $document -> approval_level,
+            'location' => $document ?-> store_id
        ];
        $voucherDetails = [];
        foreach ($postingArray as $entryType => $postDetails) {
@@ -1858,13 +1917,13 @@ class FinancialPostingHelper
                     'data' => []
                 );
             }
-            $discountPostingParam = OrganizationBookParameter::where('book_id', $document -> book_id)
-            -> where('parameter_name', ServiceParametersHelper::GL_SEPERATE_DISCOUNT_PARAM) -> first();
-            if (isset($discountPostingParam)) {
-                $discountSeperatePosting = $discountPostingParam -> parameter_value[0] === "yes" ? true : false;
-            } else {
-                $discountSeperatePosting = false;
-            }
+            // $discountPostingParam = OrganizationBookParameter::where('book_id', $document -> book_id)
+            // -> where('parameter_name', ServiceParametersHelper::GL_SEPERATE_DISCOUNT_PARAM) -> first();
+            // if (isset($discountPostingParam)) {
+            //     $discountSeperatePosting = $discountPostingParam -> parameter_value[0] === "yes" ? true : false;
+            // } else {
+            $discountSeperatePosting = false;
+            // }
             foreach ($document -> items as $docItemKey => $docItem) {
                 //Assign Item values
                 $itemValue = $docItem -> rate * $docItem -> order_qty;
@@ -2065,13 +2124,13 @@ class FinancialPostingHelper
         }
         
         //Balance does not match
-        if (round($totalDebitAmount,6) != round($totalCreditAmount,6)) {
-            return array(
-                'status' => false,
-                'message' => self::ERROR_PREFIX.'Credit Amount does not match Debit Amount',
-                'data' => []
-            );
-        }
+        // if (round($totalDebitAmount,6) != round($totalCreditAmount,6)) {
+        //     return array(
+        //         'status' => false,
+        //         'message' => self::ERROR_PREFIX.'Credit Amount does not match Debit Amount',
+        //         'data' => []
+        //     );
+        // }
         //Get Header Details
         $book = Book::find($document -> book_id);
         $glPostingBookParam = OrganizationBookParameter::where('book_id', $book -> id) -> where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM) -> first();
@@ -2111,7 +2170,8 @@ class FinancialPostingHelper
             'voucherable_type' => $userData['user_type'],
             'voucherable_id' => $userData['user_id'],
             'document_status' => ConstantHelper::APPROVED,
-            'approvalLevel' => $document -> approval_level
+            'approvalLevel' => $document -> approval_level,
+            'location' => $document ?-> store_id
        ];
        $voucherDetails = [];
        foreach ($postingArray as $entryType => $postDetails) {
@@ -2266,13 +2326,13 @@ class FinancialPostingHelper
             }
         }
         //Balance does not match
-        if (round($totalDebitAmount,6) !== round($totalCreditAmount,6)) {
-            return array(
-                'status' => false,
-                'message' => 'Credit Amount does not match Debit Amount',
-                'data' => []
-            );
-        }
+        // if (round($totalDebitAmount,6) !== round($totalCreditAmount,6)) {
+        //     return array(
+        //         'status' => false,
+        //         'message' => 'Credit Amount does not match Debit Amount',
+        //         'data' => []
+        //     );
+        // }
         //Get Header Details
         $book = Book::find($document -> book_id);
         $glPostingBookParam = OrganizationBookParameter::where('book_id', $book -> id) -> where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM) -> first();
@@ -2312,7 +2372,8 @@ class FinancialPostingHelper
             'voucherable_type' => $userData['user_type'],
             'voucherable_id' => $userData['user_id'],
             'document_status' => ConstantHelper::APPROVED,
-            'approvalLevel' => $document -> approval_level
+            'approvalLevel' => $document -> approval_level,
+            'location' => $document ?-> store_id
        ];
        $voucherDetails = self::generateVoucherDetailsArray($postingArray, $voucherHeader, $document, 'org_currency_id');
         return array(
@@ -2466,13 +2527,13 @@ class FinancialPostingHelper
             }
         }
         //Balance does not match
-        if (round($totalDebitAmount,6) !== round($totalCreditAmount,6)) {
-            return array(
-                'status' => false,
-                'message' => 'Credit Amount does not match Debit Amount',
-                'data' => []
-            );
-        }
+        // if (round($totalDebitAmount,6) !== round($totalCreditAmount,6)) {
+        //     return array(
+        //         'status' => false,
+        //         'message' => 'Credit Amount does not match Debit Amount',
+        //         'data' => []
+        //     );
+        // }
         //Get Header Details
         $book = Book::find($document->book_id);
         $glPostingBookParam = OrganizationBookParameter::where('book_id', $book -> id) -> where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM) -> first();
@@ -2662,13 +2723,13 @@ class FinancialPostingHelper
             }
         }
         //Balance does not match
-        if (round($totalDebitAmount,6) !== round($totalCreditAmount,6)) {
-            return array(
-                'status' => false,
-                'message' => 'Credit Amount does not match Debit Amount',
-                'data' => []
-            );
-        }
+        // if (round($totalDebitAmount,6) !== round($totalCreditAmount,6)) {
+        //     return array(
+        //         'status' => false,
+        //         'message' => 'Credit Amount does not match Debit Amount',
+        //         'data' => []
+        //     );
+        // }
         //Get Header Details
         $book = Book::find($document->book_id);
         $glPostingBookParam = OrganizationBookParameter::where('book_id', $book -> id) -> where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM) -> first();
@@ -2885,13 +2946,13 @@ class FinancialPostingHelper
             }
         }
         //Balance does not match
-        if (round($totalDebitAmount,6) !== round($totalCreditAmount,6)) {
-            return array(
-                'status' => false,
-                'message' => 'Credit Amount does not match Debit Amount',
-                'data' => []
-            );
-        }
+        // if (round($totalDebitAmount,6) !== round($totalCreditAmount,6)) {
+        //     return array(
+        //         'status' => false,
+        //         'message' => 'Credit Amount does not match Debit Amount',
+        //         'data' => []
+        //     );
+        // }
         //Get Header Details
         $book = Book::find($document->book_id);
         $glPostingBookParam = OrganizationBookParameter::where('book_id', $book->id)->where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM)->first();
@@ -3080,13 +3141,13 @@ class FinancialPostingHelper
         }
     }
     //Balance does not match
-    if (round($totalDebitAmount,6) !== round($totalCreditAmount,6)) {
-        return array(
-            'status' => false,
-            'message' => 'Credit Amount does not match Debit Amount',
-            'data' => []
-        );
-    }
+    // if (round($totalDebitAmount,6) !== round($totalCreditAmount,6)) {
+    //     return array(
+    //         'status' => false,
+    //         'message' => 'Credit Amount does not match Debit Amount',
+    //         'data' => []
+    //     );
+    // }
     //Get Header Details
     $book = Book::find($document->book_id);
     $glPostingBookParam = OrganizationBookParameter::where('book_id', $book->id)->where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM)->first();
@@ -3170,11 +3231,203 @@ class FinancialPostingHelper
         ]
     );
 }
+public static function depVoucherDetails(int $documentId, string $type) 
+{
+    $document = FixedAssetDepreciation::find($documentId);
+    if (!isset($document)) {
+        return array(
+            'status' => false,
+            'message' => 'Document not found',
+            'data' => []
+        );
+    }
+
+    //Invoice to follow
+    $postingArray = array(
+        self::ASSET => [],
+        self::DEPRECIATION => [],
+    );
+    //Assign Credit and Debit amount for tally check
+    $totalCreditAmount = 0;
+    $totalDebitAmount = 0;
 
 
-    public static function depVoucherDetails(int $documentId, string $type) 
+    //Status to check if all ledger entries were properly set
+    $ledgerErrorStatus = null;
+    //COGS SETUP
+    $asset_details = json_decode($document -> asset_details);
+    //COGS SETUP
+    foreach ($asset_details as $docItemKey => $docItem) {
+        $itemValue = 0;
+        $orgCurrencyCost = 0;
+        $asset= FixedAssetRegistration::find($docItem->asset_id);
+        $docValue = $docItem->dep_amount;
+        $assetsCreditAmount = $docValue;
+        $assetsLedgerId = $asset->ledger_id;
+        $assetsLedgerGroupId = $asset->ledger_group_id;
+
+
+        $assetsLedger = Ledger::find($asset->ledger_id);
+        $assetsLedgerGroup = Group::find($asset->ledger_group_id);
+        //LEDGER NOT FOUND
+        if (!isset($assetsLedger) || !isset($assetsLedgerGroup)) {
+            $ledgerErrorStatus = self::ERROR_PREFIX.'Assets Account not setup';
+            break;
+        }
+        
+        $depLedgerId = $asset->category->setup->dep_ledger_id;
+        $depLedgerGroupId = $asset->category->setup->dep_ledger_group_id;
+        $depLedger = Ledger::find($depLedgerId);
+        $depLedgerGroup = Group::find($depLedgerGroupId);
+        if (!isset($depLedger) || !isset($depLedgerGroup)) {
+            $ledgerErrorStatus = self::ERROR_PREFIX.'Depreciation Account not setup';
+            break;
+        }
+
+        $found = false;
+
+        foreach ($postingArray[self::ASSET] as &$entry) {
+            if ($entry['ledger_id'] == $assetsLedgerId && $entry['ledger_group_id'] == $assetsLedgerGroupId) {
+                $entry['credit_amount'] += $docValue;
+                $entry['credit_amount_org'] += $docValue;
+                $found = true;
+                break;
+            }
+        }
+        unset($entry);
+
+        if (!$found) {
+            $postingArray[self::ASSET][] = [
+                'ledger_id' => $assetsLedgerId,
+                'ledger_group_id' => $assetsLedgerGroupId,
+                'ledger_code' => $assetsLedger?->code,
+                'ledger_name' => $assetsLedger?->name,
+                'ledger_group_code' => $assetsLedgerGroup?->name,
+                'debit_amount' => 0,
+                'debit_amount_org' => 0,
+                'credit_amount' => $docValue,
+                'credit_amount_org' => $docValue,
+            ];
+        }
+
+    
+    
+        $found = false;
+
+        foreach ($postingArray[self::DEPRECIATION] as &$entry) {
+            if ($entry['ledger_id'] == $depLedgerId && $entry['ledger_group_id'] == $depLedgerGroupId) {
+                $entry['debit_amount'] += $docValue;
+                $entry['debit_amount_org'] += $docValue;
+                $found = true;
+                break;
+            }
+        }
+        unset($entry);
+        
+        if (!$found) {
+            $postingArray[self::DEPRECIATION][] = [
+                'ledger_id' => $depLedgerId,
+                'ledger_group_id' => $depLedgerGroupId,
+                'ledger_code' => $depLedger?->code,
+                'ledger_name' => $depLedger?->name,
+                'ledger_group_code' => $depLedgerGroup?->name,
+                'credit_amount' => 0,
+                'credit_amount_org' => 0,
+                'debit_amount' => $docValue,
+                'debit_amount_org' => $docValue,
+            ];
+        }
+        
+    }
+    if ($ledgerErrorStatus) {
+        return array(
+            'status' => false,
+            'message' => $ledgerErrorStatus,
+            'data' => []
+        );
+    }
+    $totalCreditAmount=0;
+    $totalDebitAmount=0;
+    //Check debit and credit tally
+    foreach ($postingArray as $postAccount) {
+        foreach ($postAccount as $postingValue) {
+            $totalCreditAmount += $postingValue['credit_amount'];
+            $totalDebitAmount += $postingValue['debit_amount'];
+        }
+    }
+   // Balance does not match
+   if (trim((string)$totalDebitAmount) != trim((string)$totalCreditAmount)) {
+    return array(
+        'status' => false,
+        'message' => self::ERROR_PREFIX.'Credit Amount does not match Debit Amount',
+        'data' => []
+    );
+}
+    //Get Header Details
+    $book = Book::find($document -> book_id);
+    $glPostingBookParam = OrganizationBookParameter::where('book_id', $book -> id) -> where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM) -> first();
+    if (isset($glPostingBookParam) && isset($glPostingBookParam -> parameter_value[0])) {
+        $glPostingBookId = $glPostingBookParam -> parameter_value[0];
+    } else {
+        return array(
+            'status' => false,
+            'message' => self::ERROR_PREFIX.'Financial Book Code is not specified',
+            'data' => []
+        );
+    }
+    $currency = Currency::find($document -> currency_id);
+    $currencyExc = CurrencyHelper::getCurrencyExchangeRates($document -> currency_id,$document -> document_date);
+    $currencyExc = $currencyExc['data'];
+    $userData = Helper::userCheck();
+    $voucherHeader = [
+        'voucher_no' => $document -> document_number,
+        'document_date' => $document -> document_date,
+        'book_id' => $glPostingBookId,
+        'date' => $document -> document_date,
+        'amount' => $totalCreditAmount,
+        'currency_id' => $document -> currency_id,
+        'currency_code' => $currencyExc['party_currency_code'],
+        'org_currency_id' => $currencyExc['org_currency_id'],
+        'org_currency_code' => $currencyExc['org_currency_code'],
+        'org_currency_exg_rate' => $currencyExc['org_currency_exg_rate'],
+        'comp_currency_id' => $currencyExc['comp_currency_id'],
+        'comp_currency_code' => $currencyExc['comp_currency_code'],
+        'comp_currency_exg_rate' => $currencyExc['comp_currency_exg_rate'],
+        'group_currency_id' => $currencyExc['group_currency_id'],
+        'group_currency_code' => $currencyExc['group_currency_code'],
+        'group_currency_exg_rate' => $currencyExc['group_currency_exg_rate'],
+        'reference_service' => $book ?-> service ?-> alias,
+        'reference_doc_id' => $document -> id,
+        'group_id' => $document -> group_id,
+        'company_id' => $document -> company_id,
+        'organization_id' => $document -> organization_id,
+        'voucherable_type' => $userData['user_type'],
+        'voucherable_id' => $userData['user_id'],
+        'document_status' => ConstantHelper::APPROVED,
+        'approvalLevel' => $document -> approval_level
+   ];
+   $voucherDetails = self::generateVoucherDetailsArray($postingArray, $voucherHeader, $document, 'currency_id', 'document_date', true);
+    return array(
+        'status' => true,
+        'message' => 'Posting Details found',
+        'data' => [
+            'voucher_header' => $voucherHeader,
+            'voucher_details' => $voucherDetails,
+            'document_date' => $document -> document_date,
+            'ledgers' => $postingArray,
+            'total_debit' => $totalDebitAmount,
+            'total_credit' => $totalCreditAmount,
+            'book_code' => $book ?-> book_code,
+            'document_number' => $document -> document_number,
+            'currency_code' => $currency ?-> short_name
+        ]
+    );
+}
+
+
+    public static function fixedAssetMergerVoucherDetails(int $documentId, string $type) 
     {
-        $document = FixedAssetDepreciation::find($documentId);
+        $document = FixedAssetMerger::find($documentId);
         if (!isset($document)) {
             return array(
                 'status' => false,
@@ -3185,8 +3438,8 @@ class FinancialPostingHelper
 
         //Invoice to follow
         $postingArray = array(
-            self::ASSET => [],
-            self::DEPRECIATION => [],
+            self::OLD_ASSET => [],
+            self::NEW_ASSET => [],
         );
         //Assign Credit and Debit amount for tally check
         $totalCreditAmount = 0;
@@ -3201,8 +3454,8 @@ class FinancialPostingHelper
         foreach ($asset_details as $docItemKey => $docItem) {
             $itemValue = 0;
             $orgCurrencyCost = 0;
-            $asset= FixedAssetRegistration::find($docItem->asset_id);
-            $docValue = $docItem->dep_amount;
+            $asset= FixedAssetRegistration::find((int)$docItem->asset_id);
+            $docValue = $docItem->currentvalue;
             $assetsCreditAmount = $docValue;
             $assetsLedgerId = $asset->ledger_id;
             $assetsLedgerGroupId = $asset->ledger_group_id;
@@ -3212,19 +3465,20 @@ class FinancialPostingHelper
             $assetsLedgerGroup = Group::find($asset->ledger_group_id);
             //LEDGER NOT FOUND
             if (!isset($assetsLedger) || !isset($assetsLedgerGroup)) {
-                $ledgerErrorStatus = self::ERROR_PREFIX.'Assets Account not setup';
+                $ledgerErrorStatus = self::ERROR_PREFIX.'Old Assets Account not setup';
                 break;
             }
             //Check for same ledger and group in SALES ACCOUNT
-            $existingAssetsLedger = array_filter($postingArray[self::ASSET], function ($posting) use($assetsLedgerId, $assetsLedgerGroupId) {
+            $existingAssetsLedger = array_filter($postingArray[self::OLD_ASSET], function ($posting) use($assetsLedgerId, $assetsLedgerGroupId) {
                 return $posting['ledger_id'] == $assetsLedgerId && $posting['ledger_group_id'] == $assetsLedgerGroupId;
             });
             //Ledger found
             if (count($existingAssetsLedger) > 0) {
-                $postingArray[self::ASSET][0]['credit_amount'] +=  $assetsCreditAmount;
-                $postingArray[self::ASSET][0]['credit_amount_org'] +=  $assetsCreditAmount;
+                $existingIndex = array_key_first($existingAssetsLedger);
+                $postingArray[self::OLD_ASSET][$existingIndex]['credit_amount'] +=  $assetsCreditAmount;
+                $postingArray[self::OLD_ASSET][$existingIndex]['credit_amount_org'] +=  $assetsCreditAmount;
             } else { //Assign a new ledger
-                array_push($postingArray[self::ASSET], [
+                array_push($postingArray[self::OLD_ASSET], [
                     'ledger_id' => $assetsLedgerId,
                     'ledger_group_id' => $assetsLedgerGroupId,
                     'ledger_code' => $assetsLedger ?-> code,
@@ -3237,25 +3491,26 @@ class FinancialPostingHelper
                 ]);
             }
             
-            $depLedgerId = $asset->category->setup->dep_ledger_id;
-            $depLedgerGroupId = $asset->category->setup->dep_ledger_group_id;
+            $depLedgerId = $document->ledger_id;
+            $depLedgerGroupId = $document->ledger_group_id;
             $depLedger = Ledger::find($depLedgerId);
             $depLedgerGroup = Group::find($depLedgerGroupId);
             if (!isset($depLedger) || !isset($depLedgerGroup)) {
-                $ledgerErrorStatus = self::ERROR_PREFIX.'Depreciation Account not setup';
+                $ledgerErrorStatus = self::ERROR_PREFIX.'New Asset Account not setup';
                 break;
             }
 
             //Check for same ledger and group in SALES ACCOUNT
-            $existingdepLedger = array_filter($postingArray[self::DEPRECIATION], function ($posting) use($depLedgerId, $depLedgerGroupId) {
+            $existingdepLedger = array_filter($postingArray[self::NEW_ASSET], function ($posting) use($depLedgerId, $depLedgerGroupId) {
                 return $posting['ledger_id'] == $depLedgerId && $posting['ledger_group_id'] == $depLedgerGroupId;
             });
             //Ledger found
             if (count($existingdepLedger) > 0) {
-                $postingArray[self::DEPRECIATION][0]['debit_amount'] +=  $assetsCreditAmount;
-                $postingArray[self::DEPRECIATION][0]['debit_amount_org'] +=  $orgCurrencyCost;
+                $existingIndex = array_key_first($existingdepLedger);
+                $postingArray[self::NEW_ASSET][$existingIndex]['debit_amount'] +=  $assetsCreditAmount;
+                $postingArray[self::NEW_ASSET][$existingIndex]['debit_amount_org'] +=  $assetsCreditAmount;
             } else { //Assign a new ledger
-                array_push($postingArray[self::DEPRECIATION], [
+                array_push($postingArray[self::NEW_ASSET], [
                     'ledger_id' => $depLedgerId,
                     'ledger_group_id' => $depLedgerGroupId,
                     'ledger_code' => $depLedger ?-> code,
@@ -3268,6 +3523,154 @@ class FinancialPostingHelper
                 ]);
             }
         }
+        if ($ledgerErrorStatus) {
+            return array(
+                'status' => false,
+                'message' => $ledgerErrorStatus,
+                'data' => []
+            );
+        }
+        //Check debit and credit tally
+        foreach ($postingArray as $postAccount) {
+            foreach ($postAccount as $postingValue) {
+                $totalCreditAmount += $postingValue['credit_amount'];
+                $totalDebitAmount += $postingValue['debit_amount'];
+            }
+        }
+        //Balance does not match
+        // if ($totalDebitAmount !== $totalCreditAmount) {
+        //     return array(
+        //         'status' => false,
+        //         'message' => self::ERROR_PREFIX.'Credit Amount does not match Debit Amount',
+        //         'data' => []
+        //     );
+        // }
+        //Get Header Details
+        $book = Book::find($document -> book_id);
+        $glPostingBookParam = OrganizationBookParameter::where('book_id', $book -> id) -> where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM) -> first();
+        if (isset($glPostingBookParam) && isset($glPostingBookParam -> parameter_value[0])) {
+            $glPostingBookId = $glPostingBookParam -> parameter_value[0];
+        } else {
+            return array(
+                'status' => false,
+                'message' => self::ERROR_PREFIX.'Financial Book Code is not specified',
+                'data' => []
+            );
+        }
+        $currency = Currency::find($document -> currency_id);
+        $currencyExc = CurrencyHelper::getCurrencyExchangeRates($document -> currency_id,$document -> document_date);
+        $currencyExc = $currencyExc['data'];
+        $userData = Helper::userCheck();
+        $voucherHeader = [
+            'voucher_no' => $document -> document_number,
+            'document_date' => $document -> document_date,
+            'book_id' => $glPostingBookId,
+            'date' => $document -> document_date,
+            'amount' => $totalCreditAmount,
+            'currency_id' => $document -> currency_id,
+            'currency_code' => $currencyExc['party_currency_code'],
+            'org_currency_id' => $currencyExc['org_currency_id'],
+            'org_currency_code' => $currencyExc['org_currency_code'],
+            'org_currency_exg_rate' => $currencyExc['org_currency_exg_rate'],
+            'comp_currency_id' => $currencyExc['comp_currency_id'],
+            'comp_currency_code' => $currencyExc['comp_currency_code'],
+            'comp_currency_exg_rate' => $currencyExc['comp_currency_exg_rate'],
+            'group_currency_id' => $currencyExc['group_currency_id'],
+            'group_currency_code' => $currencyExc['group_currency_code'],
+            'group_currency_exg_rate' => $currencyExc['group_currency_exg_rate'],
+            'reference_service' => $book ?-> service ?-> alias,
+            'reference_doc_id' => $document -> id,
+            'group_id' => $document -> group_id,
+            'company_id' => $document -> company_id,
+            'organization_id' => $document -> organization_id,
+            'voucherable_type' => $userData['user_type'],
+            'voucherable_id' => $userData['user_id'],
+            'document_status' => ConstantHelper::APPROVED,
+            'approvalLevel' => $document -> approval_level
+       ];
+       $voucherDetails = self::generateVoucherDetailsArray($postingArray, $voucherHeader, $document, 'currency_id', 'document_date', true);
+        return array(
+            'status' => true,
+            'message' => 'Posting Details found',
+            'data' => [
+                'voucher_header' => $voucherHeader,
+                'voucher_details' => $voucherDetails,
+                'document_date' => $document -> document_date,
+                'ledgers' => $postingArray,
+                'total_debit' => $totalDebitAmount,
+                'total_credit' => $totalCreditAmount,
+                'book_code' => $book ?-> book_code,
+                'document_number' => $document -> document_number,
+                'currency_code' => $currency ?-> short_name
+            ]
+        );
+    }
+    public static function fixedAssetSplitVoucherDetails(int $documentId, string $type) 
+    {
+        $document = FixedAssetSplit::find($documentId);
+        if (!isset($document)) {
+            return array(
+                'status' => false,
+                'message' => 'Document not found',
+                'data' => []
+            );
+        }
+
+        //Invoice to follow
+        $postingArray = array(
+            self::OLD_ASSET => [],
+            self::NEW_ASSET => [],
+        );
+        //Assign Credit and Debit amount for tally check
+        $totalCreditAmount = 0;
+        $totalDebitAmount = 0;
+        $assetsAmount = $document->current_value;
+
+
+        //Status to check if all ledger entries were properly set
+        $ledgerErrorStatus = null;
+        $oldLedgerId = $document->ledger_id;
+            $depLedgerGroupId = $document->ledger_group_id;
+            $depLedger = Ledger::find($oldLedgerId);
+            $depLedgerGroup = Group::find($depLedgerGroupId);
+            if (!isset($depLedger) || !isset($depLedgerGroup)) {
+                $ledgerErrorStatus = self::ERROR_PREFIX.'New Asset Account not setup';
+                
+            }
+            array_push($postingArray[self::OLD_ASSET], [
+                    'ledger_id' => $oldLedgerId,
+                    'ledger_group_id' => $depLedgerGroupId,
+                    'ledger_code' => $depLedger ?-> code,
+                    'ledger_name' => $depLedger ?-> name,
+                    'ledger_group_code' => $depLedgerGroup ?-> name,
+                    'credit_amount' => $assetsAmount,
+                    'credit_amount_org' => $assetsAmount,
+                    'debit_amount' => 0,
+                    'debit_amount_org' => 0,
+                ]);
+            
+
+            $depLedgerId = $document->ledger_id;
+            $depLedgerGroupId = $document->ledger_group_id;
+            $depLedger = Ledger::find($depLedgerId);
+            $depLedgerGroup = Group::find($depLedgerGroupId);
+            if (!isset($depLedger) || !isset($depLedgerGroup)) {
+                $ledgerErrorStatus = self::ERROR_PREFIX.'New Asset Account not setup';
+                
+            }
+             array_push($postingArray[self::NEW_ASSET], [
+                    'ledger_id' => $depLedgerId,
+                    'ledger_group_id' => $depLedgerGroupId,
+                    'ledger_code' => $depLedger ?-> code,
+                    'ledger_name' => $depLedger ?-> name,
+                    'ledger_group_code' => $depLedgerGroup ?-> name,
+                    'credit_amount' => 0,
+                    'credit_amount_org' => 0,
+                    'debit_amount' => $assetsAmount,
+                    'debit_amount_org' => $assetsAmount,
+                ]);
+            
+        
         if ($ledgerErrorStatus) {
             return array(
                 'status' => false,
@@ -3350,6 +3753,7 @@ class FinancialPostingHelper
             ]
         );
     }
+    
     public static function dnVoucherDetails(int $documentId, string $type) 
     {
         $document = ErpSaleInvoice::find($documentId);
@@ -3473,13 +3877,13 @@ class FinancialPostingHelper
                     'data' => []
                 );
             }
-            $discountPostingParam = OrganizationBookParameter::where('book_id', $document -> book_id)
-            -> where('parameter_name', ServiceParametersHelper::GL_SEPERATE_DISCOUNT_PARAM) -> first();
-            if (isset($discountPostingParam)) {
-                $discountSeperatePosting = $discountPostingParam -> parameter_value[0] === "yes" ? true : false;
-            } else {
-                $discountSeperatePosting = false;
-            }
+            // $discountPostingParam = OrganizationBookParameter::where('book_id', $document -> book_id)
+            // -> where('parameter_name', ServiceParametersHelper::GL_SEPERATE_DISCOUNT_PARAM) -> first();
+            // if (isset($discountPostingParam)) {
+            //     $discountSeperatePosting = $discountPostingParam -> parameter_value[0] === "yes" ? true : false;
+            // } else {
+            $discountSeperatePosting = false;
+            // }
             foreach ($document -> items as $docItemKey => $docItem) {
                 //Assign Item values
                 $itemValue = $docItem -> rate * $docItem -> order_qty;
@@ -3679,13 +4083,13 @@ class FinancialPostingHelper
             }
         }
         //Balance does not match
-        if (round($totalDebitAmount,6) !== round($totalCreditAmount,6)) {
-            return array(
-                'status' => false,
-                'message' => self::ERROR_PREFIX.'Credit Amount does not match Debit Amount',
-                'data' => []
-            );
-        }
+        // if (round($totalDebitAmount,6) !== round($totalCreditAmount,6)) {
+        //     return array(
+        //         'status' => false,
+        //         'message' => self::ERROR_PREFIX.'Credit Amount does not match Debit Amount',
+        //         'data' => []
+        //     );
+        // }
         //Get Header Details
         $book = Book::find($document -> book_id);
         $glPostingBookParam = OrganizationBookParameter::where('book_id', $book -> id) -> where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM) -> first();
@@ -3725,7 +4129,8 @@ class FinancialPostingHelper
             'voucherable_type' => $userData['user_type'],
             'voucherable_id' => $userData['user_id'],
             'document_status' => ConstantHelper::APPROVED,
-            'approvalLevel' => $document -> approval_level
+            'approvalLevel' => $document -> approval_level,
+            'location' => $document ?-> store_id
        ];
        $voucherDetails = self::generateVoucherDetailsArray($postingArray, $voucherHeader, $document, 'currency_id', 'document_date', true);
         return array(
@@ -3786,13 +4191,13 @@ class FinancialPostingHelper
             );
         }
 
-        $discountPostingParam = OrganizationBookParameter::where('book_id', $document -> book_id)
-        -> where('parameter_name', ServiceParametersHelper::GL_SEPERATE_DISCOUNT_PARAM) -> first();
-        if (isset($discountPostingParam)) {
-            $discountSeperatePosting = $discountPostingParam -> parameter_value[0] === "yes" ? true : false;
-        } else {
+        // $discountPostingParam = OrganizationBookParameter::where('book_id', $document -> book_id)
+        // -> where('parameter_name', ServiceParametersHelper::GL_SEPERATE_DISCOUNT_PARAM) -> first();
+        // if (isset($discountPostingParam)) {
+        //     $discountSeperatePosting = $discountPostingParam -> parameter_value[0] === "yes" ? true : false;
+        // } else {
             $discountSeperatePosting = false;
-        }
+        // }
 
         //Status to check if all ledger entries were properly set
         $ledgerErrorStatus = null;
@@ -4073,13 +4478,13 @@ class FinancialPostingHelper
             }
         }
         //Balance does not match
-        if (round($totalDebitAmount,6) !== round($totalCreditAmount,6)) {
-            return array(
-                'status' => false,
-                'message' => self::ERROR_PREFIX.'Credit Amount does not match Debit Amount',
-                'data' => []
-            );
-        }
+        // if (round($totalDebitAmount,6) !== round($totalCreditAmount,6)) {
+        //     return array(
+        //         'status' => false,
+        //         'message' => self::ERROR_PREFIX.'Credit Amount does not match Debit Amount',
+        //         'data' => []
+        //     );
+        // }
         //Get Header Details
         $book = Book::find($document -> book_id);
         $glPostingBookParam = OrganizationBookParameter::where('book_id', $book -> id) -> where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM) -> first();
@@ -4119,7 +4524,8 @@ class FinancialPostingHelper
             'voucherable_type' => $userData['user_type'],
             'voucherable_id' => $userData['user_id'],
             'document_status' => ConstantHelper::APPROVED,
-            'approvalLevel' => $document -> approval_level
+            'approvalLevel' => $document -> approval_level,
+            'location' => $document ?-> store_id
         ];
         $voucherDetails = self::generateVoucherDetailsArray($postingArray, $voucherHeader, $document);
 
@@ -4250,13 +4656,13 @@ class FinancialPostingHelper
             }
         }
         //Balance does not match
-        if (round($totalDebitAmount,6) !== round($totalCreditAmount,6)) {
-            return array(
-                'status' => false,
-                'message' => self::ERROR_PREFIX.'Credit Amount does not match Debit Amount',
-                'data' => []
-            );
-        }
+        // if (round($totalDebitAmount,6) !== round($totalCreditAmount,6)) {
+        //     return array(
+        //         'status' => false,
+        //         'message' => self::ERROR_PREFIX.'Credit Amount does not match Debit Amount',
+        //         'data' => []
+        //     );
+        // }
         //Get Header Details
         $book = Book::find($document -> book_id);
         $glPostingBookParam = OrganizationBookParameter::where('book_id', $book -> id) -> where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM) -> first();
@@ -4296,7 +4702,8 @@ class FinancialPostingHelper
             'voucherable_type' => $userData['user_type'],
             'voucherable_id' => $userData['user_id'],
             'document_status' => ConstantHelper::APPROVED,
-            'approvalLevel' => $document -> approval_level
+            'approvalLevel' => $document -> approval_level,
+            'location' => $document ?-> store_id
         ];
         $voucherDetails = self::generateVoucherDetailsArray($postingArray, $voucherHeader, $document);
 
@@ -4359,13 +4766,13 @@ class FinancialPostingHelper
         //Status to check if all ledger entries were properly set
         $ledgerErrorStatus = null;
 
-        $discountPostingParam = OrganizationBookParameter::where('book_id', $document -> book_id)
-        -> where('parameter_name', ServiceParametersHelper::GL_SEPERATE_DISCOUNT_PARAM) -> first();
-        if (isset($discountPostingParam)) {
-            $discountSeperatePosting = $discountPostingParam -> parameter_value[0] === "yes" ? true : false;
-        } else {
-            $discountSeperatePosting = false;
-        }
+        // $discountPostingParam = OrganizationBookParameter::where('book_id', $document -> book_id)
+        // -> where('parameter_name', ServiceParametersHelper::GL_SEPERATE_DISCOUNT_PARAM) -> first();
+        // if (isset($discountPostingParam)) {
+        //     $discountSeperatePosting = $discountPostingParam -> parameter_value[0] === "yes" ? true : false;
+        // } else {
+        $discountSeperatePosting = false;
+        // }
         foreach ($document -> items as $docItemKey => $docItem) {
             //Assign Item values
             $itemValue = ($docItem -> rate * $docItem -> accepted_qty);
@@ -4629,13 +5036,13 @@ class FinancialPostingHelper
             }
         }
         //Balance does not match
-        if (round($totalDebitAmount,6) !== round($totalCreditAmount,6)) {
-            return array(
-                'status' => false,
-                'message' => self::ERROR_PREFIX.'Credit Amount does not match Debit Amount',
-                'data' => []
-            );
-        }
+        // if (round($totalDebitAmount,6) !== round($totalCreditAmount,6)) {
+        //     return array(
+        //         'status' => false,
+        //         'message' => self::ERROR_PREFIX.'Credit Amount does not match Debit Amount',
+        //         'data' => []
+        //     );
+        // }
         //Get Header Details
         $book = Book::find($document -> book_id);
         $glPostingBookParam = OrganizationBookParameter::where('book_id', $book -> id) -> where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM) -> first();
@@ -4675,7 +5082,8 @@ class FinancialPostingHelper
             'voucherable_type' => $userData['user_type'],
             'voucherable_id' => $userData['user_id'],
             'document_status' => ConstantHelper::APPROVED,
-            'approvalLevel' => $document -> approval_level
+            'approvalLevel' => $document -> approval_level,
+            'location' => $document ?-> store_id
         ];
         $voucherDetails = self::generateVoucherDetailsArray($postingArray, $voucherHeader, $document);
 
@@ -4734,13 +5142,13 @@ class FinancialPostingHelper
             );
         }
 
-        $discountPostingParam = OrganizationBookParameter::where('book_id', $document -> book_id)
-        -> where('parameter_name', ServiceParametersHelper::GL_SEPERATE_DISCOUNT_PARAM) -> first();
-        if (isset($discountPostingParam)) {
-            $discountSeperatePosting = $discountPostingParam -> parameter_value[0] === "yes" ? true : false;
-        } else {
-            $discountSeperatePosting = false;
-        }
+        // $discountPostingParam = OrganizationBookParameter::where('book_id', $document -> book_id)
+        // -> where('parameter_name', ServiceParametersHelper::GL_SEPERATE_DISCOUNT_PARAM) -> first();
+        // if (isset($discountPostingParam)) {
+        //     $discountSeperatePosting = $discountPostingParam -> parameter_value[0] === "yes" ? true : false;
+        // } else {
+        $discountSeperatePosting = false;
+        // }
 
         //Status to check if all ledger entries were properly set
         $ledgerErrorStatus = null;
@@ -4949,13 +5357,13 @@ class FinancialPostingHelper
             }
         }
         //Balance does not match
-        if (round($totalDebitAmount,6) !== round($totalCreditAmount,6)) {
-            return array(
-                'status' => false,
-                'message' => self::ERROR_PREFIX.'Credit Amount does not match Debit Amount',
-                'data' => []
-            );
-        }
+        // if (round($totalDebitAmount,6) !== round($totalCreditAmount,6)) {
+        //     return array(
+        //         'status' => false,
+        //         'message' => self::ERROR_PREFIX.'Credit Amount does not match Debit Amount',
+        //         'data' => []
+        //     );
+        // }
         //Get Header Details
         $book = Book::find($document -> book_id);
         $glPostingBookParam = OrganizationBookParameter::where('book_id', $book -> id) -> where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM) -> first();
@@ -4996,7 +5404,8 @@ class FinancialPostingHelper
             'voucherable_type' => $userData['user_type'],
             'voucherable_id' => $userData['user_id'],
             'document_status' => ConstantHelper::APPROVED,
-            'approvalLevel' => $document -> approval_level
+            'approvalLevel' => $document -> approval_level,
+            'location' => $document ?-> store_id
         ];
         $voucherDetails = self::generateVoucherDetailsArray($postingArray, $voucherHeader, $document);
 
@@ -5123,13 +5532,13 @@ class FinancialPostingHelper
             }
         }
         //Balance does not match
-        if (round($totalDebitAmount,6) !== round($totalCreditAmount,6)) {
-            return array(
-                'status' => false,
-                'message' => 'Credit Amount does not match Debit Amount',
-                'data' => []
-            );
-        }
+        // if (round($totalDebitAmount,6) !== round($totalCreditAmount,6)) {
+        //     return array(
+        //         'status' => false,
+        //         'message' => 'Credit Amount does not match Debit Amount',
+        //         'data' => []
+        //     );
+        // }
         //Get Header Details
         $book = Book::find($document->book_id);
         $glPostingBookParam = OrganizationBookParameter::where('book_id', $book->id)->where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM)->first();
@@ -5203,6 +5612,246 @@ class FinancialPostingHelper
                 'total_credit' => $totalCreditAmount,
                 'book_code' => $book ?-> book_code,
                 'document_number' =>$document ?-> voucher_no,
+                'currency_code' => $currency ?-> short_name
+            ]
+        );
+    }
+    public static function PsvVoucherDetails(int $documentId, string $remarks) 
+    {
+        $accountSetup = isset(self::SERVICE_POSTING_MAPPING[ConstantHelper::PSV_SERVICE_ALIAS])? self::SERVICE_POSTING_MAPPING[ConstantHelper::PSV_SERVICE_ALIAS] : [];
+        if (!isset($accountSetup) || count($accountSetup) == 0) {
+            return array(
+                'status' => false,
+                'message' => 'Account Setup not found',
+                'data' => []
+            );
+        }
+        $document = ErpPsvHeader::find($documentId);
+        $items = $document->items;
+        $vocuherdata=$document;
+        if (!isset($document)) {
+            return array(
+                'status' => false,
+                'message' => 'Document not found',
+                'data' => []
+            );
+        }
+        //Make array according to setup
+        $postingArray = array(
+            self::STOCK_ACCOUNT => [],
+            self::PHYSICAL_STOCK_VARIANCE_ACCOUNT => [],
+        );
+        $totalCreditAmount = 0;
+        $totalDebitAmount = 0;
+
+        $ledgerErrorStatus = null;
+
+        foreach ($items as $item) {
+            if(!empty($vocuherdata))
+            {
+                $BankLedgerId = 1;
+                $BankLedgerGroupId = 19;
+                $BankLedger = Ledger::find($BankLedgerId);
+                $BankLedgerGroup = Group::find($BankLedgerGroupId);
+    
+            }
+    
+            if (!isset($BankLedger) || !isset($BankLedgerGroup)) {
+                return array(
+                    'status' => false,
+                    'message' => 'Bank Ledger not setup',
+                    'data' => []
+                );
+            }
+            $debAmount=0;
+            $credAmount = 0;
+            if($item->adjusted_qty>0)
+            {
+                $debAmount=$item->rate*abs($item->adjusted_qty);
+            }
+            else
+            {
+                $credAmount = $item->rate * abs($item->adjusted_qty);
+            }
+            array_push($postingArray[self::STOCK_ACCOUNT], [
+                'ledger_id' => 1,
+                'ledger_group_id' => 19,
+                'ledger_code' => $BankLedger ?-> code,
+                'ledger_name' => $BankLedger ?-> name,
+                'ledger_group_code' => $BankLedgerGroup ?-> name,
+                'debit_amount' =>  $debAmount,
+                'credit_amount' => $credAmount
+            ]);
+
+            if(!empty($item))
+            {
+                $VendorLedgerId = 11;
+                $VendorLedgerGroupId = 8;
+                $VendorLedger = Ledger::find($VendorLedgerId);
+                $VendorLedgerGroup = Group::find($VendorLedgerGroupId);
+
+            }
+
+            if (!isset($VendorLedger) || !isset($VendorLedgerGroup)) {
+                return array(
+                    'status' => false,
+                    'message' => 'Vendor Ledger not setup',
+                    'data' => []
+                );
+            }
+            array_push($postingArray[self::PHYSICAL_STOCK_VARIANCE_ACCOUNT], [
+                'ledger_id' => $VendorLedgerId,
+                'ledger_group_id' => $VendorLedgerGroupId,
+                'ledger_code' => $VendorLedger?->code,
+                'ledger_name' => $VendorLedger?->name,
+                'ledger_group_code' => $VendorLedgerGroup?->name,
+                'credit_amount' => $debAmount,
+                'debit_amount' => $credAmount,
+            ]);
+        }
+        // $postingArrays=[];
+        // foreach ($postingArray as $accountType => $entries) {
+        //     $grouped = [];
+        
+        //     foreach ($entries as $entry) {
+        //         $key = $entry['ledger_id'] . '_' . $entry['ledger_group_id'];
+        
+        //         if (!isset($grouped[$key])) {
+        //             $grouped[$key] = $entry;
+        //         } else {
+        //             $grouped[$key]['debit_amount'] += $entry['debit_amount'];
+        //             $grouped[$key]['credit_amount'] += $entry['credit_amount'];
+        //         }
+        //     }
+        
+        //     // Rebuild a new array safely to avoid reference conflicts
+        //     $finalGrouped = [];
+        
+        //     foreach ($grouped as $entry) {
+        //         $debit = $entry['debit_amount'] ?? 0;
+        //         $credit = $entry['credit_amount'] ?? 0;
+        
+        //         $difference = $credit - $debit;
+        
+        //         if ($difference > 0) {
+        //             // Net credit
+        //             $entry['credit_amount'] = $difference;
+        //             $entry['debit_amount'] = 0;
+        //         } elseif ($difference < 0) {
+        //             // Net debit
+        //             $entry['debit_amount'] = abs($difference);
+        //             $entry['credit_amount'] = 0;
+        //         } else {
+        //             // Net zero
+        //             $entry['debit_amount'] = 0;
+        //             $entry['credit_amount'] = 0;
+        //         }
+        
+        //         $finalGrouped[] = $entry;
+        //     }
+        
+        //     $postingArrays[$accountType] = $finalGrouped;
+        // }
+        
+        // $postingArray=$postingArrays;
+        
+        
+        //Check if All Legders exists and posting is properly set
+        if ($ledgerErrorStatus) {
+            return array(
+                'status' => false,
+                'message' => $ledgerErrorStatus,
+                'data' => []
+            );
+        }
+        //Check debit and credit tally
+        foreach ($postingArray as $postAccount) {
+            foreach ($postAccount as $postingValue) {
+
+                $totalDebitAmount += $postingValue['debit_amount'];
+                $totalCreditAmount += $postingValue['credit_amount'];
+            }
+        }
+        //Balance does not match
+        // if (round($totalDebitAmount,6) !== round($totalCreditAmount,6)) {
+        //     return array(
+        //         'status' => false,
+        //         'message' => 'Credit Amount does not match Debit Amount',
+        //         'data' => []
+        //     );
+        // }
+
+        //Get Header Details
+        $book = Book::find($document->book_id);
+        $glPostingBookParam = OrganizationBookParameter::where('book_id', $book->id)->where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM)->first();
+        if (isset($glPostingBookParam) && isset($glPostingBookParam -> parameter_value[0])) {
+            $glPostingBookId = $glPostingBookParam -> parameter_value[0];
+        } else {
+            return array(
+                'status' => false,
+                'message' => 'Financial Book Code is not specified',
+                'data' => []
+            );
+        }
+    
+        $currency = Currency::find($document->currency_id);
+        $userData = Helper::userCheck();
+        $book = Book::find($document -> book_id);
+        $glPostingBookParam = OrganizationBookParameter::where('book_id', $book -> id) -> where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM) -> first();
+        if (isset($glPostingBookParam) && isset($glPostingBookParam -> parameter_value[0])) {
+            $glPostingBookId = $glPostingBookParam -> parameter_value[0];
+        } else {
+            return array(
+                'status' => false,
+                'message' => self::ERROR_PREFIX.'Financial Book Code is not specified',
+                'data' => []
+            );
+        }
+        $voucherHeader = [
+            'voucher_no' => $document -> document_number,
+            'document_date' => $document -> document_date,
+            'book_id' => $glPostingBookId,
+            'date' => $document -> document_date,
+            'amount' => $totalCreditAmount,
+            'currency_id' => $document->currency_id,
+            'currency_code' => $document->currency_code,
+            'org_currency_id' => $document->org_currency_id,
+            'org_currency_code' => $document->org_currency_code,
+            'org_currency_exg_rate' => $document->org_currency_exg_rate,
+            'comp_currency_id' => $document->comp_currency_id, // Missing comma added here
+            'comp_currency_code' => $document->comp_currency_code,
+            'comp_currency_exg_rate' => $document->comp_currency_exg_rate,
+            'group_currency_id' => $document->group_currency_id,
+            'group_currency_code' => $document->group_currency_code,
+            'group_currency_exg_rate' => $document->group_currency_exg_rate,
+            'reference_service' => $book?->service?->alias,
+            'reference_doc_id' => $document->id,
+            'group_id' => $document->group_id,
+            'company_id' => $document->company_id,
+            'organization_id' => $document->organization_id,
+            'voucherable_type' => $userData['user_type'],
+            'voucherable_id' => $userData['user_id'],
+            'approvalStatus' => ConstantHelper::APPROVED,
+            'document_status' => ConstantHelper::APPROVED,
+            'approvalLevel' => $document->approval_level,
+            'remarks'=>$remarks,
+            'location' => $document ?-> store_id
+        ];
+
+        $voucherDetails = self::generateVoucherDetailsArray($postingArray, $voucherHeader, $document);
+
+        return array(
+            'status' => true,
+            'message' => 'Posting Details found',
+            'data' => [
+                'voucher_header' => $voucherHeader,
+                'voucher_details' => $voucherDetails,
+                'document_date' => $document->document_date,
+                'ledgers' => $postingArray,
+                'total_debit' => $totalDebitAmount,
+                'total_credit' => $totalCreditAmount,
+                'book_code' => $book ?-> book_code,
+                'document_number' =>$document ?-> document_number,
                 'currency_code' => $currency ?-> short_name
             ]
         );
@@ -5386,13 +6035,13 @@ public static function receiptVoucherPosting(int $bookId, int $documentId, strin
             }
         }
         //Balance does not match
-        if (round($totalDebitAmount,6) !== round($totalCreditAmount,6)) {
-            return array(
-                'status' => false,
-                'message' => 'Credit Amount does not match Debit Amount',
-                'data' => []
-            );
-        }
+        // if (round($totalDebitAmount,6) !== round($totalCreditAmount,6)) {
+        //     return array(
+        //         'status' => false,
+        //         'message' => 'Credit Amount does not match Debit Amount',
+        //         'data' => []
+        //     );
+        // }
         $currency = Currency::find($document->currency_id);
 
         $userData = Helper::userCheck();
@@ -5568,13 +6217,13 @@ public static function receiptVoucherPosting(int $bookId, int $documentId, strin
             );
         }
 
-        $discountPostingParam = OrganizationBookParameter::where('book_id', $document -> book_id)
-        -> where('parameter_name', ServiceParametersHelper::GL_SEPERATE_DISCOUNT_PARAM) -> first();
-        if (isset($discountPostingParam)) {
-            $discountSeperatePosting = $discountPostingParam -> parameter_value[0] === "yes" ? true : false;
-        } else {
-            $discountSeperatePosting = false;
-        }
+        // $discountPostingParam = OrganizationBookParameter::where('book_id', $document -> book_id)
+        // -> where('parameter_name', ServiceParametersHelper::GL_SEPERATE_DISCOUNT_PARAM) -> first();
+        // if (isset($discountPostingParam)) {
+        //     $discountSeperatePosting = $discountPostingParam -> parameter_value[0] === "yes" ? true : false;
+        // } else {
+        $discountSeperatePosting = false;
+        // }
 
 
         //Status to check if all ledger entries were properly set
@@ -5819,13 +6468,13 @@ public static function receiptVoucherPosting(int $bookId, int $documentId, strin
             }
         }
         //Balance does not match
-        if (round($totalDebitAmount,6) !== round($totalCreditAmount,6)) {
-            return array(
-                'status' => false,
-                'message' => self::ERROR_PREFIX.'Credit Amount does not match Debit Amount',
-                'data' => []
-            );
-        }
+        // if (round($totalDebitAmount,6) !== round($totalCreditAmount,6)) {
+        //     return array(
+        //         'status' => false,
+        //         'message' => self::ERROR_PREFIX.'Credit Amount does not match Debit Amount',
+        //         'data' => []
+        //     );
+        // }
         //Get Header Details
         $book = Book::find($document -> book_id);
         $glPostingBookParam = OrganizationBookParameter::where('book_id', $book -> id) -> where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM) -> first();
@@ -5865,7 +6514,8 @@ public static function receiptVoucherPosting(int $bookId, int $documentId, strin
             'voucherable_type' => $userData['user_type'],
             'voucherable_id' => $userData['user_id'],
             'document_status' => ConstantHelper::APPROVED,
-            'approvalLevel' => $document -> approval_level
+            'approvalLevel' => $document -> approval_level,
+            'location' => $document ?-> store_id
         ];
         $voucherDetails = self::generateVoucherDetailsArray($postingArray, $voucherHeader, $document);
 
@@ -5903,7 +6553,7 @@ public static function receiptVoucherPosting(int $bookId, int $documentId, strin
                 $debitAmtGroup = $groupCurrencyDebitAmt['group_currency_amount'];
                 $creditAmtGroup = $groupCurrencyCreditAmt['group_currency_amount'];
 
-                if (($entryType === self::COGS_ACCOUNT || $entryType === self::STOCK_ACCOUNT) && $stockCogDnCheck) {
+                if (($entryType === self::COGS_ACCOUNT || $entryType === self::STOCK_ACCOUNT) && $stockCogDnCheck ) {
                     $debitAmtOrg = $post['debit_amount_org'];
                     $creditAmtOrg = $post['credit_amount_org'];
                     if ($voucherHeader['org_currency_code'] === $voucherHeader['comp_currency_code']) {

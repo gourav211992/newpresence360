@@ -193,11 +193,6 @@ if($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS)
                                                         </button>
                                                     </li>
                                                     <li class="nav-item" role="presentation">
-                                                        <button class="nav-link fs-5" id="production-items-tab" data-bs-toggle="tab" data-bs-target="#production-items" type="button" role="tab" aria-controls="production-items" aria-selected="false">
-                                                            Production
-                                                        </button>
-                                                    </li>
-                                                    <li class="nav-item" role="presentation">
                                                         <button class="nav-link fs-5" id="instruction-items-tab" data-bs-toggle="tab" data-bs-target="#instruction-items" type="button" role="tab" aria-controls="instruction-items" aria-selected="false">
                                                             Instruction
                                                         </button>
@@ -297,50 +292,6 @@ if($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS)
                                                 </tfoot>
                                             </table>
                                         </div>
-                                    </div>
-                                    <div class="tab-pane fade" id="production-items" role="tabpanel" aria-labelledby="product-details-tab">
-                                        <div class="table-responsive pomrnheadtffotsticky">
-                                            <table id="itemTable2" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
-                                                <thead>
-                                                    <tr>
-                                                        <th>
-                                                            <div class="form-check form-check-primary custom-checkbox">
-                                                                <input type="checkbox" class="form-check-input" id="Email">
-                                                                <label class="form-check-label" for="Email"></label>
-                                                            </div>
-                                                        </th>
-                                                        <th width="300px">Station</th>
-                                                        <th width="150px">Product Code</th>
-                                                        <th width="300px">Product Name</th>
-                                                        <th>Attributes</th>
-                                                        <th >UOM</th>
-                                                        <th class="text-end">Qty</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody class="mrntableselectexcel">
-                                                    @include('billOfMaterial.partials.production-edit-row')
-                                                </tbody>
-                                                {{-- <tfoot>
-                                                    <tr valign="top">
-                                                        <td colspan="10">
-                                                        <table class="table border" id="itemDetailTable">
-                                                            <tr>
-                                                                <td class="p-0">
-                                                                    <h6 class="text-dark mb-0 bg-light-primary py-1 px-50"><strong>Item Details</strong></h6>
-                                                                </td>
-                                                            </tr>
-                                                            <tr class="item_detail_row">
-                                                                
-                                                            </tr>
-                                                            <tr class="item_detail_row">
-                                                                
-                                                            </tr>
-                                                        </table>
-                                                        </td>
-                                                    </tr>
-                                                </tfoot> --}}
-                                            </table>
-                                            </div>
                                     </div>
                                     <div class="tab-pane fade" id="instruction-items" role="tabpanel" aria-labelledby="product-details-tab">
                                         <div class="table-responsive pomrnheadtffotsticky">

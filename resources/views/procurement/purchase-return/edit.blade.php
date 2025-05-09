@@ -1,4 +1,9 @@
 @extends('layouts.app')
+@section('styles')
+    <style>
+        .tooltip-inner { text-align: left}
+    </style>
+@endsection
 @section('content')
     <form id="pbEditForm" class="ajax-input-form" method="POST" action="{{ route('purchase-return.update', $mrn->id) }}" data-redirect="/purchase-return" enctype="multipart/form-data">
         @csrf
@@ -25,25 +30,24 @@
                         </div>
                         <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
                             <div class="form-group breadcrumb-right">
-                                <input type="hidden" name="document_status" value="draft" id="document_status">
+                                <input type="hidden" name="document_status" value="{{$mrn->document_status}}" id="document_status">
                                 <button type="button" onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0">
                                     <i data-feather="arrow-left-circle"></i> Back
-                                </button>
-                                @if($eInvoice)
-                                    <a href="{{ route('purchase-return.generate-pdf', $mrn->id) }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round" class="feather feather-printer">
-                                            <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                                            <rect x="6" y="14" width="12" height="8"></rect>
-                                        </svg>
-                                        Print
+                                </button>@if($eInvoice)
+                                <a href="{{ route('purchase-return.generate-pdf', $mrn->id) }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" stroke-linejoin="round" class="feather feather-printer">
+                                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                                        <rect x="6" y="14" width="12" height="8"></rect>
+                                    </svg>
+                                    Print
+                                </a>
+                                @if(!$eInvoice->ewb_no && ($mrn->total_amount > 50000))
+                                    <a type="button" class="btn btn-primary btn-sm" id="eWayBillBtn" href="#">
+                                        <i data-feather="check-circle"></i> Generate Eway Bill
                                     </a>
-                                    @if(!$eInvoice->ewb_no && ($mrn->total_amount > 50000))
-                                        <a type="button" class="btn btn-primary btn-sm" id="eWayBillBtn" href="#">
-                                            <i data-feather="check-circle"></i> Generate Eway Bill
-                                        </a>
-                                    @endif
+                                @endif
                                 @endif
                                 @if($buttons['draft'])
                                     <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="draft">
@@ -60,7 +64,7 @@
                                     <button type="button" id="reject-button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg> Reject</button>
                                 @endif
                                 @if($buttons['post'])
-                                    @if(!$eInvoice)
+                                @if(!$eInvoice)
                                         <a type="button" class="btn btn-primary btn-sm" id="eEnvoiceBtn" href="#">
                                             <i data-feather="check-circle"></i> Generate Envoice
                                         </a>
@@ -122,7 +126,7 @@
                                                         <label class="form-label">Document No <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="text" class="form-control"  value="{{@$mrn->document_number}}" id="document_number" readonly>
+                                                        <input type="text" class="form-control" readonly value="{{@$mrn->document_number}}" id="document_number">
                                                     </div>
                                                 </div>
                                                 <div class="row align-items-center mb-1">
@@ -130,7 +134,7 @@
                                                         <label class="form-label">Document Date <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="date" name="document_date" class="form-control" value="{{ $mrn->document_date }}" readonly>
+                                                        <input type="date" name="document_date" readonly class="form-control" value="{{$mrn->document_date}}" >
                                                     </div>
                                                 </div>
                                                 <div class="row align-items-center mb-1">
@@ -156,6 +160,18 @@
                                                                     {{ ucfirst($erpStore->store_name) }}
                                                                 </option>
                                                             @endforeach
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Store <span class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <select class="form-select sub_store" id="sub_store_id" name="sub_store_id">
+                                                            <option value="{{$mrn->sub_store_id}}">
+                                                                    {{ ucfirst($mrn?->erpSubStore->store_name) }}
+                                                                </option>
                                                         </select>
                                                     </div>
                                                 </div>
@@ -416,8 +432,6 @@
                                                                 <th width="240px">Item Name</th>
                                                                 <th>Attributes</th>
                                                                 <th>UOM</th>
-                                                                <th>Location</th>
-                                                                <th>Store</th>
                                                                 <th class="text-end">Qty</th>
                                                                 <th class="text-end">Rate</th>
                                                                 <th class="text-end">Value</th>
@@ -431,7 +445,7 @@
                                                         </tbody>
                                                         <tfoot>
                                                             <tr class="totalsubheadpodetail">
-                                                                <td class="dynamic-colspan"></td>
+                                                                <td colspan="7"></td>
                                                                 <td class="text-end" id="totalItemValue">
                                                                     {{@$mrn->items->sum('basic_value')}}
                                                                 </td>
@@ -443,7 +457,7 @@
                                                                 </td>
                                                             </tr>
                                                             <tr valign="top">
-                                                                <td rowspan="10" class="dynamic-summary-colspan">
+                                                                <td rowspan="10" colspan="7">
                                                                     <table class="table border">
                                                                         <tbody id="itemDetailDisplay">
                                                                             <tr>
@@ -464,7 +478,7 @@
                                                                         </tbody>
                                                                     </table>
                                                                 </td>
-                                                                <td colspan="6">
+                                                                <td colspan="7">
                                                                     <table class="table border mrnsummarynewsty">
                                                                         <tr>
                                                                             <td colspan="2" class="p-0">
@@ -639,6 +653,7 @@
             <div class="modal-dialog  modal-dialog-centered" style="max-width: 700px">
             </div>
         </div>
+        @include('procurement.purchase-return.partials.amendement-modal', ['id' => $mrn->id])
     </form>
 
     {{-- Attribute popup --}}
@@ -937,7 +952,7 @@
             localStorage.removeItem('deletedItemDiscTedIds');
             localStorage.removeItem('deletedHeaderDiscTedIds');
             localStorage.removeItem('deletedHeaderExpTedIds');
-            localStorage.removeItem('deletedPbItemIds');
+            localStorage.removeItem('deletedPRItemIds');
         },0);
 
         @if($subStoreCount > 0)
@@ -976,7 +991,7 @@
                 $(".deleteSummaryDiscountRow").remove();
                 $("#add_new_head_exp").remove();
                 $(".deleteExpRow").remove();
-                $(document).on('show.bs.modal', '.modal:not(#sendMail)', function (e) {
+                $(document).on('show.bs.modal', function (e) {
                     if(e.target.id != 'approveModal') {
                         if(e.target.id != 'shortCloseModal') {
                             $(e.target).find('.modal-footer').remove();
@@ -1018,10 +1033,8 @@
             let actionUrl = '{{route("book.get.doc_no_and_parameters")}}'+'?book_id='+bookId+'&document_date='+document_date;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
-                    // console.log(data.data);
                     if (data.status == 200) {
                         const parameters = data.data.parameters;
-                        // console.log('parameters', parameters);
                         setServiceParameters(parameters);
 
                         if(parameters?.tax_required.some(val => val.toLowerCase() === 'yes')) {
@@ -1059,7 +1072,7 @@
             if (parameters.future_date_allowed && parameters.future_date_allowed.includes('yes')) {
                 let futureDate = new Date();
                 futureDate.setDate(futureDate.getDate() /*+ (parameters.future_date_days || 1)*/);
-                //docDateInput.val(futureDate.toISOString().split('T')[0]);
+                // docDateInput.val(futureDate.toISOString().split('T')[0]);
                 docDateInput.attr("min", new Date().toISOString().split('T')[0]);
                 isFeature = true;
             } else {
@@ -1168,7 +1181,7 @@
         initializeAutocomplete1("#vendor_name");
         function vendorOnChange(vendorId) {
             let store_id = $("[name='header_store_id']").val() || '';
-            let actionUrl = "{{route('material-receipt.get.address')}}"+'?id=' + vendorId+'&store_id='+store_id;
+            let actionUrl = "{{route('purchase-return.get.address')}}"+'?id=' + vendorId+'&store_id='+store_id;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if(data.data?.currency_exchange?.status == false) {
@@ -1190,22 +1203,22 @@
                         return false;
                     }
                     if(data.status == 200) {
-                        $("#vendor_name").val(data?.data?.vendor?.company_name);
-                        $("#vendor_id").val(data?.data?.vendor?.id);
-                        $("#vendor_code").val(data?.data?.vendor.vendor_code);
-                        let curOption = `<option value="${data.data.currency.id}">${data.data.currency.name}</option>`;
-                        let termOption = `<option value="${data.data.paymentTerm.id}">${data.data.paymentTerm.name}</option>`;
-                        $('[name="currency_id"]').empty().append(curOption);
-                        $('[name="payment_term_id"]').empty().append(termOption);
-                        $("#shipping_id").val(data.data.shipping.id);
-                        $("#billing_id").val(data.data.billing.id);
-                        // $(".shipping_detail").text(data.data.shipping.display_address);
-                        $(".billing_detail").text(data.data.billing.display_address);
-                        $(".delivery_address").text(data.data.delivery_address);
-                        $(".org_address").text(data.data.org_address);
+                    $("#vendor_name").val(data?.data?.vendor?.company_name);
+                    $("#vendor_id").val(data?.data?.vendor?.id);
+                    $("#vendor_code").val(data?.data?.vendor.vendor_code);
+                    let curOption = `<option value="${data.data.currency.id}">${data.data.currency.name}</option>`;
+                    let termOption = `<option value="${data.data.paymentTerm.id}">${data.data.paymentTerm.name}</option>`;
+                    $('[name="currency_id"]').empty().append(curOption);
+                    $('[name="payment_term_id"]').empty().append(termOption);
+                    $("#shipping_id").val(data.data.shipping.id);
+                    $("#billing_id").val(data.data.billing.id);
+                    // $(".shipping_detail").text(data.data.shipping.display_address);
+                    $(".billing_detail").text(data.data.billing.display_address);
+                    $(".delivery_address").text(data.data.delivery_address);
+                    $(".org_address").text(data.data.org_address);
 
-                        $("#hidden_state_id").val(data.data.shipping.state.id);
-                        $("#hidden_country_id").val(data.data.shipping.country.id);
+                    $("#hidden_state_id").val(data.data.shipping.state.id);
+                    $("#hidden_country_id").val(data.data.shipping.country.id);
                     } else {
                         if(data.data.error_message) {
                             $("#vendor_name").val('');
@@ -1314,9 +1327,6 @@
                         party_state_id: partyStateId,
                         rowCount : rowCount
                     }).toString();
-                    let storeLocation = $('.header_store_id').val();
-                    updateItemStores();
-                    getSubStores(storeLocation, itemId);
                     getItemDetail(closestTr);
                     setTimeout(() => {
                         if(ui.item.is_attr) {
@@ -1347,15 +1357,21 @@
         $(document).on('click','#addNewItemBtn', (e) => {
             // for component item code
             let storeLocation = $('.header_store_id').val();
-            updateItemStores();
-            getSubStores(storeLocation);
             var supplierName = $('#vendor_name').val();
-            if(!supplierName){
-                Swal.fire(
-                    "Warning!",
-                    "Please select vendor first!",
-                    "warning"
-                );
+            if(!checkBasicFilledDetail()) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Please fill all the header detail first',
+                    icon: 'error',
+                });
+                return false;
+            }
+            if(!checkVendorFilledDetail()) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Please fill vendor detail first',
+                    icon: 'error',
+                });
                 return false;
             }
             let rowsLength = $("#itemTable > tbody > tr").length;
@@ -1436,16 +1452,16 @@
                     mrnItemIds.push({ index: trIndex + 1, mrn_detail_id: mrn_detail_id });
                 }
             });
-            if (mrnItemIds.length) {
-                e.preventDefault();
-                let rowNumbers = mrnItemIds.map(item => item.index).join(", ");
-                Swal.fire({
-                    title: 'Error!',
-                    text: `You cannot delete purchase-return item(s) at row(s): ${rowNumbers}`,
-                    icon: 'error',
-                });
-                return false;
-            }
+            // if (mrnItemIds.length) {
+            //     e.preventDefault();
+            //     let rowNumbers = mrnItemIds.map(item => item.index).join(", ");
+            //     Swal.fire({
+            //         title: 'Error!',
+            //         text: `You cannot delete purchase-return item(s) at row(s): ${rowNumbers}`,
+            //         icon: 'error',
+            //     });
+            //     return false;
+            // }
 
             $('#itemTable > tbody .form-check-input').each(function() {
                 if ($(this).is(":checked")) {
@@ -1731,7 +1747,7 @@
         $(document).on('click','#deleteConfirm', (e) => {
             let ids = e.target.getAttribute('data-ids');
             ids = JSON.parse(ids);
-            localStorage.setItem('deletedMrnItemIds', JSON.stringify(ids));
+            localStorage.setItem('deletedPRItemIds', JSON.stringify(ids));
             $("#deleteComponentModal").modal('hide');
 
             if(ids.length) {
@@ -1999,8 +2015,6 @@
         {
             const bookId = "{{isset($mrn) ? $mrn -> book_id : ''}}";
             const documentId = "{{isset($mrn) ? $mrn -> id : ''}}";
-            console.log(bookId, documentId);
-
             const postingApiUrl = "{{route('purchase-return.post')}}"
             if (bookId && documentId) {
                 $.ajax({
@@ -2015,7 +2029,6 @@
                     }),
                     success: function(data) {
                         const response = data.data;
-                        console.log('response', response);
                         if (response.status) {
                             Swal.fire({
                                 title: 'Success!',
@@ -2229,5 +2242,5 @@
             $('#sendMail').modal('show');
         }
 
-    </script>
+        </script>
 @endsection

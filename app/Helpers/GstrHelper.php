@@ -7,6 +7,7 @@ use App\Models\ErpSaleReturn;
 use App\Models\Finance\GstrCompiledData;
 use App\Models\GstInvoiceType;
 use App\Models\Organization;
+use App\Models\PRHeader;
 use App\Models\State;
 use App\Models\Voucher;
 use Carbon\Carbon;
@@ -135,7 +136,7 @@ class GstrHelper
                     "val" => $invoice->invoice_amt,
                     "pos" => (string)$invoice->pos,
                     "rchrg" => $invoice->reverse_charge,
-                    "inv_typ" => $invoice->invoice_type, 
+                    "inv_typ" => $invoice->invoice_type,
                     "itms" => $items
                 ];
 
@@ -163,27 +164,27 @@ class GstrHelper
             foreach ($invoices as $invoice) {
                 $items = [
                     [
-                        "num" => rand(100, 999), 
+                        "num" => rand(100, 999),
                         "itm_det" => [
-                            "txval" => $invoice->taxable_amt, 
-                            "rt" => $invoice->rate, 
-                            "iamt" => $invoice->igst, 
+                            "txval" => $invoice->taxable_amt,
+                            "rt" => $invoice->rate,
+                            "iamt" => $invoice->igst,
                             "csamt" => $invoice->cess,
                         ]
                     ]
                 ];
 
                 $invoiceData = [
-                    "oinum" => $invoice->invoice_no, 
-                    "oidt" => date('d-m-Y', strtotime($invoice->invoice_date)), 
-                    "inum" => $invoice->revised_invoice_no, 
-                    "idt" => date('d-m-Y', strtotime($invoice->revised_invoice_date)), 
-                    "val" => $invoice->invoice_amt, 
-                    "pos" => $invoice->pos, 
-                    "rchrg" => $invoice->reverse_charge, 
-                    "diff_percent" => $invoice->applicable_tax_rate, 
-                    "inv_typ" => $invoice->invoice_type, 
-                    "itms" => $items  
+                    "oinum" => $invoice->invoice_no,
+                    "oidt" => date('d-m-Y', strtotime($invoice->invoice_date)),
+                    "inum" => $invoice->revised_invoice_no,
+                    "idt" => date('d-m-Y', strtotime($invoice->revised_invoice_date)),
+                    "val" => $invoice->invoice_amt,
+                    "pos" => $invoice->pos,
+                    "rchrg" => $invoice->reverse_charge,
+                    "diff_percent" => $invoice->applicable_tax_rate,
+                    "inv_typ" => $invoice->invoice_type,
+                    "itms" => $items
                 ];
 
                 $invArray[] = $invoiceData;
@@ -211,19 +212,19 @@ class GstrHelper
                         [
                             "num" => rand(100, 999),
                             "itm_det" => [
-                                "txval" => $invoice->taxable_amt, 
-                                "rt" => $invoice->rate, 
-                                "iamt" => $invoice->igst, 
-                                "csamt" => $invoice->cess, 
+                                "txval" => $invoice->taxable_amt,
+                                "rt" => $invoice->rate,
+                                "iamt" => $invoice->igst,
+                                "csamt" => $invoice->cess,
                             ]
                         ]
                     ];
 
                 $invoiceData = [
-                    "inum" => $invoice->invoice_no, 
-                    "idt" => date('d-m-Y', strtotime($invoice->invoice_date)), 
-                    "val" => $invoice->invoice_amt, 
-                    "itms" => $items 
+                    "inum" => $invoice->invoice_no,
+                    "idt" => date('d-m-Y', strtotime($invoice->invoice_date)),
+                    "val" => $invoice->invoice_amt,
+                    "itms" => $items
                 ];
 
                 $invArray[] = $invoiceData;
@@ -249,23 +250,23 @@ class GstrHelper
             foreach ($invoices as $invoice) {
                 $items = [
                     [
-                        "num" => rand(100, 999), 
+                        "num" => rand(100, 999),
                         "itm_det" => [
-                            "txval" => $invoice->taxable_amt, 
-                            "rt" => $invoice->rate, 
-                            "iamt" => $invoice->igst, 
-                            "csamt" => $invoice->cess, 
+                            "txval" => $invoice->taxable_amt,
+                            "rt" => $invoice->rate,
+                            "iamt" => $invoice->igst,
+                            "csamt" => $invoice->cess,
                         ]
                     ]
                 ];
 
                 $invoiceData = [
-                    "oinum" => $invoice->invoice_no, 
-                    "oidt" => date('d-m-Y', strtotime($invoice->invoice_date)), 
-                    "inum" => $invoice->revised_invoice_no, 
-                    "idt" => date('d-m-Y', strtotime($invoice->revised_invoice_date)), 
-                    "val" => $invoice->invoice_amt, 
-                    "diff_percent" => $invoice->applicable_tax_rate, 
+                    "oinum" => $invoice->invoice_no,
+                    "oidt" => date('d-m-Y', strtotime($invoice->invoice_date)),
+                    "inum" => $invoice->revised_invoice_no,
+                    "idt" => date('d-m-Y', strtotime($invoice->revised_invoice_date)),
+                    "val" => $invoice->invoice_amt,
+                    "diff_percent" => $invoice->applicable_tax_rate,
                     "itms" => $items
                 ];
 
@@ -287,13 +288,13 @@ class GstrHelper
 
         foreach ($data as $invoice) {
             $b2csArray[] = [
-                "sply_ty" => $invoice->supply_type, 
-                "rt" => $invoice->rate, 
-                "typ" => $invoice->invoice_type, 
-                "pos" => $invoice->pos, 
-                "txval" => $invoice->taxable_amt, 
-                "iamt" => $invoice->igst, 
-                "csamt" => $invoice->cess, 
+                "sply_ty" => $invoice->supply_type,
+                "rt" => $invoice->rate,
+                "typ" => $invoice->invoice_type,
+                "pos" => $invoice->pos,
+                "txval" => $invoice->taxable_amt,
+                "iamt" => $invoice->igst,
+                "csamt" => $invoice->cess,
             ];
         }
 
@@ -307,22 +308,22 @@ class GstrHelper
 
         foreach ($data as $invoice) {
             $items = [
-                [ 
-                    "rt" => $invoice->rate, 
-                    "txval" => $invoice->taxable_amt, 
-                    "iamt" => $invoice->igst, 
-                    "csamt" => $invoice->cess, 
+                [
+                    "rt" => $invoice->rate,
+                    "txval" => $invoice->taxable_amt,
+                    "iamt" => $invoice->igst,
+                    "csamt" => $invoice->cess,
                 ]
             ];
 
             $b2csaArray[] = [
-                "sply_ty" => $invoice->supply_type, 
-                "pos" => $invoice->pos, 
-                "typ" => $invoice->invoice_type, 
+                "sply_ty" => $invoice->supply_type,
+                "pos" => $invoice->pos,
+                "typ" => $invoice->invoice_type,
                 "diff_percent" => $invoice->applicable_tax_rate,
                 "itms" => $items,
-                "omon" => $invoice->month.''.$invoice->year, 
-               
+                "omon" => $invoice->month.''.$invoice->year,
+
             ];
         }
 
@@ -563,7 +564,7 @@ class GstrHelper
         }elseif($type == 'ecourp2c'){
             $ecom = self::prepareEcoUrp2cData($data);
         }
-        
+
         return $ecom;
     }
 
@@ -578,12 +579,12 @@ class GstrHelper
         foreach ($data as $invoice) {
             $items = [
                 [
-                    "num" => rand(1000, 9999), 
+                    "num" => rand(1000, 9999),
                     "itm_det" => [
                         "txval" => $invoice->taxable_amt,
                         "rt" => $invoice->rate,
                         "iamt" => $invoice->igst,
-                        "csamt" => $invoice->cess 
+                        "csamt" => $invoice->cess
                     ]
                 ]
             ];
@@ -593,7 +594,7 @@ class GstrHelper
                 "idt" => date('d-m-Y', strtotime($invoice->doc_date)),
                 "val" => $invoice->value_of_supplies_made,
                 "pos" => (string)$invoice->pos,
-                "inv_typ" => $invoice->doc_type, 
+                "inv_typ" => $invoice->doc_type,
                 "itms" => $items,
                 "flag" => $invoice->reverse_charge,
                 "sply_ty" => $invoice->supply_type,
@@ -634,8 +635,8 @@ class GstrHelper
                 "txval" => $invoice->taxable_amt,
                 "rt" => $invoice->rate,
                 "iamt" => $invoice->igst,
-                "camt" => $invoice->cgst, 
-                "samt" => $invoice->sgst, 
+                "camt" => $invoice->cgst,
+                "samt" => $invoice->sgst,
                 "csamt" => $invoice->cess,
                 "flag" => $invoice->reverse_charge,
             ];
@@ -655,12 +656,12 @@ class GstrHelper
         foreach ($data as $invoice) {
             $items = [
                 [
-                    "num" => rand(1000, 9999), 
+                    "num" => rand(1000, 9999),
                     "itm_det" => [
                         "txval" => $invoice->taxable_amt,
                         "rt" => $invoice->rate,
                         "iamt" => $invoice->igst,
-                        "csamt" => $invoice->cess 
+                        "csamt" => $invoice->cess
                     ]
                 ]
             ];
@@ -670,7 +671,7 @@ class GstrHelper
                 "idt" => date('d-m-Y', strtotime($invoice->doc_date)),
                 "val" => $invoice->value_of_supplies_made,
                 "pos" => (string)$invoice->pos,
-                "inv_typ" => $invoice->doc_type, 
+                "inv_typ" => $invoice->doc_type,
                 "itms" => $items,
                 "flag" => $invoice->reverse_charge,
                 "sply_ty" => $invoice->supply_type,
@@ -711,7 +712,7 @@ class GstrHelper
                 "camt" => $invoice->cgst,
                 "samt" => $invoice->sgst,
                 "flag" => $invoice->reverse_charge,
-                "csamt" => $invoice->cess 
+                "csamt" => $invoice->cess
             ];
         }
 
@@ -731,7 +732,7 @@ class GstrHelper
         }elseif($type == 'ecoaurp2c'){
             $ecoma = self::prepareEcoaUrp2cData($data);
         }
-        
+
         return $ecoma;
     }
 
@@ -746,12 +747,12 @@ class GstrHelper
         foreach ($data as $invoice) {
             $items = [
                 [
-                    "num" => rand(1000, 9999), 
+                    "num" => rand(1000, 9999),
                     "itm_det" => [
                         "txval" => $invoice->taxable_amt,
                         "rt" => $invoice->rate,
                         "iamt" => $invoice->igst,
-                        "csamt" => $invoice->cess 
+                        "csamt" => $invoice->cess
                     ]
                 ]
             ];
@@ -763,7 +764,7 @@ class GstrHelper
                 "idt" => date('d-m-Y', strtotime($invoice->revised_doc_date)),
                 "val" => $invoice->value_of_supplies_made,
                 "pos" => (string)$invoice->pos,
-                "inv_typ" => $invoice->doc_type, 
+                "inv_typ" => $invoice->doc_type,
                 "itms" => $items,
                 "flag" => $invoice->reverse_charge,
                 "sply_ty" => $invoice->supply_type,
@@ -843,12 +844,12 @@ class GstrHelper
         foreach ($data as $invoice) {
             $items = [
                 [
-                    "num" => rand(1000, 9999), 
+                    "num" => rand(1000, 9999),
                     "itm_det" => [
                         "txval" => $invoice->taxable_amt,
                         "rt" => $invoice->rate,
                         "iamt" => $invoice->igst,
-                        "csamt" => $invoice->cess 
+                        "csamt" => $invoice->cess
                     ]
                 ]
             ];
@@ -860,7 +861,7 @@ class GstrHelper
                 "idt" => date('d-m-Y', strtotime($invoice->revised_doc_date)),
                 "val" => $invoice->value_of_supplies_made,
                 "pos" => (string)$invoice->pos,
-                "inv_typ" => $invoice->doc_type, 
+                "inv_typ" => $invoice->doc_type,
                 "itms" => $items,
                 "flag" => $invoice->reverse_charge,
                 "sply_ty" => $invoice->supply_type,
@@ -923,12 +924,12 @@ class GstrHelper
             $netIssue = $invoice->total_number - $invoice->cancelled;
 
             $docs = [
-                "num" => $docNum, 
-                "to" => $invoice->sr_no_to, 
-                "from" => $invoice->sr_no_from, 
-                "totnum" => $invoice->total_number, 
-                "cancel" => $invoice->cancelled, 
-                "net_issue" => $netIssue 
+                "num" => $docNum,
+                "to" => $invoice->sr_no_to,
+                "from" => $invoice->sr_no_from,
+                "totnum" => $invoice->total_number,
+                "cancel" => $invoice->cancelled,
+                "net_issue" => $netIssue
             ];
 
             if (!isset($docIssueData[$docType])) {
@@ -961,7 +962,7 @@ class GstrHelper
                         "rt" => $invoice->rate,
                         "ad_amt" => $invoice->taxable_amt,
                         "iamt" => $invoice->igst,
-                        "csamt" => $invoice->cess, 
+                        "csamt" => $invoice->cess,
                 ];
             }
 
@@ -982,7 +983,7 @@ class GstrHelper
                     "rt" => $invoice->rate,
                     "ad_amt" => $invoice->taxable_amt,
                     "iamt" => $invoice->igst,
-                    "csamt" => $invoice->cess, 
+                    "csamt" => $invoice->cess,
                 ]
             ];
 
@@ -1016,7 +1017,7 @@ class GstrHelper
                     "rt" => $invoice->rate,
                     "ad_amt" => $invoice->taxable_amt,
                     "iamt" => $invoice->igst,
-                    "csamt" => $invoice->cess, 
+                    "csamt" => $invoice->cess,
                 ]
             ];
 
@@ -1048,7 +1049,7 @@ class GstrHelper
                     "rt" => $invoice->rate,
                     "ad_amt" => $invoice->taxable_amt,
                     "iamt" => $invoice->igst,
-                    "csamt" => $invoice->cess, 
+                    "csamt" => $invoice->cess,
                 ]
             ];
 
@@ -1087,7 +1088,7 @@ class GstrHelper
         }
 
         $invoiceData['inv'] = $invoiceArr;
-        
+
         return $invoiceData;
     }
 
@@ -1209,7 +1210,7 @@ class GstrHelper
                 'data' => array()
             );
         }
-        //Retrieve voucher 
+        //Retrieve voucher
         $voucher = $documentHeader->voucher;
         if (!isset($voucher) && !$voucher) {
             return array(
@@ -1247,7 +1248,7 @@ class GstrHelper
         $documentDate = Carbon::parse($documentHeader -> document_date);
         $year = Carbon::parse($documentDate) -> year;
         $month = Carbon::parse($documentDate) -> month;
-        
+
         //Place of supply
         $shippingAddress = $documentHeader -> shipping_address_details;
         $stateId = $shippingAddress ?-> state_id;
@@ -1349,7 +1350,7 @@ class GstrHelper
                 'message' => 'Transaction not found'
             );
         }
-        //Retrieve voucher 
+        //Retrieve voucher
         $voucher = $documentHeader->voucher;
         if (!isset($voucher) && !$voucher) {
             return array(
@@ -1395,7 +1396,7 @@ class GstrHelper
         $placeOfSupplyName = $placeOfSupply ?-> name;
 
         //Envoice Type
-        $invoiceType = ErpGstInvoiceType::where('name', strtolower($documentHeader -> gst_invoice_type)) -> first();
+        $invoiceType = ErpGstInvoiceType::where('name', EInvoiceHelper::CREDIT_NOTE_INVOICE_TYPE) -> first();
 
         $gstRItemRow = [];
 
@@ -1408,6 +1409,146 @@ class GstrHelper
             // 'revised_invoice_date' => null, //TBC
             // 'supply_type' => null, //TBC
             'invoice_type' => $documentHeader -> gst_invoice_type,
+            'invoice_type_id' => $invoiceType ?-> id, //TBC
+            'group_id' => $documentHeader -> group_id,
+            'company_id' => $documentHeader -> company_id,
+            'organization_id' => $documentHeader -> organization_id,
+            'party_name' => $partyName,
+            'party_gstin' => $partyGSTIN,
+            // 'voucher_type' => null, //TBC
+            'voucher_no' => $voucher -> voucher_no,
+            'taxable_amt' => $documentHeader -> total_amount - $documentHeader -> total_tax_value,
+            'pos' => $placeOfSupply ?-> state_code, //TBC
+            'place_of_supply' => $placeOfSupplyName, //TBC
+            'reverse_charge' => 'N', //TBC
+            // 'uqc' => null,
+            // 'e_commerce_gstin' => null, //TBC
+            // 'revised_ecom_gstin' => null, //TBC
+            // 'ecom_operator_name' => null, //TBC
+            'invoice_amt' => $documentHeader->total_amount,
+            // 'applicable_tax_rate' => null,
+            // 'is_conflict' => null,
+            // 'conflict_msg' => null,
+            // 'note_date' => null, //TBC
+            // 'note_type' => null, //TBC
+            // 'note_value' => null, //TBC
+            // 'note_number' => null, //TBC
+            // 'revised_note_no' => null, //TBC
+            // 'revised_note_date' => null, //TBC
+            // 'ur_type' => null, //TBC
+            // 'exp_type' => null, //TBC
+            // 'port_code' => null, //TBC
+            // 'shipping_bill_no' => null, //TBC
+            // 'shipping_bill_date' => null, //TBC
+            // 'description' => null, //TBC
+            // 'expt_amt' => null, //TBC
+            // 'non_gst_amt' => null, //TBC
+            // 'nil_amt' => null, //TBC
+            // 'qty' => null, //TBC
+            // 'nature_of_document' => null, //TBC
+            // 'sr_no_from' => null, //TBC
+            // 'sr_no_to' => null, //TBC
+            // 'total_number' => null, //TBC
+            // 'cancelled' => null, //TBC
+            // 'net_value_of_supplies' => null, //TBC
+            'supplier_gstin' => $supplierGSTIN,
+            'supplier_name' => $supplierName,
+            // 'doc_no' => null, //TBC
+            // 'doc_date' => null, //TBC
+            // 'revised_doc_no' => null, //TBC
+            // 'revised_doc_date' => null, //TBC
+            // 'doc_type' => null, //TBC
+            // 'value_of_supplies_made' => null, //TBC
+            'year' => $year,
+            'month' => $month,
+        ];
+
+        foreach ($documentHeader -> items as $itemData) {
+            $gstRItemRow[] = array_merge($gstRData, [
+                'rate' => $itemData -> sgst_value['rate'] + $itemData -> cgst_value['rate'] + $itemData -> igst_value['rate'],
+                'sgst' => $itemData -> sgst_value['value'],
+                'cgst' => $itemData -> cgst_value['value'],
+                'igst' => $itemData -> igst_value['value'],
+                'cess' => $itemData -> cess_value['value'],
+                'hsn_code' => $itemData -> hsn ?-> code
+            ]);
+        }
+
+        return array(
+            'data' => $gstRItemRow,
+            'message' => 'GSTR data returned successfully',
+            'status' => 'success'
+        );
+    }
+
+    public static function pushPurchaseReturnVoucherData(int $docId)
+    {
+        $documentHeader = PRHeader::find($docId);
+        if (!isset($documentHeader) && !$documentHeader) {
+            return array(
+                'status' => false,
+                'message' => 'Transaction not found'
+            );
+        }
+        //Retrieve voucher
+        $voucher = $documentHeader->voucher;
+        if (!isset($voucher) && !$voucher) {
+            return array(
+                'status' => false,
+                'message' => 'Voucher not found'
+            );
+        }
+        //Retrieve party details
+        $party = $documentHeader?->customer;
+        if (!isset($party) && !$party) {
+            return array(
+                'status' => false,
+                'message' => 'Party details not found'
+            );
+        }
+        $partyName = $party->company_name;
+        $partyGSTIN = $party->compliances?->gstin_no;
+        // if (!$partyName || !$partyGSTIN) {
+        //     return array(
+        //         'status' => false,
+        //         'message' => 'Party details not found'
+        //     );
+        // }
+        //Get orgnization and it's GSTIN
+        $organization = Organization::find($documentHeader -> organization_id);
+        if (!isset($organization) && !$organization) {
+            return array(
+                'status' => false,
+                'message' => 'Supplier details not found'
+            );
+        }
+        //Orgnization GSTIN
+        $supplierGSTIN = $organization->gst_number ?? env('EINVOICE_GSTIN', '');
+        $supplierName = $organization->name;
+        $documentDate = Carbon::parse($documentHeader -> document_date);
+        $year = Carbon::parse($documentDate) -> year;
+        $month = Carbon::parse($documentDate) -> month;
+
+        //Place of supply
+        $shippingAddress = $documentHeader -> shipping_address_details;
+        $stateId = $shippingAddress ?-> state_id;
+        $placeOfSupply = State::find($stateId);
+        $placeOfSupplyName = $placeOfSupply ?-> name;
+
+        //Envoice Type
+        $invoiceType = ErpGstInvoiceType::where('name', strtolower(EInvoiceHelper::CREDIT_NOTE_INVOICE_TYPE)) -> first();
+
+        $gstRItemRow = [];
+
+        $gstRData = [
+            'voucher_id' => $voucher -> id,
+            'invoice_id' => $documentHeader -> id,
+            'invoice_no' => $documentHeader -> document_number,
+            'invoice_date' => $documentHeader -> document_date,
+            // 'revised_invoice_no' => null, //TBC
+            // 'revised_invoice_date' => null, //TBC
+            // 'supply_type' => null, //TBC
+            'invoice_type' => 'R',
             'invoice_type_id' => $invoiceType ?-> id, //TBC
             'group_id' => $documentHeader -> group_id,
             'company_id' => $documentHeader -> company_id,
@@ -1493,18 +1634,33 @@ class GstrHelper
                     'status' => false
                 );
             }
-        } else if ($referenceService === ConstantHelper::SR_SERVICE_ALIAS) {
+        }
+        else if ($referenceService === ConstantHelper::SR_SERVICE_ALIAS) {
             $response = self::pushSalesReturnVoucherData($referenceDocId);
             if ($response['status'] === 'success' && isset($response['data'])) {
                 $gstrData = $response['data'];
-            } else {
+            }
+            else {
+                return array(
+                    'message' => $response['message'],
+                    'status' => false
+                );
+            }
+        }
+        else if ($referenceService === ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS) {
+            $response = self::pushPurchaseReturnVoucherData($referenceDocId);
+            if ($response['status'] === 'success' && isset($response['data'])) {
+                $gstrData = $response['data'];
+            }
+            else {
                 return array(
                     'message' => $response['message'],
                     'status' => false
                 );
             }
         //Default case if GSTR data is not required
-        } else {
+        }
+        else {
             return array(
                 'message' => 'Voucher posted successfully',
                 'status' => true

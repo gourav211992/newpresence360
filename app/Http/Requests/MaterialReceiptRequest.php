@@ -42,6 +42,8 @@ class MaterialReceiptRequest extends FormRequest
             'book_id' => 'required',
             'document_number' => 'required',
             'document_date' => 'required|date',
+            'header_store_id' => 'required',
+            'sub_store_id' => 'required',
             'vendor_id' => 'required',
             'currency_id' => 'required',
             'payment_term_id' => 'required',
@@ -109,7 +111,6 @@ class MaterialReceiptRequest extends FormRequest
         $rules['components.*.order_qty'] = 'required|numeric|min:0.01';
         $rules['components.*.accepted_qty'] = 'required|numeric|min:0.01';
         $rules['components.*.rate'] = 'required|numeric|min:0.01';
-        $rules['components.*.store_id'] = 'required|numeric';
         $rules['components.*.remark'] = 'nullable|max:250';
         
         foreach ($this->input('components', []) as $index => $component) {
@@ -135,6 +136,8 @@ class MaterialReceiptRequest extends FormRequest
             'document_date.date' => 'Please enter a valid date for the document date.',
             'document_date.after_or_equal' => 'The document date cannot be in the past.',
             'document_date.before_or_equal' => 'The document date cannot be in the future.',
+            'header_store_id.required' => 'Location is required',
+            'sub_store_id.required' => 'Store is required',
             'gate_entry_no.required' => 'Gate Entry No is required.',
             'gate_entry_date.required' => 'Gate Entry Date is required.',
             'eway_bill_no.required' => 'Eway Bill No is required.',
@@ -157,10 +160,8 @@ class MaterialReceiptRequest extends FormRequest
             'components.*.rate.required' => 'Rate is required',
             'components.*.rate.numeric' => 'Rate must be a number.',
             'components.*.rate.gt' => 'Rate must be greater than zero.',
-            'components.*.store_id.required' => 'Store is required',
             'components.*.attr_group_id.*.attr_name.required' => 'Select Attribute',
         ];
- 
     }
 
     /**
@@ -215,15 +216,6 @@ class MaterialReceiptRequest extends FormRequest
                     }
                 }
                 $items[] = $currentItem;
-
-                // Shor close resctriction
-                // $poItemId = $component['po_item_id'] ?? null;
-                // $poItem = PoItem::find($poItemId);
-                // if(floatval($component['short_close_qty']) && $poItem) {
-                //     if(floatval($poItem->order_qty) < max($poItem->grn_qty,$poItem->invoice_quantity) + floatval($component['short_close_qty'])) {
-                //         $validator->errors()->add("components.$key.short_close_qty", "Short close qty less then PO qty");
-                //     }
-                // }
             }
         });
 

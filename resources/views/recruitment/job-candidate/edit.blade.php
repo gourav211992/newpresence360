@@ -16,7 +16,7 @@
                                 <h2 class="content-header-title float-start mb-0">Edit Candidate</h2>
                                 <div class="breadcrumb-wrapper">
                                     <ol class="breadcrumb">
-                                        <li class="breadcrumb-item"><a href="index.html">Home</a>
+                                        <li class="breadcrumb-item"><a href="{{ route('recruitment.hr-dashboard') }}">Home</a>
                                         </li>
                                         <li class="breadcrumb-item active">Edit</li>
                                     </ol>
@@ -50,22 +50,6 @@
                                         </div>
 
                                         <div class="col-md-9">
-                                            {{-- <div class="row align-items-center mb-1">
-                                                <div class="col-md-3">
-                                                    <label class="form-label">Job</label>
-                                                </div>
-
-                                                <div class="col-md-5">
-                                                    <select class="form-select select2" name="job_id[]" multiple>
-                                                        <option value="" {{ in_array("", $jobIds) ? 'selected' : '' }}>Select</option>
-                                                        @forelse ($jobs as $job)
-                                                        <option value="{{ $job->id }}" {{ in_array($job->id, $jobIds) ? 'selected' : '' }}>{{ $job->job_title_name }}</option>
-                                                        @empty
-                                                        @endforelse
-                                                    </select>
-                                                </div>
-                                            </div> --}}
-
                                             <div class="row align-items-center mb-1">
                                                 <div class="col-md-3">
                                                     <label class="form-label">Full Name <span
@@ -196,6 +180,18 @@
                                                 </div>
                                             </div>
 
+                                            <div class="row align-items-center mb-1">
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Refered By</label>
+                                                </div>
+
+                                                <div class="col-md-5">
+                                                    <select class="form-select select2" id="refered_by" name="refered_by">
+                                                        <option value="">Select</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+
                                         </div>
 
                                         <div class="col-md-3 border-start">
@@ -265,4 +261,65 @@
     </div>
 </div>
 <!-- END: Content-->
+@endsection
+
+@section('scripts')
+<script>
+    $(document).ready(function() {
+        $("#skill").select2({
+            tags: true
+        });
+    });
+</script>
+
+<script>
+    $(document).ready(function() {
+        const selectedEmpId = "{{ $jobCandidate->refered_by }}";
+
+        $('#refered_by').select2({
+            placeholder: "Select Rfered By...",
+            minimumInputLength: 2,
+            ajax: {
+                url: "{{ route('recruitment.fetch-employees') }}",
+                dataType: 'json',
+                data: function(params) {
+                    return {
+                        search: $.trim(params.term),
+                        page: params.page || 1
+                    };
+                },
+                processResults: function(data, params) {
+                    params.page = params.page || 1;
+                    return {
+                        results: data.data.map(function(employee) {
+                            return {
+                                id: employee.id,
+                                text: employee.name
+                            };
+                        }),
+                        pagination: {
+                            more: data.pagination.more
+                        }
+                    };
+                },
+                cache: true
+            }
+        });
+
+        if (selectedEmpId) {
+            $.ajax({
+                url: "{{ route('recruitment.fetch-employees') }}",
+                type: 'GET',
+                data: { id: selectedEmpId },
+                success: function(data) {
+                    if (data && data.data && data.data.length > 0) {
+                        const emp = data.data[0];
+                        const option = new Option(emp.name, emp.id, true, true);
+                        $('#refered_by').append(option).trigger('change');
+                    }
+                }
+            });
+        }
+    });
+</script>
 @endsection

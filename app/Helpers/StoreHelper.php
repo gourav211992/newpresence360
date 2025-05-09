@@ -1,14 +1,17 @@
 <?php
 namespace App\Helpers;
 use App\Models\ErpStore;
+use App\Models\ErpSubStore;
 use Illuminate\Database\Eloquent\Collection as DatabaseCollection;
 
 class StoreHelper
 {
     public static function getAvailableStoresForVendor(array $selectedStoreIds = [], $vendorId = null) : DatabaseCollection
     {
-        $storeQuery = ErpStore::select('id', 'store_name') -> withDefaultGroupCompanyOrg() -> 
-        where('store_location_type', ConstantHelper::VENDOR_STORE);
+        $storeQuery = ErpSubStore::select('id', 'name') -> whereHas('parents', function ($parentQuery) {
+            $parentQuery -> withDefaultGroupCompanyOrg();
+        }) -> 
+        where('type', ConstantHelper::VENDOR_STORE);
         //Edit Case -> show inactive if selected
         if (count($selectedStoreIds) > 0) {
             $storeQuery -> where(function ($statusQuery) use($selectedStoreIds) {

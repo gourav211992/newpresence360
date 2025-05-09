@@ -605,8 +605,12 @@ class ErpMaterialReturnController extends Controller
                         } else {
                             $miItem = ErpMrItem::create($itemRowData);
                         }
+                        $lot_data = null;
                         //Order Pulling condition 
                         if (isset($request -> mi_item_id[$itemDataKey])) {
+                            $issue_item = ErpMiItem::with(['header'])->find($request -> mi_item_id[$itemDataKey]);
+                            $lot_data = InventoryHelper::getIssueTransactionLotNumbers('mi', $issue_item->header->id, $issue_item->id,$issue_item->uom_id);
+
                             //Back update in MO item
                             $moItem = ErpMiItem::find($request -> mi_item_id[$itemDataKey]);
                             if (isset($moItem)) {
@@ -644,13 +648,19 @@ class ErpMaterialReturnController extends Controller
                         if (isset($request -> item_lots[$itemDataKey])) {
                             $lotArray = json_decode($request -> item_lots[$itemDataKey], true);
                             if (json_last_error() === JSON_ERROR_NONE && is_array($lotArray)) {
-                                foreach ($lotArray as $lot) {
+                                foreach ($lotArray as $key => $lot) {
+                                    $so_lot = null ;
+                                    if(isset($lot_data[$key]['so_no'])){
+                                        $lot['so_no'] = $lot_data[$key]['so_no'] ?? null;
+                                        $so_lot = $lot['so_no'] ?? null;
+                                    }
                                     $miItemLot = ErpMrItemLot::updateOrCreate(
                                         [
                                             'mr_item_id' => $miItem -> id,
                                             'lot_number' => $lot['lot_number'],
                                         ],
                                         [
+                                            'so_lot_number' => $so_lot,
                                             'lot_qty' => $lot['lot_qty'],
                                             'total_lot_qty' => $lot['total_lot_qty'],
                                             'inventory_uom_qty' => ItemHelper::convertToBaseUom($miItem -> item_id, $miItem -> uom_id, (float)$lot['lot_qty']),
@@ -674,6 +684,7 @@ class ErpMaterialReturnController extends Controller
                                     'lot_number' => strtoupper($lot_number),
                                 ],
                                 [
+                                    'so_lot_number' => null,
                                     'lot_qty' => $miItem->qty,
                                     'total_lot_qty' => $miItem->qty,
                                     'inventory_uom_qty' => ItemHelper::convertToBaseUom($miItem -> item_id, $miItem -> uom_id, $miItem->qty),

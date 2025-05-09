@@ -24,20 +24,6 @@
         </select>
     </td>
     <td>
-        <select class="form-select item-store store_id" name="components[{{$rowCount}}][store_id]" id="store_id">
-            @foreach($locations as $erpStore)
-                <option value="{{$erpStore->id}}">
-                {{ ucfirst($erpStore->store_name) }}
-                </option>
-            @endforeach
-        </select>
-    </td>
-    <td class="subStore">
-        <select class="form-select sub_store" name="components[{{$rowCount}}][sub_store_id]">
-            <option value="">Select</option>
-        </select>
-    </td>
-    <td>
         <input type="number" step="any" class="form-control mw-100 accepted_qty text-end checkNegativeVal"  name="components[{{$rowCount}}][accepted_qty]"/>
     </td>
     <td>

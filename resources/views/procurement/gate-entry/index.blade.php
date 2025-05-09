@@ -34,7 +34,8 @@
                             <a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{ route('gate-entry.create') }}">
                                 <i data-feather="plus-circle"></i> Create
                             </a>
-                            <a class="btn btn-dark btn-sm mb-50 mb-sm-0" href="{{ route('gate-entry.report') }}"><i data-feather="bar-chart-2"></i>Report</a>
+                            {{-- <a class="btn btn-dark btn-sm mb-50 mb-sm-0" href="{{ route('gate-entry.report') }}"><i data-feather="bar-chart-2"></i>Report</a> --}}
+                            <a class="btn btn-dark btn-sm mb-50 mb-sm-0" href="{{ route('transactions.report', ['serviceAlias' => request() -> type]) }}"><i data-feather="bar-chart-2"></i>Report</a>
                         @endif
                     </div>
                 </div>

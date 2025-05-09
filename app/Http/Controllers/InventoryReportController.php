@@ -76,6 +76,7 @@ class InventoryReportController extends Controller
         $users = AuthUser::where('organization_id', Helper::getAuthenticatedUser()->organization_id)
             ->where('status', ConstantHelper::ACTIVE)
             ->get();
+        $subStoreLocType = ConstantHelper::ERP_SUB_STORE_LOCATION_TYPES;
         // return $records;
         return view('procurement.inventory-report.report',
             compact(
@@ -85,7 +86,8 @@ class InventoryReportController extends Controller
                 'attributeGroups',
                 'categories',
                 'sub_categories',
-                'users'
+                'users',
+                'subStoreLocType'
             )
         );
     }
@@ -104,12 +106,14 @@ class InventoryReportController extends Controller
         $mCategoryId = $request->query('m_category');
         $mSubCategoryId = $request->query('m_subCategory');
         $store = $request->query('location_id');
+        $stockType = $request->query('stock_type');
         $subStore = $request->query('store_id');
         $rack = $request->query('rack_id');
         $shelf = $request->query('shelf_id');
         $bin = $request->query('bin_id');
         $storeCheck = $request->query('store_check');
         $subLocationCheck = $request->query('sub_location_check');
+        $stockTypeCheck = $request->query('stock_type_check');
         $rackCheck = $request->query('rack_check');
         $shelfCheck = $request->query('shelf_check');
         $binCheck = $request->query('bin_check');
@@ -133,7 +137,7 @@ class InventoryReportController extends Controller
             ->whereNull('utilized_id')
             ->where('transaction_type', 'receipt');
 
-        $query->with(['item', 'item.category', 'item.subCategory', 'location', 'store']);
+        $query->with(['item', 'item.category', 'item.subCategory', 'location', 'store', 'station', 'wipStation']);
 
         // Item filters
         $query->whereHas('item', function($q) use ($itemId, $categoryId, $subCategoryId, $mCategoryId, $mSubCategoryId) {
@@ -160,9 +164,11 @@ class InventoryReportController extends Controller
         if ($rackCheck) { $query->groupBy(['rack_id']); }
         if ($shelfCheck) { $query->groupBy(['shelf_id']); }
         if ($binCheck) { $query->groupBy(['bin_id']); }
+        if ($stockTypeCheck) { $query->groupBy(['stock_type']); }
 
         if ($store) { $query->where('store_id', $store)->groupBy(['store_id']); }
         if ($subStore) { $query->where('sub_store_id', $subStore)->groupBy(['sub_store_id']); }
+        if ($stockType) { $query->where('stock_type', $stockType)->groupBy(['stock_type']); }
         if ($rack) { $query->where('rack_id', $rack)->groupBy(['rack_id']); }
         if ($shelf) { $query->where('shelf_id', $shelf)->groupBy(['shelf_id']); }
         if ($bin) { $query->where('bin_id', $bin)->groupBy(['bin_id']); }
@@ -303,7 +309,7 @@ class InventoryReportController extends Controller
             ->get();
         $query = StockLedger::query()
                 ->withDefaultGroupCompanyOrg()
-                ->with(['book', 'item', 'location', 'store', 'so']);
+                ->with(['book', 'item', 'location', 'store', 'so', 'station', 'wipStation']);
         $items = Item::orderBy('id', 'ASC')
                 ->withDefaultGroupCompanyOrg()
                 ->get();
@@ -332,8 +338,13 @@ class InventoryReportController extends Controller
             $hasFilters = true;
         }
 
-        if($request->has('sub_location_id') && !empty($request->sub_location_id)) {
-            $query->where('sub_store_id', $request->sub_location_id);
+        if($request->has('sub_store_id') && !empty($request->sub_store_id)) {
+            $query->where('sub_store_id', $request->sub_store_id);
+            $hasFilters = true;
+        }
+
+        if($request->has('stock_type') && !empty($request->stock_type)) {
+            $query->where('stock_type', $request->stock_type);
             $hasFilters = true;
         }
 
@@ -388,6 +399,8 @@ class InventoryReportController extends Controller
             // });
             $records = $records->toArray();
         }
+        $subStoreLocType = ConstantHelper::ERP_SUB_STORE_LOCATION_TYPES;
+
         return view('procurement.inventory-report.detailed_report', [
             'user' => $user,
             'records' => $records,
@@ -397,7 +410,8 @@ class InventoryReportController extends Controller
             'attributeGroups' => $attributeGroups,
             'bookTypes' => $bookTypes,
             'statusCss' => $statusCss,
-            'users' => $users
+            'users' => $users,
+            'subStoreLocType' => $subStoreLocType
         ]);
     }
 
@@ -409,7 +423,7 @@ class InventoryReportController extends Controller
             ->get();
         $query = StockLedger::query()
                 ->withDefaultGroupCompanyOrg()
-                ->with(['book', 'item', 'location', 'store', 'so']);
+                ->with(['book', 'item', 'location', 'store', 'so', 'station', 'wipStation']);
         $bookTypes = StockLedger::distinct()->pluck('book_type');
         $items = Item::orderBy('id', 'ASC')
                 ->withDefaultGroupCompanyOrg()
@@ -437,6 +451,10 @@ class InventoryReportController extends Controller
 
         if ($request->has('sub_store_id') && !empty($request->sub_store_id)) {
             $query->where('sub_store_id', $request->sub_store_id);
+        }
+
+        if ($request->has('stock_type') && !empty($request->stock_type)) {
+            $query->where('stock_type', $request->stock_type);
         }
 
         if ($request->has('type_of_stock_id') && !empty($request->type_of_stock_id)) {
@@ -488,6 +506,7 @@ class InventoryReportController extends Controller
         if ($request->ajax()) {
             return response()->json($records);
         }
+        $subStoreLocType = ConstantHelper::ERP_SUB_STORE_LOCATION_TYPES;
         // Otherwise, return the full HTML page
         return view('procurement.inventory-report.detailed_report', [
             'user' => $user,
@@ -498,7 +517,8 @@ class InventoryReportController extends Controller
             'bookTypes' => $bookTypes,
             'selectedItem' => $selectedItem,
             'statusCss' => $statusCss,
-            'users' => $users
+            'users' => $users,
+            'subStoreLocType' => $subStoreLocType
         ]);
     }
 
@@ -510,7 +530,7 @@ class InventoryReportController extends Controller
             ->get();
         $query = StockLedger::query()
                 ->withDefaultGroupCompanyOrg()
-                ->with(['book', 'item', 'location', 'store', 'so']);
+                ->with(['book', 'item', 'location', 'store', 'so', 'station', 'wipStation']);
         $items = Item::orderBy('id', 'ASC')
                 ->withDefaultGroupCompanyOrg()
                 ->get();
@@ -535,6 +555,10 @@ class InventoryReportController extends Controller
 
         if($request->has('sub_store_id') && !empty($request->sub_store_id)) {
             $query->where('sub_store_id', $request->sub_store_id);
+        }
+
+        if($request->has('stock_type') && !empty($request->stock_type)) {
+            $query->where('stock_type', $request->stock_type);
         }
 
         if($request->has('book_type_id') && !empty($request->book_type_id)) {
@@ -572,6 +596,7 @@ class InventoryReportController extends Controller
             ->groupBy(['document_header_id', 'document_detail_id', 'book_type']);
 
         $records = $query->get()->toArray();
+        $subStoreLocType = ConstantHelper::ERP_SUB_STORE_LOCATION_TYPES;
 
         return view('procurement.inventory-report.summary_report', [
             'user' => $user,
@@ -581,7 +606,8 @@ class InventoryReportController extends Controller
             'attributeGroups' => $attributeGroups,
             'bookTypes' => $bookTypes,
             'statusCss' => $statusCss,
-            'users' => $users
+            'users' => $users,
+            'subStoreLocType' => $subStoreLocType
         ]);
     }
 
@@ -593,7 +619,7 @@ class InventoryReportController extends Controller
             ->get();
         $query = StockLedger::query()
                 ->withDefaultGroupCompanyOrg()
-                ->with(['book', 'item', 'location', 'store', 'so']);
+                ->with(['book', 'item', 'location', 'store', 'so', 'station', 'wipStation']);
         $items = Item::orderBy('id', 'ASC')
                 ->withDefaultGroupCompanyOrg()
                 ->get();
@@ -621,6 +647,10 @@ class InventoryReportController extends Controller
 
         if($request->has('book_type_id') && !empty($request->book_type_id)) {
             $query->where('book_type', $request->book_type_id);
+        }
+
+        if ($request->has('stock_type') && !empty($request->stock_type)) {
+            $query->where('stock_type', $request->stock_type);
         }
 
         if ($request->has('type_of_stock_id') && !empty($request->type_of_stock_id)) {
@@ -667,6 +697,8 @@ class InventoryReportController extends Controller
         if ($request->ajax()) {
             return response()->json($records);
         }
+
+        $subStoreLocType = ConstantHelper::ERP_SUB_STORE_LOCATION_TYPES;
         // Otherwise, return the full HTML page
         return view('procurement.inventory-report.summary_report', [
             'user' => $user,
@@ -676,7 +708,8 @@ class InventoryReportController extends Controller
             'attributeGroups' => $attributeGroups,
             'bookTypes' => $bookTypes,
             'statusCss' => $statusCss,
-            'users' => $users
+            'users' => $users,
+            'subStoreLocType' => $subStoreLocType
         ]);
     }
 
@@ -723,12 +756,12 @@ class InventoryReportController extends Controller
             $endDate = new DateTime($request->input('end_date'));
             $formattedstartDate = $startDate->format('d-m-y');
             $formattedendDate = $endDate->format('d-m-y');
-            if ($request->filled('store_id')) 
+            if ($request->filled('store_id'))
             {
                 $storeData = ErpStore::find($request->input('store_id'));
                 $storeName = optional($storeData)->store_name;
             }
-            if ($request->filled('sub_store_id')) 
+            if ($request->filled('sub_store_id'))
             {
                 $subStoreData = ErpSubStore::find($request->input('sub_store_id'));
                 $subStoreName = optional($subStoreData)->name;
@@ -737,12 +770,12 @@ class InventoryReportController extends Controller
                 $itemData = Item::find($filters_json['item']);
                 $itemName = $itemData->item_name;
             }
-            
+
             if (!empty($filters_json['store_id'])) {
                 $storeData = ErpStore::find($filters_json['store_id']);
                 $storeName = $storeData->store_name;
             }
-            
+
             if (!empty($filters_json['sub_store_id'])) {
                 $subStoreData = ErpSubStore::find($filters_json['sub_store_id']);
                 $subStoreName = $subStoreData->name;
@@ -769,7 +802,7 @@ class InventoryReportController extends Controller
                 $directoryPath = storage_path('app/public/inventory-report');
                 $customHeader = array_merge(
                     array_fill(0, $centerPosition, ''),
-                    ['Inventory Report' ], 
+                    ['Inventory Report' ],
                     array_fill(0, $blankSpaces - $centerPosition, '')
                 );
             }
@@ -780,7 +813,7 @@ class InventoryReportController extends Controller
                 $directoryPath = storage_path('app/public/detailed-report');
                 $customHeader = array_merge(
                     array_fill(0, $centerPosition, ''),
-                    ['Detailed Report(From '.$formattedstartDate.' to '.$formattedendDate.')' ], 
+                    ['Detailed Report(From '.$formattedstartDate.' to '.$formattedendDate.')' ],
                     array_fill(0, $blankSpaces - $centerPosition, '')
                 );
             }
@@ -791,16 +824,16 @@ class InventoryReportController extends Controller
                 $directoryPath = storage_path('app/public/summary-report');
                 $customHeader = array_merge(
                     array_fill(0, $centerPosition, ''),
-                    ['Summarized Report(From '.$formattedstartDate.' to '.$formattedendDate.')' ], 
+                    ['Summarized Report(From '.$formattedstartDate.' to '.$formattedendDate.')' ],
                     array_fill(0, $blankSpaces - $centerPosition, '')
                 );
             }
-            
+
             $remainingSpaces = $blankSpaces - count($filters) + 1;
             $filterHeader = array_merge($filters, array_fill(0, $remainingSpaces, ''));
 
             $excelData = Excel::raw(new InventoryReportExport($customHeader, $filterHeader, $headers, $data), \Maatwebsite\Excel\Excel::XLSX);
-            
+
             if (!file_exists($directoryPath)) {
                 mkdir($directoryPath, 0755, true);
             }
@@ -876,7 +909,7 @@ class InventoryReportController extends Controller
                     $title = "Summarized Report Generated";
                     $heading = "Summarized Report";
                 }
-                
+
                 $remarks = $request->remarks ?? null;
                 $mail_from = '';
                 $mail_from_name = '';
@@ -928,7 +961,7 @@ class InventoryReportController extends Controller
         if (!$receiver || !isset($receiver->email)) {
             return "Error: Receiver details are missing or invalid.";
         }
-        
+
         dispatch(new SendEmailJob($receiver, $mail_from, $mail_from_name,$title,$description,$cc,$bcc, $attachment));
         return response() -> json([
             'status' => 'success',

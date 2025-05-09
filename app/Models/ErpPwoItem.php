@@ -69,6 +69,7 @@ class ErpPwoItem extends Model
                 $attribute_ids = $attribute -> attribute_id ? json_decode($attribute -> attribute_id) : [];
             }
             $attribute -> group_name = $attribute -> group ?-> name;
+            $attribute -> short_name = $attribute -> group ?-> short_name;
             $attributesArray = array();
             $attribute -> group_name = $attribute -> group ?-> name;
             foreach (isset($attribute_ids) ? $attribute_ids : [] as $attributeValue) {
@@ -81,8 +82,8 @@ class ErpPwoItem extends Model
                 }
             }
            $attribute -> values_data = $attributesArray;
-           $attribute = $attribute -> only(['id','group_name', 'values_data', 'attribute_group_id']);
-           array_push($processedData, ['id' => $attribute['id'], 'group_name' => $attribute['group_name'], 'values_data' => $attributesArray, 'attribute_group_id' => $attribute['attribute_group_id']]);
+           $attribute = $attribute -> only(['id','group_name', 'short_name' ,'values_data', 'attribute_group_id']);
+           array_push($processedData, ['id' => $attribute['id'], 'group_name' => $attribute['group_name'], 'values_data' => $attributesArray, 'attribute_group_id' => $attribute['attribute_group_id'],'short_name' => $attribute['short_name']]);
 
         }
         $processedData = collect($processedData);
@@ -135,7 +136,7 @@ class ErpPwoItem extends Model
     {
         return ($this -> order_qty);
     }
-    public function getAvlStock($storeId = null)
+    public function getAvlStock($storeId, $subStoreId = null, $stationId = null)
     {
         $selectedAttributeIds = [];
         $itemAttributes = $this -> item_attributes_array();
@@ -146,7 +147,7 @@ class ErpPwoItem extends Model
                 }
             }
         }
-        $stocks = InventoryHelper::totalInventoryAndStock($this -> item_id, $selectedAttributeIds,$this -> uom_id,$storeId,null,null);
+        $stocks = InventoryHelper::totalInventoryAndStock($this -> item_id, $selectedAttributeIds,$this -> uom_id,$storeId,$subStoreId,NULL, $stationId);
         $stockBalanceQty = 0;
         if (isset($stocks) && isset($stocks['confirmedStocks'])) {
             $stockBalanceQty = $stocks['confirmedStocks'];

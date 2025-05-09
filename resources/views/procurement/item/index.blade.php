@@ -25,12 +25,12 @@
                         <button class="btn btn-warning btn-sm me-1 mb-20 mb-sm-0" data-bs-target="#filter" data-bs-toggle="modal">
                             <i data-feather="filter"></i> Filter
                         </button>
-                        <a class="btn btn-primary btn-sm me-1 mb-20 mb-sm-0" href="{{ route('item.create') }}">
+                        <a href="{{ route('items.show.import') }}" class="btn btn-secondary btn-sm mb-50 me-1 mb-sm-0">
+                            <i data-feather="upload"></i> Import
+                        </a> 
+                        <a class="btn btn-primary btn-sm mb-20 mb-sm-0" href="{{ route('item.create') }}">
                             <i data-feather="plus-circle"></i> Add New
                         </a>
-                         <a href="{{ route('items.show.import') }}" class="btn btn-warning btn-sm mb-50 mb-sm-0">
-                            <i data-feather="upload"></i>Import
-                        </a> 
                     </div>
              </div>
             </div>

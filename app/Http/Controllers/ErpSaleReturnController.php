@@ -870,7 +870,7 @@ class ErpSaleReturnController extends Controller
                                     'sale_return_item_id' => $soItem->id,
                                     'ted_type' => 'Tax',
                                     'ted_level' => 'D',
-                                    'ted_id' => $taxDetail['tax_id'],
+                                    'ted_id' => $taxDetail['id'],
                                 ],
                                 [
                                     'ted_group_code' => $taxDetail['tax_group'],

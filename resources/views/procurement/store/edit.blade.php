@@ -92,7 +92,7 @@
                                                     <input type="text" name="store_name" id="store_name"  class="form-control" value="{{ $store->store_name }}" {{ $isStoreReferenced ? 'readonly' : '' }} />
                                                 </div>
                                             </div>
-                                            <div class="row align-items-center mb-1">
+                                            <!-- <div class="row align-items-center mb-1">
                                                 <div class="col-md-3">
                                                     <label class="form-label">Location Type<span class="text-danger">*</span></label>
                                                 </div>
@@ -109,7 +109,7 @@
                                                         <div class="invalid-feedback d-block">{{ $message }}</div>
                                                     @enderror
                                                 </div>
-                                            </div>
+                                            </div> -->
                                             <div class="row align-items-center mb-1">
                                                 <div class="col-md-3">
                                                     <label class="form-label">Contact Person</label>

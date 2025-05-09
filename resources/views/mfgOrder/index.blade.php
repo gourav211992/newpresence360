@@ -34,6 +34,7 @@
                                  <th>Series</th>
                                  <th>Doc No.</th>
                                  <th>Location</th>
+                                 <th>Sub Location</th>
                                  <th>Station</th>
                                  <th>Product Code</th>
                                  <th>Product Name</th>
@@ -135,6 +136,10 @@ $(document).ready(function() {
             } 
          },        
         { data: 'location_name', name: 'location_name', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+               $(td).addClass('no-wrap');
+            } 
+         },        
+        { data: 'sub_location_name', name: 'sub_location_name', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('no-wrap');
             } 
          },        

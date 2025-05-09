@@ -25,6 +25,7 @@ class ErpSoItem extends Model
         'pwo_qty',
         'invoice_qty',
         'dnote_qty',
+        'picked_qty',
         'inventory_uom_id',
         'inventory_uom_code',
         'inventory_uom_qty',
@@ -48,6 +49,7 @@ class ErpSoItem extends Model
         'balance_bundle_qty',
         'quotation_balance_qty',
         'work_order_balance_qty',
+        'picked_balance_qty',
         'cgst_value',
         'sgst_value',
         'igst_value'
@@ -170,9 +172,15 @@ class ErpSoItem extends Model
     }
     public function getBalanceQtyAttribute()
     {
-        $totalQty = $this -> getAttribute('pslip_qty');
+        // $totalQty = $this -> getAttribute('pslip_qty');
+        // $usedQty = $this -> getAttribute('dnote_qty');
+        // $balanceQty = min([$totalQty, ($totalQty - $usedQty)]);
+        // return $balanceQty;
+        $totalQty = $this -> getAttribute('order_qty');
         $usedQty = $this -> getAttribute('dnote_qty');
-        $balanceQty = min([$totalQty, ($totalQty - $usedQty)]);
+        $shortQty = $this -> getAttribute('short_close_qty');
+        $pickedQty = $this -> getAttribute('picked_qty');
+        $balanceQty = min([$totalQty, ($totalQty - ( $usedQty + $shortQty + $pickedQty))]);
         return $balanceQty;
     }
     public function getBalanceBundleQtyAttribute()
@@ -192,6 +200,11 @@ class ErpSoItem extends Model
         $totalQty = $this -> getAttribute('inventory_uom_qty');
         $usedQty = $this -> getAttribute('pwo_qty');
         $balanceQty = min([$totalQty, ($totalQty - $usedQty)]);
+        return $balanceQty;
+    }
+    public function getPickedBalanceQtyAttribute()
+    {
+        $balanceQty = $this->order_qty - ($this->dnote_qty+$this->short_close_qty+$this->picked_qty);
         return $balanceQty;
     }
 
@@ -277,13 +290,14 @@ class ErpSoItem extends Model
                 }
             }
         }
-        $stocks = InventoryHelper::totalInventoryAndStock($itemId, $selectedAttributeIds,$storeId,null,null,null);
+        $stocks = InventoryHelper::totalInventoryAndStock($itemId, $selectedAttributeIds,null,$storeId,null);
         $stockBalanceQty = 0;
         if (isset($stocks) && isset($stocks['confirmedStocks'])) {
             $stockBalanceQty = $stocks['confirmedStocks'];
         }
+        // dd($stockBalanceQty)
         // $stockBalanceQty = $this -> getAttribute('inventory_uom_qty');
-        $stockBalanceQty = ItemHelper::convertToAltUom($this -> getAttribute(('item_id')), $this -> getAttribute('uom_id'), $stockBalanceQty);
+        $stockBalanceQty = ItemHelper::convertToAltUom($this -> getAttribute(('item_id')), $this -> getAttribute('uom_id'), (float)$stockBalanceQty);
         return $stockBalanceQty;
         // return $this -> getAttribute('order_qty');
     }

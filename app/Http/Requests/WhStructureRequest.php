@@ -30,38 +30,43 @@ class WhStructureRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:100', Rule::unique('erp_production_routes', 'name')->where('group_id',  $this->group_id)->where('organization_id',  $this->organization_id)->whereNull('deleted_at')->ignore($this->route('id'))],
-            'description' => ['nullable', 'string', 'max:500'],
+            'store_id' => [
+                'required',
+                'numeric',
+            ],
+            'sub_store_id' => [
+                'required',
+                'numeric',
+                Rule::unique('erp_wh_structures')
+                    ->where(function ($query) {
+                        return $query
+                            ->where('store_id', $this->store_id)
+                            ->where('sub_store_id', $this->sub_store_id)
+                            ->where('group_id', $this->group_id)
+                            ->where('organization_id', $this->organization_id)
+                            ->whereNull('deleted_at');
+                    })
+                    ->ignore($this->route('id')), // ignore when updating
+            ],
+            'name' => ['nullable', 'string', 'max:500'],
             'status' => 'nullable|string',
             'levels' => 'nullable|array',
-            'levels.*.level' => 'required|integer',
+            'levels.*.level' => 'required|numeric',
             'levels.*.name' => 'required|string|max:100',
-            'levels.*.details' => 'required|array',
-            'levels.*.details.*.consumption' => 'nullable|in:yes,no',
-            'levels.*.details.*.qa' => 'nullable|in:yes,no',
-            'levels.*.details.*.hidden_station_id' => 'required|integer|exists:erp_stations,id',
         ];
-        if ($this->isMethod('put') || $this->isMethod('patch')) {
-            $rules['name'] = [
-                'required',
-                'string',
-                'max:100',
-                Rule::unique('erp_production_routes', 'name')->whereNull('deleted_at')->ignore($this->route('id')),
-            ];
-        }
-        return $rules;
     }
 
     public function messages()
     {
         return [
-            'name.required' => 'Name is required.',
-            'name.max' => 'Name may not be greater than 100 characters.',
-            'description.max' => 'Description may not be greater than 500 characters.',
-            'levels.*.details.required' => 'Station for each level is required.',
-            // 'levels.required' => 'Levels for this production route required.',
-            // 'levels.*.details.*.consumption.required' => 'Consumption is required.',
-            'levels.*.details.*.hidden_station_id.required' => 'Station is required.',
+            'store_id.required' => 'Location is required.',
+            'store_id.numeric' => 'Location must be a number.',
+            'sub_store_id.required' => 'Warehouse is required.',
+            'sub_store_id.numeric' => 'Warehouse must be a number.',
+            'sub_store_id.unique' => 'The combination of Location and Warehouse must be unique.',
+            'levels.*.required' => 'Station for each level is required.',
+            'levels.*.level.required' => 'Level Val is required.',
+            'levels.*.name.required' => 'Level is required.',
         ];
     }
 }

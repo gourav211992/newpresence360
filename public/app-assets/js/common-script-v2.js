@@ -227,6 +227,91 @@ $(document).ready(function () {
             },
         });
     });
+
+    // Ajax Save & Update with Confirmation
+    $(document).on("click", '[data-request="confirm-and-save"]', function () {
+        $(".is-invalid").removeClass("is-invalid");
+        $(".help-block").remove();
+        var $this = $(this);
+        var $target = $this.data("target");
+        var $url = $(this).data("action") ? $(this).data("action") : $($target).attr("action");
+        var $method = $(this).data("action") ? "POST" : $($target).attr("method");
+        var $redirect = $($target).attr("redirect");
+        var $reload = $($target).attr("reload");
+        var $callback = $($target).attr("callback");
+        var $message = $($target).attr("data-message");
+        var $data = new FormData($($target)[0]);
+        if (!$method) {
+            $method = "get";
+        }
+        $this.prop('disabled', true);
+
+        Swal.fire({
+            title: "Alert! ",
+            text: $message ? $message : "Are you sure ?",
+            showCancelButton: true,
+            confirmButtonColor: "#3085d6",
+            cancelButtonColor: "#d33",
+            confirmButtonText: "Yes, please!",
+        }).then((result) => {
+            if (result.value) {
+                $.ajax({
+                    url: $url,
+                    data: $data,
+                    cache: false,
+                    type: $method,
+                    dataType: "JSON",
+                    contentType: false,
+                    processData: false,
+                    beforeSend: function () {
+                        $('#loaderDiv').show();
+                    },
+                    success: function ($response) {
+                        $('#loaderDiv').hide();
+                        if ($response.status === 200) {
+                            $($target).trigger("reset");
+                            $this.prop('disabled', false);
+
+                            Swal.fire("Success!", $response.message, "success");
+                            if ($callback) {
+                                console.log('call');
+                                data = $response.data;
+                                eval($callback);
+                            }
+                            setTimeout(function () {
+                                if ($redirect) {
+                                    window.location.href = $redirect;
+                                } else if ($reload) {
+                                    console.log($reload);
+                                    location.reload();
+                                }
+                            }, 2200);
+                        }
+                    },
+                    error: function ($response) {
+                        $('#loaderDiv').hide();
+                        $this.prop('disabled', false);
+                        if ($response.status === 422) {
+                            if (
+                                Object.size($response.responseJSON) > 0 &&
+                                Object.size($response.responseJSON.errors) > 0
+                            ) {
+                                show_validation_error($response.responseJSON.errors);
+                            }
+                        } else {
+                            Swal.fire(
+                                "Info!",
+                                $response.responseJSON.message,
+                                "warning"
+                            );
+                            setTimeout(function () { }, 1200);
+                        }
+                    },
+                });
+            }
+        });
+    });
+
 });
 
 $(window).on('load', function () {
@@ -289,6 +374,8 @@ function show_validation_error(msg) {
                     // $('form [name="' + name + '"]').addClass("is-invalid error");
                     $('form [name="' + name + '"]').closest('.attachment-container').find('#preview')
                         .before('<span class="help-block text-danger fw-bolder">' + value + '</span><br>');
+                    $('form [name="' + name + '"]').parent().after('<span class="help-block text-danger fw-bolder">' + value + "</span>");
+
                 } else {
                     // $('form [name="' + name + '"]').addClass("is-invalid error");
                     $('form [name="' + name + '"]').after('<span class="help-block text-danger fw-bolder" role="alert">' + value + "</span>");

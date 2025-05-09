@@ -24,6 +24,11 @@ class StockLedger extends Model
         return $this->hasMany(StockLedgerDetail::class, 'stock_ledger_id');
     }
 
+    public function reservations()
+    {
+        return $this->hasMany(StockLedgerReservation::class, 'stock_ledger_id');
+    }
+
     public function group()
     {
         return $this->belongsTo(Group::class, 'group_id');
@@ -77,6 +82,16 @@ class StockLedger extends Model
     public function mrnHeader()
     {
         return $this->belongsTo(MrnHeader::class, 'document_header_id');
+    }
+
+    public function station()
+    {
+        return $this->belongsTo(Station::class, 'station_id');
+    }
+
+    public function wipStation()
+    {
+        return $this->belongsTo(Station::class, 'wip_station_id');
     }
 
     public function mrnDetail()
@@ -136,7 +151,7 @@ class StockLedger extends Model
             $soNo = $so->book_code . '-' . $so->document_number;
             return $soNo;
         }
-        return null; 
+        return null;
     }
 
 }

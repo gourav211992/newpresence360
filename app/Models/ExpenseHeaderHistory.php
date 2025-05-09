@@ -21,67 +21,68 @@ class ExpenseHeaderHistory extends Model
 
     protected $table = 'erp_expense_header_histories';
     protected $fillable = [
-        'organization_id', 
-        'group_id', 
-        'company_id', 
+        'organization_id',
+        'group_id',
+        'company_id',
         'header_id',
         'vendor_id',
         'vendor_code',
         'customer_id',
         'customer_code',
-        'purchase_order_id', 
+        'purchase_order_id',
         'sale_order_id',
-        'series_id', 
-        'book_code', 
-        'document_number', 
-        'document_date', 
-        'document_status', 
-        'revision_number', 
-        'revision_date', 
-        'approval_level', 
-        'reference_number', 
-        'gate_entry_no', 
-        'gate_entry_date', 
-        'supplier_invoice_no', 
-        'supplier_invoice_date', 
-        'eway_bill_no', 
-        'consignment_no', 
-        'transporter_name', 
-        'vehicle_no', 
-        'billing_to', 
-        'ship_to', 
-        'billing_address', 
-        'shipping_address', 
-        'currency_id', 
-        'currency_code', 
-        'payment_term_id', 
-        'payment_term_code', 
-        'transaction_currency', 
-        'org_currency_id', 
-        'org_currency_code', 
-        'org_currency_exg_rate', 
-        'comp_currency_id', 
-        'comp_currency_code', 
-        'comp_currency_exg_rate', 
-        'group_currency_id', 
-        'group_currency_code', 
-        'group_currency_exg_rate', 
-        'sub_total', 
-        'total_item_amount', 
-        'item_discount', 
-        'header_discount', 
-        'total_discount', 
-        'gst', 
-        'gst_details', 
-        'taxable_amount', 
-        'total_taxes', 
-        'total_after_tax_amount', 
-        'expense_amount', 
-        'total_amount', 
-        'final_remark', 
-        'status', 
-        'created_by', 
-        'updated_by', 
+        'series_id',
+        'book_id',
+        'book_code',
+        'document_number',
+        'document_date',
+        'document_status',
+        'revision_number',
+        'revision_date',
+        'approval_level',
+        'reference_number',
+        'gate_entry_no',
+        'gate_entry_date',
+        'supplier_invoice_no',
+        'supplier_invoice_date',
+        'eway_bill_no',
+        'consignment_no',
+        'transporter_name',
+        'vehicle_no',
+        'billing_to',
+        'ship_to',
+        'billing_address',
+        'shipping_address',
+        'currency_id',
+        'currency_code',
+        'payment_term_id',
+        'payment_term_code',
+        'transaction_currency',
+        'org_currency_id',
+        'org_currency_code',
+        'org_currency_exg_rate',
+        'comp_currency_id',
+        'comp_currency_code',
+        'comp_currency_exg_rate',
+        'group_currency_id',
+        'group_currency_code',
+        'group_currency_exg_rate',
+        'sub_total',
+        'total_item_amount',
+        'item_discount',
+        'header_discount',
+        'total_discount',
+        'gst',
+        'gst_details',
+        'taxable_amount',
+        'total_taxes',
+        'total_after_tax_amount',
+        'expense_amount',
+        'total_amount',
+        'final_remark',
+        'status',
+        'created_by',
+        'updated_by',
         'deleted_by'
     ];
 
@@ -134,7 +135,7 @@ class ExpenseHeaderHistory extends Model
     {
         return $this->belongsTo(Vendor::class);
     }
-    
+
     public function customer()
     {
         return $this->belongsTo(Customer::class);
@@ -237,5 +238,24 @@ class ExpenseHeaderHistory extends Model
     {
         return $this->belongsTo(User::class,'updated_by');
     }
-    
+
+    public function addresses()
+    {
+        return $this->morphMany(ErpAddress::class, 'addressable', 'addressable_type', 'addressable_id');
+    }
+
+    public function latestBillingAddress()
+    {
+        return $this->addresses()->where('type', 'billing')->latest()->first();
+    }
+
+    public function latestShippingAddress()
+    {
+        return $this->addresses()->where('type', 'shipping')->latest()->first();
+    }
+
+    public function media()
+    {
+        return $this->morphMany(GateEntryMedia::class, 'model');
+    }
 }

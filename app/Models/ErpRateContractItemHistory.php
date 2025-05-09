@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 class ErpRateContractItemHistory extends Model
 {
     use HasFactory;
-    protected $table = 'erp_rate_contract_item_history';
+    protected $table = 'erp_rate_contract_items_history';
     protected $fillable=[
         'id',
         'source_id',

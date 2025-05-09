@@ -685,112 +685,9 @@ $(function(){
            docDateInput.removeAttr('max');
        }
 
-        // Cunsumption Method
-        if(parameters.consumption_method.includes('manual')) {
-            $("#consumption_method").val('manual');
-            $(".consumption_btn").addClass('d-none');
-        }
-        if(parameters.consumption_method.includes('norms')) {
-            $("#consumption_method").val('norms');
-            $(".consumption_btn").removeClass('d-none');
-       }
-
-       if (parameters.station_required && !parameters.station_required.includes('yes')) {
-           let thIndex = $("#station_required").index();
-           $('tfoot .totalsubheadpodetail:eq(0)').find(`td:last-child`).remove();
-           $("#station_required").remove();
-       }
-
-       if (parameters.section_required && !parameters.section_required.includes('yes')) {
-           let td = $('tfoot .totalsubheadpodetail:eq(0)').find("td[colspan]");
-           if (td.length > 0) {
-                let colspanValue = parseInt(td.attr("colspan"));
-                let newColspanValue = colspanValue - 1;
-                td.attr("colspan", newColspanValue);
-            }
-           $("#section_required").remove();
-
-           let td2 = $("tfoot").find("tr[valign]").find('td[rowspan]');
-           if (td2.length > 0) {
-                let colspanValue = parseInt(td2.attr("colspan"));
-                if(colspanValue > 6) {
-                    let newColspanValue = colspanValue - 1;
-                    td2.attr("colspan", newColspanValue);
-                }
-            }
-       }
-
-       if (parameters.sub_section_required && !parameters.sub_section_required.includes('yes')) {
-           let td = $('tfoot .totalsubheadpodetail:eq(0)').find("td[colspan]");
-           if (td.length > 0) {
-                let colspanValue = parseInt(td.attr("colspan"));
-                let newColspanValue = colspanValue - 1;
-                td.attr("colspan", newColspanValue);
-            }
-           $("#sub_section_required").remove();
-
-           let td2 = $("tfoot").find("tr[valign]").find('td[rowspan]');
-           if (td2.length > 0) {
-                let colspanValue = parseInt(td2.attr("colspan"));
-                if(colspanValue > 6) {
-                    let newColspanValue = colspanValue - 1;
-                    td2.attr("colspan", newColspanValue);
-                }
-            }
-       }
-       if (parameters.supercede_cost_required && !parameters.supercede_cost_required.includes('yes')) {
-           let td = $('tfoot .totalsubheadpodetail:eq(0)').find("td[colspan]");
-           if (td.length > 0) {
-                let colspanValue = parseInt(td.attr("colspan"));
-                let newColspanValue = colspanValue - 1;
-                td.attr("colspan", newColspanValue);
-            }
-           $("#supercede_cost_required").remove();
-
-           let td2 = $("tfoot").find("tr[valign]").find('td[rowspan]');
-           if (td2.length > 0) {
-                let colspanValue = parseInt(td2.attr("colspan"));
-                if(colspanValue > 6) {
-                    let newColspanValue = colspanValue - 1;
-                    td2.attr("colspan", newColspanValue);
-                }
-            }
-
-       }
-       
-       if (parameters.component_waste_required && !parameters.component_waste_required.includes('yes')) {
-            $("#totalWasteAmtValue").remove();
-            $("#totalWastePercentage").remove();
-           $(".component_waste_required").remove();
-
-           let td2 = $("tfoot").find("tr[valign]").find('td[rowspan]');
-           if (td2.length > 0) {
-                let colspanValue = parseInt(td2.attr("colspan"));
-                if(colspanValue > 6) {
-                    let newColspanValue = colspanValue - 1;
-                    td2.attr("colspan", newColspanValue);
-                }
-            }
-       }
-
-       if (parameters.component_overhead_required && !parameters.component_overhead_required.includes('yes')) {
-           $("#component_overhead_required").remove();
-           $("#totalOverheadAmountValue").remove();
-           let td2 = $("tfoot").find("tr[valign]").find('td[rowspan]');
-           if (td2.length > 0) {
-                let colspanValue = parseInt(td2.attr("colspan"));
-                if(colspanValue > 6) {
-                    let newColspanValue = colspanValue - 1;
-                    td2.attr("colspan", newColspanValue);
-                }
-            }
-
-       }
-
-
         let reference_from_service = parameters.reference_from_service;
         if(reference_from_service.length) {
-            let c_bom = '{{\App\Helpers\ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS}}';
+            let c_bom = '{{\App\Helpers\ConstantHelper::MO_SERVICE_ALIAS}}';
             if(reference_from_service.includes(c_bom)) {
                 $("#reference_from").removeClass('d-none');
             } else {
@@ -833,7 +730,6 @@ $(function(){
                   $("#head_uom_name").val(uom_name);
                   $(".heaer_item").remove();
                   $("#componentSection").before(data.data.html);
-                  // $("#head_uom_name").closest('.row').after(data.data.html);
                 }
             });
         });

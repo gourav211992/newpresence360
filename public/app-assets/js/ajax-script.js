@@ -561,8 +561,6 @@ function resetGstFields() {
     $('input[name="compliance[gst_registered_name]"]').val('');
 }
 function resetGstDependentFields() {
-    $('input[name="company_name"]').val('');
-    $('input[name="vendor_initial"]').val('');
     $('input[name="compliance[gstin_registration_date]"]').val('');
     $('input[name="compliance[gst_registered_name]"]').val('');
     $('.error-message').remove();

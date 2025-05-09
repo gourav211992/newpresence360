@@ -23,9 +23,9 @@
                 <!-- Organization Logo (Left) -->
                 <td style="vertical-align: top;">
                     @if (isset($orgLogo) && $orgLogo)
-                        <img src="{!! $orgLogo !!}" alt="" height="20px" />
+                        <img src="{!! $orgLogo !!}" alt="" height="50px" />
                     @else
-                        <img src="{{$imagePath}}" height="20px" alt="">
+                        <img src="{{$imagePath}}" height="50px" alt="">
                     @endif
                 </td>
 
@@ -372,41 +372,43 @@
                             </td>
                             <td
                                 style="vertical-align: top; padding:10px 3px; text-align:left; border: 1px solid #000; border-top: none; border-left: none;">
-                                <b> {{ @$val->item->item_name }}</b>
-                                @if(isset($val->attributes))
-                                                <br>
-                                                @php
-                                                    $arrr = $val->attributes ? $val->attributes()->whereNotNull('attr_value')->pluck('attr_value')->all() : [];
-                                                    $first = true;
-                                                @endphp
-                                                @foreach($val->item->itemAttributes as $itemAttribute)
-                                                    @if(count($arrr))
+                                <div style="max-width:180px;word-wrap:break-word;">
+                                    <b> {{ @$val->item->item_name }}</b>
+                                    @if(isset($val->attributes))
+                                        <br>
+                                        @php
+                                            $arrr = $val->attributes ? $val->attributes()->whereNotNull('attr_value')->pluck('attr_value')->all() : [];
+                                            $first = true;
+                                        @endphp
+                                        @foreach($val->item->itemAttributes as $itemAttribute)
+                                            @if(count($arrr))
 
-                                                        @foreach ($itemAttribute->attributes() as $value)
-                                                            @if (in_array($value->id, $arrr))
-                                                                @if (!$first)
-                                                                    {{','}}
-                                                                @endif
-                                                                {{$value->attributeGroup->name}}:{{ucfirst($value->value)}}
-                                                                @php
-                                                                    $first = false;
-                                                                @endphp
-                                                            @endif
-                                                        @endforeach
-
+                                                @foreach ($itemAttribute->attributes() as $value)
+                                                    @if (in_array($value->id, $arrr))
+                                                        @if (!$first)
+                                                            {{','}}
+                                                        @endif
+                                                        {{$value->attributeGroup->name}}:{{ucfirst($value->value)}}
+                                                        @php
+                                                            $first = false;
+                                                        @endphp
                                                     @endif
                                                 @endforeach
-                                                <br>
-                                @endif
-                                @if(isset($val->specifications))
-                                    @foreach($val->specifications as $data)
-                                        @if(isset($data->value))
-                                            {{$data->specification_name}}:{{$data->value}}<br>
-                                        @endif
-                                    @endforeach
-                                @endif
-                                {{ @$val->item_code }}<br />
-                                {{@$val->remark}}
+
+                                            @endif
+                                        @endforeach
+                                        <br>
+                                    @endif
+                                    @if(isset($val->specifications))
+                                        @foreach($val->specifications as $data)
+                                            @if(isset($data->value))
+                                                {{$data->specification_name}}:{{$data->value}}<br>
+                                            @endif
+                                        @endforeach
+                                    @endif
+                                    {{ @$val->item_code }}<br />
+                                    {{@$val->remark}}
+                                </div>
                             </td>
                             <td
                                 style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">

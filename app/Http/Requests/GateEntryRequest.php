@@ -42,6 +42,7 @@ class GateEntryRequest extends FormRequest
             'book_id' => 'required',
             'document_number' => 'required',
             'document_date' => 'required|date',
+            'header_store_id' => 'required',
             'vendor_id' => 'required',
             'currency_id' => 'required',
             'payment_term_id' => 'required',
@@ -106,7 +107,6 @@ class GateEntryRequest extends FormRequest
         $rules['component_item_name.*'] = 'required';
         $rules['components.*.accepted_qty'] = 'required|numeric|min:0.01';
         $rules['components.*.rate'] = 'required|numeric|min:0.01';
-        $rules['components.*.store_id'] = 'required|numeric';
         $rules['components.*.remark'] = 'nullable|max:250';
         
         foreach ($this->input('components', []) as $index => $component) {
@@ -127,6 +127,7 @@ class GateEntryRequest extends FormRequest
     {
         return [
             'book_id.required' => 'The series is required.',
+            'header_store_id.required' => 'Location is required',
             'document_date.in' => 'The document date must be today.',
             'document_date.required' => 'The document date is required.',
             'document_date.date' => 'Please enter a valid date for the document date.',

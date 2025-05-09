@@ -31,7 +31,6 @@ use Illuminate\Support\Facades\Storage;
 use App\Helpers\ServiceParametersHelper;
 use App\Helpers\BookHelper;
 use App\Models\BomInstruction;
-use App\Models\BomProductionItem;
 use App\Models\Overhead;
 use App\Models\ProductionRoute;
 use App\Models\Station;
@@ -245,37 +244,6 @@ class BomController extends Controller
             $bom->document_number = $document_number;
             $bom->document_date = $request->document_date ?? now();
             $bom->save();
-            
-            # Store Production item
-            if (isset($request->all()['productions'])) {
-                foreach($request->all()['productions'] as $production) {
-                    $bomProdItem = new BomProductionItem;
-                    $bomProdItem->bom_id = $bom->id;
-                    $bomProdItem->station_id = $production['station_id'];
-                    $bomProdItem->item_id = $production['item_id'];
-                    $bomProdItem->item_code = $production['item_code'];
-                    $bomProdItem->uom_id = $production['uom_id'];
-                    $bomProdItem->qty = $production['qty'] ?? 1;
-                    $bomProdItem->save();
-                    $attributes = [];
-                    foreach($bomProdItem?->item?->itemAttributes as  $key => $itemAttribute) {
-                        if (isset($production['attr_group_id'][$itemAttribute->attribute_group_id])) {
-                            $attrId = @$production['attr_group_id'][$itemAttribute->attribute_group_id]['attr_name'];
-                            $attr = Attribute::find($attrId);
-                            $attributes[] = [
-                                'item_attribute_id' => $itemAttribute->id,
-                                'attribute_group_id' => $itemAttribute->attribute_group_id,
-                                'attribute_name' => $itemAttribute?->attributeGroup?->name,
-                                'attribute_id' => $attr->id ?? null,
-                                'attribute_value' => $attr->value ?? null
-                            ];
-                        }
-                    }
-                    $bomProdItem->attributes = $attributes;
-                    $bomProdItem->save();
-                }
-            }
-
             # Store Instruction item
             if (isset($request->all()['instructions'])) {
                 foreach($request->all()['instructions'] as $index => $instruction) {
@@ -659,46 +627,6 @@ class BomController extends Controller
         return response()->json(['data' => ['html' => $html], 'status' => 200, 'message' => 'fetched.']);
     }
 
-    # Add Production row
-    public function addProductionRow(Request $request)
-    {
-        $item = json_decode($request->item,true) ?? [];
-        $moduleType = $request->type ?? null;
-        $rowCount = intval($request->count) == 0 ? 1 : intval($request->count) + 1;
-        $customerId = $request->customer_id ?? null;
-        /*Check header mandatory*/
-        if ($item['selectedAttrRequired'] && $item['item_code']) {
-            if(!$item['item_code'] || $item['selectedAttrRequired']) {
-                return response()->json(['data' => ['html' => ''], 'status' => 422, 'message' => 'Please fill all the header details before adding components.']);
-            }
-        }
-        if(!$item['item_id']) {
-            return response()->json(['data' => ['html' => ''], 'status' => 422, 'message' => 'Please fill all the header details before adding components.']);
-        }
-
-        $headerSelectedAttr = json_decode($request->header_attr,true) ?? []; 
-        $attributes = [];
-        if(count($headerSelectedAttr)) {
-               foreach($headerSelectedAttr as $headerAttr) {
-                $itemAttr = ItemAttribute::where("item_id",$item['item_id'])
-                                ->where("attribute_group_id",$headerAttr['attr_name'])
-                                ->first();
-                $attributes[] = ['attribute_id' => intval($itemAttr?->id), 'attribute_value' => intval($headerAttr['attr_value'])];
-               }
-        }
-        // $bomExists = ItemHelper::checkItemBomExists($item['item_id'], $attributes, $moduleType, $customerId);
-        // if ($bomExists['bom_id']) {
-        //     $bomExists['message'] = "Bom already exists for this item.";
-        //     return response()->json(['data' => ['html' => ''], 'status' => 422, 'message' => $bomExists['message']]);
-        // }
-
-        $html = view('billOfMaterial.partials.production-row', [
-            'rowCount' => $rowCount
-        ])->render();
-
-        return response()->json(['data' => ['html' => $html], 'status' => 200, 'message' => 'fetched.']);
-    }
-    
     # Add Instruction row
     public function addInstructionRow(Request $request)
     {
@@ -890,7 +818,6 @@ class BomController extends Controller
                 $revisionData = [
                     ['model_type' => 'header', 'model_name' => 'Bom', 'relation_column' => ''],
                     ['model_type' => 'detail', 'model_name' => 'BomDetail', 'relation_column' => 'bom_id'],
-                    // ['model_type' => 'detail', 'model_name' => 'BomProductionItem', 'relation_column' => 'bom_id'],
                     ['model_type' => 'sub_detail', 'model_name' => 'BomAttribute', 'relation_column' => 'bom_detail_id'],
                     ['model_type' => 'sub_detail', 'model_name' => 'BomOverhead', 'relation_column' => 'bom_detail_id'],
                     ['model_type' => 'sub_detail', 'model_name' => 'BomNormsCalculation', 'relation_column' => 'bom_detail_id']
@@ -931,9 +858,6 @@ class BomController extends Controller
                     $bomItem->delete();
                 }
             }
-            if (count($deletedData['deletedProdItemIds'])) {
-                BomProductionItem::whereIn('id',$deletedData['deletedProdItemIds'])->delete();
-            }
 
             if (count($deletedData['deletedInstructionItemIds'])) {
                 BomInstruction::whereIn('id',$deletedData['deletedInstructionItemIds'])->delete();
@@ -950,37 +874,7 @@ class BomController extends Controller
             $bom->remarks = $request->remarks;
             # Extra Column
             $bom->save();
-
-            # Store Production item
-            if (isset($request->all()['productions'])) {
-                foreach($request->all()['productions'] as $production) {
-                    $bomProdItem = BomProductionItem::find($production['id'] ?? null) ?? new BomProductionItem;
-                    $bomProdItem->bom_id = $bom->id;
-                    $bomProdItem->station_id = $production['station_id'];
-                    $bomProdItem->item_id = $production['item_id'];
-                    $bomProdItem->item_code = $production['item_code'];
-                    $bomProdItem->uom_id = $production['uom_id'];
-                    $bomProdItem->qty = $production['qty'] ?? 1;
-                    $bomProdItem->save();
-                    $attributes = [];
-                    foreach($bomProdItem?->item?->itemAttributes as  $key => $itemAttribute) {
-                        if (isset($production['attr_group_id'][$itemAttribute->attribute_group_id])) {
-                            $attrId = @$production['attr_group_id'][$itemAttribute->attribute_group_id]['attr_name'];
-                            $attr = Attribute::find($attrId);
-                            $attributes[] = [
-                                'item_attribute_id' => $itemAttribute->id,
-                                'attribute_group_id' => $itemAttribute->attribute_group_id,
-                                'attribute_name' => $itemAttribute?->attributeGroup?->name,
-                                'attribute_id' => $attr->id ?? null,
-                                'attribute_value' => $attr->value ?? null
-                            ];
-                        }
-                    }
-                    $bomProdItem->attributes = $attributes;
-                    $bomProdItem->save();
-                }
-            }
-
+            
             # Store Instruction item
             if (isset($request->all()['instructions'])) {
                 foreach($request->all()['instructions'] as $index => $instruction) {
