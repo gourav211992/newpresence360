@@ -61,7 +61,7 @@ class GroupController extends Controller
         
         $allLedgerParentIds = array_unique($allLedgerParentIds);
         foreach($allLedgerParentIds as $ledg){
-            $parent = Group::find($ledg)->parent_group_id;
+            $parent = Group::find($ledg)?->parent_group_id;
             $chk_og = Group::find($parent);
                 if(!isset($chk_og->organization_id) || $chk_og->organization_id == Helper::getAuthenticatedUser()->organization_id){
                     $allIds[]=$ledg;

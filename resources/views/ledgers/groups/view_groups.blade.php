@@ -59,7 +59,7 @@
 									@foreach ($data as $item)
 										<tr>
 											<td>{{ $item->id }}</td>
-											<td>@if($item->parent_group_id) {{ $item->parent->name }} @endif</td>
+											<td>@if($item?->parent_group_id) {{ $item?->parent?->name }} @endif</td>
 											<td>{{ $item->name }}</td>
 											<td>{{ Str::ucfirst($item->status) }}</td>
 											<td class="fw-bolder text-dark">
