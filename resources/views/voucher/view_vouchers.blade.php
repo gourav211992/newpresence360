@@ -285,6 +285,7 @@
             $('.datatables-basic').DataTable({
                 processing: true, // Show processing indicator
                 serverSide: false, // Disable server-side processing since data is already loaded
+                scrollX: true,
                 drawCallback: function() {
                     feather
                         .replace(); // Re-initialize feather icons if needed (for custom icons like edit)

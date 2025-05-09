@@ -32,7 +32,7 @@
                         <div class="card">
 
                             <div class="table-responsive">
-                                <table class="datatables-basic table myrequesttablecbox ">
+                                <table class="datatables-basic table tableistlastcolumnfixed myrequesttablecbox ">
                                     <thead>
                                         <tr>
                                             <th>Sr. No</th>
@@ -80,7 +80,7 @@
                                                     <span class='badge rounded-pill {{$statusClasss}} badgeborder-radius'>@if($item->document_status==App\Helpers\ConstantHelper::APPROVAL_NOT_REQUIRED) Approved @else {{ucfirst($item->document_status)}} @endif</span>
                                                     
                                                     <div class="dropdown">
-                                                        <button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
+                                                        <button type="button" class="btn btn-sm dropdown-toggle hide-arrow p-0" data-bs-toggle="dropdown">
                                                             <i data-feather="more-vertical"></i>
                                                         </button>
                                                         <div class="dropdown-menu dropdown-menu-end">
@@ -188,6 +188,7 @@
      $(document).ready(function() {
        $('.datatables-basic').DataTable({
         processing: true,  // Show processing indicator
+        scrollX: true,
         serverSide: false, // Disable server-side processing since data is already loaded
         drawCallback: function() {
             feather.replace(); // Re-initialize feather icons if needed (for custom icons like edit)

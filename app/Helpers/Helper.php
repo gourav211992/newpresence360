@@ -2089,36 +2089,47 @@ class Helper
         $purchaseInd += $grossLoss;
     }
 
-    // Correct Net Profit/Loss Logic
-     // Correct Net Profit/Loss Logic
-    if ($grossProfit >= 0) {
-        $net = $grossProfit + $indirectIncome - $indirectExpense;
-        if ($net >= 0) {
-            $netProfit = $net;
-            $netLoss = 0;
-        } else {
-            $netProfit = 0;
-            $netLoss = abs($net);
-        }
-    } elseif ($grossLoss >= 0) {
-        $net = $grossLoss + $indirectExpense - $indirectIncome;
-        if ($net >= 0) {
-            $netLoss = $net;
-            $netProfit = 0;
-        } else {
-            $netLoss = 0;
-            $netProfit = abs($net);
-        }
+    // Calculate Net Profit or Net Loss based on Gross and Indirect entries
+if ($grossProfit >= 0) {
+    $net = $grossProfit + $indirectIncome - $indirectExpense;
+    if ($net >= 0) {
+        $netProfit = $net;
+        $netLoss = 0;
+    } else {
+        $netProfit = 0;
+        $netLoss = abs($net);
     }
-
-    // Final overall total
-   $overAllTotal = max($saleInd, $purchaseInd); // optional fallback
-
-if ($grossProfit >= 0 || $netProfit >= 0) {
-    $overAllTotal = $saleInd;
-} elseif ($grossLoss >= 0 || $netLoss >= 0) {
-    $overAllTotal = $purchaseInd;
+} elseif ($grossLoss >= 0) {
+    $net = $grossLoss + $indirectExpense - $indirectIncome;
+    if ($net >= 0) {
+        $netLoss = $net;
+        $netProfit = 0;
+    } else {
+        $netLoss = 0;
+        $netProfit = abs($net);
+    }
 }
+
+// Add Gross Profit or Loss to respective side
+if ($grossProfit > 0) {
+    $saleInd += $grossProfit;
+} elseif ($grossLoss > 0) {
+    $purchaseInd += $grossLoss;
+}
+
+// Add Indirect entries to both sides
+$saleInd = $indirectIncome + $subTotal;
+$purchaseInd = $indirectExpense + $subTotal;
+
+// // Adjust Net Profit or Loss to balance the final P&L
+// if ($netProfit > 0) {
+//     $purchaseInd += $netProfit;
+// } elseif ($netLoss > 0) {
+//     $saleInd += $netLoss;
+// }
+
+// Final overall total: Highest of both sides after adjustments
+$overAllTotal = max($saleInd, $purchaseInd);
 
     return [
         'salesInd' => $saleInd,

@@ -13,6 +13,7 @@ use App\Models\Ledger;
 use App\Models\FixedAssetMerger;
 use Illuminate\Support\Facades\DB;
 use App\Helpers\FinancialPostingHelper;
+use App\Models\FixedAssetSub;
 use Exception;
 
 
@@ -122,9 +123,7 @@ class MergerController extends Controller
         ];
 
         $data = array_merge($request->all(), $additionalData);
-        $grouped = collect(json_decode($request->sub_assets))->groupBy('asset_code');
-        $parentURL = request() -> segments()[0];
-        $parentURL = "fixed-asset_merger";
+        $parentURL = "fixed-asset_registration";
         
         
         
@@ -133,18 +132,12 @@ class MergerController extends Controller
             return redirect() -> route('/');
         }
         $firstService = $servicesBooks['services'][0];
+        $series = Helper::getBookSeriesNew($firstService -> alias, $parentURL)->first();
+
 
         
         DB::beginTransaction();
-        $existingAsset = FixedAssetMerger::withDefaultGroupCompanyOrg()->where('asset_code', $request->asset_code)->exists();
-    
-    if($existingAsset){
-        return redirect()
-        ->route('finance.fixed-asset.merger.create')
-        ->withInput()
-        ->withErrors('Asset Code '.$existingAsset->asset_code . ' already exists.');
-    }
-
+        
         try {
             $asset = FixedAssetMerger::create($data);
 
@@ -155,7 +148,77 @@ class MergerController extends Controller
             if ($asset->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED || $asset->approvalStatus == ConstantHelper::APPROVED) {
                 Helper::approveDocument($request->book_id, $asset->id, $asset->revision_number, "", null, 1, 'approve', 0, get_class($asset));
             }
-            
+                if($series!=null){
+                $book = Helper::generateDocumentNumberNew($series->id, date('Y-m-d'));
+                if($book['document_number']!=null){
+                $existingAsset = FixedAssetRegistration::where('asset_code', $request->asset_code)
+                    ->where('organization_id', $user->organization->id)
+                    ->where('group_id', $user->organization->group_id)
+                    ->first();
+                
+                if($existingAsset){
+                    return redirect()
+                    ->route('finance.fixed-asset.split.create')
+                    ->withInput()
+                    ->withErrors('Asset Code '.$existingAsset->asset_code . ' already exists.');
+                }
+
+                
+
+                    
+                // Step 1: Create main asset registration (only once per asset_code)
+                $data = [
+                    'organization_id' => $user->organization->id,
+                    'group_id' => $user->organization->group_id,
+                    'company_id' => $user->organization->company_id,
+                    'book_id' => $series->id,
+                    'document_number'=>$book['document_number'],
+                    'document_date' => date('Y-m-d'),
+                    'doc_number_type' => $book['type'],
+                    'doc_reset_pattern' => $book['reset_pattern'],
+                    'doc_prefix' => $book['prefix'],
+                    'doc_suffix' => $book['suffix'],
+                    'doc_no' => $book['doc_no'],
+                    'asset_code' => $request->asset_code,
+                    'asset_name' => $request->asset_name,
+                    'quantity' => $request->quantity,
+                    'catrgory_id'=>$request->category_id,
+                    'ledger_id' => $request->ledger_id,
+                    'ledger_group_id' => $request->ledger_group_id,
+                    'mrn_header_id'=> null,
+                    'mrn_detail_id'=> null,
+                    'capitalize_date' => $request->capitalize_date,
+                    'last_dep_date'=> $request->capitalize_date,
+                    'vendor_id'=> null,
+                    'currency_id'=> $user->organization->currency_id,
+                    'supplier_invoice_no'=> null,
+                    'supplier_invoice_date'=> null,
+                    'book_date'=>null,
+                    'maintenance_schedule' => $request->maintenance_schedule,
+                    'depreciation_method' => $request->depreciation_method,
+                    'useful_life' => $request->useful_life,
+                    'salvage_value' => $request->salvage_value,
+                    'depreciation_percentage' => $request->depreciation_percentage,
+                    'depreciation_percentage_year' => $request->depreciation_percentage,
+                    'total_depreciation' => $request->total_depreciation,
+                    'dep_type' => $request->dep_type,
+                    'current_value' => $request->current_value,
+                    'current_value_after_dep' => $request->current_value,
+                    'document_status' => Helper::checkApprovalRequired($series->id),
+                    'approval_level' => 1,
+                    'revision_number' => 0,
+                    'revision_date' => null,
+                    'created_by' => $user->auth_user_id,
+                    'type' => get_class($user),
+                    'status' => 'active',
+
+                ];
+    
+                    $asset = FixedAssetRegistration::create($data);
+                    FixedAssetSub::generateSubAssets($asset->id, $asset->asset_code, $asset->quantity, $asset->current_value, $asset->salvage_value);
+                        
+                }
+            }
 
             DB::commit();
             return redirect()->route("finance.fixed-asset.merger.index")->with('success', 'Asset Merge successfully!');

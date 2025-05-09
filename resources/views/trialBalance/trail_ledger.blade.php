@@ -25,7 +25,7 @@
                     <div class="form-group breadcrumb-right">
                         <button class="btn btn-warning btn-sm mb-50 mb-sm-0" data-bs-target="#filter"
                             data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button>
-                        <button class="btn btn-primary btn-sm mb-50 mb-sm-0" onclick="window.print()"><i data-feather="printer"></i> Print</button>
+                        {{-- <button class="btn btn-primary btn-sm mb-50 mb-sm-0" onclick="window.print()"><i data-feather="printer"></i> Print</button> --}}
                     </div>
                 </div>
             </div>

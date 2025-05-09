@@ -29,24 +29,32 @@
                 </div>
                 <div class="content-header-right text-md-end col-md-6 mb-50 mb-sm-0">
                     <div class="form-group breadcrumb-right">
+                        <button class="btn btn-warning btn-sm mb-50 mb-sm-0" data-bs-target="#filter" data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button>
+                        <a type="button" onclick="removeZeroRows()" class="zero_btn btn btn-sm btn-dark exportcustomdrop">
+                            <i data-feather="file-minus"></i> Filter Zero
+                        </a>
+                        <a type="button" onclick="location.reload();" style="display:none;" class="zero_clear btn btn-sm btn-danger exportcustomdrop">
+                            <i data-feather="x-circle"></i> Clear Zero Filter
+                        </a>
+                      
                         <button type="button" class="btn btn-sm btn-primary dropdown-toggle exportcustomdrop" data-bs-toggle="dropdown">
-                            <i class="fa fa-file-excel"> </i> Export as Excel
+                            <i data-feather="download-cloud"> </i> Export as Excel
                         </button>
                         <div class="dropdown-menu dropdown-menu-end">
                             <a class="dropdown-item" href="javascript:;" onclick="exportPLLevel(1)">
-                                <i data-feather="upload" class="me-50"></i>
+                                <i data-feather="download" class="me-50"></i>
                                 <span>Level1</span>
                             </a>
                             <a class="dropdown-item" href="javascript:;" onclick="exportPLLevel(2)">
-                                <i data-feather="upload" class="me-50"></i>
+                                <i data-feather="download" class="me-50"></i>
                                 <span>Level2</span>
                             </a>
                         </div>
                         
-                        <button type="button" class="btn btn-sm btn-danger dropdown-toggle exportcustomdrop" data-bs-toggle="dropdown">
+                        {{-- <button type="button" class="btn btn-sm btn-danger dropdown-toggle exportcustomdrop" data-bs-toggle="dropdown">
                             <i class="fa fa-file-pdf"></i> Export as PDF
-                        </button>
-                        <div class="dropdown-menu dropdown-menu-end">
+                        </button> --}}
+                        {{-- <div class="dropdown-menu dropdown-menu-end">
                             <a class="dropdown-item" href="javascript:;" onclick="exportPLLevel(1, 'pdf')">
                                 <i data-feather="upload" class="me-50"></i>
                                 <span>Level1</span>
@@ -55,15 +63,8 @@
                                 <i data-feather="upload" class="me-50"></i>
                                 <span>Level2</span>
                             </a>
-                        </div>
-                        <button class="btn btn-warning btn-sm mb-50 mb-sm-0" data-bs-target="#filter" data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button>
-                        <a type="button" onclick="removeZeroRows()" class="zero_btn btn btn-sm btn-warning exportcustomdrop">
-                            <i data-feather="filter"></i> Filter Zero
-                        </a>
-                        <a type="button" onclick="location.reload();" style="display:none;" class="zero_clear btn btn-sm btn-danger exportcustomdrop">
-                            <i data-feather="x-circle"></i> Clear Zero Filter
-                        </a>
-                        <button class="btn btn-primary  btn-sm mb-50 mb-sm-0" onclick="window.print()"><i data-feather="printer"></i> Print</button>
+                        </div> --}}
+                        {{-- <button class="btn btn-primary  btn-sm mb-50 mb-sm-0" onclick="window.print()"><i data-feather="printer"></i> Print</button> --}}
                     </div>
                 </div>
             </div>

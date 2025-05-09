@@ -2256,9 +2256,13 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     ]);
     Route::post('fixed-asset/split/approval', [SplitController::class, 'documentApproval'])->name('finance.fixed-asset.split.approval');
     Route::post('fixed-asset/split/filter', [SplitController::class, 'index'])->name('finance.fixed-asset.split.filter');
+
     Route::get('fixed-asset/split/posting/get', [MergerController::class, 'getPostingDetails'])->name('finance.fixed-asset.split.posting.get');
     Route::post('fixed-asset/split/post', [MergerController::class, 'postInvoice'])->name('finance.fixed-asset.split.post');
    
+
+
+    
 
     Route::resource('fixed-asset/merger', MergerController::class)->names([
         'index' => 'finance.fixed-asset.merger.index',
@@ -2269,9 +2273,11 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     ]);
     Route::post('fixed-asset/merger/approval', [MergerController::class, 'documentApproval'])->name('finance.fixed-asset.merger.approval');
     Route::post('fixed-asset/merger/filter', [MergerController::class, 'index'])->name('finance.fixed-asset.merger.filter');
+
     Route::get('fixed-asset/merger/posting/get', [MergerController::class, 'getPostingDetails'])->name('finance.fixed-asset.merger.posting.get');
     Route::post('fixed-asset/merger/post', [MergerController::class, 'postInvoice'])->name('finance.fixed-asset.merger.post');
     
+
 
 
     Route::resource('asset-category',AssetCategoryController::class);

@@ -30,21 +30,21 @@
             </div>
             <div class="content-header-right text-md-end col-md-6 mb-50 mb-sm-0">
                 <div class="form-group breadcrumb-right">
+                    <button class="btn btn-warning btn-sm mb-50 mb-sm-0" data-bs-target="#filter" data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button>
                     <button type="button" class="btn btn-sm btn-primary dropdown-toggle exportcustomdrop" data-bs-toggle="dropdown">
-                        <i data-feather="share"></i> Export
+                        <i data-feather="download-cloud"></i> Export
                     </button>
                     <div class="dropdown-menu dropdown-menu-end">
                         <a class="dropdown-item" href="javascript:;" onclick="exportBalanceSheet(1)">
-                            <i data-feather="upload" class="me-50"></i>
+                            <i data-feather="download" class="me-50"></i>
                             <span>Level1</span>
                         </a>
                         <a class="dropdown-item" href="javascript:;" onclick="exportBalanceSheet(2)">
-                            <i data-feather="upload" class="me-50"></i>
+                            <i data-feather="download" class="me-50"></i>
                             <span>Level2</span>
                         </a>
                     </div>
-                    <button class="btn btn-warning btn-sm mb-50 mb-sm-0" data-bs-target="#filter" data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button>
-                    <button onclick="window.print()" class="btn btn-primary  btn-sm mb-50 mb-sm-0"><i data-feather="printer"></i> Print</button>
+                    {{-- <button onclick="window.print()" class="btn btn-primary  btn-sm mb-50 mb-sm-0"><i data-feather="printer"></i> Print</button> --}}
                 </div>
             </div>
         </div>

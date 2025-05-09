@@ -290,7 +290,7 @@
                                                             <label class="form-label">Quantity <span
                                                                     class="text-danger">*</span></label>
                                                             <input type="text" class="form-control" name="quantity"
-                                                                id="quantity" value="{{ old('quantity') }}"
+                                                                id="quantity" value="1"
                                                                 readonly />
                                                         </div>
                                                     </div>
@@ -771,7 +771,15 @@ $(document).on('change', '.asset_id', function () {
                                 .sub_asset_code + '</option>'
                             );
                         });
-                          $('#last_dep_date_'+row).val(response[0].asset.last_dep_date);
+                        let lastDepDate = new Date(response[0].asset.last_dep_date);
+
+                        // Add 1 day
+                        lastDepDate.setDate(lastDepDate.getDate() - 1);
+
+                        // Format as YYYY-MM-DD
+                        let nextDate = lastDepDate.toISOString().split('T')[0];
+
+                          $('#last_dep_date_'+row).val(nextDate);
                     },
                     error: function() {
                         showToast('error', 'Failed to load sub-assets.');
@@ -848,7 +856,7 @@ $(document).on('change', '.asset_id', function () {
 
     // Example: Update totals in specific HTML elements
     $('#current_value').val(totalValue.toFixed(2));
-    $('#quantity').val(totalQuantity);
+    //$('#quantity').val(totalQuantity);
     updateDepreciationValues();
 
 

@@ -180,7 +180,7 @@
                                                             <label class="form-label" for="last_dep_date">Last Date of
                                                                 Dep. <span class="text-danger">*</span></label>
                                                             <input type="date" id="last_dep_date" name="last_dep_date"
-                                                                class="form-control" required />
+                                                                class="form-control" required readonly/>
                                                         </div>
                                                     </div>
 
@@ -349,7 +349,7 @@
                                                             <label class="form-label">Capitalize Date <span
                                                                     class="text-danger">*</span></label>
                                                             <input type="date" class="form-control"
-                                                                name="capitalize_date" id="capitalize_date"
+                                                                name="capitalize_date" id="capitalize_date" readonly
                                                                 value="{{ old('capitalize_date') }}" required />
                                                         </div>
                                                     </div>
@@ -722,13 +722,13 @@
                         let lastDepDate = new Date(response[0].asset.last_dep_date);
 
                         // Add 1 day
-                        lastDepDate.setDate(lastDepDate.getDate() + 1);
+                        lastDepDate.setDate(lastDepDate.getDate() - 1);
 
                         // Format as YYYY-MM-DD
                         let nextDate = lastDepDate.toISOString().split('T')[0];
 
-                        $('#last_dep_date').val(response[0].asset.last_dep_date);
-                        $('#capitalize_date').val(nextDate);
+                        $('#last_dep_date').val(nextDate);
+                        $('#capitalize_date').val(response[0].asset.last_dep_date);
                         $('#depreciation_rate').val(response[0].asset.depreciation_percentage);
                         $('#depreciation_rate_year').val(response[0].asset
                             .depreciation_percentage_year);

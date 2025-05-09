@@ -99,8 +99,8 @@
                                 </div>
                             </div>
                             <div class="col-md-12">
-                                <div class="table-responsive trailbalnewdesfinance po-reportnewdesign">
-                                    <table class="datatables-basic table myrequesttablecbox tabledebreport">
+                                <div class="table-responsive trailbalnewdesfinance po-reportnewdesign gsttabreporttotal">
+                                    <table class="datatables-basic table tableistlastcolumnfixed myrequesttablecbox tabledebreport">
                                         <thead>
                                             <tr>
                                                 <th>#</th>
@@ -135,14 +135,14 @@
                                             @foreach ($vendors as $index => $customer)
                                             <tr>
                                                 <td>{{ $index + 1 }}</td>
-                                                <td class="fw-bolder text-dark">
+                                                <td class="fw-bolder text-dark text-nowrap">
                                                     <div 
                                                         data-bs-placement="top" title="{{ $customer?->ledger_parent_name ??"-" }}">
                                                         {{ $customer?->ledger_parent_name ??"-" }}
                                                     </div>
                                                 </td>
                                                 
-                                                <td>
+                                                <td class="text-nowrap">
                                                     <div 
                                                         data-bs-placement="top" title="{{ $customer?->ledger_name ??"-" }}">
                                                         {{ $customer?->ledger_name ??"-" }}
@@ -154,41 +154,41 @@
                                                         {{ $customer?->credit_days ??0}}
                                                     </div>
                                                 </td>
-                                                <td class="text-end">
-                                                    <span class="badge rounded-pill badge-light-warning">
+                                                <td class="text-end text-nowrap">
+                                                    <span class="badge rounded-pill badge-light-success">
                                                     {{ number_format(abs($customer->total_outstanding), 2) }}
-                                                    <span class="{{ $customer->total_outstanding < 0 ? 'text-danger' : 'text-warning' }}">
+                                                    <span class="{{ $customer->total_outstanding < 0 ? 'text-danger' : 'text-success' }}">
                                                         {{ $customer->total_outstanding < 0 ? 'Dr' : 'Cr' }}
                                                     </span>
                                                 </td>
-                                                <td class="text-end">
+                                                <td class="text-end text-nowrap">
                                                     <div 
                                                         data-bs-placement="top" title="{{ $customer?->overdue ??0}}">
                                                         {{ Helper::formatIndianNumber($customer?->overdue ??0)}}
                                                     </div>
                                                 </td>
                                                 
-                                                <td class="text-end">
+                                                <td class="text-end text-nowrap">
                                                     {{ number_format(abs($customer->days_0_30), 2) }}
                                                         {{ $customer->days_0_30 < 0 ? 'Dr' : 'Cr' }}
                                                 </td>
-                                                <td class="text-end">
+                                                <td class="text-end text-nowrap">
                                                     {{ number_format(abs($customer->days_30_60), 2) }}
                                                         {{ $customer->days_30_60 < 0 ? 'Dr' : 'Cr' }}
                                                 </td>
-                                                <td class="text-end">
+                                                <td class="text-end text-nowrap">
                                                     {{ number_format(abs($customer->days_60_90), 2) }}
                                                         {{ $customer->days_60_90 < 0 ? 'Dr' : 'Cr' }}
                                                 </td>
-                                                <td class="text-end">
+                                                <td class="text-end text-nowrap">
                                                     {{ number_format(abs($customer->days_90_120), 2) }}
                                                         {{ $customer->days_90_120 < 0 ? 'Dr' : 'Cr' }}
                                                 </td>
-                                                <td class="text-end">
+                                                <td class="text-end text-nowrap">
                                                     {{ number_format(abs($customer->days_120_180), 2) }}
                                                         {{ $customer->days_120_180 < 0 ? 'Dr' : 'Cr' }}
                                                 </td>
-                                                <td class="text-end">
+                                                <td class="text-end text-nowrap">
                                                     {{ number_format(abs($customer->days_above_180), 2) }}
                                                         {{ $customer->days_above_180 < 0 ? 'Dr' : 'Cr' }}
                                                 </td>
@@ -501,6 +501,7 @@
         if (dt_basic_table.length) {
     var dt_basic = dt_basic_table.DataTable({
         order: [[0, 'asc']],
+        scrollX: true,
         dom: '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-3"l><"col-sm-12 col-md-6 withoutheadbuttin dt-action-buttons text-end pe-0"B><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
         "drawCallback": function(settings) {
             feather.replace(); // Re-initialize icons if needed

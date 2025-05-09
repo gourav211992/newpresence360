@@ -27,8 +27,8 @@
                 </div>
 				<div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
                     <div class="form-group breadcrumb-right">
-						<button class="btn btn-primary btn-sm mb-50 mb-sm-0" onclick="exportLedgerReport()"><i data-feather="upload"></i> Export</button>
-						<button class="btn btn-primary btn-sm mb-50 mb-sm-0" onclick="window.print()"><i data-feather="printer"></i> Print</button>
+						<button class="btn btn-primary btn-sm mb-50 mb-sm-0" onclick="exportLedgerReport()"><i data-feather="download-cloud"></i> Export</button>
+						{{-- <button class="btn btn-primary btn-sm mb-50 mb-sm-0" onclick="window.print()"><i data-feather="printer"></i> Print</button> --}}
                     </div>
                 </div>
             </div>
