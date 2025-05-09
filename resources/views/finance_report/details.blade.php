@@ -73,7 +73,7 @@
                                  
                             </div>
                           <div class="col-md-12"> 
-                                <div class="table-responsive trailbalnewdesfinance po-reportnewdesign">
+                                <div class="table-responsive trailbalnewdesfinance po-reportnewdesign gsttabreporttotal">
 									<table class="datatables-basic table myrequesttablecbox"> 
                                         <thead>
                                              <tr>
@@ -82,8 +82,8 @@
 												<th>Invoice No.</th>
 												<th>Voucher No.</th>
 												<th>O/S Days</th> 
-												<th class="outstanding">Amount</th>
-												<th class="overdue">Amount</th>
+												<th class="outstanding text-end">Invoice Amt.</th>
+												<th class="overdue text-end">Balance Amt.</th>
 												<th>Action</th>
 											  </tr>
 											</thead>
@@ -106,12 +106,12 @@
                                                     </td>
                                                     @if($type=="debit")
 
-                                                        <td class="outstanding">{{ number_format(abs($d->total_outstanding), 2) }}  {{ $d->total_outstanding < 0 ? 'Cr' : 'Dr' }}</td>
+                                                        <td class="outstanding text-end">{{ number_format(abs($d->total_outstanding), 2) }}  {{ $d->total_outstanding < 0 ? 'Cr' : 'Dr' }}</td>
                                                     @else
-                                                    <td class="outstanding">{{ number_format(abs($d->total_outstanding), 2) }}  {{ $d->total_outstanding < 0 ? 'Dr' : 'Cr' }}</td>
+                                                    <td class="outstanding text-end">{{ number_format(abs($d->total_outstanding), 2) }}  {{ $d->total_outstanding < 0 ? 'Dr' : 'Cr' }}</td>
                                                     
                                                     @endif
-												        <td class="overdue"> {{$d->overdue > 0 ? number_format($d->overdue) : '' }}</td>
+												        <td class="overdue text-end"> {{$d->overdue > 0 ? number_format($d->overdue) : '' }}</td>
 												
                                                         <td>
                                                         @if($d->view_route)

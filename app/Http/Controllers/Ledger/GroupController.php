@@ -85,27 +85,10 @@ class GroupController extends Controller
      */
     public function store(Request $request)
     {
-        $authOrganization = Helper::getAuthenticatedUser()->organization;
-        $organizationId = $authOrganization->id;
-        $companyId = $authOrganization ?-> company_id;
-        $groupId = $authOrganization ?-> group_id;
-
-        // Validate the request data
-        $request->validate([
-            // 'name' => 'required|string|max:255',
-            'name' => [
-                'required',
-                'string',
-                'max:255',
-                Helper::uniqueRuleWithConditions('erp_groups', [
-                    'organization_id' => $organizationId,
-                    'company_id' => $companyId,
-                    'group_id' => $groupId
-                ], null, 'id', false),
-            ],
-        ]);
-        $existingName = Group::withDefaultGroupCompanyOrg()
-        ->where('name', $request->name)
+         $existingName = Group::where(function ($q) {
+            $q->withDefaultGroupCompanyOrg()
+              ->orWhere('edit', 0);
+        })->where('name', $request->name)
         ->first();
     
 
@@ -158,7 +141,7 @@ else{
         
         $allLedgerParentIds = array_unique($allLedgerParentIds);
         foreach($allLedgerParentIds as $ledg){
-            $parent = Group::find($ledg)->parent_group_id;
+            $parent = Group::find($ledg)?->parent_group_id;
             $chk_og = Group::find($parent);
                 if(!isset($chk_og->organization_id) || $chk_og->organization_id == Helper::getAuthenticatedUser()->organization_id){
                     $allIds[]=$ledg;
@@ -185,28 +168,11 @@ else{
      */
     public function update(Request $request, string $id)
     {
-        $authOrganization = Helper::getAuthenticatedUser()->organization;
-        $organizationId = $authOrganization->id;
-        $companyId = $authOrganization ?-> company_id;
-        $groupId = $authOrganization ?-> group_id;
-
-        $request->validate([
-            // 'name' => ['required', 'string', 'max:255'],
-            'name' => [
-                'required',
-                'string',
-                'max:255',
-                Helper::uniqueRuleWithConditions('erp_groups', [
-                    'organization_id' => $organizationId,
-                    'company_id' => $companyId,
-                    'group_id' => $groupId
-                ], null, 'id', false),
-            ],
-        ]);
-        $existingName = Group::withDefaultGroupCompanyOrg()
-        ->where('name', $request->name)
-        ->where('id', '!=', $id)
-        ->first();
+        
+        $existingName = Group::where(function ($q) {
+            $q->withDefaultGroupCompanyOrg()
+              ->orWhere('edit', 0);
+        })->where('id', '!=', (int)$id) ->exists();
      
             if ($existingName) {
                 return back()->withErrors(['name' => 'The name has already been taken.'])->withInput();

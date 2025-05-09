@@ -123,7 +123,7 @@ class SplitController extends Controller
         $data = array_merge($request->all(), $additionalData);
         $grouped = collect(json_decode($request->sub_assets))->groupBy('asset_code');
         $parentURL = request() -> segments()[0];
-        $parentURL = "fixed-asset_split";
+        $parentURL = "fixed-asset_registration";
         
         
         
