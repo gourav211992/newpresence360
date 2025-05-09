@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
+use App\Models\ErpFinancialYear;
 use App\Models\OrganizationMenu;
 use App\Models\OrganizationService;
 use Illuminate\Support\Facades\Auth;
@@ -48,6 +50,28 @@ class AppServiceProvider extends ServiceProvider
                 //financialyears
                 $fyears = Helper::getFinancialYears();
                 $c_fyear = Helper::getFinancialYear(date('Y-m-d'));
+
+                //update access_by
+                $financialYear = Helper::getCurrentFy();
+                if($financialYear && $financialYear->access_by  == null){
+                    $organizationId = $financialYear->organization_id;
+                    $employees = Helper::getOrgWiseUserAndEmployees($organizationId);
+
+                    $accessBy = [];
+
+                    foreach ($employees as $employee) {
+                        $authUser = $employee->authUser();
+                        if ($authUser) {
+                            $accessBy[] = [
+                                'user_id' => $authUser->id,
+                                'authenticable_type' => $authUser->authenticable_type?? null,
+                                'authorized' => true,
+                            ];
+                        }
+                    }
+                    $financialYear->access_by = $accessBy;
+                    $financialYear->save();
+                }
 
                 // Pass organization id and mappings
                 $view->with([

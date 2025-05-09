@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Traits\DefaultGroupCompanyOrg;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
+
 
 class ErpFinancialYear extends Model
 {
@@ -31,6 +33,33 @@ class ErpFinancialYear extends Model
 
     public function authorizedUsers()
     {
-        return AuthUser::whereIn('id', $this->access_by ?? []);
+        $access = collect($this->access_by);
+
+        $allAuthorized = $access->every(fn($item) => $item['authorized'] === true);
+
+        $userIds = $access
+            ->where('authorized', true)
+            ->pluck('user_id')
+            ->toArray();
+
+        return [
+            'users' => AuthUser::whereIn('id', $userIds)->get(),
+            'all' => $allAuthorized ?? true
+        ];
+    }
+
+    protected static function booted()
+    {
+        static::creating(function ($financialYear) {
+            if (Auth::check()) {
+                $financialYear->created_by = Auth::id();
+            }
+        });
+
+        static::updating(function ($financialYear) {
+            if (Auth::check()) {
+                $financialYear->updated_by = Auth::id();
+            }
+        });
     }
 }

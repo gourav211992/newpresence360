@@ -118,18 +118,33 @@ class CloseFyController extends Controller
 
         try {
 
-            if($request->fyear) // need confirmation
+            if($request->fyear)
             {
                 $financialYear = ErpFinancialYear::find($request->fyear);
+                $organizationId = $financialYear->organization_id;
+                $employees = Helper::getOrgWiseUserAndEmployees($organizationId);
+
+                $accessBy = [];
+
+                foreach ($employees as $employee) {
+                    $authUser = $employee->authUser();
+                    if ($authUser) {
+                        $accessBy[] = [
+                            'user_id' => $authUser->id,
+                            'authenticable_type' => $authUser->authenticable_type?? null,
+                            'authorized' => true,
+                        ];
+                    }
+                }
                 $financialYear->fy_status = ConstantHelper::FY_PREVIOUS_STATUS;
                 $financialYear->fy_close = true;
+                $financialYear->access_by = $accessBy;
                 $financialYear->save();
             }
             else{
                     // 1. Close the selected FY
-                $financialYear = ErpFinancialYear::where('fy_status',ConstantHelper::FY_CURRENT_STATUS)
-                // ->where('fy_close', ConstantHelper::FY_NOT_CLOSED_STATUS)
-                ->first();
+                $financialYear = Helper::getCurrentFy();
+                // dd($financialYear);
                 $financialYear->fy_status = ConstantHelper::FY_PREVIOUS_STATUS;
                 $financialYear->fy_close = true;
                 $financialYear->save();
@@ -179,9 +194,7 @@ class CloseFyController extends Controller
 
         try {
             // 1. Close the selected FY
-            $financialYear = ErpFinancialYear::where('fy_status',ConstantHelper::FY_CURRENT_STATUS)
-            // ->where('fy_close', ConstantHelper::FY_NOT_CLOSED_STATUS)
-            ->first();
+            $financialYear = Helper::getCurrentFy();
             if($request->fyear) // need confirmation
             {
                 $financialYear = ErpFinancialYear::find($request->fyear);
@@ -210,25 +223,41 @@ class CloseFyController extends Controller
     public function updateFyAuthorizedUser(Request $request)
     {
         $request->validate([
-            'access_by' => 'required'
+            'users' => 'required|array',
+            'users.*.user_id' => 'required',
+            // 'users.*.authenticable_type' => 'required',
         ]);
-        // dd($request->all());
-        $financialYear = ErpFinancialYear::where('fy_status', 'current')
-        ->where('fy_close', ConstantHelper::FY_NOT_CLOSED_STATUS)
-        ->first();
 
-        if($request->fyear)
-        {
+        $selectedUsers = collect($request->users)
+        ->keyBy(fn($item) => (int) $item['user_id']);
+
+        $financialYear = ErpFinancialYear::where('fy_status', 'current')
+            ->first();
+
+        if ($request->fyear) {
             $financialYear = ErpFinancialYear::find($request->fyear);
         }
 
         if (!$financialYear) {
-            return response()->json(['success' => false, 'message' => 'No current financial year found.'], 404);
+            return response()->json(['success' => false, 'message' => 'No financial year found.'], 404);
         }
+        $existingAccess = collect($financialYear->access_by ?? []);
 
-        $financialYear->access_by = $request->access_by;
+        $updatedAccess = $existingAccess->map(function ($entry) use ($selectedUsers) {
+            $userId = (int) $entry['user_id'];
+            $isSelected = $selectedUsers->has($userId);
+
+            return [
+                'user_id' => $userId,
+                'authenticable_type' => $entry['authenticable_type'] ?? $selectedUsers[$userId]['authenticable_type'] ?? null,
+                'authorized' => $isSelected,
+            ];
+        })->toArray();
+
+        $financialYear->access_by = $updatedAccess;
+
         $financialYear->save();
-        return response()->json(['success' => true, 'message' => 'Close FY record saved successfully.']);
+        return response()->json(['success' => true, 'message' => 'Close FY Authoriz users saved successfully.']);
     }
 
     public function deleteFyAuthorizedUser(Request $request)

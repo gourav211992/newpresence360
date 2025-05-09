@@ -21,40 +21,34 @@
                                                 <p>Apply the Basic Filter</p>
                                             </div>
                                             <div class="col-md-8 text-sm-end">
-                                                @if(isset($financialYear))
+                                                @if (isset($financialYear))
+                                                    {{-- Show "Close F.Y" button only if FY is not already closed --}}
+                                                    @if ($financialYear['fy_close'] == false)
+                                                        <button class="btn mt-25 btn-primary btn-sm swal-action-btn"
+                                                            data-type="close" data-url="{{ route('post-closefy') }}"
+                                                            id="closeFyBtn" type="button">
+                                                            <i data-feather="x-circle"></i> Close F.Y
+                                                        </button>
+                                                    @endif
 
-                                                {{-- Show "Close F.Y" button only if FY is not already closed --}}
-                                                @if($financialYear['fy_close'] == false)
-                                                    <button class="btn mt-25 btn-primary btn-sm swal-action-btn"
-                                                            data-type="close"
-                                                            data-url="{{ route('post-closefy') }}"
-                                                            id="closeFyBtn"
-                                                            type="button">
-                                                        <i data-feather="x-circle"></i> Close F.Y
-                                                    </button>
-                                                @endif
-
-                                                {{-- Show "Lock F.Y" button only if it's currently unlocked --}}
-                                                @if($financialYear['lock_fy'] == false && $financialYear['fy_close'] == true)
-                                                    <button class="btn mt-25 btn-danger btn-sm swal-action-btn"
-                                                            data-type="lock"
-                                                            data-url="{{ route('close-fy.lock') }}"
+                                                    {{-- Show "Lock F.Y" button only if it's currently unlocked --}}
+                                                    @if ($financialYear['lock_fy'] == false && $financialYear['fy_close'] == true)
+                                                        <button class="btn mt-25 btn-danger btn-sm swal-action-btn"
+                                                            data-type="lock" data-url="{{ route('close-fy.lock') }}"
                                                             type="submit">
-                                                        <i data-feather="lock"></i> Lock F.Y
-                                                    </button>
-                                                @endif
+                                                            <i data-feather="lock"></i> Lock F.Y
+                                                        </button>
+                                                    @endif
 
-                                                {{-- Show "Unlock F.Y" button only if it's currently locked --}}
-                                                @if($financialYear['lock_fy'] == true && $financialYear['fy_close'] == true)
-                                                    <button class="btn mt-25 btn-success btn-sm swal-action-btn"
-                                                            data-type="unlock"
-                                                            data-url="{{ route('close-fy.lock') }}"
+                                                    {{-- Show "Unlock F.Y" button only if it's currently locked --}}
+                                                    @if ($financialYear['lock_fy'] == true && $financialYear['fy_close'] == true)
+                                                        <button class="btn mt-25 btn-success btn-sm swal-action-btn"
+                                                            data-type="unlock" data-url="{{ route('close-fy.lock') }}"
                                                             type="submit">
-                                                        <i data-feather="unlock"></i> UnLock F.Y
-                                                    </button>
+                                                            <i data-feather="unlock"></i> UnLock F.Y
+                                                        </button>
+                                                    @endif
                                                 @endif
-
-                                            @endif
 
                                             </div>
                                         </div>
@@ -82,7 +76,7 @@
 
                                                 <div class="col-md-3">
                                                     <div class="mb-1 mb-sm-0">
-														{{-- {{ dd($current_range) }} --}}
+                                                        {{-- {{ dd($current_range) }} --}}
                                                         <label class="form-label">Select F.Y</label>
                                                         <select id="fyear_id" class="form-select select2">
                                                             <option value="">Select</option>
@@ -100,9 +94,9 @@
                                                 <div class="col-md-6">
                                                     <div class="mt-sm-2 mb-sm-0">
                                                         <label class="mb-1">&nbsp;</label>
-														<button class="btn mt-25 btn-warning btn-sm waves-effect waves-float waves-light apply-filter">
-															<i
-                                                                data-feather="filter"></i> Run Report</button>
+                                                        <button
+                                                            class="btn mt-25 btn-warning btn-sm waves-effect waves-float waves-light apply-filter">
+                                                            <i data-feather="filter"></i> Run Report</button>
                                                     </div>
                                                 </div>
 
@@ -113,24 +107,7 @@
                                     </div>
 
                                 </div>
-                                <div class="row align-items-center">
-                                    <div class="col-md-8">
-                                        {{-- <div class="newheader">
-												   <div>
-													   <h4 class="card-title text-theme text-dark" id="company_name"></h4>
-													   <p class="card-text"><span id="startDate"></span> to <span id="endDate"></span></p>
-												   </div>
-											   </div> --}}
-                                    </div>
-                                    <div class="col-md-4 text-sm-end">
-                                        <a href="#" class="trail-exp-allbtnact" id="expand-all">
-                                            <i data-feather='plus-circle'></i> Expand All
-                                        </a>
-                                        <a href="#" class="trail-col-allbtnact" id="collapse-all">
-                                            <i data-feather='minus-circle'></i> Collapse All
-                                        </a>
-                                    </div>
-                                </div>
+
                             </div>
 
 
@@ -149,6 +126,19 @@
 
                                 <div class="tab-content ">
                                     <div class="tab-pane active" id="Transfer">
+                                        <div class="row align-items-center">
+                                            <div class="col-md-8">
+
+                                            </div>
+                                            <div class="col-md-4 text-sm-end">
+                                                <a href="#" class="trail-exp-allbtnact" id="expand-all">
+                                                    <i data-feather='plus-circle'></i> Expand All
+                                                </a>
+                                                <a href="#" class="trail-col-allbtnact" id="collapse-all">
+                                                    <i data-feather='minus-circle'></i> Collapse All
+                                                </a>
+                                            </div>
+                                        </div>
                                         <div class="earn-dedtable trail-balancefinance trailbalnewdesfinance">
                                             <div class="table-responsive">
                                                 <table class="table border">
@@ -158,84 +148,6 @@
                                                             <th width="300px" id="fy_range"></th>
                                                         </tr>
                                                     </thead>
-                                                    {{-- <tbody>
-																<tr class="trail-bal-tabl-none">
-																	<td><a href="#" class="trail-open-new-listplus-btn"><i data-feather='plus-circle'></i></a> <a href="#"  class="trail-open-new-listminus-btn"><i data-feather='minus-circle'></i></a> Capital Account</td>
-																	<td class="fullbaltrailborder-bottom">40,000.00 Cr</td>
-																</tr>
-																<tr class="trail-sub-list-open" style="display: none">
-																	<td><a href="#" class="trail-open-new-listplus-sub-btn text-dark"><i data-feather='plus-circle'></i></a> <a href="#"  class="trail-open-new-listminus-sub-btn text-dark"><i data-feather='minus-circle'></i></a> Proprietor Capital A/c</td>
-																	<td>40,000.00 Cr</td>
-																</tr>
-																<tr class="trail-subsub-list-open" style="display: none">
-																	<td style="padding-left: 35px"><a href="#" class="trail-open-new-listplus-subsub-btn text-dark"><i data-feather='plus-circle'></i></a> <a href="#"  class="trail-open-new-listminus-subsub-btn text-dark"><i data-feather='minus-circle'></i></a> Capital A/c</td>
-																	<td>40,000.00 Cr</td>
-																</tr>
-																<tr class="trail-subsubsub-list-open" style="display: none">
-																	<td style="padding-left: 45px"><a href="#"><i data-feather='arrow-right'></i> Sundry Creditors</a></td>
-																	<td>12,000.00 Cr</td>
-																</tr>
-																<tr class="trail-bal-tabl-none">
-																	<td><a href="#"><i data-feather='plus-circle'></i></a> Current Liabilities</td>
-																	<td>12,000.00 Cr</td>
-																</tr>
-																<tr>
-																	<td>Sundry Creditors</td>
-																	<td>12,000.00 Cr</td>
-																</tr>
-																<tr class="trail-bal-tabl-none">
-																	<td><a href="#"><i data-feather='plus-circle'></i></a> Fixed Assets</td>
-																	<td>20,000.00 Dr</td>
-																</tr>
-																<tr>
-																	<td>Furniture</td>
-																	<td>20,000.00 Dr</td>
-																</tr>
-																<tr class="trail-bal-tabl-none">
-																	<td><a href="#"><i data-feather='plus-circle'></i></a> Current Assets</td>
-																	<td>32,000.00 Dr</td>
-																</tr>
-																<tr>
-																	<td>Sundary Debtors</td>
-																	<td>12,000.00 Dr</td>
-																</tr>
-																<tr>
-																	<td>Cash-In-Hand</td>
-																	<td>-</td>
-																</tr>
-																<tr>
-																	<td>Bank Accounts</td>
-																	<td>20,000.00 Dr</td>
-																</tr>
-																<tr class="trail-bal-tabl-none">
-																	<td><a href="#"><i data-feather='plus-circle'></i></a> Sales Accounts</td>
-																	<td>-</td>
-																</tr>
-																<tr>
-																	<td>Sales</td>
-																	<td>-</td>
-																</tr>
-																<tr class="trail-bal-tabl-none">
-																	<td><a href="#"><i data-feather='plus-circle'></i></a> Purchase Accounts</td>
-																	<td>-</td>
-																</tr>
-																<tr>
-																	<td>Purchases</td>
-																	<td>-</td>
-																</tr>
-																<tr class="trail-bal-tabl-none">
-																	<td><a href="#"><i data-feather='plus-circle'></i></a> Indirect Income</td>
-																	<td>-</td>
-																</tr>
-																<tr>
-																	<td>Cash Dis. Earned</td>
-																	<td>-</td>
-																</tr>
-																<tr>
-																	<td>Int.Earned</td>
-																	<td>-</td>
-																</tr>
-															</tbody> --}}
                                                     <tbody id="tableData"></tbody>
 
                                                 </table>
@@ -243,6 +155,11 @@
                                         </div>
                                     </div>
                                     <div class="tab-pane" id="Access">
+                                        <div class="text-end mb-2">
+                                            <a id="saveAccessBy" href="#" class="btn-dark btn-sm access-by">
+                                                <i data-feather='check-circle'></i> Save
+                                            </a>
+                                        </div>
                                         <div class="table-responsive-md">
                                             <table
                                                 class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border">
@@ -255,70 +172,95 @@
                                                         <th>Action</th>
                                                     </tr>
                                                 </thead>
+
                                                 <tbody>
+                                                    @php
+                                                        $authorizedUsers = $authorized_users['users'] ?? collect();
+                                                        $showAddRowOnly = $authorizedUsers->isEmpty();
+                                                        $rowNumber = 1;
+                                                    @endphp
+{{-- {{ dd($authorizedUsers, $authorized_users, !$showAddRowOnly && $authorized_users['all'] == true) }} --}}
+                                                    {{-- If there are pre-selected users --}}
+                                                    @if ($authorized_users['all'] == true)
+                                                    {{-- Always show one last row with plus icon --}}
                                                     <tr>
-                                                        <td>1</td>
-                                                        {{-- {{ dd($employees[0]->authUser(),$employees[0]->authUser()->roles, $authorized_users, $employees) }} --}}
+                                                        <td>{{ $rowNumber }}</td>
                                                         <td>
-                                                            <select class="form-select mw-100 select2" id="authorize"
-                                                                multiple>
-                                                                <option value="" disabled>Select</option>
+                                                            <select class="form-select mw-100 select2 authorize-user" id="authorize_{{ $rowNumber }}">
+                                                                <option value="" disabled {{  $authorized_users['all'] == true ? 'selected' : '' }}>Select</option>
                                                                 @foreach ($employees as $employee)
                                                                     @php
-                                                                        // $authUser = $employee->authUser();
-                                                                        $permissions = $employee->authUser()
-                                                                            ? $employee
-                                                                                ->authUser()
-                                                                                ->roles->pluck('name')
-                                                                                ->toArray()
-                                                                            : [];
-                                                                            $isSelected = $employee->authUser() && $authorized_users && $authorized_users->contains('id', $employee->authUser()->id) ?? false;
-
+                                                                        $authUser = $employee->authUser();
+                                                                        $permissions = $authUser ? $authUser->roles->pluck('name')->toArray() : [];
                                                                     @endphp
                                                                     <option
-                                                                        value="{{ $employee->authUser() ? $employee->authUser()->id : '' }}"
-                                                                        data-permissions='@json($permissions)' {{ $isSelected ? 'selected' : '' }}>
-                                                                        {{ $employee->authUser() ? $employee->authUser()->name : 'N/A' }}
+                                                                        value="{{ $authUser ? $authUser->id : '' }}"
+                                                                        data-permissions='@json($permissions)'
+                                                                        data-authenticable-type="{{ $authUser ? $authUser->authenticable_type : '' }}">
+                                                                        {{ $authUser ? $authUser->name : 'N/A' }}
                                                                     </option>
                                                                 @endforeach
-                                                                {{-- <option>Select</option>
-																			   <option>Nishu Garg</option>
-																			   <option selected>Mahesh Bhatt</option>
-																			   <option>Inder Singh</option>
-																			   <option selected>Shivangi</option>  --}}
+                                                            </select>
+                                                            <input type="hidden" class="authenticable-type" name="authenticable_type[]">
+                                                        </td>
+                                                        <td>
+                                                            <select class="form-select mw-100 select2 permissions-box" id="permissions_{{ $rowNumber }}" multiple disabled>
+                                                                <!-- Options will populate dynamically -->
                                                             </select>
                                                         </td>
                                                         <td>
-                                                            <select class="form-select mw-100 select2 permissions-box"
-                                                                multiple disabled>
-                                                                <!-- Options will be populated dynamically -->
-                                                            </select>
+                                                            <a href="#" id="saveCloseFyBtn" class="text-primary"><i data-feather="plus-square"></i></a>
                                                         </td>
-                                                        <td>
-                                                            <a href="#" id="saveCloseFyBtn" class="text-primary"><i
-                                                                data-feather="plus-square"></i></a>
-                                                                <a href="#" id="deleteAuthorize" data-type="delete" data-url="{{ route('close-fy.delete-authuser') }}" class="text-danger swal-action-btn"><i data-feather="trash-2"></i></a>
-                                                            </td>
                                                     </tr>
-                                                    {{-- <tr>
-																		<td>2</td>
-																		<td>
-																		   <select class="form-select mw-100 select2" multiple>
-																			   <option>Select</option>
-																			   <option>Nishu Garg</option>
-																			   <option selected>Mahesh Bhatt</option>
-																			   <option>Inder Singh</option>
-																			   <option selected>Shivangi</option>
-																		   </select>
-																		</td>
-																		 <td>
-																			<select class="form-select mw-100 select2" multiple disabled>
-																			   <option>Select</option>
-																			   <option selected>Finance Admin</option>
-																		   </select>
-																		 </td>
-																		<td><a href="#" class="text-danger"><i data-feather="trash-2"></i></a></td>
-																	  </tr>  --}}
+                                                     @elseif(!$showAddRowOnly)
+                                                     @foreach ($authorizedUsers as $index => $authorizedUser)
+                                                     <tr>
+                                                         <td>{{ $rowNumber }}</td>
+                                                         <td>
+                                                             <select class="form-select mw-100 select2 authorize-user" id="authorize_{{ $rowNumber }}">
+                                                                 <option value="" disabled>Select</option>
+                                                                 @foreach ($employees as $employee)
+                                                                     @php
+                                                                         $authUser = $employee->authUser();
+                                                                         $permissions =  $employee->authUser() ? $authUser->roles->pluck('name')->toArray() : [];
+                                                                         $isSelected = $authUser && $authorizedUser->id == $authUser->id;
+                                                                     @endphp
+                                                                     <option
+                                                                         value="{{ $authUser ? $authUser->id : '' }}"
+                                                                         data-permissions='@json($permissions)'
+                                                                         data-authenticable-type="{{ $authUser ? $authUser->authenticable_type : '' }}"
+                                                                         {{ $isSelected ? 'selected' : '' }}>
+                                                                         {{ $authUser ? $authUser->name : 'N/A' }}
+                                                                     </option>
+                                                                 @endforeach
+                                                             </select>
+                                                             <input type="hidden" class="authenticable-type" name="authenticable_type[]">
+                                                         </td>
+                                                         <td>
+                                                             <select class="form-select mw-100 select2 permissions-box" id="permissions_{{ $rowNumber }}" multiple disabled>
+                                                                 {{-- Populated dynamically --}}
+                                                             </select>
+                                                         </td>
+
+                                                         {{-- Conditionally show "+" only on first row if multiple, or always if only one --}}
+                                                         @if ($authorizedUsers->count() === 1 || $loop->first)
+                                                             <td>
+                                                                 <a href="#" id="saveCloseFyBtn" class="text-primary"><i data-feather="plus-square"></i></a>
+                                                             </td>
+                                                         @else
+                                                         <td>
+                                                            <a href="#" class="text-danger deleteAuthorize"><i data-feather="trash-2"></i></a>
+                                                        </td>
+                                                                                                                 @endif
+
+
+                                                     </tr>
+                                                     @php $rowNumber++; @endphp
+                                                 @endforeach
+
+                                                    @endif
+
+
                                                 </tbody>
 
 
@@ -351,6 +293,302 @@
 <!-- END: Content-->
 
 @section('scripts')
+    <script>
+let counter = $('tbody tr').length + 1;
+// 1. Function to create a new row
+        function getNewRowHtml(rowNum) {
+            return `
+                <tr>
+                    <td>${rowNum}</td>
+                    <td>
+                        <select class="form-select mw-100 select2 authorize-user" id="authorize_${rowNum}" name="authorized_users[]" required>
+                            <option value="" disabled selected>Select</option>
+                            ${getEmployeeOptions()}
+                        </select>
+                        <input type="hidden" class="authenticable-type" name="authenticable_type[]">
+                    </td>
+                    <td>
+                        <select class="form-select mw-100 select2 permissions-box" id="permissions_${rowNum}" name="permissions[${rowNum}][]" multiple disabled>
+                        </select>
+                    </td>
+                    <td>
+                        <a href="#" class="text-danger deleteAuthorize"><i data-feather="trash-2"></i></a>
+                    </td>
+                </tr>
+            `;
+        }
+
+        // 2. Blade-generated employee options
+        function getEmployeeOptions() {
+        return `
+            @foreach ($employees as $employee)
+                @php
+                    $authUser = $employee->authUser();
+                    $permissions = $authUser ? $authUser->roles->pluck('name')->toArray() : [];
+                @endphp
+                <option value="{{ $authUser ? $authUser->id : '' }}"
+                        data-permissions='@json($permissions)'
+                        data-authenticable-type="{{ $authUser ? $authUser->authenticable_type : '' }}">
+                    {{ $authUser ? $authUser->name : 'N/A' }}
+                </option>
+            @endforeach
+        `;
+}
+
+        // 3. Disable selected users in other rows
+        function updateDisabledUsers() {
+            // Get all currently selected user IDs (except empty selections)
+            const selectedIds = [];
+            $('select.authorize-user').each(function() {
+                const val = $(this).val();
+                if (val) selectedIds.push(val);
+            });
+
+            // Update all dropdowns
+            $('select.authorize-user').each(function() {
+                const currentRowVal = $(this).val();
+                $(this).find('option').each(function() {
+                    const optionVal = $(this).val();
+                    // Disable if:
+                    // 1. It's selected in another dropdown (and not the current one)
+                    // 2. It's not the empty "Select" option
+                    if (optionVal && optionVal !== currentRowVal && selectedIds.includes(optionVal)) {
+                        $(this).prop('disabled', true);
+                    } else {
+                        $(this).prop('disabled', false);
+                    }
+                });
+
+                // Reinitialize Select2 to reflect changes
+                $(this).trigger('change.select2');
+            });
+        }
+
+        $(document).ready(function() {
+            // Initialize the first row's permissions if a user is already selected
+            // const initialSelected = $('#authorize_1').find('option:selected');
+            // console.log(initialSelected)
+            // if (initialSelected.val()) {
+            //     const permissions = initialSelected.data('permissions') || [];
+            //     const $permissionsBox = $('#authorize_1').closest('tr').find('.permissions-box');
+
+            //     $permissionsBox.empty().prop('disabled', true);
+            //     const uniquePermissions = [...new Set(permissions)];
+            //     uniquePermissions.forEach(p => {
+            //         $permissionsBox.append(`<option selected value="${p}">${p}</option>`);
+            //     });
+            //     $permissionsBox.trigger('change');
+            // }
+
+            // 4. Add new row
+            $(document).on('click', '#saveCloseFyBtn', function(e) {
+                e.preventDefault();
+                  // Get all user IDs already selected
+                const selectedIds = [];
+                $('select.authorize-user').each(function () {
+                    const val = $(this).val();
+                    if (val) selectedIds.push(val);
+                });
+
+                // Get all user IDs available in the select options
+                const allUserIds = [];
+                $('select.authorize-user:first option').each(function () {
+                    const val = $(this).val();
+                    if (val) allUserIds.push(val);
+                });
+
+                const availableToSelect = allUserIds.filter(id => !selectedIds.includes(id));
+
+                if (availableToSelect.length === 0) {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'All Users Selected',
+                        text: 'All available users have already been added.',
+                        confirmButtonText: 'OK'
+                    });
+                    return;
+                }
+                const newRowHtml = getNewRowHtml(counter);
+                $('tbody').append(newRowHtml);
+                $('.select2').select2(); // reinitialize select2
+                feather.replace(); // reinitialize icons
+                updateDisabledUsers(); // prevent duplicates
+                counter++;
+            });
+
+            // 5. Delete row
+            $(document).on('click', '.deleteAuthorize', function(e) {
+                e.preventDefault();
+                $(this).closest('tr').remove();
+                // Renumber the rows
+                $('tbody tr').each(function(index) {
+                    $(this).find('td:first').text(index + 1);
+                });
+                updateDisabledUsers(); // refresh available users
+            });
+
+            // 6. Handle user selection and populate permissions
+            $(document).on('change', '.authorize-user', function () {
+                const selected = $(this).find('option:selected');
+                const permissions = selected.data('permissions') || [];
+                const authType = selected.data('authenticable-type') || '';
+
+                const $row = $(this).closest('tr');
+                const $permissionsBox = $row.find('.permissions-box');
+                const $authTypeInput = $row.find('.authenticable-type'); // hidden input
+
+                // Set auth type in hidden input
+                $authTypeInput.val(authType);
+
+                $permissionsBox.empty().prop('disabled', true);
+                const uniquePermissions = [...new Set(permissions)];
+                uniquePermissions.forEach(p => {
+                    $permissionsBox.append(`<option selected value="${p}">${p}</option>`);
+                });
+
+                $permissionsBox.trigger('change');
+                updateDisabledUsers();
+            });
+
+            // 7. Save button: get all users and permissions
+            document.getElementById('saveAccessBy').addEventListener('click', function(event) {
+                event.preventDefault();
+
+                let users = [];
+                const fyValue = $('#fyear_id').val();
+
+                // Collect selected user IDs
+                let hasEmptyUser = false;
+                $('select.authorize-user').each(function() {
+                    const userId = $(this).val();
+                    const selectedOption = $(this).find('option:selected');
+                    const authType = selectedOption.data('authenticable-type') || null;
+
+                    if (userId) {
+                        users.push({
+                            user_id: userId,
+                            authenticable_type: authType
+                        });
+                        hasEmptyUser = true;
+                    }
+                });
+                console.log(hasEmptyUser, users)
+                // Show alert if any user row is unselected
+                if (!hasEmptyUser || users.length === 0) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Missing Selection',
+                        text: 'Please select at least one user to assign access.',
+                        confirmButtonText: 'OK'
+                    });
+                    return;
+                }
+
+                if (fyValue && fyValue.trim() !== "") {
+                    users.fyear = fyValue;
+                }
+
+                console.log("Data to be saved:", users);
+
+                const url = "{{ route('close-fy.update-authuser') }}";
+
+                fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')
+                                .getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            users: users,
+                            fyear: users.fyear
+                        })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success!',
+                                text: data.message,
+                                confirmButtonText: 'OK'
+                            }).then(() => {
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Failed',
+                                text: data.message,
+                                confirmButtonText: 'OK'
+                            });
+                        }
+                    })
+                    .catch(err => {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Oops...',
+                            text: 'Error saving Close FY Authorized Users.',
+                            confirmButtonText: 'OK'
+                        });
+                        console.error(err);
+                    });
+            });
+
+
+            // Initialize the first row's user dropdown restrictions
+            updateDisabledUsers();
+        });
+    </script>
+      <script>
+        $(document).ready(function() {
+            // $('#authorize_1').select2();
+
+            function updatePermissionsBox(selectElement) {
+                let selectedOptions = selectElement.find(':selected');
+                console.log(selectedOptions);
+                let permissionSelect = selectElement.closest('tr').find('.permissions-box');
+
+                let permissions = [];
+
+                selectedOptions.each(function() {
+                    let perms = $(this).data('permissions');
+                    if (Array.isArray(perms)) {
+                        permissions = permissions.concat(perms);
+                    }
+                });
+
+                // Remove duplicates
+                permissions = [...new Set(permissions)];
+
+                // Clear and populate permission box
+                permissionSelect.empty();
+
+                if (permissions.length > 0) {
+                    permissionSelect.prop('disabled', true);
+                    permissions.forEach(function(permission) {
+                        permissionSelect.append(`<option selected>${permission}</option>`);
+                    });
+                } else {
+                    permissionSelect.prop('disabled', true);
+                    permissionSelect.append(`<option>No Permissions</option>`);
+                }
+
+                permissionSelect.trigger('change');
+            }
+
+            // Trigger once on page load for all authorize-user dropdowns
+            $('.authorize-user').each(function () {
+                updatePermissionsBox($(this));
+            });
+
+            // Trigger on change for all authorize-user dropdowns
+            $(document).on('change', '.authorize-user', function () {
+                updatePermissionsBox($(this));
+            });
+
+        });
+    </script>
     <script>
         var reservesSurplus = '';
 
@@ -411,6 +649,7 @@
                 const selectedText = selectedValue !== "" ? selectedOption.text() : '{{ $current_range }}';
 
                 $('#fy_range').text(`F.Y ${selectedText} Closing Balance`);
+                setTimeout(() => location.reload(), 1000);
             })
 
             function getInitialGroups() {
@@ -463,44 +702,6 @@
                                 if (closing != 0) {
                                     closingText = closing > 0 ? 'Dr' : 'Cr';
                                 }
-
-                                // if (data['data'][i].name=="Liabilities") {
-                                //     if (data['profitLoss']['closing_type']==data['data'][i].opening_type) {
-                                //         opening_type=data['data'][i].opening_type;
-                                //         opening=parseFloat(opening) + parseFloat(data['profitLoss']['closingFinal']);
-                                //     } else {
-                                //         var openingDiff=parseFloat(opening) - parseFloat(data['profitLoss']['closingFinal']);
-                                //         if (openingDiff!=0) {
-                                //             var openingDiff=openingDiff > 0 ? openingDiff : -openingDiff;
-                                //             if (parseFloat(opening) > parseFloat(data['profitLoss']['closingFinal'])) {
-                                //                 opening_type=data['data'][i].opening_type;
-                                //             } else {
-                                //                 opening_type=data['profitLoss']['closing_type'];
-                                //             }
-                                //         }
-                                //         opening=openingDiff;
-                                //     }
-
-                                //     if (opening_type==closingText) {
-                                //         closingText=closingText;
-                                //         closing=parseFloat(opening) + parseFloat(closing);
-                                //     } else {
-                                //         var closingDiff=parseFloat(opening) - parseFloat(closing);
-                                //         if (closingDiff!=0) {
-                                //             var closingDiff=closingDiff > 0 ? closingDiff : -closingDiff;
-                                //             if (parseFloat(opening) > parseFloat(closing)) {
-                                //                 closingText=opening_type;
-                                //             } else {
-                                //                 closingText=closingText;
-                                //             }
-                                //         }
-                                //         closing=closingDiff;
-                                //     }
-                                // }
-
-
-
-
 
                                 opening_tot += opening;
                                 let close = parseFloat(data['data'][i].open + (data['data'][i]
@@ -717,7 +918,7 @@
                                     if (data['type'] == "group") {
                                         for (let i = 0; i < data['data'].length; i++) {
                                             const padding = getIncrementalPadding(
-                                            parentPadding);
+                                                parentPadding);
                                             var closingText = '';
                                             const closing = data['data'][i].open + (data['data']
                                                 [i].total_debit - data['data'][i]
@@ -771,7 +972,7 @@
                                         let tot_credit = 0;
                                         for (let i = 0; i < data['data'].length; i++) {
                                             const padding = getIncrementalPadding(
-                                            parentPadding);
+                                                parentPadding);
                                             var closingText = '';
                                             const closing = data['data'][i].open + (data['data']
                                                 [i].details_sum_debit_amt - data['data'][i]
@@ -790,14 +991,14 @@
 												</tr>`;
                                             tot_debt += data['data'][i].details_sum_debit_amt;
                                             tot_credit += data['data'][i]
-                                            .details_sum_credit_amt;
+                                                .details_sum_credit_amt;
                                         }
                                     }
                                     $('#' + id).closest('tr').after(html);
                                     $('.urls').each(function() {
                                         let currentHref = $(this).attr('href') || '';
                                         let baseUrl = currentHref.split('?')[
-                                        0]; // remove old query params if any
+                                            0]; // remove old query params if any
 
                                         // Append new query parameters
                                         let updatedUrl =
@@ -892,7 +1093,7 @@
 
                                     $('#check' + data['id']).val(data['id']);
                                     const parentPadding = parseInt($('.exp' + data[
-                                            'id']).closest('td').css(
+                                        'id']).closest('td').css(
                                         'padding-left'));
 
                                     if ($('#name' + data['id']).text() ==
@@ -1052,47 +1253,7 @@
             }
         });
 
-        function exportTrialBalanceReport(level) {
-            var obj = {
-                date: $('#fp-range').val(),
-                cost_center_id: $('#cost_center_id').val(),
-                currency: $('#currency').val(),
-                '_token': '{!! csrf_token() !!}',
-                group_id: group_id,
-                level: level
-            };
-            var selectedValues = $('#organization_id').val() || [];
-            var filteredValues = selectedValues.filter(function(value) {
-                return value !== null && value.trim() !== '';
-            });
-            if (filteredValues.length > 0) {
-                obj.organization_id = filteredValues
-            }
 
-            $.ajax({
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                },
-                type: "POST",
-                url: "{{ route('exportTrialBalanceReport') }}",
-                data: obj,
-                xhrFields: {
-                    responseType: 'blob'
-                },
-                success: function(data, status, xhr) {
-                    var link = document.createElement('a');
-                    var url = window.URL.createObjectURL(data);
-                    link.href = url;
-                    link.download = 'trialBalance.xlsx';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                },
-                error: function(xhr, status, error) {
-                    console.log('Export failed:', error);
-                }
-            });
-        }
 
         // selected arrow using down, up key
         $(document).ready(function() {
@@ -1178,207 +1339,82 @@
         });
     </script>
     <script>
-        $(document).ready(function() {
-            $('#authorize').select2();
+        document.querySelectorAll('.swal-action-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                console.log('save button hit')
+                let bodyData = {};
+                const actionType = this.getAttribute('data-type');
+                const url = this.getAttribute('data-url');
+                const fyValue = $('#fyear_id').val();
 
-function updatePermissionsBox(selectElement) {
-    let selectedOptions = selectElement.find(':selected');
-    console.log(selectedOptions);
-    let permissionSelect = selectElement.closest('tr').find('.permissions-box');
+                let swalOptions = {
+                    title: 'Are you sure?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                };
 
-    let permissions = [];
+                if (actionType === 'close') {
+                    swalOptions.text =
+                        "You are about to close the Financial Year. This action cannot be undone!";
+                    swalOptions.confirmButtonText = 'Yes, close it!';
 
-    selectedOptions.each(function () {
-        let perms = $(this).data('permissions');
-        if (Array.isArray(perms)) {
-            permissions = permissions.concat(perms);
-        }
-    });
+                } else if (actionType === 'delete') {
+                    swalOptions.text = "You are about to remove the authorized Users!";
+                    swalOptions.confirmButtonText = 'Yes, remove it!';
+                    // const selected = Array.from(document.getElementById('authorize').selectedOptions)
+                    //     .map(option => option.value);
 
-    // Remove duplicates
-    permissions = [...new Set(permissions)];
+                    // console.log(bodyData);
+                } else if (actionType === 'lock') {
+                    swalOptions.text = "Are you sure you want to lock the current Financial Year?";
+                    swalOptions.confirmButtonText = 'Yes, lock it!';
+                    bodyData.lock_fy = true; // equivalent to 1
+                } else if (actionType === 'unlock') {
+                    swalOptions.text = "Are you sure you want to unlock the current Financial Year?";
+                    swalOptions.confirmButtonText = 'Yes, unlock it!';
+                    bodyData.lock_fy = false; // equivalent to 0
+                }
 
-    // Clear and populate permission box
-    permissionSelect.empty();
+                if (fyValue && fyValue.trim() !== "") {
+                    bodyData.fyear = fyValue;
+                }
 
-    if (permissions.length > 0) {
-        permissionSelect.prop('disabled', false);
-        permissions.forEach(function (permission) {
-            permissionSelect.append(`<option selected>${permission}</option>`);
-        });
-    } else {
-        permissionSelect.prop('disabled', true);
-        permissionSelect.append(`<option>No Permissions</option>`);
-    }
-
-    permissionSelect.trigger('change');
-}
-
-// Trigger once on page load
-updatePermissionsBox($('#authorize'));
-
-// Trigger on change
-$('#authorize').on('change', function () {
-    updatePermissionsBox($(this));
-});
-
-        });
-
-    </script>
-   <script>
-    document.querySelectorAll('.swal-action-btn').forEach(button => {
-    button.addEventListener('click', function () {
-        let bodyData = {};
-        const actionType = this.getAttribute('data-type');
-        const url = this.getAttribute('data-url');
-        const fyValue = $('#fyear_id').val();
-
-        let swalOptions = {
-            title: 'Are you sure?',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-        };
-
-        if (actionType === 'close') {
-            swalOptions.text = "You are about to close the Financial Year. This action cannot be undone!";
-            swalOptions.confirmButtonText = 'Yes, close it!';
-
-        }
-        // else if (actionType === 'delete') {
-        //     swalOptions.text = "You are about to remove the authorized Users!";
-        //     swalOptions.confirmButtonText = 'Yes, remove it!';
-        //     // const selected = Array.from(document.getElementById('authorize').selectedOptions)
-        //     //     .map(option => option.value);
-
-        //               // console.log(bodyData);
-        // }
-        else if (actionType === 'lock') {
-            swalOptions.text = "Are you sure you want to lock the current Financial Year?";
-            swalOptions.confirmButtonText = 'Yes, lock it!';
-            bodyData.lock_fy = true; // equivalent to 1
-        }
-        else if (actionType === 'unlock') {
-            swalOptions.text = "Are you sure you want to unlock the current Financial Year?";
-            swalOptions.confirmButtonText = 'Yes, unlock it!';
-            bodyData.lock_fy = false; // equivalent to 0
-        }
-
-        if (fyValue && fyValue.trim() !== "") {
-                bodyData.fyear = fyValue;
-        }
-
-        Swal.fire(swalOptions).then((result) => {
-            if (result.isConfirmed) {
-                fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify(bodyData)
-                })
-                .then(response => response.json())
-                .then(data => {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Success!',
-                        text: data.message || 'Action completed successfully!',
-                        confirmButtonText: 'OK'
-                    }).then(() => {
-                        setTimeout(() => location.reload(), 1000);
-                    });
-                })
-                .catch(error => {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'Something went wrong.',
-                    });
-                    console.error(error);
+                Swal.fire(swalOptions).then((result) => {
+                    if (result.isConfirmed) {
+                        fetch(url, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector(
+                                        'meta[name="csrf-token"]').getAttribute('content')
+                                },
+                                body: JSON.stringify(bodyData)
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Success!',
+                                    text: data.message ||
+                                        'Action completed successfully!',
+                                    confirmButtonText: 'OK'
+                                }).then(() => {
+                                    setTimeout(() => location.reload(), 1000);
+                                });
+                            })
+                            .catch(error => {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: 'Something went wrong.',
+                                });
+                                console.error(error);
+                            });
+                    }
                 });
-            }
-        });
-    });
-});
-</script>
-<script>
-    document.getElementById('saveCloseFyBtn').addEventListener('click', function () {
-        event.preventDefault();
-        let bodyData = {};
-        // const selected = document.getElementById('authUser').value;
-        const url = "{{ route('close-fy.update-authuser') }}";
-        const fyear = null;
-        const selected = Array.from(document.getElementById('authorize').selectedOptions)
-        .map(option => option.value);
-        console.log(selected,'value');
-
-    if (selected.length === 0) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Missing Selection',
-            text: 'Please select at least one user.',
-        });
-        return;
-    }
-    bodyData.access_by = selected;
-    const fyValue = $('#fyear_id').val();
-
-    if (fyValue && fyValue.trim() !== "") {
-        bodyData.fyear = fyValue;
-    }
-        // if (!selected) {
-        //     Swal.fire({
-        //         icon: 'warning',
-        //         title: 'Missing Selection',
-        //         text: 'Please select a user to assign access.',
-        //         confirmButtonText: 'OK'
-        //     });
-        //     return;
-        // }
-
-        fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            },
-            body: JSON.stringify(bodyData)
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Success!',
-                    text: data.message,
-                    confirmButtonText: 'OK'
-                }).then(() => {
-                    location.reload(); // Optional: refresh page
-                });
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Failed',
-                    text: data.message,
-                    confirmButtonText: 'OK'
-                });
-            }
-        })
-        .catch(err => {
-            Swal.fire({
-                icon: 'error',
-                title: 'Oops...',
-                text: 'Error saving Close FY record.',
-                confirmButtonText: 'OK'
             });
-            console.error(err);
         });
-    });
     </script>
-
-
-
-
 @endsection

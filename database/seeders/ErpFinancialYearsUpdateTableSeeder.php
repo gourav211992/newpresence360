@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Helpers\ConstantHelper;
+use App\Helpers\Helper;
 use App\Models\ErpFinancialYear;
 use App\Models\Organization;
 use Exception;
@@ -24,8 +25,7 @@ class ErpFinancialYearsUpdateTableSeeder extends Seeder
         try {
             $currentYear = Carbon::now()->year;
 
-            $financialYears = DB::table('erp_financial_years')->get();
-
+            $financialYears = ErpFinancialYear::get();
             foreach ($financialYears as $fy) {
                 $startYear = Carbon::parse($fy->start_date)->year;
 
@@ -35,9 +35,12 @@ class ErpFinancialYearsUpdateTableSeeder extends Seeder
                     $startYear < $currentYear => 'prev',
                 };
 
-                DB::table('erp_financial_years')
-                    ->where('id', $fy->id)
-                    ->update(['fy_status' => $status]);
+
+                ErpFinancialYear::where('id', $fy->id)
+                    ->update([
+                        'fy_status' => $status,
+                    ]);
+
             }
 
             DB::commit();
