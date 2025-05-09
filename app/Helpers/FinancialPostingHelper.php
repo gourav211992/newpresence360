@@ -3259,27 +3259,6 @@ public static function depVoucherDetails(int $documentId, string $type)
             $ledgerErrorStatus = self::ERROR_PREFIX.'Assets Account not setup';
             break;
         }
-        //Check for same ledger and group in SALES ACCOUNT
-        $existingAssetsLedger = array_filter($postingArray[self::ASSET], function ($posting) use($assetsLedgerId, $assetsLedgerGroupId) {
-            return $posting['ledger_id'] == $assetsLedgerId && $posting['ledger_group_id'] == $assetsLedgerGroupId;
-        });
-        //Ledger found
-        if (count($existingAssetsLedger) > 0) {
-            $postingArray[self::ASSET][0]['credit_amount'] +=  $assetsCreditAmount;
-            $postingArray[self::ASSET][0]['credit_amount_org'] +=  $assetsCreditAmount;
-        } else { //Assign a new ledger
-            array_push($postingArray[self::ASSET], [
-                'ledger_id' => $assetsLedgerId,
-                'ledger_group_id' => $assetsLedgerGroupId,
-                'ledger_code' => $assetsLedger ?-> code,
-                'ledger_name' => $assetsLedger ?-> name,
-                'ledger_group_code' => $assetsLedgerGroup ?-> name,
-                'debit_amount' => 0,
-                'debit_amount_org' => 0,
-                'credit_amount' => $assetsCreditAmount,
-                'credit_amount_org' => $assetsCreditAmount
-            ]);
-        }
         
         $depLedgerId = $asset->category->setup->dep_ledger_id;
         $depLedgerGroupId = $asset->category->setup->dep_ledger_group_id;
@@ -3290,27 +3269,60 @@ public static function depVoucherDetails(int $documentId, string $type)
             break;
         }
 
-        //Check for same ledger and group in SALES ACCOUNT
-        $existingdepLedger = array_filter($postingArray[self::DEPRECIATION], function ($posting) use($depLedgerId, $depLedgerGroupId) {
-            return $posting['ledger_id'] == $depLedgerId && $posting['ledger_group_id'] == $depLedgerGroupId;
-        });
-        //Ledger found
-        if (count($existingdepLedger) > 0) {
-            $postingArray[self::DEPRECIATION][0]['debit_amount'] +=  $assetsCreditAmount;
-            $postingArray[self::DEPRECIATION][0]['debit_amount_org'] +=  $orgCurrencyCost;
-        } else { //Assign a new ledger
-            array_push($postingArray[self::DEPRECIATION], [
+        $found = false;
+
+        foreach ($postingArray[self::ASSET] as &$entry) {
+            if ($entry['ledger_id'] == $assetsLedgerId && $entry['ledger_group_id'] == $assetsLedgerGroupId) {
+                $entry['credit_amount'] += $docValue;
+                $entry['credit_amount_org'] += $docValue;
+                $found = true;
+                break;
+            }
+        }
+        unset($entry);
+
+        if (!$found) {
+            $postingArray[self::ASSET][] = [
+                'ledger_id' => $assetsLedgerId,
+                'ledger_group_id' => $assetsLedgerGroupId,
+                'ledger_code' => $assetsLedger?->code,
+                'ledger_name' => $assetsLedger?->name,
+                'ledger_group_code' => $assetsLedgerGroup?->name,
+                'debit_amount' => 0,
+                'debit_amount_org' => 0,
+                'credit_amount' => $docValue,
+                'credit_amount_org' => $docValue,
+            ];
+        }
+
+    
+    
+        $found = false;
+
+        foreach ($postingArray[self::DEPRECIATION] as &$entry) {
+            if ($entry['ledger_id'] == $depLedgerId && $entry['ledger_group_id'] == $depLedgerGroupId) {
+                $entry['debit_amount'] += $docValue;
+                $entry['debit_amount_org'] += $docValue;
+                $found = true;
+                break;
+            }
+        }
+        unset($entry);
+        
+        if (!$found) {
+            $postingArray[self::DEPRECIATION][] = [
                 'ledger_id' => $depLedgerId,
                 'ledger_group_id' => $depLedgerGroupId,
-                'ledger_code' => $depLedger ?-> code,
-                'ledger_name' => $depLedger ?-> name,
-                'ledger_group_code' => $depLedgerGroup ?-> name,
+                'ledger_code' => $depLedger?->code,
+                'ledger_name' => $depLedger?->name,
+                'ledger_group_code' => $depLedgerGroup?->name,
                 'credit_amount' => 0,
                 'credit_amount_org' => 0,
-                'debit_amount' => $assetsCreditAmount,
-                'debit_amount_org' => $assetsCreditAmount,
-            ]);
+                'debit_amount' => $docValue,
+                'debit_amount_org' => $docValue,
+            ];
         }
+        
     }
     if ($ledgerErrorStatus) {
         return array(
@@ -3319,6 +3331,8 @@ public static function depVoucherDetails(int $documentId, string $type)
             'data' => []
         );
     }
+    $totalCreditAmount=0;
+    $totalDebitAmount=0;
     //Check debit and credit tally
     foreach ($postingArray as $postAccount) {
         foreach ($postAccount as $postingValue) {
@@ -3326,14 +3340,14 @@ public static function depVoucherDetails(int $documentId, string $type)
             $totalDebitAmount += $postingValue['debit_amount'];
         }
     }
-    //Balance does not match
-    if ($totalDebitAmount !== $totalCreditAmount) {
-        return array(
-            'status' => false,
-            'message' => self::ERROR_PREFIX.'Credit Amount does not match Debit Amount',
-            'data' => []
-        );
-    }
+   // Balance does not match
+   if (trim((string)$totalDebitAmount) != trim((string)$totalCreditAmount)) {
+    return array(
+        'status' => false,
+        'message' => self::ERROR_PREFIX.'Credit Amount does not match Debit Amount',
+        'data' => []
+    );
+}
     //Get Header Details
     $book = Book::find($document -> book_id);
     $glPostingBookParam = OrganizationBookParameter::where('book_id', $book -> id) -> where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM) -> first();
@@ -3445,8 +3459,9 @@ public static function depVoucherDetails(int $documentId, string $type)
             });
             //Ledger found
             if (count($existingAssetsLedger) > 0) {
-                $postingArray[self::OLD_ASSET][0]['credit_amount'] +=  $assetsCreditAmount;
-                $postingArray[self::OLD_ASSET][0]['credit_amount_org'] +=  $assetsCreditAmount;
+                $existingIndex = array_key_first($existingAssetsLedger);
+                $postingArray[self::OLD_ASSET][$existingIndex]['credit_amount'] +=  $assetsCreditAmount;
+                $postingArray[self::OLD_ASSET][$existingIndex]['credit_amount_org'] +=  $assetsCreditAmount;
             } else { //Assign a new ledger
                 array_push($postingArray[self::OLD_ASSET], [
                     'ledger_id' => $assetsLedgerId,
@@ -3476,8 +3491,9 @@ public static function depVoucherDetails(int $documentId, string $type)
             });
             //Ledger found
             if (count($existingdepLedger) > 0) {
-                $postingArray[self::NEW_ASSET][0]['debit_amount'] +=  $assetsCreditAmount;
-                $postingArray[self::NEW_ASSET][0]['debit_amount_org'] +=  $assetsCreditAmount;
+                $existingIndex = array_key_first($existingdepLedger);
+                $postingArray[self::NEW_ASSET][$existingIndex]['debit_amount'] +=  $assetsCreditAmount;
+                $postingArray[self::NEW_ASSET][$existingIndex]['debit_amount_org'] +=  $assetsCreditAmount;
             } else { //Assign a new ledger
                 array_push($postingArray[self::NEW_ASSET], [
                     'ledger_id' => $depLedgerId,
@@ -6516,7 +6532,7 @@ public static function receiptVoucherPosting(int $bookId, int $documentId, strin
                 $debitAmtGroup = $groupCurrencyDebitAmt['group_currency_amount'];
                 $creditAmtGroup = $groupCurrencyCreditAmt['group_currency_amount'];
 
-                if (($entryType === self::COGS_ACCOUNT || $entryType === self::STOCK_ACCOUNT) && $stockCogDnCheck) {
+                if (($entryType === self::COGS_ACCOUNT || $entryType === self::STOCK_ACCOUNT) && $stockCogDnCheck ) {
                     $debitAmtOrg = $post['debit_amount_org'];
                     $creditAmtOrg = $post['credit_amount_org'];
                     if ($voucherHeader['org_currency_code'] === $voucherHeader['comp_currency_code']) {

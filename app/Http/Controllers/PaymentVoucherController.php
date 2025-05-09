@@ -116,10 +116,8 @@ class PaymentVoucherController extends Controller
     public function getParties(Request $r)
     {
         $ledger_account = $r->type == ConstantHelper::RECEIPTS_SERVICE_ALIAS ? ConstantHelper::RECEIVABLE : ConstantHelper::PAYABLE;
-        $ledger_group = Group::where('organization_id', Helper::getAuthenticatedUser()->organization_id)
-            ->where('name', $ledger_account)
-            ->first() ?? Group::whereNull('organization_id')->where('name', $ledger_account)->first();
-
+        $ledger_group = Helper::getGroupsQuery()->where('name', $ledger_account)->first(); 
+            
 
         $ids = [];
         $group_id = $ledger_group->getAllChildIds();
@@ -271,10 +269,7 @@ class PaymentVoucherController extends Controller
         $document_type = $request->document_type;
         $cost_center = $request->cost_center_id;
         $banks = Bank::withDefaultGroupCompanyOrg()->get();
-        $groupId = Group::where(function ($q) {
-            $q->whereNull('organization_id');
-            $q->OrWhere('organization_id', Helper::getAuthenticatedUser()->organization_id);
-        })->where('name', 'Cash-in-Hand')->value('id');
+        $groupId = Helper::getGroupsQuery()->where('name', 'Cash-in-Hand')->value('id');
 
         $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($groupId) {
             $query->whereJsonContains('ledger_group_id', (string) $groupId)
@@ -330,10 +325,7 @@ class PaymentVoucherController extends Controller
         $books = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
         $books_t = Helper::getAccessibleServicesFromMenuAlias('vouchers')['services'];
         $banks = Bank::withDefaultGroupCompanyOrg()->with('bankDetails')->get();
-        $groupId = Group::where(function ($q) {
-            $q->whereNull('organization_id');
-            $q->OrWhere('organization_id', Helper::getAuthenticatedUser()->organization_id);
-        })->where('name', 'Cash-in-Hand')->value('id');
+        $groupId = Helper::getGroupsQuery()->where('name', 'Cash-in-Hand')->value('id');
 
         $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($groupId) {
             $query->whereJsonContains('ledger_group_id', (string) $groupId) // Cast groupId to string
@@ -428,10 +420,7 @@ class PaymentVoucherController extends Controller
                     $voucher->account_id = $request->account_id;
                 }
             } else {
-                $groupId = Group::where(function ($q) {
-                    $q->whereNull('organization_id');
-                    $q->OrWhere('organization_id', Helper::getAuthenticatedUser()->organization_id);
-                })->where('name', 'Cash-in-Hand')->value('id');
+                $groupId = Helper::getGroupsQuery()->where('name', 'Cash-in-Hand')->value('id');
                 $voucher->ledger_id = $request->ledger_id;
                 $voucher->ledger_group_id = $groupId;
             }
@@ -615,10 +604,7 @@ class PaymentVoucherController extends Controller
         $history = Helper::getApprovalHistory($data->book_id, $id, $revNo);
 
         $banks = Bank::withDefaultGroupCompanyOrg()->with('bankDetails')->get();
-        $groupId = Group::where(function ($q) {
-            $q->whereNull('organization_id');
-            $q->OrWhere('organization_id', Helper::getAuthenticatedUser()->organization_id);
-        })->where('name', 'Cash-in-Hand')->value('id');
+        $groupId = Helper::getGroupsQuery()->where('name', 'Cash-in-Hand')->value('id');
 
         $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($groupId) {
             $query->whereJsonContains('ledger_group_id', (string) $groupId)
@@ -768,10 +754,7 @@ class PaymentVoucherController extends Controller
                 $voucher->ledger_id = $bank->ledger_id;
                 $voucher->ledger_group_id = $bank->ledger_group_id;
             } else {
-                $groupId = Group::where(function ($q) {
-                    $q->whereNull('organization_id')
-                        ->orWhere('organization_id', Helper::getAuthenticatedUser()->organization_id);
-                })->where('name', 'Cash-in-Hand')->value('id');
+                $groupId = Helper::getGroupsQuery()->where('name', 'Cash-in-Hand')->value('id');
     
                 $voucher->ledger_id = $request->ledger_id;
                 $voucher->ledger_group_id = $groupId;

@@ -488,19 +488,19 @@
                     $('#startDate').text((data['startDate']).toLocaleString('en-IN'));
                     $('#endDate').text((data['endDate']).toLocaleString('en-IN'));
                     if (data['data']['grossProfit'] == 0) {
-    $('.grossProfit').closest('tr').find('td, th').html('');
+    $('.grossProfit').closest('tr').find('td, th').html('&nbsp;');
 }
 
 if (data['data']['grossLoss'] == 0) {
-    $('.grossLoss').closest('tr').find('td, th').html('');
+    $('.grossLoss').closest('tr').find('td, th').html('&nbsp;');
 }
 
 if (data['data']['netProfit'] == 0) {
-    $('#netProfit').closest('tr').find('td, th').html('');
+    $('#netProfit').closest('tr').find('td, th').html('&nbsp;');
 }
 
 if (data['data']['netLoss'] == 0) {
-    $('#netLoss').closest('tr').find('td, th').html('');
+    $('#netLoss').closest('tr').find('td, th').html('&nbsp;');
 }
 
                     if (feather) {

@@ -2090,7 +2090,8 @@ class Helper
     }
 
     // Correct Net Profit/Loss Logic
-    if ($grossProfit > 0) {
+     // Correct Net Profit/Loss Logic
+    if ($grossProfit >= 0) {
         $net = $grossProfit + $indirectIncome - $indirectExpense;
         if ($net >= 0) {
             $netProfit = $net;
@@ -2099,7 +2100,7 @@ class Helper
             $netProfit = 0;
             $netLoss = abs($net);
         }
-    } elseif ($grossLoss > 0) {
+    } elseif ($grossLoss >= 0) {
         $net = $grossLoss + $indirectExpense - $indirectIncome;
         if ($net >= 0) {
             $netLoss = $net;
@@ -2113,9 +2114,9 @@ class Helper
     // Final overall total
    $overAllTotal = max($saleInd, $purchaseInd); // optional fallback
 
-if ($grossProfit > 0 || $netProfit > 0) {
+if ($grossProfit >= 0 || $netProfit >= 0) {
     $overAllTotal = $saleInd;
-} elseif ($grossLoss > 0 || $netLoss > 0) {
+} elseif ($grossLoss >= 0 || $netLoss >= 0) {
     $overAllTotal = $purchaseInd;
 }
 
@@ -2447,46 +2448,6 @@ if ($grossProfit > 0 || $netProfit > 0) {
             return ['data' => [], 'message' => "No record found!", 'status' => 404];
         }
         return $book->amendment ?? null;
-    }
-    /*Created helper for the get created bom cost*/
-    public static function getChildBomItemCost($itemId, $selectedAttributes)
-    {
-        $selectedAttributes = is_string($selectedAttributes) ? json_decode($selectedAttributes, true) : $selectedAttributes;
-        $type = ['WIP/Semi Finished', 'Finished Goods'];
-        $item = Item::whereHas('subTypes', function ($query) use ($type) {
-            $query->whereHas('subType', function ($subTypeQuery) use($type) {
-                $subTypeQuery ->whereIn('name', $type);
-            });
-        })->find($itemId);
-
-        if (!$item) {
-            return ['cost' => 0, 'status' => 422, 'message' => 'Not header item'];
-        }
-        $bom = Bom::where('item_id', $item->id)/*->where('document_status', ConstantHelper::APPROVED)*/;
-
-        if (!$bom->first()) {
-            return ['cost' => 0, 'status' => 422, 'message' => 'Not found header in BOM'];
-        }
-        $itemAttIds = $item->itemAttributes()->where('required_bom', 1)->pluck('attribute_group_id');
-        foreach ($itemAttIds as $itemAttId) {
-            $vId = null;
-            foreach ($selectedAttributes as $selectedAttribute) {
-                if (@$selectedAttribute['attr_id'] == $itemAttId) {
-                    $vId = @$selectedAttribute['attr_value'];
-                    break;
-                }
-            }
-            $bom = $bom->whereHas('bomAttributes', function ($q1) use ($itemAttId, $vId) {
-                $q1->where('attribute_name', $itemAttId)
-                    ->where('attribute_value', $vId);
-            });
-        }
-        $bom = $bom->first();
-        if ($bom) {
-            $totalValue = $bom->total_value ?? 0;
-            return ['cost' => $totalValue, 'route' => route('bill.of.material.edit', $bom->id), 'status' => 200, 'message' => 'Fetched BOM header item cost'];
-        }
-        return ['cost' => 0, 'status' => 422, 'message' => 'Not found header in BOM'];
     }
 
     public static function formatNumber($number)

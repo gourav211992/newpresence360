@@ -73,10 +73,10 @@ class SplitController extends Controller
         }
         $firstService = $servicesBooks['services'][0];
         $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
-        $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::SUBMITTED])->get();
+        $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)->get();
         $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->where('organization_id', Helper::getAuthenticatedUser()->organization_id)->select('id', 'name')->get();
         $group_name = ConstantHelper::FIXED_ASSETS;
-        $group = Group::where('organization_id', Helper::getAuthenticatedUser()->organization_id)->where('name', $group_name)->first() ?: Group::whereNull('organization_id')->where('name', $group_name)->first();
+        $group = Helper::getGroupsQuery()->where('name', $group_name)->first();
         $allChildIds = $group->getAllChildIds();
         $allChildIds[] = $group->id;
         $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
@@ -112,6 +112,7 @@ class SplitController extends Controller
             'created_by' => $user->auth_user_id,
             'type' => get_class($user),
             'organization_id' => $user->organization->id,
+            'currency_id'=>$user->organization->currency_id,
             'group_id' => $user->organization->group_id,
             'company_id' => $user->organization->company_id,
             'document_status' => $status,
@@ -122,7 +123,7 @@ class SplitController extends Controller
         $data = array_merge($request->all(), $additionalData);
         $grouped = collect(json_decode($request->sub_assets))->groupBy('asset_code');
         $parentURL = request() -> segments()[0];
-        $parentURL = "fixed-asset_registration";
+        $parentURL = "fixed-asset_split";
         
         
         

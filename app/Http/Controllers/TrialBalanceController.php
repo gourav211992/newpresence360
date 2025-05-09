@@ -332,10 +332,6 @@ class TrialBalanceController extends Controller
     public function get_org_ledgers($id)
     {
         $data = Ledger::withDefaultGroupCompanyOrg()
-        ->where(function ($query) use ($id) {
-            $query->whereNull('organization_id')
-                  ->orWhere('organization_id', $id);
-        })
         ->where('status', 1)
         ->select('id', 'name')
         ->orderBy('name', 'asc')
