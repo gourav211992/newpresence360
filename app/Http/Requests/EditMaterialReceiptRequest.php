@@ -30,6 +30,8 @@ class EditMaterialReceiptRequest extends FormRequest
         $rules = [
             'book_id' => 'required',
             'document_number' => 'nullable|max:50', // Default rule for document_number
+            'header_store_id' => 'required',
+            'sub_store_id' => 'required',
             'vendor_id' => 'nullable',
             'currency_id' => 'nullable',
             'payment_term_id' => 'nullable',
@@ -65,7 +67,6 @@ class EditMaterialReceiptRequest extends FormRequest
         $rules['components.*.order_qty'] = 'required|numeric';
         $rules['components.*.accepted_qty'] = 'required|numeric';
         $rules['components.*.rate'] = 'required|numeric';
-        $rules['components.*.store_id'] = 'required|numeric';
         $rules['components.*.remark'] = 'nullable|max:250';
 
         return $rules;
@@ -75,6 +76,8 @@ class EditMaterialReceiptRequest extends FormRequest
     {
         return [
             'book_id.required' => 'The series is required.',
+            'header_store_id.required' => 'Location is required',
+            'sub_store_id.required' => 'Store is required',
             'gate_entry_no.required' => 'Gate Entry No is required.',
             'gate_entry_date.required' => 'Gate Entry Date is required.',
             'eway_bill_no.required' => 'Eway Bill No is required.',
@@ -92,7 +95,6 @@ class EditMaterialReceiptRequest extends FormRequest
             'components.*.order_qty.required' => 'Order Qty is required',
             'components.*.accepted_qty.required' => 'Accepted Qty is required',
             'components.*.rate.required' => 'Rate is required',
-            'components.*.store_id.required' => 'Store is required',
             'components.*.attr_group_id.*.attr_name.required' => 'Select Attribute',
             'components.*.order_qty.numeric' => 'Order Qty must be integer',
             'components.*.accepted_qty.numeric' => 'Accepted Qty must be integer',

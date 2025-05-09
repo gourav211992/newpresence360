@@ -2,6 +2,12 @@
 
 namespace App\Helpers;
 
+use App\Helpers\TransactionReport\expenseReportHelper;
+use App\Helpers\TransactionReport\geReportHelper;
+use App\Helpers\TransactionReport\mrnReportHelper;
+use App\Helpers\TransactionReport\pbReportHelper;
+use App\Helpers\TransactionReport\prReportHelper;
+
 class TransactionReportHelper
 {
     //Report filter routes mapping
@@ -10,8 +16,19 @@ class TransactionReportHelper
         ConstantHelper::SI_SERVICE_ALIAS => 'sale.invoice.report',
         ConstantHelper::SR_SERVICE_ALIAS => 'sale.return.report',
         ConstantHelper::MATERIAL_RETURN_SERVICE_ALIAS_NAME => 'material.return.report',
-        ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME => 'material.issue.report',
+        ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME => 'mi.report',
         ConstantHelper::MRN_SERVICE_ALIAS => 'material-receipt.order.report',
+        ConstantHelper::GATE_ENTRY_SERVICE_ALIAS => 'gate-entry.order.report',
+        ConstantHelper::EXPENSE_ADVISE_SERVICE_ALIAS => 'expense-adv.order.report',
+        ConstantHelper::PB_SERVICE_ALIAS => 'purchase-bill.order.report',
+        ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS => 'purchase-return.order.report',
+    ];
+    const INDEX_ROUTES = [
+        ConstantHelper::SO_SERVICE_ALIAS => 'sale.order.index',
+        ConstantHelper::SI_SERVICE_ALIAS => 'sale.invoice.index',
+        ConstantHelper::SR_SERVICE_ALIAS => 'sale.return.index',
+        ConstantHelper::MATERIAL_RETURN_SERVICE_ALIAS_NAME => 'material.return.index',
+        ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME => 'material.issue.index',
     ];
     const SO_TABLE_HEADERS = [
         [
@@ -1683,351 +1700,17 @@ class TransactionReportHelper
         ],
     ];
 
-    // MRN Headers and Filters
-    const MRN_TABLE_HEADERS = [
-        [
-            'name' => 'S. No',
-            'field' => 'DT_RowIndex',
-            'header_class' => '',
-            'column_class' => '',
-            'header_style' => '',
-            'column_style' => '',
-        ],
-        [
-            'name' => 'Series',
-            'field' => 'book_code',
-            'header_class' => '',
-            'column_class' => 'no-wrap',
-            'header_style' => '',
-            'column_style' => '',
-        ],
-        [
-            'name' => 'MRN No',
-            'field' => 'document_number',
-            'header_class' => '',
-            'column_class' => 'no-wrap',
-            'header_style' => '',
-            'column_style' => '',
-        ],
-        [
-            'name' => 'MRN Date',
-            'field' => 'document_date',
-            'header_class' => '',
-            'column_class' => 'no-wrap',
-            'header_style' => '',
-            'column_style' => '',
-        ],
-        [
-            'name' => 'PO NO',
-            'field' => 'po_no',
-            'header_class' => '',
-            'column_class' => 'no-wrap',
-            'header_style' => '',
-            'column_style' => '',
-        ],
-        [
-            'name' => 'Gate Entry No',
-            'field' => 'ge_no',
-            'header_class' => '',
-            'column_class' => 'no-wrap',
-            'header_style' => '',
-            'column_style' => '',
-        ],
-        [
-            'name' => 'SO No',
-            'field' => 'so_no',
-            'header_class' => '',
-            'column_class' => 'no-wrap',
-            'header_style' => '',
-            'column_style' => '',
-        ],
-        [
-            'name' => 'LOT No',
-            'field' => 'lot_no',
-            'header_class' => '',
-            'column_class' => 'no-wrap',
-            'header_style' => '',
-            'column_style' => '',
-        ],
-        [
-            'name' => 'Vendor',
-            'field' => 'vendor_name',
-            'header_class' => '',
-            'column_class' => 'no-wrap',
-            'header_style' => '',
-            'column_style' => '',
-        ],
-        [
-            'name' => 'Vendor Rating',
-            'field' => 'vendor_rating',
-            'header_class' => '',
-            'column_class' => 'no-wrap',
-            'header_style' => '',
-            'column_style' => '',
-        ],
-        [
-            'name' => 'Category',
-            'field' => 'category_name',
-            'header_class' => '',
-            'column_class' => 'no-wrap',
-            'header_style' => '',
-            'column_style' => '',
-        ],
-        [
-            'name' => 'Sub Category',
-            'field' => 'sub_category_name',
-            'header_class' => '',
-            'column_class' => 'no-wrap',
-            'header_style' => '',
-            'column_style' => '',
-        ],
-        [
-            'name' => 'Item type',
-            'field' => 'item_type',
-            'header_class' => '',
-            'column_class' => 'no-wrap',
-            'header_style' => '',
-            'column_style' => '',
-        ],
-        [
-            'name' => 'Sub type',
-            'field' => 'sub_type',
-            'header_class' => '',
-            'column_class' => 'no-wrap',
-            'header_style' => '',
-            'column_style' => '',
-        ],
-        [
-            'name' => 'Item',
-            'field' => 'item_name',
-            'header_class' => '',
-            'column_class' => 'no-wrap',
-            'header_style' => '',
-            'column_style' => '',
-        ],
-        [
-            'name' => 'Item Code',
-            'field' => 'item_code',
-            'header_class' => '',
-            'column_class' => 'no-wrap',
-            'header_style' => '',
-            'column_style' => '',
-        ],
-        [
-            'name' => 'Receipt Qty',
-            'field' => 'receipt_qty',
-            'header_class' => '',
-            'column_class' => 'no-wrap',
-            'header_style' => '',
-            'column_style' => '',
-        ],
-        [
-            'name' => 'Accepted Qty',
-            'field' => 'accepted_qty',
-            'header_class' => 'numeric-alignment',
-            'column_class' => 'text-end',
-            'header_style' => '',
-            'column_style' => '',
-        ],
-        [
-            'name' => 'Rejected Qty',
-            'field' => 'rejected_qty',
-            'header_class' => 'numeric-alignment',
-            'column_class' => 'text-end',
-            'header_style' => '',
-            'column_style' => '',
-        ],
-        [
-            'name' => 'Purchase Return Qty',
-            'field' => 'pr_qty',
-            'header_class' => 'numeric-alignment',
-            'column_class' => 'text-end',
-            'header_style' => '',
-            'column_style' => '',
-        ],
-        [
-            'name' => 'Purchase Return Rejected Qty',
-            'field' => 'pr_rejected_qty',
-            'header_class' => 'numeric-alignment',
-            'column_class' => 'text-end',
-            'header_style' => '',
-            'column_style' => '',
-        ],
-        [
-            'name' => 'Purchase Bill Qty',
-            'field' => 'purchase_bill_qty',
-            'header_class' => 'numeric-alignment',
-            'column_class' => 'text-end',
-            'header_style' => '',
-            'column_style' => '',
-        ],
-        [
-            'name' => 'Location',
-            'field' => 'store_name',
-            'header_class' => '',
-            'column_class' => 'no-wrap',
-            'header_style' => '',
-            'column_style' => '',
-        ],
-        [
-            'name' => 'Store',
-            'field' => 'sub_store_name',
-            'header_class' => '',
-            'column_class' => 'no-wrap',
-            'header_style' => '',
-            'column_style' => '',
-        ],
-        [
-            'name' => 'Rate',
-            'field' => 'rate',
-            'header_class' => 'numeric-alignment',
-            'column_class' => 'text-end',
-            'header_style' => '',
-            'column_style' => '',
-        ],
-        [
-            'name' => 'Basic Value',
-            'field' => 'basic_value',
-            'header_class' => 'numeric-alignment',
-            'column_class' => 'text-end',
-            'header_style' => '',
-            'column_style' => '',
-        ],
-        [
-            'name' => 'Item Discount',
-            'field' => 'item_discount',
-            'header_class' => 'numeric-alignment',
-            'column_class' => 'text-end',
-            'header_style' => '',
-            'column_style' => '',
-        ],
-        [
-            'name' => 'Header Discount',
-            'field' => 'header_discount',
-            'header_class' => 'numeric-alignment',
-            'column_class' => 'text-end',
-            'header_style' => '',
-            'column_style' => '',
-        ],
-        [
-            'name' => 'Item Amount',
-            'field' => 'item_amount',
-            'header_class' => 'numeric-alignment',
-            'column_class' => 'text-end',
-            'header_style' => '',
-            'column_style' => '',
-        ],
-        [
-            'name' => 'Status',
-            'field' => 'status',
-            'header_class' => '',
-            'column_class' => 'no-wrap',
-            'header_style' => 'text-align:center',
-            'column_style' => '',
-        ],
-    ];
-    const MRN_FILTERS = [
-        [
-            'colSpan' => 'auto',
-            'label' => 'PO No',
-            'id' => 'po_no',
-            'requestName' => 'po_no',
-            'term' => 'po_document_qt',
-            'value_key' => 'id',
-            'label_key' => 'document_number',
-            'type' => 'auto_complete'
-        ],
-        [
-            'colSpan' => 'auto',
-            'label' => 'GE No',
-            'id' => 'gate_entry_no',
-            'requestName' => 'gate_entry_no',
-            'term' => 'gate_entry_no',
-            'value_key' => 'id',
-            'label_key' => 'document_number',
-            'type' => 'input_text'
-        ],
-        [
-            'colSpan' => 'auto',
-            'label' => 'SO No',
-            'id' => 'so_no',
-            'requestName' => 'so_no',
-            'term' => 'report_so_documents',
-            'value_key' => 'id',
-            'label_key' => 'document_number',
-            'type' => 'auto_complete'
-        ],
-        [
-            'colSpan' => 'auto',
-            'label' => 'LOT No',
-            'id' => 'lot_no',
-            'requestName' => 'lot_no',
-            'term' => 'lot_no',
-            'value_key' => 'id',
-            'label_key' => 'lot_no',
-            'type' => 'input_text'
-        ],
-        [
-            'colSpan' => 'auto',
-            'label' => 'Item',
-            'id' => 'item_filter',
-            'requestName' => 'item_id',
-            'term' => 'report_items',
-            'value_key' => 'id',
-            'label_key' => 'item_name',
-            'type' => 'auto_complete'
-        ],
-        [
-            'colSpan' => 'auto',
-            'label' => 'Status',
-            'id' => 'status',
-            'requestName' => 'status',
-            'term' => 'document_statuses',
-            'value_key' => 'id',
-            'label_key' => 'name',
-            'type' => 'auto_complete'
-        ],
-        [
-            'colSpan' => 'auto',
-            'label' => 'Vendor',
-            'id' => 'vendor',
-            'requestName' => 'vendor',
-            'term' => 'vendor_company_list',
-            'value_key' => 'id',
-            'label_key' => 'name',
-            'type' => 'auto_complete'
-        ],
-        [
-            'colSpan' => 'auto',
-            'label' => 'Item Category',
-            'id' => 'm_category_id',
-            'requestName' => 'm_category_id',
-            'term' => 'category',
-            'value_key' => 'id',
-            'label_key' => 'name',
-            'type' => 'auto_complete',
-            'dependent' => ['m_subcategory_id', 'item_filter']
-        ],
-        [
-            'colSpan' => 'auto',
-            'label' => 'Item Sub Category',
-            'id' => 'm_subcategory_id',
-            'requestName' => 'm_subcategory_id',
-            'term' => 'subcategory',
-            'value_key' => 'id',
-            'label_key' => 'name',
-            'type' => 'auto_complete',
-            'dependent' => ['item_filter']
-        ],
-    ];
-
     const FILTERS_MAPPING = [
         ConstantHelper::SO_SERVICE_ALIAS => self::SO_FILTERS,
         ConstantHelper::SI_SERVICE_ALIAS => self::SI_FILTERS,
         ConstantHelper::SR_SERVICE_ALIAS => self::SR_FILTERS,
         ConstantHelper::MATERIAL_RETURN_SERVICE_ALIAS_NAME => self::MATERIAL_RETURN_SERVICE_ALIAS_NAME_FILTERS,
         ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME => self::MATERIAL_ISSUE_SERVICE_ALIAS_NAME_FILTERS,
-        ConstantHelper::MRN_SERVICE_ALIAS => self::MRN_FILTERS
+        ConstantHelper::MRN_SERVICE_ALIAS => mrnReportHelper::MRN_FILTERS,
+        ConstantHelper::GATE_ENTRY_SERVICE_ALIAS => geReportHelper::GE_FILTERS,
+        ConstantHelper::EXPENSE_ADVISE_SERVICE_ALIAS => expenseReportHelper::EXPENSE_FILTERS,
+        ConstantHelper::PB_SERVICE_ALIAS => pbReportHelper::PB_FILTERS,
+        ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS => prReportHelper::PR_FILTERS
     ];
     const TABLE_HEADERS = [
         ConstantHelper::SO_SERVICE_ALIAS => self::SO_TABLE_HEADERS,
@@ -2035,6 +1718,10 @@ class TransactionReportHelper
         ConstantHelper::SR_SERVICE_ALIAS => self::SR_TABLE_HEADERS,
         ConstantHelper::MATERIAL_RETURN_SERVICE_ALIAS_NAME => self::MATERIAL_RETURN_SERVICE_ALIAS_NAME_TABLE_HEADERS,
         ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME => self::MATERIAL_ISSUE_SERVICE_ALIAS_NAME_TABLE_HEADERS,
-        ConstantHelper::MRN_SERVICE_ALIAS => self::MRN_TABLE_HEADERS
+        ConstantHelper::MRN_SERVICE_ALIAS => mrnReportHelper::MRN_TABLE_HEADERS,
+        ConstantHelper::GATE_ENTRY_SERVICE_ALIAS => geReportHelper::GE_TABLE_HEADERS,
+        ConstantHelper::EXPENSE_ADVISE_SERVICE_ALIAS => expenseReportHelper::EXPENSE_TABLE_HEADERS,
+        ConstantHelper::PB_SERVICE_ALIAS => pbReportHelper::PB_TABLE_HEADERS,
+        ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS => prReportHelper::PR_TABLE_HEADERS
     ];
 }

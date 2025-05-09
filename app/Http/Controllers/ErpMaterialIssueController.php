@@ -9,7 +9,6 @@ use App\Helpers\Helper;
 use App\Helpers\InventoryHelper;
 use App\Helpers\ItemHelper;
 use App\Helpers\NumberHelper;
-use App\Helpers\SaleModuleHelper;
 use App\Helpers\ServiceParametersHelper;
 use App\Helpers\UserHelper;
 use App\Http\Requests\ErpMaterialIssueRequest;
@@ -132,6 +131,18 @@ class ErpMaterialIssueController extends Controller
                 ->editColumn('grand_total_amount', function ($row) {
                     return number_format($row->total_amount,2);
                 })
+                ->editColumn('from_store_code',function($row){
+                    return $row?->from_store?->store_name ?? "N/A";
+                })
+                ->editColumn('from_sub_store_code',function($row){
+                    return $row?->from_sub_store?->name ?? "N/A";
+                })
+                ->editColumn('to_store_code',function($row){
+                    return $row?->to_store?->store_name ?? "N/A";
+                })
+                ->editColumn('to_sub_store_code',function($row){
+                    return $row?->to_sub_store?->name ?? "N/A";
+                })
                 ->rawColumns(['document_status'])
                 ->make(true);
             }
@@ -168,6 +179,7 @@ class ErpMaterialIssueController extends Controller
         $stations = Station::withDefaultGroupCompanyOrg()
         ->where('status', ConstantHelper::ACTIVE)
         ->get();
+        $stockTypes = InventoryHelper::getStockType();
         $data = [
             'user' => $user,
             'services' => $servicesBooks['services'],
@@ -182,7 +194,8 @@ class ErpMaterialIssueController extends Controller
             'selectedDepartmentId' => $departments['selectedDepartmentId'],
             'requesters' => $users,
             'selectedUserId' => null,
-            'redirect_url' => $redirectUrl
+            'redirect_url' => $redirectUrl,
+            'stockTypes' => $stockTypes
         ];
         return view('materialIssue.create_edit', $data);
     }
@@ -195,14 +208,14 @@ class ErpMaterialIssueController extends Controller
             $servicesBooks = [];
             if (isset($request -> revisionNumber))
             {
-                $doc = ErpMaterialIssueHeaderHistory::with(['book']) -> with('items', function ($query) {
+                $doc = ErpMaterialIssueHeaderHistory::with(['book', 'media_files']) -> with('items', function ($query) {
                     $query -> with(['from_item_locations', 'to_item_locations']) -> with(['item' => function ($itemQuery) {
                         $itemQuery -> with(['specifications', 'alternateUoms.uom', 'uom']);
                     }]);
                 }) -> where('source_id', $id)->first();
                 $ogDoc = ErpMaterialIssueHeader::find($id);
             } else {
-                $doc = ErpMaterialIssueHeader::with(['book']) -> with('items', function ($query) {
+                $doc = ErpMaterialIssueHeader::with(['book', 'media_files']) -> with('items', function ($query) {
                     $query -> with(['from_item_locations', 'to_item_locations']) -> with(['item' => function ($itemQuery) {
                         $itemQuery -> with(['specifications', 'alternateUoms.uom', 'uom']);
                     }]);
@@ -250,8 +263,9 @@ class ErpMaterialIssueController extends Controller
             $departments = UserHelper::getDepartments($user -> auth_user_id);
             $users = AuthUser::select('id', 'name') -> where('organization_id', $user -> organization_id) 
             -> where('status', ConstantHelper::ACTIVE) -> get();   
-            $toSubStores = InventoryHelper::getAccesibleSubLocations($doc -> to_store_id, 0, ConstantHelper::ERP_SUB_STORE_LOCATION_TYPES);
-            $fromSubStores = InventoryHelper::getAccesibleSubLocations($doc -> from_store_id, 0, [ConstantHelper::STOCKK, ConstantHelper::SHOP_FLOOR]);
+            $toSubStores = InventoryHelper::getAccesibleSubLocations($doc -> to_store_id ?? 0, 0, ConstantHelper::ERP_SUB_STORE_LOCATION_TYPES);
+            $fromSubStores = InventoryHelper::getAccesibleSubLocations($doc -> from_store_id ?? 0, 0, [ConstantHelper::STOCKK, ConstantHelper::SHOP_FLOOR]);
+            $stockTypes = InventoryHelper::getStockType();
             $data = [
                 'user' => $user,
                 'series' => $books,
@@ -273,7 +287,8 @@ class ErpMaterialIssueController extends Controller
                 'selectedUserId' => $doc ?-> user_id,
                 'toSubStores' => $toSubStores,
                 'fromSubStores' => $fromSubStores,
-                'redirect_url' => $redirect_url
+                'redirect_url' => $redirect_url,
+                'stockTypes' => $stockTypes
             ];
             return view('materialIssue.create_edit', $data);  
         } catch(Exception $ex) {
@@ -282,6 +297,7 @@ class ErpMaterialIssueController extends Controller
     }
     public function store(ErpMaterialIssueRequest $request)
     {
+        
         try {
             //Reindex
             $request -> item_qty =  array_values($request -> item_qty);
@@ -326,7 +342,8 @@ class ErpMaterialIssueController extends Controller
             }
             $materialIssue = null;
             $fromStore = ErpStore::find($request -> store_from_id);
-            $toStoreId = ($request -> issue_type === 'Sub Contracting' ? $request -> vendor_store_id : $request -> store_to_id);
+            $toStoreId = ($request->store_to_id);
+            $toSubStoreId = ($request -> issue_type === 'Sub Contracting' ? $request -> vendor_store_id : $request -> sub_store_to_id);
             $toStore = ErpStore::find($toStoreId);
             $vendor = Vendor::find($request -> vendor_id);
             if($request -> requester_type == 'User') {
@@ -339,9 +356,15 @@ class ErpMaterialIssueController extends Controller
                 $materialIssue = ErpMaterialIssueHeader::find($request -> material_issue_id);
                 $materialIssue -> document_date = $request -> document_date;
                 //Store and department keys
+                //From
                 $materialIssue -> from_store_id = $request -> store_from_id ?? null;
+                $materialIssue -> from_sub_store_id = $request -> sub_store_from_id ?? null;
+                $materialIssue -> from_station_id = $request -> station_from_id ?? null;
                 $materialIssue -> from_store_code = $fromStore ?-> from_store_code ?? null;
-                $materialIssue -> to_store_id = $request -> store_to_id ?? null;
+                //To
+                $materialIssue -> to_store_id = $toStoreId;
+                $materialIssue -> to_sub_store_id = $toSubStoreId ?? null;
+                $materialIssue -> to_station_id = $request -> station_to_id ?? null;
                 $materialIssue -> to_store_code = $toStore ?-> to_store_code ?? null;
                 $materialIssue -> remarks = $request -> final_remarks;
                 $actionType = $request -> action_type ?? '';
@@ -414,11 +437,17 @@ class ErpMaterialIssueController extends Controller
                     'document_date' => $request -> document_date,
                     'revision_number' => 0,
                     'revision_date' => null,
+                    //FROM
                     'from_store_id' => $request -> store_from_id ?? null,
+                    'from_sub_store_id' => $request -> sub_store_from_id ?? null,
+                    'from_station_id' => $request -> station_from_id ?? null,
                     'from_store_code' => $fromStore ?-> store_name ?? null,
+                    //TO
                     'to_store_id' => $toStoreId ?? null,
                     'to_store_code' => $toStore ?-> store_name ?? null,
-                    'station_id' => $request -> station_id ?? null,
+                    'to_sub_store_id' => $toSubStoreId ?? null,
+                    'to_station_id' => $request -> station_to_id ?? null,
+
                     'vendor_id' => $request -> issue_type == "Sub Contracting" ? ($request -> vendor_id) : null,
                     'vendor_code' => $request -> issue_type == "Sub Contracting" ? ($vendor ?-> company_name) : null,
                     'department_id' => $request -> department_id ?? null,
@@ -509,12 +538,20 @@ class ErpMaterialIssueController extends Controller
                                 'hsn_code' => $item -> hsn ?-> code,
                                 'uom_id' => isset($request -> uom_id[$itemKey]) ? $request -> uom_id[$itemKey] : null, //Need to change
                                 'uom_code' => isset($uom) ? $uom -> name : null,
-                                'from_store_id' => $fromStore ?-> id,
+                                //FROM
+                                'from_store_id' => isset($request -> item_store_from[$itemKey]) ? $request -> item_store_from[$itemKey] : null,
                                 'from_sub_store_id' => isset($request -> item_sub_store_from[$itemKey]) ? $request -> item_sub_store_from[$itemKey] : null,
+                                'from_station_id' => isset($request -> item_station_from[$itemKey]) ? $request -> item_station_from[$itemKey] : null,
                                 'from_store_code' => $fromStore ?-> store_code,
+                                //TO
                                 'to_store_id' => $toStore ?-> id,
-                                'to_sub_store_id' => isset($request -> item_sub_store_to[$itemKey]) ? $request -> item_sub_store_to[$itemKey] : null,
+                                'to_sub_store_id' => $toSubStoreId ?? null,
+                                'to_station_id' => isset($request -> item_station_to[$itemKey]) ? $request -> item_station_to[$itemKey] : null,
                                 'to_store_code' => $toStore ?-> store_code,
+                                //Stock Type
+                                'stock_type' => isset($request -> stock_type[$itemKey]) ? $request -> stock_type[$itemKey] : InventoryHelper::STOCK_TYPE_REGULAR,
+                                'wip_station_id' => isset($request -> wip_station_id[$itemKey]) ? $request -> wip_station_id[$itemKey] : null,
+
                                 'issue_qty' => isset($request -> item_qty[$itemKey]) ? $request -> item_qty[$itemKey] : 0,
                                 'inventory_uom_id' => $item -> uom ?-> id,
                                 'inventory_uom_code' => $item -> uom ?-> name,
@@ -563,10 +600,14 @@ class ErpMaterialIssueController extends Controller
                             'uom_code' => $itemDataValue['uom_code'],
                             'from_store_id' => $itemDataValue['from_store_id'],
                             'from_sub_store_id' => $itemDataValue['from_sub_store_id'],
+                            'from_staion_id' => $itemDataValue['from_station_id'],
                             'from_store_code' => $itemDataValue['from_store_code'],
                             'to_store_id' => $itemDataValue['to_store_id'],
                             'to_sub_store_id' => $itemDataValue['to_sub_store_id'],
+                            'to_station_id' => $itemDataValue['to_station_id'],
                             'to_store_code' => $itemDataValue['to_store_code'],
+                            'stock_type' => $itemDataValue['stock_type'],
+                            'wip_station_id' => $itemDataValue['wip_station_id'],
                             'issue_qty' => $itemDataValue['issue_qty'],
                             'inventory_uom_id' => $itemDataValue['inventory_uom_id'],
                             'inventory_uom_code' => $itemDataValue['inventory_uom_code'],
@@ -841,7 +882,8 @@ class ErpMaterialIssueController extends Controller
         $receiptDetailIds = [];
         foreach ($items as $item) {
             $tosubStore = ErpSubStore::find($item -> to_sub_store_id);
-            if (isset($tosubStore) && $tosubStore -> type === ConstantHelper::STOCKK) {
+            if (isset($tosubStore) && ($tosubStore -> type === ConstantHelper::STOCKK || 
+            $tosubStore -> type === ConstantHelper::SHOP_FLOOR || $tosubStore -> type === ConstantHelper::VENDOR_STORE)) {
                 array_push($receiptDetailIds, $item -> id);
                 //Store Lot no also
                 $lotNumber = InventoryHelper::generateLotNumber($materialIssue -> document_date, $materialIssue -> book_code, $materialIssue -> document_number);
@@ -946,7 +988,7 @@ class ErpMaterialIssueController extends Controller
     public function getVendorStores(Request $request)
     {
         try {
-            $stores = ErpStore::select('id', 'store_name') -> withDefaultGroupCompanyOrg() -> where('status', ConstantHelper::ACTIVE)
+            $stores = ErpSubStore::select('id', 'name') -> where('status', ConstantHelper::ACTIVE)
                 -> whereHas('vendor_stores', function ($subQuery) use($request) {
                     $subQuery -> where('vendor_id', $request -> vendor_id);
                 }) -> get();
@@ -980,6 +1022,8 @@ class ErpMaterialIssueController extends Controller
                         $docQuery -> where('store_id', $request -> location_id);
                     }) -> when($request -> station_id, function ($docQuery) use($request) {
                         $docQuery -> where('station_id', $request -> station_id);
+                    }) -> when($request -> sub_store_id, function ($docQuery) use($request) {
+                        $docQuery -> where('sub_store_id', $request -> sub_store_id);
                     });
                 }) -> with('attributes') -> with('uom') -> with('mo') -> when(count($selectedIds) > 0, function ($refQuery) use($selectedIds) {
                     $refQuery -> whereNotIn('id', $selectedIds);
@@ -1036,9 +1080,24 @@ class ErpMaterialIssueController extends Controller
             $order = isset($order) ? $order -> get() : new Collection();
             foreach ($order as $currentOrder) {
                 $currentOrder -> store_location_code = $currentOrder -> header -> store_location ?-> store_name;
-                $currentOrder -> avl_stock = $currentOrder -> getAvlStock($request -> store_id_from);
+                $currentOrder -> sub_store_code = $currentOrder ?-> header ?-> sub_store ?-> name;
+                $currentOrder -> avl_stock = $currentOrder -> getAvlStock($request -> store_id_from, $request -> sub_store_id_from ?? null, $request -> station_id_from ?? null);
                 $currentOrder -> department_code = $currentOrder ?-> header ?-> department ?-> name;
                 $currentOrder -> station_name = $currentOrder ?-> header ?-> station ?-> name;
+                $currentOrder -> item_name = $currentOrder ?-> item ?-> item_name;
+                $currentOrder -> so_no = $currentOrder ?-> so ?  $currentOrder ?-> so -> book_code . '-' . $currentOrder ?-> so -> document_number : '';
+                if ($request -> doc_type === ConstantHelper::MO_SERVICE_ALIAS) {
+                    if ($currentOrder -> rm_type === 'sf') {
+                        $currentOrder -> item_name .= ('-' . $currentOrder -> station ?-> name);
+                    }
+                }
+                if ($request -> doc_type === ConstantHelper::MO_SERVICE_ALIAS || $request -> doc_type === ConstantHelper::PI_SERVICE_ALIAS 
+                || $request -> doc_type === 'pi') {
+                    foreach ($currentOrder -> attributes as $itemAttr) {
+                        $itemAttr -> attribute_value = $itemAttr -> attr_value;
+                        $itemAttr -> attribute_name = $itemAttr -> attr_name;
+                    }
+                }
             }
             $order = $order -> values();
             return response() -> json([
@@ -1079,6 +1138,11 @@ class ErpMaterialIssueController extends Controller
                 foreach ($header -> items as &$item) {
                     $item -> item_attributes_array = $item -> item_attributes_array();
                     $item -> avl_stock = $item -> getAvlStock($request -> store_id);
+                    if ($request -> doc_type === ConstantHelper::MO_SERVICE_ALIAS) {
+                        if ($item -> rm_type === 'sf') {
+                            $item -> item -> item_name .= ('-' . $item -> station ?-> name);
+                        }
+                    }
                 }
             }
             return response() -> json([

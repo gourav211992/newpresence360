@@ -1936,7 +1936,7 @@ class PoController extends Controller
         if(!$isEdit) {
             $isEdit = $buttons['amend'] && intval(request('amendment') ?? 0) ? true: false;
         }
-        $saleOrders = ErpSaleOrder::whereIn('id', $po->so_id)
+        $saleOrders = ErpSaleOrder::whereIn('id', $po->so_id ?? [])
         ->get();
         return view($view, [
             'users' => $users,

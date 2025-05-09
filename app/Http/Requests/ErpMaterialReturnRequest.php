@@ -30,10 +30,7 @@ class ErpMaterialReturnRequest extends FormRequest
             
             'book_id' => 'required|numeric|integer|exists:erp_books,id',
             'document_no' => [
-                'required',
-                Rule::unique('erp_material_return_header', 'document_number')
-                    ->ignore($this->material_return_id, 'id')
-                    ->where('book_id', $this->input('book_id')), // Fixed direct variable access
+                'required'
             ],
             
             'document_date' => 'required|date',

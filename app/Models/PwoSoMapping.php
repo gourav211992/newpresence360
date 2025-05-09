@@ -82,6 +82,11 @@ class PwoSoMapping extends Model
         return $this->belongsTo(ErpSaleOrder::class,'so_id');
     }
 
+    public function mo()
+    {
+        return $this->belongsTo(MfgOrder::class,'mo_id');
+    }
+
     public function pwo()
     {
         return $this->belongsTo(ErpProductionWorkOrder::class,'pwo_id');

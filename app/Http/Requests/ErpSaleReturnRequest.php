@@ -28,9 +28,7 @@ class ErpSaleReturnRequest extends FormRequest
         return [
             'sale_return_id' => 'numeric|integer',
             'book_id' => 'required|numeric|integer|exists:erp_books,id',
-            'document_no' => ['required',Rule::unique('erp_sale_returns', 'document_number')
-            ->ignore($this->sale_return_id, 'id')
-            ->where('book_id', $this -> book_id)],
+            'document_no' => ['required'],
             'document_date' => 'required|date',
             'reference_no' => 'nullable|string',
             'customer_id' => 'required|numeric|integer|exists:erp_customers,id',

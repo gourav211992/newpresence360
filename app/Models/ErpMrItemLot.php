@@ -13,6 +13,7 @@ class ErpMrItemLot extends Model
         'mr_item_id',
         'lot_number',
         'lot_qty',
+        'so_lot_number',
         'total_lot_qty',
         'original_receipt_date',
         'inventory_uom_qty',

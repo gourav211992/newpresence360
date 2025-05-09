@@ -140,8 +140,7 @@ class PWOController extends Controller
              $mo->remarks = $request->remarks;
              $mo->location_id = $request->store_id;
              $mo->station_wise_consumption = 'yes';
-             $mo->so_tracking_required = $request->so_tracking_required ?? 'no';
-            //  $mo->station_wise_consumption = @$parameters['station_wise_consumption'][0];
+             $mo->so_tracking_required = 'yes';
 
              # Extra Column
              $document_number = $request->document_number ?? null;
@@ -305,6 +304,7 @@ class PWOController extends Controller
                         $moBomMapping->item_code = $bomDetail->item_code;
                         $moBomMapping->attributes = $bomAttributes;
                         $moBomMapping->uom_id = $bomDetail->uom_id;
+                        $moBomMapping->bom_qty = floatval($bomDetail->qty);
                         $moBomMapping->qty = floatval($pwoSoMapping->qty) * floatval($bomDetail->qty);
                         $moBomMapping->station_id = $bomDetail->station_id;
                         $moBomMapping->section_id = $sectionId;
@@ -314,17 +314,10 @@ class PWOController extends Controller
                     }    
                 }
                  # Store Data In MoItem
-                if(strtolower($mo->so_tracking_required) === 'yes') {
-                    $groupedDatas = PwoBomMapping::selectRaw('pwo_id, so_id, item_id, item_code, uom_id, attributes, SUM(qty) as total_qty')
-                    ->where('pwo_id', $mo->id)
-                    ->groupBy('pwo_id', 'so_id', 'item_id', 'item_code', 'uom_id', 'attributes')
-                    ->get();
-                } else {
-                    $groupedDatas = PwoBomMapping::selectRaw('pwo_id, item_id, item_code, uom_id, attributes, SUM(qty) as total_qty')
-                    ->where('pwo_id', $mo->id)
-                    ->groupBy('pwo_id', 'item_id', 'item_code', 'uom_id', 'attributes')
-                    ->get();
-                }
+                 $groupedDatas = PwoBomMapping::selectRaw('pwo_id, so_id, item_id, item_code, uom_id, attributes, SUM(qty) as total_qty')
+                 ->where('pwo_id', $mo->id)
+                 ->groupBy('pwo_id', 'so_id', 'item_id', 'item_code', 'uom_id', 'attributes')
+                 ->get();
                         
 
                  foreach($groupedDatas as $groupedData) {
@@ -953,6 +946,7 @@ class PWOController extends Controller
                         $moBomMapping->item_code = $bomDetail->item_code;
                         $moBomMapping->attributes = $bomAttributes;
                         $moBomMapping->uom_id = $bomDetail->uom_id;
+                        $moBomMapping->bom_qty = floatval($bomDetail->qty);
                         $moBomMapping->qty = floatval($pwoSoMapping->qty) * floatval($bomDetail->qty);
                         $moBomMapping->station_id = $bomDetail->station_id;
                         $moBomMapping->section_id = $sectionId;
@@ -963,17 +957,10 @@ class PWOController extends Controller
                 }
                 
                 # Store Data In MoItem
-                if(strtolower($mo->so_tracking_required) == 'yes') {
-                    $groupedDatas = PwoBomMapping::selectRaw('pwo_id, so_id, item_id, item_code, uom_id, attributes, SUM(qty) as total_qty')
+                $groupedDatas = PwoBomMapping::selectRaw('pwo_id, so_id, item_id, item_code, uom_id, attributes, SUM(qty) as total_qty')
                     ->where('pwo_id', $mo->id)
                     ->groupBy('pwo_id', 'so_id', 'item_id', 'item_code', 'uom_id', 'attributes')
                     ->get();
-                } else {
-                    $groupedDatas = PwoBomMapping::selectRaw('pwo_id, item_id, item_code, uom_id, attributes, SUM(qty) as total_qty')
-                    ->where('pwo_id', $mo->id)
-                    ->groupBy('pwo_id', 'item_id', 'item_code', 'uom_id', 'attributes')
-                    ->get();
-                }
 
                 foreach($groupedDatas as $groupedData) {
                     # PWO Item Save   
@@ -1377,15 +1364,16 @@ class PWOController extends Controller
          $ids = json_decode($request->ids,true) ?? [];
          $ids = array_values(array_unique($ids));
          $isAttribute = intval($request->is_attribute) ?? 0;
-
          if(!$isAttribute) {
-            $selectedData = json_decode($request->selected_items,true); 
-            $saleOrderIds = array_column($selectedData, 'sale_order_id');
-            $itemIds = array_column($selectedData, 'item_id');
-            $ids = ErpSoItem::whereIn('sale_order_id', $saleOrderIds)
-                            ->whereIn('item_id', $itemIds)
-                            ->pluck('id')
-                            ->toArray();
+             $selectedData = json_decode($request->selected_items,true); 
+             $ids = ErpSoItem::where(function ($query) use ($selectedData) {
+                foreach ($selectedData as $selectedItem) {
+                    $query->orWhere(function ($q) use ($selectedItem) {
+                        $q->where('sale_order_id', $selectedItem['sale_order_id'])
+                          ->where('item_id', $selectedItem['item_id']);
+                    });
+                }
+            })->pluck('id')->toArray();
         } 
          $pwoItems = ErpSoItem::whereIn('id', $ids)->get(); 
          $rowCount = intval($request->rowCount) ? intval($request->rowCount) + 1  : 1;

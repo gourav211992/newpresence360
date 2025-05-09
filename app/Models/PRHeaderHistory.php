@@ -1,6 +1,7 @@
 <?php
 namespace App\Models;
 
+use App\Helpers\ConstantHelper;
 use App\Models\User;
 use App\Helpers\Helper;
 use App\Models\Address;
@@ -20,68 +21,70 @@ class PRHeaderHistory extends Model
 
     protected $table = 'erp_purchase_return_headers_history';
     protected $fillable = [
-        'header_id', 
-        'organization_id', 
-        'group_id', 
-        'company_id', 
-        'series_id', 
-        'book_id', 
-        'book_code', 
-        'doc_number_type', 
-        'doc_reset_pattern', 
-        'doc_prefix', 
-        'doc_suffix', 
-        'doc_no', 
-        'vendor_id', 
-        'vendor_code', 
-        'customer_id', 
-        'customer_code', 
-        'document_number', 
-        'document_date', 
-        'document_status', 
-        'revision_number', 
-        'revision_date', 
-        'approval_level', 
-        'reference_number', 
+        'header_id',
+        'organization_id',
+        'group_id',
+        'company_id',
+        'series_id',
+        'book_id',
+        'book_code',
+        'doc_number_type',
+        'doc_reset_pattern',
+        'doc_prefix',
+        'doc_suffix',
+        'doc_no',
+        'vendor_id',
+        'vendor_code',
+        'customer_id',
+        'customer_code',
+        'document_number',
+        'document_date',
+        'document_status',
+        'revision_number',
+        'revision_date',
+        'approval_level',
+        'reference_number',
         'store_id',
         'sub_store_id',
-        'supplier_invoice_no', 
-        'supplier_invoice_date', 
-        'billing_to', 
-        'ship_to', 
-        'billing_address', 
-        'shipping_address', 
-        'currency_id', 
-        'currency_code', 
-        'payment_term_id', 
-        'payment_term_code', 
-        'transaction_currency', 
-        'org_currency_id', 
-        'org_currency_code', 
-        'org_currency_exg_rate', 
-        'comp_currency_id', 
-        'comp_currency_code', 
-        'comp_currency_exg_rate', 
-        'group_currency_id', 
-        'group_currency_code', 
-        'group_currency_exg_rate', 
-        'sub_total', 
-        'total_item_amount', 
-        'item_discount', 
-        'header_discount', 
-        'total_discount', 
-        'gst', 
-        'gst_details', 
-        'taxable_amount', 
-        'total_taxes', 
-        'total_after_tax_amount', 
-        'expense_amount', 
-        'total_amount', 
-        'final_remark', 
-        'status', 
-        'created_by', 
-        'updated_by', 
-        'deleted_by'
+        'supplier_invoice_no',
+        'supplier_invoice_date',
+        'billing_to',
+        'ship_to',
+        'billing_address',
+        'shipping_address',
+        'currency_id',
+        'currency_code',
+        'payment_term_id',
+        'payment_term_code',
+        'transaction_currency',
+        'org_currency_id',
+        'org_currency_code',
+        'org_currency_exg_rate',
+        'comp_currency_id',
+        'comp_currency_code',
+        'comp_currency_exg_rate',
+        'group_currency_id',
+        'group_currency_code',
+        'group_currency_exg_rate',
+        'sub_total',
+        'total_item_amount',
+        'item_discount',
+        'header_discount',
+        'total_discount',
+        'gst',
+        'gst_details',
+        'taxable_amount',
+        'total_taxes',
+        'total_after_tax_amount',
+        'expense_amount',
+        'total_amount',
+        'final_remark',
+        'status',
+        'created_by',
+        'updated_by',
+        'deleted_by',
+        'addressable_id',
+        'qty_return_type'
     ];
 
     protected $casts = [
@@ -133,7 +136,7 @@ class PRHeaderHistory extends Model
     {
         return $this->belongsTo(Vendor::class);
     }
-    
+
     public function customer()
     {
         return $this->belongsTo(Customer::class);
@@ -141,7 +144,7 @@ class PRHeaderHistory extends Model
 
     public function erpStore()
     {
-        return $this->belongsTo(ErpStore::class, 'store_id', 'id');
+        return $this->belongsTo(ErpStore::class, 'store_id');
     }
 
     public function erpSubStore()
@@ -256,5 +259,59 @@ class PRHeaderHistory extends Model
     {
         return $this->belongsTo(User::class,'updated_by');
     }
-    
+
+    public function addresses()
+    {
+        return $this->morphMany(ErpAddress::class, 'addressable', 'addressable_type', 'addressable_id');
+    }
+
+    public function latestBillingAddress()
+    {
+        return $this->addresses()->where('type', 'billing')->latest()->first();
+    }
+
+    public function latestShippingAddress()
+    {
+        return $this->addresses()->where('type', 'shipping')->latest()->first();
+    }
+
+    public function media()
+    {
+        return $this->morphMany(GateEntryMedia::class, 'model');
+    }
+
+    public function getDisplayStatusAttribute()
+    {
+        $status = str_replace('_', ' ', $this->document_status);
+        return ucwords($status);
+    }
+
+    public function getDocumentStatusAttribute()
+    {
+        if ($this->attributes['document_status'] == ConstantHelper::APPROVAL_NOT_REQUIRED) {
+            return ConstantHelper::APPROVED;
+        }
+        return $this->attributes['document_status'];
+    }
+
+    public function bill_address_details()
+    {
+        return $this->morphOne(ErpAddress::class, 'addressable', 'addressable_type', 'addressable_id') -> where('type', 'billing')->with(['city', 'state', 'country']);
+    }
+
+    public function ship_address_details()
+    {
+        return $this->morphOne(ErpAddress::class, 'addressable', 'addressable_type', 'addressable_id') -> where('type', 'shipping')->with(['city', 'state', 'country']);
+    }
+
+    public function store_address()
+    {
+        return $this->morphOne(ErpAddress::class, 'addressable', 'addressable_type', 'addressable_id')->where('type','location')->with(['city', 'state', 'country']);
+    }
+
+    public function irnDetail()
+    {
+        return $this->morphOne(ErpEinvoice::class, 'morphable', 'morphable_type', 'morphable_id');
+    }
+
 }

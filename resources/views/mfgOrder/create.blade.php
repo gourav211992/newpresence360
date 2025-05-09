@@ -3,6 +3,7 @@
 <form class="ajax-input-form" method="POST" action="{{ route('mo.store') }}" data-redirect="{{ route('mo.index') }}" enctype='multipart/form-data'>
     @csrf
 <input type="hidden" name="so_item_ids" id="so_item_ids">
+<input type="hidden" name="station_wise_consumption" id="station_wise_consumption">
 <div class="app-content content ">
    <div class="content-overlay"></div>
    <div class="header-navbar-shadow"></div>
@@ -87,7 +88,7 @@
                                         </select> 
                                     </div> 
                                 </div> 
-                                <div class="row align-items-center mb-1 d-none" id="sub_store_div">
+                                <div class="row align-items-center mb-1" id="sub_store_div">
                                     <div class="col-md-3"> 
                                         <label class="form-label">Sub Location <span class="text-danger">*</span></label>  
                                     </div>  
@@ -182,6 +183,17 @@
                                         <input type = "hidden" id = "customer_id_qt_val"></input>
                                     </div>
                                 </div>
+                                <div class="col">
+                                    <div class="mb-1">
+                                        <label class="form-label">Location</label>
+                                        <select class="form-select" id="filter_store_id" name="filter_store_id">
+                                            <option value=""></option>
+                                            @foreach($locations as $location)
+                                                <option value="{{$location->id}}">{{ $location?->store_name }}</option>
+                                            @endforeach 
+                                        </select> 
+                                    </div>
+                                </div>
                                 <div class="col mb-1">
                                     <label class="form-label">&nbsp;</label><br/>
                                     {{-- <button type="button" class="btn btn-primary btn-sm searchPiBtn"><i data-feather="search"></i> Search</button> --}}
@@ -202,6 +214,7 @@
                                         <th width="200px">Series</th>
                                         <th width="150px">Doc No.</th>
                                         <th width="100px">Doc Date</th>
+                                        <th width="100px">Location</th>
                                         <th width="150px">Product Code</th>
                                         <th width="300px">Product Name</th>
                                         <th>Attributes</th>
@@ -697,6 +710,7 @@ function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1,
 function getPwo() 
 {
     let itemId = $("#item_id").val() || '';
+    let storeId = $("#filter_store_id").val() || '';
     let header_book_id = $("#book_id").val() || '';
     let stationId = $("#station_id").val() || '';
     let series_id = $("#pwo_book_id_qt_val").val() || ''; // pwo
@@ -705,7 +719,7 @@ function getPwo()
     let so_document_number = $("#so_document_no_input_qt").val() || '';// so
     let actionUrl = '{{ route("mo.get.pwo.create") }}';
     let customerId = $("#customer_id_qt_val").val() || '';
-    let fullUrl = `${actionUrl}?series_id=${encodeURIComponent(series_id)}&document_number=${encodeURIComponent(document_number)}&so_series_id=${encodeURIComponent(so_series_id)}&so_document_number=${encodeURIComponent(so_document_number)}&header_book_id=${encodeURIComponent(header_book_id)}&customer_id=${customerId}&item_id=${itemId}`;
+    let fullUrl = `${actionUrl}?series_id=${encodeURIComponent(series_id)}&document_number=${encodeURIComponent(document_number)}&so_series_id=${encodeURIComponent(so_series_id)}&so_document_number=${encodeURIComponent(so_document_number)}&header_book_id=${encodeURIComponent(header_book_id)}&customer_id=${customerId}&item_id=${itemId}&store_id=${storeId}`;
     fetch(fullUrl).then(response => {
         return response.json().then(data => {
             $("#itemTable .mrntableselectexcel").empty().append(data.data.pis);
@@ -723,6 +737,9 @@ $(document).on('keyup',"#pwo_document_no_input_qt", (e) => {
     getPwo();
 });
 $(document).on('keyup',"#so_document_no_input_qt", (e) => {
+    getPwo();
+});
+$(document).on('change',"#filter_store_id", (e) => {
     getPwo();
 });
 
@@ -746,54 +763,6 @@ $(document).on('change','.po-order-detail > tbody .form-check-input',(e) => {
   }
 });
 
-// Item Attribute
-$(document).on('click','.header_attr select[name*="[attr_name]"]', (e) => {
-    let notSelectedAttr = $("select[name*='[attr_name]']").filter(function () {
-        return !$(this).val();
-    });
-    if(!notSelectedAttr.length) {
-        let itemId = $("#head_item_id").val() || '';
-        let uomId = $("#head_uom_id").val() || '';
-        let headerSelectedAttr = [];
-        if($(".heaer_item").find("input[name*='[attr_group_id]']").length) {
-            $(".heaer_item").find("input[name*='[attr_group_id]']").each(function(index1,item){
-                let attr_group_id = $(item).val();
-                let attr_val = $(`select[name="attributes[${index1+1}][attr_group_id][${attr_group_id}][attr_name]"]`).val();
-                headerSelectedAttr.push({
-                    'attr_name' : attr_group_id,
-                    'attr_value' : attr_val || ''
-                });
-            });
-        }
-        let actionUrl = '{{route("mo.item.attr.change")}}'+'?item_id='+itemId+'&uom_id='+uomId+'&header_attr='+JSON.stringify(headerSelectedAttr); 
-
-        fetch(actionUrl).then(response => {
-            return response.json().then(data => {
-                if (data.status == 200) {
-                  $('tbody.mrntableselectexcel').html(data?.data?.component_html);
-                  let qty = Number($("input[name='quantity']").val()) || 1;
-                  updateItemsQty(qty);
-                  fetchItemDetails($("tr[id*='row_']").first());
-                } else {
-                    // $("#head_item_name").val('');
-                    // $("#head_item_id").val('');
-                    // $("#head_uom_id").val('');
-                    // $("#head_uom_name").val('');
-                    // $("#item_code").val('');
-                    // $("#item_code").attr('data-name','');
-                    // $("#item_code").attr('data-code','');
-                    // $(".heaer_item").remove();
-                        Swal.fire({
-                            title: 'Error!',
-                            text: data.message,
-                            icon: 'error',
-                        });
-                }
-            });
-        });
-
-    }
-});
 // Sub Store
 function locationOnChange(storeId = '') {
     let actionUrl = '{{route("mo.get.sub.store")}}'+'?store_id='+storeId;
@@ -803,17 +772,29 @@ function locationOnChange(storeId = '') {
                 if(data.data.length) {
                     let subStore = ``;
                     data.data.forEach(element => {
-                        subStore += `<option value="${element.id}">${element.name}</option>`;
+                        subStore += `<option value="${element.id}" data-station-wise-consumption="${element.station_wise_consumption}">${element.name}</option>`;
                     });
                     $("#sub_store_id").empty().append(subStore);
-                    $("#sub_store_div").removeClass('d-none');
+                    const stationWise = getStationWiseConsBySubStoreId();
+                    if(stationWise.includes('yes')) {
+                        $("#station_column").removeClass('d-none');
+                    } else {
+                        $("#station_column").addClass('d-none');
+                    }
+                    // $("#sub_store_div").removeClass('d-none');
                 } else {
-                    $("#sub_store_div").addClass('d-none');
+                    // $("#sub_store_div").addClass('d-none');
                 }
                 // $("#sub_store_id").empty().append(data.data.html);
             }
         });
     });
+}
+function getStationWiseConsBySubStoreId() 
+{
+    const swc = $('#sub_store_id').find('option:selected').attr('data-station-wise-consumption') || 'no'; 
+    $("#station_wise_consumption").val(swc);
+    return swc;
 }
 $(document).on('change',"#store_id", (e) => {
     let storeId = e.target.value || '';
@@ -826,6 +807,7 @@ setTimeout(() => {
 }, 0);
 
 $(document).on('click', '.clearPiFilter', (e) => {
+    $("#filter_store_id").val('').trigger('change');
     $("#pwo_book_code_input_qt").val('');
     $("#pwo_book_id_qt_val").val('');
     $("#pwo_document_no_input_qt").val('');

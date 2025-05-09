@@ -22,11 +22,14 @@
                 </div>
                 <div class="content-header-right text-end col-md-7 mb-2 mb-sm-0">
                     <div class="form-group breadcrumb-right">
-                        <button class="btn btn-warning btn-sm mb-50 mb-sm-0" data-bs-target="#filter" data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button> 
+                        <button class="btn btn-warning btn-sm mb-50 mb-sm-0" data-bs-target="#filter" data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button>
+                        <a href="{{ route('customers.import') }}" class="btn btn-secondary btn-sm mb-50 mb-sm-0">
+                            <i data-feather="upload"></i> Import
+                        </a>   
                         <a class="btn btn-primary btn-sm" href="{{ route('customer.create') }}"><i data-feather="plus-circle"></i> Add New</a>
-                        <a href="{{ route('customers.import') }}" class="btn btn-warning btn-sm mb-50 mb-sm-0">
-                            <i data-feather="upload"></i>Import
-                        </a>  
+                        <a class="btn btn-dark btn-sm mb-50 mb-sm-0" id="verify-gst-btn">
+                            <i data-feather="check-circle"></i> Verify GST
+                        </a>
                     </div>
                 </div>
             </div>
@@ -48,6 +51,7 @@
                                                 <th>Category</th>
                                                 <th>Sub Category</th>
                                                 <th>Sales Person</th>
+                                                <th>Gst Status</th>
                                                 <th>Status</th>
                                                 <th>Created At</th>
                                                 <th>Created By</th>
@@ -108,6 +112,15 @@
                                         <option value="Organisation">Organisation</option>
                                     </select>
                                 </div>
+                                 <!-- Gst Status -->
+                                 <div class="mb-1">
+                                    <label class="form-label">Gst Status</label>
+                                    <select id="filter-gst-status" class="form-select">
+                                        <option value="">Select Status</option>
+                                        <option value="ACT">Active</option>
+                                        <option value="INACT">Inactive</option>
+                                    </select>
+                                </div>
                                 <!-- Status -->
                                 <div class="mb-1">
                                     <label class="form-label">Status</label>
@@ -146,12 +159,12 @@
             ajax: {
                 url: "{{ route('customer.index') }}",
                 data: function(d) {
-                    d.customer_code = $('#filter-customer-code').val();
-                    d.customer_name = $('#filter-customer-name').val();
+
                     d.customer_type = $('#filter-customer-type').val();
                     d.category_id = $('#filter-category').val(); 
                     d.subcategory_id = $('#filter-subcategory').val(); 
                     d.sales_person = $('#filter-sales-person').val(); 
+                    d.gst_status = $('#filter-gst-status').val();
                     d.status = $('#filter-status').val();
                 }
             },
@@ -165,6 +178,7 @@
                 { data: 'category.name', name: 'category.name', render: renderData }, 
                 { data: 'subcategory.name', name: 'subcategory.name', render: renderData }, 
                 { data: 'sales_person.name', name: 'sales_person.name', render: renderData }, 
+                {data: 'gst_status', name: 'gst_status', render: renderData},
                 {data: 'status', name: 'status', render: renderData, orderable: false, searchable: false},
                 { data: 'created_at', name: 'created_at', render: function(data) {
                  return data ? data : 'N/A'; 
@@ -193,35 +207,35 @@
                             text: feather.icons['printer'].toSvg({ class: 'font-small-4 mr-50' }) + 'Print',
                             className: 'dropdown-item',
                             title: 'Customer Master',
-                            exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6,7,8,9,10,11,12] }
+                            exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6,7,8,9,10,11,12,13] }
                         },
                         {
                             extend: 'csv',
                             text: feather.icons['file-text'].toSvg({ class: 'font-small-4 mr-50' }) + 'Csv',
                             className: 'dropdown-item',
                             title: 'Customer Master',
-                            exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6 ,7,8,9,10,11,12] }
+                            exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6 ,7,8,9,10,11,12,13] }
                         },
                         {
                             extend: 'excel',
                             text: feather.icons['file'].toSvg({ class: 'font-small-4 mr-50' }) + 'Excel',
                             className: 'dropdown-item',
                             title: 'Customer Master',
-                            exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6 ,7,8,9,10,11,12] }
+                            exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6 ,7,8,9,10,11,12,13] }
                         },
                         {
                             extend: 'pdf',
                             text: feather.icons['clipboard'].toSvg({ class: 'font-small-4 mr-50' }) + 'Pdf',
                             className: 'dropdown-item',
                             title: 'Customer Master',
-                            exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6 ,7,8,9,10,11,12] }
+                            exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6 ,7,8,9,10,11,12,13] }
                         },
                         {
                             extend: 'copy',
                             text: feather.icons['copy'].toSvg({ class: 'font-small-4 mr-50' }) + 'Copy',
                             className: 'dropdown-item',
                             title: 'Customer Master',
-                            exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6 ,7,8,9,10,11,12] }
+                            exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6 ,7,8,9,10,11,12,13] }
                         }
                     ],
                     init: function(api, node, config) {
@@ -251,6 +265,51 @@
         $('.apply-filter').on('click', function() {
             dt_exchange_rate.ajax.reload(); 
             $('#filter').modal('hide'); 
+        });
+    });
+</script>
+<script>
+    $('#verify-gst-btn').click(function () {
+        $.ajax({
+            url: "{{ route('check-gst') }}",
+            type: 'GET',
+            beforeSend: function () {
+                Swal.fire({
+                    title: 'Verifying GST...',
+                    html: 'Please wait while we verify the GST number.',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+            },
+            success: function (response) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: response.message,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    showConfirmButton: false
+                });
+            },
+            error: function (xhr) {
+                // Extract the error message from the server response if available
+                let errorMessage = xhr.responseJSON ? xhr.responseJSON.message : 'Something went wrong while verifying GST.';
+                
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: errorMessage,
+                    timer: 4000,
+                    timerProgressBar: true,
+                    showConfirmButton: false
+                });
+            },
+            complete: function () {
+                $('#verify-gst-btn').html('<i data-feather="check-circle"></i> Verify GST');
+                feather.replace();
+            }
         });
     });
 </script>

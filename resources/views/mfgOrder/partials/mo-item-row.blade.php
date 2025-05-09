@@ -1,5 +1,5 @@
 @use(App\Helpers\ConstantHelper)
-@foreach($bom->moItems as $key => $moItem)
+@foreach($bom->moItems()->orderBy('so_id')->get() as $key => $moItem)
 @php
    $rowCount = $key + 1;
 @endphp
@@ -15,7 +15,10 @@
       <input type="hidden" name="component[{{$rowCount}}][item_code_2]" value="{{$moItem->item_code}}"/>
   </td>
   <td>
-      <input type="text" name="component[{{$rowCount}}][item_name_2]" value="{{$moItem?->item?->item_name}}" class="form-control mw-100 mb-25" readonly/>
+      <input type="text" name="component[{{$rowCount}}][item_name_2]" value="{{$moItem?->item?->item_name}} {{$moItem?->rm_type == 'sf' ?  (' - '.$moItem->station->name)  : ''}}" class="form-control mw-100 mb-25" readonly/>
+  </td>
+  <td>
+      <input type="text" name="component[{{$rowCount}}][item_type_2]" value="{{strtoupper(($moItem?->rm_type == 'sf' ? 'wip' : $moItem?->rm_type))}}" class="form-control mw-100 mb-25" readonly/>
   </td>
    <td class="poprod-decpt">
       {{-- <button type="button" class="btn p-25 btn-sm btn-outline-secondary attributeBtn" data-row-count="{{$rowCount}}" style="font-size: 10px">Attributes</button> --}}

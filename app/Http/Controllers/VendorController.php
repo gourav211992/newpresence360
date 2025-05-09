@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 use App\Exceptions\ApiGenericException;
+use App\Helpers\GstStatusChecker;
 use App\Helpers\StoreHelper;
 use App\Models\ErpStore;
 use App\Models\VendorLocation;
@@ -76,7 +77,7 @@ class VendorController extends Controller
             $companyId = $organization?->company_id ?? null;
         
             if ($request->ajax()) {
-                $query = Vendor::with(['erpOrganizationType', 'category', 'subcategory','auth_user'])
+                $query = Vendor::with(relations: ['erpOrganizationType', 'category', 'subcategory','auth_user'])
                 ->withDefaultGroupCompanyOrg()
                 ->orderBy('id', 'desc');
         
@@ -91,6 +92,10 @@ class VendorController extends Controller
                 if ($subcategoryId = request('subcategory_id')) {
                     $query->where('subcategory_id', $subcategoryId);
                 }
+
+                if ($request->has('gst_status') && !empty($request->gst_status)) {
+                    $query->where('gst_status', $request->gst_status);
+                }
         
                 if ($request->has('status') && !empty($request->status)) {
                     $query->where('status', $request->status);
@@ -98,22 +103,28 @@ class VendorController extends Controller
         
                 return DataTables::of($query)
                     ->addIndexColumn()
-                    ->addColumn('vendor_code', function ($row) {
+                    ->editColumn('vendor_code', function ($row) {
                         return $row->vendor_code ?? 'N/A';
                     })
-                    ->addColumn('company_name', function ($row) {
+                    ->editColumn('company_name', function ($row) {
                         return $row->company_name ?? 'N/A';
                     })
-                    ->addColumn('vendor_type', function ($row) {
+                    ->editColumn('vendor_type', function ($row) {
                         return $row->vendor_type ?? 'N/A';
                     })
-                    ->addColumn('phone', function ($row) {
+                    ->editColumn('phone', function ($row) {
                         return $row->phone ?? 'N/A';
                     })
-                    ->addColumn('email', function ($row) {
+                    ->editColumn('email', function ($row) {
                         return $row->email ?? 'N/A';
                     })
-                    ->addColumn('status', function ($row) {
+                   ->editColumn('gst_status', function ($row) {
+                        $statusText = ($row->gst_status === 'ACT') ? 'Active' : (($row->gst_status === 'INACT') ? 'Inactive' : 'N/A');
+                        $className = ($row->gst_status === 'ACT') ? 'text-success' : (($row->gst_status === 'INACT') ? 'text-danger' : '');
+
+                        return $className ? '<span class="' . $className . '">' . $statusText . '</span>' : $statusText;
+                    })
+                    ->editColumn('status', function ($row) {
                         $statusClass = 'badge-light-secondary';
                         if ($row->status == 'active') {
                             $statusClass = 'badge-light-success';
@@ -126,19 +137,19 @@ class VendorController extends Controller
                         return '<span class="badge rounded-pill ' . $statusClass . ' badgeborder-radius">'
                             . ucfirst($row->status ?? 'Unknown') . '</span>';
                     })
-                    ->addColumn('created_at', function ($row) {
+                    ->editColumn('created_at', function ($row) {
                         return $row->created_at ? Carbon::parse($row->created_at)->format('d-m-Y') : 'N/A';
                     })
                     
-                    ->addColumn('created_by', function ($row) {
+                    ->editColumn('created_by', function ($row) {
                         $createdBy = optional($row->auth_user)->name ?? 'N/A'; 
                         return $createdBy;
                     })
                     
-                    ->addColumn('updated_at', function ($row) {
+                    ->editColumn('updated_at', function ($row) {
                         return $row->updated_at ? Carbon::parse($row->updated_at)->format('d-m-Y') : 'N/A';
                     })
-                    ->addColumn('action', function ($row) {
+                    ->editColumn('action', function ($row) {
                         return '
                             <div class="dropdown">
                                 <button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
@@ -152,7 +163,7 @@ class VendorController extends Controller
                                 </div>
                             </div>';
                     })
-                    ->rawColumns(['status', 'action'])
+                    ->rawColumns(['status','gst_status','action'])
                     ->make(true);
             }
         
@@ -820,6 +831,21 @@ class VendorController extends Controller
         {
             $failedVendors = UploadVendorMaster::where('status', 'Failed')->get();
             return Excel::download(new FailedVendorsExport($failedVendors), "failed-vendors.xlsx");
+        }
+
+        public function checkGst()
+        {
+            try {
+                GstStatusChecker::checkInvalidGst();
+                return response()->json(['message' => 'GST number(s) verified successfully!']);
+            } catch (\Exception $e) {
+                \Log::error('Error while verifying GST: ' . $e->getMessage());
+        
+                return response()->json([
+                    'message' => 'Something went wrong while verifying GST.',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
         }
 
         public function deleteAddress($id)

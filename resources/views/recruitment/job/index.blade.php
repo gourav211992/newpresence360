@@ -13,7 +13,7 @@
                         <h2 class="content-header-title float-start mb-0">Job Created</h2>
                         <div class="breadcrumb-wrapper">
                             <ol class="breadcrumb">
-                                <li class="breadcrumb-item"><a href="{{ route('recruitment.dashboard') }}">Home</a>
+                                <li class="breadcrumb-item"><a href="{{ route('recruitment.hr-dashboard') }}">Home</a>
                                 </li>
                                 <li class="breadcrumb-item active">All Request
                                 </li>
@@ -36,86 +36,13 @@
             <section id="chartjs-chart">
                 <div class="row">
 
-                    <div class="col-xl-12 col-md-6 col-12">
-                        <div class="card card-statistics">
-                            <div class="card-header newheader pb-0">
-                                <div class="header-left">
-                                    <h4 class="card-title">Summary - <span class="font-small-3 fw-bold"
-                                            style="font-color:#999">As on 27-09-2024</span></h4>
-                                </div>
-                            </div>
-                            <div class="card-body statistics-body">
-                                <div class="row">
-                                    <div class="col  mb-2 mb-xl-0">
-                                        <div class="d-flex flex-row">
-                                            <div class="avatar bg-light-primary me-2">
-                                                <div class="avatar-content">
-                                                    <i data-feather="trending-up" class="avatar-icon"></i>
-                                                </div>
-                                            </div>
-                                            <div class="my-auto">
-                                                <h4 class="fw-bolder mb-0">{{ $jobCount }}</h4>
-                                                <p class="card-text font-small-3 mb-0">Job Created</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col  mb-2 mb-sm-0">
-                                        <div class="d-flex flex-row">
-                                            <div class="avatar bg-light-success me-2">
-                                                <div class="avatar-content">
-                                                    <i data-feather="user-check" class="avatar-icon"></i>
-                                                </div>
-                                            </div>
-                                            <div class="my-auto">
-                                                <h4 class="fw-bolder mb-0">{{ $candidatesCount }}</h4>
-                                                <p class="card-text font-small-3 mb-0">Candidate Assigned</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col  mb-2 mb-xl-0">
-                                        <div class="d-flex flex-row">
-                                            <div class="avatar bg-light-info me-2">
-                                                <div class="avatar-content">
-                                                    <i data-feather="calendar" class="avatar-icon"></i>
-                                                </div>
-                                            </div>
-                                            <div class="my-auto">
-                                                <h4 class="fw-bolder mb-0">0</h4>
-                                                <p class="card-text font-small-3 mb-0">Scheduled</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col  ">
-                                        <div class="d-flex flex-row">
-                                            <div class="avatar bg-light-warning me-2">
-                                                <div class="avatar-content">
-                                                    <i data-feather="check-circle" class="avatar-icon"></i>
-                                                </div>
-                                            </div>
-                                            <div class="my-auto">
-                                                <h4 class="fw-bolder mb-0">0</h4>
-                                                <p class="card-text font-small-3 mb-0">Select Candidates</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col  ">
-                                        <div class="d-flex flex-row">
-                                            <div class="avatar bg-light-danger me-2">
-                                                <div class="avatar-content">
-                                                    <i data-feather="x-circle" class="avatar-icon"></i>
-                                                </div>
-                                            </div>
-                                            <div class="my-auto">
-                                                <h4 class="fw-bolder mb-0">0</h4>
-                                                <p class="card-text font-small-3 mb-0">Job Closed</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
+                    @include('recruitment.job.summary',[
+                        'jobCount' => $jobCount,
+                        'candidatesCount' => $candidatesCount,
+                        'interviewCount' => $interviewCount,
+                        'selectedCandidatesCount' => $selectedCandidatesCount,
+                        'closedJobCount' => $closedJobCount,
+                    ])
 
                     <div class="col-md-12 col-12">
                         <div class="card  new-cardbox">
@@ -123,17 +50,128 @@
                                 'jobCount' => $jobCount,
                                 'candidatesCount' => $candidatesCount,
                             ])
-                            
+
                             <div class="tab-content">
-                                @if(\Request::route()->getName() == 'recruitment.jobs.assigned-candidate')
-                                    @include('recruitment.job.assgined-candidate',[
-                                            'jobs' => $jobs
-                                    ])
-                                @else
-                                    @include('recruitment.job.job-created',[
-                                            'jobs' => $jobs
-                                    ])
-                                @endif
+                                <div class="tab-pane active" id="Requested">
+                                    <div class="table-responsive candidates-tables">
+                                        @include('recruitment.partials.card-header')
+                                        <table
+                                            class="datatables-basic table table-striped myrequesttablecbox loanapplicationlist">
+                                            <thead>
+                                                <tr>
+                                                    <th>#</th>
+                                                    <th>Date</th>
+                                                    <th>Job Id</th>
+                                                    <th>Job Type</th>
+                                                    <th>Job Title</th>
+                                                    <th>Education</th>
+                                                    <th>Skills</th>
+                                                    <th>Exp.</th>
+                                                    <th>Request By</th>
+                                                    <th>Round</th>
+                                                    <th>Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @forelse ($jobs as $job)
+                                                <tr>
+                                                    <td>{{ $jobs->firstItem() + $loop->index }}</td>
+                                                    <td class="text-nowrap">{{ $job->created_at ?
+                                                        App\Helpers\CommonHelper::dateFormat($job->created_at) : '' }}
+                                                    </td>
+                                                    <td class="fw-bolder text-dark">{{ $job->job_id }}</td>
+                                                    <td>
+                                                        <a
+                                                            href="{{ route('recruitment.jobs.show',['id' => $job->id]) }}">
+                                                            <span
+                                                                class="badge rounded-pill badge-light-primary badgeborder-radius">{{
+                                                                ucfirst($job->status) }}</span>
+                                                        </a>
+                                                    </td>
+                                                    <td>{{ $job->job_title_name }}</td>
+                                                    <td>{{ $job->education_name }}</td>
+                                                    <td>
+                                                        @php
+                                                        $skills = $job->jobSkills;
+                                                        @endphp
+                                                        @foreach ($skills->take(2) as $skill)
+                                                        <span
+                                                            class="badge rounded-pill badge-light-secondary badgeborder-radius">
+                                                            {{ $skill->name }}
+                                                        </span>
+                                                        @endforeach
+
+                                                        @if ($skills->count() > 2)
+                                                        <a href="#" class="skilnum text-primary" data-bs-toggle="modal"
+                                                            data-bs-target="#skillModal"
+                                                            data-skills='@json($skills->pluck("name"))'>
+                                                            <span class="skilnum">+{{ $skills->count() - 2 }}</span>
+                                                        </a>
+                                                        @endif
+                                                    </td>
+                                                    <td>{{ $job->work_exp_min }} - {{ $job->work_exp_max }} year</td>
+                                                    <td>
+                                                        <div class="d-flex flex-row">
+                                                            <div
+                                                                style="background-color: #ddb6ff; color: #6b12b7; line-height: 30px; width: 30px; height: 30px; border-radius: 50%; position: relative; font-size: 1rem; text-align: center; margin-right: 5px; font-weight: 600;">
+                                                                {{ strtoupper(substr($job->creator_name, 0, 1)) }}
+                                                            </div>
+                                                            <div class="my-auto">
+                                                                <h6 class="mb-0 fw-bolder text-dark hr-dashemplname">{{
+                                                                    $job->creator_name }}</h6>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td>{{ $job->totalJobRounds }}</td>
+                                                    <td class="tableactionnew">
+                                                        <div class="dropdown">
+                                                            <button type="button"
+                                                                class="btn btn-sm dropdown-toggle hide-arrow py-0"
+                                                                data-bs-toggle="dropdown">
+                                                                <i data-feather="more-vertical"></i>
+                                                            </button>
+                                                            <div class="dropdown-menu dropdown-menu-end">
+                                                                <a class="dropdown-item"
+                                                                    href="{{ route('recruitment.jobs.show',['id' => $job->id]) }}">
+                                                                    <i data-feather="eye" class="me-50"></i>
+                                                                    <span>View Detail</span>
+                                                                </a>
+                                                                @if($job->status == 'open' && $user->id ==
+                                                                $job->created_by)
+                                                                <a class="dropdown-item"
+                                                                    href="{{ route('recruitment.jobs.candidates',['id' => $job->id]) }}">
+                                                                    <i data-feather="users" class="me-50"></i>
+                                                                    <span>Assign Candidates</span>
+                                                                </a>
+
+                                                                <a class="dropdown-item"
+                                                                    href="{{ route('recruitment.jobs.edit',['id' => $job->id]) }}">
+                                                                    <i data-feather="edit-3" class="me-50"></i>
+                                                                    <span>Edit</span>
+                                                                </a>
+                                                                @endif
+                                                                <a class="dropdown-item" href="#">
+                                                                    <i data-feather="trash-2" class="me-50"></i>
+                                                                    <span>Closed</span>
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                @empty
+                                                <tr>
+                                                    <td class="text-danger text-center" colspan="12">No record(s) found.
+                                                    </td>
+                                                </tr>
+                                                @endforelse
+
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    {{-- Pagination --}}
+                                    {{ $jobs->appends(request()->input())->links('recruitment.partials.pagination') }}
+                                    {{-- Pagination End --}}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -160,79 +198,30 @@
         </div>
     </div>
 </div>
-<div class="modal modal-slide-in fade filterpopuplabel" id="filter">
-    <div class="modal-dialog sidebar-sm">
-        <form class="add-new-record modal-content pt-0">
-            <div class="modal-header mb-1">
-                <h5 class="modal-title" id="exampleModalLabel">Apply Filter</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">×</button>
-            </div>
-            <div class="modal-body flex-grow-1">
-                <div class="mb-1">
-                    <label class="form-label" for="fp-range">Select Date Range</label>
-                    <input type="text" id="fp-range" class="form-control flatpickr-range"
-                        placeholder="YYYY-MM-DD to YYYY-MM-DD" name="date_range" value="{{ request('date_range') }}"/>
-                </div>
-
-                <div class="mb-1">
-                    <label class="form-label">Select Job Title</label>
-                    <select class="form-select select2" name="job_title">
-                        <option value="" {{ request('date_range') == "" ? 'selected' : '' }}>Select</option>
-                        @forelse($jobTitles as $jobTitle)
-                            <option value="{{ $jobTitle->id }}" {{ request('date_range') == $jobTitle->id ? 'selected' : '' }}>{{ $jobTitle->title }}</option>
-                        @empty
-                        @endforelse
-                    </select>
-                </div>
-
-
-                <div class="mb-1">
-                    <label class="form-label">Skills</label>
-                    <select class="form-select select2" name="skill">
-                        <option value="" {{ request('skill') == "" ? 'selected' : '' }}>Select</option>
-                        @forelse($skills as $skill)
-                            <option value="{{ $skill->id }}" {{ request('skill') == $skill->id ? 'selected' : '' }}>{{ $skill->name }}</option>
-                        @empty
-                        @endforelse
-                    </select>
-                </div>
-
-                <div class="mb-1">
-                    <label class="form-label">Status</label>
-                    <select class="form-select select2" name="status">
-                        <option value="" {{ request('status') == "" ? 'selected' : '' }}>Select</option>
-                        @forelse($status as $value)
-                            <option value="{{ $value }}" {{ request('status') == $value ? 'selected' : '' }}>{{ $value }}</option>
-                        @empty
-                        @endforelse
-                    </select>
-                </div>
-            </div>
-            <div class="modal-footer justify-content-start">
-                <button type="submit" class="btn btn-primary data-submit mr-1">Apply</button>
-                <a href="{{ route('recruitment.jobs') }}" class="btn btn-outline-secondary">Cancel</a>
-            </div>
-        </form>
-    </div>
-</div>
+<!-- BEGIN: FILTER MODAL-->
+@include('recruitment.job.filter',[
+    'skills' => $skills,
+    'jobTitles' => $jobTitles,
+    'status' => $status,
+])
 <!-- END: MODAL-->
 @endsection
 @section('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const skillModal = document.getElementById('skillModal');
-    skillModal.addEventListener('show.bs.modal', function (event) {
-        const trigger = event.relatedTarget;
-        const skills = JSON.parse(trigger.getAttribute('data-skills'));
+    document.addEventListener('DOMContentLoaded', function () {
+        const skillModal = document.getElementById('skillModal');
+        skillModal.addEventListener('show.bs.modal', function (event) {
+            const trigger = event.relatedTarget;
+            const skills = JSON.parse(trigger.getAttribute('data-skills'));
 
-        const body = skillModal.querySelector('#skillModalBody');
-        body.innerHTML = ''; // Clear old content
+            const body = skillModal.querySelector('#skillModalBody');
+            body.innerHTML = ''; // Clear old content
 
-        skills.forEach(skill => {
-            const badge = `<span class="badge rounded-pill badge-light-secondary badgeborder-radius me-1 mb-1">${skill}</span>`;
-            body.innerHTML += badge;
+            skills.forEach(skill => {
+                const badge = `<span class="badge rounded-pill badge-light-secondary badgeborder-radius me-1 mb-1">${skill}</span>`;
+                body.innerHTML += badge;
+            });
         });
     });
-});
 </script>
 @endsection

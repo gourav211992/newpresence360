@@ -83,28 +83,38 @@ class CustomerController extends Controller
                 });
             }
 
+            if ($request->has('gst_status') && !empty($request->gst_status)) {
+                $query->where('gst_status', $request->gst_status);
+            }
+
             if ($request->filled('status')) {
                 $query->where('status', $request->status);
             }
 
             return DataTables::of($query)
                 ->addIndexColumn()
-                ->addColumn('customer_code', function ($row) {
+                ->editColumn('customer_code', function ($row) {
                     return $row->customer_code ?? 'N/A';
                 })
-                ->addColumn('company_name', function ($row) {
+                ->editColumn('company_name', function ($row) {
                     return $row->company_name ?? 'N/A';
                 })
-                ->addColumn('customer_type', function ($row) {
+                ->editColumn('customer_type', function ($row) {
                     return $row->customer_type ?? 'N/A';
                 })
-                ->addColumn('phone', function ($row) {
+                ->editColumn('phone', function ($row) {
                     return $row->phone ?? 'N/A';
                 })
-                ->addColumn('email', function ($row) {
+                ->editColumn('email', function ($row) {
                     return $row->email ?? 'N/A';
                 })
-                ->addColumn('status', function ($row) {
+                ->editColumn('gst_status', function ($row) {
+                    $statusText = ($row->gst_status === 'ACT') ? 'Active' : (($row->gst_status === 'INACT') ? 'Inactive' : 'N/A');
+                    $className = ($row->gst_status === 'ACT') ? 'text-success' : (($row->gst_status === 'INACT') ? 'text-danger' : '');
+
+                    return $className ? '<span class="' . $className . '">' . $statusText . '</span>' : $statusText;
+                })
+                ->editColumn('status', function ($row) {
                     $statusClass = 'badge-light-secondary';
                     if ($row->status == 'active') {
                         $statusClass = 'badge-light-success';
@@ -118,7 +128,7 @@ class CustomerController extends Controller
                         . ucfirst($row->status ?? 'Unknown') . '</span>';
                 })
 
-                ->addColumn('created_at', function ($row) {
+                ->editColumn('created_at', function ($row) {
                     return $row->created_at ? Carbon::parse($row->created_at)->format('d-m-Y') : 'N/A';
                 })
                 
@@ -127,11 +137,11 @@ class CustomerController extends Controller
                     return $createdBy;
                 })
                 
-                ->addColumn('updated_at', function ($row) {
+                ->editColumn('updated_at', function ($row) {
                     return $row->updated_at ? Carbon::parse($row->updated_at)->format('d-m-Y') : 'N/A';
                 })
 
-                ->addColumn('action', function ($row) {
+                ->editColumn('action', function ($row) {
                     $editUrl = route('customer.edit', $row->id);
                     return '<div class="dropdown">
                                 <button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
@@ -145,7 +155,7 @@ class CustomerController extends Controller
                                 </div>
                             </div>';
                 })
-                ->rawColumns(['status', 'action'])
+                ->rawColumns(['status','gst_status', 'action'])
                 ->make(true);
         }
 

@@ -30,14 +30,14 @@ class JobCandidateController extends Controller
         $user = Helper::getAuthenticatedUser();
         $length = $request->length ? $request->length : CommonHelper::PAGE_LENGTH_10;
 
-        $query = ErpRecruitmentJobCandidate::with('candidateSkills')
+        $candidates = ErpRecruitmentJobCandidate::with('candidateSkills')
             ->where(function($query) use($request){
                 self::filter($request, $query);
             })
-            ->where('created_by',$user->id)
-            ->where('created_by_type',$user->authenticable_type);
-
-        $candidates = $query->paginate($length);
+            ->where('organization_id',$user->organization_id)
+            ->orderBy('created_at','desc')
+            ->paginate($length);
+            
         $masterData = self::masterData();
         return view('recruitment.job-candidate.index',[
             'candidates' => $candidates,
@@ -145,6 +145,7 @@ class JobCandidateController extends Controller
             $jobCandidate->location_id = $request->location_id;
             $jobCandidate->status = $request->status;
             $jobCandidate->potential_type = $request->potential_type;
+            $jobCandidate->refered_by = $request->refered_by ? $request->refered_by : NULL;
             $jobCandidate->created_by = $user->id; 
             $jobCandidate->created_by_type = $user->authenticable_type; 
             $jobCandidate->save();
@@ -171,15 +172,6 @@ class JobCandidateController extends Controller
 
             }
 
-            // foreach($request->job_id as $jobId){
-            //     $jobCandidateSkill = new ErpRecruitmentAssignedCandidate();
-            //     $jobCandidateSkill->candidate_id = $jobCandidate->id;
-            //     $jobCandidateSkill->job_id = $jobId;
-            //     $jobCandidateSkill->created_at = date('Y-m-d h:i:s');
-            //     $jobCandidateSkill->save();
-
-            // }
-
             if($request->hasFile('resume')){
                 $attachment = $request->resume;
                 $documentName = time() . ''.$jobCandidate->id.'-' . $attachment->getClientOriginalName();
@@ -189,14 +181,6 @@ class JobCandidateController extends Controller
                 $jobCandidate->resume_path = $documentPath;
                 $jobCandidate->save();
             }
-
-            // $jobActivityLog = new ErpRecruitmentJobLog();
-            // $jobActivityLog->organization_id = $user->organization_id;
-            // // $jobActivityLog->job_id = $request->job_id;
-            // $jobActivityLog->candidate_id = $jobCandidate->id;
-            // $jobActivityLog->log_type = CommonHelper::CANDIDATE;
-            // $jobActivityLog->log_message = 'Candidate created';
-            // $jobActivityLog->save();
 
             \DB::commit();
             return [
@@ -267,6 +251,7 @@ class JobCandidateController extends Controller
             $jobCandidate->location_id = $request->location_id;
             $jobCandidate->status = $request->status;
             $jobCandidate->potential_type = $request->potential_type;
+            $jobCandidate->refered_by = $request->refered_by ? $request->refered_by : NULL;
             $jobCandidate->created_by = $user->id; 
             $jobCandidate->created_by_type = $user->authenticable_type; 
             $jobCandidate->save();
@@ -291,14 +276,6 @@ class JobCandidateController extends Controller
                     'skill_id' => $skill->id
                 ]);
             }
-
-            // dd($request->all());
-            // foreach($request->job_id as $jobId){
-            //     ErpRecruitmentAssignedCandidate::updateOrCreate([
-            //         'candidate_id' => $jobCandidate->id,
-            //         'job_id' => $jobId
-            //     ]);
-            // }
 
             if($request->hasFile('resume')){
                 if ($jobCandidate->resume_path && file_exists(public_path($jobCandidate->resume_path))) {

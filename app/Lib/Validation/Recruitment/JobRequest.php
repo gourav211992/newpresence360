@@ -37,7 +37,7 @@ class JobRequest
 				'required'
 			],
 			'expected_doj' => [
-				'required','date'
+				'required','date','after:today'
 			],
 			'priority' => [
 				'required'

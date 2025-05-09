@@ -8,19 +8,19 @@ use Illuminate\Database\Eloquent\Model;
 class ErpPslipItemLocation extends Model
 {
     use HasFactory;
+
+    protected $table = 'erp_pslip_item_locations';
+    
     protected $fillable = [
         'pslip_id',
         'pslip_item_id',
         'item_id',
-        'item_code',
         'store_id',
-        'store_code',
+        'sub_store_id',
+        'station_id',
         'rack_id',
-        'rack_code',
         'shelf_id',
-        'shelf_code',
         'bin_id',
-        'bin_code',
         'quantity',
         'inventory_uom_qty'
     ];
@@ -48,6 +48,16 @@ class ErpPslipItemLocation extends Model
     public function erpStore()
     {
         return $this->belongsTo(ErpStore::class, 'store_id');
+    }
+
+    public function erpSubStore()
+    {
+        return $this->belongsTo(ErpSubStore::class, 'sub_store_id');
+    }
+
+    public function station()
+    {
+        return $this->belongsTo(Station::class, 'station_id');
     }
 
     public function erpRack()

@@ -383,15 +383,15 @@
                             <td style="font-weight: bold; font-size: 13px;padding-bottom:10px"> <b>Instructions :</b></td>
                         </tr>
                         <tr>
-                            <td style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: left;">
+                            <td style="width:25%;font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: left;">
                                 Station
                             </td>
                             @if(isset($sectionRequired) && $sectionRequired)
-                            <td style="font-weight: bold; width: 100px; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: left;">Section
+                            <td style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: left;">Section
                             </td>
                             @endif
                             @if(isset($subSectionRequired) && $subSectionRequired)
-                            <td style="font-weight: bold; width: 100px; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: left;">Sub Section
+                            <td style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: left;">Sub Section
                             </td>
                             @endif
                             <td style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: left;">
@@ -423,7 +423,21 @@
             </tr>
             @endif
             <tr>
-                <td colspan="2"
+                <td colspan="1"
+                    style="padding: 3px; border: 1px solid #000; width: 50%; border-top: none; vertical-align: top;">
+                    <table style="width: 100%; height: 100px; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
+                        <tr>
+                            <td align="center" valign="middle">
+                                @foreach($bom->getDocuments() as $attachment)
+                                    @if(Str::contains($attachment->mime_type, 'image'))
+                                        <img src="{{$bom->getPdfDocumentUrl($attachment)}}" alt="Image : {{$attachment->name}}" style="max-width: 100%; max-height: 100px;">
+                                    @endif
+                                @endforeach
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+                <td colspan="1"
                     style="padding: 3px; border: 1px solid #000; width: 50%; border-top: none; vertical-align: top;">
                     <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
                         <tr>
@@ -475,33 +489,6 @@
                 </td>
             </tr>
         </table>
-        @if($bom->getDocuments() && $bom->getDocuments()->count())
-        <div style="page-break-before: always;"></div>
-        <table style="width: 100%; margin-bottom: 0px; border: 1px solid #000; border-collapse: collapse;" cellspacing="0" cellpadding="5">
-            <tr>
-                <td colspan="2" style="padding: 8px; border: 1px solid #000; vertical-align: top;">
-                    <table style="width: 100%; margin-bottom: 0px; border-collapse: collapse;" cellspacing="0" cellpadding="5">
-                        <tr>
-                            <td style="font-weight: bold; font-size: 13px;">
-                                <b>Attachments:</b>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <div style="min-height: 80px;">
-                                    @foreach($bom->getDocuments() as $attachment)
-                                        @if(Str::contains($attachment->mime_type, 'image'))
-                                        <img src="{{$bom->getPdfDocumentUrl($attachment)}}" alt="Image : {{$attachment->name}}" style="max-width: 100%; max-height: 150px; margin-top: 10px;">
-                                        @endif
-                                    @endforeach
-                                </div>
-                            </td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-        </table>
-        @endif
     </div>
 </body>
 </html>

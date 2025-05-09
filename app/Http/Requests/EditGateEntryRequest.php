@@ -30,6 +30,7 @@ class EditGateEntryRequest extends FormRequest
         $rules = [
             'book_id' => 'required',
             'document_number' => 'nullable|max:50', // Default rule for document_number
+            'header_store_id' => 'required',
             'vendor_id' => 'nullable',
             'currency_id' => 'nullable',
             'payment_term_id' => 'nullable',
@@ -62,7 +63,6 @@ class EditGateEntryRequest extends FormRequest
         $rules['component_item_name.*'] = 'required';
         $rules['components.*.accepted_qty'] = 'required|numeric';
         $rules['components.*.rate'] = 'required|numeric';
-        $rules['components.*.store_id'] = 'required|numeric';
         $rules['components.*.remark'] = 'nullable|max:250';
 
         return $rules;
@@ -72,6 +72,7 @@ class EditGateEntryRequest extends FormRequest
     {
         return [
             'book_id.required' => 'The series is required.',
+            'header_store_id.required' => 'Location is required',
             'eway_bill_no.required' => 'Eway Bill No is required.',
             'consignment_no.required' => 'Consignment No is required.',
             'supplier_invoice_no.required' => 'Supplier Invoice No is required.',
@@ -88,7 +89,6 @@ class EditGateEntryRequest extends FormRequest
             'components.*.accepted_qty.numeric' => 'Qty must be a number.',
             'components.*.accepted_qty.gt' => 'Qty must be greater than zero.',
             'components.*.rate.required' => 'Rate is required',
-            'components.*.store_id.required' => 'Store is required',
             'components.*.attr_group_id.*.attr_name.required' => 'Select Attribute',
             'components.*.rate.numeric' => 'Rate must be integer',
         ];

@@ -43,6 +43,11 @@ class ErpProductionSlip extends Model
         'group_currency_id',
         'group_currency_code',
         'group_currency_exg_rate',
+        'shift_id',
+        'sub_store_id',
+        'mo_id',
+        'is_last_station',
+        'station_id'
     ];
 
     public function items()
@@ -68,9 +73,21 @@ class ErpProductionSlip extends Model
     {
         return $this->morphMany(ErpPslipMedia::class, 'model') -> select('id', 'model_type', 'model_id', 'file_name');
     }
+    public function mo()
+    {
+        return $this -> belongsTo(MfgOrder::class, 'mo_id');
+    }
+    public function station()
+    {
+        return $this -> belongsTo(Station::class, 'station_id');
+    }
     public function book()
     {
         return $this -> belongsTo(Book::class, 'book_id');
+    }
+    public function consumptions()
+    {
+        return $this -> hasMany(PslipBomConsumption::class, 'pslip_id');
     }
     public function store()
     {

@@ -119,4 +119,27 @@ class ErpRecruitmentJob extends Model
             'candidate_id'                                    
         );
     }
+
+    public function jobInterview(){
+        return $this->hasMany(ErpRecruitmentJobInterview::class, 'job_id');
+    }
+    
+    public function jobReferral(){
+        return $this->hasMany(ErpRecruitmentJobReferral::class, 'job_id');
+    }
+
+    public function requests(){
+        return $this->hasMany(ErpRecruitmentJob::class, 'job_id','job_id');
+    }
+
+    // public function jobReferralCandidate(){
+    //     return $this->hasOneThrough(
+    //         ErpRecruitmentJobCandidate::class,           
+    //         ErpRecruitmentJobReferral::class,        
+    //         'job_id',                             
+    //         'id',                                         
+    //         'id',                                         
+    //         'candidate_id'                                    
+    //     );
+    // }
 }

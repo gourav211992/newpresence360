@@ -40,7 +40,8 @@ class MfgOrderHistory extends Model
         'revision_number', 
         'revision_date', 
         'remarks', 
-        'approval_level'
+        'approval_level',
+        'is_last_station'
     ];
 
     public static function boot()
@@ -124,16 +125,11 @@ class MfgOrderHistory extends Model
         return $this->attributes['document_status'];
     }
 
-    // public function moProductions()
-    // {
-    //     return $this->hasMany(MoProductionItem::class, 'mo_id');
-    // }
-
     public function moProducts()
     {
         return $this->hasMany(MoProductHistory::class, 'mo_product_id');
     }
-
+    
     public function createdBy()
     {
         return $this->belongsTo(AuthUser::class, 'created_by');

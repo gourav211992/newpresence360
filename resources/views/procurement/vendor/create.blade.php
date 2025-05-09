@@ -390,7 +390,7 @@
                                                                     <input type="text" class="form-control" name="pan_number">
                                                                 </div>
                                                                 <div class="col-md-3">
-                                                                    <input type="file" class="form-control" name="pan_attachment">
+                                                                    <input type="file" class="form-control" name="pan_attachment" onchange="simpleFileValidation(this)">
                                                                 </div>
                                                             </div>
 
@@ -403,7 +403,7 @@
                                                                     <input type="text" class="form-control" name="tin_number">
                                                                 </div>
                                                                 <div class="col-md-3">
-                                                                    <input type="file" class="form-control" name="tin_attachment">
+                                                                    <input type="file" class="form-control" name="tin_attachment" onchange="simpleFileValidation(this)">
                                                                 </div>
                                                             </div>
 
@@ -416,7 +416,7 @@
                                                                     <input type="text" class="form-control" name="aadhar_number">
                                                                 </div>
                                                                 <div class="col-md-3">
-                                                                    <input type="file" class="form-control" name="aadhar_attachment">
+                                                                    <input type="file" class="form-control" name="aadhar_attachment" onchange="simpleFileValidation(this)">
                                                                 </div>
                                                             </div>
 
@@ -503,7 +503,7 @@
                                                                     <label class="form-label">Upload Documents</label>
                                                                 </div>
                                                                 <div class="col-md-3">
-                                                                    <input type="file" class="form-control" name="other_documents[]" multiple>
+                                                                    <input type="file" class="form-control" name="other_documents[]" onchange="simpleFileValidation(this)" multiple>
                                                                 </div>
                                                             </div>
                                                      </div>
@@ -793,7 +793,7 @@
                                                                             <label class="form-label">Upload Certificate</label>
                                                                         </div>
                                                                         <div class="col-md-6">
-                                                                            <input type="file" name="compliance[gst_certificate][]" multiple class="form-control">
+                                                                            <input type="file" name="compliance[gst_certificate][]" multiple class="form-control" onchange="simpleFileValidation(this)">
                                                                             <div id="gstCertificateLinks"></div>
                                                                         </div>
                                                                     </div>
@@ -843,7 +843,7 @@
                                                                             <label class="form-label">Upload Certificate</label>
                                                                         </div>
                                                                         <div class="col-md-6">
-                                                                            <input type="file" name="compliance[msme_certificate][]" multiple class="form-control">
+                                                                            <input type="file" name="compliance[msme_certificate][]" multiple class="form-control" onchange="simpleFileValidation(this)">
                                                                             <div id="msmeCertificateLinks"></div>
                                                                         </div>
                                                                     </div>
@@ -879,7 +879,7 @@
                                                                             <td>
                                                                              <input type="radio" name="bank_info[0][primary]" value="1" class="primary-radio">
                                                                             </td>
-                                                                            <td><div><input type="file" class="form-control mw-100" name="bank_info[0][cancel_cheque][]" multiple /></div></td>
+                                                                            <td><div><input type="file" class="form-control mw-100" name="bank_info[0][cancel_cheque][]" multiple onchange="simpleFileValidation(this)" /></div></td>
                                                                             <td>
                                                                                 <a href="#" class="text-primary add-bank-row"><i data-feather="plus-square" class="me-50"></i></a>
                                                                                 <a href="#" class="text-danger delete-bank-row"><i data-feather="trash-2" class="me-50"></i></a>
@@ -962,12 +962,12 @@
 
                                                          <div class="row align-items-center mb-1">
                                                             <div class="col-md-2"> 
-                                                                <label for="user" class="form-label">Locations</label>  
+                                                                <label for="user" class="form-label">Stores</label>  
                                                             </div>  
                                                             <div class="col-md-5"> 
                                                                 <select name="store_ids[]" multiple class="form-select select2">
                                                                     @foreach($stores as $store)
-                                                                        <option value="{{$store->id}}">{{$store->store_name}}</option>
+                                                                        <option value="{{$store->id}}">{{$store->name}}</option>
                                                                     @endforeach
                                                                 </select>
                                                             </div> 
@@ -1552,7 +1552,10 @@ $(document).ready(function() {
         $template.find('input').each(function() {
             let name = $(this).attr('name');
             if ($(this).attr('type') !== 'file') {
+            $(this).val('');
+            } else {
                 $(this).val('');
+                $(this).attr('onchange', 'simpleFileValidation(this)'); 
             }
             $(this).attr('name', name.replace(/\d+/, index - 1)); 
             $(this).removeClass('is-invalid');
@@ -1783,5 +1786,47 @@ $(document).ready(function() {
             }
         });
     });
+</script>
+
+<script>
+    const ALLOWED_EXTENSIONS_SIMPLE = ['pdf', 'jpg', 'jpeg', 'png'];
+    const ALLOWED_MIME_TYPES_SIMPLE = ['application/pdf', 'image/jpeg', 'image/png'];
+    const MAX_FILE_SIZE_SIMPLE = 2048; 
+
+    function simpleFileValidation(element) {
+        const input = element;
+        const files = Array.from(input.files);
+        const dt = new DataTransfer();
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+            const fileSize = (file.size / 1024).toFixed(2); 
+
+            if (!ALLOWED_EXTENSIONS_SIMPLE.includes(fileExtension) || !ALLOWED_MIME_TYPES_SIMPLE.includes(file.type)) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Only PDF, JPG, JPEG, PNG files are allowed.',
+                    icon: 'error',
+                });
+                input.value = '';
+                return;
+            }
+
+            if (fileSize > MAX_FILE_SIZE_SIMPLE) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'File size must not exceed 2MB.',
+                    icon: 'error',
+                });
+                input.value = '';
+                return;
+            }
+
+            dt.items.add(file);
+        }
+
+        input.files = dt.files;
+    }
 </script>
 @endsection

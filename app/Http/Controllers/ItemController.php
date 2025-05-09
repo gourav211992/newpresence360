@@ -63,11 +63,11 @@ class ItemController extends Controller
                 ->with(['uom', 'hsn', 'category', 'subcategory', 'subTypes','auth_user'])
                 ->orderBy('id', 'desc');
                 
-            if ($status = request('status')) {
+            if ($status = request(key: 'status')) {
                 $query->where('status', $status);
             }
     
-            if ($hsnId = request('hsn_id')) {
+            if ($hsnId = request(key: 'hsn_id')) {
                 $query->where('hsn_id', $hsnId);
             }
             if ($subtypeId = request('sub_type_id')) {
@@ -110,22 +110,22 @@ class ItemController extends Controller
                     return '<span class="badge rounded-pill ' . $statusClass . ' badgeborder-radius">'
                         . ucfirst($row->status ?? 'Unknown') . '</span>';
                 })
-                ->addColumn('uom', function ($item) {
+                ->editColumn('uom', function ($item) {
                     return $item->uom ? $item->uom->name : 'N/A';
                 })
-                ->addColumn('created_at', function ($row) {
+                ->editColumn('created_at', function ($row) {
                     return $row->created_at ? Carbon::parse($row->created_at)->format('d-m-Y') : 'N/A';
                 })
                 
-                ->addColumn('created_by', function ($row) {
+                ->editColumn('created_by', function ($row) {
                     $createdBy = optional($row->auth_user)->name ?? 'N/A'; 
                     return $createdBy;
                 })
                 
-                ->addColumn('updated_at', function ($row) {
+                ->editColumn('updated_at', function ($row) {
                     return $row->updated_at ? Carbon::parse($row->updated_at)->format('d-m-Y') : 'N/A';
                 })
-                ->addColumn('action', function ($item) {
+                ->editColumn('action', function ($item) {
                     return '
                         <div class="dropdown">
                             <button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
@@ -423,6 +423,7 @@ class ItemController extends Controller
     }
     public function import(Request $request)
     {
+        
         $user = Helper::getAuthenticatedUser();
     
         try {
@@ -510,7 +511,7 @@ class ItemController extends Controller
 
     public function exportFailedItems()
     {
-        $failedItems = UploadItemMaster::where('status', 'Failed')  
+        $failedItems = UploadItemMaster::where('status', operator: 'Failed')  
         ->get();
         return Excel::download(new FailedItemsExport($failedItems), "failed-items.xlsx");
     }

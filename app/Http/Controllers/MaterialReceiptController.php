@@ -17,9 +17,9 @@ use App\Http\Requests\EditMaterialReceiptRequest;
 use App\Models\MrnHeader;
 use App\Models\MrnDetail;
 use App\Models\MrnAttribute;
-use App\Models\MrnItemLocation;
-use App\Models\MrnExtraAmount;
 use App\Models\AlternateUOM;
+use App\Models\MrnExtraAmount;
+use App\Models\MrnItemLocation;
 
 use App\Models\MrnHeaderHistory;
 use App\Models\MrnDetailHistory;
@@ -64,6 +64,7 @@ use App\Helpers\NumberHelper;
 use App\Helpers\ConstantHelper;
 use App\Helpers\CurrencyHelper;
 use App\Helpers\InventoryHelper;
+use App\Helpers\InventoryHelperV2;
 use App\Helpers\FinancialPostingHelper;
 use App\Helpers\ServiceParametersHelper;
 
@@ -265,6 +266,7 @@ class MaterialReceiptController extends Controller
             $mrn = new MrnHeader();
             $mrn->fill($request->all());
             $mrn->store_id = $request->header_store_id;
+            $mrn->sub_store_id = $request->sub_store_id;
             $mrn->organization_id = $organization->id;
             $mrn->bill_to_follow = $request->bill_to_follow;
             $mrn->group_id = $organization->group_id;
@@ -518,9 +520,9 @@ class MaterialReceiptController extends Controller
                         'inventory_uom_id' => $inventory_uom_id ?? null,
                         'inventory_uom_code' => $inventory_uom_code ?? null,
                         'inventory_uom_qty' => $inventory_uom_qty ?? 0.00,
-                        'store_id' => $component['store_id'] ?? null,
-                        'store_code' => $component['erp_store_code'] ?? null,
-                        'sub_store_id' => $component['sub_store_id'] ?? null,
+                        'store_id' => $mrn->store_id ?? null,
+                        'store_code' => $mrn?->erpStore?->store_code ?? null,
+                        'sub_store_id' => $mrn->sub_store_id ?? null,
                         'rate' => floatval($component['rate']) ?? 0.00,
                         'discount_amount' => floatval($component['discount_amount']) ?? 0.00,
                         'header_discount_amount' => 0.00,
@@ -951,6 +953,10 @@ class MaterialReceiptController extends Controller
         $orgAddress = $organizationAddress?->display_address;
         $subStoreCount = $mrn->items()->where('sub_store_id', '!=', null)->count() ?? 0;
 
+        $erpStores = ErpStore::where('organization_id', $user->organization_id)
+            ->orderBy('id', 'DESC')
+            ->get();
+
         return view($view, [
             'deliveryAddress'=> $deliveryAddress,
             'orgAddress'=> $orgAddress,
@@ -966,13 +972,13 @@ class MaterialReceiptController extends Controller
             'services' => $servicesBooks['services'],
             'servicesBooks' => $servicesBooks,
             'subStoreCount' => $subStoreCount,
+            'erpStores' => $erpStores
         ]);
     }
 
     # Bom Update
     public function update(EditMaterialReceiptRequest $request, $id)
     {
-        // dd($request->all());
         $mrn = MrnHeader::find($id);
         $user = Helper::getAuthenticatedUser();
         $organization = Organization::where('id', $user->organization_id)->first();
@@ -1010,10 +1016,12 @@ class MaterialReceiptController extends Controller
                     ['model_type' => 'header', 'model_name' => 'MrnHeader', 'relation_column' => ''],
                     ['model_type' => 'detail', 'model_name' => 'MrnDetail', 'relation_column' => 'mrn_header_id'],
                     ['model_type' => 'sub_detail', 'model_name' => 'MrnAttribute', 'relation_column' => 'mrn_detail_id'],
-                    ['model_type' => 'sub_detail', 'model_name' => 'MrnItemLocation', 'relation_column' => 'mrn_detail_id'],
+                    // ['model_type' => 'sub_detail', 'model_name' => 'MrnItemLocation', 'relation_column' => 'mrn_detail_id'],
                     ['model_type' => 'sub_detail', 'model_name' => 'MrnExtraAmount', 'relation_column' => 'mrn_detail_id']
                 ];
-                $a = Helper::documentAmendment($revisionData, $id);
+                // $a = Helper::documentAmendment($revisionData, $id);
+                $this->amendmentSubmit($request, $id);
+
             }
 
             $keys = ['deletedItemDiscTedIds', 'deletedHeaderDiscTedIds', 'deletedHeaderExpTedIds', 'deletedMrnItemIds', 'deletedItemLocationIds'];
@@ -1054,6 +1062,7 @@ class MaterialReceiptController extends Controller
             $totalTaxValue = 0.00;
             $mrn->gate_entry_no = $request->gate_entry_no ?? '';
             $mrn->store_id = $request->header_store_id;
+            $mrn->sub_store_id = $request->sub_store_id;
             $mrn->gate_entry_date = $request->gate_entry_date ? date('Y-m-d', strtotime($request->gate_entry_date)) : '';
             $mrn->supplier_invoice_date = $request->supplier_invoice_date ? date('Y-m-d', strtotime($request->supplier_invoice_date)) : '';
             $mrn->supplier_invoice_no = $request->supplier_invoice_no ?? '';
@@ -1194,9 +1203,9 @@ class MaterialReceiptController extends Controller
                         'inventory_uom_id' => $inventory_uom_id ?? null,
                         'inventory_uom_code' => $inventory_uom_code ?? null,
                         'inventory_uom_qty' => $inventory_uom_qty ?? 0.00,
-                        'store_id' => @$component['store_id'] ?? null,
-                        'store_code' => @$component['erp_store_code'] ?? null,
-                        'sub_store_id' => @$component['sub_store_id'] ?? null,
+                        'store_id' => $mrn->store_id ?? null,
+                        'store_code' => $mrn?->erpStore?->store_code ?? null,
+                        'sub_store_id' => $mrn->sub_store_id ?? null,
                         'rate' => floatval($component['rate']) ?? 0.00,
                         'discount_amount' => floatval($component['discount_amount']) ?? 0.00,
                         'header_discount_amount' => 0.00,
@@ -1951,6 +1960,7 @@ class MaterialReceiptController extends Controller
         $itemStoreData = json_decode($request->itemStoreData,200) ?? [];
         $itemId = $request->item_id;
         $storeId = null;
+        $subStoreId = null;
         $rackId = null;
         $shelfId = null;
         $binId = null;
@@ -1958,9 +1968,7 @@ class MaterialReceiptController extends Controller
         $headerId = $request->headerId;
         $detailId = $request->detailId;
         $totalStockData = InventoryHelper::totalInventoryAndStock($itemId, $selectedAttr,  $storeId, $rackId, $shelfId, $binId);
-        // $checkStockStatus = InventoryHelper::checkItemStockStatus($headerId, $detailId, $itemId, $selectedAttr, $quantity, $storeId, $rackId, $shelfId, $binId, 'mrn', 'receipt');
-        // $checkApprovedQuantity = InventoryHelper::checkItemStockQuantity($headerId, $detailId, $itemId, $selectedAttr, $quantity, $storeId, $rackId, $shelfId, $binId, 'mrn', 'receipt');
-        // dd($checkStockStatus);
+        $storagePoints = InventoryHelperV2::getStoragePoints($itemId);
         $item = Item::find($request->item_id ?? null);
         $uomId = $request->uom_id ?? null;
         $qty = intval($request->qty) ?? 0;
@@ -1992,11 +2000,12 @@ class MaterialReceiptController extends Controller
                 'detailId',
                 'specifications',
                 'poDetail',
-                'gateEntry'
+                'gateEntry',
+                'storagePoints'
             )
         )
         ->render();
-        return response()->json(['data' => ['html' => $html, 'totalStockData' => $totalStockData], 'status' => 200, 'message' => 'fetched.']);
+        return response()->json(['data' => ['html' => $html, 'totalStockData' => $totalStockData], 'status' => 200, 'storagePoints' => $storagePoints, 'message' => 'fetched.']);
     }
 
     public function logs(Request $request, string $id)
@@ -2226,9 +2235,9 @@ class MaterialReceiptController extends Controller
 
             $revisionNumber = "MRN".$randNo;
             $mrnHeader->revision_number += 1;
-            $mrnHeader->status = "draft";
-            $mrnHeader->document_status = "draft";
-            $mrnHeader->save();
+            // $mrnHeader->status = "draft";
+            // $mrnHeader->document_status = "draft";
+            // $mrnHeader->save();
 
             /*Create document submit log*/
             if ($mrnHeader->document_status == ConstantHelper::SUBMITTED) {
@@ -2240,7 +2249,9 @@ class MaterialReceiptController extends Controller
                 $revisionNumber = $mrnHeader->revision_number ?? 0;
                 $actionType = 'submit'; // Approve // reject // submit
                 $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType);
+                $mrnHeader->document_status = $approveDocument['approvalStatus'];
             }
+            $mrnHeader->save();
 
             DB::commit();
             return response()->json([
@@ -3453,8 +3464,8 @@ class MaterialReceiptController extends Controller
             ->orderByDesc('id');
 
         // Vendor Filter
-        $materialReceipts = $materialReceipts->when($request->vendor_id, function ($vendorQuery) use ($request) {
-            $vendorQuery->where('vendor_id', $request->vendor_id);
+        $materialReceipts = $materialReceipts->when($request->vendor, function ($vendorQuery) use ($request) {
+            $vendorQuery->where('vendor_id', $request->vendor);
         });
 
         // PO No Filter
@@ -3478,11 +3489,11 @@ class MaterialReceiptController extends Controller
         // });
 
         // Document Status Filter
-        $materialReceipts = $materialReceipts->when($request->doc_status, function ($docStatusQuery) use ($request) {
+        $materialReceipts = $materialReceipts->when($request->status, function ($docStatusQuery) use ($request) {
             $searchDocStatus = [];
-            if ($request->doc_status === ConstantHelper::DRAFT) {
+            if ($request->status === ConstantHelper::DRAFT) {
                 $searchDocStatus = [ConstantHelper::DRAFT];
-            } else if ($request->doc_status === ConstantHelper::SUBMITTED) {
+            } else if ($request->status === ConstantHelper::SUBMITTED) {
                 $searchDocStatus = [ConstantHelper::SUBMITTED, ConstantHelper::PARTIALLY_APPROVED];
             } else {
                 $searchDocStatus = [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED];
@@ -3520,27 +3531,22 @@ class MaterialReceiptController extends Controller
 
         $materialReceipts->with([
             'items' => function ($query) use ($request) {
-                $query->whereHas('item', function ($q) use ($request) {
-                    // Item ID filter
-                    $q->when($request->item_id, function ($subQuery) use ($request) {
-                        $subQuery->where('id', $request->item_id);
-                    });
+                $query
+                    ->when($request->item_id, function ($subQuery) use ($request) {
+                        $subQuery->where('item_id', $request->item_id);
+                    })
+                    ->when($request->so_no, function ($subQuery) use ($request) {
+                        $subQuery->where('so_id', $request->so_no);
+                    })
+                    ->whereHas('item', function ($q) use ($request) {
+                        $q->when($request->m_category_id, function ($subQ) use ($request) {
+                            $subQ->where('category_id', $request->m_category_id);
+                        });
 
-                    // SO ID filter
-                    $q->when($request->so_id, function ($subQuery) use ($request) {
-                        $subQuery->where('so_id', $request->so_id);
+                        $q->when($request->m_subcategory_id, function ($subQ) use ($request) {
+                            $subQ->where('category_id', $request->m_subcategory_id);
+                        });
                     });
-
-                    // Category ID filter
-                    $q->when($request->m_category_id, function ($subQuery) use ($request) {
-                        $subQuery->where('category_id', $request->m_category_id);
-                    });
-
-                    // Subcategory ID filter
-                    $q->when($request->m_subcategory_id, function ($subQuery) use ($request) {
-                        $subQuery->where('subcategory_id', $request->m_subcategory_id);
-                    });
-                });
             },
             'items.item',
             'items.item.category',
@@ -3568,9 +3574,13 @@ class MaterialReceiptController extends Controller
                 $reportRow->book_code = $header->book_code;
                 $reportRow->document_number = $header->document_number;
                 $reportRow->document_date = $header->document_date;
-                $reportRow->po_no = !empty($header->po?->book_code) ? $header->po?->book_code : (!empty($header->po?->document_number) ? $header->po?->document_number : '');
+                $reportRow->po_no = !empty($header->po?->book_code) && !empty($header->po?->document_number)
+                                    ? $header->po?->book_code . ' - ' . $header->po?->document_number
+                                    : '';
                 $reportRow->ge_no = $header->gate_entry_no;
-                $reportRow->so_no = !empty($mrnItem->so?->book_code) ? $mrnItem->so?->book_code : (!empty($mrnItem->so?->document_number) ? $mrnItem->so?->document_number : '');
+                $reportRow->so_no = !empty($header->so?->book_code) && !empty($header->so?->document_number)
+                                    ? $header->so?->book_code . ' - ' . $header->so?->document_number
+                                    : '';
                 $reportRow->lot_no = $header->lot_no;
                 $reportRow->vendor_name = $header->vendor ?-> company_name;
                 $reportRow->vendor_rating = null;

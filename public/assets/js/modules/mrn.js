@@ -787,8 +787,9 @@ function checkBasicFilledDetail()
     let bookId = $("#book_id").val() || '';
     let documentNumber = $("#document_number").val() || '';
     let documentDate = $("[name='document_date']").val() || '';
-    let referenceNumber = $("[name='reference_number']").val() || '';
-    if(bookId && documentNumber && documentDate && referenceNumber) {
+    let storeId = $("[name='header_store_id']").val() || '';
+    let subStoreId = $("[name='sub_store_id']").val() || '';
+    if(bookId && documentNumber && documentDate && storeId && subStoreId) {
         filled = true;
     }
     return filled;
@@ -1319,58 +1320,43 @@ $(document).on('change', 'select[name*="[uom_id]"]',(e) => {
     setTableCalculation();
 });
 
-function updateItemStores() {
-    var selectedStoreId = $('.header_store_id').val();
-    
-    getSubStores(selectedStoreId);
-
-    // Update all item store dropdowns with selected value
-    $('.item-store').val(selectedStoreId);
-}
-
-// On page load, set the default selected value
-// updateItemStores();
-updateItemStores(); // Trigger on page load
-
-// When header store dropdown changes
-$('.header_store_id').change(function() {
-    updateItemStores();
+// 1. Attach change event
+$(document).on('change', '.header_store_id', function () {
+    const selectedStoreId = $(this).val();
+    if (selectedStoreId) {
+        getSubStores(selectedStoreId);
+    }
 });
 
-function getSubStores(storeLocationId, item='')
+// 2. On page load: trigger if already selected
+const selectedStoreId = $('.header_store_id').val();
+if (selectedStoreId) {
+    getSubStores(selectedStoreId);
+}
+
+// Get SUb Stores
+function getSubStores(storeLocationId)
 {
     const storeId = storeLocationId;
-    let itemId = '';
-    if(item){
-        itemId = item;
-    }
     $.ajax({
         url: "/sub-stores/store-wise",
         method: 'GET',
         dataType: 'json',
         data: {
             store_id : storeId,
-            item_id : item,
         },
         success: function(data) {
+            console.log('data', data);
+            
             if((data.status == 200) && data.data.length) {
-                console.log('store wise sub stores', data);
                 let options = '';
                 data.data.forEach(function(location) {
                     options+= `<option value="${location.id}">${location.name}</option>`;
                 });
                 $(".sub_store").html(options);
-
-                // Show subStore header and cell
-                $(".subStore").show();
-                // Set colspan to 11
-                $("td.dynamic-colspan").attr("colspan", 11);
             } else {
-                console.log('No data found', data);
                 // No data found, hide subStore header and cell
-                $(".subStore").hide();
-                // Set colspan to 10
-                $("td.dynamic-colspan").attr("colspan", 10);
+                $(".sub_store").empty();
             }
         },
         error: function(xhr) {
@@ -1382,3 +1368,61 @@ function getSubStores(storeLocationId, item='')
         }
     });
 }
+
+let itemStorageMap = {};  // Key = item ID or code, Value = array of storage points
+let activeRowIndex = null;
+
+// Open modal on icon/button click
+$(document).on('click', '.addDeliveryScheduleBtn', function () {
+    activeRowIndex = $(this).data('row-count');
+    const $row = $(`#row_${activeRowIndex}`);
+    const storagePointsInput = $row.find(`input[name="components[${activeRowIndex}][storage_points]"]`);
+    const storageData = JSON.parse(storagePointsInput.val() || '[]');
+
+    populateStoragePointsTable(storageData);
+    $('#storagePointsRowIndex').val(activeRowIndex);
+    $('#storagePointsModal').modal('show');
+});
+
+// Populate the modal table
+function populateStoragePointsTable(data) {
+    const tbody = $('#storagePointsTable tbody');
+    let html = '';
+
+    if (data.length === 0) {
+        html = `<tr><td colspan="3" class="text-muted text-center">No storage points available.</td></tr>`;
+    } else {
+        data.forEach((point, i) => {
+            html += `
+                <tr data-index="${i}">
+                    <td>${point.name || '-'}</td>
+                    <td>${point.parents || '-'}</td>
+                    <td>
+                        <input type="number" step="any" class="form-control form-control-sm quantity-input" 
+                            data-index="${i}" value="${point.quantity || ''}" />
+                    </td>
+                </tr>`;
+        });
+    }
+
+    tbody.html(html);
+}
+
+// Save button logic
+$('#saveStoragePointsBtn').on('click', function () {
+    const rowIndex = $('#storagePointsRowIndex').val();
+    const $row = $(`#row_${rowIndex}`);
+    const input = $row.find(`input[name="components[${rowIndex}][storage_points]"]`);
+    let storageData = JSON.parse(input.val() || '[]');
+
+    $('#storagePointsTable tbody tr').each(function () {
+        const index = $(this).data('index');
+        const qty = parseFloat($(this).find('.quantity-input').val()) || 0;
+        if (storageData[index]) {
+            storageData[index].quantity = qty;
+        }
+    });
+
+    input.val(JSON.stringify(storageData));
+    $('#storagePointsModal').modal('hide');
+});

@@ -22,8 +22,10 @@ use App\Models\ExpenseHeader;
 use App\Models\ErpSaleReturn;
 use App\Models\ErpInvoiceItem;
 use App\Models\ErpSoItem;
+use App\Models\GateEntryHeader;
 use App\Models\MrnHeader;
 use App\Models\PbHeader;
+use App\Models\PRHeader;
 use App\Models\PurchaseIndent;
 use App\Models\PurchaseOrder;
 use Exception;
@@ -217,7 +219,7 @@ class DocumentApprovalController extends Controller
         }
     }
 
-    //Sale Return Apporval 
+    //Sale Return Apporval
     public function saleReturn(Request $request)
     {
         $request->validate([
@@ -306,14 +308,14 @@ class DocumentApprovalController extends Controller
             $tr->document_status = $approveDocument['approvalStatus'];
             if ($actionType == 'shortlist') {
                 $tr->selected_bid_id = $request->bid_id;
-            
+
                 // Update all bids' status for the given transporter_request_id
                 ErpTransporterRequestBid::where('transporter_request_id', $tr->id)->whereNotIn('bid_status',["cancelled"])
                     ->update(['bid_status' => ConstantHelper::SUBMITTED]);
-            
+
                 // Fetch the specific bid that needs to be shortlisted
                 $bid_details = ErpTransporterRequestBid::find($request->bid_id);
-            
+
                 if ($bid_details) { // Ensure bid exists before modifying
                     $bid_details->bid_status = 'shortlisted';
                     $bid_details->save(); // Save the shortlisted bid
@@ -325,7 +327,7 @@ class DocumentApprovalController extends Controller
                 else{
                     $vendors = Vendor::withDefaultGroupCompanyOrg()->get();
                 }
-                foreach ($vendors as $vendor) { 
+                foreach ($vendors as $vendor) {
                     $sendTo = $vendor->email;
                     $title = "New Transporter Request";
                     $bidLink = route('supplier.transporter.index',[$vendor->id]); // Generate route in PHP
@@ -350,24 +352,24 @@ class DocumentApprovalController extends Controller
                             </td>
                         </tr>
                     </table>
-                    HTML;                    
+                    HTML;
                     if (!$vendors || !isset($vendors->email)) {
                         continue;
                     }
-            
+
                     dispatch(new SendEmailJob($vendors, $title, $description));
                 }
-                
+
             }
             if ($actionType == 'confirmed') {
-            
+
                 // Update all bids' status for the given transporter_request_id
                 ErpTransporterRequestBid::where('transporter_request_id', $tr->id)
                     ->update(['bid_status' => ConstantHelper::SUBMITTED]);
-            
+
                 // Fetch the specific bid that needs to be shortlisted
                 $bid_details = ErpTransporterRequestBid::find($request->bid_id);
-            
+
                 if ($bid_details) { // Ensure bid exists before modifying
                     $bid_details->bid_status = 'shortlisted';
                     $bid_details->save(); // Save the shortlisted bid
@@ -375,20 +377,20 @@ class DocumentApprovalController extends Controller
             }
 
             if ($actionType == 'cancelled') {
-            
+
                 // Update all bids' status for the given transporter_request_id
                 ErpTransporterRequestBid::where('transporter_request_id', $tr->id)
                     ->update(['bid_status' => ConstantHelper::SUBMITTED]);
-            
+
                 // Fetch the specific bid that needs to be shortlisted
                 $bid_details = ErpTransporterRequestBid::find($request->bid_id);
-            
+
                 if ($bid_details) { // Ensure bid exists before modifying
                     $bid_details->bid_status = 'shortlisted';
                     $bid_details->save(); // Save the shortlisted bid
                 }
             }
-            
+
             $tr->save();
             DB::commit();
             return response()->json([
@@ -428,7 +430,7 @@ class DocumentApprovalController extends Controller
             $mrn->document_status = $approveDocument['approvalStatus'];
             $mrn->save();
 
-            
+
 
             DB::commit();
             return response()->json([
@@ -440,6 +442,44 @@ class DocumentApprovalController extends Controller
             DB::rollBack();
             return response()->json([
                 'message' => "Error occurred while $actionType mrn document.",
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // Gate Entry Document Approval
+    public function gateEntry(Request $request)
+    {
+        $request->validate([
+            'remarks' => 'nullable',
+            'attachment' => 'nullable'
+        ]);
+        DB::beginTransaction();
+        try {
+            $expense = GateEntryHeader::find($request->id);
+            $bookId = $expense->series_id;
+            $docId = $expense->id;
+            $docValue = $expense->total_amount;
+            $remarks = $request->remarks;
+            $attachments = $request->file('attachment');
+            $currentLevel = $expense->approval_level;
+            $revisionNumber = $expense->revision_number ?? 0;
+            $actionType = $request->action_type; // Approve or reject
+            $modelName = get_class($expense);
+            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
+            $expense->approval_level = $approveDocument['nextLevel'];
+            $expense->document_status = $approveDocument['approvalStatus'];
+            $expense->save();
+
+            DB::commit();
+            return response()->json([
+                'message' => "Document $actionType successfully!",
+                'data' => $expense,
+            ]);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => "Error occurred while $actionType gate entry document.",
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -531,7 +571,7 @@ class DocumentApprovalController extends Controller
         DB::beginTransaction();
         try {
             $doc = ErpMaterialIssueHeader::find($request->id);
-            $bookId = $doc->book_id; 
+            $bookId = $doc->book_id;
             $docId = $doc->id;
             $docValue = $doc->total_amount;
             $remarks = $request->remarks;
@@ -567,7 +607,7 @@ class DocumentApprovalController extends Controller
         DB::beginTransaction();
         try {
             $doc = ErpMaterialReturnHeader::find($request->id);
-            $bookId = $doc->book_id; 
+            $bookId = $doc->book_id;
             $docId = $doc->id;
             $docValue = $doc->total_amount;
             $remarks = $request->remarks;
@@ -603,7 +643,7 @@ class DocumentApprovalController extends Controller
         DB::beginTransaction();
         try {
             $doc = ErpRateContract::find($request->id);
-            $bookId = $doc->book_id; 
+            $bookId = $doc->book_id;
             $docId = $doc->id;
             $docValue = 0;
             $remarks = $request->remarks;
@@ -639,7 +679,7 @@ class DocumentApprovalController extends Controller
         DB::beginTransaction();
         try {
             $doc = ErpProductionSlip::find($request->id);
-            $bookId = $doc->book_id; 
+            $bookId = $doc->book_id;
             $docId = $doc->id;
             $docValue = $doc->total_amount;
             $remarks = $request->remarks;
@@ -653,6 +693,19 @@ class DocumentApprovalController extends Controller
             $doc->document_status = $approveDocument['approvalStatus'];
             $doc->save();
 
+            if($doc->is_last_station && in_array($doc->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED)) {
+                foreach($doc->items as $pslipItem) {
+                    $moProduct = $pslipItem?->mo_product ?? null;
+                    if($moProduct) {
+                        $moProduct->pwoMapping->pslip_qty += floatval($pslipItem->qty);
+                        $moProduct->pwoMapping->save();
+                        if($moProduct?->soItem) {
+                            $moProduct->soItem->pslip_qty += floatval($pslipItem->qty);
+                            $moProduct->soItem->save();
+                        }
+                    }
+                }
+            }
             DB::commit();
             return response()->json([
                 'message' => "Document $actionType successfully!",
@@ -662,6 +715,45 @@ class DocumentApprovalController extends Controller
             DB::rollBack();
             return response()->json([
                 'message' => "Error occurred while $actionType",
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function purchaseReturn(Request $request)
+    {
+        $request->validate([
+            'remarks' => 'nullable',
+            'attachment' => 'nullable'
+        ]);
+        DB::beginTransaction();
+        try {
+            $mrn = PRHeader::find($request->id);
+            $bookId = $mrn->series_id;
+            $docId = $mrn->id;
+            $docValue = $mrn->total_amount;
+            $remarks = $request->remarks;
+            $attachments = $request->file('attachment');
+            $currentLevel = $mrn->approval_level;
+            $revisionNumber = $mrn->revision_number ?? 0;
+            $actionType = $request->action_type; // Approve or reject
+            $modelName = get_class($mrn);
+            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
+            $mrn->approval_level = $approveDocument['nextLevel'];
+            $mrn->document_status = $approveDocument['approvalStatus'];
+            $mrn->save();
+
+            DB::commit();
+            // return response()->json([
+            //     'message' => "Document $actionType successfully!",
+            //     'data' => $mrn,
+            // ]);
+            return redirect()->route('purchase-return.index');
+        } catch (Exception $e) {
+            dd($e);
+            DB::rollBack();
+            return response()->json([
+                'message' => "Error occurred while $actionType mrn document.",
                 'error' => $e->getMessage(),
             ], 500);
         }

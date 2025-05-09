@@ -86,6 +86,15 @@
                                                     </select>
                                                 </div>
                                             </div>
+                                            <div class="col stock_type">
+                                                <div class="mb-1 mb-sm-0">
+                                                    <select class="form-select mw-100 select2 stock_types" name="stock_type"
+                                                        id="stock_type" disabled>
+                                                        <option value="R">Regular</option>
+                                                        <option value="W">WIP</option>
+                                                    </select>
+                                                </div>
+                                            </div>
                                             <div class="col type_of_stock_id">
                                                 <div class="mb-1 mb-sm-0">
                                                     <select class="form-select mw-100 select2 type_of_stock"
@@ -120,7 +129,10 @@
                                             <th class="no-wrap">Attributes</th>
                                             <th class="no-wrap">Location</th>
                                             <th class="no-wrap">Store</th>
+                                            <th class="no-wrap">Station</th>
+                                            <th class="no-wrap">Stock Type</th>
                                             <th class="no-wrap">SO No</th>
+                                            <th class="no-wrap">LOT No</th>
                                             <th class='no-wrap text-end'>Rate</th>
                                             <th class='no-wrap text-end'>Receipt Quantity</th>
                                             <th class='no-wrap text-end'>Issue Quantity</th>
@@ -235,6 +247,7 @@
         const documentStatusCssList = @json($statusCss);
         var selectedItemId = '';
         var subStoreId = '';
+        var subStoreLocType = @json($subStoreLocType);
         window.routes = {
             poReport: @json(route('inventory-report.detail.filter')),
             detailedReports: '/get-stock-ledger-reports',
@@ -278,17 +291,15 @@
                     }
                     if (key == 'item') {
                         selectedItemId = paramObj[key];
-                        $('#store_id, #sub_store_id, .attributeBtn, #type_of_stock_id').prop(
+                        $('#store_id, #sub_store_id, .attributeBtn, #type_of_stock_id, #stock_type').prop(
                             'disabled', false);
-                    }
-                    if (key === 'sub_store_id') {
-                        subStoreId = paramObj[key];
                     }
                     if (key === 'store_id') {
                         if (paramObj[key]) {
                             $('#store_id').val(paramObj[key]).select2();
                             var data = {
-                                store_id: paramObj[key]
+                                store_id: paramObj[key],
+                                type : subStoreLocType,
                             };
                             $.ajax({
                                 type: 'GET',
@@ -314,9 +325,17 @@
                             $('#sub_store_id').append('<option value="">Select</option>');
                             $('#sub_store_id').trigger('change');
                         }
-
                     }
 
+                    if (key === 'sub_store_id') {
+
+                    $('.sub_store_code').val(paramObj[key]).trigger('change');
+                    }
+
+                    if (key === 'stock_type') {
+
+                    $('.stock_types').val(paramObj[key]).trigger('change');
+                    }
                 });
                 return paramObj;
             }
@@ -447,6 +466,10 @@
                 <td></td>
                 <td></td>
                 <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
                 <td class="fw-bolder no-wrap text-end ${getBalanceColor(openingBalance)}" style="width: 100%;">Opening Balance</td>
                 <td></td>
                 <td></td>
@@ -501,11 +524,20 @@
                         `<td class="no-wrap">${report.document_number}</td>`,
                         `<td class="no-wrap">${report?.book_type ?? ""}</td>`,
                         `<td class="no-wrap">${report?.item?.item_code ?? ""}</td>`,
-                        `<td class="no-wrap">${report?.item?.item_name ?? ""}</td>`,
+                        `<td class="no-wrap">
+                            ${
+                                report?.stock_type === "W" && report?.wip_station_id
+                                    ? (report?.item?.item_name ?? "") + " - " + (report?.wip_station?.name ?? "")
+                                    : (report?.item?.item_name ?? "")
+                            }
+                        </td>`,
                         `<td class="no-wrap">${attributesHTML}</td>`,
                         `<td class="no-wrap">${report?.location?.store_name ?? ""}</td>`,
                         `<td class="no-wrap">${report?.store?.name ?? ""}</td>`,
+                        `<td class="no-wrap">${report?.station?.name ?? ""}</td>`,
+                        `<td class="no-wrap">${report?.stock_type === "R" ? "Regular" : report?.stock_type === "W" ? "WIP" : ""}</td>`,
                         `<td class="no-wrap">${report?.so?.book_code ?? ""}-${report?.so?.document_number ?? ""}</td>`,
+                        `<td class="no-wrap">${report?.lot_number ?? ""}</td>`,
                         `<td class='no-wrap text-end'>${parseFloat(report?.org_currency_cost_per_unit) ?? 0.00}</td>`,
                         `<td class='no-wrap text-end'>${report?.receipt_qty ?? 0.00}</td>`,
                         `<td class='no-wrap text-end'>${report?.issue_qty ?? 0.00}</td>`,
@@ -542,6 +574,10 @@
                 <td></td>
                 <td></td>
                 <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
                 <td class="fw-bolder text-end ${getBalanceColor(totalReceiptQty)}" style="width: 100%;">Total: ${totalReceiptQty}</td>
                 <td class="fw-bolder text-end ${getBalanceColor(totalIssueQty)}" style="width: 100%;">Total: ${totalIssueQty}</td>
                 <td class="fw-bolder text-end ${getBalanceColor(totalReceiptValue)}" style="width: 100%;">Total: ${totalReceiptValue}</td>
@@ -552,6 +588,10 @@
                 // Add the closing balance row below the total issue quantity row
                 const closingBalanceRow = document.createElement("tr");
                 closingBalanceRow.innerHTML = `
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
                 <td></td>
                 <td></td>
                 <td></td>
@@ -658,6 +698,7 @@
             handleFilterChange('#store_id', 'store_id');
             handleFilterChange('#sub_store_id', 'sub_store_id');
             handleFilterChange('#type_of_stock_id', 'type_of_stock_id');
+            handleFilterChange('#stock_type', 'stock_type');
 
             $('#attribute-button').click(function() {
                 filterData.attributes = $('.custnewpo-detail select, .custnewpo-detail input')
@@ -677,6 +718,7 @@
                     let itemValue = $("#item").attr('data-id');
                     let storeIdValue = $("#store_id").val();
                     let subStoreIdValue = $("#sub_store_id").val();
+                    let stockTypeValue = $("#stock_type").val();
                     let typeOfStockIdIdValue = $("#type_of_stock_id").val();
 
                     if (itemValue && !filterData.hasOwnProperty('item')) {
@@ -687,6 +729,9 @@
                     }
                     if (subStoreIdValue && !filterData.hasOwnProperty('sub_store_id')) {
                         params.append('sub_store_id', subStoreIdValue);
+                    }
+                    if (stockTypeValue && !filterData.hasOwnProperty('stock_type')) {
+                        params.append('stock_type', stockTypeValue);
                     }
                     if (typeOfStockIdIdValue && !filterData.hasOwnProperty('type_of_stock_id')) {
                         params.append('type_of_stock_id', typeOfStockIdIdValue);

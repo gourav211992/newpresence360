@@ -740,9 +740,9 @@ function checkBasicFilledDetail()
     let bookId = $("#book_id").val() || '';
     let documentNumber = $("#document_number").val() || '';
     let documentDate = $("[name='document_date']").val() || '';
-    let headerStoreLocation = $("[name='header_store_id']").val() || '';
-    // let referenceNumber = $("[name='reference_number']").val() || '';
-    if(bookId && documentNumber && documentDate && headerStoreLocation) {
+    let storeId = $("[name='header_store_id']").val() || '';
+    let subStoreId = $("[name='sub_store_id']").val() || '';
+    if(bookId && documentNumber && documentDate && storeId && subStoreId) {
         filled = true;
     }
     return filled;
@@ -1259,25 +1259,6 @@ $(document).on('change', 'select[name*="[uom_id]"]',(e) => {
     setTableCalculation();
 });
 
-function updateItemStores() {
-    var selectedStoreId = $('.header_store_id').val();
-    console.log('selectedStoreId', selectedStoreId);
-
-    getSubStores(selectedStoreId);
-    // Update all item store dropdowns with the selected value
-    $('.item-store').each(function() {
-        $(this).val(selectedStoreId);
-    });
-}
-
-// On page load, set the default selected value
-updateItemStores();
-
-// When header store dropdown changes
-$('.header_store_id').change(function() {
-    updateItemStores();
-});
-
 function updateDropdown() {
     // Get the value of pr_qty_type from the hidden input
     let prQtyType = $("#pr_qty_type").val();
@@ -1310,28 +1291,29 @@ $('#pr_qty_type').on('change', function() {
     updateDropdown();
 });
 
-/*store_id on change*/
-$(document).on('change',"[name*='store_id']",(e) => {
-    let tr = $(e.target).closest('tr');
-    getItemDetail(tr);
+// 1. Attach change event
+$(document).on('change', '.header_store_id', function () {
+    const selectedStoreId = $(this).val();
+    if (selectedStoreId) {
+        getSubStores(selectedStoreId);
+    }
 });
+
+// 2. On page load: trigger if already selected
+const selectedStoreId = $('.header_store_id').val();
+if (selectedStoreId) {
+    getSubStores(selectedStoreId);
+}
 
 function getSubStores(storeLocationId, item='')
 {
     const storeId = storeLocationId;
-    console.log('storeId', storeId);
-
-    let itemId = '';
-    if(item){
-        itemId = item;
-    }
     $.ajax({
         url: "/sub-stores/store-wise",
         method: 'GET',
         dataType: 'json',
         data: {
             store_id : storeId,
-            item_id : item,
         },
         success: function(data) {
             console.log('store wise sub stores', data);
@@ -1341,18 +1323,9 @@ function getSubStores(storeLocationId, item='')
                     options+= `<option value="${location.id}">${location.name}</option>`;
                 });
                 $(".sub_store").html(options);
-
-                // Show subStore header and cell
-                $(".subStore").show();
-                // Set colspan to 9
-                $("td.dynamic-colspan").attr("colspan", 9);
-                $("td.dynamic-summary-colspan").attr("colspan", 7);
             } else {
                 // No data found, hide subStore header and cell
-                $(".subStore").hide();
-                // Set colspan to 9
-                $("td.dynamic-colspan").attr("colspan", 8);
-                $("td.dynamic-summary-colspan").attr("colspan", 6);
+                $(".sub_store").empty();
             }
         },
         error: function(xhr) {

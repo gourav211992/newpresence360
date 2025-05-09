@@ -140,6 +140,36 @@
         </td>
     </tr>
 @endif
+@if(isset($storagePoints['data']) && !empty($storagePoints['data']))
+    <tr>
+        <td class="poprod-decpt">
+            <span class="mw-100" style="padding: 0%;">
+                <strong style="font-size:11px; color : #6a6a6a;">Storage Points</strong>
+            </span>
+        </td>
+    </tr>
+    @foreach($storagePoints['data'] as $index => $value)
+        <tr>
+            <td class="poprod-decpt">
+                <span class="badge rounded-pill badge-light-primary">
+                    <strong>
+                        Name
+                    </strong>: {{ucFirst($value->name)}}
+                </span>
+                <span class="badge rounded-pill badge-light-primary">
+                    <strong>
+                        Available Weight
+                    </strong>: {{(($value->max_weight ?? 0.00) - ($value->current_weight ?? 0.00))}}
+                </span>
+                <span class="badge rounded-pill badge-light-primary">
+                    <strong>
+                        Available Volume
+                    </strong>: {{(($value->max_volume ?? 0.00) - ($value->current_volume ?? 0.00))}}
+                </span>
+            </td>
+        </tr>
+    @endforeach
+@endif
 @if(isset($remark) && $remark)
     <tr>
         <td class="poprod-decpt">

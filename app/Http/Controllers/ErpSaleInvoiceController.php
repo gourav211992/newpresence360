@@ -1076,7 +1076,7 @@ class ErpSaleInvoiceController extends Controller
                                         'invoice_item_id' => $soItem -> id,
                                         'ted_type' => 'Tax',
                                         'ted_level' => 'D',
-                                        'ted_id' => $taxDetail['tax_id'],
+                                        'ted_id' => $taxDetail['id'],
                                     ],
                                     [
                                         'ted_group_code' => $taxDetail['tax_group'],
@@ -1407,7 +1407,7 @@ class ErpSaleInvoiceController extends Controller
             if ($request -> doc_type === ConstantHelper::SO_SERVICE_ALIAS) {
                 $referedHeaderId = ErpSoItem::whereIn('id', $selectedIds) -> first() ?-> header ?-> id;
                 $order = ErpSoItem::whereHas('header', function ($subQuery) use($request, $applicableBookIds, $referedHeaderId) {
-                    $subQuery -> when($referedHeaderId, function ($refQuery) use($referedHeaderId) {
+                    $subQuery -> withDefaultGroupCompanyOrg() -> when($referedHeaderId, function ($refQuery) use($referedHeaderId) {
                         $refQuery -> where('id', $referedHeaderId);
                     })-> where('document_type', ConstantHelper::SO_SERVICE_ALIAS) -> whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]) -> whereIn('book_id', $applicableBookIds) -> when($request -> customer_id, function ($custQuery) use($request) {
                         $custQuery -> where('customer_id', $request -> customer_id) -> where('store_id', $request -> store_id);
@@ -1420,10 +1420,10 @@ class ErpSaleInvoiceController extends Controller
                     $refQuery -> whereNotIn('id', $selectedIds);
                 })-> with('header', function ($headerQuery) {
                     $headerQuery -> with(['customer', 'shipping_address_details']);
-                }) -> whereColumn('dnote_qty', "<", "order_qty") -> where('pslip_qty', ">", 0);
+                }) -> whereColumn('dnote_qty', "<", "order_qty");
             } else if ($request -> doc_type === ConstantHelper::SI_SERVICE_ALIAS || $request -> doc_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS) {
                 $order = ErpInvoiceItem::whereHas('header', function ($subQuery) use($request, $applicableBookIds) {
-                    $subQuery -> whereIn('document_type', [ConstantHelper::SI_SERVICE_ALIAS, ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS]) -> whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]) -> whereIn('book_id', $applicableBookIds) -> when($request -> customer_id, function ($custQuery) use($request) {
+                    $subQuery -> withDefaultGroupCompanyOrg() -> whereIn('document_type', [ConstantHelper::SI_SERVICE_ALIAS, ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS]) -> whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]) -> whereIn('book_id', $applicableBookIds) -> when($request -> customer_id, function ($custQuery) use($request) {
                         $custQuery -> where('customer_id', $request -> customer_id)-> where('store_id', $request -> store_id);;
                     }) -> when($request -> book_id, function ($bookQuery) use($request) {
                         $bookQuery -> where('book_id', $request -> book_id);
@@ -1471,9 +1471,9 @@ class ErpSaleInvoiceController extends Controller
             $order = isset($order) ? $order -> get() : new Collection();
             if ($request -> doc_type !== ConstantHelper::LAND_LEASE) {
                 $order = $order -> filter(function ($singleOrder) use($request) {
-                    if ($request -> doc_type === ConstantHelper::SO_SERVICE_ALIAS) {
-                        return $singleOrder -> balance_qty > 0 && $singleOrder -> balance_bundle_qty > 0;
-                    }
+                    // if ($request -> doc_type === ConstantHelper::SO_SERVICE_ALIAS) {
+                    //     return $singleOrder -> balance_qty > 0 && $singleOrder -> balance_bundle_qty > 0;
+                    // }
                     return $singleOrder -> balance_qty > 0;
                 });
                 foreach ($order as &$itemVal) {

@@ -57,20 +57,6 @@
             </select>
         </td>
         <td>
-            <select class="form-select item-store" name="components[{{$rowCount}}][store_id]">
-                @foreach($locations as $erpStore)
-                    <option value="{{$erpStore->id}}">
-                        {{ucfirst($erpStore->store_name)}}
-                    </option>
-                @endforeach
-            </select>
-        </td>
-        <td class="subStore">
-            <select class="form-select sub_store" name="components[{{$rowCount}}][sub_store_id]">
-                <option value="">Select</option>
-            </select>
-        </td>
-        <td>
             <input type="hidden" name="module-type" id="module-type" value="{{ $moduleType }}">
             <input type="number" class="form-control mw-100 order_qty text-end checkNegativeVal" name="components[{{$rowCount}}][order_qty]"
             value="{{$balanceQty}}" step="any" readonly />

@@ -30,7 +30,7 @@
                         </div>
                         <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
                             <div class="form-group breadcrumb-right">
-                                <input type="hidden" name="document_status" value="draft" id="document_status">
+                                <input type="hidden" name="document_status" value="{{$mrn->document_status}}" id="document_status">
                                 <button type="button" onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0">
                                     <i data-feather="arrow-left-circle"></i> Back
                                 </button>
@@ -469,6 +469,7 @@
             <div class="modal-dialog  modal-dialog-centered" style="max-width: 700px">
             </div>
         </div>
+        @include('procurement.purchase-bill.partials.amendement-modal', ['id' => $mrn->id])
     </form>
 
     {{-- Attribute popup --}}
@@ -1238,16 +1239,16 @@
                     mrnItemIds.push({ index: trIndex + 1, mrn_detail_id: mrn_detail_id });
                 }
             });
-            if (mrnItemIds.length) {
-                e.preventDefault();
-                let rowNumbers = mrnItemIds.map(item => item.index).join(", ");
-                Swal.fire({
-                    title: 'Error!',
-                    text: `You cannot delete purchase-bill item(s) at row(s): ${rowNumbers}`,
-                    icon: 'error',
-                });
-                return false;
-            }
+            // if (mrnItemIds.length) {
+            //     e.preventDefault();
+            //     let rowNumbers = mrnItemIds.map(item => item.index).join(", ");
+            //     Swal.fire({
+            //         title: 'Error!',
+            //         text: `You cannot delete purchase-bill item(s) at row(s): ${rowNumbers}`,
+            //         icon: 'error',
+            //     });
+            //     return false;
+            // }
 
             $('#itemTable > tbody .form-check-input').each(function() {
                 if ($(this).is(":checked")) {

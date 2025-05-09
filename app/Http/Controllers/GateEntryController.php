@@ -57,6 +57,7 @@ use App\Services\MrnService;
 use Carbon\Carbon;
 use DateTime;
 use Maatwebsite\Excel\Facades\Excel;
+use stdClass;
 
 class GateEntryController extends Controller
 {
@@ -78,6 +79,8 @@ class GateEntryController extends Controller
     {
         $parentUrl = request() -> segments()[0];
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
+        $orderType = ConstantHelper::GATE_ENTRY_SERVICE_ALIAS;
+        request() -> merge(['type' => $orderType]);
         if (request()->ajax()) {
             $user = Helper::getAuthenticatedUser();
             $organization = Organization::where('id', $user->organization_id)->first();
@@ -813,7 +816,7 @@ class GateEntryController extends Controller
         if($request->has('revisionNumber') && $request->revisionNumber != $mrn->revision_number) {
             $mrn = $mrn->source;
             $mrn = GateEntryHeaderHistory::where('revision_number', $request->revisionNumber)
-                ->where('header_id', $mrn->header_id)
+                ->where('source_id', $mrn->source_id)
                 ->first();
             $view = 'procurement.gate-entry.view';
         }
@@ -826,6 +829,10 @@ class GateEntryController extends Controller
             ->where('addressable_type', Organization::class)
             ->first();
         $orgAddress = $organizationAddress?->display_address;
+
+        $erpStores = ErpStore::where('organization_id', $user->organization_id)
+            ->orderBy('id', 'DESC')
+            ->get();
 
         return view($view, [
             'deliveryAddress'=> $deliveryAddress,
@@ -841,6 +848,7 @@ class GateEntryController extends Controller
             'approvalHistory' => $approvalHistory,
             'services' => $servicesBooks['services'],
             'servicesBooks' => $servicesBooks,
+            'erpStores' => $erpStores
         ]);
     }
 
@@ -886,7 +894,8 @@ class GateEntryController extends Controller
                     ['model_type' => 'sub_detail', 'model_name' => 'GateEntryItemLocation', 'relation_column' => 'detail_id'],
                     ['model_type' => 'sub_detail', 'model_name' => 'GateEntryTed', 'relation_column' => 'detail_id']
                 ];
-                $a = Helper::documentAmendment($revisionData, $id);
+                // $a = Helper::documentAmendment($revisionData, $id);
+                $this->amendmentSubmit($request, $id);
             }
 
             $keys = ['deletedItemDiscTedIds', 'deletedHeaderDiscTedIds', 'deletedHeaderExpTedIds', 'deletedMrnItemIds', 'deletedItemLocationIds'];
@@ -1916,6 +1925,7 @@ class GateEntryController extends Controller
             $GateEntryHeaderData = $GateEntryHeader->toArray();
             unset($GateEntryHeaderData['id']); // You might want to remove the primary key, 'id'
             $GateEntryHeaderData['header_id'] = $GateEntryHeader->id;
+            $GateEntryHeaderData['source_id'] = $GateEntryHeader->id;
             $headerHistory = GateEntryHeaderHistory::create($GateEntryHeaderData);
             $headerHistoryId = $headerHistory->id;
 
@@ -1925,8 +1935,8 @@ class GateEntryController extends Controller
                 foreach($GateEntryDetails as $key => $detail){
                     $GateEntryDetailData = $detail->toArray();
                     unset($GateEntryDetailData['id']); // You might want to remove the primary key, 'id'
-                    $GateEntryDetailData['detail_id'] = $detail->id;
-                    $GateEntryDetailData['mrn_header_history_id'] = $headerHistoryId;
+                    $GateEntryDetailData['source_id'] = $detail->id;
+                    $GateEntryDetailData['header_id'] = $headerHistoryId;
                     $detailHistory = GateEntryDetailHistory::create($GateEntryDetailData);
                     $detailHistoryId = $detailHistory->id;
 
@@ -1938,9 +1948,9 @@ class GateEntryController extends Controller
                         foreach($GateEntryAttributes as $key1 => $attribute){
                             $GateEntryAttributeData = $attribute->toArray();
                             unset($GateEntryAttributeData['id']); // You might want to remove the primary key, 'id'
-                            $GateEntryAttributeData['mrn_attribute_id'] = $attribute->id;
-                            $GateEntryAttributeData['mrn_header_history_id'] = $headerHistoryId;
-                            $GateEntryAttributeData['mrn_detail_history_id'] = $detailHistoryId;
+                            $GateEntryAttributeData['source_id'] = $attribute->id;
+                            $GateEntryAttributeData['header_id'] = $headerHistoryId;
+                            $GateEntryAttributeData['detail_id'] = $detailHistoryId;
                             $attributeHistory = GateEntryAttributeHistory::create($GateEntryAttributeData);
                             $attributeHistoryId = $attributeHistory->id;
                         }
@@ -1956,9 +1966,9 @@ class GateEntryController extends Controller
                         foreach($itemExtraAmounts as $key4 => $extraAmount){
                             $extraAmountData = $extraAmount->toArray();
                             unset($extraAmountData['id']); // You might want to remove the primary key, 'id'
-                            $extraAmountData['mrn_extra_amount_id'] = $extraAmount->id;
-                            $extraAmountData['mrn_header_history_id'] = $headerHistoryId;
-                            $extraAmountData['mrn_detail_history_id'] = $detailHistoryId;
+                            $extraAmountData['source_id'] = $extraAmount->id;
+                            $extraAmountData['header_id'] = $headerHistoryId;
+                            $extraAmountData['detail_id'] = $detailHistoryId;
                             $extraAmountDataHistory = GateEntryTedHistory::create($extraAmountData);
                             $extraAmountDataId = $extraAmountDataHistory->id;
                         }
@@ -1975,8 +1985,8 @@ class GateEntryController extends Controller
                 foreach($GateEntryTeds as $key4 => $extraAmount){
                     $extraAmountData = $extraAmount->toArray();
                     unset($extraAmountData['id']); // You might want to remove the primary key, 'id'
-                    $extraAmountData['mrn_extra_amount_id'] = $extraAmount->id;
-                    $extraAmountData['mrn_header_history_id'] = $headerHistoryId;
+                    $extraAmountData['source_id'] = $extraAmount->id;
+                    $extraAmountData['header_id'] = $headerHistoryId;
                     $extraAmountDataHistory = GateEntryTedHistory::create($extraAmountData);
                     $extraAmountDataId = $extraAmountDataHistory->id;
                 }
@@ -1984,11 +1994,11 @@ class GateEntryController extends Controller
 
             $randNo = rand(10000,99999);
 
-            $revisionNumber = "MRN".$randNo;
+            $revisionNumber = "GE".$randNo;
             $GateEntryHeader->revision_number += 1;
-            $GateEntryHeader->status = "draft";
-            $GateEntryHeader->document_status = "draft";
-            $GateEntryHeader->save();
+            // $GateEntryHeader->status = "draft";
+            // $GateEntryHeader->document_status = "draft";
+            // $GateEntryHeader->save();
 
             /*Create document submit log*/
             if ($GateEntryHeader->document_status == ConstantHelper::SUBMITTED) {
@@ -2000,7 +2010,9 @@ class GateEntryController extends Controller
                 $revisionNumber = $GateEntryHeader->revision_number ?? 0;
                 $actionType = 'submit'; // Approve // reject // submit
                 $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType);
+                $GateEntryHeader->document_status = $approveDocument['approvalStatus'];
             }
+            $GateEntryHeader->save();
 
             DB::commit();
             return response()->json([
@@ -2682,4 +2694,167 @@ class GateEntryController extends Controller
 
     }
 
+    public function gateEntryReport(Request $request)
+    {
+        $user = Helper::getAuthenticatedUser();
+        $pathUrl = route('gate-entry.index');
+        $orderType = ConstantHelper::GATE_ENTRY_SERVICE_ALIAS;
+        $gateEntries = GateEntryHeader::with(['items'])
+            // ->where('document_type', $orderType)
+            ->bookViewAccess($pathUrl)
+            ->withDefaultGroupCompanyOrg()
+            ->withDraftListingLogic()
+            ->orderByDesc('id');
+
+        // Vendor Filter
+        $gateEntries = $gateEntries->when($request->vendor, function ($vendorQuery) use ($request) {
+            $vendorQuery->where('vendor_id', $request->vendor);
+        });
+
+        // PO No Filter
+        $gateEntries = $gateEntries->when($request->po_no, function ($poQuery) use ($request) {
+            $poQuery->where('purchase_order_id', $request->po_no);
+        });
+
+        // Document Status Filter
+        $gateEntries = $gateEntries->when($request->status, function ($docStatusQuery) use ($request) {
+            $searchDocStatus = [];
+            if ($request->status === ConstantHelper::DRAFT) {
+                $searchDocStatus = [ConstantHelper::DRAFT];
+            } else if ($request->status === ConstantHelper::SUBMITTED) {
+                $searchDocStatus = [ConstantHelper::SUBMITTED, ConstantHelper::PARTIALLY_APPROVED];
+            } else {
+                $searchDocStatus = [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED];
+            }
+            $docStatusQuery->whereIn('document_status', $searchDocStatus);
+        });
+
+        // Date Filters
+        $dateRange = $request->date_range ?? Carbon::now()->startOfMonth()->format('Y-m-d') . " to " . Carbon::now()->endOfMonth()->format('Y-m-d');
+        $gateEntries = $gateEntries->when($dateRange, function ($dateRangeQuery) use ($request, $dateRange) {
+            $dateRanges = explode('to', $dateRange);
+            if (count($dateRanges) == 2) {
+                $fromDate = Carbon::parse(trim($dateRanges[0]))->format('Y-m-d');
+                $toDate = Carbon::parse(trim($dateRanges[1]))->format('Y-m-d');
+                $dateRangeQuery->whereDate('document_date', ">=", $fromDate)->where('document_date', '<=', $toDate);
+            }
+        });
+
+        // Item Id Filter
+        // $materialReceipts = $materialReceipts->when($request->item_id, function ($itemQuery) use ($request) {
+        //     $itemQuery->withWhereHas('items', function ($itemSubQuery) use ($request) {
+        //         $itemSubQuery->where('item_id', $request->item_id)
+        //             // Compare Item Category
+        //             ->when($request->item_category_id, function ($itemCatQuery) use ($request) {
+        //                 $itemCatQuery->whereHas('item', function ($itemRelationQuery) use ($request) {
+        //                     $itemRelationQuery->where('category_id', $request->item_category_id)
+        //                         // Compare Item Sub Category
+        //                         ->when($request->item_sub_category_id, function ($itemSubCatQuery) use ($request) {
+        //                             $itemSubCatQuery->where('subcategory_id', $request->item_sub_category_id);
+        //                         });
+        //                 });
+        //             });
+        //     });
+        // });
+
+        $gateEntries->with([
+            'items' => function ($query) use ($request) {
+                $query
+                    ->when($request->item_id, function ($subQuery) use ($request) {
+                        $subQuery->where('item_id', $request->item_id);
+                    })
+                    ->when($request->so_no, function ($subQuery) use ($request) {
+                        $subQuery->where('so_id', $request->so_no);
+                    })
+                    ->whereHas('item', function ($q) use ($request) {
+                        $q->when($request->m_category_id, function ($subQ) use ($request) {
+                            $subQ->where('category_id', $request->m_category_id);
+                        });
+
+                        $q->when($request->m_subcategory_id, function ($subQ) use ($request) {
+                            $subQ->where('category_id', $request->m_subcategory_id);
+                        });
+                    });
+            },
+            'items.item',
+            'items.item.category',
+            'items.item.subCategory',
+            'vendor',
+            'items.so',
+            'po',
+            'items.erpStore'
+        ])
+        ->where('organization_id', $user->organization_id);
+
+        $gateEntries = $gateEntries->get();
+        $processedGateEntries = collect([]);
+
+        foreach ($gateEntries as $gateEntry) {
+            foreach ($gateEntry->items as $gateEntryItem) {
+                $reportRow = new stdClass();
+
+                // Header Details
+                $header = $gateEntryItem->gateEntryHeader;
+                $total_item_value = (($gateEntryItem?->rate ?? 0.00) * ($gateEntryItem?->accepted_qty ?? 0.00)) - ($gateEntryItem?->discount_amount ?? 0.00);
+                $reportRow->id = $gateEntryItem->id;
+                $reportRow->book_code = $header->book_code;
+                $reportRow->document_number = $header->document_number;
+                $reportRow->document_date = $header->document_date;
+                $reportRow->po_no = !empty($header->po?->book_code) && !empty($header->po?->document_number)
+                                    ? $header->po?->book_code . ' - ' . $header->po?->document_number
+                                    : '';
+                $reportRow->so_no = !empty($header->so?->book_code) && !empty($header->so?->document_number)
+                                    ? $header->so?->book_code . ' - ' . $header->so?->document_number
+                                    : '';
+                $reportRow->vendor_name = $header->vendor ?-> company_name;
+                $reportRow->vendor_rating = null;
+                $reportRow->category_name = $gateEntryItem->item ?->category ?-> name;
+                $reportRow->sub_category_name = $gateEntryItem->item ?->category ?-> name;
+                $reportRow->item_type = $gateEntryItem->item ?->type;
+                $reportRow->sub_type = null;
+                $reportRow->item_name = $gateEntryItem->item ?->item_name;
+                $reportRow->item_code = $gateEntryItem->item ?->item_code;
+
+                // Amount Details
+                $reportRow->receipt_qty = number_format($gateEntryItem->order_qty, 2);
+                $reportRow->store_name = $gateEntryItem?->erpStore?->store_name;
+                $reportRow->rate = number_format($gateEntryItem->rate);
+                $reportRow->basic_value = number_format($gateEntryItem->basic_value, 2);
+                $reportRow->item_discount = number_format($gateEntryItem->discount_amount, 2);
+                $reportRow->header_discount = number_format($gateEntryItem->header_discount_amount, 2);
+                $reportRow->item_amount = number_format($total_item_value, 2);
+
+                // Attributes UI
+                // $attributesUi = '';
+                // if (count($mrnItem->item_attributes) > 0) {
+                //     foreach ($mrnItem->item_attributes as $mrnAttribute) {
+                //         $attrName = $mrnAttribute->attribute_name;
+                //         $attrValue = $mrnAttribute->attribute_value;
+                //         $attributesUi .= "<span class='badge rounded-pill badge-light-primary' > $attrName : $attrValue </span>";
+                //     }
+                // } else {
+                //     $attributesUi = 'N/A';
+                // }
+                // $reportRow->item_attributes = $attributesUi;
+
+                // Document Status
+                $reportRow->status = $header->document_status;
+                $processedGateEntries->push($reportRow);
+            }
+        }
+
+        return DataTables::of($processedGateEntries)
+            ->addIndexColumn()
+            ->editColumn('status', function ($row) use ($orderType) {
+                $statusClass = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->status ?? ConstantHelper::DRAFT];
+                $displayStatus = ucfirst($row->status);
+                return "
+                    <div style='text-align:right;'>
+                        <span class='badge rounded-pill $statusClass'>$displayStatus</span>
+                    </div>
+                ";
+            })
+            ->rawColumns(['status'])
+            ->make(true);
+    }
 }

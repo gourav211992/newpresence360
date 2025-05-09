@@ -13,28 +13,31 @@ class ErpPslipItem extends Model
 
     protected $fillable = [
         'pslip_id',
+        'mo_product_id',
         'item_id',
+        'station_id',
+        'so_id',
         'so_item_id',
         'item_code',
         'item_name',
-        'hsn_id',
-        'hsn_code',
+        // 'hsn_id',
+        // 'hsn_code',
         'uom_id',
         'uom_code',
         'store_id',
+        'sub_store_id',
         'qty',
         'inventory_uom_id',
-        'inventory_uom_code',
+        // 'inventory_uom_code',
         'inventory_uom_qty',
         'rate',
         'customer_id',
-        'order_id',
-        'item_discount_amount',
-        'header_discount_amount',
-        'item_expense_amount',
-        'header_expense_amount',
-        'tax_amount',
-        'total_item_amount',
+        // 'item_discount_amount',
+        // 'header_discount_amount',
+        // 'item_expense_amount',
+        // 'header_expense_amount',
+        // 'tax_amount',
+        // 'total_item_amount',
         'remarks',
     ];
 
@@ -45,12 +48,47 @@ class ErpPslipItem extends Model
         'hsn' => 'hsn_id',
         'inventoryUom' => 'inventory_uom_id'
     ];
-
+    
     protected $hidden = ['deleted_at'];
+    protected $with = ['mo_product.mo'];
+
+    public function getItemValueAttribute()
+    {
+        return $this->qty * $this->rate;
+    }
+    
+    public function pslip()
+    {
+        return $this -> belongsTo(ErpProductionSlip::class, 'pslip_id', 'id');
+    }
+    
+    public function mo_product()
+    {
+        return $this -> belongsTo(MoProduct::class, 'mo_product_id', 'id');
+    }
+
+    public function consumptions()
+    {
+        return $this -> hasMany(PslipBomConsumption::class, 'pslip_item_id', 'id');
+    }
+    
+    public function getMoAttribute()
+    {
+        return $this->mo_product?->mo;
+    }
 
     public function item()
     {
         return $this -> belongsTo(Item::class, 'item_id', 'id');
+    }
+
+    public function station()
+    {
+        return $this -> belongsTo(Station::class, 'station_id');
+    }
+    public function so()
+    {
+        return $this -> belongsTo(ErpSaleOrder::class, 'so_id', 'id');
     }
     public function so_item()
     {
@@ -130,6 +168,10 @@ class ErpPslipItem extends Model
     public function store()
     {
         return $this -> belongsTo(ErpStore::class, 'store_id');
+    }
+    public function sub_store()
+    {
+        return $this -> belongsTo(ErpSubStore::class, 'sub_store_id');
     }
     public function bundles()
     {

@@ -118,12 +118,28 @@ class ErpRecruitmentJobRequests extends Model
         );
     }
 
+    public function recruitmentCertifications()
+    {
+        return $this->hasManyThrough(
+            ErpRecruitmentCertification::class,                   // Final model
+            ErpRecruitmentJobRequestCertification::class,         // Intermediate model
+            'job_request_id',                             // Foreign key on intermediate table
+            'id',                                          // Foreign key on final model (ErpRecruitmentCertification)
+            'id',                                          // Local key on this model
+            'certification_id'                                     // Local key on intermediate that matches skill
+        );
+    }
+
     public function actionByAdmin(){
         return $this->belongsTo(User::class, 'action_by');
     }
 
 	public function actionByEmployee(){
         return $this->belongsTo(Employee::class, 'action_by');
+    }
+
+    public function job(){
+        return $this->belongsTo(ErpRecruitmentJob::class, 'job_id','job_id');
     }
 
     public function getActionByNameAttribute()

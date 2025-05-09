@@ -18,6 +18,9 @@
    <td>
       <input type="text" name="components[{{$rowCount}}][pwo_doc_date]" value="{{$pwoItem->pwo?->getFormattedDate('document_date')  ?? ''}}" class="form-control mw-100 mb-25" readonly/>
    </td>
+   <td>
+      <input type="text" name="components[{{$rowCount}}][location_id]" value="{{$pwoItem->pwo?->location?->store_name  ?? ''}}" class="form-control mw-100 mb-25" readonly/>
+   </td>
    <td class="poprod-decpt"> 
       <input readonly type="text" name="component_item_name[{{$rowCount}}]" value="{{$pwoItem?->item?->item_code}}" placeholder="Select" class="form-control mw-100 mb-25 ledgerselecct comp_item_code " />
       <input type="hidden" name="components[{{$rowCount}}][item_id]" value="{{$pwoItem->item_id}}"/>
@@ -68,6 +71,7 @@
       </div>
    </td>
    <input type="hidden" name="components[{{$rowCount}}][pwo_mapping_id]" value="{{$pwoItem->id}}">
-   <input type="hidden" name="components[{{$rowCount}}][order_id]" value="{{$pwoItem->so_id}}">
+   <input type="hidden" name="components[{{$rowCount}}][so_id]" value="{{$pwoItem->so_id}}">
+   <input type="hidden" name="components[{{$rowCount}}][so_item_id]" value="{{$pwoItem->so_item_id}}">
 </tr>
 @endforeach

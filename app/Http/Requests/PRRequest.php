@@ -35,6 +35,8 @@ class PRRequest extends FormRequest
             'book_id' => 'required',
             'document_number' => 'required',
             'document_date' => 'required|date',
+            'header_store_id' => 'required',
+            'sub_store_id' => 'required',
             'vendor_id' => 'required',
             'currency_id' => 'required',
             'payment_term_id' => 'required',
@@ -123,6 +125,8 @@ class PRRequest extends FormRequest
             'document_date.date' => 'Please enter a valid date for the document date.',
             'document_date.after_or_equal' => 'The document date cannot be in the past.',
             'document_date.before_or_equal' => 'The document date cannot be in the future.',
+            'header_store_id.required' => 'Location is required',
+            'sub_store_id.required' => 'Store is required',
             'supplier_invoice_no.required' => 'Supplier Invoice No is required.',
             'supplier_invoice_date.required' => 'Supplier Invoice Date is required.',
             'transportation_mode.required' => 'Transportation mode is required.',
@@ -134,8 +138,10 @@ class PRRequest extends FormRequest
             'component_item_name.*.required' => 'Required',
             'components.*.accepted_qty.required' => 'Accepted Qty is required',
             'components.*.accepted_qty.numeric' => 'Accepted Qty must be a number.',
+            'components.*.accepted_qty.gt' => 'Accepted Qty must be greater than zero.',
             'components.*.rate.required' => 'Rate is required',
             'components.*.rate.numeric' => 'Rate must be a number.',
+            'components.*.rate.gt' => 'Rate must be greater than zero.',
             'components.*.attr_group_id.*.attr_name.required' => 'Select Attribute',
         ];
 

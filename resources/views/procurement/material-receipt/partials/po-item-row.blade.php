@@ -69,16 +69,6 @@
             </select>
         </td>
         <td>
-            <select class="form-select item-store" name="components[{{$rowCount}}][store_id]">
-                <option value="{{$item->po?->store_id}}">{{ucfirst($item->po?->store_location?->store_name)}}</option>
-            </select>
-        </td>
-        <td class="subStore">
-            <select class="form-select sub_store" name="components[{{$rowCount}}][sub_store_id]">
-                <option value="">Select</option>
-            </select>
-        </td>
-        <td>
             <input type="hidden" name="module-type" id="module-type" value="{{ $moduleType }}">
             <input type="number" class="form-control mw-100 order_qty text-end checkNegativeVal" name="components[{{$rowCount}}][order_qty]"
             value="{{$orderQty}}" step="any" {{ ($item?->po?->partial_delivery == 'no') ? 'readonly' : '' }} />

@@ -63,6 +63,7 @@ class EInvoiceHelper
     const B2B_INVOICE_TYPE = "B2B";
     const B2C_INVOICE_TYPE = "B2CL";
     const EXPORT_INVOICE_TYPE = "Export";
+    const CREDIT_NOTE_INVOICE_TYPE = "CDNR";
     const TRANPORTER_DOC_NO_MAX_LIMIT = 15;
     const EWAY_BILL_MIN_AMOUNT_LIMIT = 50000;
     

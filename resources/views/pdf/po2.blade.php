@@ -41,9 +41,9 @@
                 <!-- Organization Logo (Left) -->
                 <td style="vertical-align: top;">
                     @if (isset($orgLogo) && $orgLogo)
-                        <img src="{!! $orgLogo !!}" alt="" height="20px" />
+                        <img src="{!! $orgLogo !!}" alt="" height="50px" />
                     @else
-                        <img src="{{$imagePath}}" height="20px" alt="">
+                        <img src="{{$imagePath}}" height="50px" alt="">
                     @endif
                 </td>
 

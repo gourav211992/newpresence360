@@ -16,8 +16,6 @@ use App\Helpers\InventoryHelper;
 use App\Helpers\ServiceParametersHelper;
 use App\Models\MfgOrder;
 use App\Models\MoItem;
-use App\Models\MoAttribute;
-use App\Models\MoOverhead;
 use App\Models\AttributeGroup;
 use App\Models\Item;
 use App\Models\ItemAttribute;
@@ -26,36 +24,30 @@ use App\Models\Organization;
 use App\Models\Address;
 use App\Http\Requests\MoRequest;
 use App\Models\BomDetail;
-use App\Models\ErpSoItem;
 use App\Models\MoBomMapping;
 use App\Models\MoItemAttribute;
 use App\Models\MoItemLocation;
-use App\Models\MoMedia;
 use App\Models\MoProduct;
 use App\Models\MoProductAttribute;
 use App\Models\MoProductionItem;
 use App\Models\MoProductionItemAttribute;
 use App\Models\MoProductionItemLocation;
-use App\Models\ProductionRouteDetail;
 use App\Models\PwoSoMapping;
 use App\Models\PwoStationConsumption;
 use App\Models\Station;
 use App\Models\StockLedger;
 use App\Models\Attribute;
+use App\Models\ErpSubStore;
 use App\Models\PwoBomMapping;
-use App\Models\StockLedgerReservation;
 use Yajra\DataTables\DataTables;
 use DB;
 use PDF;
-use Illuminate\Support\Facades\Storage;
 
 class MoController extends Controller
 {
     # Bill of material list
     public function index(Request $request)
     {
-        // $user = Helper::getAuthenticatedUser();
-        // dd($user);
         $parentUrl = request()->segments()[0];
         if (request()->ajax()) {
             $user = Helper::getAuthenticatedUser();
@@ -85,28 +77,32 @@ class MoController extends Controller
                     </div>";
                 })
                 ->addColumn('book_name', function ($row) {
-                    return $row->book ? $row->book?->book_code : '';
+                    return $row->book ? $row->book?->book_code : ' ';
                 })
                 ->addColumn('item_name', function ($row) {
-                    return $row?->item ? $row?->item?->item_name : '';
+                    return $row?->item ? $row?->item?->item_name : ' ';
                 })
                 ->addColumn('item_code', function ($row) {
-                    return $row?->item ? $row?->item?->item_code : '';
+                    return $row?->item ? $row?->item?->item_code : ' ';
                 })
                 ->addColumn('location_name', function ($row) {
-                    return $row?->store_location ? $row?->store_location->store_name : '';
+                    return $row?->store_location ? $row?->store_location?->store_name : ' ';
+                })
+                ->addColumn('sub_location_name', function ($row) {
+                    return $row?->sub_store ? $row?->sub_store?->name : ' ';
                 })
                 ->addColumn('station_name', function ($row) {
-                    return $row?->station ? $row->station?->name : '';
+                    return $row?->station ? $row->station?->name : ' ';
                 })
                 ->addColumn('total_qty', function ($row) {
-                    return isset($row?->moProducts) ? (number_format($row?->moProducts()->sum('qty'),4)) : '';
+                    return isset($row?->moProducts) ? (number_format($row?->moProducts()->sum('qty'),4)) : ' ';
                 })
                 ->addColumn('mo_value', function ($row) {
-                    return isset($row?->moProductions[0]) ? (number_format($row?->moProductions[0]->value,4)) : '';
+                    return 0;
+                    // return isset($row?->moProductions[0]) ? (number_format($row?->moProductions[0]->value,4)) : ' ';
                 })
                 ->editColumn('document_date', function ($row) {
-                    return $row->getFormattedDate('document_date') ?? '';
+                    return $row->getFormattedDate('document_date') ?? ' ';
                 })
                 ->rawColumns(['document_status'])
                 ->make(true);
@@ -149,6 +145,7 @@ class MoController extends Controller
             # Mo Header Save
             $user = Helper::getAuthenticatedUser();
             $organization = Organization::where('id', $user->organization_id)->first(); 
+
             $bomExist = ItemHelper::checkItemBomExists($request->item_id, []);
             if(!$bomExist['bom_id']) {
                 return response()->json([
@@ -156,15 +153,31 @@ class MoController extends Controller
                         'error' => "",
                     ], 422);
             }
+            $subStore = ErpSubStore::find($request->sub_store_id);
+            $isConsumption = $subStore?->station_wise_consumption ?? null;
             $bom = Bom::find($bomExist['bom_id'] ?? null);
             $getProductionRoute = $bom?->productionRoute;
-            $productionDetails = optional($getProductionRoute)
-            ->details()
-            ->orderBy('level')
-            ->orderBy('id')
-            ->get();
-
+            if(strpos($isConsumption,'yes') !== false) {
+                $productionDetails = optional($getProductionRoute)
+                ->details()
+                ->orderBy('level')
+                ->orderBy('id')
+                ->get();
+            } else {
+                $productionDetails = optional($getProductionRoute)
+                ->details()
+                ->whereNull('pr_parent_id')
+                ->get();
+            }
+            
             foreach($productionDetails as $productionDetail) {
+                if(strpos($isConsumption,'yes') !== false) {
+                    $isLastStation = $productionDetail?->pr_parent_id ? false : true;
+                    $stationId = $productionDetail->station_id ?? null;
+                } else {
+                    $isLastStation = true;
+                    $stationId = null;
+                }
                 $mo = new MfgOrder;
                 $mo->organization_id = $organization->id;
                 $mo->group_id = $organization->group_id;
@@ -174,7 +187,9 @@ class MoController extends Controller
                 $mo->store_id = $request->store_id;
                 $mo->sub_store_id = $request?->sub_store_id ?? null;
                 $mo->item_id = $request->item_id;
-                $mo->station_id = $productionDetail->station_id;
+                
+                $mo->station_id = $stationId;
+                $mo->is_last_station = $isLastStation;
                 $mo->production_bom_id = $bomExist['bom_id'] ?? null;
                 $document_number = $request->document_number ?? null;
                 $numberPatternData = Helper::generateDocumentNumberNew($request->book_id, $request->document_date);
@@ -224,24 +239,6 @@ class MoController extends Controller
                 $mo->production_route_id = $productionDetail->production_route_id;
                 $mo->save();
 
-                $isLastStation = $productionDetail?->pr_parent_id ? false : true;
-                if($productionDetail->station_id && !$isLastStation) {
-                    $prDetail2 = [];
-                    $prDetail2 = ItemHelper::getStationSfItemDetails($productionDetail?->production_route_id, $productionDetail?->station_id, $mo?->production_bom_id);
-                    if(isset($prDetail2['pr_parent_id']) && $prDetail2['pr_parent_id']) {
-                        if(!$prDetail2['item_id']) {
-                            DB::rollBack();
-                            return response()->json([
-                                    'message' => 'WIP item not defined for this station.',
-                                    'error' => "",
-                                ], 422);
-                        }
-                        $mo->sf_item_id = $prDetail2['item_id'];
-                        $mo->sf_qty = $prDetail2['qty'];
-                        $mo->sf_item_attributes = $prDetail2['attributes'];
-                    }
-                    $mo->save();
-                }
                 # Save Component
                 if (isset($request->all()['components'])) {
                     # Get Product Route By Item_id
@@ -259,7 +256,8 @@ class MoController extends Controller
                         $moProdDetail->customer_id = $component['customer_id']; 
                         $moProdDetail->uom_id = $component['uom_id']; 
                         $moProdDetail->qty = $component['qty']; 
-                        $moProdDetail->order_id = $component['order_id'] ?? null; 
+                        $moProdDetail->so_id = $component['so_id'] ?? null; 
+                        $moProdDetail->so_item_id = $component['so_item_id'] ?? null; 
                         $moProdDetail->pwo_mapping_id = $component['pwo_mapping_id'] ?? null; 
                         $moProdDetail->remark = $component['remark'] ?? null; 
                         $moProdDetail->save();
@@ -286,35 +284,11 @@ class MoController extends Controller
                                 ];
                             }
                         }
-                        $stationId = $mo->station_id ?? null;
-                        $bomDetails = PwoBomMapping::where('pwo_mapping_id', $moProdDetail->pwo_mapping_id)
-                        ->where(function($query) use($stationId){
-                            if($stationId) {
-                                $query->where('station_id', $stationId);
-                            }
-                        })        
-                        ->get();
-                        foreach ($bomDetails as $bomDetail) {
-                            $moBomMapping = new MoBomMapping;
-                            $moBomMapping->mo_id = $mo->id;
-                            $moBomMapping->so_id = $bomDetail->so_id ?? null;
-                            $moBomMapping->mo_product_id = $moProdDetail->id;
-                            $moBomMapping->bom_id = $bomDetail->bom_id;
-                            $moBomMapping->bom_detail_id = $bomDetail->bom_detail_id;
-                            $moBomMapping->item_id = $bomDetail->item_id;
-                            $moBomMapping->item_code = $bomDetail->item_code;
-                            $moBomMapping->attributes = $bomDetail->attributes;
-                            $moBomMapping->uom_id = $bomDetail->uom_id;
-                            $moBomMapping->qty = $bomDetail->qty;
-                            $moBomMapping->station_id = $bomDetail->station_id;
-                            $moBomMapping->section_id = $bomDetail->section_id;
-                            $moBomMapping->sub_section_id = $bomDetail->sub_section_id;
-                            $moBomMapping->save();
-                        }       
+
                         # Back update PWO station consumption
                         if(isset($moProdDetail->pwoMapping) && $moProdDetail->pwoMapping) {
-                            $pwoStation = PwoStationConsumption::where('pwo_mapping_id',$moProdDetail?->pwoMapping?->id)
-                                                    ->where('station_id',$mo->station_id)
+                            $pwoStation = PwoStationConsumption::where('pwo_mapping_id', $moProdDetail?->pwoMapping?->id)
+                                                    ->where('station_id', $mo->station_id)
                                                     ->first();
                             if($pwoStation) {
                                 $pwoStation->mo_product_qty += $moProdDetail->qty;
@@ -322,9 +296,38 @@ class MoController extends Controller
                                 $pwoStation->save();
                             } else {
                                 $moProdDetail->pwoMapping->mo_id = $mo->id; 
+                                $moProdDetail->pwoMapping->mo_product_qty += $moProdDetail->qty; 
                                 $moProdDetail->pwoMapping->save(); 
                             }
                         }
+
+                        # Mo Item Store
+                        $bomDetails = PwoBomMapping::where('pwo_mapping_id', $moProdDetail->pwo_mapping_id)
+                                    ->where(function($query) use($stationId) {
+                                        if($stationId) {
+                                            $query->where('station_id', $stationId);
+                                        }
+                                    })      
+                                    ->get();
+
+                        foreach ($bomDetails as $bomDetail) {
+                            $moBomMapping = new MoBomMapping;
+                            $moBomMapping->mo_id = $mo->id;
+                            $moBomMapping->mo_product_id = $moProdDetail->id;
+                            $moBomMapping->so_id = $bomDetail->so_id ?? null;
+                            $moBomMapping->bom_id = $bomDetail->bom_id;
+                            $moBomMapping->bom_detail_id = $bomDetail->bom_detail_id;
+                            $moBomMapping->item_id = $bomDetail->item_id;
+                            $moBomMapping->item_code = $bomDetail->item_code;
+                            $moBomMapping->attributes = $bomDetail->attributes;
+                            $moBomMapping->uom_id = $bomDetail->uom_id;
+                            $moBomMapping->bom_qty = $bomDetail->bom_qty;
+                            $moBomMapping->consumption_qty = $bomDetail->qty;
+                            $moBomMapping->station_id = $bomDetail->station_id;
+                            $moBomMapping->section_id = $bomDetail->section_id;
+                            $moBomMapping->sub_section_id = $bomDetail->sub_section_id;
+                            $moBomMapping->save();
+                        } 
                     }   
                     if(!$selectedRow) {
                         DB::rollBack();
@@ -333,20 +336,71 @@ class MoController extends Controller
                                 'error' => "",
                             ], 422);
                     }
-                    # Store Data In MoItem
-                    $soTrackingRequired = $moProdDetail?->pwoMapping?->pwo?->so_tracking_required ?? 'no';
-                    if(strtolower($soTrackingRequired) == 'yes') {
-                        $groupedDatas = MoBomMapping::selectRaw('mo_id, so_id, station_id, bom_detail_id, item_id, item_code, uom_id, attributes, SUM(qty) as total_qty')
-                        ->where('mo_id', $mo->id)
-                        ->groupBy('mo_id','so_id','station_id','bom_detail_id', 'item_id', 'item_code', 'uom_id', 'attributes')
-                        ->get();
-                    } else {
-                        $groupedDatas = MoBomMapping::selectRaw('mo_id, station_id, bom_detail_id, item_id, item_code, uom_id, attributes, SUM(qty) as total_qty')
-                        ->where('mo_id', $mo->id)
-                        ->groupBy('mo_id','station_id','bom_detail_id', 'item_id', 'item_code', 'uom_id', 'attributes')
-                        ->get();
+
+                    if($mo->station_id) {
+                        $prDetailParents = $mo->productionRoute->details()->where('pr_parent_id', $productionDetail->station_id)->get();
+                        
+                        if($prDetailParents?->count()) {
+                            foreach($mo->moProducts as $moProduct) {
+                                foreach($prDetailParents as $prDetailParent) {
+                                    $pwoStationConsumption = PwoStationConsumption::where('pwo_mapping_id', $moProduct->pwo_mapping_id)
+                                                    ->where('station_id', $prDetailParent->station_id)->first();
+                                    $oldMo = MfgOrder::find($pwoStationConsumption->mo_id);
+                                    
+                                    $moProductAttributes = $moProduct->attributes ?? [];
+                                    if($oldMo) {
+                                        $oldMoProduct = $oldMo->moProducts()
+                                                        ->where('item_id', $moProduct->item_id)
+                                                        ->when($oldMo->so_id, function ($query) use ($oldMo) {
+                                                            $query->where('so_id', $oldMo->so_id);
+                                                        })
+                                                        ->when(count($moProductAttributes), function ($query) use ($moProductAttributes) {
+                                                            $query->whereHas('attributes', function ($piAttributeQuery) use ($moProductAttributes) {
+                                                                $piAttributeQuery->where(function ($subQuery) use ($moProductAttributes) {
+                                                                    foreach ($moProductAttributes as $poAttribute) {
+                                                                        $subQuery->orWhere(function ($q) use ($poAttribute) {
+                                                                            $q->where('item_attribute_id', $poAttribute->item_attribute_id)
+                                                                                ->where('attribute_value', $poAttribute->attribute_value);
+                                                                        });
+                                                                    }
+                                                                });
+                                                            }, '=', count($moProductAttributes));
+                                                        })
+                                                        ->first();
+                                            
+                                        $moBomAttributes = [];
+                                        foreach($moProductAttributes as $moProdAttr) {
+                                            $moBomAttributes[] = [
+                                                'attribute_id' => $moProdAttr->item_attribute_id,
+                                                'attribute_name' => $moProdAttr->attribute_name,
+                                                'attribute_value' => $moProdAttr->attribute_value
+                                            ];
+                                        }
+                                        $moBomMapping = new MoBomMapping;
+                                        $moBomMapping->mo_id = $mo->id;
+                                        $moBomMapping->mo_product_id = $moProduct->id;
+                                        $moBomMapping->old_mo_product_id = $oldMoProduct->id ?? null;
+                                        $moBomMapping->so_id = $moProduct->so_id ?? null;
+                                        $moBomMapping->item_id = $moProduct->item_id;
+                                        $moBomMapping->item_code = $moProduct->item_code;
+                                        $moBomMapping->attributes = $moBomAttributes;
+                                        $moBomMapping->uom_id = $moProduct->uom_id;
+                                        $moBomMapping->rm_type = 'sf';
+                                        $moBomMapping->bom_qty = 1;
+                                        $moBomMapping->consumption_qty = $moProduct->qty;
+                                        $moBomMapping->station_id = $prDetailParent->station_id;
+                                        $moBomMapping->save();
+                                    }
+                                }
+                            }
+                        }
                     }
-                    
+
+                    $groupedDatas = MoBomMapping::selectRaw('mo_id, so_id, station_id, bom_detail_id, item_id, item_code, uom_id, rm_type, attributes, SUM(consumption_qty) as total_qty')
+                        ->where('mo_id', $mo->id)
+                        ->groupBy('mo_id', 'so_id', 'station_id', 'bom_detail_id', 'item_id', 'item_code', 'uom_id', 'rm_type', 'attributes')
+                        ->get();
+
                     foreach($groupedDatas as $groupedData) {
                         # Mo Item Save                    
                         $moItem = new MoItem;
@@ -357,6 +411,7 @@ class MoController extends Controller
                         $moItem->item_id = $groupedData->item_id;
                         $moItem->item_code = $groupedData->item_code;
                         $moItem->uom_id = $groupedData->uom_id;
+                        $moItem->rm_type = $groupedData->rm_type;
                         $moItem->qty = $groupedData->total_qty;
                         $moItem->inventory_uom_id = $groupedData?->item?->uom_id;
                         $moItem->inventory_uom_code = $groupedData?->item?->uom?->name;
@@ -376,175 +431,7 @@ class MoController extends Controller
                             $moItemAttr->save();
                         }
                     }
-                    if($mo->station_id) {
-                        $prDetailParents = $mo->productionRoute->details()->where('pr_parent_id', $productionDetail->station_id)->get();
-                        if($prDetailParents?->count()) {
-                            foreach($mo->moProducts as $moProduct) {
-                                foreach($prDetailParents as $prDetailParent) {
-                                    $pwoStationConsumption = PwoStationConsumption::where('pwo_mapping_id', $moProduct->pwo_mapping_id)
-                                                    ->where('station_id', $prDetailParent->station_id)->first();
-                                    $oldMo = MfgOrder::find($pwoStationConsumption->mo_id);
-                                    if($oldMo && $oldMo?->sf_item_id) {
-                                        $attributes = is_string($oldMo->sf_item_attributes) 
-                                                    ? json_decode($oldMo->sf_item_attributes, true) 
-                                                    : ($oldMo->sf_item_attributes ?: []);
-                                        $moItemExit = MoItem::where('mo_id',$mo->id)
-                                                ->where('item_id',$oldMo->sf_item_id)
-                                                ->where('rm_type','sf')
-                                                ->where(function($query) use($oldMo) {
-                                                    if($oldMo->so_id) {
-                                                        $query->where('so_id', $oldMo->so_id);
-                                                    }
-                                                })
-                                                ->when(count($attributes), function ($query) use ($attributes) {
-                                                    $query->whereHas('attributes', function ($moAttributeQuery) use ($attributes) {
-                                                        $moAttributeQuery->where(function ($subQuery) use ($attributes) {
-                                                            foreach ($attributes as $attribute) {
-                                                                $subQuery->orWhere(function ($q) use ($attribute) {
-                                                                    $q->where('item_attribute_id', $attribute['item_attribute_id'])
-                                                                      ->where('attribute_value', $attribute['attribute_id']);
-                                                                });
-                                                            }
-                                                        });
-                                                    }, '=', count($attributes));
-                                                })
-                                                ->first();
-                                        if($moItemExit) {
-                                            $moItemExit->qty += $moProduct->qty * $oldMo->sf_qty;
-                                            $moItemExit->inventory_uom_qty += $moProduct->qty * $oldMo->sf_qty;
-                                            $moItemExit->save();
-                                        } else {
-                                            $moItem = new MoItem;
-                                            $moItem->mo_id = $mo->id;
-                                            $moItem->so_id = $oldMo->so_id ?? null;
-                                            $moItem->rm_type = 'sf';
-                                            $moItem->item_id = $oldMo->sf_item_id;
-                                            $moItem->item_code = $oldMo?->sfItem?->item_code;
-                                            $moItem->uom_id = $oldMo?->sfItem?->uom_id;
-                                            $moItem->inventory_uom_id = $oldMo?->sfItem?->uom_id;
-                                            $moItem->inventory_uom_code = $oldMo?->sfItem?->uom?->name;
-                                            $moItem->qty = $moProduct->qty * $oldMo->sf_qty;
-                                            $moItem->inventory_uom_qty = $moProduct->qty * $oldMo->sf_qty;
-                                            $moItem->save();
-                                            # Mo Item Attribute Save
-                                            $moItemAttributes = is_string($oldMo->sf_item_attributes) 
-                                                    ? json_decode($oldMo->sf_item_attributes, true) 
-                                                    : ($oldMo->sf_item_attributes ?: []); 
-                                            foreach($moItemAttributes as $moItemAttribute) {
-                                                $moItemAttr = new MoItemAttribute;
-                                                $moItemAttr->mo_id = $mo->id;
-                                                $moItemAttr->mo_item_id = $moItem->id;
-                                                $moItemAttr->item_id = $moItem->item_id;
-                                                $moItemAttr->item_code = $moItem->item_code;
-                                                $moItemAttr->item_attribute_id = $moItemAttribute['item_attribute_id'];
-                                                $moItemAttr->attribute_name = $moItemAttribute['attribute_group_id'];
-                                                $moItemAttr->attribute_value = $moItemAttribute['attribute_id'];
-                                                $moItemAttr->save();
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    // if last station or no station wise then product will be stored in mo production item
-                    // other wise sf item detail will insert.
-                    # Save Mo Production Item
-                    if($isLastStation) {
-                        $moProductGrouped = DB::table(function ($query) use ($mo) {
-                            $query->from('erp_mo_products')
-                                ->leftJoin('erp_mo_product_attributes', 'erp_mo_products.id', '=', 'erp_mo_product_attributes.mo_product_id')
-                                ->select(
-                                    'erp_mo_products.id as mo_product_id',
-                                    'erp_mo_products.item_id',
-                                    'erp_mo_products.item_code',
-                                    'erp_mo_products.uom_id',
-                                    DB::raw("GROUP_CONCAT(
-                                        CONCAT(erp_mo_product_attributes.item_attribute_id, ':', erp_mo_product_attributes.attribute_value)
-                                        ORDER BY erp_mo_product_attributes.item_attribute_id SEPARATOR ', '
-                                    ) as attributes"),
-                                    'erp_mo_products.qty'
-                                )
-                                ->where('erp_mo_products.mo_id', $mo->id)
-                                ->groupBy('erp_mo_products.id', 'erp_mo_products.item_id', 'erp_mo_products.item_code', 'erp_mo_products.uom_id');
-                        })
-                        ->select(
-                            'item_id',
-                            'item_code',
-                            'uom_id',
-                            DB::raw("IFNULL(attributes, '') as attributes"),
-                            DB::raw("SUM(qty) as total_qty")
-                        )
-                        ->groupBy('item_id', 'item_code', 'uom_id', 'attributes')
-                        ->get();
-                        foreach($moProductGrouped as $moProductGroup) {
-                            $moProductionItem = new MoProductionItem;
-                            $moProductionItem->mo_id = $mo->id;
-                            $moProductionItem->item_id = $moProductGroup?->item_id;
-                            $moProductionItem->item_code = $moProductGroup?->item_code;
-                            $moProductionItem->uom_id = $moProductGroup?->uom_id;
-                            $moProductionItem->required_qty = $moProductGroup?->total_qty;
-                            // $moProductionItem->attributes = $moProductGroup->attributes;
-                            $moProductionItem->save();
-                            $sfItemAttributes = $moProductGroup->attributes ? explode(',', $moProductGroup->attributes)  : [];
-                            $newAttributes = [];
-                            foreach($sfItemAttributes as $sfItemAttribute) {
-                                list($itemAttributeId, $attributeId) = explode(":", $sfItemAttribute);
-                                $itemAttribute = ItemAttribute::find($itemAttributeId);
-                                $attribute = Attribute::find($attributeId);
-                                $moProductionItemAttribute = new MoProductionItemAttribute;
-                                $moProductionItemAttribute->mo_id = $mo->id;
-                                $moProductionItemAttribute->mo_production_item_id = $moProductionItem->id;
-                                $moProductionItemAttribute->item_id = $moProductGroup->item_id;
-                                $moProductionItemAttribute->item_code = $moProductGroup->item_code;
-                                $moProductionItemAttribute->item_attribute_id = $itemAttribute?->id;
-                                $moProductionItemAttribute->attribute_group_id = $itemAttribute?->attribute_group_id;
-                                $moProductionItemAttribute->attribute_id = $attribute?->id;
-                                $moProductionItemAttribute->attribute_name = $attribute?->attributeGroup?->name;
-                                $moProductionItemAttribute->attribute_value = $attribute?->value;
-                                $moProductionItemAttribute->save();
-                                $newAttributes[] = [
-                                    'attribute_id' => intval($attribute?->id), 
-                                    'attribute_name' => $attribute?->attributeGroup?->name,
-                                    'attribute_value' => $attribute?->value,
-                                    'item_attribute_id' => intval($itemAttribute?->id),
-                                    'attribute_group_id' => intval($itemAttribute?->attribute_group_id)
-                                ];
-                            }
-                            $moProductionItem->attributes = $newAttributes;
-                            $moProductionItem->save();
-                        }
-                    } else {
-                        if($mo->sf_item_id) {
-                            $moTotalQty = MoProduct::where('mo_id', $mo->id)->sum('qty');
-                            $moProductionItem = new MoProductionItem;
-                            $moProductionItem->mo_id = $mo->id;
-                            $moProductionItem->item_id = $mo->sf_item_id;
-                            $moProductionItem->item_code = $mo->sfItem?->item_code;
-                            $moProductionItem->uom_id = $mo->sfItem?->uom_id;
-                            $moProductionItem->required_qty = $moTotalQty * $mo->sf_qty;
-                            $moProductionItem->attributes = json_encode($mo->sf_item_attributes);
-                            $moProductionItem->save();
-                            $sfItemAttributes = is_string($mo->sf_item_attributes)
-                            ? json_decode($mo->sf_item_attributes, true)
-                            : $mo->sf_item_attributes;
-                            foreach($sfItemAttributes ?? [] as $sfItemAttribute) {
-                                $moProductionItemAttribute = new MoProductionItemAttribute;
-                                $moProductionItemAttribute->mo_id = $mo->id;
-                                $moProductionItemAttribute->mo_production_item_id = $moProductionItem->id;
-                                $moProductionItemAttribute->item_id = $moProductionItem->item_id;
-                                $moProductionItemAttribute->item_code = $moProductionItem->item_code;
-                                $moProductionItemAttribute->item_attribute_id = $sfItemAttribute['item_attribute_id'];
-                                $moProductionItemAttribute->attribute_group_id = $sfItemAttribute['attribute_group_id'];
-                                $moProductionItemAttribute->attribute_id = $sfItemAttribute['attribute_id'];
-                                $moProductionItemAttribute->attribute_name = $sfItemAttribute['attribute_name'];
-                                $moProductionItemAttribute->attribute_value = $sfItemAttribute['attribute_value'];
-                                $moProductionItemAttribute->save();
-                            }
-                        }
-                    }
                 }
-                $mo->save();
                 /*Create document submit log*/
                 $modelName = get_class($mo);
                 $totalValue = 0;
@@ -630,58 +517,6 @@ class MoController extends Controller
         return response()->json(['data' => ['component_html' => $componentHtml, 'html' => $html, 'item' => $item, 'bomChanged' => $bomChanged], 'status' => 200, 'message' => 'fetched.']);
     }
 
-    # On change item Attr
-    public function changeItemAttr(Request $request)
-    {
-        $itemId = $request->item_id ?? null;
-        $moId = $request->mo_id ?? null;
-        $headerSelectedAttr = json_decode($request->header_attr,true) ?? []; 
-        $attributes = [];
-        if(count($headerSelectedAttr)) {
-               foreach($headerSelectedAttr as $headerAttr) {
-                $itemAttr = ItemAttribute::where("item_id", $itemId)
-                                ->where("attribute_group_id", $headerAttr['attr_name'])
-                                ->first();
-                $attributes[] = ['attribute_id' => intval($itemAttr?->id), 'attribute_value' => intval($headerAttr['attr_value'])];
-               }
-        }
-        $bomExists = ItemHelper::checkItemBomExists($itemId, $attributes);
-        if (!$bomExists['bom_id']) {
-            $bomExists['message'] = "Bom Not Found for this item.";
-            return response()->json(['data' => [], 'status' => 422, 'message' => $bomExists['message']]);
-        }
-        $componentHtml = '';
-        $bomChanged = false;
-        if($bomExists['bom_id']) {
-            $bom = Bom::find($bomExists['bom_id'] ?? null);
-            $mo = MfgOrder::find($moId);
-            if($mo) {
-                if($mo->production_bom_id != $bom->id) {
-                    $bomChanged = true;
-                }
-            }
-            $response = BookHelper::fetchBookDocNoAndParameters($bom->book_id, $bom->document_date);
-            $parameters = json_decode(json_encode($response['data']['parameters']), true) ?? [];
-            $sectionRequired = isset($parameters['section_required']) && is_array($parameters['section_required']) && in_array('yes', array_map('strtolower', $parameters['section_required']));
-            $subSectionRequired = isset($parameters['sub_section_required']) && is_array($parameters['sub_section_required']) && in_array('yes', array_map('strtolower', $parameters['sub_section_required']));
-            $stationRequired = isset($parameters['station_required']) && is_array($parameters['station_required']) && in_array('yes', array_map('strtolower', $parameters['station_required']));
-            $componentWasteRequired = isset($parameters['component_waste_required']) && is_array($parameters['component_waste_required']) && in_array('yes', array_map('strtolower', $parameters['component_waste_required']));
-            $componentOverheadRequired = isset($parameters['component_overhead_required']) && is_array($parameters['component_overhead_required']) && in_array('yes', array_map('strtolower', $parameters['component_overhead_required']));
-            $componentHtml = view('mfgOrder.partials.item-row-edit', [
-                'bom' => $bom,
-                'sectionRequired' => $sectionRequired,
-                'subSectionRequired' => $subSectionRequired,
-                'stationRequired' => $stationRequired,
-                'componentWasteRequired' => $componentWasteRequired,
-                'componentOverheadRequired' => $componentOverheadRequired
-                ])
-            ->render();
-        } else {
-            return response()->json(['data' => ['component_html' => $componentHtml], 'status' => 422, 'message' => $bomExists['message']]);
-        }
-        return response()->json(['data' => ['component_html' => $componentHtml, 'bomChanged' => $bomChanged], 'status' => 200, 'message' => 'fetched.']);
-    }
-
     # On change item attribute
     public function getItemAttribute(Request $request)
     {
@@ -760,15 +595,6 @@ class MoController extends Controller
         return response()->json(['data' => ['html' => $html], 'status' => 200, 'message' => 'fetched.']);
     }
 
-    # Get Orver in popup
-    public function getOverhead(Request $request)
-    {
-        $rowCount = intval($request->rowCount) ?? 1;
-        $prevSelectedData = $request->prevSelectedData ? json_decode($request->prevSelectedData,true) : [];
-        $html = view('mfgOrder.partials.comp-overhead',compact('rowCount','prevSelectedData'))->render();
-        return response()->json(['data' => ['html' => $html], 'status' => 200, 'message' => 'fetched.']);
-    }
-
     # On select row get item detail
     public function getItemDetail(Request $request)
     {
@@ -832,11 +658,6 @@ class MoController extends Controller
         ->where('status', ConstantHelper::ACTIVE)
         ->get();
         $locations = InventoryHelper::getAccessibleLocations([ConstantHelper::STOCKK, ConstantHelper::SHOP_FLOOR]);
-        $isProduction = false;
-        $approvedArr = [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED, ConstantHelper::CLOSED, ConstantHelper::POSTED];
-        if(in_array($bom->document_status, $approvedArr) && $bom?->moProductions?->count()) {
-            $isProduction = true;
-        }
         $isEdit = $buttons['submit'];
         if(!$isEdit) {
             $isEdit = $buttons['amend'] && intval(request('amendment') ?? 0) ? true: false;
@@ -869,7 +690,6 @@ class MoController extends Controller
             'serviceAlias' => $servicesAliasParam,
             'stations' => $stations,
             'locations' => $locations,
-            'isProduction' => $isProduction,
             'productionBomInstructions' => $productionBomInstructions,
             'sectionRequired' => $sectionRequired,
             'subSectionRequired' => $subSectionRequired
@@ -916,8 +736,6 @@ class MoController extends Controller
             $ctr = 0;
 
             if (count($deletedData['deletedPiItemIds'])) {
-                MoProductionItemAttribute::where('mo_id', $mo->id)->delete();
-                MoProductionItem::where('mo_id', $mo->id)->delete();
                 MoItemAttribute::where('mo_id', $mo->id)->delete();
                 MoItem::where('mo_id', $mo->id)->delete();
                 MoBomMapping::where('mo_id', $mo->id)->delete();
@@ -934,6 +752,7 @@ class MoController extends Controller
                             $pwoStation->save();
                         } else {
                             $moProductItem->pwoMapping->mo_id = null; 
+                            $moProductItem->pwoMapping->mo_product_qty -= $moProductItem->qty; 
                             $moProductItem->pwoMapping->save(); 
                         }
                     }
@@ -946,7 +765,6 @@ class MoController extends Controller
 
             $mo->document_status = $request->document_status ?? ConstantHelper::DRAFT;
             $mo->remarks = $request->remarks;
-            $mo->station_id = $request->station_id;
             # Extra Column
             $mo->save();
 
@@ -964,7 +782,8 @@ class MoController extends Controller
                     $moProdDetail->customer_id = $component['customer_id']; 
                     $moProdDetail->uom_id = $component['uom_id']; 
                     $moProdDetail->qty = $component['qty']; 
-                    $moProdDetail->order_id = $component['order_id'] ?? null; 
+                    $moProdDetail->so_id = $component['so_id'] ?? null; 
+                    $moProdDetail->so_item_id = $component['so_item_id'] ?? null; 
                     $moProdDetail->pwo_mapping_id = $component['pwo_mapping_id'] ?? null; 
                     $moProdDetail->remark = $component['remark'] ?? null; 
                     $moProdDetail->save();
@@ -1003,284 +822,139 @@ class MoController extends Controller
                             $pwoStation->save();
                         } else {
                             $moProdDetail->pwoMapping->mo_id = $mo->id; 
+                            $moProdDetail->pwoMapping->mo_product_qty += $moProdDetail->qty; 
                             $moProdDetail->pwoMapping->save(); 
                         }
                     }
                 }
 
                 if($ctr) {
-                    MoProductionItemAttribute::where('mo_id', $mo->id)->delete();
-                    MoProductionItem::where('mo_id', $mo->id)->delete();
                     MoItemAttribute::where('mo_id', $mo->id)->delete();
-                    MoItem::where('mo_id', $mo->id)->delete();
-                    MoBomMapping::where('mo_id', $mo->id)->delete();            
-
+                    MoItem::where('mo_id', $mo->id)->delete();      
+                    MoBomMapping::where('mo_id', $mo->id)->delete();
                     $stationId = $mo->station_id ?? null;
-                    $prDetail = $mo->productionRoute->details()->where('station_id', $mo->station_id)->first();
-                    $isLastStation = $prDetail?->pr_parent_id ? false : true;
-                    if($stationId && !$isLastStation) {
-                        $productionRouteId = $mo->production_route_id;
-                        $prDetail2 = [];
-                        $prDetail2 = ItemHelper::getStationSfItemDetails($productionRouteId, $stationId, $mo?->production_bom_id);
-                        if(isset($prDetail2['pr_parent_id']) && $prDetail2['pr_parent_id']) {
-                            $mo->sf_item_id = $prDetail2['item_id'];
-                            $mo->sf_qty = $prDetail2['qty'];
-                            $mo->sf_item_attributes = $prDetail2['attributes'];
-                        }
-                        $mo->save();
-                    }
                     foreach($mo->moProducts as $moProdDetail) {
-                        
-                        // $bomDetails = BomDetail::where('bom_id', $mo->production_bom_id)
-                        // ->where(function($query) use($stationId){
-                        //     if($stationId) {
-                        //         $query->where('station_id', $stationId);
-                        //     }
-                        // })        
-                        // ->get();
                         $bomDetails = PwoBomMapping::where('pwo_mapping_id', $moProdDetail->pwo_mapping_id)
-                        ->where(function($query) use($stationId){
-                            if($stationId) {
-                                $query->where('station_id', $stationId);
-                            }
-                        })        
-                        ->get();
-
+                                    ->where(function($query) use($stationId) {
+                                        if($stationId) {
+                                            $query->where('station_id', $stationId);
+                                        }
+                                    })      
+                                    ->get();
                         foreach ($bomDetails as $bomDetail) {
-                            // $bomAttributes = $bomDetail->attributes->map(fn($attribute) => [
-                            //     'attribute_id' => $attribute->item_attribute_id,
-                            //     'attribute_value' => intval($attribute->attribute_value),
-                            //     'attribute_name' => intval($attribute->attribute_name),
-                            // ])->toArray();
                             $moBomMapping = new MoBomMapping;
                             $moBomMapping->mo_id = $mo->id;
-                            $moBomMapping->so_id = $bomDetail->so_id ?? null;
                             $moBomMapping->mo_product_id = $moProdDetail->id;
+                            $moBomMapping->so_id = $bomDetail->so_id ?? null;
                             $moBomMapping->bom_id = $bomDetail->bom_id;
                             $moBomMapping->bom_detail_id = $bomDetail->bom_detail_id;
                             $moBomMapping->item_id = $bomDetail->item_id;
                             $moBomMapping->item_code = $bomDetail->item_code;
                             $moBomMapping->attributes = $bomDetail->attributes;
                             $moBomMapping->uom_id = $bomDetail->uom_id;
-                            $moBomMapping->qty = $bomDetail->qty;
+                            $moBomMapping->bom_qty = $bomDetail->bom_qty;
+                            $moBomMapping->consumption_qty = $bomDetail->qty;
                             $moBomMapping->station_id = $bomDetail->station_id;
                             $moBomMapping->section_id = $bomDetail->section_id;
                             $moBomMapping->sub_section_id = $bomDetail->sub_section_id;
                             $moBomMapping->save();
                         }       
                     }
-                    # Store Data In MoItem
-                    $soTrackingRequired = $moProdDetail?->pwoMapping?->pwo?->so_tracking_required ?? 'no';
-                    if(strtolower($soTrackingRequired) == 'yes') {
-                        $groupedDatas = MoBomMapping::selectRaw('mo_id, so_id, station_id, bom_detail_id, item_id, item_code, uom_id, attributes, SUM(qty) as total_qty')
-                        ->where('mo_id', $mo->id)
-                        ->groupBy('mo_id', 'so_id', 'station_id', 'bom_detail_id', 'item_id', 'item_code', 'uom_id', 'attributes')
-                        ->get();
-                    } else {
-                        $groupedDatas = MoBomMapping::selectRaw('mo_id, station_id, bom_detail_id, item_id, item_code, uom_id, attributes, SUM(qty) as total_qty')
-                        ->where('mo_id', $mo->id)
-                        ->groupBy('mo_id','station_id','bom_detail_id', 'item_id', 'item_code', 'uom_id', 'attributes')
-                        ->get();
-                    }
-                    
-                    foreach($groupedDatas as $groupedData) {
-                        # Mo Item Save                    
-                        $moItem = new MoItem;
-                        $moItem->mo_id = $mo->id;
-                        $moItem->so_id = $groupedData->so_id ?? null;
-                        $moItem->station_id = $groupedData->station_id;
-                        $moItem->bom_detail_id = $groupedData->bom_detail_id;
-                        $moItem->item_id = $groupedData->item_id;
-                        $moItem->item_code = $groupedData->item_code;
-                        $moItem->uom_id = $groupedData->uom_id;
-                        $moItem->qty = $groupedData->total_qty;
-                        $moItem->inventory_uom_id = $groupedData?->item?->uom_id;
-                        $moItem->inventory_uom_code = $groupedData?->item?->uom?->name;
-                        $moItem->inventory_uom_qty = $groupedData->total_qty;
-                        $moItem->save();
-                        # Mo Item Attribute Save
-                        $moItemAttributes = $groupedData->attributes;
-                        foreach($moItemAttributes as $moItemAttribute) {
-                            $moItemAttr = new MoItemAttribute;
-                            $moItemAttr->mo_id = $mo->id;
-                            $moItemAttr->mo_item_id = $moItem->id;
-                            $moItemAttr->item_id = $groupedData->item_id;
-                            $moItemAttr->item_code = $groupedData->item_code;
-                            $moItemAttr->item_attribute_id = $moItemAttribute['attribute_id'];
-                            $moItemAttr->attribute_name = $moItemAttribute['attribute_name'];
-                            $moItemAttr->attribute_value = $moItemAttribute['attribute_value'];
-                            $moItemAttr->save();
-                        }
-                    }
+
                     if($mo->station_id) {
-                        $prDetailParents = $mo->productionRoute->details()->where('pr_parent_id', $prDetail->station_id)->get();
+                        $prDetailParents = $mo->productionRoute->details()->where('pr_parent_id', $mo->station_id)->get();
+                        
                         if($prDetailParents?->count()) {
                             foreach($mo->moProducts as $moProduct) {
                                 foreach($prDetailParents as $prDetailParent) {
                                     $pwoStationConsumption = PwoStationConsumption::where('pwo_mapping_id', $moProduct->pwo_mapping_id)
                                                     ->where('station_id', $prDetailParent->station_id)->first();
                                     $oldMo = MfgOrder::find($pwoStationConsumption->mo_id);
-                                    if($oldMo && $oldMo?->sf_item_id) {
-                                        $attributes = is_string($oldMo->sf_item_attributes) 
-                                                    ? json_decode($oldMo->sf_item_attributes, true) 
-                                                    : ($oldMo->sf_item_attributes ?: []);
-                                        $moItemExit = MoItem::where('mo_id',$mo->id)
-                                            ->where('item_id',$oldMo->sf_item_id)
-                                            ->where('rm_type','sf')
-                                            ->where(function($query) use($oldMo) {
-                                                if($oldMo->so_id) {
-                                                    $query->where('so_id',$oldMo->so_id);
-                                                }
-                                            })
-                                            ->when(count($attributes), function ($query) use ($attributes) {
-                                                $query->whereHas('attributes', function ($moAttributeQuery) use ($attributes) {
-                                                    $moAttributeQuery->where(function ($subQuery) use ($attributes) {
-                                                        foreach ($attributes as $attribute) {
-                                                            $subQuery->orWhere(function ($q) use ($attribute) {
-                                                                $q->where('item_attribute_id', $attribute['item_attribute_id'])
-                                                                  ->where('attribute_value', $attribute['attribute_id']);
-                                                            });
-                                                        }
-                                                    });
-                                                }, '=', count($attributes));
-                                            })
-                                            ->first();
-                                        if($moItemExit) {
-                                            $moItemExit->qty += $moProduct->qty * $oldMo->sf_qty;
-                                            $moItemExit->inventory_uom_qty += $moProduct->qty * $oldMo->sf_qty;
-                                            $moItemExit->save();
-                                        } else {
-                                            $moItem = new MoItem;
-                                            $moItem->mo_id = $mo->id;
-                                            $moItem->so_id = $oldMo->so_id ?? null;
-                                            $moItem->rm_type = 'sf';
-                                            $moItem->item_id = $oldMo->sf_item_id;
-                                            $moItem->item_code = $oldMo?->sfItem?->item_code;
-                                            $moItem->uom_id = $oldMo?->sfItem?->uom_id;
-                                            $moItem->inventory_uom_id = $oldMo?->sfItem?->uom_id;
-                                            $moItem->inventory_uom_code = $oldMo?->sfItem?->uom?->name;
-                                            $moItem->qty = $moProduct->qty * $oldMo->sf_qty;
-                                            $moItem->inventory_uom_qty = $moProduct->qty * $oldMo->sf_qty;
-                                            $moItem->save();
-                                            # Mo Item Attribute Save
-                                            // $moItemAttributes = $oldMo->sf_item_attributes ? $oldMo->sf_item_attributes : [];
-                                            $moItemAttributes = is_string($oldMo->sf_item_attributes) 
-                                            ? json_decode($oldMo->sf_item_attributes, true) 
-                                            : ($oldMo->sf_item_attributes ?: []);
-                                            foreach($moItemAttributes as $moItemAttribute) {
-                                                $moItemAttr = new MoItemAttribute;
-                                                $moItemAttr->mo_id = $mo->id;
-                                                $moItemAttr->mo_item_id = $moItem->id;
-                                                $moItemAttr->item_id = $moItem->item_id;
-                                                $moItemAttr->item_code = $moItem->item_code;
-                                                $moItemAttr->item_attribute_id = $moItemAttribute['item_attribute_id'];
-                                                $moItemAttr->attribute_name = $moItemAttribute['attribute_group_id'];
-                                                $moItemAttr->attribute_value = $moItemAttribute['attribute_id'];
-                                                $moItemAttr->save();
-                                            }
+                                    
+                                    $moProductAttributes = $moProduct->attributes ?? [];
+                                    if($oldMo) {
+                                        $oldMoProduct = $oldMo->moProducts()
+                                                        ->where('item_id', $moProduct->item_id)
+                                                        ->when($oldMo->so_id, function ($query) use ($oldMo) {
+                                                            $query->where('so_id', $oldMo->so_id);
+                                                        })
+                                                        ->when(count($moProductAttributes), function ($query) use ($moProductAttributes) {
+                                                            $query->whereHas('attributes', function ($piAttributeQuery) use ($moProductAttributes) {
+                                                                $piAttributeQuery->where(function ($subQuery) use ($moProductAttributes) {
+                                                                    foreach ($moProductAttributes as $poAttribute) {
+                                                                        $subQuery->orWhere(function ($q) use ($poAttribute) {
+                                                                            $q->where('item_attribute_id', $poAttribute->item_attribute_id)
+                                                                                ->where('attribute_value', $poAttribute->attribute_value);
+                                                                        });
+                                                                    }
+                                                                });
+                                                            }, '=', count($moProductAttributes));
+                                                        })
+                                                        ->first();
+                                            
+                                        $moBomAttributes = [];
+                                        foreach($moProductAttributes as $moProdAttr) {
+                                            $moBomAttributes[] = [
+                                                'attribute_id' => $moProdAttr->item_attribute_id,
+                                                'attribute_name' => $moProdAttr->attribute_name,
+                                                'attribute_value' => $moProdAttr->attribute_value
+                                            ];
                                         }
+                                        $moBomMapping = new MoBomMapping;
+                                        $moBomMapping->mo_id = $mo->id;
+                                        $moBomMapping->mo_product_id = $moProduct->id;
+                                        $moBomMapping->old_mo_product_id = $oldMoProduct->id ?? null;
+                                        $moBomMapping->so_id = $moProduct->so_id ?? null;
+                                        $moBomMapping->item_id = $moProduct->item_id;
+                                        $moBomMapping->item_code = $moProduct->item_code;
+                                        $moBomMapping->attributes = $moBomAttributes;
+                                        $moBomMapping->uom_id = $moProduct->uom_id;
+                                        $moBomMapping->rm_type = 'sf';
+                                        $moBomMapping->bom_qty = 1;
+                                        $moBomMapping->consumption_qty = $moProduct->qty;
+                                        $moBomMapping->station_id = $prDetailParent->station_id;
+                                        $moBomMapping->save();
                                     }
                                 }
                             }
                         }
                     }
-                    // if last station or no station wise then product will be stored in mo production item
-                    // other wise sf item detail will insert.
-                    # Save Mo Production Item
-                    if($isLastStation) {
-                        $moProductGrouped = DB::table(function ($query) use ($mo) {
-                            $query->from('erp_mo_products')
-                                ->leftJoin('erp_mo_product_attributes', 'erp_mo_products.id', '=', 'erp_mo_product_attributes.mo_product_id') // Use LEFT JOIN
-                                ->select(
-                                    'erp_mo_products.id as mo_product_id',
-                                    'erp_mo_products.item_id',
-                                    'erp_mo_products.item_code',
-                                    'erp_mo_products.uom_id',
-                                    DB::raw("GROUP_CONCAT(
-                                        CONCAT(erp_mo_product_attributes.item_attribute_id, ':', erp_mo_product_attributes.attribute_value)
-                                        ORDER BY erp_mo_product_attributes.item_attribute_id SEPARATOR ', '
-                                    ) as attributes"),
-                                    'erp_mo_products.qty'
-                                )
-                                ->where('erp_mo_products.mo_id', $mo->id)
-                                ->groupBy('erp_mo_products.id', 'erp_mo_products.item_id', 'erp_mo_products.item_code', 'erp_mo_products.uom_id');
-                        })
-                        ->select(
-                            'item_id',
-                            'item_code',
-                            'uom_id',
-                            DB::raw("IFNULL(attributes, '') as attributes"),
-                            DB::raw("SUM(qty) as total_qty")
-                        )
-                        ->groupBy('item_id', 'item_code', 'uom_id', 'attributes')
+                    # Store Data In MoItem
+                    $groupedDatas = MoBomMapping::selectRaw('mo_id, so_id, station_id, bom_detail_id, item_id, item_code, uom_id, rm_type, attributes, SUM(consumption_qty) as total_qty')
+                        ->where('mo_id', $mo->id)
+                        ->groupBy('mo_id', 'so_id', 'station_id', 'bom_detail_id', 'item_id', 'item_code', 'uom_id', 'rm_type', 'attributes')
                         ->get();
-                        foreach($moProductGrouped as $moProductGroup) {
-                            $moProductionItem = new MoProductionItem;
-                            $moProductionItem->mo_id = $mo->id;
-                            $moProductionItem->item_id = $moProductGroup?->item_id;
-                            $moProductionItem->item_code = $moProductGroup?->item_code;
-                            $moProductionItem->uom_id = $moProductGroup?->uom_id;
-                            $moProductionItem->required_qty = $moProductGroup?->total_qty;
-                            // $moProductionItem->attributes = $moProductGroup->attributes;
-                            $moProductionItem->save();
-                            $sfItemAttributes = $moProductGroup->attributes ? explode(',', $moProductGroup->attributes)  : [];
-                            $newAttributes = [];
-                            foreach($sfItemAttributes as $sfItemAttribute) {
-                                list($itemAttributeId, $attributeId) = explode(":", $sfItemAttribute);
-                                $itemAttribute = ItemAttribute::find($itemAttributeId);
-                                $attribute = Attribute::find($attributeId);
-                                $moProductionItemAttribute = new MoProductionItemAttribute;
-                                $moProductionItemAttribute->mo_id = $mo->id;
-                                $moProductionItemAttribute->mo_production_item_id = $moProductionItem->id;
-                                $moProductionItemAttribute->item_id = $moProductGroup->item_id;
-                                $moProductionItemAttribute->item_code = $moProductGroup->item_code;
-                                $moProductionItemAttribute->item_attribute_id = $itemAttribute?->id;
-                                $moProductionItemAttribute->attribute_group_id = $itemAttribute?->attribute_group_id;
-                                $moProductionItemAttribute->attribute_id = $attribute?->id;
-                                $moProductionItemAttribute->attribute_name = $attribute?->attributeGroup?->name;
-                                $moProductionItemAttribute->attribute_value = $attribute?->value;
-                                $moProductionItemAttribute->save();
-                                $newAttributes[] = [
-                                    'attribute_id' => intval($attribute?->id), 
-                                    'attribute_name' => $attribute?->attributeGroup?->name,
-                                    'attribute_value' => $attribute?->value,
-                                    'item_attribute_id' => intval($itemAttribute?->id),
-                                    'attribute_group_id' => intval($itemAttribute?->attribute_group_id)
-                                ];
-                            }
-                            $moProductionItem->attributes = json_encode($newAttributes);
-                            $moProductionItem->save();
-                        }
-                    } else {
-                        if($mo?->sf_item_id) {
-                            $moTotalQty = MoProduct::where('mo_id', $mo->id)->sum('qty');
-                            $moProductionItem = new MoProductionItem;
-                            $moProductionItem->mo_id = $mo->id;
-                            $moProductionItem->item_id = $mo->sf_item_id;
-                            $moProductionItem->item_code = $mo->sfItem?->item_code;
-                            $moProductionItem->uom_id = $mo->sfItem?->uom_id;
-                            $moProductionItem->required_qty = $moTotalQty * $mo->sf_qty;
-                            $moProductionItem->attributes = $mo->sf_item_attributes;
-                            $moProductionItem->save();
-                            $sfItemAttributes = is_string($mo->sf_item_attributes)
-                            ? json_decode($mo->sf_item_attributes, true)
-                            : $mo->sf_item_attributes;
-                            // $sfItemAttributes = is_array($mo->sf_item_attributes) ? $mo->sf_item_attributes  : json_decode($mo->sf_item_attributes,true); 
-                            foreach($sfItemAttributes ?? [] as $sfItemAttribute) {
-                                $moProductionItemAttribute = new MoProductionItemAttribute;
-                                $moProductionItemAttribute->mo_id = $mo->id;
-                                $moProductionItemAttribute->mo_production_item_id = $moProductionItem->id;
-                                $moProductionItemAttribute->item_id = $moProductionItem->item_id;
-                                $moProductionItemAttribute->item_code = $moProductionItem->item_code;
-                                $moProductionItemAttribute->item_attribute_id = $sfItemAttribute['item_attribute_id'];
-                                $moProductionItemAttribute->attribute_group_id = $sfItemAttribute['attribute_group_id'];
-                                $moProductionItemAttribute->attribute_id = $sfItemAttribute['attribute_id'];
-                                $moProductionItemAttribute->attribute_name = $sfItemAttribute['attribute_name'];
-                                $moProductionItemAttribute->attribute_value = $sfItemAttribute['attribute_value'];
-                                $moProductionItemAttribute->save();
+                    
+                        foreach($groupedDatas as $groupedData) {
+                            # Mo Item Save                    
+                            $moItem = new MoItem;
+                            $moItem->mo_id = $mo->id;
+                            $moItem->so_id = $groupedData->so_id ?? null;
+                            $moItem->bom_detail_id = $groupedData->bom_detail_id;
+                            $moItem->station_id = $groupedData->station_id;
+                            $moItem->item_id = $groupedData->item_id;
+                            $moItem->item_code = $groupedData->item_code;
+                            $moItem->uom_id = $groupedData->uom_id;
+                            $moItem->rm_type = $groupedData->rm_type;
+                            $moItem->qty = $groupedData->total_qty;
+                            $moItem->inventory_uom_id = $groupedData?->item?->uom_id;
+                            $moItem->inventory_uom_code = $groupedData?->item?->uom?->name;
+                            $moItem->inventory_uom_qty = $groupedData->total_qty;
+                            $moItem->save();
+                            # Mo Item Attribute Save
+                            $moItemAttributes = $groupedData->attributes;
+                            foreach($moItemAttributes as $moItemAttribute) {
+                                $moItemAttr = new MoItemAttribute;
+                                $moItemAttr->mo_id = $mo->id;
+                                $moItemAttr->mo_item_id = $moItem->id;
+                                $moItemAttr->item_id = $groupedData->item_id;
+                                $moItemAttr->item_code = $groupedData->item_code;
+                                $moItemAttr->item_attribute_id = $moItemAttribute['attribute_id'];
+                                $moItemAttr->attribute_name = $moItemAttribute['attribute_name'];
+                                $moItemAttr->attribute_value = $moItemAttribute['attribute_value'];
+                                $moItemAttr->save();
                             }
                         }
-                    }
                 }
             } else {
                 if($request->document_status == ConstantHelper::SUBMITTED) {
@@ -1298,10 +972,8 @@ class MoController extends Controller
             if ($request->hasFile('attachment')) {
                 $mediaFiles = $mo->uploadDocuments($request->file('attachment'), 'mo', true);
             }
-
             /*Update Bom header*/
             $mo->save();
-
             /*Create document submit log*/
             $bookId = $mo->book_id; 
             $docId = $mo->id;
@@ -1349,396 +1021,8 @@ class MoController extends Controller
             ], 500);
         } 
     }
-    // Old Logic
-    // public function oldupdate(MoRequest $request, $id)
-    // {
-    //    DB::beginTransaction();
-    //     try {
-    //         $mo = MfgOrder::find($id);
-    //         $currentStatus = $mo->document_status;
-    //         $actionType = $request->action_type;
-    //         // if($currentStatus == ConstantHelper::APPROVED && $actionType == 'amendment')
-    //         // {
-    //         //     $revisionData = [
-    //         //         ['model_type' => 'header', 'model_name' => 'MfgOrder', 'relation_column' => ''],
-    //         //         ['model_type' => 'detail', 'model_name' => 'MoProduct', 'relation_column' => 'mo_id'],
-    //         //         ['model_type' => 'detail', 'model_name' => 'MoItem', 'relation_column' => 'mo_id'],
-    //         //         ['model_type' => 'detail', 'model_name' => 'MoBomMapping', 'relation_column' => 'mo_id'],
-    //         //         ['model_type' => 'sub_detail', 'model_name' => 'MoItemAttribute', 'relation_column' => 'mo_id'],
-    //         //         ['model_type' => 'sub_detail', 'model_name' => 'MoAttribute', 'relation_column' => 'mo_item_id'],
-    //         //     ];
-    //         //     $a = Helper::documentAmendment($revisionData, $id);
-    //         // }
 
-    //         $keys = ['deletedPiItemIds', 'deletedAttachmentIds'];
-    //         $deletedData = [];
-
-    //         foreach ($keys as $key) {
-    //             $deletedData[$key] = json_decode($request->input($key, '[]'), true);
-    //         }
-
-    //         // if (count($deletedData['deletedAttachmentIds'])) {
-    //         //     $medias = MoMedia::whereIn('id',$deletedData['deletedAttachmentIds'])->get();
-    //         //     foreach ($medias as $media) {
-    //         //         if ($request->document_status == ConstantHelper::DRAFT) {
-    //         //             Storage::delete($media->file_name);
-    //         //         }
-    //         //         $media->delete();
-    //         //     }
-    //         // }
-
-    //         if (count($deletedData['deletedPiItemIds'])) {
-    //             $moProductItems = MoProduct::whereIn('id', $deletedData['deletedPiItemIds'])->get();
-    //             MoProductionItemAttribute::where('mo_id', $mo->id)->delete();
-    //             MoProductionItem::where('mo_id', $mo->id)->delete();
-    //             MoItemAttribute::where('mo_id', $mo->id)->delete();
-    //             MoItem::where('mo_id', $mo->id)->delete();
-    //             MoBomMapping::where('mo_id', $mo->id)->delete();
-                
-    //             // foreach($moProductItems as $moProductItem) {
-    //             //     $groupedItems = $moProductItem->moBomMapping()->groupBy('mo_id','item_id','attributes','uom_id')->selectRaw('mo_id, item_id, attributes, uom_id, SUM(qty) as total_qty')->get();
-    //             //     foreach($groupedItems as $groupedItem) {
-    //             //        $moItem = MoItem::where('mo_id', $groupedItem->mo_id)
-    //             //                 ->where('item_id', $groupedItem->item_id)
-    //             //                 ->where('uom_id', $groupedItem->uom_id)
-    //             //                 ->where(function($query) use($groupedItem) {
-    //             //                     if(count($groupedItem->attributes)) {
-    //             //                         $query->whereHas('attributes', function($moItemAttrQuery) use($groupedItem) {
-    //             //                             foreach($groupedItem->attributes as $attribute) {
-    //             //                                 $moItemAttrQuery->where('item_attribute_id', $attribute['attribute_id'])
-    //             //                                 ->where('attribute_value', $attribute['attribute_value']);
-    //             //                             }
-    //             //                         });
-    //             //                     }
-    //             //                 })
-    //             //                 ->first();
-    //             //         if($groupedItem->total_qty < $moItem->mi_qty) {
-    //             //             DB::rollBack();
-    //             //             return response()->json([
-    //             //                 'message' => "Can't delete, MI created.",
-    //             //                 'error' => "",
-    //             //             ], 422);
-    //             //         }
-
-    //             //         if($moItem->inventory_uom_qty <= $groupedItem->total_qty) {
-    //             //             $moItem->attributes()->delete();
-    //             //             $moItem->delete();
-    //             //         } else {
-    //             //             $moItem->inventory_uom_qty -= $groupedItem->total_qty;
-    //             //             $moItem->qty -= $groupedItem->total_qty;
-    //             //             $moItem->save();
-    //             //         }
-    //             //     }
-    //             //     $moProductItem->moBomMapping()->delete();
-    //             //     if($moProductItem->pwoStationConsumption) {
-    //             //         $moProductItem->pwoStationConsumption->mo_product_qty -= $moProductItem->qty;
-    //             //         $moProductItem->pwoStationConsumption->mo_id = null;
-    //             //         $moProductItem->pwoStationConsumption->save();
-    //             //     } else {
-    //             //         $moProductItem->pwoMapping->mo_id = null;
-    //             //         $moProductItem->pwoMapping->save();
-    //             //     }
-    //             //     $moProductItem->attributes()->delete();
-    //             //     $moProductItem->delete();   
-    //             // }
-    //         }
-
-    //         $mo->document_status = $request->document_status ?? ConstantHelper::DRAFT;
-    //         $mo->remarks = $request->remarks;
-    //         $mo->station_id = $request->station_id;
-    //         # Extra Column
-    //         $mo->save();
-
-    //         if (isset($request->all()['components'])) {
-    //             foreach($request->all()['components'] as $component) {
-    //                 # MoProductDetail
-    //                 if(isset($component['mo_product_id']) && $component['mo_product_id']) {
-    //                     continue;
-    //                 }
-    //                 $moProdDetail = new MoProduct;
-    //                 $moProdDetail->mo_id = $mo->id; 
-    //                 $moProdDetail->item_id = $component['item_id']; 
-    //                 $moProdDetail->item_code = $component['item_code']; 
-    //                 $moProdDetail->customer_id = $component['customer_id']; 
-    //                 $moProdDetail->uom_id = $component['uom_id']; 
-    //                 $moProdDetail->qty = $component['qty']; 
-    //                 $moProdDetail->order_id = $component['order_id'] ?? null; 
-    //                 $moProdDetail->pwo_mapping_id = $component['pwo_mapping_id'] ?? null; 
-    //                 $moProdDetail->remark = $component['remark'] ?? null; 
-    //                 $moProdDetail->save();
-    //                 #Save MoProductDetailAttr component Attr
-    //                 $attributes = [];
-    //                 $newAttributes = [];
-    //                 foreach($moProdDetail?->item?->itemAttributes as $itemAttribute) {
-    //                     if (isset($component['attr_group_id'][$itemAttribute->attribute_group_id])) {
-    //                         $moProdAttr = new MoProductAttribute;
-    //                         $moProdAttr->mo_id = $mo->id;
-    //                         $moProdAttr->mo_product_id = $moProdDetail->id;
-    //                         $moProdAttr->item_attribute_id = $itemAttribute->id;
-    //                         $moProdAttr->item_code = $component['item_code'];
-    //                         $moProdAttr->attribute_name = $itemAttribute->attribute_group_id;
-    //                         $moProdAttr->attribute_value = @$component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_name'];
-    //                         $moProdAttr->save();
-    //                         $attributes[] = ['attribute_id' => intval($itemAttribute?->id), 'attribute_value' => intval($moProdAttr->attribute_value)];
-    //                         $newAttributes[] = [
-    //                             'attribute_id' => intval($moProdAttr->attribute_value), 
-    //                             'attribute_name' => $moProdAttr?->headerAttribute?->name,
-    //                             'attribute_value' => $moProdAttr?->headerAttributeValue?->value,
-    //                             'item_attribute_id' => intval($moProdAttr->item_attribute_id),
-    //                             'attribute_group_id' => intval($moProdAttr->attribute_name)
-    //                         ];
-    //                     }
-    //                 }
-                
-    //                 # Back update PWO station consumption
-    //                 if(isset($moProdDetail->pwoMapping) && $moProdDetail->pwoMapping) {
-    //                     $pwoStation = PwoStationConsumption::where('pwo_mapping_id', $moProdDetail?->pwoMapping?->id)
-    //                                             ->where('station_id', $mo->station_id)
-    //                                             ->first();
-    //                     if($pwoStation) {
-    //                         $pwoStation->mo_product_qty += $moProdDetail->qty;
-    //                         $pwoStation->save();
-    //                     }
-    //                 }
-
-    //                 # Save Mo Item from Bom Detail
-    //                 $checkBomExist = ItemHelper::checkItemBomExists($component['item_id'], $attributes);
-    //                 if(!$checkBomExist['bom_id']) {
-    //                     DB::rollBack();
-    //                     return response()->json([
-    //                             'message' => 'Bom Not Exists.',
-    //                             'error' => "",
-    //                         ], 422);
-    //                 }
-    
-    //                 $moProdDetail->save();
-    //                 $stationId = $request->station_id ?? null;
-
-    //                 if($moProdDetail->bom) {
-    //                     $productionRouteId = $moProdDetail?->bom?->production_route_id;
-    //                     $prDetail = [];
-    //                     if($stationId) {
-    //                         $prDetail = ItemHelper::getStationSfItemDetails($productionRouteId,$stationId,$moProdDetail?->production_bom_id);
-    //                     }
-    //                     if(isset($prDetail['pr_parent_id']) && $prDetail['pr_parent_id']) {
-    //                         $moProdDetail->sf_item_id = $prDetail['item_id'];
-    //                         $moProdDetail->sf_item_attributes = $prDetail['attributes'];
-    //                     } else {
-    //                         $moProdDetail->sf_item_id = $moProdDetail->item_id;
-    //                         $moProdDetail->sf_item_attributes = $newAttributes;
-    //                     }
-    //                     $moProdDetail->save();
-                        
-    //                 }
-
-    //                 $bomDetails = BomDetail::where('bom_id',$checkBomExist['bom_id'])
-    //                 ->where(function($query) use($stationId){
-    //                     if($stationId) {
-    //                         $query->where('station_id', $stationId);
-    //                     }
-    //                 })        
-    //                 ->get();
-    //                 foreach ($bomDetails as $bomDetail) {
-    //                     $bomAttributes = $bomDetail->attributes->map(fn($attribute) => [
-    //                         'attribute_id' => $attribute->item_attribute_id,
-    //                         'attribute_value' => intval($attribute->attribute_value),
-    //                         'attribute_name' => intval($attribute->attribute_name),
-    //                     ])->toArray();
-
-    //                     $moBomMapping = new MoBomMapping;
-    //                     $moBomMapping->mo_id = $mo->id;
-    //                     $moBomMapping->mo_product_id = $moProdDetail->id;
-    //                     $moBomMapping->bom_id = $bomDetail->bom_id;
-    //                     $moBomMapping->bom_detail_id = $bomDetail->id;
-    //                     $moBomMapping->item_id = $bomDetail->item_id;
-    //                     $moBomMapping->item_code = $bomDetail->item_code;
-    //                     $moBomMapping->attributes = $bomAttributes;
-    //                     $moBomMapping->uom_id = $bomDetail->uom_id;
-    //                     $moBomMapping->qty = floatval($moProdDetail->qty) * floatval($bomDetail->qty);
-    //                     $moBomMapping->save();
-    
-    //                 }   
-                    
-    //                 # Store Data In MoItem
-    //                 $groupedDatas = MoBomMapping::selectRaw('mo_id, item_id, item_code, uom_id, attributes, SUM(qty) as total_qty')
-    //                 ->where('mo_id', $mo->id)
-    //                 ->where('mo_product_id', $moProdDetail->id)
-    //                 ->groupBy('mo_id', 'item_id', 'item_code', 'uom_id', 'attributes')
-    //                 ->get();
-        
-    //                 foreach($groupedDatas as $groupedData) {
-    //                     # Mo Item Save
-    //                     $moItemExist = MoItem::where('mo_id', $groupedData->mo_id)
-    //                                 ->where('item_id', $groupedData->item_id)
-    //                                 ->where('uom_id', $groupedData->uom_id)
-    //                                 ->where(function($query) use($groupedData) {
-    //                                     if(count($groupedData->attributes)) {
-    //                                         $query->whereHas('attributes', function($moItemAttrQuery) use($groupedData) {
-    //                                             foreach($groupedData->attributes as $attribute) {
-    //                                                 $moItemAttrQuery->where('item_attribute_id', $attribute['attribute_id'])
-    //                                                 ->where('attribute_value', $attribute['attribute_value']);
-    //                                             }
-    //                                         });
-    //                                     }
-    //                                 })
-    //                                 ->first();
-                                
-    //                     if($moItemExist) {
-    //                         $moItemExist->qty += $groupedData->total_qty;
-    //                         $moItemExist->inventory_uom_qty += $groupedData->total_qty;
-    //                         $moItemExist->save();
-    //                     } else {
-    //                         $moItem = new MoItem;
-    //                         $moItem->mo_id = $mo->id;
-    //                         $moItem->item_id = $groupedData->item_id;
-    //                         $moItem->item_code = $groupedData->item_code;
-    //                         $moItem->uom_id = $groupedData->uom_id;
-    //                         $moItem->qty = $groupedData->total_qty;
-    //                         $moItem->inventory_uom_id = $groupedData?->item?->uom_id;
-    //                         $moItem->inventory_uom_code = $groupedData?->item?->uom?->name;
-    //                         $moItem->inventory_uom_qty = $groupedData->total_qty;
-    //                         $moItem->save();
-
-    //                         # Mo Item Attribute Save
-    //                         $moItemAttributes = $groupedData->attributes;
-    //                         foreach($moItemAttributes as $moItemAttribute) {
-    //                             $moItemAttr = new MoItemAttribute;
-    //                             $moItemAttr->mo_id = $mo->id;
-    //                             $moItemAttr->mo_item_id = $moItem->id;
-    //                             $moItemAttr->item_id = $groupedData->item_id;
-    //                             $moItemAttr->item_code = $groupedData->item_code;
-    //                             $moItemAttr->item_attribute_id = $moItemAttribute['attribute_id'];
-    //                             $moItemAttr->attribute_name = $moItemAttribute['attribute_name'];
-    //                             $moItemAttr->attribute_value = $moItemAttribute['attribute_value'];
-    //                             $moItemAttr->save();
-    //                         }
-    //                     }
-    //                 }
-    //             }
-
-    //             # Save Mo Production Item
-    //             $moProductGrouped = MoProduct::selectRaw('mo_id,production_bom_id, sf_item_id, sf_item_attributes, SUM(qty) as total_qty')
-    //             ->where('mo_id', $mo->id)
-    //             ->groupBy('mo_id', 'production_bom_id', 'sf_item_id', 'sf_item_attributes')
-    //             ->get();
-    //             MoProductionItem::where('mo_id',$mo->id)->delete();
-    //             MoProductionItemAttribute::where('mo_id',$mo->id)->delete();
-    //             foreach($moProductGrouped as $moProductGroup) {
-    //                 $moProductionItem = new MoProductionItem;
-    //                 $moProductionItem->mo_id = $moProductGroup->mo_id;
-    //                 $moProductionItem->production_bom_id = $moProductGroup->production_bom_id;
-    //                 $moProductionItem->item_id = $moProductGroup->sf_item_id;
-    //                 $moProductionItem->item_code = $moProductGroup?->sfItem?->item_code;
-    //                 $moProductionItem->uom_id = $moProductGroup?->sfItem?->uom_id;
-    //                 $moProductionItem->required_qty = $moProductGroup?->total_qty;
-    //                 $moProductionItem->attributes = $moProductGroup->sf_item_attributes;
-    //                 $moProductionItem->save();
-    //                 $sfItemAttributes = is_array($moProductGroup->sf_item_attributes) ? $moProductGroup->sf_item_attributes  : json_decode($moProductGroup->sf_item_attributes,true); 
-    //                 foreach($sfItemAttributes as $sfItemAttribute) {
-    //                     $moProductionItemAttribute = new MoProductionItemAttribute;
-    //                     $moProductionItemAttribute->mo_id = $moProductGroup->mo_id;
-    //                     $moProductionItemAttribute->mo_production_item_id = $moProductionItem->id;
-    //                     $moProductionItemAttribute->item_id = $moProductGroup->sf_item_id;
-    //                     $moProductionItemAttribute->item_code = $moProductGroup?->sfItem?->item_code;
-    //                     $moProductionItemAttribute->item_attribute_id = $sfItemAttribute['item_attribute_id'];
-    //                     $moProductionItemAttribute->attribute_group_id = $sfItemAttribute['attribute_group_id'];
-    //                     $moProductionItemAttribute->attribute_id = $sfItemAttribute['attribute_id'];
-    //                     $moProductionItemAttribute->attribute_name = $sfItemAttribute['attribute_name'];
-    //                     $moProductionItemAttribute->attribute_value = $sfItemAttribute['attribute_value'];
-    //                     $moProductionItemAttribute->save();
-    //                 }
-    //             }
-
-    //         } else {
-    //             if($request->document_status == ConstantHelper::SUBMITTED) {
-    //                 DB::rollBack();
-    //                 return response()->json([
-    //                         'message' => 'Please add atleast one row in component table.',
-    //                         'error' => "",
-    //                     ], 422);
-    //             }
-    //         }
-    
-    //         $mo->save();
-
-    //         /*Bom Attachment*/
-    //         if ($request->hasFile('attachment')) {
-    //             $mediaFiles = $mo->uploadDocuments($request->file('attachment'), 'mo', true);
-    //         }
-
-    //         /*Update Bom header*/
-    //         $mo->save();
-
-    //         /*Create document submit log*/
-    //         $bookId = $mo->book_id; 
-    //         $docId = $mo->id;
-    //         $amendRemarks = $request->amend_remarks ?? null;
-    //         $remarks = $mo->remarks;
-    //         $amendAttachments = $request->file('amend_attachment');
-    //         $attachments = $request->file('attachment');
-    //         $currentLevel = $mo->approval_level;
-    //         $modelName = get_class($mo);
-    //         $totalValue = 0;
-    //         if($currentStatus == ConstantHelper::APPROVED && $actionType == 'amendment')
-    //         {
-    //             //*amendmemnt document log*/
-    //             $revisionNumber = $mo->revision_number + 1;
-    //             $actionType = 'amendment';
-    //             $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $amendRemarks, $amendAttachments, $currentLevel, $actionType, $totalValue, $modelName);
-    //             $mo->revision_number = $revisionNumber;
-    //             $mo->approval_level = 1;
-    //             $mo->revision_date = now();
-    //             $amendAfterStatus = $approveDocument['approvalStatus'] ??  $mo->document_status;
-    //             $mo->document_status = $amendAfterStatus;
-    //             $mo->save();
-    //         } else {
-    //             if ($request->document_status == ConstantHelper::SUBMITTED) {
-    //                 $revisionNumber = $mo->revision_number ?? 0;
-    //                 $actionType = 'submit'; // Approve // reject // submit
-    //                 $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
-    //                 $mo->document_status = $approveDocument['approvalStatus'] ?? $mo->document_status;
-    //             } else {
-    //                 $mo->document_status = $request->document_status ?? ConstantHelper::DRAFT;
-    //             }
-    //         }
-    //         $mo->save();
-    //         DB::commit();
-
-    //         return response()->json([
-    //             'message' => 'Record updated successfully',
-    //             'data' => $mo,
-    //         ]);   
-    //     } catch (Exception $e) {
-    //         DB::rollBack();
-    //         return response()->json([
-    //             'message' => 'Error occurred while updating the record.',
-    //             'error' => $e->getMessage(),
-    //         ], 500);
-    //     } 
-    // }
-
-    # Get Bom item cost
-    public function getItemCost(Request $request)
-    {
-        $selectedAttributes = json_decode($request->itemAttributes,true);
-        $itemId = $request->item_id;
-        $result = Helper::getChildBomItemCost($itemId, $selectedAttributes);
-        $itemCost = $result['cost'];
-        if(!floatval($itemCost)) {
-            $uomId = $request->uom_id ?? null;
-            $currency =  CurrencyHelper::getOrganizationCurrency();
-            $currencyId = $currency->id ?? null; 
-            $transactionDate = $request->transaction_date ?? date('Y-m-d');
-            if($request->type == ConstantHelper::BOM_SERVICE_ALIAS) {
-                $itemCost = ItemHelper::getItemCostPrice($itemId, $selectedAttributes, $uomId, $currencyId, $transactionDate);
-            } else {
-                $itemCost = ItemHelper::getItemSalePrice($itemId, $selectedAttributes, $uomId, $currencyId, $transactionDate);
-            }
-        }
-        return response()->json(['data' => ['cost' => $itemCost,'route' => $result['route'] ?? null], 'status' => 200, 'message' => 'fetched bom header item cost']);
-    }
-
-        // genrate pdf
+    // genrate pdf
     public function generatePdf(Request $request, $id)
     {
         $user = Helper::getAuthenticatedUser();
@@ -2112,8 +1396,8 @@ class MoController extends Controller
        $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
        $pwoItems = PwoSoMapping::whereHas('pwo', function ($subQuery) use ($request, $applicableBookIds, $docNumber, $stationId) {
                 $subQuery->withDefaultGroupCompanyOrg()
-               ->whereIn('book_id', $applicableBookIds)
-               ->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
+                ->whereIn('book_id', $applicableBookIds)
+                ->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
                 ->where(function($pwoQuery) use($stationId) {
                     if($stationId) {
                         $pwoQuery->whereIn('station_wise_consumption', ['yes']);
@@ -2169,6 +1453,7 @@ class MoController extends Controller
     # Get Quotation Bom Item List
     public function getPwoCreate(Request $request)
     {
+       $storeId = $request->store_id ?? null;
        $seriesId = $request->series_id ?? null;
        $docNumber = $request->document_number ?? null;
        $soSeriesId = $request->so_series_id ?? null;
@@ -2177,10 +1462,13 @@ class MoController extends Controller
        $customerId = $request->customer_id ?? null;
        $headerBookId = $request->header_book_id ?? null;
        $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
-       $pwoItems = PwoSoMapping::whereHas('pwo', function ($subQuery) use ($request, $applicableBookIds, $docNumber, $seriesId) {
+       $pwoItems = PwoSoMapping::whereHas('pwo', function ($subQuery) use ($request, $applicableBookIds, $docNumber, $seriesId, $storeId) {
                 $subQuery->withDefaultGroupCompanyOrg()
                ->whereIn('book_id', $applicableBookIds)
                ->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
+               ->when($storeId, function ($bookQuery) use ($storeId) {
+                   $bookQuery->where('location_id', $storeId);
+               })
                ->when($seriesId, function ($bookQuery) use ($seriesId) {
                    $bookQuery->where('book_id', $seriesId);
                })
@@ -2232,39 +1520,6 @@ class MoController extends Controller
             'rowCount' => $rowCount
             ])->render();
         return response()->json(['data' => ['pos' => $html], 'status' => 200, 'message' => "fetched!"]);
-    }
-
-    public function destroy($id)
-    {
-        try {
-            $bom = MfgOrder::find($id);
-            $bom->moItems()->delete();
-            $bom->moOverheadAllItems()->delete();
-            $bom->moAllAttributes()->delete();    
-            $bom->production_bom_id = null;
-            $bom->qty_produced = 0;
-            $bom->total_item_value = 0;
-            $bom->item_waste_amount = 0;
-            $bom->item_overhead_amount = 0;
-            $bom->header_waste_perc = 0;
-            $bom->header_waste_amount = 0;
-            $bom->header_overhead_amount = 0;
-            $bom->item_id = null;
-            $bom->item_code = null;
-            $bom->item_name = null;
-            $bom->uom_id = null;
-            $bom->save();
-            return response()->json([
-                'status' => true,
-                'message' => 'Record deleted successfully',
-            ], 200);
-            
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'An error occurred while deleting the MO: ' . $e->getMessage()
-            ], 500);
-        }
     }
 
     # Get Posting details
@@ -2331,7 +1586,7 @@ class MoController extends Controller
     public function getSubStore(Request $request)
     {
         $storeId = $request->store_id;
-        $results = InventoryHelper::getAccesibleSubLocations($storeId ?? 0,null, ConstantHelper::SHOP_FLOOR);
+        $results = InventoryHelper::getAccesibleSubLocations($storeId ?? 0,null, [ConstantHelper::SHOP_FLOOR]);
         return response()->json(['data' => $results, 'status' => 200, 'message' => "fetched!"]);
     }
 }

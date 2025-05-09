@@ -1,6 +1,8 @@
 <?php
 namespace App\Helpers;
 
+use App\Models\ErpPsvHeader;
+use App\Models\ErpPsvItem;
 use DB;
 use Auth;
 
@@ -62,8 +64,10 @@ use App\Models\MoProductionItem;
 use App\Models\MoProductionItemLocation;
 
 use App\Models\ErpSoItem;
-
+use Illuminate\Support\Collection;
+use App\Models\PslipBomConsumption;
 use Illuminate\Support\Facades\Log;
+use stdClass;
 
 
 class InventoryHelper
@@ -72,6 +76,15 @@ class InventoryHelper
     {
     
     }
+
+    const STOCK_TYPE_REGULAR = 'R';
+    const STOCK_TYPE_REGULAR_LABEL = 'Regular';
+    const STOCK_TYPE_WIP = 'W';
+    const STOCK_TYPE_WIP_LABEL = 'WIP';
+    const STOCK_TYPES = [
+        ['label' => self::STOCK_TYPE_REGULAR_LABEL, 'value' => self::STOCK_TYPE_REGULAR],
+        ['label' => self::STOCK_TYPE_WIP_LABEL, 'value' => self::STOCK_TYPE_WIP],
+    ];
 
     public static function settlementOfInventoryAndStock($documentHeaderId, $documentDetailId=NULL, $bookType, $documentStatus, $transactionType = NULL, $stockReservation = NULL)
     {
@@ -90,10 +103,40 @@ class InventoryHelper
             $records = array();
             $message = $documentDetail;
         }
-        else if($bookType == ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS){
-            $documentDetail = self::settlementForProductionSlip($documentHeaderId, $documentDetailId, $bookType, $documentStatus);
-            $records = array();
-            $message = $documentDetail;
+        else if($bookType == ConstantHelper::PSV_SERVICE_ALIAS){
+            if($transactionType == 'issue')
+            {
+
+                $documentDetail = self::settlementForPsvForIssue($documentHeaderId, $documentDetailId, $bookType, $documentStatus,$transactionType);
+                $message = $documentDetail;
+                $invoiceIds = StockLedger::withDefaultGroupCompanyOrg()
+                    ->where('document_header_id', $documentHeaderId)
+                    ->where('transaction_type', 'issue')
+                    ->pluck('id')->toArray();
+                $records = StockLedger::with('issuedBy')
+                ->where('organization_id', $user->organization_id)
+                ->whereIn('utilized_id', $invoiceIds)
+                ->where('transaction_type', 'receipt')
+                ->select([
+                    'utilized_id',
+                    'store_id',
+                    'sub_store_id',
+                    'lot_number',
+                    DB::raw('SUM(receipt_qty) as total_receipt_qty'),
+                    DB::raw('SUM(org_currency_cost) as total_org_currency_cost')
+                ])
+                ->groupBy([
+                    'utilized_id',
+                    'store_id',
+                    'sub_store_id'
+                ])
+                ->get();
+            }
+            else{
+                $documentDetail = self::settlementForPsvForReceive($documentHeaderId, $documentDetailId, $bookType, $documentStatus,$transactionType);
+                $records = array();
+                $message = $documentDetail;
+            }
         }
         else if($bookType == ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS){
             $documentDetail = self::settlementForPurchaseReturn($documentHeaderId, $documentDetailId, $bookType, $documentStatus);
@@ -123,10 +166,10 @@ class InventoryHelper
                 ->get();
 
         }
-        else if($bookType == ConstantHelper::MO_SERVICE_ALIAS){
+        else if($bookType == ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS){
 
             if($transactionType == 'issue') {
-                $documentDetail = self::settlementForMO($documentHeaderId, $documentDetailId, $bookType, $documentStatus);
+                $documentDetail = self::settlementForPslip($documentHeaderId, $documentDetailId, $bookType, $documentStatus);
                 $message = $documentDetail;
                 $invoiceIds = StockLedger::withDefaultGroupCompanyOrg()
                 ->where('document_header_id', $documentHeaderId)
@@ -153,7 +196,7 @@ class InventoryHelper
                     ->get();
             }
             if($transactionType == 'receipt') {
-                $documentDetail = self::settlementForMOReceipt($documentHeaderId, $documentDetailId, $bookType, $documentStatus);
+                $documentDetail = self::settlementForPslipReceipt($documentHeaderId, $documentDetailId, $bookType, $documentStatus);
                 $records = array();
                 $documentDetail;
             }
@@ -265,7 +308,7 @@ class InventoryHelper
     }
 
     // Total Draft And Confirmed Stock
-    public static function totalInventoryAndStock($itemId, $selectedAttr=null, $uomId=null, $storeId=null, $subStoreId=null, $orderId=null)
+    public static function totalInventoryAndStock($itemId, $selectedAttr=null, $uomId=null, $storeId=null, $subStoreId=null, $orderId=null, $stationId = null, $stockType = self::STOCK_TYPE_REGULAR, $itemWipStationId = null)
     {
         $user = Helper::getAuthenticatedUser();
         $reservedStocks = 0.00;
@@ -298,6 +341,13 @@ class InventoryHelper
         if ($subStoreId) {
             $stockLedger->where('sub_store_id', $subStoreId);
         }
+        if ($stationId) {
+            $stockLedger->where('station_id', $stationId);
+        }
+        $stockLedger -> where('stock_type', $stockType);
+        if ($itemWipStationId && $stockType === self::STOCK_TYPE_WIP) {
+            $stockLedger -> where('wip_station_id', $itemWipStationId);
+        }
         // $stockLedger = $stockLedger->get();
         // $pendingStocks = $stockLedger->whereNotIn('document_status', ['approved','posted','approval_not_required'])->sum('receipt_qty');
         // $confirmedStocks = $stockLedger->whereIn('document_status', ['approved','posted','approval_not_required'])->sum('receipt_qty');
@@ -317,11 +367,17 @@ class InventoryHelper
             ->selectRaw('SUM(receipt_qty - reserved_qty) as total')
             ->value('total'); // Fetch the summed value
 
-        if($orderId){
-            $reservedStocks = $reservedStocksQuery
+        if ($orderId) {
+            $stocks = $reservedStocksQuery
                 ->whereIn('document_status', ['approved', 'posted', 'approval_not_required'])
-                ->selectRaw('SUM(reserved_qty) as total')
-                ->value('total'); // Fetch the summed value
+                ->with(['reservations' => function ($q) use ($orderId) {
+                    $q->where('so_item_id', $orderId);
+                }])
+                ->get();
+        
+            foreach ($stocks as $stock) {
+                $reservedStocks += $stock->reservations->sum('quantity');
+            }
         }
 
         $pendingStockAltUom = $pendingStocks;
@@ -346,7 +402,7 @@ class InventoryHelper
     }
 
     // Fetch stock summary
-    public static function fetchStockSummary($itemId, $selectedAttr=null, $uomId=null, $quantity, $storeId=null, $subStoreId=null)
+    public static function fetchStockSummary($itemId, $selectedAttr=null, $uomId=null, $quantity, $storeId=null, $subStoreId=null, $stationId = null, $stockType = self::STOCK_TYPE_REGULAR, $itemWipStationId = null)
     {
         $user = Helper::getAuthenticatedUser();
 
@@ -386,6 +442,13 @@ class InventoryHelper
         }
         if ($subStoreId) {
             $query->where('sub_store_id', $subStoreId);
+        }
+        if ($stationId) {
+            $query->where('station_id', $stationId);
+        }
+        $query -> where('stock_type', $stockType);
+        if ($itemWipStationId && $stockType === self::STOCK_TYPE_WIP) {
+            $query -> where('wip_station_id', $itemWipStationId);
         }
 
         // Select Records with Grouping and Summing
@@ -611,39 +674,51 @@ class InventoryHelper
         }
 
         // Issue
-        if($bookType == ConstantHelper::MO_SERVICE_ALIAS) {
+        if($bookType == ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS) {
             if($transactionType == 'issue') {
                 $qty = @$documentItemLocation->inventory_uom_qty;
-                $documentHeader = MfgOrder::find($documentItemLocation->mo_id);
-                $documentDetail = MoItem::with(['mo', 'attributes'])->find($documentItemLocation->id);
+                $documentHeader = ErpProductionSlip::find($documentItemLocation->pslip_id);
+                $documentDetail = PslipBomConsumption::with(['pslip'])->find($documentItemLocation->id);
                 $stockLedger->vendor_id = null;
                 $stockLedger->vendor_code = null;
                 $stockLedger->issue_qty = @$qty;
                 $stockLedger->book_id = @$documentHeader->book_id;
-                $totalItemCost = ($documentDetail->qty*$documentDetail->rate) - ($documentDetail->item_discount_amount + $documentDetail->header_discount_amount);
+                $totalItemCost = ($documentDetail->qty*$documentDetail->rate);
                 $costPerUnit = $totalItemCost/$qty;
 
                 // Item Location Data
                 $stockLedger->store_id = $documentHeader->store_id ?? null;
-                $stockLedger->sub_store_id = $documentItemLocation->sub_store_id ?? null;
-                $stockLedger->store = @$documentHeader?->store_location?->store_code;
+                $stockLedger->sub_store_id = $documentHeader->sub_store_id ?? null;
+                $stockLedger->station_id = $documentHeader->station_id ?? null;
+                $stockLedger->store = @$documentHeader?->store?->store_code;
+                $stockType = 'R';
+                if($documentDetail->rm_type == 'sf') {
+                    $stockType = 'W';
+                }
+                $stockLedger->stock_type = $stockType;
             }
             if($transactionType == 'receipt') {
                 $qty = ($documentItemLocation->inventory_uom_qty - $utilizedQty);
-                $documentHeader = MfgOrder::find($documentItemLocation->mo_id);
-                $documentDetail = MoProductionItem::with(['mo', 'productionAttributes'])->find($documentItemLocation->mo_production_item_id);
+                $documentHeader = ErpProductionSlip::find($documentItemLocation->pslip_id);
+                $documentDetail = ErpPslipItem::with(['pslip', 'attributes'])->find($documentItemLocation->pslip_item_id);
                 // Over ride attribute
-                $documentDetail->attributes = $documentDetail->productionAttributes;
                 $stockLedger->vendor_id = null;
                 $stockLedger->vendor_code = null;
                 $stockLedger->receipt_qty = $qty ?? 0;
                 $stockLedger->book_id = @$documentHeader->book_id;
-                $totalItemCost = ($documentDetail->produced_qty*$documentDetail->rate);
+                $totalItemCost = ($documentDetail->qty * $documentDetail->rate);
                 $costPerUnit = $totalItemCost/$qty;
                 // Item Location Data
-                $stockLedger->store_id = $documentItemLocation->store_id ?? null;
-                $stockLedger->sub_store_id = $documentItemLocation->sub_store_id ?? null;
-                $stockLedger->store = @$documentItemLocation->erpStore->store_code;
+                $stockLedger->store_id = $documentHeader->store_id ?? null;
+                $stockLedger->sub_store_id = $documentHeader->sub_store_id ?? null;
+                $stockLedger->station_id = $documentHeader->station_id ?? null;
+                $stockLedger->store = $documentHeader?->store?->store_code;
+                $stockLedger->lot_number = InventoryHelper::generateLotNumber($documentHeader -> document_date, $documentHeader -> book_code, $documentHeader -> document_number);
+                
+                if(!$documentHeader->is_last_station) {
+                    $stockLedger->stock_type = 'W';
+                    $stockLedger->wip_station_id = $documentHeader?->station_id ?? null;
+                }
             }
         }
 
@@ -660,10 +735,16 @@ class InventoryHelper
             if ($transactionType == 'receipt') {
                 $stockLedger->receipt_qty = @$qty;
                 $stockLedger->original_receipt_date = @$utlStockLedger->original_receipt_date;
+                $stockLedger->lot_number = InventoryHelper::generateLotNumber($documentHeader -> document_date, $documentHeader -> book_code, $documentHeader -> document_number);
+
             }
             $stockLedger->book_id = @$documentHeader->book_id;
             $totalItemCost = ($documentDetail->inventory_uom_qty*$documentDetail->rate) - ($documentDetail->item_discount_amount + $documentDetail->header_discount_amount);
             $costPerUnit = $totalItemCost/$qty;
+
+            $stockLedger->stock_type=$documentDetail->stock_type;
+            $stockLedger->wip_station_id=$documentDetail->wip_station_id;
+
             // Item Location Data
             if(($transactionType == 'issue') && $documentDetail->from_store_id){
                 $stockLedger->store_id = $documentDetail->from_store_id ?? null;
@@ -684,6 +765,15 @@ class InventoryHelper
                 $stockLedger->sub_store_id = $documentDetail->to_sub_store_id ?? null;
                 $stockLedger->sub_store = @$documentDetail->toErpSubStore->store_code;
             }
+
+            if(($transactionType == 'issue') && $documentDetail->from_station_id){
+                $stockLedger->station_id = $documentDetail->from_station_id ?? null;
+            }
+
+            if(($transactionType == 'receipt') && ($documentDetail->to_station_id)){
+                $stockLedger->station_id = $documentDetail->to_station_id ?? null;
+            }
+
         }
         if($bookType == ConstantHelper::MATERIAL_RETURN_SERVICE_ALIAS_NAME){
             $qty = @$documentItemLocation->inventory_uom_qty;
@@ -739,23 +829,44 @@ class InventoryHelper
                 $stockLedger->sub_store = @$documentDetail->toErpSubStore->store_code;
             }
         }
-        if($bookType == ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS){
-            $qty = ($documentItemLocation->inventory_uom_qty - $utilizedQty);
-            $documentHeader = ErpProductionSlip::find($documentItemLocation->pslip_id);
-            $documentDetail = ErpPslipItem::with(['header', 'attributes'])->find($documentItemLocation->pslip_item_id);
+
+        if($bookType == ConstantHelper::PSV_SERVICE_ALIAS){
+            $qty =ItemHelper::convertToBaseUom($documentItemLocation->item_id,$documentItemLocation->uom_id,abs($documentItemLocation->adjusted_qty));
+            $documentHeader = ErpPsvHeader::find($documentItemLocation->psv_header_id);
+            $detailId = $documentItemLocation->id;
+            $documentDetail = ErpPsvItem::with(['header', 'attributes'])->find($detailId);
             $stockLedger->vendor_id = null;
             $stockLedger->vendor_code = null;
-            $stockLedger->receipt_qty = $qty ?? 0;
+            if ($transactionType == 'issue') {
+                $stockLedger->issue_qty = @$qty;
+            }
+            if ($transactionType == 'receipt') {
+                $stockLedger->receipt_qty = @$qty;
+                $stockLedger->original_receipt_date = @$utlStockLedger->original_receipt_date;
+            }
             $stockLedger->book_id = @$documentHeader->book_id;
-            $totalItemCost = ($documentDetail->order_qty*$documentDetail->rate) - ($documentDetail->item_discount_amount + $documentDetail->header_discount_amount);
+            $totalItemCost = ($qty*$documentDetail->rate) - ($documentDetail?->item_discount_amount + $documentDetail->header_discount_amount);
             $costPerUnit = $totalItemCost/$qty;
-
             // Item Location Data
-            $stockLedger->store_id = $documentItemLocation->store_id ?? null;
-            $stockLedger->sub_store_id = $documentItemLocation->sub_store_id ?? null;
-            $stockLedger->store = @$documentItemLocation->erpStore->store_code;
-        }
+            if(($transactionType == 'issue') && $documentDetail->header->store_id){
+                $stockLedger->store_id = $documentDetail->header->store_id ?? null;
+                $stockLedger->store = @$documentDetail->header->store->store_code;
+            }
+            if(($transactionType == 'receipt') && $documentDetail->header->store_id){
+                $stockLedger->store_id = $documentDetail->header->store_id ?? null;
+                $stockLedger->store = @$documentDetail->header->store->store_code;
+            }
+            if(($transactionType == 'issue') && $documentDetail->header->sub_store_id){
+                $stockLedger->sub_store_id = $documentDetail->header->sub_store_id ?? null;
+                $stockLedger->sub_store = @$documentDetail->header->sub_store->store_code;
+            }
 
+            if(($transactionType == 'receipt') && $documentDetail->header->sub_store_id){
+                $stockLedger->sub_store_id = $documentDetail->header->sub_store_id ?? null;
+                $stockLedger->sub_store = @$documentDetail->header->sub_store->store_code;
+            }
+        }
+        
         $inventoryUom = Unit::find($documentDetail->item->uom_id);
         //Header Data
         $stockLedger->group_id = @$documentHeader->group_id;
@@ -797,24 +908,29 @@ class InventoryHelper
         $stockLedger->created_by = @$user->id;
         $stockLedger->updated_by = @$user->id;
         $stockLedger->save();
+        $stockLedger->refresh();
 
         self::updateStockCost($stockLedger);
 
         $attributeArray = array();
         $attributeJsonArray = array();
         if(isset($documentDetail->attributes) && !empty($documentDetail->attributes)){
-            foreach($documentDetail->attributes as $key1 => $attribute){
+            foreach($documentDetail->attributes as $key1 => $attribute) {
                 $attributeName = @$attribute->attr_name ?? @$attribute->attribute_group_id ?? @$attribute->attribute_name;
                 $attributeValue = @$attribute->attr_value ?? @$attribute->attribute_id ?? @$attribute->attribute_value;
-                // if($bookType == ConstantHelper::MO_SERVICE_ALIAS){
-                //     $attributeName = @$attribute->attribute_name;
-                //     $attributeValue = @$attribute->attribute_value;
-                // }
+                $itemAttributeId = @$attribute->item_attribute_id;
+
+                if($bookType == ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS && $transactionType == 'issue') {
+                    $itemAttributeId = $attribute['attribute_id'];
+                    $attributeName = $attribute['attribute_name'];
+                    $attributeValue = $attribute['attribute_value'];
+                }
+                
                 $ledgerAttribute = new StockLedgerItemAttribute();
                 $ledgerAttribute->stock_ledger_id = $stockLedger->id;
                 $ledgerAttribute->item_id = @$documentDetail->item_id;
                 $ledgerAttribute->item_code = @$documentDetail->item_code;
-                $ledgerAttribute->item_attribute_id = @$attribute->item_attribute_id;
+                $ledgerAttribute->item_attribute_id = $itemAttributeId;
                 $ledgerAttribute->attribute_name = @$attributeName;
                 $ledgerAttribute->attribute_value = @$attributeValue;
                 $ledgerAttribute->status = "active";
@@ -839,6 +955,7 @@ class InventoryHelper
         $stockLedger->item_attributes = $attributeArray;
         $stockLedger->json_item_attributes = $attributeJsonArray;
         $stockLedger->save();
+
         return $stockLedger;
     }
 
@@ -856,7 +973,7 @@ class InventoryHelper
         if($issueQty && ($issueQty > $documentItemLocation->inventory_uom_qty)){
             $balanceQty = $issueQty - $documentItemLocation->inventory_uom_qty;
             $message = self::updateIssueStockForLessQty($invoiceLedger, $balanceQty, $documentItemLocation);
-        } else{
+        } else {
             $balanceQty = $documentItemLocation->inventory_uom_qty - $issueQty;
             $approvedStockLedger = StockLedger::withDefaultGroupCompanyOrg()
                 ->whereIn('document_status', ['approved','posted','approval_not_required'])
@@ -864,9 +981,16 @@ class InventoryHelper
                 ->where('store_id', $invoiceLedger->store_id)
                 ->where('sub_store_id', $invoiceLedger->sub_store_id)
                 ->where('transaction_type', 'receipt')
+                ->where('stock_type', $invoiceLedger -> stock_type)
                 ->whereNull('utilized_id')
                 ->whereRaw('receipt_qty > 0')
                 ->orderBy('document_date', 'ASC');
+                if (isset($invoiceLedger -> station_id) && $invoiceLedger -> station_id) {
+                    $approvedStockLedger = $approvedStockLedger -> where('station_id', $invoiceLedger -> station_id);
+                }
+            if (isset($invoiceLedger -> wip_station_id) && $invoiceLedger -> wip_station_id && $invoiceLedger -> stock_type === self::STOCK_TYPE_WIP) {
+                $approvedStockLedger = $approvedStockLedger -> where('wip_station_id', $invoiceLedger -> wip_station_id);
+            }
             if(($bookType == ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS) && ($transactionType == 'issue') && ($documentItemLocation->mrn_detail_id)){
                 $approvedStockLedger = $approvedStockLedger->where('document_detail_id', $documentItemLocation->mrn_detail_id)
                 ->where('book_type', ConstantHelper::MRN_SERVICE_ALIAS);
@@ -983,6 +1107,7 @@ class InventoryHelper
             } else{
                 $message = "This item does not have approved stocks, Please approve the mrn first.";
             }
+            // dd($message);
         }
         if($transactionType == 'issue'){
             self::updateIssueCost($invoiceLedger, $documentItemLocation, $bookType, $documentStatus, $transactionType);
@@ -1162,8 +1287,6 @@ class InventoryHelper
                         break;
                     }
                 }
-
-
             }
             return "Success";
         }
@@ -1828,6 +1951,8 @@ class InventoryHelper
                 $typeQuery = $typeQuery -> where('store_location_type', $locationType);
             } else if (is_array($locationType)) {
                 $typeQuery = $typeQuery -> whereIn('store_location_type', $locationType);
+            } else if (!$locationType) {
+                $typeQuery = $typeQuery -> whereIn('store_location_type', ConstantHelper::STOCKK);
             }
         })
         ->when(isset($editStore), function ($storeQuery) use($editStore) { // Location with same country and state
@@ -1849,13 +1974,13 @@ class InventoryHelper
     {
         $subStoreIds = ErpSubStoreParent::withDefaultGroupCompanyOrg()->where('store_id', $storeId)
             -> get() -> pluck('sub_store_id') -> toArray();
-        $subStores = ErpSubStore::select('id', 'name', 'code') -> whereIn('id', $subStoreIds) -> when($locationType, function ($typeQuery) use($locationType) {
+        $subStores = ErpSubStore::select('id', 'name', 'code','station_wise_consumption') -> whereIn('id', $subStoreIds) -> when($locationType, function ($typeQuery) use($locationType) {
             if (is_string($locationType)) {
                 $typeQuery = $typeQuery -> where('type', $locationType);
             } else if (is_array($locationType)) {
                 $typeQuery = $typeQuery -> whereIn('type', $locationType);
             } else {
-                $typeQuery = $typeQuery -> where('type', [ConstantHelper::STOCKK, ConstantHelper::SHOP_FLOOR]);
+                $typeQuery = $typeQuery -> where('type', [ConstantHelper::STOCKK]);
             }
             })->where(function($query) use($subStoreId) {
                 $query->where('status',ConstantHelper::ACTIVE);
@@ -1974,63 +2099,6 @@ class InventoryHelper
         return $message;
     }
 
-    // Settlement For Packing Slip (Receive)
-    private static function settlementForProductionSlip($documentHeaderId, $documentDetailId, $bookType, $documentStatus)
-    {
-        $user = Helper::getAuthenticatedUser();
-        try{
-            $transactionType = 'receipt';
-            $documentItemLocations = ErpPslipItemLocation::where('pslip_id',$documentHeaderId)
-                ->whereIn('pslip_item_id',$documentDetailId)
-                ->with('header',
-                    'detail',
-                    'detail.item',
-                    'detail.attributes',
-                    'erpStore',
-                    'erpRack',
-                    'erpShelf',
-                    'erpBin'
-                )
-                ->get();
-
-            $stockLedger = StockLedger::withDefaultGroupCompanyOrg()
-                ->where('document_header_id',$documentHeaderId)
-                ->whereIn('document_detail_id',$documentDetailId)
-                ->where('book_type','=',$bookType)
-                ->where('transaction_type','=',$transactionType)
-                // ->where('document_status','draft')
-                ->whereNull('utilized_id')
-                ->get();
-
-            foreach($stockLedger as $val){
-                StockLedgerItemAttribute::where('stock_ledger_id', $val->id)->delete();
-                $val->delete();
-            }
-
-            foreach ($documentItemLocations as $documentItemLocation) {
-                $utilizedQty = StockLedger::withDefaultGroupCompanyOrg()
-                    ->where('document_header_id',$documentHeaderId)
-                    ->where('document_detail_id',$documentDetailId)
-                    ->where('book_type','=',$bookType)
-                    ->where('transaction_type','=',$transactionType)
-                    ->where('document_status','draft')
-                    ->whereNotNull('utilized_id')
-                    ->sum('receipt_qty');
-
-                if($documentItemLocation->inventory_uom_qty > $utilizedQty){
-                    $stockLedger = new StockLedger();
-                    $invoiceLedger = self::insertStockLedger($stockLedger, $documentItemLocation, $bookType, $documentStatus, $transactionType, $utilizedQty);
-                }
-            }
-        } catch (\Exception $e) {
-            $errorMsg = "ERROR: " . $e->getMessage();
-            return self::errorResponse($errorMsg);
-
-        }
-        $message = 'success';
-        return $message;
-    }
-
     // Settlement For Sale Invoice (Issue)
     private static function settlementForSaleInvoice($documentHeaderId, $documentDetailId, $bookType, $documentStatus, $stockReservation)
     {
@@ -2110,20 +2178,18 @@ class InventoryHelper
         return $message;
     }
 
-    // Settlement For MO (Issue)
-    private static function settlementForMO($documentHeaderId, $documentDetailId, $bookType, $documentStatus)
+    // Settlement For Pslip (Issue)
+    private static function settlementForPslip($documentHeaderId, $documentDetailId, $bookType, $documentStatus)
     {
         $user = Helper::getAuthenticatedUser();
 
         try{
             $transactionType = 'issue';
-            $documentItems = MoItem::where('mo_id',$documentHeaderId)
-                ->with('mo',
-                    'item',
-                    'attributes'
+            $documentItems = PslipBomConsumption::where('pslip_id', $documentHeaderId)
+                ->with('pslip',
+                    'item'
                 )
                 ->get();
-
             if(isset($documentItems) && $documentItems){
                 foreach ($documentItems as $documentItem) {
                     $stockLedger = StockLedger::withDefaultGroupCompanyOrg()
@@ -2149,26 +2215,27 @@ class InventoryHelper
         return $message;
     }
 
-    // Settlement For MO (Receive)
-    private static function settlementForMOReceipt($documentHeaderId, $documentDetailId, $bookType, $documentStatus)
+    // Settlement For Pslip (Receive)
+    private static function settlementForPslipReceipt($documentHeaderId, $documentDetailId, $bookType, $documentStatus)
     {
         $user = Helper::getAuthenticatedUser();
         
         try{
             $transactionType = 'receipt';
-            $documentItemLocations = MoProductionItemLocation::where('mo_id', $documentHeaderId)
-                ->whereIn('mo_production_item_id', $documentDetailId)
+            $documentItemLocations = ErpPslipItemLocation::where('pslip_id', $documentHeaderId)
+                ->whereIn('pslip_item_id', $documentDetailId)
                 ->with('header',
                     'detail',
                     'detail.item',
-                    'detail.productionAttributes',
+                    'detail.attributes',
                     'erpStore',
+                    'erpSubStore',
+                    'station',
                     'erpRack',
                     'erpShelf',
                     'erpBin'
                 )
                 ->get();
-
             $stockLedger = StockLedger::withDefaultGroupCompanyOrg()
                 ->where('document_header_id', $documentHeaderId)
                 ->whereIn('document_detail_id', $documentDetailId)
@@ -2192,7 +2259,6 @@ class InventoryHelper
                     ->where('document_status','draft')
                     ->whereNotNull('utilized_id')
                     ->sum('receipt_qty');
-
                 if($documentItemLocation->inventory_uom_qty > $utilizedQty){
                     $stockLedger = new StockLedger();
                     $invoiceLedger = self::insertStockLedger($stockLedger, $documentItemLocation, $bookType, $documentStatus, $transactionType, $utilizedQty);
@@ -2233,6 +2299,45 @@ class InventoryHelper
                         }
                         $utilizedQty = 0;
                         $issueQty = $stockLedger->issue_qty;
+                        $invoiceLedger = self::insertStockLedger($stockLedger, $documentItem,  $bookType, $documentStatus, $transactionType, $utilizedQty);
+                        $updatedInvoiceLedger = self::updateStockLedger($invoiceLedger, $documentItem, $bookType, $documentStatus, $transactionType, $issueQty);
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            $errorMsg = "ERROR: " . $e->getMessage();
+            return self::errorResponse($errorMsg);
+
+        }
+        $message = 'success';
+        return $message;
+    }
+    private static function settlementForPsvForIssue($documentHeaderId, $documentDetailId, $bookType, $documentStatus, $transactionType)
+    {
+        $user = Helper::getAuthenticatedUser();
+
+        try{
+            $documentItems = ErpPsvItem::whereIn('id',$documentDetailId)
+                ->with('header',
+                    'item',
+                    'attributes'
+                )
+                ->get();
+
+            if(isset($documentItems) && $documentItems){
+                foreach ($documentItems as $documentItem) {
+                    if($documentItem->header->store_id){
+                        $stockLedger = StockLedger::withDefaultGroupCompanyOrg()
+                            ->where('document_header_id',$documentHeaderId)
+                            ->where('document_detail_id',$documentItem->id)
+                            ->where('book_type','=',$bookType)
+                            ->first();
+                        if(!$stockLedger){
+                            $stockLedger = new StockLedger();
+                        }
+                        $utilizedQty = 0;
+                        $issueQty = $stockLedger->issue_qty;
+                        $documentItem->inventory_uom_qty = ItemHelper::convertToBaseUom($documentItem->item_id,$documentItem->uom_id,abs($documentItem->adjusted_qty));
                         $invoiceLedger = self::insertStockLedger($stockLedger, $documentItem,  $bookType, $documentStatus, $transactionType, $utilizedQty);
                         $updatedInvoiceLedger = self::updateStockLedger($invoiceLedger, $documentItem, $bookType, $documentStatus, $transactionType, $issueQty);
                     }
@@ -2343,6 +2448,50 @@ class InventoryHelper
                     //         }
                     //     }
                     // }
+                }
+            }
+        } catch (\Exception $e) {
+            $errorMsg = "ERROR: " . $e->getMessage();
+            return self::errorResponse($errorMsg);
+
+        }
+        $message = 'success';
+        return $message;
+    }
+    private static function settlementForPsvForReceive($documentHeaderId, $documentDetailId, $bookType, $documentStatus, $transactionType)
+    {
+        $user = Helper::getAuthenticatedUser();
+
+        try{
+            $documentItem = ErpPsvItem::where('psv_header_id',$documentHeaderId)
+                ->whereIn('id',$documentDetailId)
+                ->get();
+            // dd($documentItemLocations);
+            $stockLedger = StockLedger::withDefaultGroupCompanyOrg()
+                ->where('document_header_id',$documentHeaderId)
+                ->whereIn('document_detail_id',$documentDetailId)
+                ->where('book_type','=',$bookType)
+                ->where('transaction_type','=',$transactionType)
+                ->where('document_status','draft')
+                ->whereNull('utilized_id')
+                ->get();
+            foreach($stockLedger as $val){
+                StockLedgerItemAttribute::where('stock_ledger_id', $val->id)->delete();
+                $val->delete();
+            }
+            foreach ($documentItem as $documentItems) {
+                $utilizedQty = StockLedger::withDefaultGroupCompanyOrg()
+                    ->where('document_header_id',$documentHeaderId)
+                    ->where('document_detail_id',$documentDetailId)
+                    ->where('book_type','=',$bookType)
+                    ->where('transaction_type','=',$transactionType)
+                    // ->where('document_status','draft')
+                    ->whereNotNull('utilized_id')
+                    ->sum('receipt_qty');
+                    $documentItems->inventory_uom_qty = ItemHelper::convertToBaseUom($documentItems->item_id,$documentItems->uom_id,abs($documentItems->adjusted_qty));
+                if($documentItems->inventory_uom_qty > $utilizedQty){
+                    $stockLedger = new StockLedger();
+                    $invoiceLedger = self::insertStockLedger($stockLedger, $documentItems, $bookType, $documentStatus, $transactionType, $utilizedQty, $utlStockLedger = null);
                 }
             }
         } catch (\Exception $e) {
@@ -2477,13 +2626,15 @@ class InventoryHelper
         if (!isset($stockLedger)) {
             return [];
         }
-        $utlStockLedgers = StockLedger::select('item_id','receipt_qty', 'lot_number','original_receipt_date') -> where('utilized_id', $stockLedger -> id) -> get();
+        $utlStockLedgers = StockLedger::select('item_id','receipt_qty', 'lot_number','original_receipt_date','so_id') -> where('utilized_id', $stockLedger -> id) -> get();
         $lotNoWithQtys = [];
         foreach ($utlStockLedgers as $utlStock) {
             array_push($lotNoWithQtys, [
                 'lot_qty' => ItemHelper::convertToAltUom($utlStock -> item_id, $altUomId, $utlStock -> receipt_qty),
                 'lot_number' => $utlStock -> lot_number,
                 'original_receipt_date' => $utlStock -> original_receipt_date,
+                'so_no' => $utlStock -> so ? $utlStock -> so -> book_code . "-" . $utlStock -> so -> document_number : ' ',
+                'so_qty' => $utlStock -> so ? $utlStock -> so -> order_qty : 0,
 
             ]);
         }
@@ -2494,6 +2645,19 @@ class InventoryHelper
     {
         $lotNumber = date('Y/M/d', strtotime($documentDate)) . '/' . $bookCode . '/' . $documentNumber;
         return strtoupper($lotNumber);
+    }
+
+    public static function getStockType()
+    {
+        $stockTypes = self::STOCK_TYPES;
+        $formattedStockType = collect([]);
+        foreach ($stockTypes as $stockType) {
+            $currentStockType = new stdClass();
+            $currentStockType -> label = $stockType['label'];
+            $currentStockType -> value = $stockType['value'];
+            $formattedStockType -> push($currentStockType);
+        }
+        return $formattedStockType;
     }
 
 }

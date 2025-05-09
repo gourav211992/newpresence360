@@ -39,11 +39,9 @@
    <td>
       <input type="text" readonly value="{{number_format($inventoryStock['pendingStocks'] ?? 0, 4)}}" step="any" class="form-control mw-100 text-end"  name="component[{{$rowCount}}][unconf_2]"/>
    </td>
-   @if(strtolower($bom->so_tracking_required) == 'yes')
    <td>
       <input type="text" readonly value="{{strtoupper($moItem?->so?->book_code)}} - {{$moItem?->so?->document_number}}" step="any" class="form-control mw-100"  name="component[{{$rowCount}}][doc_no_2]"/>
    </td>
-   @endif
    <input type="hidden" value="{{$moItem->id}}" name="component[{{$rowCount}}][mo_item_id_2]">
 </tr>
 @endforeach

@@ -55,6 +55,7 @@ use App\Models\UnitMaster;
 use App\Models\HsnMaster;
 use App\Models\Overhead;
 use App\Models\PiItem;
+use App\Models\ErpSubStoreParent;
 use Auth;
 use Illuminate\Http\Request;
 
@@ -752,10 +753,10 @@ class AutocompleteController extends Controller
                             })
                             ->where('status', ConstantHelper::ACTIVE)
                             ->with(['currency:id,short_name', 'paymentTerms:id,name']);
-            
+
                 $results = $subQuery->where('company_name', 'LIKE', "%$term%")
                     ->get(['id', 'company_name', 'vendor_code','currency_id','payment_terms_id']);
-            
+
                 // Map the results to include currency and payment terms
                 $results = $results->map(function ($vendor) {
                     return [
@@ -768,12 +769,12 @@ class AutocompleteController extends Controller
                         'payment_terms_name' => $vendor->paymentTerms->name ?? null,
                     ];
                 });
-            
+
                 if ($results->isEmpty()) {
                     $results = $subQuery
                         ->limit(10)
                         ->get(['id', 'company_name', 'vendor_code']);
-            
+
                     // Map fallback results
                     $results = $results->map(function ($vendor) {
                         return [
@@ -930,7 +931,7 @@ class AutocompleteController extends Controller
                     ->get(['id', 'document_number']);
                 }
             } else if ($type === "vendor_mi") {
-                $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request -> header_book_id);
+                // $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request -> header_book_id);
                 $results = Vendor::where('company_name', 'LIKE', "%$term%")
                     -> withDefaultGroupCompanyOrg()->get();
                 if ($results->isEmpty()) {
@@ -1230,6 +1231,42 @@ class AutocompleteController extends Controller
                         ->limit(10)
                         ->get(['id', 'store_code']);
                 }
+            } else if ($type === "sub_store_list") {
+                $storeType = $request->store_type ?? '';
+
+                $results = ErpSubStoreParent::withDefaultGroupCompanyOrg()
+                    ->with(['sub_store' => function ($query) use ($term) {
+                        $query->where('status', 'active')
+                        ->where('name', 'LIKE', "%$term%");
+                    }])
+                    ->get(['id', 'store_id', 'sub_store_id']);
+            
+                // Map the results to include sub store
+                $results = $results->map(function ($subStore) {
+                    return [
+                        'id' => $subStore->sub_store_id,
+                        'name' => $subStore->sub_store->name ?? null,
+                        'code' => $subStore->sub_store->code ?? null,
+                    ];
+                });
+
+                if ($results->isEmpty()) {
+                    $results = ErpSubStoreParent::withDefaultGroupCompanyOrg()
+                        ->with(['sub_store' => function ($query) {
+                            $query->where('status', 'active');
+                        }])
+                        ->limit(10)
+                        ->get(['id', 'store_id', 'sub_store_id']);
+                
+                    // Map the results to include sub store
+                    $results = $results->map(function ($subStore) {
+                        return [
+                            'id' => $subStore->sub_store_id,
+                            'name' => $subStore->sub_store->name ?? null,
+                            'code' => $subStore->sub_store->code ?? null,
+                        ];
+                    });
+                }
             } else if ($type === "store_rack") {
                 $results = ErpRack::where('rack_code', 'LIKE', "%$term%")
                     -> where('erp_store_id', $request -> store_id)
@@ -1379,7 +1416,7 @@ class AutocompleteController extends Controller
                 }
             } else if ($type === 'report_so_book') {
                 $service = Service::where('alias', ConstantHelper::SO_SERVICE_ALIAS) -> first();
-                
+
                 $query = Book::withDefaultGroupCompanyOrg() -> where('service_id', $service ?-> id);
                 $results = $query->when($term, function ($q) use ($term) {
                     return $q->where(function($query) use ($term) {

@@ -179,12 +179,7 @@ class Bom extends Model
     {
         return $this->hasMany(BomAttribute::class, 'bom_id')->where('type','D');
     }
-
-    public function bomProductions()
-    {
-        return $this->hasMany(BomProductionItem::class, 'bom_id');
-    }
-
+    
     public function bomInstructions()
     {
         return $this->hasMany(BomInstruction::class, 'bom_id');
