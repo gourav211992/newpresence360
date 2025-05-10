@@ -159,17 +159,46 @@ class Helper
         return $bookTypes;
     }
 
-    public static function getFinancialYear(string $date): mixed
+   public static function getFinancialYear(string $date): mixed
     {
+        $startDate = session('fyear_start_date') ?? $date;
+        $endDate = session('fyear_end_date') ?? $date;
         $financialYear = ErpFinancialYear::withDefaultGroupCompanyOrg()
-            ->where('start_date', '<=', $date)
-            ->where('end_date', '>=', $date)
+            ->where('start_date', '<=', $startDate)
+            ->where('end_date', '>=', $endDate)
+            // ->where('fy_close', ConstantHelper::FY_NOT_CLOSED_STATUS)
+            // ->where('fy_status',ConstantHelper::FY_CURRENT_STATUS)
             ->first();
-        if (isset($financialYear)) {
+            // dd($financialYear);
+            $startYear = \Carbon\Carbon::parse($financialYear->start_date)->format('Y');
+            $endYearShort = \Carbon\Carbon::parse($financialYear->end_date)->format('y'); // e
+            if (isset($financialYear)) {
+                $authorized = true;
+
+                $currentUserId = auth()->user()->id;
+                $currentUserType = auth()->user()->authenticable_type;
+// dd($currentUserId, $currentUserType);
+                if (
+                    $financialYear->lock_fy == true &&
+                    is_array($financialYear->access_by)
+                    ) {
+                    // dd( $financialYear->access_by[0]['authorized'], $financialYear->access_by[0]['authenticable_type'] ,$financialYear->access_by[0]['user_id']);
+                    $authorized = !collect($financialYear->access_by)->contains(function ($entry) use ($currentUserId, $currentUserType) {
+                        return isset($entry['user_id'], $entry['authorized'], $entry['authenticable_type']) &&
+                               $entry['user_id'] == $currentUserId &&
+                               $entry['authenticable_type'] == $currentUserType &&
+                               $entry['authorized'] == false;
+                    });
+                }
+                // dd($authorized);
             return [
                 'alias' => $financialYear->alias,
                 'start_date' => $financialYear->start_date,
                 'end_date' => $financialYear->end_date,
+                'lock_fy' => $financialYear->lock_fy,
+                'fy_close' => $financialYear->fy_close,
+                'range' => $startYear . '-' . $endYearShort,
+                'authorized' => $authorized,
             ];
         } else {
             return null;
@@ -2016,15 +2045,13 @@ class Helper
         });
         return $data;
     }
-   public static function getPlGroupDetails($groups)
+    public static function getPlGroupDetails($groups)
 {
     $totalSales = 0;
     $totalPurchase = 0;
+
     $saleInd = 0;
     $purchaseInd = 0;
-
-    $indExpTotal = 0;
-    $indIncTotal = 0;
 
     $opening = 0;
     $purchase = 0;
@@ -2033,6 +2060,7 @@ class Helper
     $salesAccount = 0;
     $directIncome = 0;
     $indirectIncome = 0;
+
     $grossProfit = 0;
     $grossLoss = 0;
     $subTotal = 0;
@@ -2041,114 +2069,120 @@ class Helper
     $netLoss = 0;
 
     foreach ($groups as $group) {
-        if ($group->name == "Opening Stock") {
-            $totalPurchase += $group->closing;
-            $opening = $group->closing;
-        }
-        if ($group->name == "Purchase Accounts") {
-            $totalPurchase += $group->closing;
-            $purchase = $group->closing;
-        }
-        if ($group->name == "Direct Expenses") {
-            $totalPurchase += $group->closing;
-            $directExpense = $group->closing;
-        }
-        if ($group->name == "Indirect Expenses") {
-            $purchaseInd += $group->closing;
-            $indExpTotal = $group->closing;
-            $indirectExpense = $group->closing;
-        }
-        if ($group->name == "Sales Accounts") {
-            $totalSales += $group->closing;
-            $salesAccount = $group->closing;
-        }
-        if ($group->name == "Direct Income") {
-            $totalSales += $group->closing;
-            $directIncome = $group->closing;
-        }
-        if ($group->name == "Indirect Income") {
-            $saleInd += $group->closing;
-            $indIncTotal = $group->closing;
-            $indirectIncome = $group->closing;
+        switch ($group->name) {
+            case "Opening Stock":
+                $totalPurchase += $group->closing;
+                $opening = $group->closing;
+                break;
+            case "Purchase Accounts":
+                $totalPurchase += $group->closing;
+                $purchase = $group->closing;
+                break;
+            case "Direct Expenses":
+                $totalPurchase += $group->closing;
+                $directExpense = $group->closing;
+                break;
+            case "Indirect Expenses":
+                $purchaseInd += $group->closing;
+                $indirectExpense = $group->closing;
+                break;
+            case "Sales Accounts":
+                $totalSales += $group->closing;
+                $salesAccount = $group->closing;
+                break;
+            case "Direct Income":
+                $totalSales += $group->closing;
+                $directIncome = $group->closing;
+                break;
+            case "Indirect Income":
+                $saleInd += $group->closing;
+                $indirectIncome = $group->closing;
+                break;
         }
     }
 
     $difference = $totalSales - $totalPurchase;
     $diffVal = abs($difference);
 
-    // Correct Gross Profit/Loss Logic
+    // Calculate Gross Profit/Loss
     if ($totalSales >= $totalPurchase) {
         $grossProfit = $diffVal;
-        $grossLoss = 0;
         $subTotal = $totalSales;
-        $saleInd += $grossProfit;
     } else {
         $grossLoss = $diffVal;
-        $grossProfit = 0;
         $subTotal = $totalPurchase;
-        $purchaseInd += $grossLoss;
     }
 
-    // Calculate Net Profit or Net Loss based on Gross and Indirect entries
-if ($grossProfit >= 0) {
+ // Calculate Gross Profit or Loss
+$grossProfit = $salesAccount + $directIncome - ($opening + $purchase + $directExpense);
+$grossLoss = 0;
+if ($grossProfit < 0) {
+    $grossLoss = abs($grossProfit);
+    $grossProfit = 0;
+}
+
+// Calculate Net Profit or Loss
+if ($grossProfit > 0) {
     $net = $grossProfit + $indirectIncome - $indirectExpense;
     if ($net >= 0) {
         $netProfit = $net;
-        $netLoss = 0;
     } else {
-        $netProfit = 0;
         $netLoss = abs($net);
     }
-} elseif ($grossLoss >= 0) {
-    $net = $grossLoss + $indirectExpense - $indirectIncome;
+} elseif ($grossLoss > 0) {
+    $net = $indirectIncome - ($grossLoss + $indirectExpense);
     if ($net >= 0) {
-        $netLoss = $net;
-        $netProfit = 0;
+        $netProfit = $net;
     } else {
-        $netLoss = 0;
-        $netProfit = abs($net);
+        $netLoss = abs($net);
+    }
+} else {
+    // Only indirect values exist
+    $net = $indirectIncome - $indirectExpense;
+    if ($net >= 0) {
+        $netProfit = $net;
+    } else {
+        $netLoss = abs($net);
     }
 }
 
-// Add Gross Profit or Loss to respective side
-if ($grossProfit > 0) {
-    $saleInd += $grossProfit;
-} elseif ($grossLoss > 0) {
-    $purchaseInd += $grossLoss;
+// Subtotal (Gross Profit side)
+$subTotal = max($grossProfit, $grossLoss);
+
+if ($netProfit > 0) 
+{
+    $salesInd = $subTotal + $indirectIncome;
+    $purchaseInd = $subTotal + $indirectExpense;
+} 
+elseif ($netLoss > 0) 
+{
+    $salesInd = $subTotal + $indirectIncome + $netLoss;
+    $purchaseInd = $subTotal + $indirectExpense;
+}
+// Final Tally Total
+$overAllTotal = max($salesInd, $purchaseInd);
+
+// Return results
+return [
+    'salesInd' => $saleInd,
+    'purchaseInd' => $purchaseInd,
+    'opening' => $opening,
+    'purchase' => $purchase,
+    'directExpense' => $directExpense,
+    'indirectExpense' => $indirectExpense,
+    'salesAccount' => $salesAccount,
+    'directIncome' => $directIncome,
+    'indirectIncome' => $indirectIncome,
+    'grossProfit' => $grossProfit,
+    'grossLoss' => $grossLoss,
+    'subTotal' => $subTotal,
+    'overAllTotal' => $overAllTotal,
+    'netProfit' => $netProfit,
+    'netLoss' => $netLoss
+];
 }
 
-// Add Indirect entries to both sides
-$saleInd = $indirectIncome + $subTotal;
-$purchaseInd = $indirectExpense + $subTotal;
 
-// // Adjust Net Profit or Loss to balance the final P&L
-// if ($netProfit > 0) {
-//     $purchaseInd += $netProfit;
-// } elseif ($netLoss > 0) {
-//     $saleInd += $netLoss;
-// }
-
-// Final overall total: Highest of both sides after adjustments
-$overAllTotal = max($saleInd, $purchaseInd);
-
-    return [
-        'salesInd' => $saleInd,
-        'purchaseInd' => $purchaseInd,
-        'opening' => $opening,
-        'purchase' => $purchase,
-        'directExpense' => $directExpense,
-        'indirectExpense' => $indirectExpense,
-        'salesAccount' => $salesAccount,
-        'directIncome' => $directIncome,
-        'indirectIncome' => $indirectIncome,
-        'grossProfit' => $grossProfit,
-        'grossLoss' => $grossLoss,
-        'subTotal' => $subTotal,
-        'overAllTotal' => $overAllTotal,
-        'netProfit' => $netProfit,
-        'netLoss' => $netLoss
-    ];
-}
 
     public static function getAuthenticatedUser()
     {
@@ -3026,27 +3060,77 @@ $overAllTotal = max($saleInd, $purchaseInd);
             return $rule;
         }
 
-        public static function getAllFinancialYear(): mixed
+
+        public static function getAllPastFinancialYear(): mixed
         {
             $financialYears = ErpFinancialYear::withDefaultGroupCompanyOrg()->get();
-        
+
             if ($financialYears->isNotEmpty()) {
-                return $financialYears->map(function ($financialYear) {
+                return $financialYears
+                    ->filter(function ($financialYear) {
+                        return \Carbon\Carbon::parse($financialYear->end_date)->isPast(); // Only past end dates
+                    })
+                    ->map(function ($financialYear) {
+                        $startYear = \Carbon\Carbon::parse($financialYear->start_date)->format('Y');
+                        $endYearShort = \Carbon\Carbon::parse($financialYear->end_date)->format('y'); // e.g., 24
+                        return [
+                            'id' => $financialYear->id,
+                            'alias' => $financialYear->alias,
+                            'start_date' => $financialYear->start_date,
+                            'end_date' => $financialYear->end_date,
+                            'range' => $startYear . '-' . $endYearShort,
+                            'lock_fy' => $financialYear->lock_fy,
+                            'fy_close' => $financialYear->fy_close,
+                            'authorized_users' => $financialYear->authorizedUsers()
+                        ];
+                    })->values();
+            }
+
+            return null;
+        }
+
+         public static function getFinancialYears()
+        {
+            $financialYears = ErpFinancialYear::withDefaultGroupCompanyOrg()->get();
+            if ($financialYears->isNotEmpty()) {
+                return $financialYears
+               ->map(function ($financialYear) {
                     $startYear = \Carbon\Carbon::parse($financialYear->start_date)->format('Y');
-                    $endYearShort = \Carbon\Carbon::parse($financialYear->end_date)->format('y'); // last 2 digits
+                    $endYearShort = \Carbon\Carbon::parse($financialYear->end_date)->format('y'); // e.g., 24
                     return [
                         'id' => $financialYear->id,
                         'alias' => $financialYear->alias,
                         'start_date' => $financialYear->start_date,
                         'end_date' => $financialYear->end_date,
-                        'range' => $startYear . '-' . $endYearShort // e.g., 2024-25
+                        'range' => $startYear . '-' . $endYearShort,
+                        'authorized_users' => $financialYear->authorizedUsers()
                     ];
-                });
+                })->values();
             }
-        
+
             return null;
         }
-        public static function getGroupsQuery($organizations=[]){
+
+        public static function getFyAuthorizedUsers(string $date): mixed
+        {
+            $financialYear = ErpFinancialYear::withDefaultGroupCompanyOrg()
+                ->where('start_date', '<=', $date)
+                ->where('end_date', '>=', $date)
+                ->orWhere('fy_status',ConstantHelper::FY_CURRENT_STATUS)
+                // ->where('fy_close', ConstantHelper::FY_NOT_CLOSED_STATUS)
+                ->first();
+            if (isset($financialYear)) {
+                return [
+                    'alias' => $financialYear->alias,
+                    'authorized_users' => $financialYear->authorizedUsers()
+                ];
+            } else {
+                return null;
+            }
+        }
+
+        public static function getGroupsQuery($organizations=[])
+        {
             $groups = Group::where('status', 'active')
         ->where(function ($q) {
         $q->withDefaultGroupCompanyOrg()
@@ -3054,6 +3138,23 @@ $overAllTotal = max($saleInd, $purchaseInd);
     });
 
     return $groups;
+        }
+
+        public static function getCurrentFy($date = null)
+        {
+            $date = $date ?? date('Y-m-d');
+            $startDate = session('fyear_start_date') ?? $date;
+            $endDate = session('fyear_end_date') ?? $date;
+            $financialYear = ErpFinancialYear::withDefaultGroupCompanyOrg()
+            ->where(function ($query) use ($startDate, $endDate) {
+                $query->where('start_date', '<=', $startDate)
+                    ->where('end_date', '>=', $endDate);
+            })
+            ->orWhere('fy_status', ConstantHelper::FY_CURRENT_STATUS)
+            ->first();
+
+            return $financialYear ?? null;
+
         }
 }
 

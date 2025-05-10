@@ -569,12 +569,13 @@ class VoucherController extends Controller
             return redirect()->route('/');
         }
 
+
+        
         $user = Helper::getAuthenticatedUser();
         $userId = $user->id;
         $organizationId = $user->organization_id;
 
         $organizations = [];
-
         // Check if `filter_organization` is set and push values to `$organizations`
         if ($request->filter_organization && is_array($request->filter_organization)) {
             foreach ($request->filter_organization as $value) {
@@ -586,6 +587,8 @@ class VoucherController extends Controller
         if (count($organizations) == 0) {
             $organizations[] = $organizationId;
         }
+        
+        $fyear = Helper::getFinancialYear(date('Y-m-d'));
 
         // Retrieve vouchers based on organization_id and include series with levels
         $data =  Voucher::withDefaultGroupCompanyOrg()
@@ -620,7 +623,7 @@ class VoucherController extends Controller
                 ->whereDate('document_date', '<=', $end);
         }
         else{
-            $fyear = Helper::getFinancialYear(date('Y-m-d'));
+           
             $data = $data->whereDate('document_date', '>=',$fyear['start_date'])
                 ->whereDate('document_date', '<=',$fyear['end_date']);
                 $start = $fyear['start_date'];
@@ -664,8 +667,8 @@ class VoucherController extends Controller
             ];
         })
         ->toArray();
-        
-        return view('voucher.view_vouchers', compact('cost_centers','bookTypes', 'mappings', 'organizationId', 'data', 'book_type', 'date', 'voucher_no', 'voucher_name','date2'));
+         $fyearLocked = $fyear['authorized'];
+        return view('voucher.view_vouchers', compact('cost_centers','bookTypes', 'mappings', 'organizationId', 'data', 'book_type', 'date', 'voucher_no', 'voucher_name','date2','fyearLocked'));
     }
 
     public function create()

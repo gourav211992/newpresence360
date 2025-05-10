@@ -23,7 +23,9 @@
                             </div>
                             <div class="col-md-8 text-sm-end">
                                 <button class="btn btn-warning btn-sm mb-50 mb-sm-0" data-bs-target="#filter" data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button>
+                                @if(isset($fyearLocked) && $fyearLocked)
                                 <a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{ $createRoute }}"><i data-feather="plus-circle"></i> Add New</a>
+                                @endif
                            
                             </div>
                         </div>

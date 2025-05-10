@@ -151,6 +151,7 @@ use App\Http\Controllers\Finance\GstrController;
 use App\Http\Controllers\WarehouseStructureController;
 use App\Http\Controllers\WarehouseMappingController;
 use App\Http\Controllers\WarehouseItemMappingController;
+use App\Http\Controllers\CloseFy\CloseFyController;
 
 //Reports
 use App\Http\Controllers\Report\TransactionReportController;
@@ -282,6 +283,15 @@ Route::middleware(['user.auth'])->group(function () {
     Route::resource('ledgers', LedgerController::class)->except(['show']);
     Route::get('/ledgers/{ledgerId}/groups', [LedgerController::class, 'getLedgerGroups'])->name('ledgers.groups');;
     Route::get('/search/ledger', [LedgerController::class,'getLedger'])->name('ledger.search');
+    // closefy
+    Route::get('/close-fy', [CloseFyController::class,'index'])->name('close-fy');
+    Route::post('/close-fy', [CloseFyController::class,'closeFy'])->name('post-closefy');
+    Route::post('/close-fy/update-authuser', [CloseFyController::class, 'updateFyAuthorizedUser'])->name('close-fy.update-authuser');
+    Route::post('/close-fy/delete-authuser', [CloseFyController::class, 'deleteFyAuthorizedUser'])->name('close-fy.delete-authuser');
+    Route::post('/close-fy/lock', [CloseFyController::class, 'lockUnlockFy'])->name('close-fy.lock');
+    Route::post('/getFyInitialGroups', [CloseFyController::class,'getFyInitialGroups'])->name('getFyInitialGroups');
+    Route::post('/store-fy-session', [CloseFyController::class, 'storeFySession'])->name('store.fy.session');
+
 
 
 
@@ -2222,6 +2232,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     ]);
     Route::get('fixed-asset/setup/category', [SetupController::class, 'category'])->name('finance.fixed-asset.setup.category');
 
+
     Route::resource('fixed-asset/setup', SetupController::class)->names([
         'index' => 'finance.fixed-asset.setup.index',
         'create' => 'finance.fixed-asset.setup.create',
@@ -2256,6 +2267,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     ]);
     Route::post('fixed-asset/split/approval', [SplitController::class, 'documentApproval'])->name('finance.fixed-asset.split.approval');
     Route::post('fixed-asset/split/filter', [SplitController::class, 'index'])->name('finance.fixed-asset.split.filter');
+<<<<<<< HEAD
 
     Route::get('fixed-asset/split/posting/get', [MergerController::class, 'getPostingDetails'])->name('finance.fixed-asset.split.posting.get');
     Route::post('fixed-asset/split/post', [MergerController::class, 'postInvoice'])->name('finance.fixed-asset.split.post');
@@ -2265,6 +2277,11 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     
 
     Route::resource('fixed-asset/merger', MergerController::class)->names([
+=======
+    Route::get('fixed-asset/split/filter', [SplitController::class, 'index'])->name('finance.fixed-asset.split.filter');
+
+ Route::resource('fixed-asset/merger', MergerController::class)->names([
+>>>>>>> 14d56563a94429af64d0d5a5f5b77d13fdb9159e
         'index' => 'finance.fixed-asset.merger.index',
         'create' => 'finance.fixed-asset.merger.create',
         'store' => 'finance.fixed-asset.merger.store',
@@ -2273,10 +2290,15 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     ]);
     Route::post('fixed-asset/merger/approval', [MergerController::class, 'documentApproval'])->name('finance.fixed-asset.merger.approval');
     Route::post('fixed-asset/merger/filter', [MergerController::class, 'index'])->name('finance.fixed-asset.merger.filter');
+<<<<<<< HEAD
 
     Route::get('fixed-asset/merger/posting/get', [MergerController::class, 'getPostingDetails'])->name('finance.fixed-asset.merger.posting.get');
     Route::post('fixed-asset/merger/post', [MergerController::class, 'postInvoice'])->name('finance.fixed-asset.merger.post');
     
+=======
+    Route::get('fixed-asset/merger/posting/get', [MergerController::class, 'getPostingDetails'])->name('finance.fixed-asset.merger.posting.get');
+    Route::post('fixed-asset/merger/post', [MergerController::class, 'postInvoice'])->name('finance.fixed-asset.merger.post');
+>>>>>>> 14d56563a94429af64d0d5a5f5b77d13fdb9159e
 
 
 
