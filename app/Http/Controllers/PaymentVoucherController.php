@@ -206,8 +206,8 @@ class PaymentVoucherController extends Controller
             $organizations[] = $organizationId;
         }
 
+          $fyear = Helper::getFinancialYear(date('Y-m-d'));
         // Retrieve vouchers based on organization_id and include series with levels
-        $fyear = Helper::getFinancialYear(date('Y-m-d'));
         $data = PaymentVoucher::withDefaultGroupCompanyOrg()
             ->with([
                 'series' => function ($d) {
@@ -293,6 +293,7 @@ class PaymentVoucherController extends Controller
             ];
         })
         ->toArray();
+
         $fyearLocked = $fyear['authorized'];
         return view('paymentVoucher.paymentVouchers', compact('cost_centers','mappings', 'banks', 'ledgers', 'bank_id', 'ledger_id', 'organizationId', 'data', 'book_type', 'date', 'document_no', 'document_type', 'type', 'createRoute', 'editRouteString','date','date2','fyearLocked'));
     }

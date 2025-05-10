@@ -569,12 +569,13 @@ class VoucherController extends Controller
             return redirect()->route('/');
         }
 
+
+
         $user = Helper::getAuthenticatedUser();
         $userId = $user->id;
         $organizationId = $user->organization_id;
 
         $organizations = [];
-
         // Check if `filter_organization` is set and push values to `$organizations`
         if ($request->filter_organization && is_array($request->filter_organization)) {
             foreach ($request->filter_organization as $value) {
@@ -587,8 +588,9 @@ class VoucherController extends Controller
             $organizations[] = $organizationId;
         }
 
-        // Retrieve vouchers based on organization_id and include series with levels
         $fyear = Helper::getFinancialYear(date('Y-m-d'));
+
+        // Retrieve vouchers based on organization_id and include series with levels
         $data =  Voucher::withDefaultGroupCompanyOrg()
         ->with([
             'documents:id,name',
@@ -621,6 +623,7 @@ class VoucherController extends Controller
                 ->whereDate('document_date', '<=', $end);
         }
         else{
+
             $data = $data->whereDate('document_date', '>=',$fyear['start_date'])
                 ->whereDate('document_date', '<=',$fyear['end_date']);
                 $start = $fyear['start_date'];
@@ -664,7 +667,7 @@ class VoucherController extends Controller
             ];
         })
         ->toArray();
-        $fyearLocked = $fyear['authorized'];
+         $fyearLocked = $fyear['authorized'];
         return view('voucher.view_vouchers', compact('cost_centers','bookTypes', 'mappings', 'organizationId', 'data', 'book_type', 'date', 'voucher_no', 'voucher_name','date2','fyearLocked'));
     }
 
@@ -1187,7 +1190,7 @@ class VoucherController extends Controller
                     'date' => $request->date,
                 ]);
             }
-        
+
 
         }
 
