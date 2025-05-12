@@ -12,7 +12,9 @@ use App\Models\Group;
 use App\Models\Ledger;
 use App\Models\FixedAssetMerger;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Helpers\FinancialPostingHelper;
+use App\Models\FixedAssetMergerHistory;
 use App\Models\FixedAssetSub;
 use Exception;
 
@@ -123,18 +125,6 @@ class MergerController extends Controller
         ];
 
         $data = array_merge($request->all(), $additionalData);
-        $parentURL = "fixed-asset_registration";
-        
-        
-        
-         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
-         if (count($servicesBooks['services']) == 0) {
-            return redirect() -> route('/');
-        }
-        $firstService = $servicesBooks['services'][0];
-        $series = Helper::getBookSeriesNew($firstService -> alias, $parentURL)->first();
-
-
         
         DB::beginTransaction();
         
@@ -145,79 +135,8 @@ class MergerController extends Controller
                 Helper::approveDocument($request->book_id, $asset->id, $asset->revision_number, "", null, 1, 'submit', 0, get_class($asset));
             }
 
-            if ($asset->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED || $asset->approvalStatus == ConstantHelper::APPROVED) {
+            if ($asset->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED || $asset->document_status == ConstantHelper::APPROVED) {
                 Helper::approveDocument($request->book_id, $asset->id, $asset->revision_number, "", null, 1, 'approve', 0, get_class($asset));
-            }
-                if($series!=null){
-                $book = Helper::generateDocumentNumberNew($series->id, date('Y-m-d'));
-                if($book['document_number']!=null){
-                $existingAsset = FixedAssetRegistration::where('asset_code', $request->asset_code)
-                    ->where('organization_id', $user->organization->id)
-                    ->where('group_id', $user->organization->group_id)
-                    ->first();
-                
-                if($existingAsset){
-                    return redirect()
-                    ->route('finance.fixed-asset.split.create')
-                    ->withInput()
-                    ->withErrors('Asset Code '.$existingAsset->asset_code . ' already exists.');
-                }
-
-                
-
-                    
-                // Step 1: Create main asset registration (only once per asset_code)
-                $data = [
-                    'organization_id' => $user->organization->id,
-                    'group_id' => $user->organization->group_id,
-                    'company_id' => $user->organization->company_id,
-                    'book_id' => $series->id,
-                    'document_number'=>$book['document_number'],
-                    'document_date' => date('Y-m-d'),
-                    'doc_number_type' => $book['type'],
-                    'doc_reset_pattern' => $book['reset_pattern'],
-                    'doc_prefix' => $book['prefix'],
-                    'doc_suffix' => $book['suffix'],
-                    'doc_no' => $book['doc_no'],
-                    'asset_code' => $request->asset_code,
-                    'asset_name' => $request->asset_name,
-                    'quantity' => $request->quantity,
-                    'catrgory_id'=>$request->category_id,
-                    'ledger_id' => $request->ledger_id,
-                    'ledger_group_id' => $request->ledger_group_id,
-                    'mrn_header_id'=> null,
-                    'mrn_detail_id'=> null,
-                    'capitalize_date' => $request->capitalize_date,
-                    'last_dep_date'=> $request->capitalize_date,
-                    'vendor_id'=> null,
-                    'currency_id'=> $user->organization->currency_id,
-                    'supplier_invoice_no'=> null,
-                    'supplier_invoice_date'=> null,
-                    'book_date'=>null,
-                    'maintenance_schedule' => $request->maintenance_schedule,
-                    'depreciation_method' => $request->depreciation_method,
-                    'useful_life' => $request->useful_life,
-                    'salvage_value' => $request->salvage_value,
-                    'depreciation_percentage' => $request->depreciation_percentage,
-                    'depreciation_percentage_year' => $request->depreciation_percentage,
-                    'total_depreciation' => $request->total_depreciation,
-                    'dep_type' => $request->dep_type,
-                    'current_value' => $request->current_value,
-                    'current_value_after_dep' => $request->current_value,
-                    'document_status' => Helper::checkApprovalRequired($series->id),
-                    'approval_level' => 1,
-                    'revision_number' => 0,
-                    'revision_date' => null,
-                    'created_by' => $user->auth_user_id,
-                    'type' => get_class($user),
-                    'status' => 'active',
-
-                ];
-    
-                    $asset = FixedAssetRegistration::create($data);
-                    FixedAssetSub::generateSubAssets($asset->id, $asset->asset_code, $asset->quantity, $asset->current_value, $asset->salvage_value);
-                        
-                }
             }
 
             DB::commit();
@@ -232,15 +151,21 @@ class MergerController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(Request $r, string $id)
     {
         $parentURL = "fixed-asset_merger";
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
         if (count($servicesBooks['services']) == 0) {
             return redirect()->route('/');
         }
-        $data = FixedAssetMerger::withDefaultGroupCompanyOrg()->findOrFail($id);
+        $currNumber = $r->revisionNumber;
+        if ($currNumber) {
+            $data= FixedAssetMergerHistory::withDefaultGroupCompanyOrg()->findorFail($id);
+        } else {
+            $data= FixedAssetMerger::withDefaultGroupCompanyOrg()->findorFail($id);
+        }
         $revision_number = $data->revision_number;
+        
         $userType = Helper::userCheck();
         
         $buttons = Helper::actionButtonDisplay($data->book_id,$data->document_status , $data->id, $data->current_value, 
@@ -253,25 +178,92 @@ class MergerController extends Controller
         $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()->whereIn('document_status',ConstantHelper::DOCUMENT_STATUS_APPROVED)->get();
         
         
-        return view('fixed-asset.merger.show', compact('assets','data', 'buttons', 'docStatusClass', 'approvalHistory'));
+        return view('fixed-asset.merger.show', compact('assets','data', 'buttons', 'docStatusClass', 'approvalHistory','revision_number'));
         
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
+    public function edit(Request $request,$id)
     {
-        //
+        $parentURL = "fixed-asset_merger";
+        $series = [];
+
+        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
+        if (count($servicesBooks['services']) == 0) {
+            return redirect()->route('/');
+        }
+        $firstService = $servicesBooks['services'][0];
+        $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
+        $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()->whereIn('document_status',ConstantHelper::DOCUMENT_STATUS_APPROVED)->get();
+        $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->where('organization_id', Helper::getAuthenticatedUser()->organization_id)->select('id', 'name')->get();
+        $group_name = ConstantHelper::FIXED_ASSETS;
+
+        
+        $group = Group::withDefaultGroupCompanyOrg()->where('name', $group_name)->first() ?: Group::where('edit',0)->where('name', $group_name)->first();
+        $allChildIds = $group->getAllChildIds();
+        $allChildIds[] = $group->id;
+        $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
+            $query->whereIn('ledger_group_id', $allChildIds)
+                ->orWhere(function ($subQuery) use ($allChildIds) {
+                    foreach ($allChildIds as $child) {
+                        $subQuery->orWhereJsonContains('ledger_group_id',(string)$child);
+                    }
+                });
+                })->get(); 
+                $financialEndDate = Helper::getFinancialYear(\Carbon\Carbon::parse(date('Y-m-d'))->subYear()->format('Y-m-d'))['end_date'];
+                $financialStartDate = Helper::getFinancialYear(\Carbon\Carbon::parse(date('Y-m-d'))->subYear()->format('Y-m-d'))['start_date'];
+                $organization = Helper::getAuthenticatedUser()->organization;
+                $dep_percentage = $organization->dep_percentage;
+                $dep_type = $organization->dep_type;
+                $dep_method = $organization->dep_method;
+                $data = FixedAssetMerger::find($id);
+                return view('fixed-asset.merger.edit', compact('data','assets','series','assets', 'categories','ledgers','financialEndDate','financialStartDate','dep_percentage','dep_type','dep_method'));
+       
+        
     }
+
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
-    {
-        //
+    public function update(Request $request, $id)
+{
+    $user = Helper::getAuthenticatedUser();
+    $asset = FixedAssetMerger::findOrFail($id);
+
+    $status = ($request->document_status === ConstantHelper::SUBMITTED)
+        ? Helper::checkApprovalRequired($asset->book_id)
+        : $request->document_status;
+
+    $additionalData = [
+        'document_status' => $status,
+    ];
+
+    $data = array_merge($request->all(), $additionalData);
+
+    DB::beginTransaction();
+
+    try {
+        $asset->update($data);
+
+        if ($status == ConstantHelper::SUBMITTED) {
+            Helper::approveDocument($asset->book_id, $asset->id, $asset->revision_number, "", null, 1, 'submit', 0, get_class($asset));
+        }
+
+        if ($status == ConstantHelper::APPROVAL_NOT_REQUIRED || $status == ConstantHelper::APPROVED) {
+            Helper::approveDocument($asset->book_id, $asset->id, $asset->revision_number, "", null, 1, 'approve', 0, get_class($asset));
+        }
+
+        DB::commit();
+        return redirect()->route("finance.fixed-asset.merger.index")->with('success', 'Asset Merge updated successfully!');
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return redirect()->route("finance.fixed-asset.merger.edit", $id)->with('error', $e->getMessage());
     }
+}
+
 
     /**
      * Remove the specified resource from storage.
@@ -335,10 +327,14 @@ class MergerController extends Controller
 
     public function postInvoice(Request $request)
     {
+        DB::beginTransaction();
+        $register = FixedAssetMerger::makeRegistration((int)$request -> document_id);
+        if($register['status']){
         try {
-            DB::beginTransaction();
+
             $data = FinancialPostingHelper::financeVoucherPosting($request -> book_id ?? 0, $request -> document_id ?? 0, "post");
             if ($data['status']) {
+               
                 DB::commit();
             } else {
                 DB::rollBack();
@@ -353,6 +349,71 @@ class MergerController extends Controller
                 'status' => 'exception',
                 'message' => 'Some internal error occured',
                 'error' => $ex -> getMessage()
+            ]);
+        }
+    }
+    else{
+        DB::rollBack();
+        return response() -> json([
+            'status' => false,
+            'message' => $register['message'],
+            'error' =>  $register['message']
+        ]);
+
+    }
+    }
+    public function amendment(Request $request, $id)
+    {
+        $asset_id = FixedAssetMerger::find($id);
+        if (!$asset_id) {
+            return response()->json([
+                "data" => [],
+                "message" => "Merger not found.",
+                "status" => 404,
+            ]);
+        }
+
+        $revisionData = [
+            [
+                "model_type" => "header",
+                "model_name" => "FixedAssetMerger",
+                "relation_column" => "",
+            ],
+        ];
+
+        $a = Helper::documentAmendment($revisionData, $id);
+        DB::beginTransaction();
+        try {
+            if ($a) {
+                Helper::approveDocument(
+                    $asset_id->book_id,
+                    $asset_id->id,
+                    $asset_id->revision_number,
+                    "Amendment",
+                    $request->file("attachment"),
+                    $asset_id->approval_level,
+                    "amendment"
+                );
+
+                $asset_id->document_status = ConstantHelper::DRAFT;
+                $asset_id->revision_number = $asset_id->revision_number + 1;
+                $asset_id->revision_date = now();
+                $asset_id->save();
+            }
+
+            DB::commit();
+            return response()->json([
+                "data" => [],
+                "message" => "Amendment done!",
+                "status" => 200,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Amendment Submit Error: " . $e->getMessage());
+            return response()->json([
+                "data" => [],
+                "message" => "An unexpected error occurred. Please try again.",
+                "status" => 500,
             ]);
         }
     }

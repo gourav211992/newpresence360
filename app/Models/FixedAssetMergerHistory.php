@@ -11,11 +11,11 @@ use App\Traits\Deletable;
 use Illuminate\Support\Facades\DB;
 
 
-class FixedAssetMerger extends Model
+class FixedAssetMergerHistory extends Model
 {
     use HasFactory, SoftDeletes, DefaultGroupCompanyOrg, Deletable;
 
-    protected $table = 'erp_finance_fixed_asset_merger';
+    protected $table = 'erp_finance_fixed_asset_merger_history';
 
     protected $guarded = ['id'];
     public function book(){
@@ -143,12 +143,7 @@ class FixedAssetMerger extends Model
 
                 $asset = FixedAssetRegistration::create($data);
                 FixedAssetSub::generateSubAssets($asset->id, $asset->asset_code, $asset->quantity, $asset->current_value, $asset->salvage_value);
-                //delete old assets
-                foreach(json_decode($request->asset_details) as $item){
-                    foreach($item->sub_asset_id as $sub){
-                        FixedAssetSub::find($sub)->delete();
-                    }
-                }   
+                    
                 return array(
                     'status' => true,
                     'message' => "Registration Added",

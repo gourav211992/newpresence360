@@ -30,10 +30,13 @@
                                 <button type="button" class="btn btn-primary btn-sm" id="approved-button" name="action" value="approved"><i data-feather="check-circle"></i> Approve</button>
                                 <button type="button" id="reject-button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg> Reject</button>
                         @endif
+                        @if($buttons['amend'])
+                        <button type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i> Amendment</button>
+                        @endif
                         @if($buttons['post'])
                         <button id="postButton" onclick="onPostVoucherOpen();" type="button" class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Post</button>
                     @endif
-                                <a href="{{ route('finance.fixed-asset.split.index') }}"> <button
+                                <a href="{{ route('finance.fixed-asset.merger.index') }}"> <button
                                         class="btn btn-secondary btn-sm"><i data-feather="arrow-left-circle"></i> Back</button>
                                 </a>
 
@@ -529,8 +532,7 @@
   
 
 
-    <div class="modal fade text-start alertbackdropdisabled" id="amendmentconfirm" tabindex="-1"
-        aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
+     <div class="modal fade text-start alertbackdropdisabled" id="amendmentconfirm" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header p-0 bg-transparent">
@@ -539,14 +541,13 @@
                 <div class="modal-body alertmsg text-center warning">
                     <i data-feather='alert-circle'></i>
                     <h2>Are you sure?</h2>
-                    <p>Are you sure you want to <strong>Amendment</strong> this <strong>MRN</strong>? After Amendment
-                        this action cannot be undone.</p>
+                    <p>Are you sure you want to <strong>Amendment</strong> this <strong>Asset Merger</strong>? After Amendment this action cannot be undone.</p>
                     <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Confirm</button>
+                    <button type="button" id="amendmentSubmit" class="btn btn-primary">Confirm</button>
                 </div>
             </div>
         </div>
-    </div>
+      </div>
 @endsection
 
 
@@ -721,6 +722,45 @@
 
             }
         }
+        $('#ap_file').prop('disabled', false).prop('readonly', false);
+        $('#revisionNumber').prop('disabled', false).prop('readonly', false);
+        
+$(document).on('click', '#amendmentSubmit', (e) => {
+let actionUrl = "{{ route('finance.fixed-asset.merger.amendment', $data->id) }}";
+fetch(actionUrl).then(response => {
+    return response.json().then(data => {
+        if (data.status == 200) {
+            Swal.fire({
+                    title: 'Success!',
+                    text: data.message,
+                    icon: 'success'
+                }).then(() => {
+                    window.location.href = "{{ route('finance.fixed-asset.merger.edit', $data->id) }}";
+                });
+   
+        } else {
+            Swal.fire({
+                title: 'Error!',
+                text: data.message,
+                icon: 'error'
+            });
+            $('#amendmentconfirm').modal('hide');
+        }
+    });
+});
+});
+// # Revision Number On Chage
+$(document).on('change', '#revisionNumber', (e) => {
+    let actionUrl = location.pathname + '?revisionNumber='+e.target.value;
+    let revision_number = Number("{{$revision_number}}");
+    let revisionNumber = Number(e.target.value);
+    if(revision_number == revisionNumber) {
+        location.href = actionUrl;
+    } else {
+        window.open(actionUrl, '_blank');
+    }
+});
+
 
     </script>
     <!-- END: Content-->

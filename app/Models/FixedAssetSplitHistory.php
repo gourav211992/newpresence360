@@ -10,11 +10,11 @@ use App\Traits\DefaultGroupCompanyOrg;
 use App\Traits\Deletable;
 use Illuminate\Support\Facades\DB;
 
-class FixedAssetSplit extends Model
+class FixedAssetSplitHistory extends Model
 {
     use HasFactory, SoftDeletes, DefaultGroupCompanyOrg, Deletable;
 
-    protected $table = 'erp_finance_fixed_asset_split';
+    protected $table = 'erp_finance_fixed_asset_split_history';
 
     protected $guarded = ['id'];
     public function book(){
@@ -46,7 +46,8 @@ class FixedAssetSplit extends Model
 
     //     return FixedAssetRegistration::whereIn('id', $assetIds)->get();
     // }
-    public static function makeRegistration($id){
+    public function makeRegistration($id){
+        DB::beginTransaction();
         try{
         $request = FixedAssetSplit::find($id);
         $user = Helper::getAuthenticatedUser();
@@ -57,16 +58,10 @@ class FixedAssetSplit extends Model
         
          $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
          if (count($servicesBooks['services']) == 0) {
-            DB::rollBack();
-            return response() -> json([
-                'status' => 'exception',
-                'data' => array(
-                    'status' => false,
-                    'message' => 'Service not found',
-                    'data' => []
-                )
-            ]);
-          
+            return redirect()
+            ->route('finance.fixed-asset.split.show',$id)
+            ->withInput()
+            ->withErrors('Series not set.');
         
         }
         $firstService = $servicesBooks['services'][0];
@@ -83,12 +78,10 @@ class FixedAssetSplit extends Model
                     ->first();
                 
                 if($existingAsset){
-                    DB::rollBack();
-                    return array(
-                            'status' => false,
-                            'message' => 'Asset Code '.$existingAsset->asset_code . ' already exists.',
-                            'data' => []
-                    );
+                    return redirect()
+                    ->route('finance.fixed-asset.split.show',$id)
+                    ->withInput()
+                    ->withErrors('Asset Code '.$existingAsset->asset_code . ' already exists.');
                 }
 
                 $asset = FixedAssetRegistration::find($request->asset_id);
@@ -143,7 +136,6 @@ class FixedAssetSplit extends Model
 
             ]);
     
-    
                 // Step 2: Create sub-assets under main asset
                 foreach ($items as $subAsset) {
                     FixedAssetSub::create([
@@ -157,23 +149,9 @@ class FixedAssetSplit extends Model
             }
         }
             }
-            //delete_old
-            FixedAssetSplit::find($request->sub_asset_id)->delete();
-            return array(
-                    'status' => true,
-                    'message' => "Registration Added",
-                    'data' => []
-            );
-        
+            DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
-            return array(
-                    'status' => false,
-                    'message' => $e->getMessage(),
-                    'data' => []
-            );
-        
-           
         }
     }
 

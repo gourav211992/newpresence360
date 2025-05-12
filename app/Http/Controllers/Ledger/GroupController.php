@@ -169,10 +169,10 @@ else{
     public function update(Request $request, string $id)
     {
         
-        $existingName = Group::where(function ($q) {
+        $existingName = Group::where('id', '!=', (int)$id)->where(function ($q) {
             $q->withDefaultGroupCompanyOrg()
               ->orWhere('edit', 0);
-        })->where('id', '!=', (int)$id) ->exists();
+        })->where('name',$request->name)->exists();
      
             if ($existingName) {
                 return back()->withErrors(['name' => 'The name has already been taken.'])->withInput();

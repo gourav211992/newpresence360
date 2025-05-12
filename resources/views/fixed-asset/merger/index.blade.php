@@ -83,10 +83,18 @@
 																<i data-feather="more-vertical"></i>
 															</button>
 															<div class="dropdown-menu dropdown-menu-end">
-																<a class="dropdown-item" href="{{ route('finance.fixed-asset.merger.show', $d->id) }}">
+                                @if($d->document_status=="draft")
+                                <a class="dropdown-item" href="{{ route('finance.fixed-asset.merger.edit', $d->id) }}">
 																	<i data-feather="edit" class="me-50"></i>
+																	<span>Edit</span>
+																</a>
+                                @endif
+                               
+                                <a class="dropdown-item" href="{{ route('finance.fixed-asset.merger.show', $d->id) }}">
+																	<i data-feather="eye" class="me-50"></i>
 																	<span>View Detail</span>
 																</a>
+                              
 															</div>
 														</div>
 													</td>
