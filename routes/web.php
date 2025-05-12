@@ -16,6 +16,7 @@ use App\Http\Controllers\ErpRCController;
 use App\Http\Controllers\ErpTransporterRequestController;
 use App\Http\Controllers\ErpTransportersController;
 use App\Http\Controllers\ErpProductionSlipController;
+
 use App\Http\Controllers\OrganizationServiceController;
 use App\Http\Controllers\LoanProgress\AppraisalController;
 use App\Http\Controllers\LoanProgress\ApprovalController;
@@ -282,6 +283,15 @@ Route::middleware(['user.auth'])->group(function () {
     Route::resource('ledgers', LedgerController::class)->except(['show']);
     Route::get('/ledgers/{ledgerId}/groups', [LedgerController::class, 'getLedgerGroups'])->name('ledgers.groups');;
     Route::get('/search/ledger', [LedgerController::class,'getLedger'])->name('ledger.search');
+    // closefy
+    Route::get('/close-fy', [CloseFyController::class,'index'])->name('close-fy');
+    Route::post('/close-fy', [CloseFyController::class,'closeFy'])->name('post-closefy');
+    Route::post('/close-fy/update-authuser', [CloseFyController::class, 'updateFyAuthorizedUser'])->name('close-fy.update-authuser');
+    Route::post('/close-fy/delete-authuser', [CloseFyController::class, 'deleteFyAuthorizedUser'])->name('close-fy.delete-authuser');
+    Route::post('/close-fy/lock', [CloseFyController::class, 'lockUnlockFy'])->name('close-fy.lock');
+    Route::post('/getFyInitialGroups', [CloseFyController::class,'getFyInitialGroups'])->name('getFyInitialGroups');
+    Route::post('/store-fy-session', [CloseFyController::class, 'storeFySession'])->name('store.fy.session');
+
 
     // closefy
     Route::get('/close-fy', [CloseFyController::class,'index'])->name('close-fy');
@@ -2230,6 +2240,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         'update' => 'finance.fixed-asset.maintenance.update',
     ]);
     Route::get('fixed-asset/setup/category', [SetupController::class, 'category'])->name('finance.fixed-asset.setup.category');
+
 
     Route::resource('fixed-asset/setup', SetupController::class)->names([
         'index' => 'finance.fixed-asset.setup.index',

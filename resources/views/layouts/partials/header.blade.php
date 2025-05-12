@@ -49,6 +49,23 @@
                                 </select>
                             </form>
                         </li>
+                        <li class="nav-item d-none d-lg-block select-organization-menu">
+                            <form action="{{ route('update-organization') }}" method="POST">
+                                @csrf
+
+                                <select class="form-select" name="fyear" id="fyear" >
+                                    <option value="">-- Select F.Y --</option>
+                                    @foreach ($fyears as $year)
+                                    <option value="{{ $year['id'] }}"
+                                        data-start="{{ $year['start_date'] }}"
+                                        data-end="{{ $year['end_date'] }}"
+                                        {{ $year['range'] == $c_fyear ? 'selected' : '' }}>
+                                        {{ $year['range'] }}
+                                    </option>
+                                    @endforeach
+                                </select>
+                            </form>
+                        </li>
                         @endif
 
 
@@ -405,3 +422,48 @@
         </a></li>
 </ul>
 <!-- END: Header-->
+<script>
+    function sendFySession(startDate, endDate, id) {
+    fetch("{{ route('store.fy.session') }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            start_date: startDate,
+            end_date: endDate,
+            fyearId: id,
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Session updated:', data.message);
+        location.reload();
+    })
+    .catch(error => {
+        console.error('Error setting session:', error);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const select = document.getElementById('fyear');
+
+    select.addEventListener('change', function () {
+        const selected = this.options[this.selectedIndex];
+
+        if (selected && selected.value.trim() !== "") {
+            const id = selected.value; // ✅ properly defined now
+            const start = selected.getAttribute('data-start');
+            const end = selected.getAttribute('data-end');
+
+            if (start && end && id !== "") {
+                sendFySession(start, end, id);
+            }
+        }
+    });
+});
+
+</script>
+
+
