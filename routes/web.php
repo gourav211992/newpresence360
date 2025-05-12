@@ -152,7 +152,6 @@ use App\Http\Controllers\WarehouseStructureController;
 use App\Http\Controllers\WarehouseMappingController;
 use App\Http\Controllers\WarehouseItemMappingController;
 use App\Http\Controllers\CloseFy\CloseFyController;
-
 //Reports
 use App\Http\Controllers\Report\TransactionReportController;
 
@@ -271,6 +270,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('vouchers/getLedgerGroups', [VoucherController::class, 'getLedgerGroups'])->name('voucher.getLedgerGroups');
     Route::get('report/creditors', [CrDrReportController::class, 'credit'])->name('voucher.credit.report');
     Route::get('report/debitors', [CrDrReportController::class, 'debit'])->name('voucher.debit.report');
+    Route::post('report/debitors-creditor-export', [CrDrReportController::class, 'exportDebitorCreditor'])->name('credit.debit.report.export');
     Route::get('/crdr/report/ledger/{group}', [CrDrReportController::class, 'getLedgersByGroup'])->name('crdr.report.ledger');
     Route::get('/report/getLedgerDetails/{type}/{ledger}/{group}', [CrDrReportController::class, 'getLedgerDetails'])->name('crdr.report.ledger.details');
     Route::get('report/creditors/getDetails', [CrDrReportController::class, 'credit_debit_details'])->name('voucher.credit_details.report');
@@ -283,6 +283,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::resource('ledgers', LedgerController::class)->except(['show']);
     Route::get('/ledgers/{ledgerId}/groups', [LedgerController::class, 'getLedgerGroups'])->name('ledgers.groups');;
     Route::get('/search/ledger', [LedgerController::class,'getLedger'])->name('ledger.search');
+
     // closefy
     Route::get('/close-fy', [CloseFyController::class,'index'])->name('close-fy');
     Route::post('/close-fy', [CloseFyController::class,'closeFy'])->name('post-closefy');
@@ -291,7 +292,6 @@ Route::middleware(['user.auth'])->group(function () {
     Route::post('/close-fy/lock', [CloseFyController::class, 'lockUnlockFy'])->name('close-fy.lock');
     Route::post('/getFyInitialGroups', [CloseFyController::class,'getFyInitialGroups'])->name('getFyInitialGroups');
     Route::post('/store-fy-session', [CloseFyController::class, 'storeFySession'])->name('store.fy.session');
-
 
 
 
@@ -813,17 +813,17 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
 
     Route::prefix('physical-stock-accounts')->controller(PhysicalStockAccountController::class)->group(function () {
         Route::get('/', 'index')->name('physical-stock-account.index');
-        Route::post('/', 'store')->name('physical-stock-account.store'); 
+        Route::post('/', 'store')->name('physical-stock-account.store');
         Route::delete('/{id}', 'destroy')->name('physical-stock-account.destroy');
         Route::get('/test-ledger', 'testLedgerGroupAndLedgerId')->name('physical-stock-account.test-stock');
         Route::get('organizations/{companyId}', 'getOrganizationsByCompany')->name('physical-stock-account.organizations.by-company');
-        Route::get('data-by-organization/{organizationId}', 'getDataByOrganization')->name('physical-stock-account.data.by-organization'); 
+        Route::get('data-by-organization/{organizationId}', 'getDataByOrganization')->name('physical-stock-account.data.by-organization');
         Route::get('items-and-subcategories-by-category', 'getItemsAndSubCategoriesByCategory')->name('physical-stock-account.items-and-subcategories.by-category');
-        Route::get('items-by-subcategory', 'getItemsBySubCategory')->name('physical-stock-account.items.by-subcategory'); 
-        Route::get('ledgers-by-organization/{organizationId}', 'getLedgersByOrganization')->name('physical-stock-account.ledgers.by-organization'); 
-        Route::get('categories-by-organization/{organizationId}', 'getCategoriesByOrganization')->name('physical-stock-account.categories.by-organization'); 
+        Route::get('items-by-subcategory', 'getItemsBySubCategory')->name('physical-stock-account.items.by-subcategory');
+        Route::get('ledgers-by-organization/{organizationId}', 'getLedgersByOrganization')->name('physical-stock-account.ledgers.by-organization');
+        Route::get('categories-by-organization/{organizationId}', 'getCategoriesByOrganization')->name('physical-stock-account.categories.by-organization');
         Route::get('sub-categories-by-category/{categoryId}', 'getSubcategoriesByCategory')->name('physical-stock-account.subcategories.by-category');
-        Route::get('ledgers-by-group', 'getLedgerGroupByLedger')->name('physical-stock-account.ledgers.by-group'); 
+        Route::get('ledgers-by-group', 'getLedgerGroupByLedger')->name('physical-stock-account.ledgers.by-group');
     });
 
     Route::get('/loan', [LoanController::class, 'index']);
@@ -2232,7 +2232,6 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     ]);
     Route::get('fixed-asset/setup/category', [SetupController::class, 'category'])->name('finance.fixed-asset.setup.category');
 
-
     Route::resource('fixed-asset/setup', SetupController::class)->names([
         'index' => 'finance.fixed-asset.setup.index',
         'create' => 'finance.fixed-asset.setup.create',
@@ -2267,38 +2266,24 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     ]);
     Route::post('fixed-asset/split/approval', [SplitController::class, 'documentApproval'])->name('finance.fixed-asset.split.approval');
     Route::post('fixed-asset/split/filter', [SplitController::class, 'index'])->name('finance.fixed-asset.split.filter');
-<<<<<<< HEAD
+    Route::get('fixed-asset/split/posting/get', [SplitController::class, 'getPostingDetails'])->name('finance.fixed-asset.split.posting.get');
+    Route::post('fixed-asset/split/post', [SplitController::class, 'postInvoice'])->name('finance.fixed-asset.split.post');
+    Route::get('fixed-asset/depreciation/amendment/{id}', [SplitController::class, 'amendment'])->name('finance.fixed-asset.split.amendment');
 
-    Route::get('fixed-asset/split/posting/get', [MergerController::class, 'getPostingDetails'])->name('finance.fixed-asset.split.posting.get');
-    Route::post('fixed-asset/split/post', [MergerController::class, 'postInvoice'])->name('finance.fixed-asset.split.post');
-   
-
-
-    
 
     Route::resource('fixed-asset/merger', MergerController::class)->names([
-=======
-    Route::get('fixed-asset/split/filter', [SplitController::class, 'index'])->name('finance.fixed-asset.split.filter');
-
- Route::resource('fixed-asset/merger', MergerController::class)->names([
->>>>>>> 14d56563a94429af64d0d5a5f5b77d13fdb9159e
         'index' => 'finance.fixed-asset.merger.index',
         'create' => 'finance.fixed-asset.merger.create',
         'store' => 'finance.fixed-asset.merger.store',
         'show' => 'finance.fixed-asset.merger.show',
+        'edit' => 'finance.fixed-asset.merger.edit',
         'update' => 'finance.fixed-asset.merger.update',
     ]);
     Route::post('fixed-asset/merger/approval', [MergerController::class, 'documentApproval'])->name('finance.fixed-asset.merger.approval');
     Route::post('fixed-asset/merger/filter', [MergerController::class, 'index'])->name('finance.fixed-asset.merger.filter');
-<<<<<<< HEAD
-
     Route::get('fixed-asset/merger/posting/get', [MergerController::class, 'getPostingDetails'])->name('finance.fixed-asset.merger.posting.get');
     Route::post('fixed-asset/merger/post', [MergerController::class, 'postInvoice'])->name('finance.fixed-asset.merger.post');
-    
-=======
-    Route::get('fixed-asset/merger/posting/get', [MergerController::class, 'getPostingDetails'])->name('finance.fixed-asset.merger.posting.get');
-    Route::post('fixed-asset/merger/post', [MergerController::class, 'postInvoice'])->name('finance.fixed-asset.merger.post');
->>>>>>> 14d56563a94429af64d0d5a5f5b77d13fdb9159e
+    Route::get('fixed-asset/merger/amendment/{id}', [MergerController::class, 'amendment'])->name('finance.fixed-asset.merger.amendment');
 
 
 
