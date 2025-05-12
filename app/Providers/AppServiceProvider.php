@@ -51,28 +51,6 @@ class AppServiceProvider extends ServiceProvider
                 $fyears = Helper::getFinancialYears();
                 $c_fyear = Helper::getFinancialYear(date('Y-m-d'));
 
-                //update access_by
-                $financialYear = Helper::getCurrentFy();
-                if($financialYear && $financialYear->access_by  == null){
-                    $organizationId = $financialYear->organization_id;
-                    $employees = Helper::getOrgWiseUserAndEmployees($organizationId);
-
-                    $accessBy = [];
-
-                    foreach ($employees as $employee) {
-                        $authUser = $employee->authUser();
-                        if ($authUser) {
-                            $accessBy[] = [
-                                'user_id' => $authUser->id,
-                                'authenticable_type' => $authUser->authenticable_type?? null,
-                                'authorized' => true,
-                            ];
-                        }
-                    }
-                    $financialYear->access_by = $accessBy;
-                    $financialYear->save();
-                }
-
                 // Pass organization id and mappings
                 $view->with([
                     'authSessionUser' => $user,
@@ -82,7 +60,7 @@ class AppServiceProvider extends ServiceProvider
                     'orgLogo' => $orgLogo,
                     'logedinUser'=> $user,
                     'fyears' => $fyears,
-                    'c_fyear' => $c_fyear['range']
+                    'c_fyear' => $c_fyear['range'] ?? ''
                 ]);
             }
         });
