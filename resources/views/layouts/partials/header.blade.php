@@ -55,14 +55,16 @@
 
                                 <select class="form-select" name="fyear" id="fyear" >
                                     <option value="">-- Select F.Y --</option>
+                                    @if(isset($fyears) && is_iterable($fyears))
                                     @foreach ($fyears as $year)
                                     <option value="{{ $year['id'] }}"
                                         data-start="{{ $year['start_date'] }}"
                                         data-end="{{ $year['end_date'] }}"
-                                        {{ $year['range'] == $c_fyear ? 'selected' : '' }}>
+                                        {{ $year['range'] == isset($c_fyear) && $c_fyear ? 'selected' : '' }}>
                                         {{ $year['range'] }}
                                     </option>
                                     @endforeach
+                                    @endif
                                 </select>
                             </form>
                         </li>

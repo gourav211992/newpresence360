@@ -29,7 +29,6 @@ class AppServiceProvider extends ServiceProvider
         View::composer('*', function ($view) {
 
             $user = Helper::getAuthenticatedUser();
-            // dd($user);
             if ($user) {
                 $organizationId = $user->organization_id;
                 // Fetch organization menus based on services
