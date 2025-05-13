@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Helpers\FinancialPostingHelper;
 use App\Models\ErpAssetCategory;
 use App\Models\FixedAssetSub;
+use App\Models\ErpStore;
 use App\Models\Group;
 use App\Models\Ledger;
 class SplitController extends Controller
@@ -76,7 +77,7 @@ class SplitController extends Controller
         $firstService = $servicesBooks['services'][0];
         $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
         $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)->get();
-        $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->where('organization_id', Helper::getAuthenticatedUser()->organization_id)->select('id', 'name')->get();
+        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         $group_name = ConstantHelper::FIXED_ASSETS;
         $group = Helper::getGroupsQuery()->where('name', $group_name)->first();
         $allChildIds = $group->getAllChildIds();
@@ -95,7 +96,9 @@ class SplitController extends Controller
                 $dep_percentage = $organization->dep_percentage;
                 $dep_type = $organization->dep_type;
                 $dep_method = $organization->dep_method;
-        return view('fixed-asset.split.create', compact('series','assets', 'categories','ledgers','financialEndDate','financialStartDate','dep_percentage','dep_type','dep_method'));
+                $locations = ErpStore::withDefaultGroupCompanyOrg()->get();
+       
+                return view('fixed-asset.split.create', compact('locations','series','assets', 'categories','ledgers','financialEndDate','financialStartDate','dep_percentage','dep_type','dep_method'));
        
         
     }
@@ -173,10 +176,11 @@ class SplitController extends Controller
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$data->document_status] ?? '';
         $revNo = $data->revision_number;
         $approvalHistory = Helper::getApprovalHistory($data->book_id, $data->id, $revNo,$data->current_value,$data->created_by);
+        $locations = ErpStore::withDefaultGroupCompanyOrg()->get();
         
 
         
-        return view('fixed-asset.split.show', compact('data', 'buttons', 'docStatusClass', 'approvalHistory','revision_number'));
+        return view('fixed-asset.split.show', compact('locations','data', 'buttons', 'docStatusClass', 'approvalHistory','revision_number'));
         
     }
 
@@ -196,7 +200,7 @@ class SplitController extends Controller
         $firstService = $servicesBooks['services'][0];
         $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
         $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)->get();
-        $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->where('organization_id', Helper::getAuthenticatedUser()->organization_id)->select('id', 'name')->get();
+        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         $group_name = ConstantHelper::FIXED_ASSETS;
         $group = Helper::getGroupsQuery()->where('name', $group_name)->first();
         $allChildIds = $group->getAllChildIds();
@@ -215,7 +219,9 @@ class SplitController extends Controller
                 $dep_percentage = $organization->dep_percentage;
                 $dep_type = $organization->dep_type;
                 $dep_method = $organization->dep_method;
-        return view('fixed-asset.split.edit', compact('data','series','assets', 'categories','ledgers','financialEndDate','financialStartDate','dep_percentage','dep_type','dep_method'));
+                $locations = ErpStore::withDefaultGroupCompanyOrg()->get();
+       
+                return view('fixed-asset.split.edit', compact('locations','data','series','assets', 'categories','ledgers','financialEndDate','financialStartDate','dep_percentage','dep_type','dep_method'));
        
     }
 

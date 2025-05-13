@@ -774,6 +774,9 @@ class ConstantHelper
         self::RC_SERVICE_ALIAS => 'rate.contract.edit',
         self::PSV_SERVICE_ALIAS => 'psv.edit',
         self::PL_SERVICE_ALIAS => 'PL.layout',
+        self::FIXED_ASSET_SPLIT=>'finance.fixed-asset.split.show',
+        self::FIXED_ASSET_MERGER=>'finance.fixed-asset.merger.show',
+        
     ];
     const PWO_DOC_TYPES = [self::PWO_SERVICE_ALIAS];
     const SALE_INVOICE_DOC_TYPES = [self::SI_SERVICE_ALIAS, self::LEASE_INVOICE_SERVICE_ALIAS, self::DELIVERY_CHALLAN_SERVICE_ALIAS, self::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS];

@@ -158,6 +158,8 @@ class FixedAssetSplit extends Model
         }
             }
             //delete_old
+            $old = FixedAssetSplit::find($request->sub_asset_id);
+            if($old)
             FixedAssetSplit::find($request->sub_asset_id)->delete();
             return array(
                     'status' => true,

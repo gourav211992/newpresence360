@@ -111,5 +111,5 @@ class FixedAssetRegistration extends Model
             [json_encode((string) $this->id)]
         )->get();
     }
-    
+   
 }

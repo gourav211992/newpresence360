@@ -6,6 +6,7 @@ use App\Helpers\ConstantHelper;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Helpers\Helper;
+use App\Models\CostCenterOrgLocations;
 use App\Models\ErpAssetCategory;
 use App\Models\Currency;
 use App\Models\Ledger;
@@ -19,6 +20,7 @@ use App\Models\FixedAssetSub;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Exception;
+use App\Models\ErpStore;
 use App\Models\Group;
 
 
@@ -68,7 +70,7 @@ class RegistrationController extends Controller
                     }
                 });
                 })->get();
-        $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->where('organization_id', Helper::getAuthenticatedUser()->organization_id)->select('id', 'name')->get();
+        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         
         $grns = MrnHeader::where('organization_id', Helper::getAuthenticatedUser()->organization_id)
         ->whereHas('items', function ($q) {
@@ -93,12 +95,13 @@ class RegistrationController extends Controller
         $dep_method = $organization->dep_method;
         $dep_percentage = $organization->dep_percentage;
         $dep_type = $organization->dep_type;
+        
         $financialEndDate = Helper::getFinancialYear(\Carbon\Carbon::parse(date('Y-m-d'))->subYear()->format('Y-m-d'))['end_date'];
         $financialStartDate = Helper::getFinancialYear(\Carbon\Carbon::parse(date('Y-m-d'))->subYear()->format('Y-m-d'))['start_date'];
-     
-        
+        $locations = ErpStore::withDefaultGroupCompanyOrg()->get();
+         
        
-        return view('fixed-asset.registration.create',compact('series','ledgers','categories','grns','vendors','currencies','grn_details','dep_method','dep_percentage','dep_type','financialEndDate','financialStartDate'));
+        return view('fixed-asset.registration.create',compact('locations','series','ledgers','categories','grns','vendors','currencies','grn_details','dep_method','dep_percentage','dep_type','financialEndDate','financialStartDate'));
     }
 
     /**
@@ -204,7 +207,7 @@ public function store(FixedAssetRegistrationRequest $request)
                     }
                 });
                 })->get();
-        $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->where('organization_id', Helper::getAuthenticatedUser()->organization_id)->select('id', 'name')->get();
+        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         $grns = MrnHeader::where('organization_id', Helper::getAuthenticatedUser()->organization_id)->whereHas('items')->whereHas('vendor')->get();
         $grn_details = MrnDetail::withwhereHas('header', function ($query) {$query->where('organization_id', Helper::getAuthenticatedUser()->organization_id);})->get();
         $vendors = Vendor::withDefaultGroupCompanyOrg()->select('id', 'display_name as name')->get();
@@ -220,8 +223,10 @@ public function store(FixedAssetRegistrationRequest $request)
         $approvalHistory = Helper::getApprovalHistory($data->book_id, $data->id, $revNo,$data->current_value,$data->created_by);
         
 
-
-        return view('fixed-asset.registration.show',compact('sub_assets','series','data','ledgers','categories','grns','vendors','currencies','grn_details','buttons','docStatusClass','revision_number', 'currNumber','approvalHistory'));
+        $locations = ErpStore::withDefaultGroupCompanyOrg()->get();
+        
+        
+        return view('fixed-asset.registration.show',compact('locations','sub_assets','series','data','ledgers','categories','grns','vendors','currencies','grn_details','buttons','docStatusClass','revision_number', 'currNumber','approvalHistory'));
 
     }
 
@@ -256,7 +261,7 @@ public function store(FixedAssetRegistrationRequest $request)
                     }
                 });
                 })->get();
-        $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->where('organization_id', Helper::getAuthenticatedUser()->organization_id)->select('id', 'name')->get();
+        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         $grns = MrnHeader::where('organization_id', Helper::getAuthenticatedUser()->organization_id)->whereHas('vendor')->get();
         $grn_details = MrnDetail::with('header')->whereHas('header', function ($query) {$query->where('organization_id', Helper::getAuthenticatedUser()->organization_id);})->get();
         $vendors = Vendor::withDefaultGroupCompanyOrg()->select('id', 'display_name as name')->get();
@@ -267,8 +272,9 @@ public function store(FixedAssetRegistrationRequest $request)
         $dep_type = $organization->dep_type;
         $financialEndDate = Helper::getFinancialYear(\Carbon\Carbon::parse(date('Y-m-d'))->subYear()->format('Y-m-d'))['end_date'];
         $financialStartDate = Helper::getFinancialYear(\Carbon\Carbon::parse(date('Y-m-d'))->subYear()->format('Y-m-d'))['start_date'];
-     
-        return view('fixed-asset.registration.edit',compact('sub_assets','series','data','ledgers','categories','grns','vendors','currencies','grn_details','financialEndDate','dep_type','dep_method','dep_percentage','financialStartDate'));
+        $locations = ErpStore::withDefaultGroupCompanyOrg()->get();
+        
+        return view('fixed-asset.registration.edit',compact('locations','sub_assets','series','data','ledgers','categories','grns','vendors','currencies','grn_details','financialEndDate','dep_type','dep_method','dep_percentage','financialStartDate'));
 
     }
 

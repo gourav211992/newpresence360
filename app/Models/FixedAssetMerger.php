@@ -146,6 +146,8 @@ class FixedAssetMerger extends Model
                 //delete old assets
                 foreach(json_decode($request->asset_details) as $item){
                     foreach($item->sub_asset_id as $sub){
+                        $old = FixedAssetSplit::find($sub);
+                        if($old)
                         FixedAssetSub::find($sub)->delete();
                     }
                 }   

@@ -622,45 +622,6 @@ $(document).on('click', '#reject-button', (e) => {
 
             }
         }
-        $(document).on('click', '#amendmentSubmit', (e) => {
-let actionUrl = "{{ route('finance.fixed-asset.depreciation.amendment', $data->id) }}";
-fetch(actionUrl).then(response => {
-    return response.json().then(data => {
-        if (data.status == 200) {
-            Swal.fire({
-                title: 'Success!',
-                text: data.message,
-                icon: 'success'
-            });
-            location.reload();
-   
-        } else {
-            Swal.fire({
-                title: 'Error!',
-                text: data.message,
-                icon: 'error'
-            });
-            $('#amendmentconfirm').modal('hide');
-        }
-    });
-});
-});
-// # Revision Number On Chage
-$(document).on('change', '#revisionNumber', (e) => {
-    let actionUrl = location.pathname + '?revisionNumber='+e.target.value;
-    let revision_number = Number("{{$revision_number}}");
-    let revisionNumber = Number(e.target.value);
-    if(revision_number == revisionNumber) {
-        location.href = actionUrl;
-    } else {
-        window.open(actionUrl, '_blank');
-    }
-});
-
-
-
-        
-
 
     </script>
 @endsection

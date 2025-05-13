@@ -308,6 +308,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::resource('cost-group', CostGroupController::class)->except(['show']);
     Route::resource('cost-center', CostCenterController::class)->except(['show']);
     Route::post('getLocations', [CostCenterController::class, 'getLocation'])->name('cost-center.getLocations');
+    Route::get('get-cost-center/{id}', [CostCenterController::class, 'getCostCenter'])->name('cost-center.get-cost-center');
 
     Route::get('/city', [CityController::class, 'index']);
 

@@ -313,6 +313,10 @@
                     }, 50);
                 }
             }],
+            drawCallback: function() {
+                    feather.replace();
+                },
+                
             language: {
                 paginate: {
                     previous: '&nbsp;',

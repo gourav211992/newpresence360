@@ -181,4 +181,24 @@ class CostCenterController extends Controller
         $location = Helper::getStoreLocation($organizations);
         return response()->json($location);
     }
+    public function getCostCenter($id){
+        $cost_centers =  CostCenterOrgLocations::where('location_id',$id)->with(['costCenter' => function ($query) {
+            $query->where('status', 'active');
+            $query->withDefaultGroupCompanyOrg();
+        }])
+        ->get()
+        ->filter(function ($item) {
+            return $item->costCenter !== null;
+        })
+        ->map(function ($item) {
+            return [
+                'id' => $item->costCenter->id,
+                'name' => $item->costCenter->name,
+            ];
+        })
+        ->toArray();
+        return $cost_centers;
+        
+    }
+    
 }

@@ -124,6 +124,37 @@
                                                             name="document_date" value="{{ $data->document_date }}" required>
                                                     </div>
                                                 </div>
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Location <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+
+                                                    <div class="col-md-5">
+                                                        <select id="location" class="form-select"
+                                                            name="location_id" required>
+                                                            @foreach ($locations as $location)
+                                                                <option value="{{ $location->id }}" {{$data->location_id==$location->id?"selected":""}}>
+                                                                    {{ $location->store_name }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+
+                                                </div>
+                                                <div class="row align-items-center mb-1 cost_center">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Cost Center <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+
+                                                    <div class="col-md-5">
+                                                        <select id="cost_center" class="form-select"
+                                                            name="cost_center_id" required>
+                                                        </select>
+                                                    </div>
+
+                                                </div>
+
                                             </div>
 
 
@@ -953,7 +984,8 @@ $(document).on('change', '.asset_id', function () {
                     url: '{{ route('finance.fixed-asset.sub_asset') }}', // Update this route
                     type: 'GET',
                     data: {
-                        id: assetId
+                        id: assetId,
+                        merger:"{{$data->id}}"
                     },
                     success: function(response) {
                         subAssetSelect.html('<option value="">Select</option>');
@@ -1033,6 +1065,44 @@ $(document).on('change', '.asset_id', function () {
     }
 });
 
+$('#location').on('change', function () {
+    var locationId = $(this).val();
+
+    if (locationId) {
+        // Build the route manually
+        var url = '{{ route("cost-center.get-cost-center", ":id") }}'.replace(':id', locationId);
+        var selectedCostCenterId = '{{ $data->cost_center_id ?? '' }}'; // Use null coalescing for safety
+
+        $.ajax({
+            url: url,
+            type: 'GET',
+            dataType: 'json',
+            success: function (data) {
+                if(data.length==0){
+                    $('#cost_center').empty(); 
+                $('#cost_center').prop('required', false);
+                $('.cost_center').hide();
+                }
+                else{
+                    $('.cost_center').show();
+                    $('#cost_center').prop('required', true);
+                $('#cost_center').empty(); // Clear previous options
+                $.each(data, function (key, value) {
+                        let selected = (value.id == selectedCostCenterId) ? 'selected' : '';
+                        $('#cost_center').append('<option value="' + value.id + '" ' + selected + '>' + value.name + '</option>');
+                    });
+            }
+            },
+            error: function () {
+                $('#cost_center').empty();
+            }
+        });
+    } else {
+        $('#cost_center').empty();
+    }
+});
+
+$('#location').trigger('change');
 
     </script>
     <!-- END: Content-->

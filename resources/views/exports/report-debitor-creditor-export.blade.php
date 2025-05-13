@@ -37,6 +37,7 @@
                     <td>@if($record->overdue_days!="-")
                                                         <span class="badge rounded-pill @if($item['credit_days']<$record->overdue_days) badge-light-danger @else badge-light-secondary @endif  badgeborder-radius">{{$record->overdue_days}}</span>
                                                         @endif</td>
+                    <td  align="right">{{ $record->invoice_amount > 0 ? number_format($record->invoice_amount) : '' }}</td>
                     @if ($type == 'debit')
                         <td  align="right">{{ number_format(abs($record->total_outstanding), 2) }}
                             {{ $record->total_outstanding < 0 ? 'Cr' : 'Dr' }}</td>
@@ -44,7 +45,7 @@
                         <td  align="right">{{ number_format(abs($record->total_outstanding), 2) }}
                             {{ $record->total_outstanding < 0 ? 'Dr' : 'Cr' }}</td>
                     @endif
-                    <td  align="right">{{ $record->overdue > 0 ? number_format($record->overdue) : '' }}</td>
+                    
                 </tr>
             @endforeach
         @endforeach

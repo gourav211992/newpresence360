@@ -134,6 +134,38 @@
                                                             name="document_date" value="{{$data->document_date}}" required>
                                                     </div>
                                                 </div>
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Location <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+
+                                                    <div class="col-md-5">
+                                                        <select id="location" class="form-select"
+                                                            name="location_id" required>
+                                                            @foreach ($locations as $location)
+                                                                <option value="{{ $location->id }}" {{$data->location_id==$location->id?"selected":""}}>
+                                                                    {{ $location->store_name }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+
+                                                </div>
+                                                <div class="row align-items-center mb-1 cost_center">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Cost Center <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+
+                                                    <div class="col-md-5">
+                                                        <select id="cost_center" class="form-select"
+                                                            name="cost_center_id" required>
+                                                        </select>
+                                                    </div>
+
+                                                </div>
+
+
                                             </div>
 
 
@@ -746,7 +778,8 @@
                     url: '{{ route('finance.fixed-asset.sub_asset') }}', // Update this route
                     type: 'GET',
                     data: {
-                        id: assetId
+                        id: assetId,
+                        split:"{{$data->id}}"
                     },
                     success: function(response) {
                         let selectedSubAssetId = '{{ isset($data) ? $data->sub_asset_id : '' }}';
@@ -759,6 +792,7 @@
                                     '<option value="' + subAsset.id + '" ' + selected + '>' + subAsset.sub_asset_code + '</option>'
                                 );
                             });
+                            
                         $('#category').val(response[0].asset.category_id).trigger('change');
                         $('#ledger').val(response[0].asset.ledger_id).trigger('change');
                         $('#ledger_group').val(response[0].asset.ledger_group_id).trigger(
@@ -1094,6 +1128,45 @@
 }
  
         $(document).on('input change', '.asset-code-input,.asset-name-input, .quantity-input, .current-value-input', updateSubAssetCodes);
+        $('#location').on('change', function () {
+    var locationId = $(this).val();
+
+    if (locationId) {
+        // Build the route manually
+        var url = '{{ route("cost-center.get-cost-center", ":id") }}'.replace(':id', locationId);
+        var selectedCostCenterId = '{{ $data->cost_center_id ?? '' }}'; // Use null coalescing for safety
+
+        $.ajax({
+            url: url,
+            type: 'GET',
+            dataType: 'json',
+            success: function (data) {
+                if(data.length==0){
+                    $('#cost_center').empty(); 
+                $('#cost_center').prop('required', false);
+                $('.cost_center').hide();
+                }
+                else{
+                    $('.cost_center').show();
+                    $('#cost_center').prop('required', true);
+                $('#cost_center').empty(); // Clear previous options
+                $.each(data, function (key, value) {
+                        let selected = (value.id == selectedCostCenterId) ? 'selected' : '';
+                        $('#cost_center').append('<option value="' + value.id + '" ' + selected + '>' + value.name + '</option>');
+                    });
+            }
+            },
+            error: function () {
+                $('#cost_center').empty();
+            }
+        });
+    } else {
+        $('#cost_center').empty();
+    }
+});
+
+$('#location').trigger('change');
+
     </script>
     <!-- END: Content-->
 @endsection

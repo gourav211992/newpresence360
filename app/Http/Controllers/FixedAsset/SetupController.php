@@ -111,25 +111,30 @@ class SetupController extends Controller
        
         if ($asset_category_id == null) {
             $asset_category_id = ErpAssetCategory::where('name', $request->asset_category)->withDefaultGroupCompanyOrg()->first();
+            $validatedData = Helper::prepareValidatedDataWithPolicy();
+
+           
             if (!$asset_category_id) {
                 ErpAssetCategory::create([
                     'created_by' => $user->id,
                     'type' => get_class($user),
-                    'organization_id' => $user->organization->id,
-                    'group_id' => $user->organization->group_id,
-                    'company_id' => $user->organization->company_id,
                     'name'=>$request->asset_category,
                     'status' => ConstantHelper::ACTIVE,
+                    'group_id'=>$validatedData['group_id'],
+                    'company_id'=>$validatedData['company_id'],
+                    'organization_id'=>$validatedData['organization_id'],
                 ]);
                 $asset_category_id = ErpAssetCategory::where('name', $request->asset_category)->withDefaultGroupCompanyOrg()->first()->id;
             }
         }
+        $validatedData = Helper::prepareValidatedDataWithPolicy();
+
         $additionalData = [
             'created_by' => $user->id, // Assuming logged-in user
             'type' => get_class($user),
-            'organization_id' => $user->organization->id,
-            'group_id' => $user->organization->group_id,
-            'company_id' => $user->organization->company_id,
+            'group_id'=>$validatedData['group_id'],
+            'company_id'=>$validatedData['company_id'],
+            'organization_id'=>$validatedData['organization_id'],
             'asset_category_id'=>$asset_category_id
         ];
         
