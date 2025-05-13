@@ -265,6 +265,7 @@
                                                                 <th width="200">Sub Asset Code</th>
                                                                 <th width="100">Quantity</th>
                                                                 <th>Current Value</th>
+                                                                <th>Salvage Value</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody class="mrntableselectexcel">
@@ -289,6 +290,9 @@
                                                                 </td>
                                                                 <td>
                                                                     <input type="text" required class="form-control mw-100 text-end current-value-input" min="1" />
+                                                                </td>
+                                                                <td>
+                                                                    <input type="text" required class="form-control mw-100 text-end salvage-value-input" min="1" readonly />
                                                                 </td>
                                                             </tr>
                                                 
@@ -590,6 +594,9 @@
                 <td>
                     <input type="text" required class="form-control mw-100 text-end current-value-input" max="${Current}" min="1" />
                 </td>
+                    <td>
+                                                                    <input type="text" required class="form-control mw-100 text-end salvage-value-input" min="1" readonly />
+                                                                </td>
             </tr>
 
 
@@ -825,6 +832,9 @@
                                                                 <td>
                                                                     <input type="text" required class="form-control mw-100 text-end current-value-input" min="1" />
                                                                 </td>
+                                                                    <td>
+                                                                    <input type="text" required class="form-control mw-100 text-end salvage-value-input" min="1" readonly />
+                                                                </td>
                                                             </tr>`;
                                                             $('.mrntableselectexcel').append(blank_row);
 
@@ -876,6 +886,9 @@
                                                                 <td>
                                                                     <input type="text" required class="form-control mw-100 text-end current-value-input" min="1" />
                                                                 </td>
+                                                                    <td>
+                                                                    <input type="text" required class="form-control mw-100 text-end salvage-value-input" min="1" readonly />
+                                                                </td>
                                                             </tr>`;
                                                             $('.mrntableselectexcel').append(blank_row);
                     
@@ -922,6 +935,9 @@
 
     let totalQuantity = 0;
     let totalCurrentValue = 0;
+    let totalSalvageValue = 0;
+    let depreciationPercentage = parseFloat(document.getElementById("depreciation_percentage").value) || 0;
+
 
     $('.mrntableselectexcel tr').each(function() {
         const $row = $(this);
@@ -929,10 +945,14 @@
         const assetCode = $row.find('.asset-code-input').val().trim();
         const $assetNameInput = $row.find('.asset-name-input');
         const $subAssetInput = $row.find('.sub-asset-code-input');
+        const $salvageValueInput = $row.find('.salvage-value-input');
 
         const quantity = parseFloat($row.find('.quantity-input').val()) || 0;
         const currentValue = parseFloat($row.find('.current-value-input').val()) || 0;
 
+        const salvageValue = (currentValue * (depreciationPercentage / 100)).toFixed(2);
+        $salvageValueInput.val(salvageValue);
+      
         if (assetCode !== '') {
             // Count sub-assets per asset code
             assetCodeCounts[assetCode] = (assetCodeCounts[assetCode] || 0) + 1;
@@ -954,6 +974,7 @@
         }
 
         // Accumulate totals
+        totalSalvageValue+=parseFloat(salvageValue);
         totalQuantity += quantity;
         totalCurrentValue += currentValue;
     });
@@ -966,6 +987,7 @@
     }
 
     $('#current_value').val(totalCurrentValue.toFixed(2));
+    $('#salvage_value').val(totalSalvageValue.toFixed(2));
     updateDepreciationValues();
    
 }
@@ -1027,6 +1049,7 @@
                 const subAssetCode = $row.find('.sub-asset-code-input').val()?.trim() || '';
                 const quantity = parseFloat($row.find('.quantity-input').val()) || 0;
                 const currentValue = parseFloat($row.find('.current-value-input').val()) || 0;
+                const salvageValue = parseFloat($row.find('.salvage-value-input').val()) || 0;
                
                 if (assetCode !== '') {
                     subAssetData.push({
@@ -1035,6 +1058,7 @@
                         sub_asset_id: subAssetCode,
                         quantity: quantity,
                         current_value: currentValue,
+                        salvage_value:salvageValue,
                     });
                 }
             });
@@ -1079,7 +1103,7 @@ function updateDepreciationValues() {
 
     }
 
-    let salvageValue = (currentValue * (depreciationPercentage / 100)).toFixed(2);
+    let salvageValue = (parseFloat($('#salvage_value').val())).toFixed(2);
 
     let depreciationRate = 0;
     if (method === "SLM") {
@@ -1089,7 +1113,7 @@ function updateDepreciationValues() {
     }
 
     let totalDepreciation = 0;
-    document.getElementById("salvage_value").value = salvageValue;
+   // document.getElementById("salvage_value").value = salvageValue;
     console.log("dep_rate"+depreciationRate+"devidend"+devidend);
     document.getElementById("depreciation_rate").value = depreciationRate;
     document.getElementById("depreciation_rate_year").value = depreciationRate;

@@ -23,8 +23,12 @@
                             </div>
                         </div>
                     </div>
+               
                     <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
                         <div class="form-group breadcrumb-right">
+                            <a href="{{ route('finance.fixed-asset.merger.index') }}"> <button
+                                class="btn btn-secondary btn-sm"><i data-feather="arrow-left-circle"></i> Back</button>
+                        </a>
                             <button class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" type="button" id="save-draft-btn">
                                 <i data-feather="save"></i> Save as Draft
                             </button>
@@ -187,6 +191,7 @@
                                                                 <th width="500px">Sub Assets & Code</th>
                                                                 <th width="100px">Quantity</th>
                                                                 <th class="text-end">Current Value</th>
+                                                                <th class="text-end">Salvage Value</th>
                                                                 <th width="200px">Last Dep. Date</th>
                                                             </tr>
                                                         </thead>
@@ -223,6 +228,9 @@
                                                                 <td class="text-end"><input type="text" name="currentvalue[]" id="currentvalue_1" data-id="1"
                                                                         class="form-control mw-100 text-end currentvalue" readonly/>
                                                                 </td>
+                                                                <td class="text-end"><input type="text" name="salvagevalue[]" id="salvagevalue_1" data-id="1"
+                                                                    class="form-control mw-100 text-end salvagevalue" readonly/>
+                                                            </td>
                                                                 <td><input type="date" name="last_dep_date[]" id="last_dep_date_1" data-id="1"
                                                                     class="form-control mw-100 last_dep_date" readonly/>
                                                             </td>
@@ -604,6 +612,7 @@
             quantity: row.find(`#quantity_${rowId}`).val(),
             sub_asset_code :sub_asset_codes,
             currentvalue: row.find(`#currentvalue_${rowId}`).val(),
+            salvagevalue: row.find(`#salvagevalue_${rowId}`).val(),
             last_dep_date: row.find(`#last_dep_date_${rowId}`).val(),
         };
 
@@ -636,6 +645,7 @@ $('#fixed-asset-merger-form').on('submit', function(e) {
             quantity: row.find(`#quantity_${rowId}`).val(),
             sub_asset_code :sub_asset_codes,
             currentvalue: row.find(`#currentvalue_${rowId}`).val(),
+            salvagevalue: row.find(`#salvagevalue_${rowId}`).val(),
             last_dep_date: row.find(`#last_dep_date_${rowId}`).val(),
         };
 
@@ -763,8 +773,9 @@ $('#fixed-asset-merger-form').on('submit', function(e) {
             break;
 
     }
+    
 
-    let salvageValue = (currentValue * (depreciationPercentage / 100)).toFixed(2);
+    let salvageValue = (parseFloat($('#salvage_value').val())).toFixed(2);
 
     let depreciationRate = 0;
     if (method === "SLM") {
@@ -874,12 +885,21 @@ $(document).on('change', '.asset_id', function () {
 
             
  function updateSum() {
+    let depreciationPercentage = parseFloat(document.getElementById("depreciation_percentage").value) || 0;
+
     let totalValue = 0;
     let totalQuantity = 0;
+    let salvageValue = 0;
 
     $('.currentvalue').each(function () {
         let value = parseFloat($(this).val()) || 0;
+        let salvageValue = (value * (depreciationPercentage / 100)).toFixed(2);
+        $(this).closest('tr').find('.salvagevalue').val(salvageValue);
         totalValue += value;
+    });
+    $('.salvagevalue').each(function () {
+        let value = parseFloat($(this).val()) || 0;
+        salvageValue += value;
     });
 
     $('.quantity').each(function () {
@@ -889,6 +909,7 @@ $(document).on('change', '.asset_id', function () {
 
     // Example: Update totals in specific HTML elements
     $('#current_value').val(totalValue.toFixed(2));
+    $('#salvage_value').val(salvageValue.toFixed(2));
     //$('#quantity').val(totalQuantity);
     updateDepreciationValues();
 
@@ -929,6 +950,9 @@ $('#addNewRowBtn').on('click', function () {
             class="form-control mw-100 quantity" /></td>
         <td><input type="text" name="currentvalue[]" id="currentvalue_${rowCount}" data-id="${rowCount}"
             class="form-control mw-100 text-end currentvalue" readonly /></td>
+              <td class="text-end"><input type="text" name="salvagevalue[]" id="salvagevalue_${rowCount}" data-id="${rowCount}"
+                                                                    class="form-control mw-100 text-end salvagevalue" readonly/>
+                                                            </td>
         <td><input type="date" name="last_dep_date[]" id="last_dep_date_${rowCount}" data-id="${rowCount}"
             class="form-control mw-100 last_dep_date" readonly /></td>
     </tr>

@@ -102,7 +102,7 @@ class FixedAssetSplit extends Model
                     'company_id' => $user->organization->company_id,
                     'book_id' => $series->id,
                     'document_number'=>$book['document_number'],
-                    'document_date' => date('Y-m-d'),
+                    'document_date' => $request->document_date,
                     'doc_number_type' => $book['type'],
                     'doc_reset_pattern' => $book['reset_pattern'],
                     'doc_prefix' => $book['prefix'],

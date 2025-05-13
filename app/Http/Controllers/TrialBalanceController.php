@@ -374,8 +374,10 @@ class TrialBalanceController extends Controller
             ->toArray();
 
         $dateRange = \Carbon\Carbon::parse($startDate)->format('d-m-Y') . " to " . \Carbon\Carbon::parse($endDate)->format('d-m-Y');
+        $orgname=Organization::where('id',Helper::getAuthenticatedUser()->organization_id)->value('name');
+        
         $date2 = \Carbon\Carbon::parse($startDate)->format('jS-F-Y') . ' to ' . \Carbon\Carbon::parse($endDate)->format('jS-F-Y');
-        return view('trialBalance.view-trial-balance', compact('cost_centers', 'companies', 'organizationId', 'id', 'date2', 'dateRange'));
+        return view('trialBalance.view-trial-balance', compact('orgname','cost_centers', 'companies', 'organizationId', 'id', 'date2', 'dateRange'));
     }
 
     public function getInitialGroups(Request $r)

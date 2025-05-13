@@ -63,9 +63,10 @@
 													<td>{{$d?->asset_name}}</td>
 													<td>{{$d?->asset_code}}</td>
 													<td>{{$d?->ledger?->name}}</td>
-													<td>{{$d?->document_date}}</td>
-													<td>{{$d?->quantity}}</td>
-													<td>{{$d?->capitalize_date}}</td>
+                          <td>{{ $d?->document_date ? \Carbon\Carbon::parse($d->document_date)->format('d-m-Y') : '' }}</td>
+                          <td>{{ $d?->quantity }}</td>
+                          <td>{{ $d?->capitalize_date ? \Carbon\Carbon::parse($d->capitalize_date)->format('d-m-Y') : '' }}</td>
+                          
 													<td>
                             @php $statusClasss = App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$d->document_status??"draft"];  @endphp
                             <span

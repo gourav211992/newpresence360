@@ -25,6 +25,10 @@
                     </div>
                     <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
                         <div class="form-group breadcrumb-right">
+                            <a href="{{ route('finance.fixed-asset.split.index') }}"> <button
+                                class="btn btn-secondary btn-sm"><i data-feather="arrow-left-circle"></i> Back</button>
+                        </a>
+                      
                             @if($buttons['approve'])
                             <button type="button" class="btn btn-primary btn-sm" id="approved-button" name="action" value="approved"><i data-feather="check-circle"></i> Approve</button>
                             <button type="button" id="reject-button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg> Reject</button>
@@ -36,9 +40,6 @@
                         <button id="postButton" onclick="onPostVoucherOpen();" type="button" class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Post</button>
                     @endif
 
-                            <a href="{{ route('finance.fixed-asset.split.index') }}"> <button
-                                    class="btn btn-secondary btn-sm"><i data-feather="arrow-left-circle"></i> Back</button>
-                            </a>
                             <button type="submit" hidden form="fixed-asset-split-form" class="btn btn-primary btn-sm"
                                 id="submit-btn">
                                 <i data-feather="check-circle"></i> Submit
@@ -288,6 +289,9 @@
                                                                 </td>
                                                                 <td>
                                                                     <input type="text" required class="form-control mw-100 text-end current-value-input" value="{{$subAsset->current_value}}" />
+                                                                </td>
+                                                                <td>
+                                                                    <input type="text" required value="{{$subAsset->salvage_value??""}}" class="form-control mw-100 text-end salvage-value-input" min="1" disabled />
                                                                 </td>
                                                             </tr>
                                                             @endforeach

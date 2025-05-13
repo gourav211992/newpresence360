@@ -53,7 +53,7 @@
 
             <div class="content-body">
                 <section id="basic-datatable">
-                    <div class="card border  overflow-hidden"> 
+                    <div class="card border  overflow-hidden">
                         <div class="row">
                             <div class="col-md-12 bg-light border-bottom mb-1 po-reportfileterBox">
                                 <div class="row pofilterhead action-button align-items-center">
@@ -62,28 +62,29 @@
                                         <p style="margin-left: -2px"><span class="badge rounded-pill badge-light-secondary badgeborder-radius my-50"><strong>Credit Days :</strong> {{$credit_days}} Days</span></p>
                                         <p class="my-25"><strong>Time Period:</strong> {{$date2}}</p>
                                     </div>
-                                    
-                                    <div class="col-md-8 text-sm-end pofilterboxcenter mb-0 d-flex flex-wrap align-items-center justify-content-sm-end"> 
+
+                                    <div class="col-md-8 text-sm-end pofilterboxcenter mb-0 d-flex flex-wrap align-items-center justify-content-sm-end">
                                         <a href="javascript: history.go(-1)" class="btn btn-secondary btn-sm"><i
                                             data-feather="arrow-left-circle"></i> Back </a> &nbsp;
                                         <a id="printButton" href="{{route('crdr.report.ledger.print',[$type,$ledger,$group])}}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 me-25"><i data-feather='printer'></i> Print</a>
                                         <button data-bs-toggle="modal" data-bs-target="#addcoulmn" class="btn btn-primary btn-sm mb-0 waves-effect"><i data-feather="filter"></i> Advance Filter</button>
                                     </div>
                                 </div>
-                                 
+
                             </div>
-                          <div class="col-md-12"> 
+                          <div class="col-md-12">
                                 <div class="table-responsive trailbalnewdesfinance po-reportnewdesign gsttabreporttotal">
-									<table class="datatables-basic table myrequesttablecbox"> 
+									<table class="datatables-basic table myrequesttablecbox">
                                         <thead>
                                              <tr>
 												<th>#</th>
 												<th>Invoice Date</th>
 												<th>Invoice No.</th>
 												<th>Voucher No.</th>
-												<th>O/S Days</th> 
-												<th class="outstanding text-end">Invoice Amt.</th>
-												<th class="overdue text-end">Balance Amt.</th>
+												<th>O/S Days</th>
+                                                <th class="text-end">Invoice Amt.</th>
+												<th class="outstanding text-end">Balance Amt.</th>
+                                                <th class="overdue text-end">Overdue Amt.</th>
 												<th>Action</th>
 											  </tr>
 											</thead>
@@ -104,15 +105,15 @@
                                                         <span class="badge rounded-pill @if($credit_days<$d->overdue_days) badge-light-danger @else badge-light-secondary @endif  badgeborder-radius">{{$d->overdue_days}}</span>
                                                         @endif
                                                     </td>
+                                                        <td class="text-end">@if($d->invoice_amount!=""){{ number_format($d->invoice_amount,2)}}@endif</td>
                                                     @if($type=="debit")
-
-                                                        <td class="outstanding text-end">{{ number_format(abs($d->total_outstanding), 2) }}  {{ $d->total_outstanding < 0 ? 'Cr' : 'Dr' }}</td>
+                                                    <td class="outstanding text-end">{{ number_format(abs($d->total_outstanding), 2) }}  {{ $d->total_outstanding < 0 ? 'Cr' : 'Dr' }}</td>
                                                     @else
                                                     <td class="outstanding text-end">{{ number_format(abs($d->total_outstanding), 2) }}  {{ $d->total_outstanding < 0 ? 'Dr' : 'Cr' }}</td>
-                                                    
+
                                                     @endif
 												        <td class="overdue text-end"> {{$d->overdue > 0 ? number_format($d->overdue) : '' }}</td>
-												
+
                                                         <td>
                                                         @if($d->view_route)
                                                             <a href="{{ $d->view_route }}" target="_blank">
@@ -121,23 +122,23 @@
                                                         @endif
                                                         </td>
 
-                                                    
+
                                                     </tr>
                                                 @endif
                                                   @endforeach
-                                                
+
                                                </tbody>
 
 
 									</table>
-						    </div> 
+						    </div>
                             </div>
                         </div>
                     </div>
-                     
+
                 </section>
-                
-              
+
+
             </div>
         </div>
     </div>
@@ -153,22 +154,22 @@
 				</div>
 				<div class="modal-body">
 					 <div class="row">
-                         
-                          
+
+
 						 <div class="col-md-12">
- 
+
 
 							<div class="table-responsive">
-								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail"> 
+								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail">
 									<thead>
 										 <tr>
-											<th>#</th>  
+											<th>#</th>
 											<th>Series</th>
 											<th>Doc No.</th>
                                             <th>Doc Date</th>
                                             <th>O/S Amount</th>
 											<th class="text-end">0-30 Days</th>
-                                            <th class="text-end">30-60 days</th> 
+                                            <th class="text-end">30-60 days</th>
                                             <th class="text-end">60-90 days</th>
                                             <th class="text-end">90-120 days</th>
                                             <th class="text-end">120-180 days</th>
@@ -177,10 +178,10 @@
 										</thead>
 										<tbody>
 											 <tr>
-												<td>1</td>   
-												<td>PV-1</td>   
+												<td>1</td>
+												<td>PV-1</td>
 												<td>2901</td>
-												<td>10-04-2023</td> 
+												<td>10-04-2023</td>
                                                 <td class="text-end"><span class="badge rounded-pill badge-light-warning badgeborder-radius">1,00,000</span></td>
                                                 <td class="text-end">10000</td>
                                                 <td class="text-end">-</td>
@@ -189,12 +190,12 @@
                                                 <td class="text-end">20000</td>
                                                 <td class="text-end">20000</td>
 											</tr>
-											
+
 											<tr>
-												<td>2</td>   
-												<td>PV-1</td>   
+												<td>2</td>
+												<td>PV-1</td>
 												<td>2901</td>
-												<td>10-04-2023</td> 
+												<td>10-04-2023</td>
                                                 <td class="text-end"><span class="badge rounded-pill badge-light-warning badgeborder-radius">1,00,000</span></td>
                                                 <td class="text-end">10000</td>
                                                 <td class="text-end">-</td>
@@ -203,12 +204,12 @@
                                                 <td class="text-end">20000</td>
                                                 <td class="text-end">20000</td>
 											</tr>
-                                            
+
                                             <tr>
-												<td>3</td>   
-												<td>PV-1</td>   
+												<td>3</td>
+												<td>PV-1</td>
 												<td>2901</td>
-												<td>10-04-2023</td> 
+												<td>10-04-2023</td>
                                                 <td class="text-end"><span class="badge rounded-pill badge-light-warning badgeborder-radius">1,00,000</span></td>
                                                 <td class="text-end">10000</td>
                                                 <td class="text-end">-</td>
@@ -217,12 +218,12 @@
                                                 <td class="text-end">20000</td>
                                                 <td class="text-end">20000</td>
 											</tr>
-                                            
+
                                             <tr>
-												<td>4</td>   
-												<td>PV-1</td>   
+												<td>4</td>
+												<td>PV-1</td>
 												<td>2901</td>
-												<td>10-04-2023</td> 
+												<td>10-04-2023</td>
                                                 <td class="text-end"><span class="badge rounded-pill badge-light-warning badgeborder-radius">1,00,000</span></td>
                                                 <td class="text-end">10000</td>
                                                 <td class="text-end">-</td>
@@ -231,12 +232,12 @@
                                                 <td class="text-end">20000</td>
                                                 <td class="text-end">20000</td>
 											</tr>
-                                            
+
                                             <tr>
-												<td>5</td>   
-												<td>PV-1</td>   
+												<td>5</td>
+												<td>PV-1</td>
 												<td>2901</td>
-												<td>10-04-2023</td> 
+												<td>10-04-2023</td>
                                                 <td class="text-end"><span class="badge rounded-pill badge-light-warning badgeborder-radius">1,00,000</span></td>
                                                 <td class="text-end">10000</td>
                                                 <td class="text-end">-</td>
@@ -245,10 +246,10 @@
                                                 <td class="text-end">20000</td>
                                                 <td class="text-end">20000</td>
 											</tr>
-											
-											
-											 
-											 
+
+
+
+
 
 									   </tbody>
 
@@ -261,12 +262,12 @@
 					 </div>
 				</div>
 				<div class="modal-footer text-end">
-					<button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"><i data-feather="x-circle"></i> Close</button> 
+					<button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"><i data-feather="x-circle"></i> Close</button>
 				</div>
 			</div>
 		</div>
 	</div>
-	 
+
     <div class="modal fade text-start filterpopuplabel " id="addcoulmn" tabindex="-1" aria-labelledby="myModalLabel17" aria-hidden="true">
 			<div class="modal-dialog modal-dialog-centered modal-lg">
 				<div class="modal-content">
@@ -277,9 +278,9 @@
 						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 					</div>
 					<div class="modal-body">
-						
+
 <!--
-								<div class="row"> 
+								<div class="row">
 									<div class="col-md-7 mt-1">
 										<div class="form-check form-check-success mb-1">
 											<input type="checkbox" class="form-check-input" id="colorCheck1" checked="">
@@ -288,39 +289,39 @@
 									</div>
 								</div>
 -->
-                        
+
 
                                 <div class="step-custhomapp bg-light">
-                                    <ul class="nav nav-tabs my-25 custapploannav" role="tablist"> 
+                                    <ul class="nav nav-tabs my-25 custapploannav" role="tablist">
                                         <li class="nav-item">
                                             <a class="nav-link active" data-bs-toggle="tab" href="#Bank" role="tab" ><i data-feather="bar-chart"></i> Apply Filter</a>
                                         </li>
- 
+
                                         <li class="nav-item">
                                             <a class="nav-link" data-bs-toggle="tab" href="#Location" role="tab" ><i data-feather="calendar"></i> Scheduler</a>
-                                        </li> 
- 
+                                        </li>
+
                                     </ul>
                                 </div>
 
                                 <div class="tab-content tablecomponentreport">
-                                     
+
                                     <div class="tab-pane active" id="Bank">
-                                          
+
                                         <div class="row">
-                                            <div class="col-md-12"> 
+                                            <div class="col-md-12">
                                                 <div class="customernewsection-form">
                                                     <div class="demo-inline-spacing">
                                                         <div class="form-check form-check-primary mt-0">
                                                             <input type="radio" id="customColorRadio1" name="goodsservice" value="outstanding" class="form-check-input" checked="">
                                                             <label class="form-check-label fw-bolder" for="customColorRadio1">Total Outstanding</label>
-                                                        </div> 
+                                                        </div>
                                                         <div class="form-check form-check-primary mt-0">
                                                             <input type="radio" id="service" name="goodsservice" value="overdue" class="form-check-input">
                                                             <label class="form-check-label fw-bolder" for="service">Overdue</label>
-                                                        </div> 
+                                                        </div>
                                                     </div>
-                                                </div> 
+                                                </div>
                                             </div>
                                             <div class="col-md-6 mt-1">
                                               <label class="form-label" for="fp-range">Select Period</label>
@@ -328,43 +329,43 @@
                                             </div>
 
                                         </div>
-                                        
-                                        <div class="modal-footer mt-2 pe-0"> 
+
+                                        <div class="modal-footer mt-2 pe-0">
                                             <button type="reset" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                                             <button type="button" class="btn btn-primary data-submit mr-1" onClick="filter()">Apply</button>
                                         </div>
- 
+
                                     </div>
-                                    <div class="tab-pane" id="Location"> 
+                                    <div class="tab-pane" id="Location">
                                         <div class="row">
                                             <div class="col-md-12">
                                                  <div class="compoenentboxreport advanced-filterpopup customernewsection-form mb-1">
                                                     <div class="row">
                                                         <div class="col-md-12">
-                                                            <div class="form-check ps-0"> 
+                                                            <div class="form-check ps-0">
                                                                 <label class="form-check-label">Add Scheduler</label>
                                                             </div>
                                                         </div>
                                                     </div>
                                                     <div class="row camparboxnewcen mt-1">
-                                                        <div class="col-md-8 mb-1"> 
+                                                        <div class="col-md-8 mb-1">
                                                             <label class="form-label">To <label class="text-danger">*</label></label>
-                                                            <select disabled class="form-select select2" name="to" id="to" required> 
+                                                            <select disabled class="form-select select2" name="to" id="to" required>
                                                                 @if($to_user_mail)
                                                                 <option value="{{$to_users}}" data-type="{{$to_type}}">{{$to_user_mail}}</option>
                                                                 @else
                                                                 <option value="">Select</option>
                                                                 @endif
-                                                            </select> 
+                                                            </select>
                                                         </div>
-                                                        <div class="col-md-8 mb-1"> 
+                                                        <div class="col-md-8 mb-1">
                                                             <label class="form-label">CC <label class="text-danger">*</label></label>
                                                             @php
                                                                 $selectedCc = $scheduler && $scheduler->cc
                                                                     ? json_decode($scheduler->cc, true)
                                                                     : [App\Helpers\Helper::getAuthenticatedUser()->auth_user_id];
                                                             @endphp
-                                                            
+
                                                             <select class="form-select select2" name="cc" multiple>
                                                                 <option disabled>Select</option>
                                                                 @foreach($cc_users as $cc)
@@ -373,56 +374,56 @@
                                                                     </option>
                                                                 @endforeach
                                                             </select>
-                                                            
+
                                                         </div>
                                                      </div>
                                                      <input name="ledger_id" type="hidden" value="{{$ledger}}">
                                                      <input name="ledger_group_id" type="hidden" value="{{$group}}">
                                                      <input name="report_type" type="hidden" value="{{$type}}">
-                                                     
+
                                                      <input name="ledger_id" type="hidden" value="{{$ledger}}">
                                                      <input name="ledger_group_id" type="hidden" value="{{$group}}">
                                                      <input name="report_type" type="hidden" value="{{$type}}">
-                                                     
+
                                                      <div class="row camparboxnewcen">
                                                         @php
                                                             $selectedType = old('type', $scheduler->type ?? '');
                                                         @endphp
-                                                        
-                                                        <div class="col-md-4"> 
+
+                                                        <div class="col-md-4">
                                                             <label class="form-label">Type <label class="text-danger">*</label></label>
-                                                            <select class="form-select" name="type" id="type" required> 
+                                                            <select class="form-select" name="type" id="type" required>
                                                                 <option value="">Select</option>
                                                                 <option value="daily" {{ $selectedType == 'daily' ? 'selected' : '' }}>Daily</option>
                                                                 <option value="weekly" {{ $selectedType == 'weekly' ? 'selected' : '' }}>Weekly</option>
                                                                 <option value="monthly" {{ $selectedType == 'monthly' ? 'selected' : '' }}>Monthly</option>
-                                                            </select> 
+                                                            </select>
                                                         </div>
-                                                        
 
-                                                        <div class="col-md-4"> 
+
+                                                        <div class="col-md-4">
                                                             <label class="form-label">Select Date <label class="text-danger">*</label></label>
-                                                            <input 
-                                                                type="datetime-local" 
-                                                                class="form-select" 
-                                                                name="date" 
-                                                                min="{{ now()->format('Y-m-d\TH:i') }}" 
+                                                            <input
+                                                                type="datetime-local"
+                                                                class="form-select"
+                                                                name="date"
+                                                                min="{{ now()->format('Y-m-d\TH:i') }}"
                                                                 value="{{ old('date', isset($scheduler) ? \Carbon\Carbon::parse($scheduler->date)->format('Y-m-d\TH:i') : '') }}"
                                                                 required
                                                             />
                                                         </div>
-                                                        
-                                                        <div class="col-md-12"> 
+
+                                                        <div class="col-md-12">
                                                             <label class="form-label">Remarks  <label class="text-danger">*</label></label>
-                                                            <textarea 
-                                                                class="form-control" 
-                                                                placeholder="Enter Remarks" 
-                                                                id="remarks" 
-                                                                name="remarks" 
+                                                            <textarea
+                                                                class="form-control"
+                                                                placeholder="Enter Remarks"
+                                                                id="remarks"
+                                                                name="remarks"
                                                                 required
                                                             >{{ old('remarks', $scheduler->remarks ?? '') }}</textarea>
                                                         </div>
-                                                        
+
 
 
 
@@ -433,18 +434,18 @@
 
 
                                          </div>
-                                        
-                                        <div class="modal-footer mt-2 pe-0"> 
+
+                                        <div class="modal-footer mt-2 pe-0">
                                             <button type="reset" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                                             <button type="button" id="applyBtn" class="btn btn-primary data-submit mr-1">Submit</button>
                                         </div>
-                                          
-                                    </div> 
+
+                                    </div>
                                 </div>
-									 
-					</div> 
-					
-					
+
+					</div>
+
+
 				</div>
 			</div>
 		</div>
@@ -458,8 +459,8 @@
     <script>
         let baseUrl = "{{ route('crdr.report.ledger.print', [$type, $ledger, $group,'outstanding']) }}";
         printButton.setAttribute("href", baseUrl);
-         $(".overdue").hide();
-         
+        $(".overdue").hide();
+
 function filter() {
     let range = $('#fp-range').val();
     let currentUrl = new URL(window.location.href);
@@ -486,6 +487,7 @@ if (dt_basic_table.length) {
         },
         displayLength: 10,
         lengthMenu: [10, 25, 50, 75, 100],
+        
         buttons: [{
             extend: 'collection',
             className: 'btn btn-outline-secondary dropdown-toggle',
@@ -501,8 +503,28 @@ if (dt_basic_table.length) {
                     className: 'dropdown-item',
                     filename: 'Billing Report',
                     exportOptions: {
-                        columns: ':not(:last-child)' // Excludes "Action" column (last column)
-                    }
+        columns: function (idx, data, node) {
+            // Determine which radio is selected
+            let isServiceSelected = document.querySelector('input[type="radio"]#service')?.checked;
+
+            // Hide last column (assumed action column)
+            const isLastColumn = node.cellIndex === node.parentNode.cells.length - 1;
+
+            if (isLastColumn) {
+                return false;
+            }
+
+            // If 'service' is selected, hide column 7 (index 6)
+            // Else hide column 6 (index 5)
+            if (isServiceSelected && node.cellIndex === 6) {
+                return false;
+            } else if (!isServiceSelected && node.cellIndex === 7) {
+                return false;
+            }
+
+            return true;
+        }
+    },
                 },
                 {
                     extend: 'pdf',
@@ -512,8 +534,28 @@ if (dt_basic_table.length) {
                     className: 'dropdown-item',
                     filename: 'Billing Report',
                     exportOptions: {
-                        columns: ':not(:last-child)' // Excludes "Action" column (last column)
-                    }
+        columns: function (idx, data, node) {
+            // Determine which radio is selected
+            let isServiceSelected = document.querySelector('input[type="radio"]#service')?.checked;
+
+            // Hide last column (assumed action column)
+            const isLastColumn = node.cellIndex === node.parentNode.cells.length - 1;
+
+            if (isLastColumn) {
+                return false;
+            }
+
+            // If 'service' is selected, hide column 7 (index 6)
+            // Else hide column 6 (index 5)
+            if (isServiceSelected && node.cellIndex === 6) {
+                return false;
+            } else if (!isServiceSelected && node.cellIndex === 7) {
+                return false;
+            }
+
+            return true;
+        }
+    },
                 },
                 {
                     extend: 'copy',
@@ -523,8 +565,28 @@ if (dt_basic_table.length) {
                     className: 'dropdown-item',
                     filename: 'Billing Report',
                     exportOptions: {
-                        columns: ':not(:last-child)' // Excludes "Action" column (last column)
-                    }
+        columns: function (idx, data, node) {
+            // Determine which radio is selected
+            let isServiceSelected = document.querySelector('input[type="radio"]#service')?.checked;
+
+            // Hide last column (assumed action column)
+            const isLastColumn = node.cellIndex === node.parentNode.cells.length - 1;
+
+            if (isLastColumn) {
+                return false;
+            }
+
+            // If 'service' is selected, hide column 7 (index 6)
+            // Else hide column 6 (index 5)
+            if (isServiceSelected && node.cellIndex === 6) {
+                return false;
+            } else if (!isServiceSelected && node.cellIndex === 7) {
+                return false;
+            }
+
+            return true;
+        }
+    },
                 }
             ],
             init: function(api, node, config) {
@@ -573,7 +635,7 @@ function getSelectedData() {
 
  // Trigger column order save when Apply button is clicked
  $('#applyBtn').on('click', function (e) {
-            
+
             // Close the modal
             var filterModal = bootstrap.Modal.getInstance(document.getElementById('addcoulmn'));
 
@@ -601,7 +663,7 @@ function getSelectedData() {
             let remarks= $('textarea[name="remarks"]').val();
             let to = $('select[name="to"]').val();
             let cc = $('select[name="cc"]').val();
-                
+
             var requiredFields = {
             "To": to,
             "CC": cc,
@@ -617,7 +679,7 @@ function getSelectedData() {
         //         missingFields.push(key);
         //     }
         // });
-        
+
 
         // // If missing fields exist, show an alert and stop execution
         // if (missingFields.length > 0) {
@@ -626,7 +688,7 @@ function getSelectedData() {
         // }
 
             if (formData.to && formData.to.length > 0 || formData.type || formData.date) {
-                
+
 
                 // AJAX request
                 let isValid=true;
@@ -762,13 +824,11 @@ function getSelectedData() {
             let overdueAmount = parseFloat($(this).attr("data-overdue")) || 0;
 
             if (selectedValue === "customColorRadio1") {
-                $(this).show(); // Show all rows when "Total Outstanding" is selected
+                $('.outstanding').show();
+                $('.overdue').hide(); 
             } else if (selectedValue === "service") {
-                if (overdueAmount > 0) {
-                    $(this).show(); // Show only rows where overdue > 0
-                } else {
-                    $(this).hide(); // Hide rows with overdue = 0
-                }
+                $('.overdue').show();
+                $('.outstanding').hide();
             }
         });
         $('#addcoulmn').modal('hide');
@@ -781,10 +841,10 @@ function getSelectedData() {
         radios.forEach(radio => {
             radio.addEventListener("change", function() {
                 let billType = document.querySelector("input[name='goodsservice']:checked")?.value;
-                
+
                 // Base URL without billType
                 let baseUrl = "{{ route('crdr.report.ledger.print', [$type, $ledger, $group]) }}";
-                
+
                 if (billType) {
                     baseUrl += `/${billType}`; // Append bill type dynamically
                 }
@@ -793,6 +853,7 @@ function getSelectedData() {
             });
         });
     });
+    
 
 
 

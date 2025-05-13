@@ -188,6 +188,7 @@
                                                                 <th width="500px">Sub Assets & Code</th>
                                                                 <th width="100px">Quantity</th>
                                                                 <th class="text-end">Current Value</th>
+                                                                <th class="text-end">Salvage Value</th>
                                                                 <th width="200px">Last Dep. Date</th>
                                                             </tr>
                                                         </thead>
@@ -231,8 +232,11 @@
                                                                     class="form-control mw-100 quantity"  value="{{ $assetRow->quantity }}"/> </td>
                                                                 <td class="text-end"><input type="text" name="currentvalue[]" id="currentvalue_{{$key}}" data-id="{{$key}}"
                                                                     class="form-control mw-100 text-end currentvalue" value="{{ $assetRow->currentvalue }}" readonly/>
+                                                                    <td class="text-end"><input type="text" name="salvagevalue[]" id="salvagevalue_{{$key}}" value="{{ $assetRow->salvagevalue??0 }}" data-id="{{$key}}"
+                                                                        class="form-control mw-100 text-end salvagevalue" readonly/>
+                                                                </td>
                                                                     </td>
-                                                                <td><input type="date" name="last_dep_date[]" id="last_dep_date_1" data-id="{{$key}}"
+                                                                <td><input type="date" name="last_dep_date[]" id="last_dep_date_{{$key}}" data-id="{{$key}}"
                                                                     class="form-control mw-100 last_dep_date" value="{{ $assetRow->last_dep_date }}" readonly/>
                                                                     </td>
                                                             </tr>
@@ -469,6 +473,7 @@
 
 @section('scripts')
     <script>
+        updateSum();
         $(window).on('load', function() {
             if (feather) {
                 feather.replace({
@@ -582,6 +587,7 @@
             quantity: row.find(`#quantity_${rowId}`).val(),
             sub_asset_code :sub_asset_codes,
             currentvalue: row.find(`#currentvalue_${rowId}`).val(),
+            salvagevalue: row.find(`#salvagevalue_${rowId}`).val(),
             last_dep_date: row.find(`#last_dep_date_${rowId}`).val(),
         };
 
@@ -614,6 +620,7 @@
             quantity: row.find(`#quantity_${rowId}`).val(),
             sub_asset_code :sub_asset_codes,
             currentvalue: row.find(`#currentvalue_${rowId}`).val(),
+            salvagevalue: row.find(`#salvagevalue_${rowId}`).val(),
             last_dep_date: row.find(`#last_dep_date_${rowId}`).val(),
         };
 
@@ -745,7 +752,7 @@
 
     }
 
-    let salvageValue = (currentValue * (depreciationPercentage / 100)).toFixed(2);
+    let salvageValue = (parseFloat($('#salvage_value').val())).toFixed(2);
 
     let depreciationRate = 0;
     if (method === "SLM") {
@@ -765,12 +772,21 @@
 
             
  function updateSum() {
+    let depreciationPercentage = parseFloat(document.getElementById("depreciation_percentage").value) || 0;
+
     let totalValue = 0;
     let totalQuantity = 0;
+    let salvageValue = 0;
 
     $('.currentvalue').each(function () {
         let value = parseFloat($(this).val()) || 0;
+        let salvageValue = (value * (depreciationPercentage / 100)).toFixed(2);
+        $(this).closest('tr').find('.salvagevalue').val(salvageValue);
         totalValue += value;
+    });
+    $('.salvagevalue').each(function () {
+        let value = parseFloat($(this).val()) || 0;
+        salvageValue += value;
     });
 
     $('.quantity').each(function () {
@@ -780,6 +796,7 @@
 
     // Example: Update totals in specific HTML elements
     $('#current_value').val(totalValue.toFixed(2));
+    $('#salvage_value').val(salvageValue.toFixed(2));
     //$('#quantity').val(totalQuantity);
     updateDepreciationValues();
 
@@ -820,6 +837,9 @@ $('#addNewRowBtn').on('click', function () {
             class="form-control mw-100 quantity" /></td>
         <td><input type="text" name="currentvalue[]" id="currentvalue_${rowCount}" data-id="${rowCount}"
             class="form-control mw-100 text-end currentvalue" readonly /></td>
+            <td class="text-end"><input type="text" name="salvagevalue[]" id="salvagevalue_${rowCount}" data-id="${rowCount}"
+                                                                    class="form-control mw-100 text-end salvagevalue" readonly/>
+                                                            </td>
         <td><input type="date" name="last_dep_date[]" id="last_dep_date_${rowCount}" data-id="${rowCount}"
             class="form-control mw-100 last_dep_date" readonly /></td>
     </tr>
@@ -842,6 +862,7 @@ $('.asset_id').each(function () {
 
 // Disable already selected options in other selects
 $('.asset_id').each(function () {
+
     let currentSelect = $(this);
     let currentVal = currentSelect.val();
 
@@ -944,11 +965,13 @@ $(document).on('change', '.asset_id', function () {
                         });
                         let lastDepDate = new Date(response[0].asset.last_dep_date);
 
+
                         // Add 1 day
                         lastDepDate.setDate(lastDepDate.getDate() - 1);
 
                         // Format as YYYY-MM-DD
                         let nextDate = lastDepDate.toISOString().split('T')[0];
+                        console.log(nextDate);
 
                           $('#last_dep_date_'+row).val(nextDate);
                     },

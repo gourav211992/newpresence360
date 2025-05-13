@@ -54,7 +54,6 @@ class AppServiceProvider extends ServiceProvider
                 //update access_by
                 $financialYear = Helper::getCurrentFy();
                 if($financialYear && $financialYear->access_by  == null){
-                    $organizationId = $financialYear->organization_id;
                     $employees = Helper::getOrgWiseUserAndEmployees($organizationId);
 
                     $accessBy = [];
