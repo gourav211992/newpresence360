@@ -25,10 +25,10 @@ class CloseFyController extends Controller
         $user = Helper::getAuthenticatedUser();
 
         $userId = $user->id;
-        $organizationId = $user->organization_id;
+        $organizationId = $request->organization_id;
 
         $companies = $user->access_rights_org;
-        $past_fyears = Helper::getAllPastFinancialYear();
+        $past_fyears = Helper::getAllPastFinancialYear($organizationId);
         $financialYear = Helper::getFinancialYear(date('Y-m-d'));
         $financialYearAuthUsers = null;
         $currentFy = null;
@@ -38,7 +38,7 @@ class CloseFyController extends Controller
             $financialYear = Helper::getFinancialYear(date('Y-m-d'));
         } else {
             $currentFy = $past_fyears?->firstWhere('id', $fyearId);
-            $financialYear = $currentFy; // ✅ Assign selected FY to $financialYear
+            $financialYear = $currentFy;
         }
 
         $authorized_users = $financialYearAuthUsers['authorized_users'] ?? $currentFy['authorized_users'] ?? null;
@@ -121,24 +121,10 @@ class CloseFyController extends Controller
             if($request->fyear)
             {
                 $financialYear = ErpFinancialYear::find($request->fyear);
-                $organizationId = $financialYear->organization_id;
-                $employees = Helper::getOrgWiseUserAndEmployees($organizationId);
 
-                $accessBy = [];
 
-                foreach ($employees as $employee) {
-                    $authUser = $employee->authUser();
-                    if ($authUser) {
-                        $accessBy[] = [
-                            'user_id' => $authUser->id,
-                            'authenticable_type' => $authUser->authenticable_type?? null,
-                            'authorized' => true,
-                        ];
-                    }
-                }
                 $financialYear->fy_status = ConstantHelper::FY_PREVIOUS_STATUS;
                 $financialYear->fy_close = true;
-                $financialYear->access_by = $accessBy;
                 $financialYear->save();
             }
             else{
@@ -165,7 +151,26 @@ class CloseFyController extends Controller
                     $nextFy->save();
                 }
             }
-            // dd($request->all(), $request->fyear,                $financialYear);
+                $accessBy = null;
+                if($financialYear && $financialYear->access_by == null)
+                {
+                $organizationId = $financialYear->organization_id;
+                $employees = Helper::getOrgWiseUserAndEmployees($organizationId);
+
+                    foreach ($employees as $employee) {
+                        $authUser = $employee->authUser();
+                        if ($authUser) {
+                            $accessBy[] = [
+                                'user_id' => $authUser->id,
+                                'authenticable_type' => $authUser->authenticable_type?? null,
+                                'authorized' => true,
+                            ];
+                        }
+                    }
+
+                }
+                $financialYear->access_by = $accessBy;
+                $financialYear->save();
 
             DB::commit();
 
@@ -242,18 +247,28 @@ class CloseFyController extends Controller
             return response()->json(['success' => false, 'message' => 'No financial year found.'], 404);
         }
         $existingAccess = collect($financialYear->access_by ?? []);
+        if ($existingAccess->isEmpty()) {
+            $updatedAccess = [];
 
-        $updatedAccess = $existingAccess->map(function ($entry) use ($selectedUsers) {
-            $userId = (int) $entry['user_id'];
-            $isSelected = $selectedUsers->has($userId);
+            foreach ($selectedUsers as $userId => $userData) {
+                $updatedAccess[] = [
+                    'user_id' => $userId,
+                    'authenticable_type' => $userData['authenticable_type'] ?? null,
+                    'authorized' => true,
+                ];
+            }
+        } else {
+                $updatedAccess = $existingAccess->map(function ($entry) use ($selectedUsers) {
+                    $userId = (int) $entry['user_id'];
+                    $isSelected = $selectedUsers->has($userId);
 
-            return [
-                'user_id' => $userId,
-                'authenticable_type' => $entry['authenticable_type'] ?? $selectedUsers[$userId]['authenticable_type'] ?? null,
-                'authorized' => $isSelected,
-            ];
-        })->toArray();
-
+                    return [
+                        'user_id' => $userId,
+                        'authenticable_type' => $entry['authenticable_type'] ?? $selectedUsers[$userId]['authenticable_type'] ?? null,
+                        'authorized' => $isSelected,
+                    ];
+                })->toArray();
+            }
         $financialYear->access_by = $updatedAccess;
 
         $financialYear->save();
@@ -294,6 +309,7 @@ class CloseFyController extends Controller
             'fyear_end_date' => $request->end_date,
             'fyear_id' => $request->fyearId,
         ]);
+        session()->save();
         return response()->json(['success' => true, 'message' => 'Financial Year session set successfully.']);
     }
 

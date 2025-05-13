@@ -164,6 +164,7 @@ class Helper
          $user = self::getAuthenticatedUser();
         $startDate = session('fyear_start_date') ?? $date;
         $endDate = session('fyear_end_date') ?? $date;
+        \Log::info('Session Start Date: ' . session('fyear_start_date').session('fyear_end_date'));
         $financialYear = ErpFinancialYear::withDefaultGroupCompanyOrg()
             ->where('start_date', '<=', $startDate)
             ->where('end_date', '>=', $endDate)
@@ -2198,7 +2199,7 @@ return [
                  $subQuery->where('organization_id', $organizationId);
              })->orWhere('organization_id', $organizationId);
         })->get()->pluck('id');
-
+        // dd($employeeIds);
         $userIds= User::where(function ($query) use ($organizationId) {
             $query->whereHas('access_rights_org', function ($subQuery) use ($organizationId) {
                  $subQuery->where('organization_id', $organizationId);
@@ -2206,6 +2207,7 @@ return [
         })->get()->pluck('id');
 
         $user = self::getAuthenticatedUser();
+        // dd($user);
         $employees = AuthUser::where('db_name', $user->db_name)
         ->where(function ($empQuery) use($employeeIds) {
             $empQuery -> where('authenticable_type', 'employee') -> whereIn('authenticable_id', $employeeIds);
@@ -3055,10 +3057,14 @@ return [
         }
 
 
-       public static function getAllPastFinancialYear(): mixed
+       public static function getAllPastFinancialYear($organizationId = null): mixed
         {
-            $financialYears = ErpFinancialYear::withDefaultGroupCompanyOrg()->get();
+            if($organizationId){
 
+                $financialYears = ErpFinancialYear::where('organization_id', $organizationId)->get();
+            }else{
+                $financialYears = ErpFinancialYear::withDefaultGroupCompanyOrg()->get();
+            }
             if ($financialYears->isNotEmpty()) {
                 return $financialYears
                     ->filter(function ($financialYear) {

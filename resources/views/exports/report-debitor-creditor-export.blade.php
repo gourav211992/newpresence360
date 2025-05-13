@@ -12,7 +12,7 @@
     <tr>
         <th><strong>SNO.</strong></th>
         <th><strong>Party Name</strong></th>
-        <th><strong>Group Name</strong></th>
+        @if($group == '')<th><strong>Group Name</strong></th>@endif
         <th><strong>Credit Days</strong></th>
         <th><strong>Invoice Date</strong></th>
         <th><strong>Invoice No</strong></th>
@@ -29,7 +29,7 @@
                 <tr>
                     <td>{{ $serial++ }}</td>
                     <td>{{ $item['vendor_name'] }}</td>
-                    <td>{{ $item['group_name'] ?? '' }}</td>
+                    @if($group == '')<td>{{ $item['group_name'] ?? '' }}</td>@endif
                     <td>{{ $record->credit_days ?? 0 }}</td>
                     <td>{{ $record->document_date ?? null }}</td>
                     <td>{{ $record->bill_no ?? null}}</td>

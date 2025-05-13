@@ -1234,13 +1234,11 @@ class CrDrReportController extends Controller
         $groupIdFromRequest = $request->group_id;
 
         // If group_id is selected, build single group structure
-        $defaultGroupName = $type === 'debit'
-            ? ConstantHelper::RECEIVABLE
-            : ConstantHelper::PAYABLE;
+        $defaultGroupName = '';
 
         // If group_id is selected, use it globally
         if ($groupIdFromRequest) {
-            $groupName = Group::find($groupIdFromRequest)?->name ?? $defaultGroupName;
+            $groupName = Group::find($groupIdFromRequest)?->name ?? '';
 
             $structuredRecords = [
                 'group_name' => $groupName,
@@ -1288,7 +1286,6 @@ class CrDrReportController extends Controller
                 ];
             }
         }
-
         $filename = $type === 'credit'
             ? 'creditor-ledger.xlsx'
             : ($type === 'debit' ? 'debitor-ledger.xlsx' : 'ledger-report.xlsx');

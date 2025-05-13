@@ -28,9 +28,9 @@ class DebitorCreditoExcelExport implements FromView, WithStyles
     {
         return [
             // Header
-            'A1:I1' => ['font' => ['bold' => true], 'borders' => ['allBorders' => ['borderStyle' => 'thin']]],
+            'A1:I1' => ['font' => ['bold' => true]],
             // Apply borders to all
-            'A1:I100' => ['borders' => ['allBorders' => ['borderStyle' => 'thin']]],
+            // 'A1:I100' => ['borders' => ['allBorders' => ['borderStyle' => 'thin']]],
             // Grey background for A5 to AI5
             'A5:I5' => [
                 'fill' => [

@@ -35,6 +35,9 @@ class ErpFinancialYear extends Model
     public function authorizedUsers()
     {
         $access = collect($this->access_by);
+         if (empty($this->access_by)) {
+           return null;
+        }
 
         $allAuthorized = $access->every(fn($item) => $item['authorized'] === true);
 
@@ -51,17 +54,17 @@ class ErpFinancialYear extends Model
 
     protected static function booted()
     {
-        static::creating(function ($financialYear) 
+        static::creating(function ($financialYear)
         {
-            if (Auth::check()) 
+            if (Auth::check())
             {
                 $financialYear->created_by = Auth::id();
             }
         });
 
-        static::updating(function ($financialYear) 
+        static::updating(function ($financialYear)
         {
-            if (Auth::check()) 
+            if (Auth::check())
             {
                 $financialYear->updated_by = Auth::id();
             }
