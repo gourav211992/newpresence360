@@ -49,7 +49,7 @@ class SalesAccountController extends Controller
         $customers = Customer::withDefaultGroupCompanyOrg()
         ->where('status', 'active') 
         ->get();
-        $salesAccount = SalesAccount::All(); 
+        $salesAccount = SalesAccount::withDefaultGroupCompanyOrg()->get();
         $erpBooks = Book::withDefaultGroupCompanyOrg()
         ->where('status', 'active') 
         ->get(); 
@@ -57,7 +57,7 @@ class SalesAccountController extends Controller
             $salesAccounts = SalesAccount::with([
                 'organization', 'group', 'company', 'ledgerGroup',
                 'ledger', 'customerCategory.customers',
-                'customerSubCategory.customersSub','customerCategory', 'customerSubCategory','itemCategory.items', 'itemCategory', 'itemSubCategory','itemSubCategory.itemsSub', 'item', 'book'
+                'customerSubCategory.customersSub','customerCategory', 'customerSubCategory','itemCategory.items', 'itemCategory', 'itemSubCategory','itemSubCategory.itemsSub', 'item', 'book','orgIds'
             ])
             ->orderBy('group_id')
             ->orderBy('company_id') 

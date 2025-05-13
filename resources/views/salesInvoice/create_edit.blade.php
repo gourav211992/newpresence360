@@ -352,6 +352,31 @@
                                                         <input type = "hidden" name = "customer_code" id = "customer_code_input_hidden" value = "{{isset($order) ? $order -> customer_code : ''}}"></input>
                                                         </div>
                                                     </div>
+
+                                                    <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">Phone No.<span class="text-danger">*</span></label>
+                                                            <input type="text" class="form-control ledgerselecct ui-autocomplete-input" autocomplete="off" id = "customer_phone_no_input" name = "customer_phone_no" value = "{{isset($order) ? $order -> customer_phone_no : ''}}" /> 
+                                                        </div>
+                                                    </div> 
+                                                    <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">Email<span class="text-danger">*</span></label>
+                                                            <input type="text" class="form-control ledgerselecct ui-autocomplete-input" autocomplete="off"  id = "customer_email_input" name = "customer_email" value = "{{isset($order) ? $order -> customer_email : ''}}" /> 
+                                                        </div>
+                                                    </div> 
+                                                    <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">Consignee Name<span class="text-danger">*</span></label>
+                                                            <input type="text" class="form-control ledgerselecct ui-autocomplete-input" autocomplete="off"  id = "consignee_name_input" name = "consignee_name" value = "{{isset($order) ? $order -> consignee_name : ''}}" /> 
+                                                        </div>
+                                                    </div> 
+                                                    <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">GSTIN No.</label>
+                                                            <input type="text" class="form-control ledgerselecct ui-autocomplete-input" autocomplete="off"  id = "customer_gstin_input" name = "customer_gstin" value = "{{isset($order) ? $order -> customer_gstin : ''}}" /> 
+                                                        </div>
+                                                    </div>
                                                     
                                                     
 
@@ -383,13 +408,6 @@
                                                         </div>
                                                         <input type = "hidden" name = "payment_terms_code" value = "{{isset($order) ? $order -> payment_terms_code : ''}}" id = "payment_terms_code_input"></input>
                                                     </div>
-
-                                                    <div class="col-md-3">
-                                                        <div class="mb-1">
-                                                            <label class="form-label">Consignee Name</label>
-                                                            <input type="text" class="form-control" id = "consignee_name_input" name = "consignee_name" value = "{{isset($order) ? $order -> consignee_name : ''}}" /> 
-                                                        </div>
-                                                    </div> 
 											    </div>                                                  
                                                     
                                                  </div>
@@ -407,6 +425,13 @@
                                                                 <div class="genertedvariables genertedvariablesnone">
                                                                     <div class="mrnaddedd-prim" id = "current_billing_address">{{isset($order) ? $order -> billing_address_details ?-> display_address : ''}}</div>
                                                                     <input type = "hidden" id = "current_billing_address_id"></input>
+                                                                    <input type="hidden" name="new_billing_country_id" id="new_billing_country_id" value="">
+                                                                    <input type="hidden" name="new_billing_state_id" id="new_billing_state_id" value="">
+                                                                    <input type="hidden" name="new_billing_city_id" id="new_billing_city_id" value="">
+                                                                    <input type="hidden" name="new_billing_address" id="new_billing_address" value="">
+                                                                    <input type="hidden" name="new_billing_type" id="new_billing_type" value="">
+                                                                    <input type="hidden" name="new_billing_pincode" id="new_billing_pincode" value="">
+                                                                    <input type="hidden" name="new_billing_phone" id="new_billing_phone" value="">
                                                                 </div>
                                                             </div>
 
@@ -414,11 +439,9 @@
                                                     </div> 
                                                     <div class="col-md-4">
                                                         <div class="customer-billing-section">
-                                                            <p>Shipping Address&nbsp;<span class="text-danger">*</span>
-                                                            @if (!isset($order))
-                                                            <a href="javascript:;" id="shipAddressEditBtn" data-bs-toggle="modal" class="float-end"><i data-feather='edit-3'></i></a>
-                                                            @endif
-                                                        </p>
+                                                            <p>Shipping Address&nbsp;<span class="text-danger">*</span><span id = "same_checkbox_as_billing" style = "margin-left:120px; font-weight:100;"></span>
+                                                                <a href="javascript:;" id="shipAddressEditBtn" data-bs-toggle="modal" class="float-end"><i data-feather='edit-3'></i></a>
+                                                            </p>
                                                             <div class="bilnbody"> 
 
                                                                 <div class="genertedvariables genertedvariablesnone">
@@ -426,6 +449,13 @@
                                                                     <input type = "hidden" id = "current_shipping_address_id"></input>
                                                                     <input type = "hidden" id = "current_shipping_country_id" name = "shipping_country_id" value = "{{isset($order) && isset($order -> shipping_address_details) ? $order -> shipping_address_details -> country_id : ''}}"></input>
                                                                     <input type = "hidden" id = "current_shipping_state_id" name = "shipping_state_id" value = "{{isset($order) && isset($order -> shipping_address_details) ? $order -> shipping_address_details -> state_id : ''}}"></input>
+                                                                    <input type="hidden" name="new_shipping_country_id" id="new_shipping_country_id" value="">
+                                                                    <input type="hidden" name="new_shipping_state_id" id="new_shipping_state_id" value="">
+                                                                    <input type="hidden" name="new_shipping_city_id" id="new_shipping_city_id" value="">
+                                                                    <input type="hidden" name="new_shipping_address" id="new_shipping_address" value="">
+                                                                    <input type="hidden" name="new_shipping_type" id="new_shipping_type" value="">
+                                                                    <input type="hidden" name="new_shipping_pincode" id="new_shipping_pincode" value="">
+                                                                    <input type="hidden" name="new_shipping_phone" id="new_shipping_phone" value="">
                                                                 </div> 
                                                             </div>
                                                         </div>
@@ -2082,6 +2112,7 @@
     
 @section('scripts')
 <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
+<script type="text/javascript" src="{{asset('app-assets/js/scripts/sales/common.js')}}"></script>
 
 <script>
         $(window).on('load', function() {
@@ -2197,7 +2228,7 @@
             changeDropdownOptions(document.getElementById('customer_id_input'), ['billing_address_dropdown','shipping_address_dropdown'], ['billing_addresses', 'shipping_addresses'], '/customer/addresses/', 'vendor_dependent');
         }
 
-        function changeDropdownOptions(mainDropdownElement, dependentDropdownIds, dataKeyNames, routeUrl, resetDropdowns = null, resetDropdownIdsArray = [])
+        function changeDropdownOptions(mainDropdownElement, dependentDropdownIds, dataKeyNames, routeUrl, resetDropdowns = null, resetDropdownIdsArray = [], extraKeysForRequest = [])
         {
             const mainDropdown = mainDropdownElement;
             const secondDropdowns = [];
@@ -2254,8 +2285,13 @@
                     }            
                 }
             }
-
-            const apiRequestValue = mainDropdown?.value;
+            let apiRequestValue = mainDropdown?.value;
+            //Append Extra Key for Data
+            if (extraKeysForRequest && extraKeysForRequest.length > 0) {
+                extraKeysForRequest.forEach((extraData, index) => {
+                    apiRequestValue += ((index == 0 ? "?" : "&") + extraData.key) + "=" + (extraData.value);
+                });
+            }
             const apiUrl = routeUrl + apiRequestValue;
             fetch(apiUrl, {
                 method : "GET",
@@ -2327,6 +2363,7 @@
                             currentElement.appendChild(option);
                         })
                     }
+                    $("#" + mainDropdownElement.id).trigger('ApiCompleted');
                 });
             }).catch(error => {
                 mainDropdownElement.value = "";
@@ -2340,6 +2377,7 @@
                 document.getElementById('current_shipping_address').textContent = "";
                 document.getElementById('customer_id_input').value = "";
                 document.getElementById('customer_code_input').value = "";
+                $("#" + mainDropdownElement.id).trigger('ApiCompleted');
                 console.log("Error : ", error);
                 return;
             })
@@ -4019,6 +4057,10 @@
                                     currency_id : item?.currency?.id,
                                     currency : item?.currency?.name,
                                     currency_code : item?.currency?.short_name,
+                                    type : item?.customer_type,
+                                    phone_no : item?.mobile,
+                                    email : item?.email,
+                                    gstin : item?.compliances?.gstin_no
                                 };
                             }));
                         },
@@ -4036,6 +4078,14 @@
                     var currencyId = ui.item.currency_id;
                     var currency = ui.item.currency;
                     var currencyCode = ui.item.currency_code;
+                    var customerType = ui.item.type;
+                    var phoneNo = ui.item.phone_no;
+                    var email = ui.item.email;
+                    var gstIn = ui.item.gstin;
+                    $input.attr('customer_type', customerType);
+                    $input.attr('phone_no', phoneNo);
+                    $input.attr('email', email);
+                    $input.attr('gstin', gstIn);
                     $input.attr('payment_terms_id', paymentTermsId);
                     $input.attr('payment_terms', paymentTerms);
                     $input.attr('payment_terms_code', paymentTermsCode);
@@ -4046,6 +4096,11 @@
                     $("#customer_code_input_hidden").val(ui.item.code);
                     document.getElementById('customer_id_input').value = ui.item.id;
                     onChangeCustomer(selector);
+                    if (customerType === 'Cash') {
+                        initializeCashCustomerPhoneDropdown();
+                    } else {
+                        deInitializeCashCustomerFlow();
+                    }
                     return false;
                 },
                 change: function(event, ui) {
@@ -5103,6 +5158,9 @@
                             $("#customer_id_input").val(currentOrder.customer_id);
                             $("#customer_code_input_hidden").val(currentOrder.customer_code);
                             $("#consignee_name_input").val(currentOrder.consignee_name);
+                            $("#customer_phone_no_input").val(currentOrder?.customer_phone_no);
+                            $("#customer_email_input").val(currentOrder?.customer_email);
+                            $("#customer_gstin_input").val(currentOrder?.customer_gstin);
                             //First add options also
                             $("#currency_dropdown").empty(); // Clear existing options
                             $("#currency_dropdown").append(new Option(
@@ -5460,7 +5518,7 @@
                             
                             setAllTotalFields();
                             
-                            changeDropdownOptions(document.getElementById('customer_id_input'), ['billing_address_dropdown','shipping_address_dropdown'], ['billing_addresses', 'shipping_addresses'], '/customer/addresses/', 'vendor_dependent');
+                            changeDropdownOptions(document.getElementById('customer_id_input'), ['billing_address_dropdown','shipping_address_dropdown'], ['billing_addresses', 'shipping_addresses'], '/customer/addresses/', 'vendor_dependent', [], [{key : 'phone_no', value : currentOrder?.customer_phone_no}]);
 
                             // $("#shipping_address_dropdown").select2();
                             // $("#shipping_address_dropdown").prop('disabled', false);
@@ -5981,9 +6039,13 @@
                     $("#current_shipping_country_id").val(data.data.country_id);
                     $("#current_shipping_state_id").val(data.data.state_id);
                     $("#current_shipping_address").text(data.data.display_address);
-                    var newOption = new Option(data.data.display_address, data.data.id, false, false);
-                    $('#shipping_address_dropdown').append(newOption).trigger('change');
-                    $("#shipping_address_dropdown").val(data.data.id).trigger('change');
+                    $("#new_shipping_country_id").val(data.data.country_id);
+                    $("#new_shipping_state_id ").val(data.data.state_id );
+                    $("#new_shipping_city_id").val(data.data.city_id);
+                    $("#new_shipping_type").val(data.data.type);
+                    $("#new_shipping_pincode").val(data.data.pincode);
+                    $("#new_shipping_phone").val(data.data.phone);
+                    
                 }
             },
             error: function(xhr) {
@@ -6016,9 +6078,15 @@
                     $("#current_billing_country_id").val(data.data.country_id);
                     $("#current_billing_state_id").val(data.data.state_id);
                     $("#current_billing_address").text(data.data.display_address);
-                    var newOption = new Option(data.data.display_address, data.data.id, false, false);
-                    $('#billing_address_dropdown').append(newOption).trigger('change');
-                    $("#billing_address_dropdown").val(data.data.id).trigger('change');
+                    // var newOption = new Option(data.data.display_address, data.data.id, false, false);
+                    // $('#billing_address_dropdown').append(newOption).trigger('change');
+                    // $("#billing_address_dropdown").val(data.data.id).trigger('change');
+                    $("#new_billing_country_id").val(data.data.country_id);
+                    $("#new_billing_state_id ").val(data.data.state_id );
+                    $("#new_billing_city_id").val(data.data.city_id);
+                    $("#new_billing_type").val(data.data.type);
+                    $("#new_billing_pincode").val(data.data.pincode);
+                    $("#new_billing_phone").val(data.data.phone);
                 }
             },
             error: function(xhr) {

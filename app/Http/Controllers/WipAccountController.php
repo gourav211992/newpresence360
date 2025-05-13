@@ -50,7 +50,7 @@ class WipAccountController extends Controller
         $items = Item::withDefaultGroupCompanyOrg()
         ->where('status', 'active') 
         ->get();
-        $wipAccount = WipAccount::All();  
+        $wipAccount = WipAccount::withDefaultGroupCompanyOrg()->get();
         $erpBooks = Book::withDefaultGroupCompanyOrg()
         ->where('status', 'active') 
         ->get(); 
@@ -58,7 +58,7 @@ class WipAccountController extends Controller
         if ($request->ajax()) {
             $wipAccounts = WipAccount::with([
                 'organization', 'group', 'company', 'ledgerGroup',
-                'ledger', 'category', 'subCategory', 'item'
+                'ledger', 'category', 'subCategory', 'item','book'
             ])
             ->orderBy('group_id')
             ->orderBy('company_id') 
@@ -98,7 +98,7 @@ class WipAccountController extends Controller
         }
 
         return view('procurement.wip-account.index', compact(
-            'companies', 'categories', 'subCategories', 'ledgerGroups', 'ledgers', 'items', 'wipAccount','erpBooks'
+            'companies', 'categories', 'subCategories', 'ledgerGroups', 'ledgers', 'items', 'wipAccount','erpBooks','orgIds'
         ));
     }
 

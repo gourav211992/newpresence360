@@ -1,4 +1,3 @@
-
 <div class="modal modal-slide-in fade filterpopuplabel" id="filter">
     <div class="modal-dialog sidebar-sm">
         <form class="add-new-record modal-content pt-0">
@@ -16,10 +15,11 @@
                 <div class="mb-1">
                     <label class="form-label">Select Job Title</label>
                     <select class="form-select select2" name="job_title">
-                        <option value="" {{ request('job_title')=="" ? 'selected' : '' }}>Select</option>
+                        <option value="" {{ request('job_title') == '' ? 'selected' : '' }}>Select</option>
                         @forelse($jobTitles as $jobTitle)
-                        <option value="{{ $jobTitle->id }}" {{ request('job_title')==$jobTitle->id ? 'selected' : ''
-                            }}>{{ $jobTitle->title }}</option>
+                            <option value="{{ $jobTitle->id }}"
+                                {{ request('job_title') == $jobTitle->id ? 'selected' : '' }}>{{ $jobTitle->title }}
+                            </option>
                         @empty
                         @endforelse
                     </select>
@@ -29,10 +29,10 @@
                 <div class="mb-1">
                     <label class="form-label">Skills</label>
                     <select class="form-select select2" name="skill">
-                        <option value="" {{ request('skill')=="" ? 'selected' : '' }}>Select</option>
-                        @forelse($skills as $skill)
-                        <option value="{{ $skill->id }}" {{ request('skill')==$skill->id ? 'selected' : '' }}>{{
-                            $skill->name }}</option>
+                        <option value="" {{ request('skill') == '' ? 'selected' : '' }}>Select</option>
+                        @forelse($skillsData as $skill)
+                            <option value="{{ $skill->id }}" {{ request('skill') == $skill->id ? 'selected' : '' }}>
+                                {{ $skill->name }}</option>
                         @empty
                         @endforelse
                     </select>
@@ -41,10 +41,11 @@
                 <div class="mb-1">
                     <label class="form-label">Status</label>
                     <select class="form-select select2" name="status">
-                        <option value="" {{ request('status')=="" ? 'selected' : '' }}>Select</option>
+                        <option value="" {{ request('status') == '' ? 'selected' : '' }}>Select</option>
                         @forelse($status as $value)
-                        <option value="{{ $value }}" {{ request('status')==$value ? 'selected' : '' }}>{{ $value }}
-                        </option>
+                            <option value="{{ $value }}" {{ request('status') == $value ? 'selected' : '' }}>
+                                {{ ucwords($value) }}
+                            </option>
                         @empty
                         @endforelse
                     </select>

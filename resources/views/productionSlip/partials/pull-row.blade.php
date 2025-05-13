@@ -10,6 +10,13 @@ $currentOrderIndexVal = $index;
         <label class="form-check-label" for="Email"></label>
     </div> 
 </td>
+<td class="poprod-decpt">
+    <input type="text" id="so_doc_{{$currentOrderIndexVal}}" name="so_doc[{{$currentOrderIndexVal}}]" class="form-control mw-100"  value="{{strtoupper($order?->pwoMapping?->so?->book_code)}} - {{$order?->pwoMapping?->so?->document_number}}" readonly>
+</td>
+<td class="poprod-decpt">
+    <input type="text" id="customer_{{$currentOrderIndexVal}}" name="customer[{{$currentOrderIndexVal}}]" class="form-control mw-100"  value="{{$order?->customer?->company_name}}" readonly>
+    <input type="hidden" id="customer_id_{{$currentOrderIndexVal}}" name = "customer_id[{{$currentOrderIndexVal}}]"  value = "{{$order?->customer?->id}}">
+</td>
 <td class="poprod-decpt"> 
     <input type="text" id = "items_dropdown_{{$currentOrderIndexVal}}" name="item_code[{{$currentOrderIndexVal}}]" placeholder="Select" class="form-control mw-100 ledgerselecct comp_item_code ui-autocomplete-input restrict" autocomplete="off" data-name="{{$order -> item ?-> item_name}}" data-code="{{$order -> item ?-> item_code}}" data-id="{{$order -> item ?-> id}}" hsn_code = "{{$order -> item ?-> hsn ?-> code}}" item-name = "{{$order -> item ?-> item_name}}" specs = "{{$order -> item ?-> specifications}}" attribute-array = "{{$order -> item_attributes_array()}}"  value = "{{$order -> item ?-> item_code}}" readonly>
     <input type = "hidden" name = "item_id[]" id = "items_dropdown_{{$currentOrderIndexVal}}_value" value = "{{$order -> item_id}}"></input>
@@ -18,7 +25,7 @@ $currentOrderIndexVal = $index;
     <input type="text" id="items_name_{{$currentOrderIndexVal}}" name="item_name[{{$currentOrderIndexVal}}]" class="form-control mw-100"  value="{{$order?->item?->item_name}}" readonly>
 </td>
 <td class="poprod-decpt" id="attribute_section_{{$currentOrderIndexVal}}"> 
-    <button id = "attribute_button_{{$currentOrderIndexVal}}" type = "button" data-bs-toggle="modal" onclick="setItemAttributes('items_dropdown_{{$currentOrderIndexVal}}', '{{$currentOrderIndexVal}}', false,'#production-items');" data-bs-target="#attribute" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">Attributes</button>
+    <button id = "attribute_button_{{$currentOrderIndexVal}}" type = "button" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">Attributes</button>
     <input type = "hidden" name = "attribute_value_{{$currentOrderIndexVal}}" />
  </td>
 <td>
@@ -26,14 +33,8 @@ $currentOrderIndexVal = $index;
         <option value="{{$order?->item?->uom?->id}}">{{$order?->item?->uom?->name}}</option>
     </select> 
 </td>
+<td><input type="text" id="item_so_qty_{{$currentOrderIndexVal}}" name = "item_so_qty[{{$currentOrderIndexVal}}]" class="form-control mw-100 text-end" value = "{{$order?->soItem?->order_qty}}" readonly/></td>
 <td><input type="text" id="item_qty_{{$currentOrderIndexVal}}" name = "item_qty[{{$currentOrderIndexVal}}]" oninput = "changeItemQty(this, {{$currentOrderIndexVal}});" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" value = "{{$order->pslip_bal_qty}}"/></td>
-<td class="poprod-decpt">
-    <input type="text" id="customer_{{$currentOrderIndexVal}}" name="customer[{{$currentOrderIndexVal}}]" class="form-control mw-100"  value="{{$order?->customer?->company_name}}" readonly>
-    <input type="hidden" id="customer_id_{{$currentOrderIndexVal}}" name = "customer_id[{{$currentOrderIndexVal}}]"  value = "{{$order?->customer?->id}}">
-</td>
-<td class="poprod-decpt">
-    <input type="text" id="so_doc_{{$currentOrderIndexVal}}" name="so_doc[{{$currentOrderIndexVal}}]" class="form-control mw-100"  value="{{$order?->pwoMapping?->so?->document_number}}" readonly>
-</td>
 <td>
     <div class="d-flex">
             <div class="me-50 cursor-pointer" data-bs-toggle="modal" data-bs-target="#Remarks" onclick = "setItemRemarks('item_remarks_{{$currentOrderIndexVal}}');">        

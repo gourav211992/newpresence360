@@ -66,7 +66,7 @@ class PslipRequest extends FormRequest
         $validator->after(function ($validator) {
             foreach ($this->input('cons', []) as $index => $component) {
                 $selectedAttributeIds = [];
-                $moBomMappingId = $component['id'] ?? null;
+                $moBomMappingId = $component['mo_bom_cons_id'] ?? null;
                 $moBomMapping = MoBomMapping::find($moBomMappingId);
 
                 $rm_type = 'R';

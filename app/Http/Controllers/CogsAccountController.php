@@ -46,7 +46,7 @@ class CogsAccountController extends Controller
         $items = Item::withDefaultGroupCompanyOrg()
         ->where('status', 'active') 
         ->get();
-        $cogsAccounts = CogsAccount::All();
+        $cogsAccounts = CogsAccount::withDefaultGroupCompanyOrg()->get();
         $erpBooks = Book::withDefaultGroupCompanyOrg()
         ->where('status', 'active') 
         ->get(); 
@@ -93,7 +93,7 @@ class CogsAccountController extends Controller
         }
 
         return view('procurement.cogs-account.index', compact(
-            'companies', 'categories', 'subCategories', 'ledgerGroups', 'ledgers', 'items', 'cogsAccounts', 'erpBooks'
+            'companies', 'categories', 'subCategories', 'ledgerGroups', 'ledgers', 'items', 'cogsAccounts', 'erpBooks','orgIds'
         ));
     }
 

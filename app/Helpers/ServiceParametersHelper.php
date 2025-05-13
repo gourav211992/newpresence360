@@ -1187,6 +1187,47 @@ class ServiceParametersHelper
             'type' => self::GL_PARAMETERS
         ]
     ];
+
+    const ASSET_POSTING_SERVICE_PARAMETERS = [
+        [
+            "name" => self::BACK_DATE_ALLOW_PARAM,
+            "applicable_values" => self::BACK_DATE_ALLOW_PARAM_VALUES,
+            "default_value" => ['yes'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+       [
+            "name" => self::FUTURE_DATE_ALLOW_PARAM,
+            "applicable_values" => self::FUTURE_DATE_ALLOW_PARAM_VALUES,
+            "default_value" => ['yes'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+        [
+            "name" => self::GL_POSTING_REQUIRED_PARAM,
+            "applicable_values" => self::GL_POSTING_REQUIRED_PARAM_VALUES,
+            "default_value" => ['no'],
+            'is_multiple' => false,
+            'service_level_visibility' => true,
+            'type' => self::GL_PARAMETERS
+        ],
+        [
+            "name" => self::GL_POSTING_SERIES_PARAM,
+            "applicable_values" => [],
+            "default_value" => [],
+            'is_multiple' => true,
+            'service_level_visibility' => false,
+            'type' => self::GL_PARAMETERS
+        ],
+        [
+            "name" => self::POST_ON_ARROVE_PARAM,
+            "applicable_values" => self::POST_ON_ARROVE_PARAM_VALUES,
+            "default_value" => ['no'],
+            'is_multiple' => false,
+            'service_level_visibility' => true,
+            'type' => self::GL_PARAMETERS
+        ]
+    ];
     const ASSET_SERVICE_PARAMETERS = [
         [
             "name" => self::BACK_DATE_ALLOW_PARAM,
@@ -2164,8 +2205,8 @@ class ServiceParametersHelper
         ConstantHelper::PAYMENTS_SERVICE_ALIAS => self::PV_SERVICE_PARAMETERS,
         ConstantHelper::RECEIPTS_SERVICE_ALIAS => self::PV_SERVICE_PARAMETERS,
         ConstantHelper::FIXED_ASSET_DEPRECIATION => self::ASSET_SERVICE_PARAMETERS,
-        ConstantHelper::FIXED_ASSET_SPLIT => self::PV_SERVICE_PARAMETERS,
-        ConstantHelper::FIXED_ASSET_MERGER => self::PV_SERVICE_PARAMETERS,
+        ConstantHelper::FIXED_ASSET_SPLIT => self::ASSET_POSTING_SERVICE_PARAMETERS,
+        ConstantHelper::FIXED_ASSET_MERGER => self::ASSET_POSTING_SERVICE_PARAMETERS,
         ConstantHelper::PO_SERVICE_ALIAS => self::PO_SERVICE_PARAMETERS,
         ConstantHelper::FIXED_ASSETS=>self::FIXED_ASSET_SERVICE_PARAMETERS,
         ConstantHelper::GATE_ENTRY_SERVICE_ALIAS => self::GATE_ENTRY_SERVICE_PARAMETERS,

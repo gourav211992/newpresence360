@@ -129,7 +129,7 @@ class ErpRecruitmentJob extends Model
     }
 
     public function requests(){
-        return $this->hasMany(ErpRecruitmentJob::class, 'job_id','job_id');
+        return $this->hasMany(ErpRecruitmentJobRequests::class, 'job_id','job_id');
     }
 
     // public function jobReferralCandidate(){

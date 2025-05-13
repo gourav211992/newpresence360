@@ -45,10 +45,12 @@ class ErpProductionSlipController extends Controller
         $pathUrl = request()->segments()[0];
         $redirectUrl = route('production.slip.index');
         $createRoute = route('production.slip.create');
-        $typeName = "Packing Slip";
+        $typeName = "Production Slip";
         if ($request -> ajax()) {
             try {
-            $docs = ErpProductionSlip::withDefaultGroupCompanyOrg() ->  bookViewAccess($pathUrl) ->  withDraftListingLogic() -> orderByDesc('id') -> get();
+            $docs = ErpProductionSlip::withDefaultGroupCompanyOrg()
+                    ->bookViewAccess($pathUrl)
+                    ->withDraftListingLogic();
             return DataTables::of($docs) ->addIndexColumn()
             ->editColumn('document_status', function ($row) {
                 $statusClass = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->document_status ?? ConstantHelper::DRAFT];    
@@ -72,22 +74,47 @@ class ErpProductionSlipController extends Controller
                 ";
             })
             ->addColumn('book_name', function ($row) {
-                return $row->book_code ? $row->book_code : 'N/A';
+                return $row->book_code ? $row->book_code : '';
             })
-            ->addColumn('store_code', function ($row) {
-                return $row->store?->store_code ? $row->store?->store_code  : 'N/A';
+            ->addColumn('store_name', function ($row) {
+                return $row->store ? $row->store?->store_name  : '';
             })
-            ->addColumn('curr_name', function ($row) {
-                return $row->currency ? ($row->currency?->short_name ?? $row->currency?->name) : 'N/A';
+            ->addColumn('sub_store_name', function ($row) {
+                return $row->sub_store?->name ? $row->sub_store?->name  : '';
+            })
+            ->addColumn('station_name', function ($row) {
+                return $row?->station ? $row->station?->name  : '';
+            })
+            ->addColumn('shift_name', function ($row) {
+                return $row->shift?->label ? $row->shift?->label  : '';
+            })
+            ->addColumn('mo_no', function ($row) {
+                return $row?->mo ? ($row?->mo->book_code .' - '. $row?->mo->document_number)  : '';
+            })
+            ->addColumn('mo_product', function ($row) {
+                return $row?->mo ? $row?->mo?->item?->item_name  : '';
+            })
+            ->addColumn('type', function ($row) {
+                return $row?->is_last_station ? 'Final'  : 'WIP';
+            })
+            ->addColumn('so_no', function ($row) {
+                $bookCode = strtoupper($row?->last_so()?->book_code);
+                return $row?->last_so() ? ($bookCode .' - '. $row?->last_so()?->document_number)  : '';
             })
             ->editColumn('document_date', function ($row) {
                 return $row->getFormattedDate('document_date') ?? 'N/A';
             })
-            ->editColumn('revision_number', function ($row) {
-                return strval($row->revision_number);
+            ->addColumn('produced_qty', function ($row) {
+                return isset($row?->pslip_items) ? (number_format($row?->pslip_items()->sum('qty'),4)) : ' ';
             })
-            ->addColumn('items_count', function ($row) {
-                return $row->items->count();
+            ->addColumn('value', function ($row) {
+                if ($row->pslip_items && $row->pslip_items()->exists()) {
+                    return number_format(
+                        $row->pslip_items()->select(DB::raw('SUM(qty * rate) as total'))->value('total'), 
+                        2
+                    );
+                }
+                return ' ';
             })
             ->rawColumns(['document_status'])
             ->make(true);
@@ -395,13 +422,12 @@ class ErpProductionSlipController extends Controller
                                 'sub_store_id' => $productionSlip->sub_store_id,
                                 'qty' => isset($request -> item_qty[$itemKey]) ? $request -> item_qty[$itemKey] : 0,
                                 'rate' => isset($request -> item_rate[$itemKey]) ? $request -> item_rate[$itemKey] : 0,
-                                'customer_id' => isset($request -> customer_id[$itemKey]) ? $request -> customer_id[$itemKey] : 0,
+                                'customer_id' => isset($request -> customer_id[$itemKey]) ? $request -> customer_id[$itemKey] : null,
                                 'inventory_uom_id' => $item -> uom ?-> id,
                                 'inventory_uom_code' => $item -> uom ?-> name,
                                 'inventory_uom_qty' => $inventoryUomQty,
                                 'remarks' => isset($request -> item_remarks[$itemKey]) ? $request -> item_remarks[$itemKey] : null,
                             ]);
-                            
                         }
                     }
                     foreach ($itemsData as $itemDataKey => $itemDataValue) {
@@ -938,7 +964,8 @@ class ErpProductionSlipController extends Controller
         if(!empty($issueRecords['data'])){
             foreach($issueRecords['data'] as $key => $val){
                 $pslipConsumption = PslipBomConsumption::where('id',@$val->issuedBy->document_detail_id)->first();
-                $qty = ItemHelper::convertToAltUom($val->issuedBy->item_id, $pslipConsumption?->uom_id, $val->issuedBy->issue_qty);
+                // $qty = ItemHelper::convertToAltUom($val->issuedBy->item_id, $pslipConsumption?->uom_id, $val->issuedBy->issue_qty);
+                $qty = $val->issuedBy->issue_qty;
                 PslipConsumptionLocation::create([
                     'pslip_id' => $pslip->id,
                     'pslip_consumption_id' => @$val->issuedBy->document_detail_id,
@@ -971,6 +998,26 @@ class ErpProductionSlipController extends Controller
         } else {
             return false;
         }
+    }
+
+    public function getItemDetail(Request $request)
+    {
+        $pslip_bom_cons_id = $request->pslip_bom_cons_id ?? null;
+        $mo_bom_cons_id = $request->mo_bom_cons_id ?? null;
+        $pslipBom = PslipBomConsumption::where('id', $pslip_bom_cons_id)->first();
+        $moBom = MoBomMapping::where('id', $mo_bom_cons_id)->first();
+        $data = null;
+        if($pslipBom) {
+            $data = $pslipBom;
+        }
+        if($moBom) {
+            $data = $moBom;
+        }
+        $selectedAttr = explode(',', $request->selected_attribute_ids) ?? [];
+        $item = $data?->item;
+        $specifications = $item?->specifications()->whereNotNull('value')->get() ?? [];
+        $html = view('productionSlip.partials.item-detail', compact('item', 'selectedAttr', 'specifications'))->render();
+        return response()->json(['data' => ['html' => $html, 'status' => 200, 'message' => 'fetched.']]);
     }
 
 }

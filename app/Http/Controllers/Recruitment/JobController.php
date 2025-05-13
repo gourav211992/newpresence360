@@ -361,6 +361,7 @@ class JobController extends Controller
             $job->assessment_url = $request->third_party_assessment == 'yes' ? $request->assessment_url : NULL;
             $job->last_apply_date = $request->last_apply_date ? $request->last_apply_date : NULL;
             $job->publish_for = $request->publish_for;
+            $job->no_of_position = $request->no_of_position;
             $job->employement_type = $request->employement_type;
             $job->industry_id = $request->industry_id;
             $job->work_mode = $request->work_mode;
@@ -525,6 +526,7 @@ class JobController extends Controller
             $job->annual_salary_max = $request->annual_salary_max;
             $job->notice_peroid_id = $request->notice_peroid_id;
             $job->job_description = $request->description;
+            $job->no_of_position = $request->no_of_position;
             $job->created_by = $user->id; 
             $job->created_by_type = $user->authenticable_type; 
             $job->save();

@@ -188,7 +188,6 @@
                                                     </div>
                                                     <div class="col-md-2 mb-1 mb-sm-0">
                                                         <select name="uom_id" class="form-select select2" {{$isItemReferenced ? 'disabled' : '' }}>
-                                                            <option value="">Select UOM</option>
                                                             @foreach ($units as $unit)
                                                                 <option value="{{ $unit->id }}" {{ $item->uom_id == $unit->id ? 'selected' : '' }}>
                                                                     {{ $unit->name ??'' }}
@@ -208,11 +207,11 @@
                                                     <div class="col-md-2 pe-sm-0"> 
                                                         <label class="form-label">Selling price</label>  
                                                     </div>
+                                                    
                                                     <div class="col-md-2">
                                                         <input type="text" name="sell_price" class="form-control sell-price-input" value="{{ number_format($item->sell_price, 2) }}" placeholder="Enter Sell Price">
                                                     </div>
                                                 </div>
-
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3"> 
                                                         <label class="form-label">Item Remarks</label>  
@@ -258,13 +257,13 @@
                                                             <a class="nav-link" data-bs-toggle="tab" href="#Attributes">Attributes</a>
                                                         </li>
                                                         <li class="nav-item">
-                                                            <a class="nav-link" data-bs-toggle="tab" href="#Details">Inventory Details</a>
-                                                        </li>
-                                                        <li class="nav-item">
                                                             <a class="nav-link active" data-bs-toggle="tab" href="#UOM">Alt. UOM</a>
                                                         </li>
                                                         <li class="nav-item">
                                                             <a class="nav-link" data-bs-toggle="tab" href="#Alternative">Alternative Items</a>
+                                                        </li>
+                                                        <li class="nav-item">
+                                                            <a class="nav-link" data-bs-toggle="tab" href="#Details">Inventory Details</a>
                                                         </li>
                                                         <li class="nav-item">
                                                             <a class="nav-link" data-bs-toggle="tab" href="#Customer">Approved Customers</a>
@@ -417,131 +416,6 @@
                                                                 </table>
                                                             </div>
                                                         </div>
-                                                        <div class="tab-pane" id="Details">
-                                                            <div class="row"> 
-                                                                <div class="col-md-6"> 
-                                                                    <div class="row align-items-center mb-1">
-                                                                        <div class="col-md-4"> 
-                                                                            <label class="form-label">Min Stocking Level</label>  
-                                                                        </div>  
-                                                                        <div class="col-md-6">  
-                                                                            <input type="text" class="form-control numberonly" name="min_stocking_level" value="{{ $item->min_stocking_level ?? '' }}" /> 
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <div class="row align-items-center mb-1">
-                                                                        <div class="col-md-4"> 
-                                                                            <label class="form-label">Max Stocking Level</label>  
-                                                                        </div>  
-                                                                        <div class="col-md-6"> 
-                                                                            <input type="text" class="form-control numberonly" name="max_stocking_level" value="{{ $item->max_stocking_level ?? '' }}" />
-                                                                        </div> 
-                                                                    </div>
-
-                                                                    <div class="row align-items-center mb-1">
-                                                                        <div class="col-md-4"> 
-                                                                            <label class="form-label">Reorder Level</label>  
-                                                                        </div>  
-                                                                        <div class="col-md-6">  
-                                                                            <input type="text" class="form-control numberonly" name="reorder_level" value="{{ $item->reorder_level ?? '' }}" /> 
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <div class="row align-items-center mb-1">
-                                                                        <div class="col-md-4"> 
-                                                                            <label class="form-label">Minimum Order Qty</label>  
-                                                                        </div>  
-                                                                        <div class="col-md-6"> 
-                                                                            <input type="text" class="form-control numberonly" name="minimum_order_qty" value="{{ $item->minimum_order_qty ?? '' }}" />
-                                                                        </div> 
-                                                                    </div>
-
-                                                                    <div class="row align-items-center mb-1">
-                                                                        <div class="col-md-4"> 
-                                                                            <label class="form-label">Lead Days </label>  
-                                                                        </div>  
-                                                                        <div class="col-md-6">  
-                                                                            <input type="text" class="form-control numberonly" name="lead_days" value="{{ $item->lead_days ?? '' }}" /> 
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <div class="row align-items-center mb-1">
-                                                                        <div class="col-md-4"> 
-                                                                            <label class="form-label">Safety Days </label>  
-                                                                        </div>  
-                                                                        <div class="col-md-6"> 
-                                                                            <input type="text" class="form-control numberonly" name="safety_days" value="{{ $item->safety_days ?? '' }}" />
-                                                                        </div> 
-                                                                    </div>
-                                                                    
-                                                                    <div class="row align-items-center mb-1">
-                                                                        <div class="col-md-4"> 
-                                                                            <label class="form-label">Shelf Life in Days</label>  
-                                                                        </div>  
-                                                                        <div class="col-md-6"> 
-                                                                            <input type="text" class="form-control numberonly" name="shelf_life_days" value="{{ $item->shelf_life_days ?? '' }}" />
-                                                                        </div> 
-                                                                    </div>
-                                                                     <!-- PO Positive Tolerance -->
-                                                                    <div class="row align-items-center mb-1">
-                                                                        <div class="col-md-4"> 
-                                                                            <label class="form-label">PO Positive Tolerance</label>  
-                                                                        </div>  
-                                                                        <div class="col-md-6">  
-                                                                            <input type="number" class="form-control" step="any" name="po_positive_tolerance" value="{{ $item->po_positive_tolerance ?? '' }}" /> 
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <!-- PO Negative Tolerance -->
-                                                                    <div class="row align-items-center mb-1">
-                                                                        <div class="col-md-4"> 
-                                                                            <label class="form-label">PO Negative Tolerance</label>  
-                                                                        </div>  
-                                                                        <div class="col-md-6">  
-                                                                            <input type="number" class="form-control" step="any" name="po_negative_tolerance" value="{{ $item->po_negative_tolerance ?? '' }}" /> 
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <!-- SO Positive Tolerance -->
-                                                                    <div class="row align-items-center mb-1">
-                                                                        <div class="col-md-4"> 
-                                                                            <label class="form-label">SO Positive Tolerance</label>  
-                                                                        </div>  
-                                                                        <div class="col-md-6">  
-                                                                            <input type="number" class="form-control" step="any" name="so_positive_tolerance" value="{{ $item->so_positive_tolerance ?? '' }}" /> 
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <!-- SO Negative Tolerance -->
-                                                                    <div class="row align-items-center mb-1">
-                                                                        <div class="col-md-4"> 
-                                                                            <label class="form-label">SO Negative Tolerance</label>  
-                                                                        </div>  
-                                                                        <div class="col-md-6">  
-                                                                            <input type="number" class="form-control" step="any" name="so_negative_tolerance" value="{{ $item->so_negative_tolerance ?? '' }}" /> 
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <div class="row align-items-center mb-1">
-                                                                        <div class="col-md-4">
-                                                                            <label class="form-label">Storage Type</label>
-                                                                        </div>
-                                                                        
-                                                                        <div class="col-md-6">
-                                                                            <select name="storage_type" class="form-select mw-100">
-                                                                                <option value="">Select</option>
-                                                                                @foreach ($storageTypes as $type)
-                                                                                    <option value="{{ $type }}" {{ isset($item) && $item->storage_type === $type ? 'selected' : '' }}>
-                                                                                        {{ ucfirst($type) }}
-                                                                                    </option>
-                                                                                @endforeach
-                                                                            </select>
-                                                                        </div>
-                                                                    </div>
-
-                                                                </div>
-                                                            </div> 
-                                                        </div>
                                                         <div class="tab-pane active" id="UOM">
                                                             <div class="table-responsive-md">
                                                                 <table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail border" id="alternateUOMTable">
@@ -675,6 +549,131 @@
                                                             </div>
                                                         </div>
                                                    
+                                                        <div class="tab-pane" id="Details">
+                                                            <div class="row mt-2">
+                                                                <div class="col-md-12">
+                                                                    <div class="newheader border-bottom pb-50 mb-1">
+                                                                        <h4 class="card-title text-theme">Replenishment</h4>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="row align-items-center mb-1">
+                                                                <div class="col-md-3 mb-1">
+                                                                    <label class="form-label">Min Stocking Level</label>
+                                                                    <input type="text" class="form-control numberonly" name="min_stocking_level" value="{{ $item->min_stocking_level ?? '' }}" />
+                                                                </div>
+                                                                <div class="col-md-3 mb-1">
+                                                                    <label class="form-label">Max Stocking Level</label>
+                                                                    <input type="text" class="form-control numberonly" name="max_stocking_level" value="{{ $item->max_stocking_level ?? '' }}" />
+                                                                </div>
+                                                                <div class="col-md-3 mb-1">
+                                                                    <label class="form-label">Reorder Level</label>
+                                                                    <input type="text" class="form-control numberonly" name="reorder_level" value="{{ $item->reorder_level ?? '' }}" />
+                                                                </div>
+                                                                <div class="col-md-3 mb-1">
+                                                                    <label class="form-label">Minimum Order Qty</label>
+                                                                    <input type="text" class="form-control numberonly" name="minimum_order_qty" value="{{ $item->minimum_order_qty ?? '' }}" />
+                                                                </div>
+                                                                <div class="col-md-3 mb-1">
+                                                                    <label class="form-label">Lead Days</label>
+                                                                    <input type="text" class="form-control numberonly" name="lead_days" value="{{ $item->lead_days ?? '' }}" />
+                                                                </div>
+                                                                <div class="col-md-3 mb-1">
+                                                                    <label class="form-label">Safety Days</label>
+                                                                    <input type="text" class="form-control numberonly" name="safety_days" value="{{ $item->safety_days ?? '' }}" />
+                                                                </div>
+                                                                <div class="col-md-3 mb-1">
+                                                                    <label class="form-label">Shelf Life in Days</label>
+                                                                    <input type="text" class="form-control numberonly" name="shelf_life_days" value="{{ $item->shelf_life_days ?? '' }}" />
+                                                                </div>
+                                                            </div>
+
+                                                            
+                                                            <div class="row mt-1">
+                                                                <div class="col-md-12">
+                                                                    <div class="newheader border-bottom pb-50 mb-1">
+                                                                        <h4 class="card-title text-theme">Tolerance</h4>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="row align-items-center mb-1">
+                                                                <div class="col-md-3 mb-1">
+                                                                    <label class="form-label">PO Positive Tolerance</label>
+                                                                    <input type="number" class="form-control" step="any" name="po_positive_tolerance" value="{{ $item->po_positive_tolerance ?? '' }}" />
+                                                                </div>
+                                                                <div class="col-md-3 mb-1">
+                                                                    <label class="form-label">PO Negative Tolerance</label>
+                                                                    <input type="number" class="form-control" step="any" name="po_negative_tolerance" value="{{ $item->po_negative_tolerance ?? '' }}" />
+                                                                </div>
+                                                                <div class="col-md-3 mb-1">
+                                                                    <label class="form-label">SO Positive Tolerance</label>
+                                                                    <input type="number" class="form-control" step="any" name="so_positive_tolerance" value="{{ $item->so_positive_tolerance ?? '' }}" />
+                                                                </div>
+                                                                <div class="col-md-3 mb-1">
+                                                                    <label class="form-label">SO Negative Tolerance</label>
+                                                                    <input type="number" class="form-control" step="any" name="so_negative_tolerance" value="{{ $item->so_negative_tolerance ?? '' }}" />
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="row mt-1">
+                                                                <div class="col-md-12">
+                                                                    <div class="newheader border-bottom pb-50 mb-1">
+                                                                        <h4 class="card-title text-theme">Storage</h4>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="row align-items-center mb-1">
+                                                                <div class="col-md-3 mb-1">
+                                                                    <label class="form-label">Storage UOM</label>
+                                                                    <select name="storage_uom_id" class="form-select select2">
+                                                                        <option value="">Select Storage Uom</option>
+                                                                        @foreach ($units as $unit)
+                                                                            <option value="{{ $unit->id }}" {{ (isset($item) && $item->storage_uom_id == $unit->id) ? 'selected' : '' }}>
+                                                                                {{ $unit->name }}
+                                                                            </option>
+                                                                        @endforeach
+                                                                    </select>
+                                                                </div>
+
+                                                                <div class="col-md-3 mb-1">
+                                                                    <label class="form-label">Conversion</label>
+                                                                    <input type="text" name="storage_uom_conversion" class="form-control" placeholder="Enter Conversion" value="{{ $item->storage_uom_conversion ?? '' }}"{{ (isset($item) && $item->uom_id == $item->storage_uom_id) ? 'readonly' : '' }}>
+                                                                </div>
+
+                                                                <div class="col-md-3 mb-1">
+                                                                    <label class="form-label">No of Pack</label>
+                                                                    <input type="number" name="storage_uom_count" class="form-control" placeholder="Enter No of Pack" value="{{ $item->storage_uom_count ?? '' }}">
+                                                                </div>
+                                                            </div>
+
+
+                                                            {{-- Uncomment if you need storage type --}}
+                                                            {{-- 
+                                                            <div class="row">
+                                                                <div class="col-md-6">
+                                                                    <div class="row align-items-center mb-1">
+                                                                        <div class="col-md-4">
+                                                                            <label class="form-label">Storage Type</label>
+                                                                        </div>
+                                                                        <div class="col-md-6">
+                                                                            <select name="storage_type" class="form-select mw-100">
+                                                                                <option value="">Select</option>
+                                                                                @foreach ($storageTypes as $type)
+                                                                                    <option value="{{ $type }}" {{ (isset($item) && $item->storage_type == $type) ? 'selected' : '' }}>
+                                                                                        {{ ucfirst($type) }}
+                                                                                    </option>
+                                                                                @endforeach
+                                                                            </select>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            --}}
+                                                        </div>
+                                                       
                                                         <?php
                                                             $alternateUOMIds = [];
                                                             foreach ($item->alternateUOMs as $alternateItem) {
@@ -2286,7 +2285,37 @@
         }
     });
 </script>
-
+<script>
+   $(document).ready(function() {
+        function syncStorageFields() {
+            var uomName = $('select[name="uom_id"] option:selected').text().trim();
+            var storageUomName = $('select[name="storage_uom_id"] option:selected').text().trim();
+            var isMeter = (uomName === 'MTR');
+            var storageIsMeter = (storageUomName === 'MTR')
+            if (storageUomName) {
+                if (isMeter && storageIsMeter) {
+                    $('input[name="storage_uom_conversion"]')
+                        .val(1)
+                        .prop('readonly', true);
+                    $('input[name="storage_uom_count"]')
+                        .val(1)
+                } else {
+                    $('input[name="storage_uom_conversion"]')
+                    .val(1)
+                    .prop('readonly', false);
+                    $('input[name="storage_uom_count"]')
+                    .val(1)
+                }
+            }
+        }
+        $('select[name="uom_id"]').on('change', function() {
+            syncStorageFields();
+        });
+        $('select[name="storage_uom_id"]').on('change', function() {
+            syncStorageFields();
+        });
+    });
+</script>
 <script>
     $(document).ready(function() {
         function applyCapsLock() {

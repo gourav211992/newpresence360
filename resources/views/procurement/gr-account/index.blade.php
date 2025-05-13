@@ -165,9 +165,11 @@
                                                                             <option value="">Select Organization</option>
                                                                             @if($item->company && $item->company->organizations)
                                                                                 @foreach($item->company->organizations as $organization)
-                                                                                    <option value="{{ $organization->id }}" {{ $organization->id == $item->organization_id ? 'selected' : '' }}>
-                                                                                        {{ $organization->name }}
-                                                                                    </option>
+                                                                                    @if (in_array($organization->id, $orgIds))
+                                                                                        <option value="{{ $organization->id }}" {{ $organization->id == $item->organization_id ? 'selected' : '' }}>
+                                                                                            {{ $organization->name }}
+                                                                                        </option>
+                                                                                    @endif
                                                                                 @endforeach
                                                                             @else
                                                                                 <option value="">No Organizations Available</option>

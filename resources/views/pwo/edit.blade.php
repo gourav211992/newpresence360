@@ -200,7 +200,7 @@
                                                     <th >UOM</th>
                                                     <th class="text-end">Quantity</th>
                                                     <th width="200px">Customer</th>
-                                                    <th width="150px">Order No.</th>
+                                                    <th width="150px">SO No.</th>
                                                     {{-- <th>Order Date</th> --}}
                                                     {{-- <th width="50px">Action</th> --}}
                                                 </tr>
@@ -230,7 +230,6 @@
                                         </table>
                                         </div>
                                 </div>
-
                                 <div class="tab-pane fade" id="raw-materials" role="tabpanel" aria-labelledby="raw-materials-tab">
                                     <div class="table-responsive pomrnheadtffotsticky">
                                         <table id="itemTable2" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
@@ -238,12 +237,12 @@
                                                 <tr>
                                                     <th>Item Code</th>
                                                     <th>Item Name</th>
-                                                    <th>Attributes</th>
+                                                    <th max-width="180px">Attributes</th>
                                                     <th>UOM</th>
                                                     <th class="text-end">Quantity</th>
                                                     <th class="text-end">Conf Stock</th>
                                                     <th class="text-end">Unconf Stock</th>
-                                                    <th>Order No.</th>
+                                                    <th>SO No.</th>
                                                 </tr>
                                             </thead>
                                             <tbody class="mrntableselectexcel">
@@ -262,7 +261,6 @@
                                                             
                                                         </tr>
                                                         <tr class="item_detail_row">
-                                                            
                                                         </tr>
                                                     </table>
                                                     </td>
@@ -403,6 +401,7 @@
 
 @endsection
 @section('scripts')
+<script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
 <script type="text/javascript" src="{{asset('assets/js/modules/pwo.js')}}"></script>
 <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
 <script type="text/javascript">
@@ -679,6 +678,7 @@ function initializeAutocomplete2(selector, type) {
             $(this).removeData("selected");
             $(this).closest('tr').find("input[name*='component_item_name']").val('');
             $(this).closest('tr').find("input[name*='item_name']").val('');
+            $(this).closest('tr').find("td[id*='itemAttribute_']").html(defautAttrBtn);
             $(this).closest('tr').find("input[name*='item_id']").val('');
             $(this).closest('tr').find("input[name*='item_code']").val('');
             $(this).closest('tr').find("input[name*='attr_name']").remove();
@@ -696,6 +696,7 @@ function checkBomExist(itemId, currentTr)
                 if(currentTr.length) {
                     currentTr.find("input[name*='component_item_name']").val('');
                     currentTr.find("input[name*='item_name']").val('');
+                    currentTr.find("td[id*='itemAttribute_']").html(defautAttrBtn);
                     currentTr.find("input[name*='item_id']").val('');
                     currentTr.find("input[name*='item_code']").val('');
                     currentTr.find("input[name*='attr_name']").remove();
@@ -844,7 +845,7 @@ $(document).on('click', '.attributeBtn', (e) => {
         selectedAttr = JSON.stringify(selectedAttr);
     }
     if (item_name && item_id) {
-        let rowCount = e.target.getAttribute('data-row-count');
+        let rowCount = tr.getAttribute('data-index');
         getItemAttribute(item_id, rowCount, selectedAttr, tr);
     } else {
         alert("Please select first item name.");
@@ -852,14 +853,16 @@ $(document).on('click', '.attributeBtn', (e) => {
 });
 
 /*For comp attr*/
-function getItemAttribute(itemId, rowCount, selectedAttr, tr){
-    let actionUrl = '{{route("pwo.item.attr")}}'+'?item_id='+itemId+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
+function getItemAttribute(itemId, rowCount, selectedAttr, tr) {
+    let pwo_so_mapping_id = $(tr).find("input[name*='[pwo_so_mapping_id]']").val() || '';
+    let actionUrl = '{{route("pwo.item.attr")}}'+'?item_id='+itemId+'&pwo_so_mapping_id='+pwo_so_mapping_id+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
     fetch(actionUrl).then(response => {
         return response.json().then(data => {
             if (data.status == 200) {
                   $("#attribute tbody").empty();
                   $("#attribute table tbody").append(data.data.html);
                   $(tr).find('td:nth-child(2)').find("[name*='[attr_name]']").remove();
+                  $(tr).find("td[id*='itemAttribute_']").attr('attribute-array', JSON.stringify(data.data.itemAttributeArray));
                   $(tr).find('td:nth-child(2)').append(data.data.hiddenHtml);
                   if (data.data.attr) {
                      $("#attribute").modal('show');
@@ -913,7 +916,13 @@ function fetchItemDetails2(currentTr) {
     let itemId = $(currentTr).find("[name*='[item_id_2]']").val();
     let moItemId = $(currentTr).find("[name*='[mo_item_id_2]']").val();
     if (itemId) {
-        let actionUrl = `{{route("pwo.get.itemdetail2")}}?item_id=${itemId}&mo_item_id=${moItemId}`;
+        let selectedAttr = [];
+        $(currentTr).find("[name*='attr_name']").each(function(index, item) {
+            if ($(item).val()) {
+                selectedAttr.push($(item).val());
+            }
+        });
+        let actionUrl = `{{route("pwo.get.itemdetail2")}}?item_id=${itemId}&selectedAttr=${JSON.stringify(selectedAttr)}&mo_item_id=${moItemId}`;
         fetch(actionUrl).then(response => {
             return response.json().then(data => {
                 if (data.status == 200) {
@@ -982,6 +991,18 @@ $(document).on('click', '.searchSoBtn', (e) => {
     getPwo();
 });
 
+$(document).on('click', '.clearPiFilter', (e) => {
+    $("#item_name_search").val('');
+    $("#book_code_input_qt").val('');
+    $("#book_id_qt_val").val('');
+    $("#document_no_input_qt").val('');
+    $("#document_id_qt_val").val('');
+    $("#customer_code_input_qt").val('');
+    $("#customer_id_qt_val").val('');
+    getPwo();
+});
+
+
 function openBomRequest()
 {
     initializeAutocompleteQt("customer_code_input_qt", "customer_id_qt_val", "customer", "customer_code", "company_name");
@@ -1024,6 +1045,7 @@ function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1,
             var $input = $(this);
             $input.val(ui.item.label);
             $("#" + selectorSibling).val(ui.item.id);
+            getPwo();
             return false;
         },
         change: function(event, ui) {
@@ -1031,15 +1053,20 @@ function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1,
                 $(this).val("");
                 $("#" + selectorSibling).val("");
             }
+            getPwo();
         }
     }).focus(function() {
         if (this.value === "") {
             $(this).autocomplete("search", "");
         }
+        getPwo();
     });
 }
 
 $(document).on('keyup', '#item_name_search', (e) => {
+    getPwo();
+});
+$(document).on('keyup', '#document_no_input_qt', (e) => {
     getPwo();
 });
 
@@ -1173,45 +1200,6 @@ $(document).on('click', '.soProcess', (e) => {
             }
         });
     });
-});
-
-// Item Attribute
-$(document).on('click','.header_attr select[name*="[attr_name]"]', (e) => {
-    let notSelectedAttr = $("select[name*='[attr_name]']").filter(function () {
-        return !$(this).val();
-    });
-    if(!notSelectedAttr.length) {
-        let itemId = $("#head_item_id").val() || '';
-        let uomId = $("#head_uom_id").val() || '';
-        let headerSelectedAttr = [];
-        if($(".heaer_item").find("input[name*='[attr_group_id]']").length) {
-            $(".heaer_item").find("input[name*='[attr_group_id]']").each(function(index1,item){
-                let attr_group_id = $(item).val();
-                let attr_val = $(`select[name="attributes[${index1+1}][attr_group_id][${attr_group_id}][attr_name]"]`).val();
-                headerSelectedAttr.push({
-                    'attr_name' : attr_group_id,
-                    'attr_value' : attr_val || ''
-                });
-            });
-        }
-        let actionUrl = '{{route("pwo.item.attr.change")}}'+'?item_id='+itemId+'&uom_id='+uomId+'&header_attr='+JSON.stringify(headerSelectedAttr); 
-        fetch(actionUrl).then(response => {
-            return response.json().then(data => {
-                if (data.status == 200) {
-                  $('tbody.mrntableselectexcel').html(data?.data?.component_html);
-                  let qty = Number($("input[name='quantity']").val()) || 1;
-                  updateItemsQty(qty);
-                  fetchItemDetails($("tr[id*='row_']").first());
-                } else {
-                    Swal.fire({
-                        title: 'Error!',
-                        text: data.message,
-                        icon: 'error',
-                    });
-                }
-            });
-        });
-    }
 });
 
 // Close modal
@@ -1360,5 +1348,23 @@ $(document).on('click','#deleteConfirm', (e) => {
     // deletedSoItemIds = deletedSoItemIds.filter(id => !newDeletedSoItemIds.includes(id));
     // localStorage.setItem("selectedSoItemIds", JSON.stringify(deletedSoItemIds));
 });
+
+$(document).on('click','td[id*="itemAttribute_"]', (e) => {
+    let dataAttributes = $(e.target).attr('data-attributes');
+    // dataAttributes = JSON.parse(dataAttributes);
+    // dataAttributes.
+});
+
+setTimeout(() => {
+    $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+        let currentIndex = index + 1;
+        setAttributesUIHelper(currentIndex,"#itemTable");
+    });
+    $("#itemTable2 .mrntableselectexcel tr").each(function(index, item) {
+        let currentIndex = index + 1;
+        setAttributesUIHelper(currentIndex,"#itemTable2");
+    });
+},100);
+
 </script>
 @endsection

@@ -164,7 +164,7 @@
                                                             <tr class="trail-bal-tabl-none ">
                                                                 <td>Gross Loss b/f</td>
                                                                 <td>&nbsp;</td>
-                                                                <td class="text-end grossLoss" id="grossLoss">0</td>
+                                                                <td class="text-end grossLoss sumtot1" id="grossLoss">0</td>
                                                             </tr>
                                                             <tr class="trail-bal-tabl-none" id="4">
                                                                 <input type="hidden" id="check4">
@@ -177,12 +177,12 @@
                                                                     </a> Indirect Expenses
                                                                 </td>
                                                                 <td>&nbsp;</td>
-                                                                <td class="text-end" id="indirectExpense">0</td>
+                                                                <td class="text-end sumtot1" id="indirectExpense">0</td>
                                                             </tr>
                                                             <tr class="trail-bal-tabl-none semitotalpl">
                                                                 <td>Net Profit</td>
                                                                 <td>&nbsp;</td>
-                                                                <td class="text-end" id="netProfit">0</td>
+                                                                <td class="text-end sumtot1" id="netProfit">0</td>
                                                             </tr>
                                                         </table>
                                                     </td>
@@ -238,7 +238,7 @@
                                                             <tr class="trail-bal-tabl-none">
                                                                 <td>Gross Profit b/f</td>
                                                                 <td>&nbsp;</td>
-                                                                <td class="text-end grossProfit" id="grossProfit">0</td>
+                                                                <td class="text-end grossProfit sumtot2" id="grossProfit">0</td>
                                                             </tr>
                                                             <tr class="trail-bal-tabl-none" id="7">
                                                                 <input type="hidden" id="check7">
@@ -251,12 +251,12 @@
                                                                     </a>Indirect Income
                                                                 </td>
                                                                 <td>&nbsp;</td>
-                                                                <td class="text-end" id="indirectIncome">0</td>
+                                                                <td class="text-end sumtot2" id="indirectIncome">0</td>
                                                             </tr>
                                                             <tr class="trail-bal-tabl-none semitotalpl">
                                                                 <td>Net Loss</td>
                                                                 <td>&nbsp;</td>
-                                                                <td class="text-end" id="netLoss">0</td>
+                                                                <td class="text-end sumtot2" id="netLoss">0</td>
                                                             </tr>
                                                         </table>
                                                     </td>
@@ -270,7 +270,7 @@
                                                                 <tr>
                                                                     <td>Total</td>
                                                                     <td>&nbsp;</td>
-                                                                    <td class="text-end overAllTotal">0</td>
+                                                                    <td class="text-end overAllTotal1">0</td>
                                                                 </tr>
                                                             </table>
                                                         </td>
@@ -279,7 +279,7 @@
                                                                 <tr>
                                                                     <td>Total</td>
                                                                     <td>&nbsp;</td>
-                                                                    <td class="text-end overAllTotal">0</td>
+                                                                    <td class="text-end overAllTotal2">0</td>
                                                                 </tr>
                                                             </table>
                                                         </td>
@@ -491,6 +491,23 @@
                     if (data['data']['grossProfit'] == 0) {
     $('.grossProfit').closest('tr').find('td, th').html('&nbsp;');
 }
+let total = 0;
+let total2 = 0;
+
+// Loop through each element with class 'sumtot1'
+$('.sumtot1').each(function() {
+    let value = parseFloat(removeCommas($(this).text())) || 0;
+    total += value;
+});
+$('.sumtot2').each(function() {
+    let value = parseFloat(removeCommas($(this).text())) || 0;
+    total2 += value;
+});
+
+// Add text like 'Total: ' and update the target element
+$('.overAllTotal1').text(total.toLocaleString('en-IN'));
+$('.overAllTotal2').text(total2.toLocaleString('en-IN'));
+
 
 if (data['data']['grossLoss'] == 0) {
     $('.grossLoss').closest('tr').find('td, th').html('&nbsp;');

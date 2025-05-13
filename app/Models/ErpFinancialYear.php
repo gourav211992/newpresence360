@@ -1,16 +1,17 @@
 <?php
-
 namespace App\Models;
-
 use App\Traits\DefaultGroupCompanyOrg;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
-
 class ErpFinancialYear extends Model
 {
+
     use HasFactory, DefaultGroupCompanyOrg;
+
+    protected $connection = 'mysql';
+    protected $table='erp_financial_years';
     protected $fillable = [
         'group_id',
         'company_id',
@@ -50,14 +51,18 @@ class ErpFinancialYear extends Model
 
     protected static function booted()
     {
-        static::creating(function ($financialYear) {
-            if (Auth::check()) {
+        static::creating(function ($financialYear) 
+        {
+            if (Auth::check()) 
+            {
                 $financialYear->created_by = Auth::id();
             }
         });
 
-        static::updating(function ($financialYear) {
-            if (Auth::check()) {
+        static::updating(function ($financialYear) 
+        {
+            if (Auth::check()) 
+            {
                 $financialYear->updated_by = Auth::id();
             }
         });

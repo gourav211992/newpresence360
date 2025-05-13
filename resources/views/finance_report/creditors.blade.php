@@ -39,7 +39,7 @@
                                                         use App\Helpers\Helper;
                                                         $selectedGroupId = request()->query('group'); // Get group_id from URL params
                                                     @endphp
-                                                    
+
                                                     @isset($all_groups)
                                                     @foreach($all_groups as $group)
                                                         <option value="{{$group->id}}" {{ $selectedGroupId == $group->id ? 'selected' : '' }}>
@@ -79,17 +79,17 @@
                                                 <button class="btn mt-25 btn-warning btn-sm waves-effect waves-float waves-light" onClick="filter()">
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-filter"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg> Run Report</button>
                                             </div>
-                                            
+
                                         </div>
-                                        
 
 
-                                        
+
+
 
                                     </div>
                                     <br>
                                         <div class="col-md-3">
-                                            @if(request()->hasAny(['ledger', 'age0', 'age1', 'age2', 'age3', 'age4']))  
+                                            @if(request()->hasAny(['ledger', 'age0', 'age1', 'age2', 'age3', 'age4']))
                                             <a type="button" href="{{ route('voucher.credit.report') }}" class="btn btn-danger">Clear</a>
                                         @endif
                                         </div>
@@ -109,7 +109,7 @@
                                                 <th>Credit Days</th>
                                                 <th class="text-end">Total O/S</th>
                                                 <th class="text-end">OVERDUE</th>
-                                        
+
                                                 <!-- Define the variables for all age ranges -->
                                                 @php
                                                     $age0 = request()->get('age0', 30);
@@ -118,7 +118,7 @@
                                                     $age3 = request()->get('age3', 120);
                                                     $age4 = request()->get('age4', 180);
                                                 @endphp
-                                        
+
                                                 <!-- Display the age ranges dynamically -->
                                                 <th class="text-end">0-{{ $age0 }} Days</th>
                                                 <th class="text-end">{{ $age0 + 1 }}-{{ $age1 }} Days</th>
@@ -126,30 +126,30 @@
                                                 <th class="text-end">{{ $age2 + 1 }}-{{ $age3 }} Days</th>
                                                 <th class="text-end">{{ $age3 + 1 }}-{{ $age4 }} Days</th>
                                                 <th class="text-end">Above {{ $age4 }} Days</th>
-                                        
+
                                                 <th>Action</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            
+
                                             @foreach ($vendors as $index => $customer)
                                             <tr>
                                                 <td>{{ $index + 1 }}</td>
                                                 <td class="fw-bolder text-dark text-nowrap">
-                                                    <div 
+                                                    <div
                                                         data-bs-placement="top" title="{{ $customer?->ledger_parent_name ??"-" }}">
                                                         {{ $customer?->ledger_parent_name ??"-" }}
                                                     </div>
                                                 </td>
-                                                
+
                                                 <td class="text-nowrap">
-                                                    <div 
+                                                    <div
                                                         data-bs-placement="top" title="{{ $customer?->ledger_name ??"-" }}">
                                                         {{ $customer?->ledger_name ??"-" }}
                                                     </div>
                                                 </td>
                                                 <td>
-                                                    <div 
+                                                    <div
                                                         data-bs-placement="top" title="{{ $customer?->credit_days ??0}}">
                                                         {{ $customer?->credit_days ??0}}
                                                     </div>
@@ -162,12 +162,12 @@
                                                     </span>
                                                 </td>
                                                 <td class="text-end text-nowrap">
-                                                    <div 
+                                                    <div
                                                         data-bs-placement="top" title="{{ $customer?->overdue ??0}}">
                                                         {{ Helper::formatIndianNumber($customer?->overdue ??0)}}
                                                     </div>
                                                 </td>
-                                                
+
                                                 <td class="text-end text-nowrap">
                                                     {{ number_format(abs($customer->days_0_30), 2) }}
                                                         {{ $customer->days_0_30 < 0 ? 'Dr' : 'Cr' }}
@@ -197,13 +197,13 @@
                                                        <a href="{{ route('crdr.report.ledger.details', ['credit', $customer->ledger_id, $customer->ledger_parent_id]) }}@if(request('date'))?date={{request('date')}}@endif" target="_blank">
                                                         <i class="cursor-pointer" data-feather='eye'></i>
                                                     </a>
-                                                    
+
                                                        @endif
                                              </td>
                                             </tr>
-                                   
+
                                             @endforeach
-                                            
+
 
                                         </tbody>
 
@@ -260,7 +260,7 @@
                                         </tr>
                                     </thead>
                                     <tbody id="inovice_tbody">
-                             
+
                                     </tbody>
 
 
@@ -303,13 +303,13 @@
             </div>
     -->
 
-                   
+
 
                     <div class="tab-content tablecomponentreport">
                         <div class="tab-pane active" id="Employee">
-                            
 
-                            
+
+
                             <div class="compoenentboxreport" style="margin-top:2%;">
                                 <div class="row">
                                     <div class="col-md-12">
@@ -449,6 +449,23 @@
             </div>
         </div>
     </div>
+      {{-- for customized excel --}}
+    <form id="customExcelExportForm1"  action="{{ route('credit.debit.report.export') }}" method="POST">
+        @csrf
+        <input type="hidden" name="vendors" value="{{ json_encode($vendors) }}">
+
+        <!-- Serialize complex arrays to JSON -->
+        <input type="hidden" name="date2" value="{{ $date2 }}">
+        <input type="hidden" name="date" value="{{ $date }}">
+        <input type="hidden" name="type" value="{{ 'credit' }}">
+        <input type="hidden" name="age0" value="{{ $age0 }}">
+        <input type="hidden" name="age1" value="{{ $age1 }}">
+        <input type="hidden" name="age2" value="{{ $age2 }}">
+        <input type="hidden" name="age3" value="{{ $age3 }}">
+        <input type="hidden" name="age4" value="{{ $age4 }}">
+        <input type="hidden" name="group_id" value="{{ $selectedGroupId}}">
+        <input type="hidden" name="ledger" value="{{ $selectedLedgerId}}">
+    </form>
 @endsection
 @section('scripts')
     <!-- BEGIN: Dashboard Custom Code JS-->
@@ -522,8 +539,8 @@
                     }) + 'Excel',
                     className: 'dropdown-item',
                     filename: 'Creditors Report',
-                    exportOptions: {
-                        columns: ':not(:last-child)' // Excludes the last column (Action)
+                    action: function (e, dt, node, config) {
+                                        document.getElementById('customExcelExportForm1').submit();
                     }
                 },
                 {
@@ -579,7 +596,7 @@
     }
     function getDetails(ledger,ledger_group,partyName){
             $.ajax({
-                url: "{{ route('voucher.credit_details.report') }}?ledger_id="+ledger+"&ledger_group_id="+ledger_group+"&type=credit", 
+                url: "{{ route('voucher.credit_details.report') }}?ledger_id="+ledger+"&ledger_group_id="+ledger_group+"&type=credit",
            method: 'GET', // Change to POST if necessary
         dataType: 'json',
         success: function(data) {
@@ -588,7 +605,7 @@
                 var tbody = $('#inovice_tbody'); // Get tbody element
                 tbody.empty();
                 $('#party').text(partyName)
-                    
+
                         // Loop through the response data and append rows to the table
                         $.each(data, function(index, item) {
                     // Function to format amounts with Cr/Dr
@@ -667,10 +684,10 @@
 });
 
 function filter() {
-    let ledger = $('#filter_ledger').val(); 
-    let group = $('#filter_group').val(); 
+    let ledger = $('#filter_ledger').val();
+    let group = $('#filter_group').val();
     let range = $('#fp-range').val();
-    let ages = []; 
+    let ages = [];
     let isAgingChecked = $('#selectAllInputAging').prop('checked');  // Check if the aging checkbox is checked
 
     // If the aging checkbox is checked, capture the age values

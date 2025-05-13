@@ -1,8 +1,8 @@
 @foreach ($consumptions as $pwoBomConsIndex => $consumption)
     <tr id = "item_row_{{$pwoBomConsIndex}}" class = "item_header_rows" data-detail-id = "{{$consumption -> id}}" data-id = "{{$consumption -> id}}">
-        <input type = 'hidden' name = "cons[{{$pwoBomConsIndex}}][id]" value = "{{$consumption -> id}}">
+        <input type = 'hidden' name = "cons[{{$pwoBomConsIndex}}][mo_bom_cons_id]" value = "{{$consumption -> id}}">
         <td class="poprod-decpt">
-            <input type="text" id="so_doc_{{$pwoBomConsIndex}}" name="cons[{{$pwoBomConsIndex}}][so_doc]" class="form-control mw-100" readonly  value="{{$consumption?->so?->document_number}}">
+            <input type="text" id="so_doc_{{$pwoBomConsIndex}}" name="cons[{{$pwoBomConsIndex}}][so_doc]" class="form-control mw-100" readonly  value="{{strtoupper($consumption?->so?->book_code)}} - {{$consumption?->so?->document_number}}">
         </td>
         <td class="poprod-decpt"> 
             <input type="text" id = "items_dropdown_{{$pwoBomConsIndex}}" name="item_code[{{$pwoBomConsIndex}}]" placeholder="Select" class="form-control mw-100 ledgerselecct comp_item_code ui-autocomplete-input  readonlyrestrict" autocomplete="off" data-name="{{$consumption -> item ?-> item_name}}" data-code="{{$consumption -> item ?-> item_code}}" data-id="{{$consumption -> item ?-> id}}" hsn_code = "{{$consumption -> item ?-> hsn ?-> code}}" item-name = "{{$consumption -> item ?-> item_name}}" specs = "{{$consumption -> item ?-> specifications}}" attribute-array = "{{$consumption -> item_attributes_array()}}"  value = "{{$consumption -> item ?-> item_code}}" item-location = "[]">
@@ -15,7 +15,7 @@
             <input type="text" id = "items_type_{{$pwoBomConsIndex}}" class="form-control mw-100" readonly   value = "{{strtoupper(($consumption?->rm_type == 'sf' ? 'wip' : $consumption?->rm_type) ?? 'rm')}}" name = "cons[{{$pwoBomConsIndex}}][item_type]">
         </td>
         <td class="poprod-decpt" id="attribute_section_{{$pwoBomConsIndex}}"> 
-            <button id = "attribute_button_{{$pwoBomConsIndex}}" {{count($consumption->item_attributes_array()) > 0 ? '' : 'disabled'}} type = "button" data-bs-toggle="modal" onclick = "setItemAttributes('items_dropdown_{{$pwoBomConsIndex}}', '{{$pwoBomConsIndex}}', false,'#raw-materials');" data-bs-target="#attribute" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">Attributes</button>
+            <button id = "attribute_button_{{$pwoBomConsIndex}}" {{count($consumption->item_attributes_array()) > 0 ? '' : 'disabled'}} type = "button" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">Attributes</button>
             <input type = "hidden" name = "cons[{{$pwoBomConsIndex}}][attribute_value]" />
         </td>
         <td>

@@ -28,10 +28,15 @@
                             <a href="{{ route('finance.fixed-asset.split.index') }}"> <button
                                     class="btn btn-secondary btn-sm"><i data-feather="arrow-left-circle"></i> Back</button>
                             </a>
+                            <button class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" type="button" id="save-draft-btn">
+                                <i data-feather="save"></i> Save as Draft
+                            </button>
                             <button type="submit" form="fixed-asset-split-form" class="btn btn-primary btn-sm"
                                 id="submit-btn">
                                 <i data-feather="check-circle"></i> Submit
                             </button>
+                           
+                            
                         </div>
                     </div>
                 </div>
@@ -53,6 +58,8 @@
                             <input type="hidden" name="doc_suffix" id="doc_suffix">
                             <input type="hidden" name="doc_no" id="doc_no">
                             <input type="hidden" name="document_status" id="document_status" value="">
+                            <input type="hidden" name="dep_type" id="depreciation_type" value="{{$dep_type}}">
+                            
                             <div class="col-12">
 
 
@@ -105,7 +112,7 @@
                                                                 class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="text" class="form-control" id="document_number"
+                                                        <input type="text" class="form-control" readonly id="document_number"
                                                             name="document_number" required>
                                                     </div>
                                                 </div>
@@ -258,9 +265,37 @@
                                                                 <th width="200">Sub Asset Code</th>
                                                                 <th width="100">Quantity</th>
                                                                 <th>Current Value</th>
+                                                                <th>Salvage Value</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody class="mrntableselectexcel">
+                                                            <tr class="trselected">
+                                                                <td class="customernewsection-form">
+                                                                    <div class="form-check form-check-primary custom-checkbox">
+                                                                        <input type="checkbox" class="form-check-input row-check">
+                                                                        <label class="form-check-label"></label>
+                                                                    </div>
+                                                                </td>
+                                                                <td class="poprod-decpt">
+                                                                    <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-code-input" />
+                                                                </td>
+                                                                <td class="poprod-decpt">
+                                                                    <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-name-input" />
+                                                                </td>
+                                                                <td class="poprod-decpt">
+                                                                    <input type="text" required placeholder="Enter" disabled class="form-control mw-100 mb-25 sub-asset-code-input" />
+                                                                </td>
+                                                                <td>
+                                                                    <input type="text" required disabled value="1" class="form-control mw-100 quantity-input" />
+                                                                </td>
+                                                                <td>
+                                                                    <input type="text" required class="form-control mw-100 text-end current-value-input" min="1" />
+                                                                </td>
+                                                                <td>
+                                                                    <input type="text" required class="form-control mw-100 text-end salvage-value-input" min="1" readonly />
+                                                                </td>
+                                                            </tr>
+                                                
 
                                                         </tbody>
 
@@ -559,6 +594,9 @@
                 <td>
                     <input type="text" required class="form-control mw-100 text-end current-value-input" max="${Current}" min="1" />
                 </td>
+                    <td>
+                                                                    <input type="text" required class="form-control mw-100 text-end salvage-value-input" min="1" readonly />
+                                                                </td>
             </tr>
 
 
@@ -567,12 +605,25 @@
                     $('.mrntableselectexcel').append(newRow);
                     updateSubAssetCodes();
         }
+        $('#Email').on('change', function() {
+    let isChecked = $(this).is(':checked');
+    $('.form-check-input').not(this).prop('checked', isChecked);
+});
+
 
 
         $('#delete_new_sub_asset').on('click', function() {
-            $('.mrntableselectexcel .row-check:checked').closest('tr').remove();
-            updateSubAssetCodes();
-        });
+    let totalRows = $('.mrntableselectexcel tbody tr').length;
+    let checkedRows = $('.mrntableselectexcel .row-check:checked').length;
+
+    if (totalRows - checkedRows < 1) {
+        showToast('warning','At least one row must remain.');
+        return;
+    }
+
+    $('.mrntableselectexcel .row-check:checked').closest('tr').remove();
+    updateSubAssetCodes();
+});
 
         function resetParametersDependentElements(data) {
             let backDateAllowed = false;
@@ -668,6 +719,25 @@
             });
         });
         $('#book_id').trigger('change');
+        document.getElementById('save-draft-btn').addEventListener('click', function() {
+            document.getElementById('document_status').value = 'draft';
+          
+                collectSubAssetDataToJson();
+                
+                let currentValueAsset = parseFloat($('#current_value_asset').val()) || 0;
+                let totalCurrentValue = parseFloat($('#current_value').val()) || 0;
+
+                if (totalCurrentValue > currentValueAsset) {
+                    showToast('error', 'Total Current Value cannot be greater than Asset Current Value.');
+                    return false;
+                }
+                else if (totalCurrentValue <= 0) {
+                    showToast('error', 'Total Current Value must be greater than 0.');
+                    return false;
+                }
+
+            document.getElementById('fixed-asset-split-form').submit();
+        });
 
         $('#fixed-asset-split-form').on('submit', function(e) {
     e.preventDefault(); // Always prevent default first
@@ -734,13 +804,40 @@
                             .depreciation_percentage_year);
                         $('#useful_life').val(response[0].asset.useful_life);
                         $('#maintenance_schedule').val(response[0].asset.maintenance_schedule);
-                        $('#salvage_value').val(response[0].asset.salvage_value);
                     },
                     error: function() {
                         showToast('error', 'Failed to load sub-assets.');
                     }
                 });
                 $('.mrntableselectexcel').empty();
+                let blank_row = `<tr class="trselected">
+                                                                <td class="customernewsection-form">
+                                                                    <div class="form-check form-check-primary custom-checkbox">
+                                                                        <input type="checkbox" class="form-check-input row-check">
+                                                                        <label class="form-check-label"></label>
+                                                                    </div>
+                                                                </td>
+                                                                <td class="poprod-decpt">
+                                                                    <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-code-input" />
+                                                                </td>
+                                                                <td class="poprod-decpt">
+                                                                    <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-name-input" />
+                                                                </td>
+                                                                <td class="poprod-decpt">
+                                                                    <input type="text" required placeholder="Enter" disabled class="form-control mw-100 mb-25 sub-asset-code-input" />
+                                                                </td>
+                                                                <td>
+                                                                    <input type="text" required disabled value="1" class="form-control mw-100 quantity-input" />
+                                                                </td>
+                                                                <td>
+                                                                    <input type="text" required class="form-control mw-100 text-end current-value-input" min="1" />
+                                                                </td>
+                                                                    <td>
+                                                                    <input type="text" required class="form-control mw-100 text-end salvage-value-input" min="1" readonly />
+                                                                </td>
+                                                            </tr>`;
+                                                            $('.mrntableselectexcel').append(blank_row);
+
                    
             });
 
@@ -758,7 +855,8 @@
                     },
                     success: function(response) {
                         $('#current_value_asset').val(response.current_value_after_dep);
-                        $('#last_dep_date').val(response.asset.last_dep_date);
+                        $('#total_depreciation').val(response.total_depreciation);
+                    
                         
                     },
                     error: function() {
@@ -766,6 +864,33 @@
                     }
                 });
                 $('.mrntableselectexcel').empty();
+                let blank_row = `<tr class="trselected">
+                                                                <td class="customernewsection-form">
+                                                                    <div class="form-check form-check-primary custom-checkbox">
+                                                                        <input type="checkbox" class="form-check-input row-check">
+                                                                        <label class="form-check-label"></label>
+                                                                    </div>
+                                                                </td>
+                                                                <td class="poprod-decpt">
+                                                                    <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-code-input" />
+                                                                </td>
+                                                                <td class="poprod-decpt">
+                                                                    <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-name-input" />
+                                                                </td>
+                                                                <td class="poprod-decpt">
+                                                                    <input type="text" required placeholder="Enter" disabled class="form-control mw-100 mb-25 sub-asset-code-input" />
+                                                                </td>
+                                                                <td>
+                                                                    <input type="text" required disabled value="1" class="form-control mw-100 quantity-input" />
+                                                                </td>
+                                                                <td>
+                                                                    <input type="text" required class="form-control mw-100 text-end current-value-input" min="1" />
+                                                                </td>
+                                                                    <td>
+                                                                    <input type="text" required class="form-control mw-100 text-end salvage-value-input" min="1" readonly />
+                                                                </td>
+                                                            </tr>`;
+                                                            $('.mrntableselectexcel').append(blank_row);
                     
             });
 
@@ -810,6 +935,9 @@
 
     let totalQuantity = 0;
     let totalCurrentValue = 0;
+    let totalSalvageValue = 0;
+    let depreciationPercentage = parseFloat(document.getElementById("depreciation_percentage").value) || 0;
+
 
     $('.mrntableselectexcel tr').each(function() {
         const $row = $(this);
@@ -817,10 +945,14 @@
         const assetCode = $row.find('.asset-code-input').val().trim();
         const $assetNameInput = $row.find('.asset-name-input');
         const $subAssetInput = $row.find('.sub-asset-code-input');
+        const $salvageValueInput = $row.find('.salvage-value-input');
 
         const quantity = parseFloat($row.find('.quantity-input').val()) || 0;
         const currentValue = parseFloat($row.find('.current-value-input').val()) || 0;
 
+        const salvageValue = (currentValue * (depreciationPercentage / 100)).toFixed(2);
+        $salvageValueInput.val(salvageValue);
+      
         if (assetCode !== '') {
             // Count sub-assets per asset code
             assetCodeCounts[assetCode] = (assetCodeCounts[assetCode] || 0) + 1;
@@ -842,6 +974,7 @@
         }
 
         // Accumulate totals
+        totalSalvageValue+=parseFloat(salvageValue);
         totalQuantity += quantity;
         totalCurrentValue += currentValue;
     });
@@ -854,6 +987,9 @@
     }
 
     $('#current_value').val(totalCurrentValue.toFixed(2));
+    $('#salvage_value').val(totalSalvageValue.toFixed(2));
+    updateDepreciationValues();
+   
 }
 
         $('#ledger').change(function() {
@@ -913,6 +1049,7 @@
                 const subAssetCode = $row.find('.sub-asset-code-input').val()?.trim() || '';
                 const quantity = parseFloat($row.find('.quantity-input').val()) || 0;
                 const currentValue = parseFloat($row.find('.current-value-input').val()) || 0;
+                const salvageValue = parseFloat($row.find('.salvage-value-input').val()) || 0;
                
                 if (assetCode !== '') {
                     subAssetData.push({
@@ -921,14 +1058,69 @@
                         sub_asset_id: subAssetCode,
                         quantity: quantity,
                         current_value: currentValue,
+                        salvage_value:salvageValue,
                     });
                 }
             });
 
             $('#sub_assets').val(JSON.stringify(subAssetData));
         }
+function updateDepreciationValues() {
+    let depreciationType = document.getElementById("depreciation_type").value;
+    let currentValue = parseFloat(document.getElementById("current_value").value) || 0;
+    let depreciationPercentage = parseFloat(document.getElementById("depreciation_percentage").value) || 0;
+    let usefulLife = parseFloat(document.getElementById("useful_life").value) || 0;
+    let method = document.getElementById("depreciation_method").value;
 
+    // Ensure all required values are provided
+    if (!depreciationType || !currentValue || !depreciationPercentage || !usefulLife || !method) {
+        return;
+    }
+    
+
+    // Determine financial date based on depreciation type
+    let financialDate;
+    let financialEnd = new Date("{{$financialEndDate}}");
+    
+    
+    // Extract the financial year-end month and day
+    let financialEndMonth = financialEnd.getMonth(); 
+    let financialEndDay = financialEnd.getDate();
+    let devidend = 1; 
+
+    switch (depreciationType) {
+       case 'half_yearly':
+            devidend = 2; // Adjust dividend for half-yearly
+            break;
+
+        case 'quarterly':
+            devidend = 4; // Adjust dividend for quarterly
+            break;
+
+        case 'monthly':
+            devidend = 12; // Adjust dividend for monthly
+            break;
+
+    }
+
+    let salvageValue = (parseFloat($('#salvage_value').val())).toFixed(2);
+
+    let depreciationRate = 0;
+    if (method === "SLM") {
+        depreciationRate = ((((currentValue - salvageValue) / usefulLife) / currentValue)*100).toFixed(2);
+    } else if (method === "WDV") {
+        depreciationRate = ((1 - Math.pow(salvageValue / currentValue, 1 / usefulLife))*100).toFixed(2);
+    }
+
+    let totalDepreciation = 0;
+   // document.getElementById("salvage_value").value = salvageValue;
+    console.log("dep_rate"+depreciationRate+"devidend"+devidend);
+    document.getElementById("depreciation_rate").value = depreciationRate;
+    document.getElementById("depreciation_rate_year").value = depreciationRate;
+    document.getElementById("total_depreciation").value = totalDepreciation;
+}
         $(document).on('input change', '.asset-code-input,.asset-name-input, .quantity-input, .current-value-input', updateSubAssetCodes);
+
     </script>
     <!-- END: Content-->
 @endsection

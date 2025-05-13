@@ -33,20 +33,36 @@ class RequestController extends Controller
         $user = Helper::getAuthenticatedUser();
         $length = $request->length ? $request->length : CommonHelper::PAGE_LENGTH_10;
 
-        $query = ErpRecruitmentJobRequests::with('recruitmentSkills')
-            ->where(function($query) use($request){
-                self::filter($request, $query);
-            });
+        // $query = ErpRecruitmentJobRequests::with('recruitmentSkills')
+        //     ->where(function($query) use($request){
+        //         self::filter($request, $query);
+        //         self::sorting($request, $query);
+        //     });
 
-            if (\Request::route()->getName() == "recruitment.requests.for-approval") {
-                $query->where('approval_authority',$user->id)
-                ->whereIn('status',['pending','approved-forward']);
-            } else {
-                $query->where('created_by',$user->id)
-                    ->where('created_by_type',$user->authenticable_type);
-            }
+        //     if (\Request::route()->getName() == "recruitment.requests.for-approval") {
+        //         $query->where('approval_authority',$user->id)
+        //         ->whereIn('status',['pending','approved-forward']);
+        //     } else {
+        //         $query->where('created_by',$user->id)
+        //             ->where('created_by_type',$user->authenticable_type);
+        //     }
+        // $requests = $query->paginate($length);
 
-        $requests = $query->orderBy('created_at','desc')->paginate($length);
+        $query = ErpRecruitmentJobRequests::with('recruitmentSkills');
+
+        self::filter($request, $query);   // Filtering
+        self::sorting($request, $query);  // Sorting
+        
+        $query->when(\Request::route()->getName() === "recruitment.requests.for-approval", function($q) use ($user) {
+            $q->where('approval_authority', $user->id)
+            ->whereIn('status', ['pending', 'approved-forward']);
+        }, function($q) use ($user) {
+            $q->where('created_by', $user->id)
+            ->where('created_by_type', $user->authenticable_type);
+        });
+
+        $requests = $query->paginate($length);
+
         $masterData = self::masterData();
         $summaryData = self::getJobSummary($request, $user);
 
@@ -63,6 +79,123 @@ class RequestController extends Controller
             'interviewScheduledCount' => $summaryData['interviewScheduledCount'],
             'candidateAssignedRequestCount' => $summaryData['candidateAssignedRequestCount'],
         ]);
+    }
+
+    private function masterData(){
+        $user = Helper::getAuthenticatedUser();
+        $jobTitles = ErpRecruitmentJobTitle::where('status','active')
+            ->where('organization_id',$user->organization_id)
+            ->get();
+            
+        $eduactions = ErpRecruitmentEducation::where('status','active')
+            ->where('organization_id',$user->organization_id)
+            ->get();
+
+        $certifications = ErpRecruitmentCertification::where('status','active')
+            ->where('organization_id',$user->organization_id)
+            ->get();
+
+        $workExperiences = ErpRecruitmentWorkExperience::where('status','active')
+            ->where('organization_id',$user->organization_id)
+            ->get();
+
+        $skills = ErpRecruitmentSkill::select('name','id')
+            ->where('status','active')
+            ->where('organization_id',$user->organization_id)
+            ->get();
+
+        $locations = ErpStore::select('store_name','id')
+            ->where('status','active')
+            ->where('organization_id',$user->organization_id)
+            ->get();
+
+        return [
+            'jobTitles' => $jobTitles,
+            'eduactions' => $eduactions,
+            'certifications' => $certifications,
+            'workExperiences' => $workExperiences,
+            'skills' => $skills,
+            'locations' => $locations,
+        ];
+
+    }
+
+    private function filter($request, $query){
+        $startDate = Carbon::now()->startOfMonth(); // Start of the current month
+        $endDate = Carbon::now()->endOfMonth(); 
+
+        // Check if there's an applied date filter
+        if ($request->has('date_range') && $request->date_range != '') {
+            $dates = explode(' to ', $request->date_range);
+            $startDate = $dates[0] ? Carbon::parse($dates[0])->startOfDay() : null;
+            $endDate = isset($dates[1]) ? Carbon::parse($dates[1])->startOfDay():  Carbon::parse($dates[0])->startOfDay();
+        }
+
+        if ($request->job_title) {
+            $query->where('job_title_id', $request->job_title);
+        }
+
+        if ($request->skill) {
+            $query->whereHas('recruitmentSkills', function ($q) use($request) {
+                $q->where('skill_id', $request->skill);
+            });
+        }
+
+        if ($request->status) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->search) {
+            $query->where(function($q) use($request){
+                $q->where('job_id', 'like', '%'.$request->search.'%')
+                ->orWhere('request_id', 'like', '%'.$request->search.'%')
+                ->orWhere('job_type', 'like', '%'.$request->search.'%')
+                ->orWhere('status', 'like', '%'.$request->search.'%')
+                ->orWhereHas('jobTitle', function($q) use($request){
+                    $q->where('title', 'like', '%'.$request->search.'%');
+                })
+                ->orWhereHas('education', function($q) use($request){
+                    $q->where('name', 'like', '%'.$request->search.'%');
+                })
+                ->orWhereHas('recruitmentSkills', function($q) use($request){
+                    $q->where('name', 'like', '%'.$request->search.'%');
+                });
+            });
+        }
+
+        $query->whereBetween('created_at', [$startDate, $endDate]);
+
+        return $query;
+    }
+
+    private function sorting($request, $query){
+        $query->when($request->column && $request->sort, function ($query) use ($request) {
+            if (in_array($request->column, ['job_id','request_id','job_type','created_at','status','expected_doj'])) {
+                $query->orderBy($request->column, $request->sort);
+            }
+
+            // if ($request->column == 'job_title') {
+            //     $query->whereHas('jobTitle', function ($q) use ($request) {
+            //         $q->orderBy('title', $request->sort);
+            //     });
+            // }
+
+            // if ($request->column == 'education') {
+            //     $query->whereHas('education', function ($q) use ($request) {
+            //         $q->orderBy('name', $request->sort);
+            //     });
+            // }
+
+            // if ($request->column == 'skill') {
+            //     $query->whereHas('recruitmentSkills', function ($q) use ($request) {
+            //         $q->orderBy('name', $request->sort);
+            //     });
+            // }
+
+            // dd($query->toSql(), $query->getBindings());
+        });
+        
+        return $query;
     }
 
     public function jobInterviewList(Request $request){
@@ -104,6 +237,7 @@ class RequestController extends Controller
             'candidateAssignedRequestCount' => $summaryData['candidateAssignedRequestCount'],
         ]);
     }
+    
 
     private function interviewFilter($request, $query){
         $startDate = Carbon::now()->startOfMonth(); // Start of the current month
@@ -351,83 +485,6 @@ class RequestController extends Controller
 
     }
 
-    private function masterData(){
-        $user = Helper::getAuthenticatedUser();
-        $jobTitles = ErpRecruitmentJobTitle::where('status','active')
-            ->where('organization_id',$user->organization_id)
-            ->get();
-            
-        $eduactions = ErpRecruitmentEducation::where('status','active')
-            ->where('organization_id',$user->organization_id)
-            ->get();
-
-        $certifications = ErpRecruitmentCertification::where('status','active')
-            ->where('organization_id',$user->organization_id)
-            ->get();
-
-        $workExperiences = ErpRecruitmentWorkExperience::where('status','active')
-            ->where('organization_id',$user->organization_id)
-            ->get();
-
-        $skills = ErpRecruitmentSkill::select('name','id')
-            ->where('status','active')
-            ->where('organization_id',$user->organization_id)
-            ->get();
-
-        $locations = ErpStore::select('store_name','id')
-            ->where('status','active')
-            ->where('organization_id',$user->organization_id)
-            ->get();
-
-        return [
-            'jobTitles' => $jobTitles,
-            'eduactions' => $eduactions,
-            'certifications' => $certifications,
-            'workExperiences' => $workExperiences,
-            'skills' => $skills,
-            'locations' => $locations,
-        ];
-
-    }
-
-    private function filter($request, $query){
-        $startDate = Carbon::now()->startOfMonth(); // Start of the current month
-        $endDate = Carbon::now()->endOfMonth(); 
-
-        // Check if there's an applied date filter
-        if ($request->has('date_range') && $request->date_range != '') {
-            $dates = explode(' to ', $request->date_range);
-            $startDate = $dates[0] ? Carbon::parse($dates[0])->startOfDay() : null;
-            $endDate = isset($dates[1]) ? Carbon::parse($dates[1])->startOfDay():  Carbon::parse($dates[0])->startOfDay();
-        }
-
-        if ($request->job_title) {
-            $query->where('job_title_id', $request->job_title);
-        }
-
-        if ($request->skill) {
-            $query->whereHas('recruitmentSkills', function ($q) use($request) {
-                $q->where('skill_id', $request->skill);
-            });
-        }
-
-        if ($request->status) {
-            $query->where('status', $request->status);
-        }
-
-        if ($request->search) {
-            $query->where(function($q) use($request){
-                $q->where('job_id', 'like', '%'.$request->search.'%')
-                ->orWhere('request_id', 'like', '%'.$request->search.'%')
-                ->orWhere('status', 'like', '%'.$request->search.'%');
-            });
-        }
-
-        $query->whereBetween('created_at', [$startDate, $endDate]);
-
-        return $query;
-    }
-
     public function edit($id){
         $masterData = self::masterData();
 
@@ -473,6 +530,7 @@ class RequestController extends Controller
             $jobRequest->job_description = $request->job_description; 
             $jobRequest->reason = $request->reason; 
             // $jobRequest->assessment_required = $request->assessment_required; 
+            $jobRequest->status = CommonHelper::PENDING; 
             $jobRequest->location_id = $request->location_id; 
             $jobRequest->emp_id = $request->emp_id ?? NULL; 
             $jobRequest->save();
@@ -562,6 +620,10 @@ class RequestController extends Controller
                 if($status == CommonHelper::APPROVED_FORWARD){
                     $jobRequest->approval_authority = $user->manager_id;
                     $managerId = $user->manager_id ? $user->manager_id : null;
+                }
+
+                if($status == CommonHelper::SEND_BACK){
+                    $managerId = $jobRequest->approval_authority;
                 }
 
                 // if($status == CommonHelper::REJECTED){

@@ -31,8 +31,7 @@
   <td>
       <input type="text" name="components[{{$rowCount}}][item_name]" value="{{$moProduct?->item?->item_name}}" class="form-control mw-100 mb-25" readonly/>
   </td>
-   <td class="poprod-decpt"> 
-      <button type="button" {{$moProduct->soItem ? 'disabled' : ''}} class="btn p-25 btn-sm btn-outline-secondary attributeBtn" data-row-count="{{$rowCount}}" style="font-size: 10px">Attributes</button>
+   <td class="poprod-decpt attributeBtn" id="itemAttribute_{{$rowCount}}" data-count="{{$rowCount}}" attribute-array="{{$moProduct->item_attributes_array()}}">
    </td>
    <td>
       <select {{$moProduct->soItem ? 'disabled' : ''}} class="form-select mw-100 " name="components[{{$rowCount}}][uom_id]">
@@ -48,7 +47,7 @@
       <input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct" value="{{$moProduct?->so?->customer?->customer_code}}" name="components[{{$rowCount}}][customer_code]" />
       @endif
    </td>
-   <td>{{$moProduct?->so?->document_number}}</td>
+   <td>{{strtoupper($moProduct?->so?->book_code)}} - {{$moProduct?->so?->document_number}}</td>
    {{-- <td>
       <div class="d-flex align-items-center justify-content-center">
       <input type="hidden" name="components[{{$rowCount}}][remark]" value="{{$moProduct->remark}}"/>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Exceptions\ApiGenericException;
 use App\Helpers\ConstantHelper;
 use App\Helpers\CurrencyHelper;
+use App\Helpers\EInvoiceHelper;
 use App\Helpers\Helper;
 use App\Helpers\InventoryHelper;
 use App\Helpers\ItemHelper;
@@ -17,6 +18,7 @@ use App\Models\Attribute;
 use App\Models\Bom;
 use App\Models\BomDetail;
 use App\Models\Book;
+use App\Models\CashCustomerDetail;
 use App\Models\Country;
 use App\Models\Customer;
 use App\Models\Address;
@@ -44,6 +46,7 @@ use App\Models\Organization;
 use App\Models\ProductionLevel;
 use App\Models\ProductionRouteDetail;
 use App\Models\ServiceParameter;
+use App\Models\State;
 use Carbon\Carbon;
 use DB;
 use Illuminate\Support\Facades\Storage;
@@ -368,6 +371,69 @@ class ErpSaleOrderController extends Controller
                     }
             }
             $saleOrder = null;
+            //Reset Customer Fields 
+            $customer = Customer::find($request -> customer_id);
+            $customerPhoneNo = $request -> customer_phone_no ?? null;
+            $customerEmail = $request -> customer_email ?? null;
+            $customerGSTIN = $request -> customer_gstin ?? null;
+            $customerName = $request -> consignee_name ?? null;
+            //If Customer is Regular, pick from Customer Master
+            if ($customer -> customer_type === ConstantHelper::REGULAR) {
+                $customerPhoneNo = $customer -> mobile ?? null;
+                $customerEmail = $customer -> email ?? null;
+                $customerGSTIN = $customer -> compliances ?-> gstin_no ?? null;
+            } else {
+                //Check for customer details in Cash
+                if (!$customerPhoneNo || !$customerEmail || !$customerName) {
+                    DB::rollBack();
+                    return response() -> json([
+                        'message' => 'Please enter all details of the customer',
+                        'error' => ''
+                    ], 422);
+                }
+                if ($customerGSTIN) { // Validate Customer
+                    $validatedGSTIN = EInvoiceHelper::validateGstNumber($customerGSTIN);
+                    if (isset($validatedGSTIN) && isset($validatedData['status'])) {
+                        if ($validatedGSTIN['Status'] == 1) {
+                            $gstResponse = json_decode($validatedGSTIN['checkGstIn'], true);
+                            $addresses = $gstResponse['addresses'] ?? [];
+                            //Check the GSTIN with state
+                            if (!empty($addresses)) {
+                                $firstAddress = $addresses[0];  
+                                if (isset($firstAddress['state_id'])) {
+                                    $shipAddrStateId = null;
+                                    $shipAddr = ErpAddress::find($request -> shipping_address);
+                                    if (!isset($shipAddr)) {
+                                        $shipAddrStateId = $request -> new_shipping_state_id;
+                                    } else {
+                                        $shipAddrStateId = $shipAddr -> state_id;
+                                    }
+                                    $shipState = State::find($shipAddrStateId);
+                                    if (isset($shipState) && $shipState -> state_code != $firstAddress['state_id']) {
+                                        DB::rollBack();
+                                        return response() -> json([
+                                            'message' => 'Entered GST Number does not match Shipping Address',
+                                            'error' => ''
+                                        ], 422);
+                                    }
+                                }
+                            }
+                        } else {
+                            DB::rollBack();
+                            return response() -> json([
+                                'message' => 'Entered GST Number is invalid',
+                                'error' => ''
+                            ], 422);
+                        }
+                    } else {
+                        DB::rollBack();
+                        return response() -> json([
+                            'message' => 'Entered GST Number is invalid',
+                            'error' => ''
+                        ], 422);
+                    }
+                }
+            }
             if ($request -> sale_order_id) { //Update
                 $saleOrder = ErpSaleOrder::find($request -> sale_order_id);
                 $saleOrder -> document_date = $request -> document_date;
@@ -471,6 +537,9 @@ class ErpSaleOrderController extends Controller
                     'department_id' => $request -> department_id ?? null,
                     'department_code' => $department ?-> name ?? null,
                     'customer_id' => $request -> customer_id,
+                    'customer_email' => $customerEmail,
+                    'customer_phone_no' => $customerPhoneNo,
+                    'customer_gstin' => $customerGSTIN,
                     'customer_code' => $request -> customer_code,
                     'consignee_name' => $request -> consignee_name,
                     'billing_address' => null,
@@ -509,6 +578,17 @@ class ErpSaleOrderController extends Controller
                         'phone' => $customerBillingAddress -> phone,
                         'fax_number' => $customerBillingAddress -> fax_number
                     ]);
+                } else {
+                    $billingAddress = $saleOrder -> billing_address_details() -> create([
+                        'address' => $request -> new_billing_address,
+                        'country_id' => $request -> new_billing_country_id,
+                        'state_id' => $request -> new_billing_state_id,
+                        'city_id' => $request -> new_billing_city_id,
+                        'type' => 'billing',
+                        'pincode' => $request -> new_billing_pincode,
+                        'phone' => $request -> new_billing_phone,
+                        'fax_number' => null
+                    ]);
                 }
                 // Shipping Address
                 $customerShippingAddress = ErpAddress::find($request -> shipping_address);
@@ -522,6 +602,17 @@ class ErpSaleOrderController extends Controller
                         'pincode' => $customerShippingAddress -> pincode,
                         'phone' => $customerShippingAddress -> phone,
                         'fax_number' => $customerShippingAddress -> fax_number
+                    ]);
+                } else {
+                    $shippingAddress = $saleOrder -> shipping_address_details() -> create([
+                        'address' => $request -> new_shipping_address,
+                        'country_id' => $request -> new_shipping_country_id,
+                        'state_id' => $request -> new_shipping_state_id,
+                        'city_id' => $request -> new_shipping_city_id,
+                        'type' => 'shipping',
+                        'pincode' => $request -> new_shipping_pincode,
+                        'phone' => $request -> new_shipping_phone,
+                        'fax_number' => null
                     ]);
                 }
                 //Location Address
@@ -1033,6 +1124,8 @@ class ErpSaleOrderController extends Controller
                         $mediaFiles = $saleOrder->uploadDocuments($singleFile, 'sale_order', false);
                     }
                 }
+                SaleModuleHelper::cashCustomerMasterData($saleOrder);
+                SaleModuleHelper::updateEInvoiceDataFromHelper($saleOrder, false);
                 DB::commit();
                 return response() -> json([
                     'message' => ($saleOrder -> document_type == ConstantHelper::SQ_SERVICE_ALIAS 
@@ -1103,8 +1196,15 @@ class ErpSaleOrderController extends Controller
     {
         try {
             $customer = Customer::find($customerId);
-            $billingAddresses = ErpAddress::where('addressable_id', $customerId)->where('addressable_type', Customer::class)->whereIn('type', ['billing', 'both'])->get();
-            $shippingAddresses = ErpAddress::where('addressable_id', $customerId)->where('addressable_type', Customer::class)->whereIn('type', ['shipping', 'both'])->get();
+            if ($customer -> customer_type === ConstantHelper::CASH) {
+                $phoneNo = $request -> phone_no ?? null;
+                $cashCustomerDetail = CashCustomerDetail::where('phone_no', $phoneNo) -> first();
+                $billingAddresses = ErpAddress::where('addressable_id', $cashCustomerDetail ?-> id)->where('addressable_type', CashCustomerDetail::class)->whereIn('type', ['billing', 'both'])->get();
+                $shippingAddresses = ErpAddress::where('addressable_id', $cashCustomerDetail ?-> id)->where('addressable_type', CashCustomerDetail::class)->whereIn('type', ['shipping', 'both'])->get();
+            } else {
+                $billingAddresses = ErpAddress::where('addressable_id', $customerId)->where('addressable_type', Customer::class)->whereIn('type', ['billing', 'both'])->get();
+                $shippingAddresses = ErpAddress::where('addressable_id', $customerId)->where('addressable_type', Customer::class)->whereIn('type', ['shipping', 'both'])->get();
+            }
             foreach ($billingAddresses as $billingAddress) {
                 $billingAddress->value = $billingAddress->id;
                 $billingAddress->label = $billingAddress->display_address;
@@ -1113,33 +1213,35 @@ class ErpSaleOrderController extends Controller
                 $shippingAddress->value = $shippingAddress->id;
                 $shippingAddress->label = $shippingAddress->display_address;
             }
-            if (count($shippingAddresses) == 0) {
-                return response()->json([
-                    'data' => array(
-                        'error_message' => 'Shipping Address not found for ' . $customer?->company_name
-                    )
-                ]);
-            }
-            if (count($billingAddresses) == 0) {
-                return response()->json([
-                    'data' => array(
-                        'error_message' => 'Billing Address not found for ' . $customer?->company_name
-                    )
-                ]);
-            }
-            if (!isset($customer?->currency_id)) {
-                return response()->json([
-                    'data' => array(
-                        'error_message' => 'Currency not found for ' . $customer?->company_name
-                    )
-                ]);
-            }
-            if (!isset($customer?->payment_terms_id)) {
-                return response()->json([
-                    'data' => array(
-                        'error_message' => 'Payment Terms not found for ' . $customer?->company_name
-                    )
-                ]);
+            if ($customer -> customer_type === ConstantHelper::REGULAR) {
+                if (count($shippingAddresses) == 0) {
+                    return response()->json([
+                        'data' => array(
+                            'error_message' => 'Shipping Address not found for ' . $customer?->company_name
+                        )
+                    ]);
+                }
+                if (count($billingAddresses) == 0) {
+                    return response()->json([
+                        'data' => array(
+                            'error_message' => 'Billing Address not found for ' . $customer?->company_name
+                        )
+                    ]);
+                }
+                if (!isset($customer?->currency_id)) {
+                    return response()->json([
+                        'data' => array(
+                            'error_message' => 'Currency not found for ' . $customer?->company_name
+                        )
+                    ]);
+                }
+                if (!isset($customer?->payment_terms_id)) {
+                    return response()->json([
+                        'data' => array(
+                            'error_message' => 'Payment Terms not found for ' . $customer?->company_name
+                        )
+                    ]);
+                }
             }
             //Currency Helper
             $currencyData = CurrencyHelper::getCurrencyExchangeRates($customer?->currency_id ?? 0, $request->document_date ?? '');
@@ -1214,10 +1316,12 @@ class ErpSaleOrderController extends Controller
     {
         try {
             $item = Item::with(['alternateUoms.uom', 'category', 'subCategory'])->find($request->item_id);
-            $customerItemDetails = ItemHelper::getCustomerItemDetails((int)$request -> item_id, (int) $request -> customer_id);
+            $customerItemDetails = ItemHelper::getCustomerItemDetails((int)$request -> item_id, (int) $request->customer_id);
             $selectedUom = $request->uom_id ?? null;
             $totalStockData = InventoryHelper::totalInventoryAndStock($request->item_id, $request->selectedAttr ?? [], 
-            $selectedUom, $request->store_id ?? null, $request -> sub_store_id ?? null, $request -> so_item_id ?? null, $request -> station_id ?? null, $request -> stock_type ?? InventoryHelper::STOCK_TYPE_REGULAR, $request -> wip_station_id ?? null);
+            $selectedUom, $request->store_id ?? null, $request -> sub_store_id ?? null, $request -> so_item_id ?? null, 
+            $request -> station_id ?? null, $request -> stock_type ?? InventoryHelper::STOCK_TYPE_REGULAR,
+            $request -> wip_station_id ?? null);
             if (isset($item)) {
                 $inventoryUomQty = $request->quantity ?? 0;
                 $requestUomId = $selectedUom;
@@ -1265,7 +1369,9 @@ class ErpSaleOrderController extends Controller
         try {
             $baseUomQty = ItemHelper::convertToBaseUom($request -> item_id, $request -> uom_id, $request -> quantity ?? 0);
             $storeWiseStockData = InventoryHelper::fetchStockSummary($request -> item_id, $request -> selectedAttr ?? [], 
-            $request -> uom_id ?? null, $baseUomQty ?? 0, $request -> store_id ?? null, $request -> sub_store_id ?? null);
+            $request -> uom_id ?? null, $baseUomQty ?? 0, $request -> store_id ?? null, $request -> sub_store_id ?? null,
+            $request -> station_id ?? null, $request -> stock_type ?? InventoryHelper::STOCK_TYPE_REGULAR,
+            $request -> wip_station_id ?? null);
             
             return response() -> json([
                 'message' => 'Item details found',
@@ -1350,6 +1456,13 @@ class ErpSaleOrderController extends Controller
     public function addAddress(Request $request)
     {
         try {
+            $customer = Customer::find($request -> customer_id);
+            if (!isset($customer)) {
+                return response()->json([
+                    'message' => 'Customer Not found',
+                    'error' => 'Customer not found'
+                ], 500);
+            }
             $address = ErpAddress::where([
                 ['addressable_id', $request->customer_id],
                 ['addressable_type', Customer::class],
@@ -1366,7 +1479,7 @@ class ErpSaleOrderController extends Controller
                     'data' => $address
                 ]);
             }
-            $address = ErpAddress::create([
+            $address = new ErpAddress([
                 'addressable_id' => $request->customer_id,
                 'addressable_type' => Customer::class,
                 'country_id' => $request->country_id,

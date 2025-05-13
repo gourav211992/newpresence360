@@ -47,6 +47,7 @@ class Vendor extends Model
         'pricing_type',
         'credit_limit',
         'credit_days',
+        'on_account_required',
         'interest_percent',
         'stop_billing',
         'stop_purchasing',

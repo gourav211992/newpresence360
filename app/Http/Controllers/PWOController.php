@@ -57,9 +57,7 @@ class PWOController extends Controller
          $parentUrl = request()->segments()[0];
          if (request()->ajax()) {
              $boms = ErpProductionWorkOrder::withDefaultGroupCompanyOrg()
-                     ->withDraftListingLogic()
-                     ->latest()
-                     ->get();
+                     ->withDraftListingLogic();
              return DataTables::of($boms)
                  ->addIndexColumn()
                  ->editColumn('document_status', function ($row) {
@@ -85,7 +83,17 @@ class PWOController extends Controller
                      return $row->book ? $row->book?->book_code : 'N/A';
                  })
                  ->addColumn('items', function ($row) {
-                    return $row?->items?->count();
+                    $firstItemName = $row?->mapping[0]?->item?->item_name ?? '';
+                    $count = $row?->mapping?->count() ?? 0;
+                    if ($count > 1) {
+                        $remaining = intval($count - 1);
+                        return $firstItemName . " <span class='badge rounded-pill badge-light-primary badgeborder-radius'>+$remaining</span>";
+                    }
+                    return $firstItemName;
+                })
+                ->addColumn('so_no', function ($row) {
+                    $bookCode = strtoupper($row?->last_so()?->book_code);
+                    return $row?->last_so() ? ($bookCode.' - '. $row?->last_so()?->document_number)  : '';
                 })
                 ->addColumn('location', function ($row) {
                     return $row?->location->store_name ?? '';
@@ -93,7 +101,7 @@ class PWOController extends Controller
                  ->editColumn('document_date', function ($row) {
                      return $row->getFormattedDate('document_date') ?? 'N/A';
                  })
-                 ->rawColumns(['document_status'])
+                 ->rawColumns(['document_status','items'])
                  ->make(true);
          }
          $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
@@ -318,7 +326,6 @@ class PWOController extends Controller
                  ->where('pwo_id', $mo->id)
                  ->groupBy('pwo_id', 'so_id', 'item_id', 'item_code', 'uom_id', 'attributes')
                  ->get();
-                        
 
                  foreach($groupedDatas as $groupedData) {
                      # PWO Item Save                  
@@ -506,17 +513,17 @@ class PWOController extends Controller
      # On change item attribute
      public function getItemAttribute(Request $request)
      {
- 
          $rowCount = intval($request->rowCount) ?? 1;
          $item = Item::find($request->item_id);
          $selectedAttr = $request->selectedAttr ? json_decode($request->selectedAttr,true) : [];
- 
-         $detailItemId = $request->mo_item_id ?? null;
+         $detailItemId = $request->pwo_so_mapping_id ?? null;
          $itemAttIds = [];
+         $itemAttributeArray = [];
          if($detailItemId) {
-             $detail = BomDetail::find($detailItemId);
+             $detail = PwoSoMapping::find($detailItemId);
              if($detail) {
-                 $itemAttIds = $detail->attributes()->pluck('item_attribute_id')->toArray();
+                $itemAttIds = collect($detail->attributes)->pluck('item_attribute_id')->toArray();
+                $itemAttributeArray = $detail->item_attributes_array(); 
              }
          }
          $itemAttributes = collect();
@@ -524,9 +531,11 @@ class PWOController extends Controller
              $itemAttributes = $item?->itemAttributes()->whereIn('id',$itemAttIds)->get();
              if(count($itemAttributes) < 1) {
                  $itemAttributes = $item?->itemAttributes;
+                 $itemAttributeArray = $item->item_attributes_array();
              }
          } else {
              $itemAttributes = $item?->itemAttributes;
+             $itemAttributeArray = $item->item_attributes_array();
          }
  
          $html = view('pwo.partials.comp-attribute',compact('item','rowCount','selectedAttr','itemAttributes'))->render();
@@ -540,7 +549,17 @@ class PWOController extends Controller
                  }
              $hiddenHtml .= "<input type='hidden' name='components[$rowCount][attr_group_id][$attribute->attribute_group_id][attr_name]' value=$selected>";
          }
-         return response()->json(['data' => ['attr' => $item->itemAttributes->count(),'html' => $html, 'hiddenHtml' => $hiddenHtml], 'status' => 200, 'message' => 'fetched.']);
+
+        if(count($selectedAttr)) {
+            foreach ($itemAttributeArray as &$group) {
+                foreach ($group['values_data'] as $attribute) {
+                    if (in_array($attribute->id, $selectedAttr)) {
+                        $attribute->selected = true;
+                    }
+                }
+            }
+        }
+         return response()->json(['data' => ['attr' => $item->itemAttributes->count(),'html' => $html, 'hiddenHtml' => $hiddenHtml, 'itemAttributeArray' => $itemAttributeArray], 'status' => 200, 'message' => 'fetched.']);
      }
  
      # Add item row
@@ -554,26 +573,6 @@ class PWOController extends Controller
                  return response()->json(['data' => ['html' => ''], 'status' => 422, 'message' => 'Please fill all component details before adding new row more!']);
              }
          }
-         $compSelectedAttr = json_decode($request->comp_attr,true) ?? []; 
-         $attributes = [];
-         if(count($compSelectedAttr)) {
-                foreach($compSelectedAttr as $compAttr) {
-                 $itemAttr = ItemAttribute::where("item_id",$componentItem['item_id'])->first();
-                 if(!$itemAttr->all_checked) {
-                     $itemAttr = ItemAttribute::where("item_id",$componentItem['item_id'])
-                                     ->where("attribute_group_id",$compAttr['attr_name'])
-                                     ->first();
-                 }
-                 $attributes[] = ['attribute_id' => $itemAttr?->id, 'attribute_value' => $compAttr['attr_value']];
-                }
-         }
-         if(intval($itemId)) {
-             $bomExists = ItemHelper::checkItemBomExists($itemId, $attributes);
-             if (!$bomExists['bom_id']) {
-                 // $bomExists['message'] = $bomExists['message'];
-                 return response()->json(['data' => ['html' => ''], 'status' => 422, 'message' => $bomExists['message']]);
-             }
-         }
          $rowCount = intval($request->count) == 0 ? 1 : intval($request->count) + 1;
          $html = view('pwo.partials.item-row', [
              'rowCount' => $rowCount
@@ -584,25 +583,23 @@ class PWOController extends Controller
      # On select row get item detail
      public function getItemDetail(Request $request)
      {
-         $selectedAttr = json_decode($request->selectedAttr,200) ?? [];
-         $item = Item::find($request->item_id ?? null);
-         $specifications = $item->specifications()->whereNotNull('value')->get();
-         $remark = $request->remark ?? null;
-         $html = view('pwo.partials.comp-item-detail',compact('item','selectedAttr','specifications','remark'))->render();
-         return response()->json(['data' => ['html' => $html], 'status' => 200, 'message' => 'fetched.']);
+        $selectedAttr = json_decode($request->selectedAttr,200) ?? [];
+        $item = Item::find($request->item_id ?? null);
+        $specifications = $item->specifications()->whereNotNull('value')->get();
+        $remark = $request->remark ?? null;
+        $html = view('pwo.partials.comp-item-detail',compact('item','selectedAttr','specifications','remark'))->render();
+        return response()->json(['data' => ['html' => $html], 'status' => 200, 'message' => 'fetched.']);
      }
  
      # On select row get item detail
      public function getItemDetail2(Request $request)
      {
-         $item = Item::find($request->item_id ?? null);
-         $moItem = ErpPwoItem::find($request->mo_item_id ?? null);
-         if($moItem) {
-             $selectedAttr = $moItem->attributes->map(fn($attribute) => intval($attribute->attribute_value))->toArray();
-         }
-         $specifications = $item->specifications()->whereNotNull('value')->get();
-         $html = view('pwo.partials.comp-item-detail2',compact('item','specifications'))->render();
-         return response()->json(['data' => ['html' => $html], 'status' => 200, 'message' => 'fetched.']);
+        $item = Item::find($request->item_id ?? null);
+        $selectedAttr = json_decode($request->selectedAttr,200) ?? [];
+        $moItem = ErpPwoItem::find($request->mo_item_id ?? null);
+        $specifications = $item->specifications()->whereNotNull('value')->get();
+        $html = view('pwo.partials.comp-item-detail2',compact('item','specifications','selectedAttr'))->render();
+        return response()->json(['data' => ['html' => $html], 'status' => 200, 'message' => 'fetched.']);
      }
  
      # Bom edit

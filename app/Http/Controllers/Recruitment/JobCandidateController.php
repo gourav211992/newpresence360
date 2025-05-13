@@ -29,7 +29,6 @@ class JobCandidateController extends Controller
     {
         $user = Helper::getAuthenticatedUser();
         $length = $request->length ? $request->length : CommonHelper::PAGE_LENGTH_10;
-
         $candidates = ErpRecruitmentJobCandidate::with('candidateSkills')
             ->where(function($query) use($request){
                 self::filter($request, $query);
@@ -41,7 +40,7 @@ class JobCandidateController extends Controller
         $masterData = self::masterData();
         return view('recruitment.job-candidate.index',[
             'candidates' => $candidates,
-            'skills' => $masterData['skills'],
+            'skillsData' => $masterData['skills'],
             'locations' => $masterData['locations'],
         ]);
     }

@@ -43,18 +43,21 @@
                                         <thead>
                                              <tr>
                                                 <th>S.No</th>
+                                                <th style="display:none;"></th> 
                                                 <th>Date</th>
                                                 <th>Series</th>
                                                 <th>Doc No.</th>
                                                 <th>Location</th>
-                                                <th>Rev No</th>
-                                                <th>Items</th>
-                                                <th>Curr</th>
-                                                <th class = "numeric-alignment">Item Value</th>
-                                                <th class = "numeric-alignment">Discount</th>
-                                                <th class = "numeric-alignment">Tax</th>
-                                                <th class = "numeric-alignment">Expenses</th>
-                                                <th class = "numeric-alignment">Total Amt</th>
+                                                <th>Sub Location</th>
+                                                <th>Station</th>
+                                                <th>SO No.</th>
+                                                <th>MO No.</th>
+                                                <th>Product</th>
+                                                <th>Type</th>
+                                                <th>Produced Qty</th>
+                                                <th>Value</th>
+                                                <th>Shift</th>
+                                                {{-- <th class = "numeric-alignment">Amount</th> --}}
                                                 <th style = 'text-align:center'>Status</th>
 											  </tr>
 											</thead>
@@ -160,6 +163,7 @@
     }
     var columns = [
         { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
+        { data: 'id', name: 'id', visible: false, searchable: false },
         { data: 'document_date', name: 'document_date', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('no-wrap');
             }
@@ -172,58 +176,64 @@
                $(td).addClass('no-wrap');
             }
         },
-        { data: 'store_code', name: 'store_code', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+        { data: 'store_name', name: 'store_name', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('no-wrap');
             }
         },
-        { data: 'revision_number', name: 'revision_number', render: renderData, orderable: true, createdCell: function(td, cellData, rowData, row, col) {
+        { data: 'sub_store_name', name: 'sub_store_name', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('no-wrap');
             }
         },
-        { data: 'items_count', name: 'items_count', render: renderData },
-        { data: 'curr_name', name: 'curr_name', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+        { data: 'station_name', name: 'station_name', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('no-wrap');
-            } 
+            }
         },
-        { data: 'total_item_value', name: 'total_item_value', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-               $(td).addClass('text-end');
+        { data: 'so_no', name: 'so_no', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+               $(td).addClass('no-wrap');
             }
-         },
-        { data: 'total_discount_value', name: 'total_discount_value', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-               $(td).addClass('text-end');
+        },
+        { data: 'mo_no', name: 'mo_no', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+               $(td).addClass('no-wrap');
             }
-         },
-        { data: 'total_tax_value', name: 'total_tax_value', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-               $(td).addClass('text-end');
-            } 
-         },
-        { data: 'total_expense_value', name: 'total_expense_value', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-               $(td).addClass('text-end');
-            } 
-         },
-         { data: 'total_amount', name: 'total_amount', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-               $(td).addClass('text-end');
-            } 
-         },
+        },
+        { data: 'mo_product', name: 'mo_product', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+               $(td).addClass('no-wrap');
+            }
+        },
+        { data: 'type', name: 'type', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+               $(td).addClass('no-wrap');
+            }
+        },
+        { data: 'produced_qty', name: 'produced_qty', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+               $(td).addClass('no-wrap');
+            }
+        },
+        { data: 'value', name: 'value', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+               $(td).addClass('no-wrap');
+            }
+        },
+        { data: 'shift_name', name: 'shift_name', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+               $(td).addClass('no-wrap');
+            }
+        },
         { data: 'document_status', name: 'document_status', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('no-wrap');
             }
         },
     ];
-    // Define your dynamic filters
     var filters = {
-        status: '#filter-status',         // Status filter (dropdown)
-        category: '#filter-category',     // Category filter (dropdown)
-        item_code: '#filter-item-code'    // Item code filter (input text field)
+        status: '#filter-status',
+        category: '#filter-category',
+        item_code: '#filter-item-code'
     };
-    var exportColumns = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]; // Columns to export
+    var exportColumns = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
     initializeDataTable('.datatables-basic', 
         "{{ $redirect_url }}", 
         columns,
         filters,  // Apply filters
         "{{$typeName}}",  // Export title
         exportColumns,  // Export columns
-        [],// default order
+        [[1, 'desc']],// default order
         'landscape'
     );
     // Apply filter on button click

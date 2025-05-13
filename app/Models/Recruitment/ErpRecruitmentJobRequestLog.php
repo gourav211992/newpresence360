@@ -29,4 +29,8 @@ class ErpRecruitmentJobRequestLog extends Model
 
         return optional($this->actionByAdmin)->name;
     }
+
+    public function request(){
+        return $this->belongsTo(ErpRecruitmentJobRequests::class, 'job_request_id');
+    }
 }

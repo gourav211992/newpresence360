@@ -44,7 +44,7 @@ class PurchaseReturnAccountController extends Controller
         $items = Item::withDefaultGroupCompanyOrg()
         ->where('status', 'active') 
         ->get();
-        $purchaseReturnAccounts = PurchaseReturnAccount::All();   
+        $purchaseReturnAccounts = PurchaseReturnAccount::withDefaultGroupCompanyOrg()->get();
         $erpBooks = Book::withDefaultGroupCompanyOrg()
         ->where('status', 'active') 
         ->get(); 
@@ -92,7 +92,7 @@ class PurchaseReturnAccountController extends Controller
         }
 
         return view('procurement.purchase-return-account.index', compact(
-            'companies', 'categories', 'subCategories', 'ledgerGroups', 'ledgers', 'items', 'purchaseReturnAccounts', 'erpBooks'
+            'companies', 'categories', 'subCategories', 'ledgerGroups', 'ledgers', 'items', 'purchaseReturnAccounts', 'erpBooks','orgIds'
         ));
     }
 

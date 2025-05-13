@@ -124,19 +124,6 @@ class VendorController extends Controller
 
                         return $className ? '<span class="' . $className . '">' . $statusText . '</span>' : $statusText;
                     })
-                    ->editColumn('status', function ($row) {
-                        $statusClass = 'badge-light-secondary';
-                        if ($row->status == 'active') {
-                            $statusClass = 'badge-light-success';
-                        } elseif ($row->status == 'inactive') {
-                            $statusClass = 'badge-light-danger';
-                        } elseif ($row->status == 'draft') {
-                            $statusClass = 'badge-light-warning';
-                        }
-        
-                        return '<span class="badge rounded-pill ' . $statusClass . ' badgeborder-radius">'
-                            . ucfirst($row->status ?? 'Unknown') . '</span>';
-                    })
                     ->editColumn('created_at', function ($row) {
                         return $row->created_at ? Carbon::parse($row->created_at)->format('d-m-Y') : 'N/A';
                     })
@@ -149,8 +136,20 @@ class VendorController extends Controller
                     ->editColumn('updated_at', function ($row) {
                         return $row->updated_at ? Carbon::parse($row->updated_at)->format('d-m-Y') : 'N/A';
                     })
-                    ->editColumn('action', function ($row) {
-                        return '
+                    ->addColumn('status_action', function ($row) {
+                        $statusClass = 'badge-light-secondary';
+                        if ($row->status == 'active') {
+                            $statusClass = 'badge-light-success';
+                        } elseif ($row->status == 'inactive') {
+                            $statusClass = 'badge-light-danger';
+                        } elseif ($row->status == 'draft') {
+                            $statusClass = 'badge-light-warning';
+                        }
+        
+                        $status = '<span class="badge rounded-pill ' . $statusClass . ' badgeborder-radius">'
+                            . ucfirst($row->status ?? 'Unknown') . '</span>';
+        
+                        $action = '
                             <div class="dropdown">
                                 <button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
                                     <i data-feather="more-vertical"></i>
@@ -162,8 +161,10 @@ class VendorController extends Controller
                                     </a>
                                 </div>
                             </div>';
+        
+                        return '<div class="d-flex align-items-center justify-content-end">' . $status . $action . '</div>';
                     })
-                    ->rawColumns(['status','gst_status','action'])
+                    ->rawColumns(['gst_status','status_action'])
                     ->make(true);
             }
         
@@ -283,6 +284,7 @@ class VendorController extends Controller
             $validatedData = $request->validated();
             $validatedData['created_by'] = $user->auth_user_id; 
             $validatedData['related_party'] = isset($validatedData['related_party']) ? 'Yes' : 'No';
+            // $validatedData['on_account_required'] = isset($validatedData['on_account_required']) ? '1' : '0';
             $parentUrl = ConstantHelper::VENDOR_SERVICE_ALIAS;
             $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
             if ($services && $services['services'] && $services['services']->isNotEmpty()) {
@@ -542,6 +544,7 @@ class VendorController extends Controller
             $organization = $user->organization;
             $validatedData = $request->validated();
             $validatedData['related_party'] = isset($validatedData['related_party']) ? 'Yes' : 'No';
+            // $validatedData['on_account_required'] = isset($validatedData['on_account_required']) ? '1' : '0';
             $parentUrl = ConstantHelper::VENDOR_SERVICE_ALIAS;
             $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
             if ($services && $services['services'] && $services['services']->isNotEmpty()) {
