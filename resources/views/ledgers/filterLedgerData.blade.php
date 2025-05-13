@@ -1,9 +1,9 @@
 <tbody>
-    @php  
-        use App\Helpers\Helper;  
+    @php
+        use App\Helpers\Helper;
         $totalDebit=0;
         $totalCredit=0;
-    @endphp 
+    @endphp
     @foreach ($data as $voucher)
         @php
             $currentDebit=0;
@@ -27,9 +27,9 @@
                                 $currentBalanceType = $currentBalance >= 0 ? 'Dr' : 'Cr';
                                 $currentBalance = abs($currentBalance);
                             @endphp
-                            <tr> 
-                                <td  style="font-weight: bold; color:black;">{{ $item->ledger->name }}</td>
-                                <td class="text-end">{{Helper::formatIndianNumber($currentBalance)}} {{ $currentBalanceType }}</td> 
+                            <tr>
+                                <td  style="font-weight: bold; color:black;">{{ $item->ledger->name ?? '' }}</td>
+                                <td class="text-end">{{Helper::formatIndianNumber($currentBalance)}} {{ $currentBalanceType }}</td>
                             </tr>
                         @endif
                     @endforeach
@@ -50,7 +50,7 @@
             <td>{{ Helper::formatIndianNumber($currentCredit) }}</td>
         </tr>
     @endforeach
-</tbody>                
+</tbody>
 
 <tfoot>
     <tr class="ledfootnobg">
@@ -63,7 +63,7 @@
         <td>@if($opening && $opening->opening_type=="Dr") {{ Helper::formatIndianNumber($opening->opening) }} @endif</td>
         <td>@if($opening && $opening->opening_type=="Cr") {{ Helper::formatIndianNumber($opening->opening) }} @endif</td>
     </tr>
-    @php $closing = ($opening->opening)+ $totalDebit-$totalCredit; 
+    @php $closing = ($opening->opening)+ $totalDebit-$totalCredit;
     $closing_type =$closing<0?"Cr":"Dr";
 
 @endphp
