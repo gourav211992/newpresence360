@@ -30,16 +30,18 @@
                            <thead>
                               <tr>
                                  <th>S.No</th>
+                                 <th style="display:none;"></th> 
                                  <th>Date</th>
                                  <th>Series</th>
                                  <th>Doc No.</th>
                                  <th>Location</th>
                                  <th>Sub Location</th>
                                  <th>Station</th>
+                                 <th>SO No.</th>
                                  <th>Product Code</th>
                                  <th>Product Name</th>
                                  <th style="text-align: right">Quantity</th>
-                                 <th style="text-align: right">Value</th>
+                                 <th style="text-align: right">Produced Qty</th>
                                  <th>Status</th>
                               </tr>
                            </thead>
@@ -126,6 +128,7 @@ $(document).ready(function() {
     }
     var columns = [
         { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
+        { data: 'id', name: 'id', visible: false, searchable: false },
         { data: 'document_date', name: 'document_date', render: renderData },
         { data: 'book_name', name: 'book_name', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('no-wrap');
@@ -147,6 +150,10 @@ $(document).ready(function() {
                $(td).addClass('no-wrap');
             } 
          },        
+        { data: 'so_no', name: 'so_no', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+               $(td).addClass('no-wrap');
+            } 
+         },        
         { data: 'item_code', name: 'item_code', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('no-wrap');
             } 
@@ -159,10 +166,14 @@ $(document).ready(function() {
                $(td).addClass('text-end');
             } 
          },        
-        { data: 'mo_value', name: 'mo_value', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+        { data: 'produced_qty', name: 'produced_qty', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('text-end');
             } 
          },        
+      //   { data: 'mo_value', name: 'mo_value', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+      //          $(td).addClass('text-end');
+      //       } 
+      //    },        
         // { data: 'revision_number', name: 'revision_number', render: renderData },
          { data: 'document_status', name: 'document_status', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('no-wrap');
@@ -182,7 +193,7 @@ $(document).ready(function() {
         filters,  // Apply filters
         'Manufacturing Order',  // Export title
         exportColumns,  // Export columns
-        // [[1, "desc"]] // default order
+        [[1, "desc"]] // default order
 
     );
     // Apply filter on button click

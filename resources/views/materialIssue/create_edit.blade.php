@@ -426,7 +426,7 @@
             <i data-feather="plus-square"></i> MFG Order
         </button>
     </div>
-    <div class="col-auto action-button" id="pwo_order_selection">
+    <div class="col-auto action-button d-none" id="pwo_order_selection">
         <button onclick="openHeaderPullModal('pwo');" disabled type="button" id="select_pwo_button" class="btn btn-outline-primary btn-sm mb-0">
             <i data-feather="plus-square"></i> PWO
         </button>

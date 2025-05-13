@@ -139,7 +139,7 @@
                                 <th >UOM</th>
                                 <th class="text-end">Quantity</th>
                                 <th width="200px">Customer</th>
-                                <th width="150px">Order No.</th>
+                                <th width="150px">SO No.</th>
                                 {{-- <th width="50px">Action</th> --}}
                              </tr>
                           </thead>
@@ -312,6 +312,7 @@
 @include('pwo.partials.so-modal')
 @endsection
 @section('scripts')
+<script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
 <script type="text/javascript" src="{{asset('assets/js/modules/pwo.js')}}"></script>
 <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
 <script type="text/javascript">
@@ -502,6 +503,7 @@ function initializeAutocomplete2(selector, type) {
             $(this).removeData("selected");
             $(this).closest('tr').find("input[name*='component_item_name']").val('');
             $(this).closest('tr').find("input[name*='item_name']").val('');
+            $(this).closest('tr').find("td[id*='itemAttribute_']").html(defautAttrBtn);
             $(this).closest('tr').find("input[name*='item_id']").val('');
             $(this).closest('tr').find("input[name*='item_code']").val('');
             $(this).closest('tr').find("input[name*='attr_name']").remove();
@@ -518,6 +520,7 @@ function checkBomExist(itemId, currentTr)
                 if(currentTr.length) {
                     currentTr.find("input[name*='component_item_name']").val('');
                     currentTr.find("input[name*='item_name']").val('');
+                    $(this).closest('tr').find("td[id*='itemAttribute_']").html(defautAttrBtn);
                     currentTr.find("input[name*='item_id']").val('');
                     currentTr.find("input[name*='item_code']").val('');
                     currentTr.find("input[name*='attr_name']").remove();
@@ -666,7 +669,7 @@ $(document).on('click', '.attributeBtn', (e) => {
         selectedAttr = JSON.stringify(selectedAttr);
     }
     if (item_name && item_id) {
-        let rowCount = e.target.getAttribute('data-row-count');
+        let rowCount = tr.getAttribute('data-index');
         getItemAttribute(item_id, rowCount, selectedAttr, tr);
     } else {
         alert("Please select first item name.");
@@ -674,8 +677,9 @@ $(document).on('click', '.attributeBtn', (e) => {
 });
 
 /*For comp attr*/
-function getItemAttribute(itemId, rowCount, selectedAttr, tr){
-    let actionUrl = '{{route("pwo.item.attr")}}'+'?item_id='+itemId+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
+function getItemAttribute(itemId, rowCount, selectedAttr, tr) {
+    let pwo_so_mapping_id = "";
+    let actionUrl = '{{route("pwo.item.attr")}}'+'?item_id='+itemId+'&pwo_so_mapping_id='+pwo_so_mapping_id+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
     fetch(actionUrl).then(response => {
         return response.json().then(data => {
             if (data.status == 200) {
@@ -683,6 +687,7 @@ function getItemAttribute(itemId, rowCount, selectedAttr, tr){
                   $("#attribute table tbody").append(data.data.html);
                   $(tr).find('td:nth-child(2)').find("[name*='[attr_name]']").remove();
                   $(tr).find('td:nth-child(2)').append(data.data.hiddenHtml);
+                  $(tr).find("td[id*='itemAttribute_']").attr('attribute-array', JSON.stringify(data.data.itemAttributeArray));
                   if (data.data.attr) {
                      $("#attribute").modal('show');
                      $(".select2").select2();
@@ -761,8 +766,14 @@ $(document).on('change', '#attributeCheck', (e) => {
     getPwo();
 });
 
-/*searchPiBtn*/
-$(document).on('click', '.searchSoBtn', (e) => {
+$(document).on('click', '.clearPiFilter', (e) => {
+    $("#item_name_search").val('');
+    $("#book_code_input_qt").val('');
+    $("#book_id_qt_val").val('');
+    $("#document_no_input_qt").val('');
+    $("#document_id_qt_val").val('');
+    $("#customer_code_input_qt").val('');
+    $("#customer_id_qt_val").val('');
     getPwo();
 });
 
@@ -770,7 +781,6 @@ function openBomRequest()
 {
     initializeAutocompleteQt("customer_code_input_qt", "customer_id_qt_val", "customer", "customer_code", "company_name");
     initializeAutocompleteQt("book_code_input_qt", "book_id_qt_val", "book_so", "book_code", "");
-    initializeAutocompleteQt("document_no_input_qt", "document_id_qt_val", "sale_order_document_qt", "document_number", "");
     initializeAutocompleteQt("item_name_input_qt", "item_id_qt_val", "header_item", "item_code", "item_name");
 
 }
@@ -808,6 +818,7 @@ function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1,
             var $input = $(this);
             $input.val(ui.item.label);
             $("#" + selectorSibling).val(ui.item.id);
+            getPwo();
             return false;
         },
         change: function(event, ui) {
@@ -815,15 +826,20 @@ function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1,
                 $(this).val("");
                 $("#" + selectorSibling).val("");
             }
+            getPwo();
         }
     }).focus(function() {
         if (this.value === "") {
             $(this).autocomplete("search", "");
         }
+        getPwo();
     });
 }
 
 $(document).on('keyup', '#item_name_search', (e) => {
+    getPwo();
+});
+$(document).on('keyup', '#document_no_input_qt', (e) => {
     getPwo();
 });
 
@@ -838,7 +854,6 @@ function getPwo()
     let selectedPiIds = localStorage.getItem('selectedSoItemIds') ?? '[]';
     selectedPiIds = JSON.parse(selectedPiIds);
     selectedPiIds = encodeURIComponent(JSON.stringify(selectedPiIds));
-
     let header_book_id = $("#book_id").val() || '';
     let series_id = $("#book_id_qt_val").val() || '';
     let document_number = $("#document_no_input_qt").val() || '';
@@ -878,7 +893,6 @@ $(document).on('change','.po-order-detail > tbody .form-check-input',(e) => {
       $('.po-order-detail > thead .form-check-input').prop('checked', false);
   }
 });
-
 
 function getSelectedPiIDS()
 {
@@ -925,7 +939,6 @@ $(document).on('click', '.soProcess', (e) => {
     fetch(actionUrl).then(response => {
         return response.json().then(data => {
             if(data.status == 200) {
-
                 if ($("#itemTable > tbody tr").length) {
                     $("#itemTable > tbody > tr:last").after(data.data.pos);
                 } else {
@@ -944,8 +957,6 @@ $(document).on('click', '.soProcess', (e) => {
                 } else {
                     localStorage.setItem('selectedSoItemIds', JSON.stringify(newIds));
                 }
-
-
             }
             if(data.status == 422) {
                 Swal.fire({
@@ -957,55 +968,6 @@ $(document).on('click', '.soProcess', (e) => {
             }
         });
     });
-});
-
-// Item Attribute
-$(document).on('click','.header_attr select[name*="[attr_name]"]', (e) => {
-    let notSelectedAttr = $("select[name*='[attr_name]']").filter(function () {
-        return !$(this).val();
-    });
-    if(!notSelectedAttr.length) {
-        let itemId = $("#head_item_id").val() || '';
-        let uomId = $("#head_uom_id").val() || '';
-        let headerSelectedAttr = [];
-        if($(".heaer_item").find("input[name*='[attr_group_id]']").length) {
-            $(".heaer_item").find("input[name*='[attr_group_id]']").each(function(index1,item){
-                let attr_group_id = $(item).val();
-                let attr_val = $(`select[name="attributes[${index1+1}][attr_group_id][${attr_group_id}][attr_name]"]`).val();
-                headerSelectedAttr.push({
-                    'attr_name' : attr_group_id,
-                    'attr_value' : attr_val || ''
-                });
-            });
-        }
-        let actionUrl = '{{route("pwo.item.attr.change")}}'+'?item_id='+itemId+'&uom_id='+uomId+'&header_attr='+JSON.stringify(headerSelectedAttr); 
-
-        fetch(actionUrl).then(response => {
-            return response.json().then(data => {
-                if (data.status == 200) {
-                  $('tbody.mrntableselectexcel').html(data?.data?.component_html);
-                  let qty = Number($("input[name='quantity']").val()) || 1;
-                  updateItemsQty(qty);
-                  fetchItemDetails($("tr[id*='row_']").first());
-                } else {
-                    // $("#head_item_name").val('');
-                    // $("#head_item_id").val('');
-                    // $("#head_uom_id").val('');
-                    // $("#head_uom_name").val('');
-                    // $("#item_code").val('');
-                    // $("#item_code").attr('data-name','');
-                    // $("#item_code").attr('data-code','');
-                    // $(".heaer_item").remove();
-                        Swal.fire({
-                            title: 'Error!',
-                            text: data.message,
-                            icon: 'error',
-                        });
-                }
-            });
-        });
-
-    }
 });
 </script>
 @endsection

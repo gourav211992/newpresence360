@@ -237,7 +237,7 @@
                                                 </th>
                                                 <th width="150px">Product Code</th>
                                                 <th width="300px">Product Name</th>
-                                                <th>Attributes</th>
+                                                <th max-width="180px">Attributes</th>
                                                 <th >UOM</th>
                                                 <th class="text-end">Quantity</th>
                                                 <th width="200px">Customer</th>
@@ -280,7 +280,7 @@
                                                     <th>Item Code</th>
                                                     <th>Item Name</th>
                                                     <th>Item Type</th>
-                                                    <th>Attributes</th>
+                                                    <th max-width="180px">Attributes</th>
                                                     <th>UOM</th>
                                                     <th class="text-end">Required Qty</th>
                                                     <th class="text-end">Consumed Qty</th>

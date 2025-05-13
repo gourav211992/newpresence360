@@ -713,6 +713,19 @@
                                                                     <input type="number" id="credit_days" name="credit_days" value="{{ $customer->credit_days ?? '' }}" class="form-control" placeholder="Enter credit days" min="0" />
                                                                 </div> 
                                                             </div>
+
+                                                            <!-- <div class="row align-items-center mb-1">
+                                                                <div class="col-md-2">
+                                                                    <label class="form-label">On Account Required?</label>
+                                                                </div>
+                                                                <div class="col-md-3">
+                                                                    <div class="form-check form-check-primary mt-25 custom-checkbox">
+                                                                        <input type="checkbox" class="form-check-input" id="OnAccountRequired" name="on_account_required" {{ $customer->on_account_required == 1 ? 'checked' : '' }}>
+                                                                        <label class="form-check-label" for="OnAccountRequired">Yes/No</label>
+                                                                    </div>
+                                                                </div>
+                                                            </div> -->
+
                                                         </div>
 
                                                         <!-- FinancialEnd -->

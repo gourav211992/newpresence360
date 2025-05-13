@@ -31,7 +31,6 @@ $(document).on('change','#itemTable > thead .form-check-input',(e) => {
      $("#approveModal").find("#action_type").val(actionType);
      $("#approveModal").modal('show');
   });
-  
   /*Delete Row*/
   $(document).on('click','#deleteBtn', (e) => {
       let itemIds = [];
@@ -80,17 +79,7 @@ $(document).on('change','#itemTable > thead .form-check-input',(e) => {
       let attrGroupId = e.target.getAttribute('data-attr-group-id');
       $(`[name="components[${rowCount}][attr_group_id][${attrGroupId}][attr_name]"]`).val(e.target.value);
       qtyEnabledDisabled();
-  
-      let itemId = $("#attribute tbody tr").find('[name*="[item_id]"]').val();
-     let itemAttributes = [];
-     $("#attribute tbody tr").each(function(index, item) {
-        let attr_id = $(item).find('[name*="[attribute_id]"]').val();
-        let attr_value = $(item).find('[name*="[attribute_value]"]').val();
-        itemAttributes.push({
-              'attr_id': attr_id,
-              'attr_value': attr_value
-          });
-     });
+      setSelectedAttribute(rowCount);
   });
 
   /*Edit mode table calculation filled*/
@@ -127,7 +116,6 @@ $(document).on('change','#itemTable > thead .form-check-input',(e) => {
      $("#approveModal").modal('show');
   });
   
-  /*Bom detail remark js*/
   /*Open item remark modal*/
   $(document).on('click', '.addRemarkBtn', (e) => {
       let rowCount = e.target.closest('div').getAttribute('data-row-count');
@@ -197,20 +185,10 @@ $(document).on('change','#itemTable > thead .form-check-input',(e) => {
   
   $('#attribute').on('hidden.bs.modal', function () {
      let rowCount = $("[id*=row_].trselected").attr('data-index');
-     $(`[name="components[${rowCount}][qty]"]`).val('').focus();
+     let qty = $(`[name="components[${rowCount}][qty]"]`).val() || ''; 
+     $(`[name="components[${rowCount}][qty]"]`).val(qty).focus();
   });
-
-$(document).on('click', '.clearPiFilter', (e) => {
-    $("#item_name_search").val('');
-    $("#book_code_input_qt").val('');
-    $("#book_id_qt_val").val('');
-    $("#document_no_input_qt").val('');
-    $("#document_id_qt_val").val('');
-    $("#customer_code_input_qt").val('');
-    $("#customer_id_qt_val").val('');
-    $(".searchSoBtn").trigger('click');
-});
-
+  
 function updateRowIndex() {
     $("#itemTable tbody tr[id*='row_']").each(function(index, item) {
         let currentIndex = index + 1;

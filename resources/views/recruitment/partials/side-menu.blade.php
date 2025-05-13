@@ -17,6 +17,9 @@
                     <li><a class="d-flex align-items-center" href="{{ route('recruitment.internal-jobs') }}"><i
                                 data-feather="circle"></i><span class="menu-item text-truncate">Internal Job
                                 Posting</span></a></li>
+                    <li><a class="d-flex align-items-center" href="{{ route('recruitment.my-activities') }}"><i
+                                data-feather="circle"></i><span class="menu-item text-truncate">My Activity</span></a>
+                    </li>
                     <li><a class="d-flex align-items-center" href="{{ route('recruitment.my-referal') }}"><i
                                 data-feather="circle"></i><span class="menu-item text-truncate">My Referral</span></a>
                     </li>

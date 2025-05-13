@@ -30,11 +30,13 @@
                            <thead>
                               <tr>
                                  <th>S.No</th>
+                                 <th style="display:none;"></th> 
                                  <th>Date</th>
                                  <th>Series</th>
                                  <th>Doc No.</th>
                                  <th>Location</th>
                                  <th>Items</th>
+                                 <th>SO No.</th>
                                  <th style="text-align: right">Status</th>
                               </tr>
                            </thead>
@@ -121,6 +123,7 @@ $(document).ready(function() {
     }
     var columns = [
         { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
+        { data: 'id', name: 'id', visible: false, searchable: false },
         { data: 'document_date', name: 'document_date', render: renderData },
         { data: 'book_name', name: 'book_name', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('no-wrap');
@@ -132,6 +135,7 @@ $(document).ready(function() {
          }, 
         { data: 'location', name: 'location', render: renderData },
         { data: 'items', name: 'items', render: renderData },
+        { data: 'so_no', name: 'so_no', render: renderData },
          { data: 'document_status', name: 'document_status', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('no-wrap');
             }
@@ -150,7 +154,7 @@ $(document).ready(function() {
         filters,  // Apply filters
         'PWO',  // Export title
         exportColumns,  // Export columns
-        // [[1, "desc"]] // default order
+        [[1, "desc"]] // default order
 
     );
     // Apply filter on button click

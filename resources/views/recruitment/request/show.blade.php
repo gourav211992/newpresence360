@@ -24,7 +24,7 @@
                     </div>
                     <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
                         <div class="form-group breadcrumb-right">
-                            <a href="{{ route('recruitment.requests') }}" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i
+                            <a href="javascript:history.back()" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i
                                     data-feather="arrow-left-circle"></i> Back</a>
 
                             @if ($jobRequest->status == App\Helpers\CommonHelper::PENDING && $user->id == $jobRequest->created_by)
@@ -35,6 +35,11 @@
 
                             @if (in_array($jobRequest->status, [App\Helpers\CommonHelper::PENDING, App\Helpers\CommonHelper::APPROVED_FORWARD]) &&
                                     $jobRequest->approval_authority == $user->id)
+                                <button class="btn btn-success btn-sm mb-50 mb-sm-0" data-bs-target="#status-modal"
+                                    data-bs-toggle="modal" data-status="{{ App\Helpers\CommonHelper::SEND_BACK }}"
+                                    data-title="Send Back Request" data-id="{{ $jobRequest->id }}"><i
+                                        data-feather='send'></i> Send Back</button>
+
                                 @if ($user->manager_id)
                                     <button class="btn btn-primary btn-sm mb-50 mb-sm-0" data-bs-target="#status-modal"
                                         data-bs-toggle="modal"
@@ -157,8 +162,8 @@
                                                         </a>
                                                     </li>
                                                     <li class="nav-item">
-                                                        <a class="nav-link candidate-tab" id="scheduled" href="#scheduled"
-                                                            onclick="fetchCandidateList('scheduled')">
+                                                        <a class="nav-link candidate-tab" id="scheduled"
+                                                            href="#scheduled" onclick="fetchCandidateList('scheduled')">
                                                             Scheduled({{ $job->scheduledInterviewCount }})
                                                         </a>
                                                     </li>
@@ -182,7 +187,11 @@
                                                                         <div class="card-body emplodetainfocard pb-0">
                                                                             <div
                                                                                 class="employee-box text-center border-0 my-4">
-                                                                                @if (in_array($jobRequest->status, [App\Helpers\CommonHelper::PENDING, App\Helpers\CommonHelper::APPROVED_FORWARD]))
+                                                                                @if (in_array($jobRequest->status, [
+                                                                                        App\Helpers\CommonHelper::PENDING,
+                                                                                        App\Helpers\CommonHelper::SEND_BACK,
+                                                                                        App\Helpers\CommonHelper::APPROVED_FORWARD,
+                                                                                    ]))
                                                                                     <span>Approval Pending at
                                                                                         {{ $jobRequest->approvar_name }}</span>
                                                                                 @elseif (!$jobRequest->job_id && $jobRequest->status == App\Helpers\CommonHelper::FINAL_APPROVED)

@@ -9,21 +9,18 @@
       <input type="text" readonly value="{{$moItem->item_code}}" name="component_item_name[{{$rowCount}}]" placeholder="Select" class="form-control mw-100 mb-25 ledgerselecct" />
       <input type="hidden" name="component[{{$rowCount}}][item_id_2]" value="{{$moItem->item_id}}"/>
       <input type="hidden" name="component[{{$rowCount}}][item_code_2]" value="{{$moItem->item_code}}"/>
+      @foreach($moItem?->item?->itemAttributes as $itemAttribute)
+         @foreach ($itemAttribute->attributes() as $value)
+            @if(in_array($value->id, $selectedAttr))
+            <input type="hidden" name="component[{{$rowCount}}][attr_group_id][{{$itemAttribute->attribute_group_id}}][attr_name]" value="{{$value->id}}">
+            @endif
+         @endforeach
+      @endforeach
   </td>
   <td>
       <input type="text" name="component[{{$rowCount}}][item_name_2]" value="{{$moItem?->item?->item_name}}" class="form-control mw-100 mb-25" readonly/>
   </td>
-   <td class="poprod-decpt">
-    @php
-    $selectedAttr = $moItem->attributes ? $moItem->attributes()->pluck('attribute_id')->all() : []; 
-    @endphp
-    @foreach($moItem?->item?->itemAttributes as $index => $attribute) 
-        <span class="badge rounded-pill badge-light-primary"><strong data-group-id="{{$attribute->attributeGroup->id}}"> {{$attribute->attributeGroup->name}}</strong>: @foreach ($attribute->attributes() as $value) 
-            @if(in_array($value->id, $selectedAttr))
-                {{ $value->value }}
-            @endif
-        @endforeach </span>
-    @endforeach
+   <td class="poprod-decpt" id="itemAttribute_{{$rowCount}}" data-count="{{$rowCount}}" attribute-array="{{$moItem->item_attributes_array()}}">
    </td>
    <td>
       <select readonly class="form-select mw-100 " name="component[{{$rowCount}}][uom_id_2]">

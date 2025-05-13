@@ -96,20 +96,6 @@ class ItemController extends Controller
                     }
                     return $row->subTypes->isEmpty() ? 'No Subtypes' : $subTypes;
                 })
-                                          
-                ->addColumn('status', function ($row) {
-                    $statusClass = 'badge-light-secondary';
-                    if ($row->status == 'active') {
-                        $statusClass = 'badge-light-success';
-                    } elseif ($row->status == 'inactive') {
-                        $statusClass = 'badge-light-danger';
-                    } elseif ($row->status == 'draft') {
-                        $statusClass = 'badge-light-warning';
-                    }
-    
-                    return '<span class="badge rounded-pill ' . $statusClass . ' badgeborder-radius">'
-                        . ucfirst($row->status ?? 'Unknown') . '</span>';
-                })
                 ->editColumn('uom', function ($item) {
                     return $item->uom ? $item->uom->name : 'N/A';
                 })
@@ -125,21 +111,34 @@ class ItemController extends Controller
                 ->editColumn('updated_at', function ($row) {
                     return $row->updated_at ? Carbon::parse($row->updated_at)->format('d-m-Y') : 'N/A';
                 })
-                ->editColumn('action', function ($item) {
-                    return '
+                ->addColumn('status_action', function ($row) {
+                    $statusClass = 'badge-light-secondary';
+                    if ($row->status == 'active') {
+                        $statusClass = 'badge-light-success';
+                    } elseif ($row->status == 'inactive') {
+                        $statusClass = 'badge-light-danger';
+                    } elseif ($row->status == 'draft') {
+                        $statusClass = 'badge-light-warning';
+                    }
+    
+                    $status = '<span class="badge rounded-pill ' . $statusClass . ' badgeborder-radius">'
+                        . ucfirst($row->status ?? 'Unknown') . '</span>';
+    
+                    $action = '
                         <div class="dropdown">
                             <button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
                                 <i data-feather="more-vertical"></i>
                             </button>
                             <div class="dropdown-menu dropdown-menu-end">
-                                <a class="dropdown-item" href="' . route('item.edit', $item->id) . '">
+                                <a class="dropdown-item" href="' . route('item.edit', $row->id) . '">
                                     <i data-feather="edit-3" class="me-50"></i>
                                     <span>Edit</span>
                                 </a>
                             </div>
                         </div>';
+                    return '<div class="d-flex align-items-center justify-content-end">' . $status . $action . '</div>';
                 })
-                ->rawColumns(['status', 'action'])
+                ->rawColumns(['status_action'])
                 ->make(true);
 
         }
@@ -423,7 +422,6 @@ class ItemController extends Controller
     }
     public function import(Request $request)
     {
-        
         $user = Helper::getAuthenticatedUser();
     
         try {

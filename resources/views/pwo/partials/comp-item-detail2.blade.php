@@ -15,3 +15,17 @@
     </td>
 </tr>
 @endif
+@if($item->itemAttributes->count())
+<tr class="item_detail_row2">
+    <td class="poprod-decpt item_detail_attributes">
+        <span class="poitemtxt mw-100"><strong>Attributes:</strong></span>
+        @foreach($item->itemAttributes as $index => $attribute) 
+            <span class="badge rounded-pill badge-light-primary"><strong data-group-id="{{$attribute->attributeGroup->id}}"> {{$attribute->attributeGroup->name}}</strong>: @foreach ($attribute->attributes() as $value) 
+                @if(in_array($value->id, $selectedAttr))
+                    {{ $value->value }}
+                @endif
+             @endforeach </span>
+        @endforeach
+    </td>
+</tr>
+@endif

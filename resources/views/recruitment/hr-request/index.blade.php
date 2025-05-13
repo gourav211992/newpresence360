@@ -306,10 +306,10 @@
                     <div class="mb-1">
                         <label class="form-label">Select Job Title</label>
                         <select class="form-select select2" name="job_title">
-                            <option value="" {{ request('date_range') == '' ? 'selected' : '' }}>Select</option>
+                            <option value="" {{ request('job_title') == '' ? 'selected' : '' }}>Select</option>
                             @forelse($jobTitles as $jobTitle)
                                 <option value="{{ $jobTitle->id }}"
-                                    {{ request('date_range') == $jobTitle->id ? 'selected' : '' }}>{{ $jobTitle->title }}
+                                    {{ request('job_title') == $jobTitle->id ? 'selected' : '' }}>{{ $jobTitle->title }}
                                 </option>
                             @empty
                             @endforelse
@@ -343,7 +343,7 @@
                 </div>
                 <div class="modal-footer justify-content-start">
                     <button type="submit" class="btn btn-primary data-submit mr-1">Apply</button>
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <a href="{{ route('recruitment.request-hr') }}" class="btn btn-outline-secondary">Cancel</a>
                 </div>
             </form>
         </div>

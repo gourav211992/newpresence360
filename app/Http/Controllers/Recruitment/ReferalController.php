@@ -29,9 +29,13 @@ class ReferalController extends Controller
         $jobTitles = ErpRecruitmentJobTitle::where('status','active')
             ->where('organization_id',$user->organization_id)
             ->get();
+
+        $summaryData = CommonHelper::getSummaryData($request, $user);
         return view('recruitment.referal.index',[
             'referrals' => $referrals,
             'jobTitles' => $jobTitles,
+            'requestCount' => $summaryData['requestCount'],
+            'referralCount' => $summaryData['referralCount'],
         ]);
     }
 

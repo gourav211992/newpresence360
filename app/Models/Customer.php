@@ -54,6 +54,7 @@ class Customer  extends Model
         'pricing_type',
         'credit_limit',
         'credit_days',
+        'on_account_required',
         'interest_percent',
         'status',
         'created_by',

@@ -15,7 +15,6 @@ use App\Http\Requests\StockAccountRequest;
 use Illuminate\Http\Request;
 use App\Helpers\Helper;
 use App\Helpers\AccountHelper;
-use App\Models\Trait\DefaultGroupCompanyOrg;
 use Illuminate\Support\Facades\DB;
 use Auth;
 
@@ -27,7 +26,7 @@ class StockAccountController extends Controller
         $userType = Helper::userCheck()['type'];
         $orgIds = $user -> organizations() -> pluck('organizations.id') -> toArray();
         array_push($orgIds, $user?->organization_id);
-        $orgData = Organization::whereIn('id', $orgIds);
+        $orgData = Organization::whereIn('id', values: $orgIds);
         $companyIds = $orgData
             ->pluck('company_id')
             ->toArray();
@@ -49,7 +48,7 @@ class StockAccountController extends Controller
         ->where('status', 'active') 
         ->get();
     
-        $stockAccount = StockAccount::All();  
+        $stockAccount = StockAccount::withDefaultGroupCompanyOrg()->get();
         $erpBooks = Book::withDefaultGroupCompanyOrg()
         ->where('status', 'active') 
         ->get(); 
@@ -97,7 +96,7 @@ class StockAccountController extends Controller
         }
 
         return view('procurement.stock-account.index', compact(
-            'companies', 'categories', 'subCategories', 'ledgerGroups', 'ledgers', 'items', 'stockAccount','erpBooks'
+            'companies', 'categories', 'subCategories', 'ledgerGroups', 'ledgers', 'items', 'stockAccount','erpBooks','orgIds'
         ));
     }
 

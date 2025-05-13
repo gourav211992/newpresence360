@@ -217,7 +217,7 @@
                                         <th width="100px">Location</th>
                                         <th width="150px">Product Code</th>
                                         <th width="300px">Product Name</th>
-                                        <th>Attributes</th>
+                                        <th max-width="180px">Attributes</th>
                                         <th >UOM</th>
                                         <th class="text-end">Quantity</th>
                                         <th width="200px">Customer</th>

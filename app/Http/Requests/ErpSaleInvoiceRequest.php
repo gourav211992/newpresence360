@@ -45,7 +45,10 @@ class ErpSaleInvoiceRequest extends FormRequest
             'item_id.*' => 'required|numeric|integer',
             'item_qty.*' => 'required|numeric|min:0.0001',
             'item_rate.*' => 'required|numeric|min:1',
-            'final_remarks' => 'nullable|string|max:255'
+            'final_remarks' => 'nullable|string|max:255',
+            'customer_phone_no' => 'nullable|string|regex:/^[0-9]{10}$/',
+            'customer_email' => 'nullable|email',
+            'customer_gstin' => 'nullable|string|size:15|regex:/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/'
         ];
     }
 

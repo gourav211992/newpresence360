@@ -164,6 +164,15 @@ class MfgOrder extends Model
     {
         return $this->hasMany(MoItem::class, 'mo_id');
     } 
+
+    public function last_so()
+    {
+        $moProduct = $this->moProducts?->count() ? $this->moProducts()->whereNotNull('so_id')->first() : null;
+        if($moProduct) {
+            return $moProduct?->so;
+        }
+        return null;
+    }
     
     public function items()
     {

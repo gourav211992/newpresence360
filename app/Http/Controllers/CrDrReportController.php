@@ -26,6 +26,9 @@ use Illuminate\Support\Facades\Mail;
 use App\Models\AuthUser;
 use Carbon\Carbon;
 use PDF;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\DebitorCreditoExcelExport;
+
 
 
 class CrDrReportController extends Controller
@@ -38,7 +41,7 @@ class CrDrReportController extends Controller
             $dates = explode(' to ', $request->date);
             $start = date('Y-m-d', strtotime($dates[0]));
             $end = date('Y-m-d', strtotime($dates[1]));
-        } 
+        }
 
         $group_name = Group::find($request->group)->name ?? ConstantHelper::RECEIVABLE;
 
@@ -91,7 +94,7 @@ class CrDrReportController extends Controller
             $dates = explode(' to ', $request->date);
             $start = date('Y-m-d', strtotime($dates[0]));
             $end = date('Y-m-d', strtotime($dates[1]));
-        } 
+        }
 
         $group_name = Group::find($request->group)->name ?? ConstantHelper::PAYABLE;
         $vendors = [];
@@ -242,7 +245,7 @@ class CrDrReportController extends Controller
                         $query->where('ledger_parent_id', $group);
                         $query->where($type . '_amt_org', '>', 0);
                     })
-                    
+
                         ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED);
 
                     if (!empty($start) && !empty($end)) {
@@ -477,10 +480,10 @@ class CrDrReportController extends Controller
                     : in_array($ledgerGroupId, (array) $group);
             });
         }
-    
+
 
         return $advance;
-        
+
     }
 
 
@@ -924,24 +927,24 @@ class CrDrReportController extends Controller
                     fn($v, $k) => $k < $resDateTimestamp && $v > 0,
                     ARRAY_FILTER_USE_BOTH
                 );
-                
+
                 if (!empty($filtered) && $res[$bucket] > 0) {
                     foreach ($filtered as $advanceDate => $advanceAmount) {
                         if ($res[$bucket] <= 0) {
                             break; // stop once there's nothing left to deduct
                         }
-                
+
                         // Deduct the smaller between the available advance and the bucket amount
                         $deductAmount = min($advanceAmount, $res[$bucket]);
                         $res[$bucket] -= $deductAmount;
                         $remainingAdvancesByDate[$advanceDate] -= $deductAmount;
                         $res['total_outstanding'] -= $deductAmount;
                     }
-                
+
                 }}
             }
             //dd($remainingAdvancesByDate,$totAdvancesByDate);
-        
+
 
 
 
@@ -1219,5 +1222,147 @@ class CrDrReportController extends Controller
         $fileName = $type == "debit" ? str_replace(' ', '_', $ledger_name).'_Account_Statment (Debtor)' . date('Y-m-d') . '.pdf' : str_replace(' ', '_', $ledger_name).'_Account_Statment (Creditor)' . date('Y-m-d') . '.pdf';
         $pdf->setPaper('A4', 'portrait');
         return $pdf->stream($fileName);
+    }
+
+    public function exportDebitorCreditor(Request $request)
+    {
+        $type = $request->type;
+
+        if ($type === 'credit') {
+            $entities = is_string($request->vendors) ? json_decode($request->vendors) : $request->vendors;
+        } elseif ($type === 'debit') {
+            $entities = is_string($request->customers) ? json_decode($request->customers) : $request->customers;
+        } else {
+            $entities = [];
+        }
+
+        $groupIdFromRequest = $request->group_id;
+
+        // If group_id is selected, build single group structure
+        $defaultGroupName = $type === 'debit'
+            ? ConstantHelper::RECEIVABLE
+            : ConstantHelper::PAYABLE;
+
+        // If group_id is selected, use it globally
+        if ($groupIdFromRequest) {
+            $groupName = Group::find($groupIdFromRequest)?->name ?? $defaultGroupName;
+
+            $structuredRecords = [
+                'group_name' => $groupName,
+                'type' => $type,
+                'entities' => [],
+                'date' => $request->date,
+                'date2' => $request->date2,
+            ];
+
+            foreach ($entities as $item) {
+                $ledger = $item->ledger_id;
+                $ledgerData = self::prepareLedgerDataOnly($type, $ledger, $groupIdFromRequest, $request);
+
+                $structuredRecords['entities'][] = [
+                    'vendor_name' => $item->ledger_name,
+                    'records' => $ledgerData['data'],
+                    'credit_days' => $ledgerData['credit_days']
+                ];
+            }
+        } else {
+            // No group_id selected — still provide default group_name
+            $structuredRecords = [
+                'group_name' => $defaultGroupName,
+                'type' => $type,
+                'date' => $request->date,
+                'date2' => $request->date2,
+                'entities' => []
+            ];
+
+            foreach ($entities as $item) {
+                $ledger = $item->ledger_id;
+                $groupId = $item->ledger_parent_id;
+
+                if (!$groupId) continue;
+
+                $groupName = Group::find($groupId)?->name ?? 'Unknown Group';
+
+                $ledgerData = self::prepareLedgerDataOnly($type, $ledger, $groupId, $request);
+
+                $structuredRecords['entities'][] = [
+                    'vendor_name' => $item->ledger_name,
+                    'group_name' => $groupName,
+                    'records' => $ledgerData['data'],
+                    'credit_days' => $ledgerData['credit_days']
+                ];
+            }
+        }
+
+        $filename = $type === 'credit'
+            ? 'creditor-ledger.xlsx'
+            : ($type === 'debit' ? 'debitor-ledger.xlsx' : 'ledger-report.xlsx');
+
+        return Excel::download(
+            new DebitorCreditoExcelExport($structuredRecords),
+            $filename
+        );
+    }
+
+
+
+    public static function prepareLedgerDataOnly($type, $ledger, $group, Request $request)
+    {
+        $model = $type == 'debit' ? Customer::class : Vendor::class;
+
+        $start = null;
+        $end = null;
+        if ($request->date) {
+            $dates = explode(' to ', $request->date);
+            $start = date('Y-m-d', strtotime($dates[0]));
+            $end = date('Y-m-d', strtotime($dates[1]));
+        }
+
+        $ages_all = [
+            $request->age0 ?? 30,
+            $request->age1 ?? 60,
+            $request->age2 ?? 90,
+            $request->age3 ?? 120,
+            $request->age4 ?? 180
+        ];
+
+        $credit_days = $model::where('ledger_group_id', $group)
+            ->where('ledger_id', $ledger)
+            ->value('credit_days') ?? 0;
+
+        $doc_types = $type === 'debit'
+            ? [ConstantHelper::RECEIPTS_SERVICE_ALIAS, 'Receipt']
+            : [ConstantHelper::PAYMENTS_SERVICE_ALIAS, 'Payment'];
+
+        $cus_type = $type === 'debit' ? 'customer' : 'vendor';
+
+        $vouchers = Voucher::withDefaultGroupCompanyOrg()
+            ->withWhereHas('items', function ($query) use ($ledger, $group, $type) {
+                $query->where('ledger_id', $ledger);
+                $query->where('ledger_parent_id', $group);
+                $query->where($type . '_amt_org', '>', 0);
+            })
+            ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED);
+
+        if (!empty($start) && !empty($end)) {
+            $vouchers->whereBetween('document_date', [$start, $end]);
+        }
+
+        $voucherIds = $vouchers
+            ->orderBy('document_date', 'asc')
+            ->orderBy('created_at', 'asc')
+            ->pluck('id')
+            ->toArray();
+
+        if ($voucherIds) {
+            $data = self::get_overdue($type, $ages_all, $doc_types, $cus_type, $voucherIds, $credit_days, $group, $ledger, 1, $start, $end);
+        } else {
+            $data = [];
+        }
+
+        return [
+            'data' => json_decode(json_encode($data)),
+            'credit_days' => $credit_days
+        ];
     }
 }

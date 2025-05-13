@@ -11,6 +11,8 @@ use App\Models\PriceVarianceAccount;
 use App\Models\Organization;
 use App\Models\Item;
 use App\Models\Book;
+use App\Models\ServiceAccount; 
+use App\Models\PhysicalStockAccount;
 use App\Models\Customer;
 use Illuminate\Support\Facades\Log;
 
@@ -621,6 +623,162 @@ class AccountHelper
             [
                 'ledger_group' => $wipAccount->ledgerGroup ? $wipAccount->ledgerGroup->id : null, 
                 'ledger_id' => $wipAccount->ledger ? $wipAccount->ledger->id : null,
+            ]
+        ]);
+    }
+
+    public static function getServiceLedgerGroupAndLedgerId($organizationId = null, $itemId = null, $bookId = null)
+    {
+        $query = ServiceAccount::query();
+
+        if ($organizationId) {
+            $organization = Organization::find($organizationId);
+            if ($organization && $organization->group_id) {
+                $query->where('group_id', $organization->group_id);
+            } else {
+                return ['message' => 'Organization not found or does not have a group ID.'];
+            }
+        } else {
+            return ['message' => 'Organization ID is required to proceed.'];
+        }
+
+        if ($organization->company_id) {
+            $query->where('company_id', $organization->company_id);
+        } else {
+            return ['message' => 'Organization does not have a valid Company ID.'];
+        }
+
+        if ($organization->id) {
+            $query->where('organization_id', $organization->id);
+        } else {
+            return ['message' => 'Organization ID is required to filter Service accounts.'];
+        }
+
+        if ($bookId) {
+            $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(book_id, '$[*]')) LIKE ?", ['%' . $bookId . '%']);
+            $bookQuery = clone $query;
+            $serviceAccounts = $bookQuery->get();
+            if ($serviceAccounts->isEmpty()) {
+                $query->orWhereNull('book_id');
+            }
+        }
+
+        if ($itemId) {
+            $item = Item::find($itemId);
+
+            if (!$item) {
+                return ['message' => 'Record not found for the given item ID.'];
+            }
+
+            if ($item->category_id) {
+                $query->where('category_id', $item->category_id);
+                $itemCategoryQuery = clone $query;
+                $serviceAccounts = $itemCategoryQuery->get();
+                if ($serviceAccounts->isEmpty()) {
+                    $query->orWhereNull('category_id');
+                }
+            }
+
+            if ($item->subcategory_id) {
+                $query->where('sub_category_id', $item->subcategory_id);
+                $itemSubCategoryQuery = clone $query;
+                $serviceAccounts = $itemSubCategoryQuery->get();
+                if ($serviceAccounts->isEmpty()) {
+                    $query->orWhereNull('sub_category_id');
+                }
+            }
+
+            $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(item_id, '$[*]')) LIKE ?", ['%' . $itemId . '%']);
+                $itemQuery = clone $query;
+                $serviceAccounts = $itemQuery->get();
+                if ($serviceAccounts->isEmpty()) {
+                    $query->orWhereNull('item_id');
+                }
+        }
+
+        $serviceAccount = $query->first();
+
+        if (!$serviceAccount) {
+            return ['message' => 'Record not found with the applied filters.'];
+        }
+
+        return collect([
+            [
+                'ledger_group' => $serviceAccount->ledgerGroup ? $serviceAccount->ledgerGroup->id : null,
+                'ledger_id' => $serviceAccount->ledger ? $serviceAccount->ledger->id : null,
+            ]
+        ]);
+    }
+
+    public static function getPhysicalStockLedgerGroupAndLedgerId($organizationId = null, $itemId = null)
+    {
+        $query = PhysicalStockAccount::query();
+
+        if ($organizationId) {
+            $organization = Organization::find($organizationId);
+            if ($organization && $organization->group_id) {
+                $query->where('group_id', $organization->group_id);
+            } else {
+                return ['message' => 'Organization not found or does not have a group ID.'];
+            }
+        } else {
+            return ['message' => 'Organization ID is required to proceed.'];
+        }
+
+        if ($organization->company_id) {
+            $query->where('company_id', $organization->company_id);
+        } else {
+            return ['message' => 'Organization does not have a valid Company ID.'];
+        }
+
+        if ($organization->id) {
+            $query->where('organization_id', $organization->id);
+        } else {
+            return ['message' => 'Organization ID is required to filter Physical Stock accounts.'];
+        }
+
+        if ($itemId) {
+            $item = Item::find($itemId);
+
+            if (!$item) {
+                return ['message' => 'Record not found for the given item ID.'];
+            }
+
+            if ($item->category_id) {
+                $query->where('category_id', $item->category_id);
+                $itemCategoryQuery = clone $query;
+                $physicalStockAccounts = $itemCategoryQuery->get();
+                if ($physicalStockAccounts->isEmpty()) {
+                    $query->orWhereNull('category_id');
+                }
+            }
+
+            if ($item->subcategory_id) {
+                $query->where('sub_category_id', $item->subcategory_id);
+                $itemSubCategoryQuery = clone $query;
+                $physicalStockAccounts = $itemSubCategoryQuery->get();
+                if ($physicalStockAccounts->isEmpty()) {
+                    $query->orWhereNull('sub_category_id');
+                }
+            }
+              $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(item_id, '$[*]')) LIKE ?", ['%' . $itemId . '%']);
+            $itemQuery = clone $query;
+            $physicalStockAccounts = $itemQuery->get();
+            if ($physicalStockAccounts->isEmpty()) {
+                $query->orWhereNull('item_id');
+            }
+        }
+
+        $physicalStockAccount = $query->first();
+
+        if (!$physicalStockAccount) {
+            return ['message' => 'Record not found with the applied filters.'];
+        }
+
+        return collect([
+            [
+                'ledger_group' => $physicalStockAccount->ledgerGroup ? $physicalStockAccount->ledgerGroup->id : null,
+                'ledger_id' => $physicalStockAccount->ledger ? $physicalStockAccount->ledger->id : null,
             ]
         ]);
     }

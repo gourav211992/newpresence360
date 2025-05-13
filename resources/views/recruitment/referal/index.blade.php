@@ -35,6 +35,11 @@
                     <div class="row">
                         <div class="col-md-12 col-12">
                             <div class="card  new-cardbox">
+                                {{-- Card Header --}}
+                                @include('recruitment.activity.tab', [
+                                    'requestCount' => $requestCount,
+                                    'referralCount' => $referralCount,
+                                ])
                                 <div class="table-responsive candidates-tables">
                                     @include('recruitment.partials.card-header')
                                     <table

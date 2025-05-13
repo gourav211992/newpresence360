@@ -3,6 +3,7 @@
 namespace App\Helpers;
 use App\Models\Bom;
 use App\Models\Book;
+use App\Models\CashCustomerDetail;
 use App\Models\Compliance;
 use App\Models\Customer;
 use App\Models\ErpAddress;
@@ -23,6 +24,7 @@ use App\Models\OrganizationBookParameter;
 use App\Models\Vendor;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Psy\TabCompletion\Matcher\ConstantsMatcher;
 
 class SaleModuleHelper  
 { 
@@ -255,27 +257,30 @@ class SaleModuleHelper
         return $pslipNos;
     }
 
-    public static function updateEInvoiceDataFromHelper(Model $document) : Model
+    public static function updateEInvoiceDataFromHelper(Model $document, bool $invoiceTypeField = true) : Model
     {
         //Update Organization Address
-        $organization = Organization::find($document -> organization_id);
-        $actualOrgAddress = $organization -> addresses ?-> first();
-        if (isset($actualOrgAddress)) {
-            $document->organization_address()->updateOrCreate(
-                [
-                    'type' => 'organization'
-                ],
-                [
-                    'address' => $actualOrgAddress->address,
-                    'country_id' => $actualOrgAddress->country_id,
-                    'state_id' => $actualOrgAddress->state_id,
-                    'city_id' => $actualOrgAddress->city_id,
-                    'pincode' => $actualOrgAddress->pincode,
-                    'phone' => $actualOrgAddress->phone,
-                    'fax_number' => $actualOrgAddress->fax_number
-                ]
-            );
+        if ($invoiceTypeField) {
+            $organization = Organization::find($document -> organization_id);
+            $actualOrgAddress = $organization -> addresses ?-> first();
+            if (isset($actualOrgAddress)) {
+                $document->organization_address()->updateOrCreate(
+                    [
+                        'type' => 'organization'
+                    ],
+                    [
+                        'address' => $actualOrgAddress->address,
+                        'country_id' => $actualOrgAddress->country_id,
+                        'state_id' => $actualOrgAddress->state_id,
+                        'city_id' => $actualOrgAddress->city_id,
+                        'pincode' => $actualOrgAddress->pincode,
+                        'phone' => $actualOrgAddress->phone,
+                        'fax_number' => $actualOrgAddress->fax_number
+                    ]
+                );
+            }
         }
+        
         //Update Store Address
         $store = ErpStore::find($document -> store_id);
         $actualStoreAddress = $store -> address;
@@ -331,11 +336,96 @@ class SaleModuleHelper
                 ]
             );
         }
-        //Update GST Invoice
-        $document -> gst_invoice_type = EInvoiceHelper::getGstInvoiceType($document -> customer_id, 
-        $actualCustomerShipAddress ?-> country_id, $actualOrgAddress ?-> country_id);
+        //Retrieve Customer and update fields from there
+        $customer = Customer::find($document -> customer_id);
+        if (isset($customer) && $customer -> customer_type === ConstantHelper::REGULAR) {
+            $document -> customer_phone_no = $customer -> mobile;
+            $document -> customer_email = $customer -> email;
+            $document -> customer_gstin = $customer -> compliances ?-> gstin_no;
+        }
+        if ($invoiceTypeField) {
+            //Update GST Invoice
+            $document -> gst_invoice_type = EInvoiceHelper::getGstInvoiceType($document -> customer_id, 
+            $actualCustomerShipAddress ?-> country_id, $actualOrgAddress ?-> country_id);
+        }
+        
         //Save
         $document -> save();
         return $document;
+    }
+
+    public static function cashCustomerMasterData(ErpSaleOrder|ErpSaleInvoice $saleOrder)
+    {
+        $customer = Customer::find($saleOrder -> customer_id);
+        if (!isset($customer) || (isset($customer) && $customer -> customer_type !== ConstantHelper::CASH)) {
+            return;
+        }
+        $customerPhoneNo = $saleOrder -> customer_phone_no;
+        $customerEmail = $saleOrder -> customer_email;
+        $customerGstIn = $saleOrder -> customer_gstin;
+        $customerName = $saleOrder -> consignee_name;
+        $shippingAddress = $saleOrder -> shipping_address_details;
+        $billingAddress = $saleOrder -> billing_address_details;
+
+        //Check for existing record
+        $existingPhoneRecord = CashCustomerDetail::where('phone_no', $customerPhoneNo) -> first();
+
+        if (isset($existingPhoneRecord)) {
+            $existingPhoneRecord -> name = $customerName;
+            $existingPhoneRecord -> gstin = $customerGstIn;
+            $existingPhoneRecord -> email = $customerEmail;
+            $existingPhoneRecord -> save();
+
+            $existingPhoneRecord -> shipping_address() -> create([
+                'address' => $shippingAddress -> address,
+                'country_id' => $shippingAddress -> country_id,
+                'state_id' => $shippingAddress -> state_id,
+                'city_id' => $shippingAddress -> city_id,
+                'type' => 'shipping',
+                'pincode' => $shippingAddress -> pincode,
+                'phone' => $shippingAddress -> phone,
+                'fax_number' => $shippingAddress -> fax_number
+            ]);
+            $existingPhoneRecord -> billing_address() -> create([
+                'address' => $billingAddress -> address,
+                'country_id' => $billingAddress -> country_id,
+                'state_id' => $billingAddress -> state_id,
+                'city_id' => $billingAddress -> city_id,
+                'type' => 'billing',
+                'pincode' => $billingAddress -> pincode,
+                'phone' => $billingAddress -> phone,
+                'fax_number' => $billingAddress -> fax_number
+            ]);
+        } else {
+            $cashCustomer = CashCustomerDetail::create([
+                'customer_id' => $saleOrder -> customer_id,
+                'name' => $customerName,
+                'email' => $customerEmail,
+                'phone_no' => $customerPhoneNo,
+                'gstin' => $customerGstIn
+            ]);
+            $cashCustomer -> shipping_address() -> create([
+                'address' => $shippingAddress -> address,
+                'country_id' => $shippingAddress -> country_id,
+                'state_id' => $shippingAddress -> state_id,
+                'city_id' => $shippingAddress -> city_id,
+                'type' => 'shipping',
+                'pincode' => $shippingAddress -> pincode,
+                'phone' => $shippingAddress -> phone,
+                'fax_number' => $shippingAddress -> fax_number
+            ]);
+            $cashCustomer -> billing_address() -> create([
+                'address' => $billingAddress -> address,
+                'country_id' => $billingAddress -> country_id,
+                'state_id' => $billingAddress -> state_id,
+                'city_id' => $billingAddress -> city_id,
+                'type' => 'billing',
+                'pincode' => $billingAddress -> pincode,
+                'phone' => $billingAddress -> phone,
+                'fax_number' => $billingAddress -> fax_number
+            ]);
+            
+            
+        }
     }
 }

@@ -1046,7 +1046,7 @@ class PiController extends Controller
                     'attribute_id' => $soAttribute->item_attribute_id,
                     'attribute_value' => intval($soAttribute->attr_value)
                 ])->toArray();
-               $res = $this->syncPiSoMapping($soId, $soItemId, $itemId, $soAttribute, $avlQty, $createdBy);
+               $res = $this->syncPiSoMapping($soId, $soItemId, $itemId, $soAttribute, $avlQty, $createdBy, $avlQty);
                    if($res['status'] == 422) {
                        DB::rollBack();
                        return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => $res['message']]);
@@ -1062,12 +1062,26 @@ class PiController extends Controller
            // ->whereNull('pi_item_id')
            ->whereNotNull('child_bom_id')
            ->get();
+        //    dd($soProcessItems);
            foreach($soProcessItems as $soProcessItem) {
                $soId = $soProcessItem->so_id;
                $soItemId = $soProcessItem->so_item_id;
                $itemId = $soProcessItem->item_id;
                $attributes = json_decode($soProcessItem->attributes,true);
-               $res = $this->syncPiSoMapping($soId, $soItemId, $itemId, $attributes, $soProcessItem->order_qty, $createdBy);
+               $soItemOrderQty = $soProcessItem->order_qty;
+               $mappingExit = PiSoMapping::where([
+                   ['so_id', $soId],
+                   ['so_item_id', $soItemId],
+                   ['item_id', $itemId]
+                   ])
+                   ->whereJsonContains('attributes', $attributes)
+                   ->first();
+                $updatedQty = $soProcessItem->qty;
+                if(isset($mappingExit) && $mappingExit) {
+                    $updatedQty = $mappingExit->qty;
+                }
+
+               $res = $this->syncPiSoMapping($soId, $soItemId, $itemId, $attributes, $updatedQty, $createdBy, $soItemOrderQty);
                if($res['status'] == 422) {
                    DB::rollBack();
                    return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => $res['message']]);
@@ -1116,52 +1130,47 @@ class PiController extends Controller
    /**
     * Sync or Create PiSoMapping
     */
-   private function syncPiSoMapping($soId, $soItemId, $itemId, $attr, $soQty, $createdBy)
+   private function syncPiSoMapping($soId, $soItemId, $itemId, $attr, $soQty, $createdBy, $soItemOrderQty)
    {
        $so = ErpSaleOrder::find($soId);
        $customerId = $so?->customer_id; 
        $item = Item::find($itemId);
        $checkBomExist = ItemHelper::checkItemBomExists($itemId, $attr);
-    //    if(!$checkBomExist['bom_id']) {
-    //        $checkBomExist = ItemHelper::checkItemBomExists($itemId, $attr, 'qbom', $customerId);
-    //    }
        if($checkBomExist['bom_id']) {
             $bom = Bom::find($checkBomExist['bom_id']);
-            // dd($bom->production_type);
-            if($bom->customizable === 'no') {
-                $bomDetails = BomDetail::where("bom_id",$checkBomExist['bom_id'])->get();
-            } else {
-                $bomDetails = ErpSoItemBom::where("bom_id",$checkBomExist['bom_id'])
-                            ->where("sale_order_id", $soId)
-                            ->where("so_item_id", $soItemId)
-                            ->get();
-            }
+            $bomDetails = (strtolower($bom->customizable) === 'no')
+                ? BomDetail::where('bom_id', $checkBomExist['bom_id'])->get()
+                : ErpSoItemBom::where('bom_id', $checkBomExist['bom_id'])
+                    ->where('sale_order_id', $soId)
+                    ->where('so_item_id', $soItemId)
+                    ->get();
 
+            if (strtolower($bom->customizable) === 'yes' && $bomDetails->isEmpty()) {
+                $bomDetails = BomDetail::where('bom_id', $checkBomExist['bom_id'])->get();
+            }
+            
             if($bom->production_type == 'In-house') {
-                $ctr = 0;
                 foreach($bomDetails as $bomDetail) {
-                    $ctr++;
                     
                     $bomDetailId = null;
-                    if($bom->customizable === 'no') {
+                    $attributes = [];
+                    if ($bomDetail instanceof \App\Models\BomDetail) {
                         $attributes = $bomDetail->attributes->map(fn($attribute) => [
                             'attribute_id' => intval($attribute->item_attribute_id),
                             'attribute_value' => intval($attribute->attribute_value),
                         ])->toArray();
                         $bomDetailId = $bomDetail->id;
-                    } else {
+                    } elseif ($bomDetail instanceof \App\Models\ErpSoItemBom) {
                         $attributes = array_map(function ($attribute) {
                             return [
                                 'attribute_id' => intval($attribute['attribute_id']),
                                 'attribute_value' => intval($attribute['attribute_value_id']),
                             ];
                         }, $bomDetail->item_attributes ?? []);
-                        $bomDetailId = $bomDetail?->bom_detail_id;
+                        $bomDetailId = $bomDetail->bom_detail_id;
                     }
+
                        $checkBomExist = ItemHelper::checkItemBomExists($bomDetail->item_id, $attributes);
-                        // if(!$checkBomExist['bom_id']) {
-                        //     $checkBomExist = ItemHelper::checkItemBomExists($bomDetail->item_id, $attributes, 'qbom', $customerId);
-                        // }
                        if(in_array($checkBomExist['sub_type'],['Finished Goods', 'WIP/Semi Finished'])) {
                            if(!$checkBomExist['bom_id']) {
                                $name = $bomDetail?->item?->item_name;
@@ -1179,7 +1188,7 @@ class PiController extends Controller
                                'bom_id' => $bomDetail->bom_id ?? null,
                                'bom_detail_id' => $bomDetailId ?? null,
                                'item_code' => $bomDetail->item_code,
-                               'order_qty' => floatval($soQty),
+                               'order_qty' => floatval($soItemOrderQty),
                                'bom_qty' => floatval($bomDetail->qty),
                                'qty' => floatval($soQty) * floatval($bomDetail->qty),
                                'attributes' => json_encode($attributes),
@@ -1193,11 +1202,13 @@ class PiController extends Controller
                         //    ->where('attributes', json_encode($attributes))
                            ->whereJsonContains('attributes', $attributes)
                            ->first();
-
-                           if($soId == 27 && $soItemId == 29 && $soQty == 20) {
-                                // dd($soId, $soItemId,$soQty,$mappingData['item_id'],$attributes);
-                            }
+                            
+                           
+                        //    if($soId == 27 && $soItemId == 29 && $soQty == 20) {
+                        //         dd($soId, $soItemId,$soQty,$mappingData['item_id'],$attributes);
+                        //     }
                            if($mappingExit) {
+                            
                             //    $mappingData['order_qty'] = $mappingData['order_qty'] + $soQty;
                             //    $mappingData['bom_qty'] = $mappingData['bom_qty'] + floatval($bomDetail->qty);
                                $mappingData['qty'] = $mappingData['qty'] + $mappingExit->qty;
@@ -1208,7 +1219,9 @@ class PiController extends Controller
                            } else {
                                PiSoMapping::create($mappingData);
                            }
-        
+                           
+                           
+
                        }
                        
                    }

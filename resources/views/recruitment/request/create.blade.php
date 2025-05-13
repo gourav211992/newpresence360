@@ -348,8 +348,13 @@
         function toggleReplacementField(type) {
             if (type === 'replacement') {
                 $('.replacementTypeField').show();
+                $('input[name="no_of_position"]').val(1);
+                $('input[name="no_of_position"]').prop('readonly', true);
             } else {
                 $('.replacementTypeField').hide();
+                $('input[name="no_of_position"]').prop('readonly', false);
+                $('input[name="no_of_position"]').val('');
+
             }
         }
 
@@ -358,7 +363,7 @@
                 placeholder: "Select Employee...",
                 minimumInputLength: 2,
                 ajax: {
-                    url: "{{ route('recruitment.fetch-employees') }}",
+                    url: "{{ route('recruitment.fetch-team') }}",
                     dataType: 'json',
                     data: function(params) {
                         return {

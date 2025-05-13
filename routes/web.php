@@ -271,6 +271,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('vouchers/getLedgerGroups', [VoucherController::class, 'getLedgerGroups'])->name('voucher.getLedgerGroups');
     Route::get('report/creditors', [CrDrReportController::class, 'credit'])->name('voucher.credit.report');
     Route::get('report/debitors', [CrDrReportController::class, 'debit'])->name('voucher.debit.report');
+    Route::post('report/debitors-creditor-export', [CrDrReportController::class, 'exportDebitorCreditor'])->name('credit.debit.report.export');
     Route::get('/crdr/report/ledger/{group}', [CrDrReportController::class, 'getLedgersByGroup'])->name('crdr.report.ledger');
     Route::get('/report/getLedgerDetails/{type}/{ledger}/{group}', [CrDrReportController::class, 'getLedgerDetails'])->name('crdr.report.ledger.details');
     Route::get('report/creditors/getDetails', [CrDrReportController::class, 'credit_debit_details'])->name('voucher.credit_details.report');
@@ -283,15 +284,6 @@ Route::middleware(['user.auth'])->group(function () {
     Route::resource('ledgers', LedgerController::class)->except(['show']);
     Route::get('/ledgers/{ledgerId}/groups', [LedgerController::class, 'getLedgerGroups'])->name('ledgers.groups');;
     Route::get('/search/ledger', [LedgerController::class,'getLedger'])->name('ledger.search');
-    // closefy
-    Route::get('/close-fy', [CloseFyController::class,'index'])->name('close-fy');
-    Route::post('/close-fy', [CloseFyController::class,'closeFy'])->name('post-closefy');
-    Route::post('/close-fy/update-authuser', [CloseFyController::class, 'updateFyAuthorizedUser'])->name('close-fy.update-authuser');
-    Route::post('/close-fy/delete-authuser', [CloseFyController::class, 'deleteFyAuthorizedUser'])->name('close-fy.delete-authuser');
-    Route::post('/close-fy/lock', [CloseFyController::class, 'lockUnlockFy'])->name('close-fy.lock');
-    Route::post('/getFyInitialGroups', [CloseFyController::class,'getFyInitialGroups'])->name('getFyInitialGroups');
-    Route::post('/store-fy-session', [CloseFyController::class, 'storeFySession'])->name('store.fy.session');
-
 
     // closefy
     Route::get('/close-fy', [CloseFyController::class,'index'])->name('close-fy');
@@ -302,6 +294,15 @@ Route::middleware(['user.auth'])->group(function () {
     Route::post('/getFyInitialGroups', [CloseFyController::class,'getFyInitialGroups'])->name('getFyInitialGroups');
     Route::post('/store-fy-session', [CloseFyController::class, 'storeFySession'])->name('store.fy.session');
 
+
+    // closefy
+    Route::get('/close-fy', [CloseFyController::class,'index'])->name('close-fy');
+    Route::post('/close-fy', [CloseFyController::class,'closeFy'])->name('post-closefy');
+    Route::post('/close-fy/update-authuser', [CloseFyController::class, 'updateFyAuthorizedUser'])->name('close-fy.update-authuser');
+    Route::post('/close-fy/delete-authuser', [CloseFyController::class, 'deleteFyAuthorizedUser'])->name('close-fy.delete-authuser');
+    Route::post('/close-fy/lock', [CloseFyController::class, 'lockUnlockFy'])->name('close-fy.lock');
+    Route::post('/getFyInitialGroups', [CloseFyController::class,'getFyInitialGroups'])->name('getFyInitialGroups');
+    Route::post('/store-fy-session', [CloseFyController::class, 'storeFySession'])->name('store.fy.session');
 
 
     Route::resource('cost-group', CostGroupController::class)->except(['show']);
@@ -2240,7 +2241,6 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         'update' => 'finance.fixed-asset.maintenance.update',
     ]);
     Route::get('fixed-asset/setup/category', [SetupController::class, 'category'])->name('finance.fixed-asset.setup.category');
-
 
     Route::resource('fixed-asset/setup', SetupController::class)->names([
         'index' => 'finance.fixed-asset.setup.index',

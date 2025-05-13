@@ -63,17 +63,35 @@
                                                 <thead>
                                                     <tr>
                                                         <th>#</th>
-                                                        <th>Date</th>
-                                                        <th>Job Id</th>
-                                                        <th>Request Id</th>
-                                                        <th>Job Type</th>
+                                                        <th onclick="sort('created_at')">
+                                                            Date<i data-feather='arrow-up-circle' class="float-end"
+                                                                id="sort-icon-created_at"></i>
+                                                        </th>
+                                                        <th onclick="sort('job_id')">
+                                                            Job Id<i data-feather='arrow-up-circle' class="float-end"
+                                                                id="sort-icon-job_id"></i>
+                                                        </th>
+                                                        <th onclick="sort('request_id')">
+                                                            Request Id<i data-feather='arrow-up-circle' class="float-end"
+                                                                id="sort-icon-request_id"></i>
+                                                        </th>
+                                                        <th onclick="sort('job_type')">
+                                                            Job Type<i data-feather='arrow-up-circle' class="float-end"
+                                                                id="sort-icon-job_type"></i>
+                                                        </th>
                                                         <th>Job Title</th>
                                                         <th>Education</th>
                                                         <th>Skills</th>
-                                                        <th>Exp.</th>
+                                                        <th>Exp</th>
                                                         <th>Request By</th>
-                                                        <th>Expected D.O.J</th>
-                                                        <th>Status</th>
+                                                        <th onclick="sort('expected_doj')">
+                                                            Expected D.O.J<i data-feather='arrow-up-circle'
+                                                                class="float-end" id="sort-icon-expected_doj"></i>
+                                                        </th>
+                                                        <th onclick="sort('status')">
+                                                            Status<i data-feather='arrow-up-circle' class="float-end"
+                                                                id="sort-icon-status"></i>
+                                                        </th>
                                                         <th>Action</th>
                                                     </tr>
                                                 </thead>
@@ -302,10 +320,10 @@
                     <div class="mb-1">
                         <label class="form-label">Select Job Title</label>
                         <select class="form-select select2" name="job_title">
-                            <option value="" {{ request('date_range') == '' ? 'selected' : '' }}>Select</option>
+                            <option value="" {{ request('job_title') == '' ? 'selected' : '' }}>Select</option>
                             @forelse($jobTitles as $jobTitle)
                                 <option value="{{ $jobTitle->id }}"
-                                    {{ request('date_range') == $jobTitle->id ? 'selected' : '' }}>{{ $jobTitle->title }}
+                                    {{ request('job_title') == $jobTitle->id ? 'selected' : '' }}>{{ $jobTitle->title }}
                                 </option>
                             @empty
                             @endforelse
@@ -428,6 +446,42 @@
                     form.action = `{{ url('/recruitment/requests/update-status/${requestId}') }}`;
                 });
             });
+        });
+    </script>
+
+    {{-- Sorting --}}
+    <script>
+        // Handle sorting logic
+        function sort(column) {
+            const params = new URLSearchParams(window.location.search);
+            const currentColumn = params.get('column');
+            const currentDirection = params.get('sort');
+
+            const newSortDirection = (currentColumn === column && currentDirection === 'asc') ? 'desc' : 'asc';
+
+            params.set('column', column);
+            params.set('sort', newSortDirection);
+
+            // Build new query string and reload
+            const newQueryString = '?' + params.toString();
+            window.location.href = window.location.pathname + newQueryString;
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const column = params.get('column');
+            const sortDirection = params.get('sort');
+
+            if (column && sortDirection) {
+                // Build the dynamic element ID based on the column
+                const icon = document.getElementById(`sort-icon-${column}`);
+                if (icon) {
+                    // Determine the correct icon based on sort direction
+                    const iconType = sortDirection === 'asc' ? 'arrow-up-circle' : 'arrow-down-circle';
+                    icon.setAttribute('data-feather', iconType);
+                    feather.replace(); // Re-render Feather icons
+                }
+            }
         });
     </script>
 @endsection

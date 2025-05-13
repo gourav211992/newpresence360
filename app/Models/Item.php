@@ -24,6 +24,9 @@ class Item extends Model
         'item_initial',
         'item_remark',
         'uom_id',
+        'storage_uom_id',
+        'storage_uom_conversion',
+        'storage_uom_count',
         'cost_price',
         'sell_price',
         'book_id',
@@ -164,5 +167,35 @@ class Item extends Model
     public function auth_user()
     {
         return $this->belongsTo(AuthUser::class, 'created_by', 'id');
+    }
+
+    public function item_attributes_array()
+    {
+        $itemId = $this->getAttribute('id');
+        if (!$itemId) {
+            return collect([]);
+        }
+        $itemAttributes = ItemAttribute::where('item_id', $itemId)->get();
+        $processedData = [];
+        foreach ($itemAttributes as $attribute) {
+            $attributeIds = is_array($attribute->attribute_id) ? $attribute->attribute_id : [$attribute->attribute_id];
+            $attribute->group_name = $attribute->group?->name;
+            $valuesData = [];
+            foreach ($attributeIds as $attributeValueId) {
+                $attributeValueData = ErpAttribute::where('id', $attributeValueId)
+                    ->where('status', 'active')
+                    ->select('id', 'value')
+                    ->first();
+                $attributeValueData->selected = false;
+                $valuesData[] = $attributeValueData;
+            }
+            $processedData[] = [
+                'id' => $attribute->id,
+                'group_name' => $attribute->group_name,
+                'values_data' => $valuesData,
+                'attribute_group_id' => $attribute->attribute_group_id,
+            ];
+        }
+        return collect($processedData);
     }
 }

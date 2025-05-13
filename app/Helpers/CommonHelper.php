@@ -2,6 +2,9 @@
 
 namespace App\Helpers;
 
+use App\Models\Recruitment\ErpRecruitmentJobReferral;
+use App\Models\Recruitment\ErpRecruitmentJobRequestLog;
+
 class CommonHelper
 {
     const PAGE_LENGTH_10 = 10;
@@ -52,6 +55,7 @@ class CommonHelper
 	const INTERNAL = 'internal';
 	const SELF = 'self';
 	const REFER = 'refer';
+	const SEND_BACK = 'send-back';
 
     const JOB_REQUEST_STATUS = [
         self::APPROVED_FORWARD,
@@ -101,5 +105,18 @@ class CommonHelper
     {
         $date = $date ? date('h:i A', strtotime($date)) : '';
         return $date;
+    }
+
+    public static function getSummaryData($request, $user){
+        $requestCount = ErpRecruitmentJobRequestLog::where('action_by',$user->id)
+        ->where('action_by_type',$user->authenticable_type)
+        ->count();
+        
+        $referralCount = ErpRecruitmentJobReferral::where('created_by',$user->id)
+            ->count();
+        return [
+            'requestCount' =>  $requestCount,
+            'referralCount' =>  $referralCount,
+        ];
     }
 }

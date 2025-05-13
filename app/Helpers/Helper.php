@@ -159,30 +159,26 @@ class Helper
         return $bookTypes;
     }
 
-   public static function getFinancialYear(string $date): mixed
+  public static function getFinancialYear(string $date): mixed
     {
+         $user = self::getAuthenticatedUser();
         $startDate = session('fyear_start_date') ?? $date;
         $endDate = session('fyear_end_date') ?? $date;
         $financialYear = ErpFinancialYear::withDefaultGroupCompanyOrg()
             ->where('start_date', '<=', $startDate)
             ->where('end_date', '>=', $endDate)
-            // ->where('fy_close', ConstantHelper::FY_NOT_CLOSED_STATUS)
-            // ->where('fy_status',ConstantHelper::FY_CURRENT_STATUS)
             ->first();
-            // dd($financialYear);
-            $startYear = \Carbon\Carbon::parse($financialYear->start_date)->format('Y');
-            $endYearShort = \Carbon\Carbon::parse($financialYear->end_date)->format('y'); // e
-            if (isset($financialYear)) {
+          
+            if (isset($financialYear)) 
+            {
+                  $startYear = \Carbon\Carbon::parse($financialYear->start_date)->format('Y');
+                 $endYearShort = \Carbon\Carbon::parse($financialYear->end_date)->format('y'); // e
                 $authorized = true;
-
-                $currentUserId = auth()->user()->id;
-                $currentUserType = auth()->user()->authenticable_type;
-// dd($currentUserId, $currentUserType);
-                if (
-                    $financialYear->lock_fy == true &&
-                    is_array($financialYear->access_by)
-                    ) {
-                    // dd( $financialYear->access_by[0]['authorized'], $financialYear->access_by[0]['authenticable_type'] ,$financialYear->access_by[0]['user_id']);
+                $currentUserId =  $user->auth_user_id;
+                $currentUserType = $user->authenticable_type;
+                if ($financialYear->lock_fy == true &&is_array($financialYear->access_by)) 
+                {
+                  
                     $authorized = !collect($financialYear->access_by)->contains(function ($entry) use ($currentUserId, $currentUserType) {
                         return isset($entry['user_id'], $entry['authorized'], $entry['authenticable_type']) &&
                                $entry['user_id'] == $currentUserId &&
@@ -204,6 +200,7 @@ class Helper
             return null;
         }
     }
+
 
     public static function getFinancialYearQuarter(string $date): mixed
     {
@@ -2151,18 +2148,16 @@ $subTotal = max($grossProfit, $grossLoss);
 
 if ($netProfit > 0) 
 {
-    $salesInd = $subTotal + $indirectIncome;
+    $saleInd = $subTotal + $indirectIncome;
     $purchaseInd = $subTotal + $indirectExpense;
 } 
 elseif ($netLoss > 0) 
 {
-    $salesInd = $subTotal + $indirectIncome + $netLoss;
+    $saleInd = $subTotal + $indirectIncome + $netLoss;
     $purchaseInd = $subTotal + $indirectExpense;
 }
-// Final Tally Total
-$overAllTotal = max($salesInd, $purchaseInd);
+$overAllTotal = max($saleInd, $purchaseInd);
 
-// Return results
 return [
     'salesInd' => $saleInd,
     'purchaseInd' => $purchaseInd,
@@ -2181,7 +2176,6 @@ return [
     'netLoss' => $netLoss
 ];
 }
-
 
 
     public static function getAuthenticatedUser()
@@ -3061,7 +3055,7 @@ return [
         }
 
 
-        public static function getAllPastFinancialYear(): mixed
+       public static function getAllPastFinancialYear(): mixed
         {
             $financialYears = ErpFinancialYear::withDefaultGroupCompanyOrg()->get();
 

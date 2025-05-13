@@ -618,6 +618,18 @@
                                                                         <input type="number" id="credit_days" name="credit_days" class="form-control numberonly" placeholder="Enter credit days" />
                                                                     </div> 
                                                                 </div>
+
+                                                                <!-- <div class="row align-items-center mb-1">
+                                                                    <div class="col-md-2">
+                                                                        <label class="form-label">On Account Required?</label>
+                                                                    </div>
+                                                                    <div class="col-md-3">
+                                                                        <div class="form-check form-check-primary mt-25 custom-checkbox">
+                                                                            <input type="checkbox" class="form-check-input" id="OnAccountRequired" name="on_account_required">
+                                                                            <label class="form-check-label" for="OnAccountRequired">Yes/No</label>
+                                                                        </div>
+                                                                    </div>
+                                                                </div> -->
                                                         </div>
                                                         <!--End Financial -->
                                                        <!--Start Contact -->

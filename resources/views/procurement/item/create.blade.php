@@ -163,7 +163,6 @@
                                                         </div>  
                                                         <div class="col-md-2 mb-1 mb-sm-0">
                                                             <select name="uom_id" class="form-select select2">
-                                                                <option value="">Select UOM</option>
                                                                 @foreach ($units as $unit)
                                                                     <option value="{{ $unit->id }}">{{ $unit->name }}</option>
                                                                 @endforeach
@@ -287,112 +286,105 @@
                                                         </div>
                                                         </div>
 
-                                                         <div class="tab-pane" id="Details">
-                                                            <div class="row">
+                                                        <div class="tab-pane" id="Details">
+                                                            <div class="row mt-2">
+                                                                <div class="col-md-12">
+                                                                    <div class="newheader border-bottom pb-50 mb-1">
+                                                                        <h4 class="card-title text-theme">Replenishment</h4>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="row align-items-center mb-1">
+                                                                <div class="col-md-3 mb-1">
+                                                                    <label class="form-label">Min Stocking Level</label>
+                                                                    <input type="text" class="form-control numberonly" name="min_stocking_level" />
+                                                                </div>
+                                                                <div class="col-md-3 mb-1">
+                                                                    <label class="form-label">Max Stocking Level</label>
+                                                                    <input type="text" class="form-control numberonly" name="max_stocking_level" />
+                                                                </div>
+
+                                                                <div class="col-md-3 mb-1">
+                                                                    <label class="form-label">Reorder Level</label>
+                                                                    <input type="text" class="form-control numberonly" name="reorder_level" />
+                                                                </div>
+                                                                <div class="col-md-3 mb-1">
+                                                                    <label class="form-label">Minimum Order Qty</label>
+                                                                    <input type="text" class="form-control numberonly" name="minimum_order_qty" />
+                                                                </div>
+                                                                <div class="col-md-3 mb-1">
+                                                                    <label class="form-label">Lead Days</label>
+                                                                    <input type="text" class="form-control numberonly" name="lead_days" />
+                                                                </div>
+                                                                <div class="col-md-3 mb-1">
+                                                                    <label class="form-label">Safety Days</label>
+                                                                    <input type="text" class="form-control numberonly" name="safety_days" />
+                                                                </div>
+                                                                <div class="col-md-3 mb-1">
+                                                                    <label class="form-label">Shelf Life in Days</label>
+                                                                    <input type="text" class="form-control numberonly" name="shelf_life_days" />
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="row mt-1">
+                                                                <div class="col-md-12">
+                                                                    <div class="newheader border-bottom pb-50 mb-1">
+                                                                        <h4 class="card-title text-theme">Tolerance</h4>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="row align-items-center mb-1">
+                                                                <div class="col-md-3 mb-1">
+                                                                    <label class="form-label">PO Positive Tolerance</label>
+                                                                    <input type="number" class="form-control" step="any" name="po_positive_tolerance" />
+                                                                </div>
+                                                                <div class="col-md-3 mb-1">
+                                                                    <label class="form-label">PO Negative Tolerance</label>
+                                                                    <input type="number" class="form-control" step="any" name="po_negative_tolerance" />
+                                                                </div>
+                                                                <div class="col-md-3 mb-1">
+                                                                    <label class="form-label">SO Positive Tolerance</label>
+                                                                    <input type="number" class="form-control" step="any" name="so_positive_tolerance" />
+                                                                </div>
+                                                                <div class="col-md-3 mb-1">
+                                                                    <label class="form-label">SO Negative Tolerance</label>
+                                                                    <input type="number" class="form-control" step="any" name="so_negative_tolerance" />
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="row mt-1">
+                                                                <div class="col-md-12">
+                                                                    <div class="newheader border-bottom pb-50 mb-1">
+                                                                        <h4 class="card-title text-theme">Storage</h4>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="row align-items-center mb-1">
+                                                                <div class="col-md-3 mb-1">
+                                                                    <label class="form-label">Storage UOM</label>
+                                                                    <select name="storage_uom_id" class="form-select select2">
+                                                                        <option value="">Select Storage Uom</option>
+                                                                        @foreach ($units as $unit)
+                                                                            <option value="{{ $unit->id }}">{{ $unit->name }}</option>
+                                                                        @endforeach
+                                                                    </select>
+                                                                </div>
+
+                                                                <div class="col-md-3 mb-1">
+                                                                    <label class="form-label">Conversion</label>
+                                                                    <input type="text" name="storage_uom_conversion" class="form-control" placeholder="Enter Conversion">
+                                                                </div>
+
+                                                                <div class="col-md-3 mb-1">
+                                                                    <label class="form-label">No of Pack</label>
+                                                                    <input type="number" name="storage_uom_count" class="form-control" placeholder="Enter No of Pack">
+                                                                </div>
+                                                            </div>
+                                                            <!-- <div class="row">
                                                                 <div class="col-md-6">
-                                                                    <div class="row align-items-center mb-1">
-                                                                        <div class="col-md-4">
-                                                                            <label class="form-label">Min Stocking Level</label>
-                                                                        </div>
-                                                                        <div class="col-md-6">
-                                                                            <input type="text" class="form-control numberonly" name="min_stocking_level" />
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <div class="row align-items-center mb-1">
-                                                                        <div class="col-md-4">
-                                                                            <label class="form-label">Max Stocking Level</label>
-                                                                        </div>
-                                                                        <div class="col-md-6">
-                                                                            <input type="text" class="form-control numberonly" name="max_stocking_level" />
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <div class="row align-items-center mb-1">
-                                                                        <div class="col-md-4">
-                                                                            <label class="form-label">Reorder Level</label>
-                                                                        </div>
-                                                                        <div class="col-md-6">
-                                                                            <input type="text" class="form-control numberonly" name="reorder_level" />
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <div class="row align-items-center mb-1">
-                                                                        <div class="col-md-4">
-                                                                            <label class="form-label">Minimum Order Qty</label>
-                                                                        </div>
-                                                                        <div class="col-md-6">
-                                                                            <input type="text" class="form-control numberonly" name="minimum_order_qty" />
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <div class="row align-items-center mb-1">
-                                                                        <div class="col-md-4">
-                                                                            <label class="form-label">Lead Days</label>
-                                                                        </div>
-                                                                        <div class="col-md-6">
-                                                                            <input type="text" class="form-control numberonly" name="lead_days" />
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <div class="row align-items-center mb-1">
-                                                                        <div class="col-md-4">
-                                                                            <label class="form-label">Safety Days </label>
-                                                                        </div>
-                                                                        <div class="col-md-6">
-                                                                            <input type="text" class="form-control numberonly" name="safety_days" />
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <div class="row align-items-center mb-1">
-                                                                        <div class="col-md-4">
-                                                                            <label class="form-label">Shelf Life in Days</label>
-                                                                        </div>
-                                                                        <div class="col-md-6">
-                                                                            <input type="text" class="form-control numberonly" name="shelf_life_days" />
-                                                                        </div>
-                                                                    </div>
-                                                                    <!-- PO Positive Tolerance -->
-                                                                    <div class="row align-items-center mb-1">
-                                                                        <div class="col-md-4">
-                                                                            <label class="form-label">PO Positive Tolerance</label>
-                                                                        </div>
-                                                                        <div class="col-md-6">
-                                                                            <input type="number" class="form-control" step="any" name="po_positive_tolerance" />
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <!-- PO Negative Tolerance -->
-                                                                    <div class="row align-items-center mb-1">
-                                                                        <div class="col-md-4">
-                                                                            <label class="form-label">PO Negative Tolerance</label>
-                                                                        </div>
-                                                                        <div class="col-md-6">
-                                                                            <input type="number" class="form-control" step="any" name="po_negative_tolerance" />
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <!-- SO Positive Tolerance -->
-                                                                    <div class="row align-items-center mb-1">
-                                                                        <div class="col-md-4">
-                                                                            <label class="form-label">SO Positive Tolerance</label>
-                                                                        </div>
-                                                                        <div class="col-md-6">
-                                                                            <input type="number" class="form-control" step="any" name="so_positive_tolerance" />
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <!-- SO Negative Tolerance -->
-                                                                    <div class="row align-items-center mb-1">
-                                                                        <div class="col-md-4">
-                                                                            <label class="form-label">SO Negative Tolerance</label>
-                                                                        </div>
-                                                                        <div class="col-md-6">
-                                                                            <input type="number" class="form-control" step="any" name="so_negative_tolerance" />
-                                                                        </div>
-                                                                    </div>
-
-
                                                                     <div class="row align-items-center mb-1">
                                                                         <div class="col-md-4">
                                                                             <label class="form-label">Storage Type</label>
@@ -409,7 +401,7 @@
                                                                         </div>
                                                                     </div>
                                                                 </div>
-                                                            </div>
+                                                            </div> -->
                                                         </div>
 
                                                         <div class="tab-pane active" id="UOM">
@@ -1748,6 +1740,37 @@ $(document).ready(function() {
     catInitialsInput.on('change', generateItemCode); 
     subCatInitialsInput.on('change', generateItemCode); 
 });
+</script>
+<script>
+   $(document).ready(function() {
+        function syncStorageFields() {
+            var uomName = $('select[name="uom_id"] option:selected').text().trim();
+            var storageUomName = $('select[name="storage_uom_id"] option:selected').text().trim();
+            var isMeter = (uomName === 'MTR');
+            var storageIsMeter = (storageUomName === 'MTR')
+            if (storageUomName) {
+                if (isMeter && storageIsMeter) {
+                    $('input[name="storage_uom_conversion"]')
+                        .val(1)
+                        .prop('readonly', true);
+                    $('input[name="storage_uom_count"]')
+                        .val(1)
+                } else {
+                    $('input[name="storage_uom_conversion"]')
+                    .val(1)
+                    .prop('readonly', false);
+                    $('input[name="storage_uom_count"]')
+                    .val(1)
+                }
+            }
+        }
+        $('select[name="uom_id"]').on('change', function() {
+            syncStorageFields();
+        });
+        $('select[name="storage_uom_id"]').on('change', function() {
+            syncStorageFields();
+        });
+    });
 </script>
 <script>
     $(document).ready(function() {
