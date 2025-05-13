@@ -46,7 +46,7 @@ class PriceVarianceAccountController extends Controller
         $items = Item::withDefaultGroupCompanyOrg()
         ->where('status', 'active') 
         ->get();
-        $priceVarianceAccounts = PriceVarianceAccount::All();    
+        $priceVarianceAccounts = PriceVarianceAccount::withDefaultGroupCompanyOrg()->get();
         $erpBooks = Book::withDefaultGroupCompanyOrg()
         ->where('status', 'active') 
         ->get(); 
@@ -94,7 +94,7 @@ class PriceVarianceAccountController extends Controller
         }
 
         return view('procurement.price-variance-account.index', compact(
-            'companies', 'categories', 'subCategories', 'ledgerGroups', 'ledgers', 'items', 'priceVarianceAccounts', 'erpBooks'
+            'companies', 'categories', 'subCategories', 'ledgerGroups', 'ledgers', 'items', 'priceVarianceAccounts', 'erpBooks','orgIds'
         ));
     }
 

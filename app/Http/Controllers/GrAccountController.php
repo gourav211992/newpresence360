@@ -46,7 +46,7 @@ class GrAccountController extends Controller
         $items = Item::withDefaultGroupCompanyOrg()
         ->where('status', 'active') 
         ->get();
-        $grAccounts = GrAccount::All();  
+        $grAccounts = GrAccount::withDefaultGroupCompanyOrg()->get();
         $erpBooks = Book::withDefaultGroupCompanyOrg()
         ->where('status', 'active') 
         ->get(); 
@@ -94,7 +94,7 @@ class GrAccountController extends Controller
         }
 
         return view('procurement.gr-account.index', compact(
-            'companies', 'categories', 'subCategories', 'ledgerGroups', 'ledgers', 'items', 'grAccounts','erpBooks'
+            'companies', 'categories', 'subCategories', 'ledgerGroups', 'ledgers', 'items', 'grAccounts','erpBooks','orgIds'
         ));
     }
     public function store(GrAccountRequest $request)

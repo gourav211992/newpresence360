@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\API\BookController;
 use App\Http\Controllers\API\TransporterRequest\TransporterRequestApiController;
 use App\Http\Controllers\CRM\API\ServiceController;
 use Illuminate\Http\Request;
@@ -28,7 +29,7 @@ Route::group(['middleware' => ['apiresponse']], function () {
     });
 });
 
-Route::group(['middleware' => ['auth:sanctum', 'apiresponse', 'auth:api']], function () {
+Route::group(['middleware' => ['apiresponse']], function () {
     Route::controller(TransporterRequestApiController::class)->group(function(){
         Route::post('transporter-requests/create','create')->name('create');
         Route::post('transporter-requests/get_request_list','get_request_list')->name('get_request_list');
@@ -36,5 +37,8 @@ Route::group(['middleware' => ['auth:sanctum', 'apiresponse', 'auth:api']], func
         Route::post('transporter-requests/shortlist','shortlist')->name('shortlist');
         Route::post('transporter-requests/close','close')->name('close');
         // Route::post('transporter-requests/reopen','reopen')->name('reopen');
+    });
+    Route::controller(BookController::class)->prefix('book')->group(function(){
+        Route::get('get-document-number','generateDocumentNumber')->name('book.get.docNo');
     });
 });

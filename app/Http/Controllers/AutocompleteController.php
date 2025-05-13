@@ -8,6 +8,7 @@ use App\Helpers\InventoryHelper;
 use App\Helpers\ServiceParametersHelper;
 use App\Models\AuthUser;
 use App\Models\Book;
+use App\Models\CashCustomerDetail;
 use App\Models\Category;
 use App\Models\Customer;
 use App\Models\DiscountMaster;
@@ -837,15 +838,15 @@ class AutocompleteController extends Controller
 
                 }
             } else if ($type === 'customer') {
-                $results = Customer::withDefaultGroupCompanyOrg() -> with(['payment_terms', 'currency'])
+                $results = Customer::withDefaultGroupCompanyOrg() -> with(['payment_terms', 'currency', 'compliances'])
                 ->where('company_name', 'LIKE', "%$term%")
                 ->where('status', ConstantHelper::ACTIVE)
-                ->get(['id', 'customer_code', 'company_name', 'currency_id', 'payment_terms_id','display_name']);
+                ->get(['id', 'customer_type', 'email', 'mobile', 'customer_code', 'company_name', 'currency_id', 'payment_terms_id','display_name']);
                 if ($results->isEmpty()) {
-                    $results = Customer::withDefaultGroupCompanyOrg() -> with(['payment_terms', 'currency'])
+                    $results = Customer::withDefaultGroupCompanyOrg() -> with(['payment_terms', 'currency', 'compliances'])
                                     ->where('status', ConstantHelper::ACTIVE)
                                     ->limit(10)
-                                    ->get(['id', 'customer_code', 'company_name', 'currency_id', 'payment_terms_id','display_name']);
+                                    ->get(['id', 'customer_type', 'email', 'mobile', 'customer_code', 'company_name', 'currency_id', 'payment_terms_id','display_name']);
                                 }
             } else if ($type === 'location') {
                 $results = ErpStore::withDefaultGroupCompanyOrg()
@@ -1451,6 +1452,38 @@ class AutocompleteController extends Controller
                     $results = OrganizationCompany::whereIn('id', $applicableCompIds) ->
                          limit(10) -> get(['id', 'name']);
                 }
+            } else if ($type == 'cash_customer_email') {
+                $results = CashCustomerDetail::whereHas('customer', function ($custQuery) {
+                    $custQuery -> withDefaultGroupCompanyOrg();
+                }) ->when($term, function ($emailQuery) use($term) {
+                    $emailQuery -> where('email', 'LIKE', '%' . $term . '%');
+                })  -> where(function ($custQuery) {
+                    $custQuery -> whereNotNull('email') -> whereRaw("TRIM(email) != ''");
+                }) -> orderByDesc('id') -> limit(10) -> get();
+            } else if ($type == 'cash_customer_phone_no') {
+                $results = CashCustomerDetail::whereHas('customer', function ($custQuery) {
+                    $custQuery -> withDefaultGroupCompanyOrg();
+                }) -> when($term, function ($emailQuery) use($term) {
+                    $emailQuery -> where('phone_no', 'LIKE', '%' . $term . '%');
+                }) -> where(function ($custQuery) {
+                    $custQuery -> whereNotNull('phone_no') -> whereRaw("TRIM(phone_no) != ''");
+                }) -> orderByDesc('id') -> limit(10) -> get();
+            } else if ($type == 'cash_customer_consignee') {
+                $results = CashCustomerDetail::whereHas('customer', function ($custQuery) {
+                    $custQuery -> withDefaultGroupCompanyOrg();
+                }) -> when($term, function ($emailQuery) use($term) {
+                    $emailQuery -> where('name', 'LIKE', '%' . $term . '%');
+                }) -> where(function ($custQuery) {
+                    $custQuery -> whereNotNull('name') -> whereRaw("TRIM(name) != ''");
+                }) -> orderByDesc('id') -> limit(10) -> get();
+            } else if ($type == 'cash_customer_gstin') {
+                $results = CashCustomerDetail::whereHas('customer', function ($custQuery) {
+                    $custQuery -> withDefaultGroupCompanyOrg();
+                }) -> when($term, function ($emailQuery) use($term) {
+                    $emailQuery -> where('gstin', 'LIKE', '%' . $term . '%');
+                })  -> where(function ($custQuery) {
+                    $custQuery -> whereNotNull('gstin') -> whereRaw("TRIM(gstin) != ''");
+                }) -> orderByDesc('id') -> limit(10) -> get();
             }else {
                 return response()->json(['error' => 'Invalid type specified'], 400);
             }

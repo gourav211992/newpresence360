@@ -2,6 +2,7 @@
 @php
    $rowCount = $key + 1;
    $itemCost = $bomDetail->item_cost;
+   $cost = \App\Helpers\ItemHelper::getChildBomItemCost($bomDetail->item_id,[]);
 @endphp
 <tr id="row_{{$rowCount}}" data-index="{{$rowCount}}" @if($rowCount < 2 ) class="trselected" @endif>
    <td class="customernewsection-form">

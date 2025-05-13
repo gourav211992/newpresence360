@@ -35,32 +35,36 @@
                                             <div class="form-group breadcrumb-right">
                                                 <button class="btn btn-primary box-shadow-2 btn-sm" data-bs-target="#filter"
                                                     data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button>
+                                                <button class="btn btn-primary box-shadow-2 btn-sm"
+                                                    data-bs-target="#setting" data-bs-toggle="modal"><i
+                                                        data-feather="settings"></i></button>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="row travelexp-summry">
-
-                                        <div class="col-md-3">
-                                            <div class="card card-statistics">
-                                                <div class="card-body statistics-body">
-                                                    <div class="d-flex flex-row justify-content-between">
-                                                        <div class="my-auto">
-                                                            <h4 class="fw-bolder mb-0"><a
-                                                                    href="{{ route('recruitment.internal-jobs') }}">{{ $currentOpeningCount }}</a>
-                                                            </h4>
-                                                            <p class="card-text mb-0">Current Opening</p>
-                                                        </div>
-                                                        <div>
-                                                            <div class="avatar bg-light-info">
-                                                                <div class="avatar-content">
-                                                                    <i data-feather="file-text" class="avatar-icon"></i>
+                                        @if ($configuration && $configuration->current_opening)
+                                            <div class="col-md-3">
+                                                <div class="card card-statistics">
+                                                    <div class="card-body statistics-body">
+                                                        <div class="d-flex flex-row justify-content-between">
+                                                            <div class="my-auto">
+                                                                <h4 class="fw-bolder mb-0"><a
+                                                                        href="{{ route('recruitment.internal-jobs') }}">{{ $currentOpeningCount }}</a>
+                                                                </h4>
+                                                                <p class="card-text mb-0">Current Opening</p>
+                                                            </div>
+                                                            <div>
+                                                                <div class="avatar bg-light-info">
+                                                                    <div class="avatar-content">
+                                                                        <i data-feather="file-text" class="avatar-icon"></i>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
+                                        @endif
 
                                         <div class="col-md-3">
                                             <div class="card card-statistics">
@@ -122,13 +126,8 @@
                                                 </div>
                                             </div>
                                         </div>
-
-
-
-
                                     </div>
                                 </div>
-
 
                                 <div class="col-md-8 col-12">
                                     <div class="card">
@@ -192,7 +191,7 @@
                                                                 </tr>
                                                             </thead>
                                                             <tbody>
-                                                                @forelse($jobTtitles as $title)
+                                                                @forelse($jobTitles as $title)
                                                                     <tr>
                                                                         <td>{{ $title->title }}</td>
                                                                         <td><span
@@ -223,341 +222,178 @@
 
 
                                 <div class="col-md-4 col-12">
-                                    <div class="card">
-                                        <div
-                                            class="card-header newheader d-flex justify-content-between align-items-start">
-                                            <div class="header-left">
-                                                <h4 class="card-title">Interview Summary</h4>
-                                            </div>
-                                            <div class="dropdown">
-                                                <div data-bs-toggle="dropdown" class="newcolortheme cursor-pointer"><i
-                                                        data-feather='bell' class="me-25"></i> This Month <img
-                                                        src="../../../assets/css/down-arrow.png"></div>
-                                                <div class="dropdown-menu dropdown-menu-end"
-                                                    aria-labelledby="heat-chart-dd">
-                                                    <a class="dropdown-item" href="#">Last Month</a>
-                                                    <a class="dropdown-item" href="#">Last 3 Months</a>
+                                    @if ($configuration && $configuration->interview_summary)
+                                        <div class="card">
+                                            <div
+                                                class="card-header newheader d-flex justify-content-between align-items-start">
+                                                <div class="header-left">
+                                                    <h4 class="card-title">Interview Summary</h4>
+                                                </div>
+                                                <div class="dropdown">
+                                                    <div data-bs-toggle="dropdown" class="newcolortheme cursor-pointer">
+                                                        <i data-feather='bell' class="me-25"></i>
+                                                        <span id="dropdown-label">This Month</span>
+                                                        <img src="{{ asset('assets/css/down-arrow.png') }}">
+                                                    </div>
+                                                    <div class="dropdown-menu dropdown-menu-end"
+                                                        aria-labelledby="heat-chart-dd">
+                                                        <a class="dropdown-item" href="#"
+                                                            onclick="updateDropdownLabel('This Month','dropdown-label'); fetchInterviewSummary('this_month')">This
+                                                            Month</a>
+                                                        <a class="dropdown-item" href="#"
+                                                            onclick="updateDropdownLabel('Last Month','dropdown-label'); fetchInterviewSummary('last_month')">Last
+                                                            Month</a>
+                                                        <a class="dropdown-item" href="#"
+                                                            onclick="updateDropdownLabel('Last 3 Month','dropdown-label'); fetchInterviewSummary('last_3_month')">Last
+                                                            3
+                                                            Months</a>
+                                                    </div>
                                                 </div>
                                             </div>
+                                            <div class="card-body">
+                                                <div id="radialbar-chart"></div>
+                                                <div class="row mt-2" id="interview-summary-section"></div>
+                                            </div>
                                         </div>
-                                        <div class="card-body">
-                                            <div id="radialbar-chart"></div>
+                                    @endif
 
-                                            <div class="row mt-2">
-                                                <div class="col-md-12 leacveprogress totalleave">
-                                                    <div class="leavetype-list">
-                                                        <h3>Total Qualified</h3>
-                                                        <h6>20</h6>
-                                                    </div>
-                                                    <div class="progress progress-bar-secondary">
-                                                        <div class="progress-bar" role="progressbar" aria-valuenow="25"
-                                                            aria-valuemin="25" aria-valuemax="100"
-                                                            aria-describedby="example-caption-2"></div>
-                                                    </div>
+                                    @if ($configuration && $configuration->new_applicants)
+                                        <div class="card">
+                                            <div
+                                                class="card-header newheader d-flex justify-content-between align-items-start">
+                                                <div class="header-left">
+                                                    <h4 class="card-title">New Applicants</h4>
                                                 </div>
-                                                <div class="col-md-12 leacveprogress">
-                                                    <div class="leavetype-list">
-                                                        <h3>Scheduled</h3>
-                                                        <h6>12</h6>
+                                                <div class="dropdown">
+                                                    <div data-bs-toggle="dropdown" class="newcolortheme cursor-pointer">
+                                                        <span id="applicant-label">Today</span>
+                                                        <img src="{{ asset('assets/css/down-arrow.png') }}">
                                                     </div>
-                                                    <div class="progress progress-bar-primary">
-                                                        <div class="progress-bar" role="progressbar" aria-valuenow="25"
-                                                            aria-valuemin="25" aria-valuemax="100" style="width: 25%"
-                                                            aria-describedby="example-caption-2"></div>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-12 leacveprogress sickleave">
-                                                    <div class="leavetype-list">
-                                                        <h3>Pending</h3>
-                                                        <h6>05</h6>
-                                                    </div>
-                                                    <div class="progress progress-bar-warning">
-                                                        <div class="progress-bar" role="progressbar" aria-valuenow="25"
-                                                            aria-valuemin="25" aria-valuemax="100" style="width: 25%"
-                                                            aria-describedby="example-caption-2"></div>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-12 leacveprogress paidleave">
-                                                    <div class="leavetype-list">
-                                                        <h3>Closed</h3>
-                                                        <h6>03</h6>
-                                                    </div>
-                                                    <div class="progress progress-bar-success">
-                                                        <div class="progress-bar" role="progressbar" aria-valuenow="25"
-                                                            aria-valuemin="25" aria-valuemax="100" style="width: 25%"
-                                                            aria-describedby="example-caption-2"></div>
+                                                    <div class="dropdown-menu dropdown-menu-end"
+                                                        aria-labelledby="heat-chart-dd">
+                                                        <a class="dropdown-item" href="#"
+                                                            onclick="updateDropdownLabel('Today','applicant-label'); fetchApplicantList('last_week')">Today</a>
+                                                        <a class="dropdown-item" href="#"
+                                                            onclick="updateDropdownLabel('Last Week','applicant-label'); fetchApplicantList('last_week')">Last
+                                                            Week</a>
+                                                        <a class="dropdown-item" href="#"
+                                                            onclick="updateDropdownLabel('Last Month','applicant-label'); fetchApplicantList('last_month')">Last
+                                                            Month</a>
                                                     </div>
                                                 </div>
                                             </div>
+                                            <div class="card-body">
+                                                <div class="card-employee-task" id="applicants-section">
 
-                                        </div>
-                                    </div>
-
-                                    <div class="card">
-                                        <div
-                                            class="card-header newheader d-flex justify-content-between align-items-start">
-                                            <div class="header-left">
-                                                <h4 class="card-title">New Applicants</h4>
-                                            </div>
-                                            <div class="dropdown">
-                                                <div data-bs-toggle="dropdown" class="newcolortheme cursor-pointer">Today
-                                                    <img src="../../../assets/css/down-arrow.png">
-                                                </div>
-                                                <div class="dropdown-menu dropdown-menu-end"
-                                                    aria-labelledby="heat-chart-dd">
-                                                    <a class="dropdown-item" href="#">Last Week</a>
-                                                    <a class="dropdown-item" href="#">Last Month</a>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="card-body">
-                                            <div class="card-employee-task">
-                                                @forelse($applicants as $applicant)
-                                                    <div
-                                                        class="employee-task d-flex justify-content-between align-items-center">
-                                                        <div class="d-flex flex-row">
-                                                            <div
-                                                                style="background-color: #ddb6ff; color: #6b12b7; line-height: 30px; width: 30px; height: 30px; border-radius: 50%; position: relative; font-size: 1rem; text-align: center; margin-right: 5px; font-weight: 600;">
-                                                                {{ strtoupper(substr($applicant->name, 0, 1)) }}
-                                                            </div>
-                                                            <div class="my-auto text-dark">
-                                                                <h6 class="mb-0 fw-bolder text-dark">
-                                                                    {{ $applicant->name }}</h6>
-                                                                <small>Applied for
-                                                                    <strong>{{ $applicant->jobDetail->job_title_name }}</strong></small>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                @empty
-                                                    <div
-                                                        class="employee-task d-flex justify-content-between align-items-center">
-                                                        <h5>No data found</h5>
-                                                    </div>
-                                                @endforelse
-                                            </div>
-                                        </div>
-                                    </div>
+                                    @endif
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-3 right-calendar">
                             <div class="card card-profile border">
-                                <img src="../../../app-assets/images/banner/banner-12.jpg" class="img-fluid card-img-top"
-                                    alt="Profile Cover Photo" />
+                                <img src="{{ asset('app-assets/images/banner/banner-12.jpg') }}"
+                                    class="img-fluid card-img-top" alt="Profile Cover Photo" />
                                 <div class="card-body">
                                     <div class="profile-image-wrapper">
                                         <div class="profile-image">
                                             <div class="avatar">
-                                                <img src="../../../app-assets/images/portrait/small/avatar-s-9.jpg"
-                                                    alt="Profile Picture" />
+                                                <div
+                                                    style="background-color: #ddb6ff; color: #6b12b7; line-height: 62px; width: 70px; height: 70px; border-radius: 50%; position: relative; font-size: 2rem; text-align: center; font-weight: 600;">
+                                                    {{ strtoupper(substr($user->name, 0, 1)) }}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <h3>Shubham Diwedi</h3>
+                                    <h3>{{ $user->name }}</h3>
                                     <h6 class="text-muted">Assistant Manager (IT)</h6>
                                 </div>
                             </div>
 
-                            <div class="newheader border-bottom pb-50  mt-5 mb-2 pb-25">
-                                <h4 class="card-title text-primary-new">My Scheduled</h4>
-                            </div>
-
-                            <div class="calbg">
-                                <div id="calendar"></div>
-                            </div>
-
-                            <div class="row leave-indicator myatteandance-leave">
-                                <div class="col-4">
-                                    <div class="presentleave"><span></span> Interview</div>
+                            @if ($configuration && $configuration->my_scheduled)
+                                <div class="newheader border-bottom pb-50  mt-5 mb-2 pb-25">
+                                    <h4 class="card-title text-primary-new">My Scheduled</h4>
                                 </div>
-                                <div class="col-4">
-                                    <div class="sickleave"><span></span> Previous</div>
+
+                                <div class="calbg">
+                                    <div id="calendar"></div>
                                 </div>
-                                <div class="col-4">
-                                    <div class="holyleave"><span></span> Holiday</div>
+
+                                <div class="row leave-indicator myatteandance-leave">
+                                    <div class="col-4">
+                                        <div class="presentleave"><span></span> Interview</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="sickleave"><span></span> Previous</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="holyleave"><span></span> Holiday</div>
+                                    </div>
                                 </div>
-                            </div>
+                            @endif
 
-                            <div class="newheader border-bottom pb-50  mt-5 mb-2 pb-25">
-                                <h4 class="card-title text-primary-new">Activity History/Scheduled</h4>
-                            </div>
+                            @if ($configuration && $configuration->activity)
+                                <div class="newheader border-bottom pb-50  mt-5 mb-2 pb-25">
+                                    <h4 class="card-title text-primary-new">Activity History/Scheduled</h4>
+                                </div>
 
-                            <div class=" employee-task card-employee-tasknew2">
+                                <div class=" employee-task card-employee-tasknew2">
 
-                                <ul class="timeline">
-                                    <li class="timeline-item">
-                                        <span class="timeline-point timeline-point-primary">
-                                            <i data-feather="user"></i>
-                                        </span>
-                                        <div class="timeline-event">
-                                            <div
-                                                class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                <h6 class="mb-50 text-dark"><strong>Assisant Manager</strong></h6>
-                                                <span class="timeline-event-time">10 min ago</span>
-                                            </div>
-                                            <p class="font-small-3"><strong>1st</strong> Round Interview with
-                                                <strong>Deepak Kumar</strong> on <strong>17-12-2024</strong> at
-                                                <strong>2:00</strong> PM
-                                            </p>
-
-
-                                            <div class="d-flex flex-row align-items-center">
-                                                <div class="avatar">
-                                                    <img src="../../../app-assets/images/avatars/12-small.png"
-                                                        alt="avatar" height="38" width="38" />
-                                                </div>
-                                                <div class="ms-50">
-                                                    <h6 class="mb-0">Ashish Kumar (IT)</h6>
-                                                    <span class="font-small-2">Team Lead</span>
-                                                </div>
-                                            </div>
-
-                                            <div
-                                                class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1 mt-1">
-                                                <div class="d-flex align-items-center cursor-pointer mt-sm-0 mt-50">
-                                                    <i data-feather="video" class="me-1"></i>
-                                                    <i data-feather="mail" class="me-1"></i>
-                                                    <i data-feather="phone-call"></i>
-                                                </div>
-                                            </div>
-                                            <hr />
-                                        </div>
-                                    </li>
-
-                                    <li class="timeline-item">
-                                        <span class="timeline-point timeline-point-primary">
-                                            <i data-feather="user"></i>
-                                        </span>
-                                        <div class="timeline-event">
-                                            <div
-                                                class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                <h6 class="mb-50 text-dark"><strong>Assisant Manager</strong></h6>
-                                                <span class="timeline-event-time">1 hr ago</span>
-                                            </div>
-                                            <p class="font-small-3"><strong>1st</strong> Round Interview with
-                                                <strong>Deepak Kumar</strong> on <strong>17-12-2024</strong> at
-                                                <strong>2:00</strong> PM
-                                            </p>
-
-
-                                            <div>
-                                                <span class="text-muted">Panel List</span>
-                                                <div class="avatar-group mt-50">
-                                                    <div data-bs-toggle="tooltip" data-popup="tooltip-custom"
-                                                        data-bs-placement="top" title="Deepak (IT)"
-                                                        class="avatar pull-up">
-                                                        <img src="../../../app-assets/images/portrait/small/avatar-s-5.jpg"
-                                                            alt="Avatar" height="30" width="30" />
+                                    <ul class="timeline">
+                                        @forelse($interviewLogs as $log)
+                                            <li class="timeline-item">
+                                                <span class="timeline-point timeline-point-primary">
+                                                    <i data-feather="user"></i>
+                                                </span>
+                                                <div class="timeline-event">
+                                                    <div
+                                                        class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
+                                                        <h6 class="mb-50 text-dark">
+                                                            <strong>{{ isset($log->job->job_title_name) ? $log->job->job_title_name : '' }}</strong>
+                                                            <!-- Adjust this field name based on your DB -->
+                                                        </h6>
+                                                        <span class="timeline-event-time">
+                                                            {{ isset($log->interview->date_time) ? $log->interview->date_time->diffForHumans() : 'No Date Available' }}
+                                                        </span>
                                                     </div>
-                                                    <div data-bs-toggle="tooltip" data-popup="tooltip-custom"
-                                                        data-bs-placement="top" title="Neha (HR)" class="avatar pull-up">
-                                                        <img src="../../../app-assets/images/portrait/small/avatar-s-7.jpg"
-                                                            alt="Avatar" height="30" width="30" />
+                                                    <p class="font-small-3">
+                                                        <strong>{{ isset($log->interview->round_name) ? $log->interview->round_name : '' }}</strong>
+                                                        Round Interview with
+                                                        <strong>{{ isset($log->interview->candidate_name) ? $log->interview->candidate_name : '' }}</strong>
+                                                        on
+                                                        <strong>{{ isset($log->interview->date_time) ? App\Helpers\CommonHelper::dateFormat($log->interview->date_time) : 'N/A' }}</strong>
+                                                        at
+                                                        <strong>{{ isset($log->interview->date_time) ? App\Helpers\CommonHelper::timeFormat($log->interview->date_time) : 'N/A' }}</strong>
+                                                    </p>
+                                                    <div>
+                                                        <span class="text-muted">Panel List</span>
+                                                        <div class="avatar-group mt-50">
+                                                            @forelse($log->panels as $panel)
+                                                                <div data-bs-toggle="tooltip" data-popup="tooltip-custom"
+                                                                    data-bs-placement="top" title="{{ $panel->name }}"
+                                                                    class="avatar pull-up">
+                                                                    <div
+                                                                        style="background-color: #ddb6ff; color: #6b12b7; line-height: 30px; width: 30px; height: 30px; border-radius: 50%; position: relative; font-size: 1rem; text-align: center; margin-right: 5px; font-weight: 600;">
+                                                                        {{ strtoupper(substr($panel->name, 0, 1)) }}
+                                                                    </div>
+                                                                </div>
+                                                            @empty
+                                                                <div class="text-muted">No panels available</div>
+                                                            @endforelse
+                                                        </div>
                                                     </div>
-                                                    <div data-bs-toggle="tooltip" data-popup="tooltip-custom"
-                                                        data-bs-placement="top" title="Soni (React)"
-                                                        class="avatar pull-up">
-                                                        <img src="../../../app-assets/images/portrait/small/avatar-s-10.jpg"
-                                                            alt="Avatar" height="30" width="30" />
-                                                    </div>
+                                                    <hr />
                                                 </div>
-                                            </div>
+                                            </li>
+                                        @empty
+                                            <div class="text-center">No interview logs available.</div>
+                                        @endforelse
+                                    </ul>
 
-                                            <div
-                                                class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1 mt-1">
-                                                <div class="d-flex align-items-center cursor-pointer mt-sm-0 mt-50">
-                                                    <i data-feather="video" class="me-1"></i>
-                                                    <i data-feather="mail" class="me-1"></i>
-                                                    <i data-feather="phone-call"></i>
-                                                </div>
-                                            </div>
-                                            <hr />
-                                        </div>
-                                    </li>
-
-                                    <li class="timeline-item">
-                                        <span class="timeline-point timeline-point-warning">
-                                            <i data-feather="user"></i>
-                                        </span>
-                                        <div class="timeline-event">
-                                            <div
-                                                class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                <h6 class="mb-50 text-dark"><strong>PHP Developer</strong></h6>
-                                                <span class="timeline-event-time">45 min ago</span>
-                                            </div>
-                                            <p class="font-small-3"><strong>2nd</strong> Round Interview with
-                                                <strong>Aniket Singh</strong> on <strong>17-12-2024</strong> at
-                                                <strong>2:00</strong> PM
-                                            </p>
-
-
-                                            <div class="d-flex flex-row align-items-center">
-                                                <div class="avatar">
-                                                    <img src="../../../app-assets/images/avatars/12-small.png"
-                                                        alt="avatar" height="38" width="38" />
-                                                </div>
-                                                <div class="ms-50">
-                                                    <h6 class="mb-0">Brijesh Singh (IT)</h6>
-                                                    <span class="font-small-2">Manager</span>
-                                                </div>
-                                            </div>
-
-                                            <div
-                                                class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1 mt-1">
-                                                <div class="d-flex align-items-center cursor-pointer mt-sm-0 mt-50">
-                                                    <i data-feather="video" class="me-1"></i>
-                                                    <i data-feather="mail" class="me-1"></i>
-                                                    <i data-feather="phone-call"></i>
-                                                </div>
-                                            </div>
-                                            <hr />
-                                        </div>
-                                    </li>
-
-                                    <li class="timeline-item">
-                                        <span class="timeline-point timeline-point-secondary">
-                                            <i data-feather="user"></i>
-                                        </span>
-                                        <div class="timeline-event">
-                                            <div
-                                                class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                <h6 class="mb-50 text-dark"><strong>Accounts</strong></h6>
-                                                <span class="timeline-event-time">50 min ago</span>
-                                            </div>
-                                            <p class="font-small-3"><strong>3rd</strong> Round Interview with <strong>Diwan
-                                                    Singh</strong> on <strong>17-12-2024</strong> at <strong>2:00</strong>
-                                                PM</p>
-
-
-                                            <div class="d-flex flex-row align-items-center">
-                                                <div class="avatar">
-                                                    <img src="../../../app-assets/images/avatars/12-small.png"
-                                                        alt="avatar" height="38" width="38" />
-                                                </div>
-                                                <div class="ms-50">
-                                                    <h6 class="mb-0">Neha Singh (HR)</h6>
-                                                    <span class="font-small-2">Associate</span>
-                                                </div>
-                                            </div>
-
-                                            <div
-                                                class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1 mt-1">
-                                                <div class="d-flex align-items-center cursor-pointer mt-sm-0 mt-50">
-                                                    <i data-feather="video" class="me-1"></i>
-                                                    <i data-feather="mail" class="me-1"></i>
-                                                    <i data-feather="phone-call"></i>
-                                                </div>
-                                            </div>
-                                            <hr />
-                                        </div>
-                                    </li>
-
-
-
-
-                                </ul>
-
-                            </div>
+                                </div>
+                            @endif
 
                         </div>
                     </div>
@@ -569,18 +405,172 @@
         </div>
     </div>
     <!-- END: Content-->
+
+    <!-- Modal for Interview Details -->
+    <div class="modal fade" id="interviewModal" tabindex="-1" aria-labelledby="interviewModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-primary-new" id="interviewModalLabel"><strong>Interview Details</strong>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p><strong>Candidate Name:</strong> <span id="candidateName"></span></p>
+                    <p><strong>Interview Link:</strong> <span id="interviewLink"></span></p>
+                    <p><strong>Scheduled Time:</strong> <span id="interviewTime"></span></p>
+                    <p><strong>Status:</strong> <span id="interviewStatus"></span></p>
+                    <!-- Add other details you need -->
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-outline-secondary waves-effect"
+                        data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Filter -->
+    <div class="modal modal-slide-in fade filterpopuplabel" id="filter">
+        <div class="modal-dialog sidebar-sm">
+            <form class="apply-filter add-new-record modal-content pt-0">
+                <div class="modal-header mb-1">
+                    <h5 class="modal-title" id="exampleModalLabel">Apply Filter</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">×</button>
+                </div>
+                <div class="modal-body flex-grow-1">
+                    <div class="mb-1">
+                        <label class="form-label" for="fp-range">Select Date Range</label>
+                        <input type="text" id="fp-range" class="form-control flatpickr-range"
+                            placeholder="YYYY-MM-DD to YYYY-MM-DD" name="date_range"
+                            value="{{ request('date_range') }}" />
+                    </div>
+
+
+                    {{-- <div class="mb-1">
+                        <label class="form-label">Select Job</label>
+                        <select class="form-select select2">
+                            <option>Select</option>
+                        </select>
+                    </div> --}}
+
+
+                    {{-- <div class="mb-1">
+                        <label class="form-label">Select Status</label>
+                        <select class="form-select select2">
+                            <option>Qualified</option>
+                            <option>Non-Qualified</option>
+                            <option>On Hold</option>
+                        </select>
+                    </div> --}}
+
+                </div>
+                <div class="modal-footer justify-content-start">
+                    <button type="submit" class="btn btn-primary data-submit mr-1">Apply</button>
+                    <button type="button" class="btn btn-outline-secondary" id="clear-filters">Reset</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- Setting modal --}}
+    <div class="modal modal-slide-in fade filterpopuplabel" id="setting">
+        <div class="modal-dialog sidebar-sm">
+            <form class="add-new-record modal-content pt-0" role="post-data" method="POST" id="status-form"
+                action="{{ route('recruitment.user-configuration') }}" redirect="{{ route('recruitment.dashboard') }}"
+                data-message='Do you want to update configuration?'>
+                <div class="modal-header mb-1">
+                    <h5 class="modal-title" id="exampleModalLabel">Apply Configuration</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">×</button>
+                </div>
+                <div class="modal-body flex-grow-1">
+                    <label class="form-label fw-bolder text-dark mt-1 mb-50">Show/Hide Module Setting</label>
+
+                    <div class="candidates-tables">
+                        <table
+                            class="datatables-basic table table-striped myrequesttablecbox loanapplicationlist tasklist">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Module</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>1</td>
+                                    <td class="text-dark fw-bolder">Current Opening</td>
+                                    <td>
+                                        <div class="form-check form-check-primary form-switch">
+                                            <input name="current_opening" type="checkbox" value="1"
+                                                class="form-check-input"
+                                                {{ @$configuration->current_opening == 1 ? 'checked' : '' }} />
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>2</td>
+                                    <td class="text-dark fw-bolder">Interview Summary</td>
+                                    <td>
+                                        <div class="form-check form-check-primary form-switch">
+                                            <input name="interview_summary" type="checkbox" value="1"
+                                                class="form-check-input"
+                                                {{ @$configuration->interview_summary == 1 ? 'checked' : '' }} />
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>3</td>
+                                    <td class="text-dark fw-bolder">My Scheduled</td>
+                                    <td>
+                                        <div class="form-check form-check-primary form-switch">
+                                            <input name="my_scheduled" type="checkbox" value="1"
+                                                class="form-check-input"
+                                                {{ @$configuration->my_scheduled == 1 ? 'checked' : '' }} />
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>4</td>
+                                    <td class="text-dark fw-bolder">Activity History/Scheduled</td>
+                                    <td>
+                                        <div class="form-check form-check-primary form-switch">
+                                            <input name="activity" type="checkbox" value="1"
+                                                class="form-check-input"
+                                                {{ @$configuration->activity == 1 ? 'checked' : '' }} />
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>5</td>
+                                    <td class="text-dark fw-bolder">New Applicants</td>
+                                    <td>
+                                        <div class="form-check form-check-primary form-switch">
+                                            <input name="new_applicants" type="checkbox" value="1"
+                                                class="form-check-input"
+                                                {{ @$configuration->new_applicants == 1 ? 'checked' : '' }} />
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+                <div class="modal-footer justify-content-start">
+                    <button type="reset" class="btn btn-outline-secondary me-1">Cancel</button>
+                    <button type="button" class="btn btn-primary" data-request="confirm-and-save"
+                        data-target="[role=post-data]">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
 @endsection
 
 @section('scripts')
     <script src="{{ asset('app-assets/vendors/js/charts/apexcharts.min.js') }}"></script>
-    <script src="{{ asset('app-assets/vendors/js/charts/chart.min.js') }}"></script>
-    <script src="{{ asset('app-assets/js/scripts/cards/card-advance.js') }}"></script>
-    <script src="{{ asset('app-assets/js/scripts/charts/chart-chartjs.js') }}"></script>
-    <script src="{{ asset('app-assets/js/scripts/charts/chart-apex.js') }}"></script>
-    <script src="{{ asset('app-assets/js/scripts/cards/card-statistics.js') }}"></script>
-    <script src="{{ asset('app-assets/js/scripts/pages/dashboard-ecommerce.js') }}"></script>
     <script src="{{ asset('app-assets/vendors/js/calendar/fullcalendar.min.js') }}"></script>
-
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -595,80 +585,164 @@
 
                 editable: true,
                 dayMaxEvents: true, // allow "more" link when too many events
-                eventClick: function(event, jsEvent, view) {
-                    alert();
+                eventClick: function(info) {
+                    // Retrieve interview details from the event
+                    const interviewLink = info.event.extendedProps.interviewLink;
+                    const interviewTime = info.event.extendedProps.interviewTime;
+                    const status = info.event.extendedProps.status;
+                    const candidateName = info.event.extendedProps.candidateName;
+                    const eventType = info.event.extendedProps.holiday;
+                    if (!eventType) {
+                        // Set the modal data
+                        $('#interviewLink').text(interviewLink);
+                        $('#interviewTime').text(interviewTime);
+                        $('#interviewStatus').text(status);
+                        $('#candidateName').text(candidateName);
+
+                        // Show the modal
+                        $('#interviewModal').modal('show');
+                    }
                 },
-                //dateClick: function(info) {
-                //alert();
-                //},
                 eventContent: function(info) {
+                    const color = info.event.backgroundColor;
+                    const title = info.event.title;
+                    const start = info.event.start;
                     return {
-                        html: info.event.title
+                        html: `<div class="dotcirclatt ${color}" title="${title}"></div>`,
                     };
                 },
-                events: [{
-                        title: '<div class="dotcirclatt"></div>',
-                        start: '2024-12-01'
-                    },
-                    {
-                        title: '<div class="dotcirclatt previous"></div>',
-                        start: '2024-12-02'
-                    },
+                events: function(fetchInfo, successCallback, failureCallback) {
+                    $.ajax({
+                        url: "{{ route('recruitment.interview-events') }}",
+                        type: 'GET',
+                        cache: true,
+                        data: {
+                            start: fetchInfo.startStr,
+                            end: fetchInfo.endStr
+                        },
+                        success: function(response) {
+                            successCallback(response);
+                        }
+                    });
 
-                    {
-                        title: '<div class="dotcirclatt previous"></div>',
-                        start: '2024-12-05'
-                    },
-                    {
-                        title: '<div class="dotcirclatt present"></div>',
-                        start: '2024-12-06'
-                    },
-                    {
-                        title: '<div class="dotcirclatt absent"></div>',
-                        start: '2024-12-07'
-                    },
-                    {
-                        title: '<div class="dotcirclatt"></div>',
-                        start: '2024-12-08'
-                    },
-                    {
-                        title: '<div class="dotcirclatt"></div>',
-                        start: '2024-12-15'
-                    },
-                    {
-                        title: '<div class="dotcirclatt"></div>',
-                        start: '2024-12-22'
-                    },
-
-                    {
-                        title: '<div class="dotcirclatt present"></div>',
-                        start: '2024-12-24'
-                    },
-                    {
-                        title: '<div class="dotcirclatt present"></div>',
-                        start: '2024-12-27'
-                    },
-                    {
-                        title: '<div class="dotcirclatt present"></div>',
-                        start: '2024-12-26'
-                    },
-
-                    {
-                        title: '<div class="dotcirclatt"></div>',
-                        start: '2024-12-29'
-                    },
-                    {
-                        title: '<div class="dotcirclatt"></div>',
-                        start: '2024-12-14'
-                    },
-                    {
-                        title: '<div class="dotcirclatt"></div>',
-                        start: '2024-12-28'
-                    }
-                ]
+                }
             });
 
             calendar.render();
         });
+    </script>
+
+    {{-- For applcants --}}
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            fetchApplicantList();
+        });
+
+        function fetchApplicantList(type = 'today') {
+            const url = `{{ route('recruitment.fetch-applicants') }}`;
+
+            $.ajax({
+                url: url,
+                type: 'GET',
+                data: {
+                    type: type
+                },
+                success: function(response) {
+                    $('#applicants-section').html(response); // You can adjust this to target the right tab
+                },
+                error: function(xhr) {
+                    console.error('Failed to load applicants');
+                }
+            });
+        }
+    </script>
+
+    {{-- For Interview Summary --}}
+    <script>
+        let radialChart;
+        document.addEventListener("DOMContentLoaded", function() {
+            fetchInterviewSummary();
+        });
+
+        function fetchInterviewSummary(type = 'this_month') {
+            const url = `{{ route('recruitment.fetch-interview-summary') }}`;
+
+            $.ajax({
+                url: url,
+                type: 'GET',
+                data: {
+                    type: type
+                },
+                success: function(response) {
+                    updateRadialChart([
+                        response.scheduledCount,
+                        response.selectedCount,
+                        response.rejectCount,
+                        response.holdCount,
+                    ]);
+
+                    $('#interview-summary-section').html(response.html);
+                },
+                error: function(xhr) {
+                    console.error('Failed to load applicants');
+                }
+            });
+        }
+
+        function updateDropdownLabel(label, id) {
+            document.getElementById(id).textContent = label;
+        }
+
+        function updateRadialChart(seriesData) {
+            const options = {
+                chart: {
+                    height: 350,
+                    type: 'radialBar'
+                },
+                colors: ['#7367f0', '#28c76f', '#ff6f61', '#ff9f43'],
+                plotOptions: {
+                    radialBar: {
+                        size: 185,
+                        hollow: {
+                            size: '25%'
+                        },
+                        track: {
+                            margin: 15
+                        },
+                        dataLabels: {
+                            name: {
+                                fontSize: '1rem'
+                            },
+                            value: {
+                                fontSize: '1rem'
+                            },
+                            total: {
+                                show: true,
+                                label: 'Total',
+                                formatter: function() {
+                                    return seriesData.reduce((a, b) => a + b, 0);
+                                }
+                            }
+                        }
+                    }
+                },
+                legend: {
+                    show: true,
+                    position: 'bottom'
+                },
+                stroke: {
+                    lineCap: 'round'
+                },
+                series: seriesData,
+                labels: ['Scheduled', 'Selected', 'Rejected', 'On Hold']
+            };
+
+            if (radialChart) {
+                radialChart.updateOptions(options);
+            } else {
+                radialChart = new ApexCharts(document.querySelector('#radialbar-chart'), options);
+                radialChart.render();
+            }
+        }
     </script>
 @endsection

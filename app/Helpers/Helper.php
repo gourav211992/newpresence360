@@ -3150,35 +3150,4 @@ return [
             return $financialYear ?? null;
 
         }
-
-        public static function updateFinancialYearAccessBy($user)
-        {
-            $financialYear = self::getCurrentFy();
-
-            if ($financialYear && $financialYear->access_by === null) {
-                $organizationId = $user->organization_id;
-                $employees = self::getOrgWiseUserAndEmployees($organizationId);
-                $accessBy = [];
-
-                foreach ($employees as $employee) {
-                    $authUser = $employee->authUser();
-                    if ($authUser) {
-                        $accessBy[] = [
-                            'user_id' => $authUser->id,
-                            'authenticable_type' => $authUser->authenticable_type ?? null,
-                            'authorized' => true,
-                        ];
-                    }
-                }
-
-                $financialYear->access_by = $accessBy;
-                $financialYear->save();
-
-                // Store a flag so this doesn't run again in the session
-                Session::put('fy_access_updated', true);
-                session()->save();
-            }
 }
-}
-
-

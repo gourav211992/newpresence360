@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use App\Helpers\GstInvoiceHelper;
 use App\Jobs\SendEmailJob;
 use App\Models\AuthUser;
+use App\Models\Customer;
 use App\Models\EwayBillMaster;
 use Dompdf\Dompdf;
 
@@ -52,6 +53,7 @@ use App\Models\Unit;
 use Carbon\Carbon;
 use DB;
 use Dompdf\Options;
+use App\Models\CashCustomerDetail;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -459,6 +461,69 @@ class ErpSaleInvoiceController extends Controller
                     }
             }
             $saleInvoice = null;
+            //Reset Customer Fields 
+            $customer = Customer::find($request -> customer_id);
+            $customerPhoneNo = $request -> customer_phone_no ?? null;
+            $customerEmail = $request -> customer_email ?? null;
+            $customerGSTIN = $request -> customer_gstin ?? null;
+            $customerName = $request -> consignee_name ?? null;
+            //If Customer is Regular, pick from Customer Master
+            if ($customer -> customer_type === ConstantHelper::REGULAR) {
+                $customerPhoneNo = $customer -> mobile ?? null;
+                $customerEmail = $customer -> email ?? null;
+                $customerGSTIN = $customer -> compliances ?-> gstin_no ?? null;
+            } else {
+                //Check for customer details in Cash
+                if (!$customerPhoneNo || !$customerEmail || !$customerName) {
+                    DB::rollBack();
+                    return response() -> json([
+                        'message' => 'Please enter all details of the customer',
+                        'error' => ''
+                    ], 422);
+                }
+                if ($customerGSTIN) { // Validate Customer
+                    $validatedGSTIN = EInvoiceHelper::validateGstNumber($customerGSTIN);
+                    if (isset($validatedGSTIN) && isset($validatedData['status'])) {
+                        if ($validatedGSTIN['Status'] == 1) {
+                            $gstResponse = json_decode($validatedGSTIN['checkGstIn'], true);
+                            $addresses = $gstResponse['addresses'] ?? [];
+                            //Check the GSTIN with state
+                            if (!empty($addresses)) {
+                                $firstAddress = $addresses[0];  
+                                if (isset($firstAddress['state_id'])) {
+                                    $shipAddrStateId = null;
+                                    $shipAddr = ErpAddress::find($request -> shipping_address);
+                                    if (!isset($shipAddr)) {
+                                        $shipAddrStateId = $request -> new_shipping_state_id;
+                                    } else {
+                                        $shipAddrStateId = $shipAddr -> state_id;
+                                    }
+                                    $shipState = State::find($shipAddrStateId);
+                                    if (isset($shipState) && $shipState -> state_code != $firstAddress['state_id']) {
+                                        DB::rollBack();
+                                        return response() -> json([
+                                            'message' => 'Entered GST Number does not match Shipping Address',
+                                            'error' => ''
+                                        ], 422);
+                                    }
+                                }
+                            }
+                        } else {
+                            DB::rollBack();
+                            return response() -> json([
+                                'message' => 'Entered GST Number is invalid',
+                                'error' => ''
+                            ], 422);
+                        }
+                    } else {
+                        DB::rollBack();
+                        return response() -> json([
+                            'message' => 'Entered GST Number is invalid',
+                            'error' => ''
+                        ], 422);
+                    }
+                }
+            }
             $transportationMode = EwayBillMaster::find($request->transporter_mode);
 
             if ($request -> sale_invoice_id) { //Update
@@ -620,6 +685,9 @@ class ErpSaleInvoiceController extends Controller
                     'store_code' => $store ?-> store_code ?? null,
                     'customer_id' => $request -> customer_id,
                     'customer_code' => $request -> customer_code,
+                    'customer_email' => $customerEmail,
+                    'customer_phone_no' => $customerPhoneNo,
+                    'customer_gstin' => $customerGSTIN,
                     'consignee_name' => $request -> consignee_name,
                     'consignment_no' => $request -> consignment_no,
                     'vehicle_no' => $request -> vehicle_no,
@@ -663,6 +731,17 @@ class ErpSaleInvoiceController extends Controller
                         'phone' => $customerBillingAddress -> phone,
                         'fax_number' => $customerBillingAddress -> fax_number
                     ]);
+                } else {
+                    $billingAddress = $saleInvoice -> billing_address_details() -> create([
+                        'address' => $request -> new_billing_address,
+                        'country_id' => $request -> new_billing_country_id,
+                        'state_id' => $request -> new_billing_state_id,
+                        'city_id' => $request -> new_billing_city_id,
+                        'type' => 'billing',
+                        'pincode' => $request -> new_billing_pincode,
+                        'phone' => $request -> new_billing_phone,
+                        'fax_number' => null
+                    ]);
                 }
                 // Shipping Address
                 $customerShippingAddress = ErpAddress::find($request -> shipping_address);
@@ -676,6 +755,17 @@ class ErpSaleInvoiceController extends Controller
                         'pincode' => $customerShippingAddress -> pincode,
                         'phone' => $customerShippingAddress -> phone,
                         'fax_number' => $customerShippingAddress -> fax_number
+                    ]);
+                } else {
+                    $shippingAddress = $saleInvoice -> shipping_address_details() -> create([
+                        'address' => $request -> new_shipping_address,
+                        'country_id' => $request -> new_shipping_country_id,
+                        'state_id' => $request -> new_shipping_state_id,
+                        'city_id' => $request -> new_shipping_city_id,
+                        'type' => 'shipping',
+                        'pincode' => $request -> new_shipping_pincode,
+                        'phone' => $request -> new_shipping_phone,
+                        'fax_number' => null
                     ]);
                 }
                 //Location Address
@@ -1331,6 +1421,7 @@ class ErpSaleInvoiceController extends Controller
                 }
                 $saleInvoice -> e_invoice_status = EInvoiceHelper::getEInvoicePendingDocumentStatus($saleInvoice, $saleInvoice -> gst_invoice_type);
                 $saleInvoice -> save();
+                SaleModuleHelper::cashCustomerMasterData($saleInvoice);
                 DB::commit();
                 $module = "Invoice";
                 $redirect_url = route('sale.invoice.index');

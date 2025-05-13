@@ -120,4 +120,15 @@ class ErpProductionWorkOrder extends Model
         return $this->hasMany(PwoSoMapping::class, 'pwo_id');
     } 
 
+    public function last_so()
+    {
+        $pwoSoMapping = $this->mapping?->count() ? $this->mapping()->whereNotNull('so_id')->first() : null;
+        if($pwoSoMapping) {
+            return $pwoSoMapping?->so;
+        }
+        return null;
+    }
+
+
+
 }

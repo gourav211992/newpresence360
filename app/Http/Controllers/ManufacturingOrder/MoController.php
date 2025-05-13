@@ -52,9 +52,7 @@ class MoController extends Controller
         if (request()->ajax()) {
             $user = Helper::getAuthenticatedUser();
             $boms = MfgOrder::withDefaultGroupCompanyOrg()
-                    ->withDraftListingLogic()
-                    ->latest()
-                    ->get();
+                    ->withDraftListingLogic();
             return DataTables::of($boms)
                 ->addIndexColumn()
                 ->editColumn('document_status', function ($row) {
@@ -97,9 +95,12 @@ class MoController extends Controller
                 ->addColumn('total_qty', function ($row) {
                     return isset($row?->moProducts) ? (number_format($row?->moProducts()->sum('qty'),4)) : ' ';
                 })
-                ->addColumn('mo_value', function ($row) {
-                    return 0;
-                    // return isset($row?->moProductions[0]) ? (number_format($row?->moProductions[0]->value,4)) : ' ';
+                ->addColumn('produced_qty', function ($row) {
+                    return isset($row?->moProducts) ? (number_format($row?->moProducts()->sum('pslip_qty'),4)) : ' ';
+                })
+                ->addColumn('so_no', function ($row) {
+                    $bookCode = strtoupper($row?->last_so()?->book_code);
+                    return $row?->last_so() ? ($bookCode.' - '. $row?->last_so()?->document_number)  : '';
                 })
                 ->editColumn('document_date', function ($row) {
                     return $row->getFormattedDate('document_date') ?? ' ';

@@ -38,8 +38,23 @@ class ErpRecruitmentJobLog extends Model
         return $this->belongsTo(ErpRecruitmentJobInterview::class, 'interview_id');
     }
 
+    public function job(){
+        return $this->belongsTo(ErpRecruitmentJob::class, 'job_id');
+    }
+
     public function getCandidateNameAttribute()
     {
         return optional($this->candidate)->name;
+    }
+
+    public function panels(){
+        return $this->hasManyThrough(
+            Employee::class,                   
+            ErpRecruitmentJobPanelAllocation::class,         
+            'job_id',                             
+            'id',                                          
+            'job_id',                                         
+            'panel_id'                                 
+        );
     }
 }

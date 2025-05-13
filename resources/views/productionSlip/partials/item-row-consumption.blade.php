@@ -5,7 +5,7 @@
     @endphp
     @foreach ($slip->consumptions as $psBomConsIndex => $psBomCons)
         <tr id = "item_row_{{$psBomConsIndex}}" class = "item_header_rows" data-detail-id = "{{$psBomCons -> id}}" data-id = "{{$psBomCons -> id}}">
-        <input type = 'hidden' name = "cons[{{$psBomConsIndex}}][id]" value = "{{$psBomCons -> id}}">
+        <input type = 'hidden' name = "cons[{{$psBomConsIndex}}][pslip_bom_cons_id]" value = "{{$psBomCons -> id}}">
         <td class="poprod-decpt">
             <input type="text" id="so_doc_{{$psBomConsIndex}}" name="cons[{{$psBomConsIndex}}][so_doc]" class="form-control mw-100 disabled-input"  value="{{$psBomCons?->so?->document_number}}">
         </td>
@@ -20,7 +20,7 @@
             <input type="text" id = "items_type_{{$psBomConsIndex}}" class="form-control mw-100 disabled-input"   value = "{{strtoupper(($psBomCons?->rm_type == 'sf' ? 'wip' : $psBomCons?->rm_type) ?? 'rm')}}" name = "cons[{{$psBomConsIndex}}][item_type]">
         </td>
         <td class="poprod-decpt" id="attribute_section_{{$psBomConsIndex}}"> 
-            <button id = "attribute_button_{{$psBomConsIndex}}" type = "button" data-bs-toggle="modal" onclick = "setItemAttributes('items_dropdown_{{$psBomConsIndex}}', '{{$psBomConsIndex}}', false,'#raw-materials' }});" data-bs-target="#attribute" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">Attributes</button>
+            <button id = "attribute_button_{{$psBomConsIndex}}" type = "button" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">Attributes</button>
             <input type = "hidden" name = "cons[{{$psBomConsIndex}}][attribute_value]" />
             </td>
         <td>

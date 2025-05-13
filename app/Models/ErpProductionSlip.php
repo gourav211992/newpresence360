@@ -77,6 +77,22 @@ class ErpProductionSlip extends Model
     {
         return $this -> belongsTo(MfgOrder::class, 'mo_id');
     }
+    public function pslip_items()
+    {
+        return $this -> hasMany(ErpPslipItem::class, 'pslip_id');
+    }
+    public function last_so()
+    {
+        $pslipItem = $this->pslip_items?->count() ? $this->pslip_items()->whereNotNull('so_id')->first() : null;
+        if($pslipItem) {
+            return $pslipItem?->so;
+        }
+        return null;
+    }
+    public function shift()
+    {
+        return $this -> belongsTo(Shift::class, 'shift_id');
+    }
     public function station()
     {
         return $this -> belongsTo(Station::class, 'station_id');
@@ -92,6 +108,10 @@ class ErpProductionSlip extends Model
     public function store()
     {
         return $this -> belongsTo(ErpStore::class, 'store_id');
+    }
+    public function sub_store()
+    {
+        return $this -> belongsTo(ErpSubStore::class, 'sub_store_id');
     }
     public function currency()
     {

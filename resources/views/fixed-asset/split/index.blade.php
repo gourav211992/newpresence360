@@ -63,9 +63,10 @@
 													<td>{{$d?->asset?->asset_name}}</td>
 													<td>{{$d?->asset?->asset_code}}</td>
 													<td>{{$d?->ledger?->name}}</td>
-													<td>{{$d?->document_date}}</td>
-													<td>{{$d?->quantity}}</td>
-													<td>{{$d?->capitalize_date}}</td>
+													<td>{{ $d?->document_date ? \Carbon\Carbon::parse($d->document_date)->format('d-m-Y') : '' }}</td>
+                          <td>{{ $d?->quantity }}</td>
+                          <td>{{ $d?->capitalize_date ? \Carbon\Carbon::parse($d->capitalize_date)->format('d-m-Y') : '' }}</td>
+
 													<td>
                             @php $statusClasss = App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$d->document_status??"draft"];  @endphp
                             <span
@@ -83,8 +84,14 @@
 																<i data-feather="more-vertical"></i>
 															</button>
 															<div class="dropdown-menu dropdown-menu-end">
-																<a class="dropdown-item" href="{{ route('finance.fixed-asset.split.show', $d->id) }}">
+                                @if($d->document_status == "draft")
+                                <a class="dropdown-item" href="{{ route('finance.fixed-asset.split.edit', $d->id) }}">
 																	<i data-feather="edit" class="me-50"></i>
+																	<span>Edit</span>
+																</a>
+                                @endif
+                                <a class="dropdown-item" href="{{ route('finance.fixed-asset.split.show', $d->id) }}">
+																	<i data-feather="eye" class="me-50"></i>
 																	<span>View Detail</span>
 																</a>
 															</div>
@@ -289,9 +296,42 @@
   $('.datatables-basic tbody').on('click', '.delete-record', function () {
     dt_basic.row($(this).parents('tr')).remove().draw();
   });
+  
 	
 	 
  
-});	
+});
+function showToast(icon, title) {
+            const Toast = Swal.mixin({
+                toast: true,
+                position: "top-end",
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+                didOpen: (toast) => {
+                    toast.onmouseenter = Swal.stopTimer;
+                    toast.onmouseleave = Swal.resumeTimer;
+                },
+            });
+            Toast.fire({
+                icon,
+                title
+            });
+        }
+
+        @if (session('success'))
+            showToast("success", "{{ session('success') }}");
+        @endif
+
+        @if (session('error'))
+            showToast("error", "{{ session('error') }}");
+        @endif
+
+        @if ($errors->any())
+            showToast('error',
+                "@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach"
+            );
+        @endif
+
 </script>
 @endsection

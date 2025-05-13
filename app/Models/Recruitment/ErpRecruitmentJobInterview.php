@@ -23,16 +23,13 @@ class ErpRecruitmentJobInterview extends Model
         'status',
         'created_by',
         'created_by_type',
-        'feedback_by',
-        'feedback_by_type',
-        'feedback_at',
     ];
 
     protected $casts = [
-        'feedback_at' => 'datetime',
+        'date_time' => 'datetime',
     ];
     
-    protected $append = ['creator_name','feedback_by_name','round_name'];
+    protected $append = ['creator_name','round_name'];
 
     public function organization(){
         return $this->belongsTo(Organization::class, 'organization_id');
@@ -70,23 +67,6 @@ class ErpRecruitmentJobInterview extends Model
         }
 
         return optional($this->createdByAdmin)->name;
-    }
-
-    public function feedbackByAdmin(){
-        return $this->belongsTo(User::class, 'feedback_by');
-    }
-
-	public function feedbackByEmployee(){
-        return $this->belongsTo(Employee::class, 'feedback_by');
-    }
-
-    public function getFeedbackByNameAttribute()
-    {
-        if ($this->feedback_by_type === 'employee') {
-            return optional($this->feedbackByEmployee)->name;
-        }
-
-        return optional($this->feedbackByAdmin)->name;
     }
 
     public function interviewFeedback(){

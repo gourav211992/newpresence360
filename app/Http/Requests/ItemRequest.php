@@ -69,6 +69,9 @@ class ItemRequest extends FormRequest
             ],
 
             'uom_id' => 'required|max:255',
+            'storage_uom_id' => 'nullable|exists:erp_units,id',
+            'storage_uom_conversion' => 'nullable',
+            'storage_uom_count' => 'nullable',
             'item_remark' => 'nullable', 
             'cost_price' =>'nullable|regex:/^[0-9,]*(\.[0-9]{1,2})?$/|min:0',
             'sell_price' =>'nullable|regex:/^[0-9,]*(\.[0-9]{1,2})?$/|min:0',
@@ -174,9 +177,26 @@ class ItemRequest extends FormRequest
                     $validator->errors()->add("alternate_uoms.{$index}.conversion_to_inventory", 'The conversion  is required when UOM is selected.');
                 }
             }
-        });
 
-        
+            if (!empty($this->input('storage_uom_id'))) {
+                if ($this->input('storage_uom_conversion') === null || $this->input('storage_uom_conversion') === '') {
+                    $validator->errors()->add('storage_uom_conversion', 'The storage UOM conversion is required.');
+                } elseif (!is_numeric($this->input('storage_uom_conversion'))) {
+                    $validator->errors()->add('storage_uom_conversion', 'The storage UOM conversion must be numeric.');
+                } elseif ($this->input('storage_uom_conversion') < 0.0001) {
+                    $validator->errors()->add('storage_uom_conversion', 'The storage UOM conversion must be at least 0.0001.');
+                }
+    
+                if ($this->input('storage_uom_count') === null || $this->input('storage_uom_count') === '') {
+                    $validator->errors()->add('storage_uom_count', 'The storage UOM count is required.');
+                } elseif (!is_numeric($this->input('storage_uom_count'))) {
+                    $validator->errors()->add('storage_uom_count', 'The storage UOM count must be an integer.');
+                } elseif (intval($this->input('storage_uom_count')) < 1) {
+                    $validator->errors()->add('storage_uom_count', 'The storage UOM count must be at least 1.');
+                }
+    
+            }
+        });
     }
 
     public function messages(): array
@@ -193,7 +213,9 @@ class ItemRequest extends FormRequest
             'item_code.required' => 'The item code is required.',
             'item_code.unique' => 'The item code has already been taken.',
             'item_name.required' => 'The item name is required.',
-            'uom_id.max' => 'The unit of measure must not exceed 255 characters.',
+            'uom_id.required' => 'The unit name is required.',
+            'storage_uom_id.required' => 'Please select a storage unit of measure.',
+            'storage_uom_id.exists' => 'The selected storage unit is invalid.',
             'min_stocking_level.integer' => 'The minimum stocking level must be an integer.',
             'min_stocking_level.min' => 'The minimum stocking level must be at least 0.',
             'max_stocking_level.integer' => 'The maximum stocking level must be an integer.',

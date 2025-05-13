@@ -115,6 +115,20 @@ class ItemHelper
         );
     }
 
+    /*Created helper for the get created bom cost*/
+    public static function getChildBomItemCost($itemId, $selectedAttributes = [])
+    {
+        $bomExist = self::checkItemBomExists($itemId,[]);
+        if (!$bomExist['bom_id']) {
+            return ['cost' => 0, 'status' => 422, 'message' => 'Not found header in BOM'];
+        }
+        $bom = Bom::where('id', $bomExist['bom_id'])->first();
+        if ($bom) {
+            $totalValue = $bom->total_value ?? 0;
+            return ['cost' => $totalValue, 'route' => route('bill.of.material.edit', $bom->id), 'status' => 200, 'message' => 'Fetched BOM header item cost'];
+        }
+    }
+    
     # Return item sub type name
     public static function getItemSubType($itemId = null)
     {

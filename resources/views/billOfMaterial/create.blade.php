@@ -1923,7 +1923,6 @@ $(document).on('click', '.prProcess', (e) => {
                 $("#overheadSummaryFooter").remove();
                 $("#headerOverheadTbl tbody").html(data.data.headerOverhead);
                 $("#itemTable .mrntableselectexcel").empty().append(data.data.pos);
-                $("#itemTable2 .mrntableselectexcel").empty().append(data.data.productionHtml);
                 $("#itemTable3 .mrntableselectexcel").empty().append(data.data.instructionHtml);
                 $("#prModal").modal('hide');
                 $(".prSelect").prop('disabled',true);

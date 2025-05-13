@@ -146,6 +146,7 @@ class VendorRequest extends FormRequest
             'pricing_type' => 'nullable|string',
             'credit_limit' => 'nullable|numeric|min:0',
             'credit_days' => 'nullable|integer|min:0|max:365',
+            'on_account_required' => 'nullable',
             'interest_percent' => 'nullable|numeric|min:0',
             'payment_terms_id' => 'required|exists:erp_payment_terms,id',
             'other_documents.*' => 'nullable|mimes:pdf,jpg,jpeg,png|max:2048',

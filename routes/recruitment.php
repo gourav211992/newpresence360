@@ -20,7 +20,12 @@ Route::middleware(['user.auth'])->group(function () {
         Route::get('/dashboard', 'index')->name('recruitment.dashboard');
         Route::get('/hr-dashboard', 'hrDashboard')->name('recruitment.hr-dashboard');
         Route::get('/fetch-employees', 'fetchEmployees')->name('recruitment.fetch-employees');
+        Route::get('/fetch-team', 'fetchTeam')->name('recruitment.fetch-team');
         Route::get('/fetch-emails', 'fetchEmails')->name('recruitment.fetch-emails');
+        Route::get('/fetch-applicants', 'fetchApplicants')->name('recruitment.fetch-applicants');
+        Route::get('/fetch-interview-summary', 'interviewSummary')->name('recruitment.fetch-interview-summary');
+        Route::get('/interview-events', 'getInterviewEvents')->name('recruitment.interview-events');
+
     });
 
     Route::controller(RequestController::class)->prefix('requests')->group(function () {
@@ -75,6 +80,11 @@ Route::middleware(['user.auth'])->group(function () {
         Route::get('/show/{id}', 'show')->name('recruitment.request-hr.show');
     });
 
+    Route::controller(ActivityController::class)->prefix('my-activities')->group(function () {
+        Route::get('/', 'index')->name('recruitment.my-activities');
+        Route::get('/interview-log', 'interviewLog')->name('recruitment.my-activities.interview-log');
+    });
+
     Route::group(['middleware' => ['apiresponse']], function () {
         Route::controller(RequestController::class)->prefix('requests')->group(function () {
             Route::post('/store', 'store')->name('recruitment.requests.store');
@@ -110,6 +120,10 @@ Route::middleware(['user.auth'])->group(function () {
 
         Route::controller(ReferalController::class)->prefix('my-referal')->group(function () {
             Route::post('/applied-for-job/{jobId}', 'appliedForJob')->name('recruitment.my-referal.applied-for-job');
+        });
+         
+        Route::controller(IndexController::class)->group(function () {
+            Route::post('/user-configuration', 'userConfiguration')->name('recruitment.user-configuration');
         });
     });
 });

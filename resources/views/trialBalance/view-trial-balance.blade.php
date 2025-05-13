@@ -64,7 +64,7 @@
                                      <div class="col-md-8">
                                          <div class="newheader">
                                             <div>
-                                                <h4 class="card-title text-theme text-dark" id="company_name"></h4>
+                                                <h4 class="card-title text-theme text-dark" id="company_name">{{$orgname}}</h4>
                                                 <p class="card-text"><span id="startDate"></span> to <span id="endDate"></span></p>
                                             </div>
                                         </div>
@@ -201,8 +201,8 @@
         
       
     getInitialGroups();
-   
-            $('#company_name').text(
+    if($('#organization_id').val()!=""){
+        $('#company_name').text(
                 $('#organization_id option:selected')
                     .map(function() {
                         return $(this).text();
@@ -210,6 +210,9 @@
                     .get()
                     .join(', ')
             );
+}
+   
+           
       
 
         // Filter record
@@ -229,7 +232,7 @@
 
             var selectedValues = $('#organization_id').val() || [];
             if (selectedValues.length === 0) {
-                $('#company_name').text('All Companies');
+                $('#company_name').text("{{$orgname}}");
             } else {
                 $('#company_name').text(
                     $('#organization_id option:selected')

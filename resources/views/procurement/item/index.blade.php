@@ -40,7 +40,7 @@
                         <div class="col-12">
                             <div class="card">
                                 <div class="table-responsive">
-                                    <table class="datatables-basic table myrequesttablecbox">
+                                    <table class="datatables-basic table myrequesttablecbox tableistlastcolumnfixed">
                                         <thead>
                                              <tr>
                                                 <th>S.NO</th>
@@ -52,11 +52,10 @@
                                                 <th>SubType</th>
                                                 <th>Category</th>
                                                 <th>Sub Category</th>
-                                                <th>Status</th>
                                                 <th>Created At</th>
                                                 <th>Created By</th>
                                                 <th>Updated At</th>
-                                                <th>Action</th>
+                                                <th class="text-end">Status</th>
                                               </tr>
                                         </thead>
                                     </table>
@@ -153,6 +152,7 @@ $(document).ready(function() {
         dt_basic_table.DataTable({
             processing: true,
             serverSide: true,
+            scrollX: true,
             ajax: {
                 url: "{{ route('item.index') }}",
                 
@@ -165,6 +165,9 @@ $(document).ready(function() {
                     d.type = $('#filter-type').val(); 
                 }
             },
+            "createdRow": function( row, data, dataIndex ) {
+                $(row).find('td').addClass('text-nowrap');
+            },
             columns: [
                 { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
                 { data: 'item_code', name: 'item_code', render: renderData },
@@ -175,7 +178,6 @@ $(document).ready(function() {
                 { data: 'subtypes', name: 'subtypes', render: renderData },
                 { data: 'category.name', name: 'category.name', render: renderData }, 
                 { data: 'subcategory.name', name: 'subcategory.name', render: renderData }, 
-                { data: 'status', name: 'status', render: renderData },
                 { data: 'created_at', name: 'created_at', render: function(data) {
                  return data ? data : 'N/A'; 
                 }},
@@ -190,7 +192,41 @@ $(document).ready(function() {
                     return data ?data  : 'N/A'; 
                 }},
                
-                { data: 'action', name: 'action', orderable: false, searchable: false }
+                {
+                    data: null, 
+                    name: 'status_action',
+                    orderable: false,
+                    searchable: false,
+                    render: function(data, type, row) {
+                        let statusClass = 'badge-light-secondary';
+                        if (row.status == 'active') {
+                            statusClass = 'badge-light-success';
+                        } else if (row.status == 'inactive') {
+                            statusClass = 'badge-light-danger';
+                        } else if (row.status == 'draft') {
+                            statusClass = 'badge-light-warning';
+                        }
+
+                        const status = `<span class="badge rounded-pill ${statusClass} badgeborder-radius">
+                                        ${row.status ? row.status.charAt(0).toUpperCase() + row.status.slice(1) : 'Unknown'}
+                                      </span>`;
+
+                        const editUrl = "{{ url('items') }}/" + row.id + "/edit";
+                        const action = `<div class="dropdown">
+                                          <button type="button" class="btn btn-sm dropdown-toggle hide-arrow p-0" data-bs-toggle="dropdown">
+                                              <i data-feather="more-vertical"></i>
+                                          </button>
+                                          <div class="dropdown-menu">
+                                              <a class="dropdown-item" href="${editUrl}">
+                                                  <i data-feather="edit-3" class="me-50"></i>
+                                                  <span>Edit</span>
+                                              </a>
+                                          </div>
+                                        </div>`;
+
+                        return '<td class="text-nowrap"><div class="d-flex align-items-center justify-content-end">' + status + action + '</div></td>';
+                    }
+                },
             ],
             dom: '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-3 dt-action-buttons text-end"B><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
             buttons: [
@@ -220,6 +256,7 @@ $(document).ready(function() {
                 paginate: { previous: '&nbsp;', next: '&nbsp;' }
             },
             search: { caseInsensitive: true }
+            
         });
     }
     $('#reset-filters').on('click', function() {
@@ -236,6 +273,21 @@ $(document).ready(function() {
         $('#filter').modal('hide'); 
     });
 });
+function handleRowSelection(tableSelector) {
+    $(tableSelector).on('click', 'tbody tr', function () {
+        $(tableSelector).find('tr').removeClass('trselected');
+        $(this).addClass('trselected');
+    });
 
+    $(document).on('keydown', function (e) {
+        const $selected = $(tableSelector).find('.trselected');
+        if (e.which == 38) {  
+            $selected.prev('tr').addClass('trselected').siblings().removeClass('trselected');
+        } else if (e.which == 40) { 
+            $selected.next('tr').addClass('trselected').siblings().removeClass('trselected');
+        }
+    });
+}
+handleRowSelection('.datatables-basic');
 </script>
 @endsection

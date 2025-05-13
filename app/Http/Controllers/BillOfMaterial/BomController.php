@@ -1153,7 +1153,7 @@ class BomController extends Controller
     {
         $selectedAttributes = json_decode($request->itemAttributes,true);
         $itemId = $request->item_id;
-        $result = Helper::getChildBomItemCost($itemId, $selectedAttributes);
+        $result = ItemHelper::getChildBomItemCost($itemId, $selectedAttributes);
         $itemCost = $result['cost'];
         if(!floatval($itemCost)) {
             $uomId = $request->uom_id ?? null;
@@ -1337,9 +1337,8 @@ class BomController extends Controller
             ])->render();
         $headerOverheads = $bom->bomOverheadItems()->where('type','H')->orderBy('level')->get();
         $headerOverhead = view('billOfMaterial.partials.overhead.add-comp-level', ['headerOverheads' => $headerOverheads])->render();
-        $productionHtml = view('billOfMaterial.partials.production-edit-row', ['bom' => $bom])->render();
         $instructionHtml = view('billOfMaterial.partials.instruction-row-edit', ['bom' => $bom,'sectionRequired' => $sectionRequired, 'subSectionRequired' => $subSectionRequired])->render();
-        return response()->json(['data' => ['bom' => $bom, 'pos' => $html, 'headerAttrHtml' => $headerAttrHtml, 'productionHtml' => $productionHtml, 'instructionHtml' => $instructionHtml, 'headerOverhead' => $headerOverhead], 'status' => 200, 'message' => "fetched!"]);
+        return response()->json(['data' => ['bom' => $bom, 'pos' => $html, 'headerAttrHtml' => $headerAttrHtml, 'instructionHtml' => $instructionHtml, 'headerOverhead' => $headerOverhead], 'status' => 200, 'message' => "fetched!"]);
     }
 
     # Add Overhead Level

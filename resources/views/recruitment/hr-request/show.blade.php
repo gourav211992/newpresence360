@@ -399,7 +399,7 @@
                     url: url,
                     type: 'GET',
                     data: {
-                        page: 'job-request-view'
+                        page: 'job-view-hr'
                     },
                     success: function(response) {
                         $('#newcand').html(response); // You can adjust this to target the right tab
@@ -441,7 +441,7 @@
                         url: url,
                         type: 'GET',
                         data: {
-                            page: 'job-request-view',
+                            page: 'job-view-hr',
                             status: status
                         },
                         success: function(response) {
@@ -476,7 +476,7 @@
                         url: url,
                         type: 'GET',
                         data: {
-                            page: 'job-request-view'
+                            page: 'job-view-hr'
                         },
                         success: function(response) {
                             $('#emp-detail-div').html(response);

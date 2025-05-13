@@ -26,6 +26,9 @@ class Job
 			'job_title_id' => [
 				'required'
 			],
+			'no_of_position' => [
+				'required'
+			],
 			'job_request' => [
 				'required', 'array', 'min:1'
 			],
@@ -105,6 +108,7 @@ class Job
             ],
 
 		],[
+			'no_of_position.required' => 'No of position field is required!',
 			'employement_type.required' => 'Employement type field is required!',
 			'job_request.required' => 'Request field is required!',
 			'job_title_id.required' => 'Job title field is required!',
@@ -177,6 +181,9 @@ class Job
 			'third_party_assessment' => [
 				'required'
 			],
+			'no_of_position' => [
+				'required'
+			],
 			'assessment_url' => [
 				'required_if:third_party_assessment,yes',
 				'nullable',
@@ -244,6 +251,7 @@ class Job
             ],
 
 		],[
+			'no_of_position.required' => 'No of position field is required!',
 			'employement_type.required' => 'Employement type field is required!',
 			'job_request.required' => 'Request field is required!',
 			'job_title_id.required' => 'Job title field is required!',
