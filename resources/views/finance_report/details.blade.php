@@ -106,13 +106,9 @@
                                                         @endif
                                                     </td>
                                                         <td class="text-end">@if($d->invoice_amount!=""){{ number_format($d->invoice_amount,2)}}@endif</td>
-                                                    @if($type=="debit")
-                                                    <td class="outstanding text-end">{{ number_format(abs($d->total_outstanding), 2) }}  {{ $d->total_outstanding < 0 ? 'Cr' : 'Dr' }}</td>
-                                                    @else
-                                                    <td class="outstanding text-end">{{ number_format(abs($d->total_outstanding), 2) }}  {{ $d->total_outstanding < 0 ? 'Dr' : 'Cr' }}</td>
+                                                    <td class="outstanding text-end">{{ $d->total_outstanding < 0 ? 0: number_format($d->total_outstanding,2) }}</td>
 
-                                                    @endif
-												        <td class="overdue text-end"> {{$d->overdue > 0 ? number_format($d->overdue) : '' }}</td>
+                                                    <td class="overdue text-end"> {{$d->overdue > 0 ? number_format($d->overdue) : '' }}</td>
 
                                                         <td>
                                                         @if($d->view_route)

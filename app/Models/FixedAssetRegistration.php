@@ -92,6 +92,14 @@ class FixedAssetRegistration extends Model
     {
         return $this->belongsTo(Currency::class, 'currency_id');
     }
+    public function location()
+    {
+        return $this->belongsTo(ErpStore::class, 'location_id');
+    }
+    public function cost_center()
+    {
+        return $this->belongsTo(CostCenter::class, 'cost_center_id');
+    }
     public function issue_transfer(){
         return $this->hasOne(FixedAssetIssueTransfer::class, 'asset_id', 'id');
     }

@@ -438,10 +438,10 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Vendor <span
                                                                     class="text-danger">*</span></label>
-                                                                    <select class="form-select select2" disabled style="pointer-events: none;" id="vendor" required>
+                                                                    <select class="form-select select2" id="vendor" required>
                                                                         <option value="">Select</option>
                                                                         @foreach ($vendors as $vendor)
-                                                                            <option value="{{ $vendor->id }}" {{ $data->vendor_id ? 'selected' : '' }}>
+                                                                            <option value="{{ $vendor->id }}" {{ $data->vendor_id==$vendor->id ? 'selected' : '' }}>
                                                                                 {{ $vendor->name }}
                                                                             </option>
                                                                         @endforeach
@@ -457,7 +457,7 @@
                                                                     <select class="form-select" name="currency_id" id="currency" disabled required>
                                                                         <option value="">Select</option>
                                                                         @foreach ($currencies as $currency)
-                                                                            <option value="{{ $currency->id }}" {{ $data->currency_id ? 'selected' : '' }}>
+                                                                            <option value="{{ $currency->id }}" {{ $data->currency_id==$currency->id ? 'selected' : '' }}>
                                                                                 {{ $currency->name }}
                                                                             </option>
                                                                         @endforeach
@@ -1578,6 +1578,8 @@ function showToast(icon, title) {
         
         $('#ap_file').prop('disabled', false).prop('readonly', false);
         $('#revisionNumber').prop('disabled', false).prop('readonly', false);
+        $('#organization').prop('disabled', false).prop('readonly', false);
+        $('#fyear').prop('disabled', false).prop('readonly', false);
         
 $(document).on('click', '#amendmentSubmit', (e) => {
 let actionUrl = "{{ route('finance.fixed-asset.registration.amendment', $data->id) }}";
@@ -1652,6 +1654,7 @@ $('#location').on('change', function () {
 });
 
 $('#location').trigger('change');
+$('.select2').select2();
 
     </script>
 @endsection

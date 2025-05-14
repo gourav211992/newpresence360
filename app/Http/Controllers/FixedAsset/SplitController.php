@@ -96,7 +96,7 @@ class SplitController extends Controller
                 $dep_percentage = $organization->dep_percentage;
                 $dep_type = $organization->dep_type;
                 $dep_method = $organization->dep_method;
-                $locations = ErpStore::withDefaultGroupCompanyOrg()->get();
+                $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
        
                 return view('fixed-asset.split.create', compact('locations','series','assets', 'categories','ledgers','financialEndDate','financialStartDate','dep_percentage','dep_type','dep_method'));
        
@@ -176,7 +176,7 @@ class SplitController extends Controller
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$data->document_status] ?? '';
         $revNo = $data->revision_number;
         $approvalHistory = Helper::getApprovalHistory($data->book_id, $data->id, $revNo,$data->current_value,$data->created_by);
-        $locations = ErpStore::withDefaultGroupCompanyOrg()->get();
+        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
         
 
         
@@ -219,7 +219,7 @@ class SplitController extends Controller
                 $dep_percentage = $organization->dep_percentage;
                 $dep_type = $organization->dep_type;
                 $dep_method = $organization->dep_method;
-                $locations = ErpStore::withDefaultGroupCompanyOrg()->get();
+                $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
        
                 return view('fixed-asset.split.edit', compact('locations','data','series','assets', 'categories','ledgers','financialEndDate','financialStartDate','dep_percentage','dep_type','dep_method'));
        

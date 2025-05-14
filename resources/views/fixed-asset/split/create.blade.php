@@ -187,15 +187,8 @@
                                                         <div class="mb-1">
                                                             <label class="form-label" for="asset_id">Asset Code &
                                                                 Name <span class="text-danger">*</span></label>
-                                                            <select id="asset_id" name="asset_id"
-                                                                class="form-control mw-100 p_ledgerselecct" required>
-                                                                <option value="">Select</option>
-                                                                @foreach ($assets as $asset)
-                                                                    <option value="{{ $asset->id }}">
-                                                                        {{ $asset->asset_code }} ({{ $asset->asset_name }})
-                                                                    </option>
-                                                                @endforeach
-                                                            </select>
+                                                            <input type="text" id="asset_search_input"  class="form-control">
+                                                            <input type="hidden" id="asset_id" name="asset_id">
                                                         </div>
                                                     </div>
 
@@ -204,21 +197,18 @@
                                                         <div class="mb-1">
                                                             <label class="form-label" for="sub_asset_id">Sub-Asset Code
                                                                 <span class="text-danger">*</span></label>
-                                                            <select id="sub_asset_id" name="sub_asset_id"
-                                                                class="form-control mw-100 c_ledgerselecct" required>
-                                                                <option value="">Select</option>
-                                                                <!-- Will be filled via AJAX -->
-                                                            </select>
-                                                        </div>
+                                                          <input type="text" id="subasset_search_input"  class="form-control">
+                                                            <input type="hidden" id="sub_asset_id" name="sub_asset_id">
+                                                          </div>
                                                     </div>
 
                                                     <!-- Last Date of Dep. -->
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label" for="last_dep_date">Last Date of
-                                                                Dep. <span class="text-danger">*</span></label>
+                                                                Dep. </label>
                                                             <input type="date" id="last_dep_date" name="last_dep_date"
-                                                                class="form-control" required readonly/>
+                                                                class="form-control" readonly/>
                                                         </div>
                                                     </div>
 
@@ -794,137 +784,151 @@
 
 
         $(document).ready(function() {
-
-            // On Asset change, get sub-assets
-            $('#asset_id').on('change', function() {
-                let assetId = $(this).val();
-                $('#sub_asset_id').html('<option value="">Loading...</option>');
-
-                $.ajax({
-                    url: '{{ route('finance.fixed-asset.sub_asset') }}', // Update this route
-                    type: 'GET',
-                    data: {
-                        id: assetId
-                    },
-                    success: function(response) {
-                        $('#sub_asset_id').html('<option value="">Select</option>');
-                        $.each(response, function(key, subAsset) {
-                            $('#sub_asset_id').append(
-                                '<option value="' + subAsset.id + '">' + subAsset
-                                .sub_asset_code + '</option>'
-                            );
+    
+                $("#asset_search_input").autocomplete({
+                    source: function (request, response) {
+                        $.ajax({
+                            headers: {
+                                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                            },
+                            url: '{{ route("finance.fixed-asset.asset-search") }}',
+                            type: 'POST',
+                            dataType: 'json',
+                            data: {
+                                q: request.term
+                            },
+                            success: function (data) {
+                                response(data.map(function (item) {
+                                    return {
+                                        label: item.asset_code + ' (' + item.asset_name + ')',
+                                        value: item.id,
+                                    };
+                                }));
+                            },
+                            error: function () {
+                                response([]);
+                            }
                         });
-
-                        $('#category').val(response[0].asset.category_id).trigger('change');
-                        $('#ledger').val(response[0].asset.ledger_id).trigger('change');
-                        $('#ledger_group').val(response[0].asset.ledger_group_id).trigger(
-                            'change');
-                        $('#last_dep_date').val(response[0].asset.last_dep_date);
-                        let lastDepDate = new Date(response[0].asset.last_dep_date);
-
-                        // Add 1 day
-                        lastDepDate.setDate(lastDepDate.getDate() - 1);
-
-                        // Format as YYYY-MM-DD
-                        let nextDate = lastDepDate.toISOString().split('T')[0];
-
-                        $('#last_dep_date').val(nextDate);
-                        $('#capitalize_date').val(response[0].asset.last_dep_date);
-                        $('#depreciation_rate').val(response[0].asset.depreciation_percentage);
-                        $('#depreciation_rate_year').val(response[0].asset
-                            .depreciation_percentage_year);
-                        $('#useful_life').val(response[0].asset.useful_life);
-                        $('#maintenance_schedule').val(response[0].asset.maintenance_schedule);
                     },
-                    error: function() {
-                        showToast('error', 'Failed to load sub-assets.');
+                    minLength: 0,
+                    select: function (event, ui) {
+                        const asset = ui.item.asset;
+
+                        // Set the input box and hidden ID field
+                        $(this).val(ui.item.label);
+                        $('#asset_id').val(ui.item.value);
+                        add_blank();
+
+                        return false; // Prevent default behavior
+                    },
+                    change: function (event, ui) {
+                        if (!ui.item) {
+                            $(this).val('');
+                            $('#asset_id').val('');
+                            add_blank();
+
+                        }
+                    },
+                    focus: function (event, ui) {
+                        return false; // Prevent default behavior
+                    }
+                }).focus(function () {
+                    if (this.value === '') {
+                        $(this).autocomplete('search');
                     }
                 });
-                $('.mrntableselectexcel').empty();
-                let blank_row = `<tr class="trselected">
-                                                                <td class="customernewsection-form">
-                                                                    <div class="form-check form-check-primary custom-checkbox">
-                                                                        <input type="checkbox" class="form-check-input row-check">
-                                                                        <label class="form-check-label"></label>
-                                                                    </div>
-                                                                </td>
-                                                                <td class="poprod-decpt">
-                                                                    <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-code-input" />
-                                                                </td>
-                                                                <td class="poprod-decpt">
-                                                                    <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-name-input" />
-                                                                </td>
-                                                                <td class="poprod-decpt">
-                                                                    <input type="text" required placeholder="Enter" disabled class="form-control mw-100 mb-25 sub-asset-code-input" />
-                                                                </td>
-                                                                <td>
-                                                                    <input type="text" required disabled value="1" class="form-control mw-100 quantity-input" />
-                                                                </td>
-                                                                <td>
-                                                                    <input type="text" required class="form-control mw-100 text-end current-value-input" min="1" />
-                                                                </td>
-                                                                    <td>
-                                                                    <input type="text" required class="form-control mw-100 text-end salvage-value-input" min="1" readonly />
-                                                                </td>
-                                                            </tr>`;
-                                                            $('.mrntableselectexcel').append(blank_row);
-
-                   
-            });
-
-            // On Sub-Asset change, get value and last dep date
-            $('#sub_asset_id').on('change', function() {
-                let subAssetId = $(this).val();
-                let assetId = $('#asset_id').val();
-
-                $.ajax({
-                    url: '{{ route('finance.fixed-asset.sub_asset_details') }}', // Update this route
-                    type: 'GET',
-                    data: {
-                        id: assetId,
-                        sub_asset_id: subAssetId
+                $("#subasset_search_input").autocomplete({
+                    source: function (request, response) {
+                        $.ajax({
+                            headers: {
+                                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                            },
+                            url: '{{ route("finance.fixed-asset.sub_asset_search") }}',
+                            type: 'POST',
+                            dataType: 'json',
+                            data: {
+                                id:$('#asset_id').val(),
+                                q: request.term
+                            },
+                            success: function (data) {
+                                response(data.map(function (item) {
+                                    return {
+                                        label: item.sub_asset_code,
+                                        value: item.id,
+                                        asset: item.asset,
+                                        sub_asset:item
+                                    };
+                                }));
+                            },
+                            error: function () {
+                                response([]);
+                            }
+                        });
                     },
-                    success: function(response) {
-                        $('#current_value_asset').val(response.current_value_after_dep);
-                        $('#total_depreciation').val(response.total_depreciation);
-                    
-                        
+                    minLength: 0,
+                    select: function (event, ui) {
+                        const asset = ui.item.asset;
+                        const sub_asset = ui.item.sub_asset
+
+                        // Set the input box and hidden ID field
+                        $(this).val(ui.item.label);
+                        $('#sub_asset_id').val(ui.item.value);
+                        console.log(asset);
+
+                        // Fill other fields directly
+                        $('#category').val(asset.category_id).trigger('change');
+                        $('#ledger').val(asset.ledger_id).trigger('change');
+                        $('#ledger_group').val(asset.ledger_group_id).trigger('change');
+
+                        // Handle depreciation date
+                        if (asset.last_dep_date !== asset.capitalize_date) {
+                            let lastDepDate = new Date(asset.last_dep_date);
+                            lastDepDate.setDate(lastDepDate.getDate() - 1);
+                            let formattedDate = lastDepDate.toISOString().split('T')[0];
+                            $('#last_dep_date').val(formattedDate);
+                        }
+
+                        $('#capitalize_date').val(asset.last_dep_date);
+                        $('#depreciation_rate').val(asset.depreciation_percentage);
+                        $('#depreciation_rate_year').val(asset.depreciation_percentage_year);
+                        $('#useful_life').val(asset.useful_life);
+                        $('#maintenance_schedule').val(asset.maintenance_schedule);
+                        $('#current_value_asset').val(sub_asset.current_value_after_dep);
+                        $('#total_depreciation').val(sub_asset.total_depreciation);
+                        add_blank();
+
+                        return false; // Prevent default behavior
                     },
-                    error: function() {
-                        showToast('error', 'Failed to load sub-asset details.');
+                    change: function (event, ui) {
+                        if (!ui.item) {
+                            $(this).val('');
+                            $('#sub_asset_id').val('');
+                            $('#category').val("").trigger('change');
+                            $('#ledger').val("").trigger('change');
+                            $('#ledger_group').val("").trigger('change');
+                            $('#capitalize_date').val("");
+                            $('#depreciation_rate').val("");
+                            $('#depreciation_rate_year').val("");
+                            $('#useful_life').val("");
+                            $('#maintenance_schedule').val("");
+                            $('#current_value_asset').val("");
+                            $('#total_depreciation').val("");
+                            $('#last_dep_date').val("")
+                       
+                            add_blank();
+
+                        }
+                    },
+                    focus: function (event, ui) {
+                        return false; // Prevent default behavior
+                    }
+                }).focus(function () {
+                    if (this.value === '') {
+                        $(this).autocomplete('search');
                     }
                 });
-                $('.mrntableselectexcel').empty();
-                let blank_row = `<tr class="trselected">
-                                                                <td class="customernewsection-form">
-                                                                    <div class="form-check form-check-primary custom-checkbox">
-                                                                        <input type="checkbox" class="form-check-input row-check">
-                                                                        <label class="form-check-label"></label>
-                                                                    </div>
-                                                                </td>
-                                                                <td class="poprod-decpt">
-                                                                    <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-code-input" />
-                                                                </td>
-                                                                <td class="poprod-decpt">
-                                                                    <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-name-input" />
-                                                                </td>
-                                                                <td class="poprod-decpt">
-                                                                    <input type="text" required placeholder="Enter" disabled class="form-control mw-100 mb-25 sub-asset-code-input" />
-                                                                </td>
-                                                                <td>
-                                                                    <input type="text" required disabled value="1" class="form-control mw-100 quantity-input" />
-                                                                </td>
-                                                                <td>
-                                                                    <input type="text" required class="form-control mw-100 text-end current-value-input" min="1" />
-                                                                </td>
-                                                                    <td>
-                                                                    <input type="text" required class="form-control mw-100 text-end salvage-value-input" min="1" readonly />
-                                                                </td>
-                                                            </tr>`;
-                                                            $('.mrntableselectexcel').append(blank_row);
-                    
-            });
 
+           
         });
 
         function showToast(icon, title) {
@@ -1185,6 +1189,37 @@ $('#location').on('change', function () {
         $('#cost_center').empty();
     }
 });
+function add_blank(){
+    $('.mrntableselectexcel').empty();
+                let blank_row = `<tr class="trselected">
+                                                                <td class="customernewsection-form">
+                                                                    <div class="form-check form-check-primary custom-checkbox">
+                                                                        <input type="checkbox" class="form-check-input row-check">
+                                                                        <label class="form-check-label"></label>
+                                                                    </div>
+                                                                </td>
+                                                                <td class="poprod-decpt">
+                                                                    <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-code-input" />
+                                                                </td>
+                                                                <td class="poprod-decpt">
+                                                                    <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-name-input" />
+                                                                </td>
+                                                                <td class="poprod-decpt">
+                                                                    <input type="text" required placeholder="Enter" disabled class="form-control mw-100 mb-25 sub-asset-code-input" />
+                                                                </td>
+                                                                <td>
+                                                                    <input type="text" required disabled value="1" class="form-control mw-100 quantity-input" />
+                                                                </td>
+                                                                <td>
+                                                                    <input type="text" required class="form-control mw-100 text-end current-value-input" min="1" />
+                                                                </td>
+                                                                    <td>
+                                                                    <input type="text" required class="form-control mw-100 text-end salvage-value-input" min="1" readonly />
+                                                                </td>
+                                                            </tr>`;
+                                                            $('.mrntableselectexcel').append(blank_row);
+
+}
 
 $('#location').trigger('change');
     </script>

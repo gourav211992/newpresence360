@@ -118,6 +118,8 @@ class FixedAssetMerger extends Model
                 'last_dep_date'=> $request->capitalize_date,
                 'vendor_id'=> null,
                 'currency_id'=> $user->organization->currency_id,
+                'location_id'=>$request->location_id,
+                'cost_center_id'=>$request->cost_center_id,
                 'supplier_invoice_no'=> null,
                 'supplier_invoice_date'=> null,
                 'book_date'=>null,

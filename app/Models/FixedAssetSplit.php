@@ -120,6 +120,8 @@ class FixedAssetSplit extends Model
                     'last_dep_date'=> $request->capitalize_date,
                     'vendor_id'=> $asset->vendor_id,
                     'currency_id'=> $asset->currency_id,
+                    'location_id'=>$request->location_id,
+                    'cost_center_id'=>$request->cost_center_id,
                     'supplier_invoice_no'=> $asset->supplier_invoice_no,
                     'supplier_invoice_date'=> $asset->supplier_invoice_date,
                     'book_date'=>$asset->book_date,

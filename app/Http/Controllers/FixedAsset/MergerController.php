@@ -98,7 +98,7 @@ class MergerController extends Controller
                 $dep_percentage = $organization->dep_percentage;
                 $dep_type = $organization->dep_type;
                 $dep_method = $organization->dep_method;
-                $locations = ErpStore::withDefaultGroupCompanyOrg()->get();
+                $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
        
                 return view('fixed-asset.merger.create', compact('locations','assets','series','assets', 'categories','ledgers','financialEndDate','financialStartDate','dep_percentage','dep_type','dep_method'));
        
@@ -180,7 +180,7 @@ class MergerController extends Controller
         
         $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()->whereIn('document_status',ConstantHelper::DOCUMENT_STATUS_APPROVED)->get();
         
-        $locations = ErpStore::withDefaultGroupCompanyOrg()->get();
+        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
        
         return view('fixed-asset.merger.show', compact('locations','assets','data', 'buttons', 'docStatusClass', 'approvalHistory','revision_number'));
         
@@ -223,7 +223,7 @@ class MergerController extends Controller
                 $dep_type = $organization->dep_type;
                 $dep_method = $organization->dep_method;
                 $data = FixedAssetMerger::find($id);
-                $locations = ErpStore::withDefaultGroupCompanyOrg()->get();
+                $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
        
                 return view('fixed-asset.merger.edit', compact('locations','data','assets','series','assets', 'categories','ledgers','financialEndDate','financialStartDate','dep_percentage','dep_type','dep_method'));
        

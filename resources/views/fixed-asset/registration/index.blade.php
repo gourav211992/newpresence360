@@ -70,11 +70,13 @@
                                         <thead>
                                             <tr>
                                                 <th>#</th>
+                                                <th>Date</th>
                                                 <th>Asset Name</th>
                                                 <th>Asset Code</th>
                                                 <th>Ledger Name</th>
                                                 <th>Book Date</th>
                                                 <th>Location</th>
+                                                <th>Cost Center</th>
                                                 <th>Qty</th>
                                                 <th>Cap. Date</th>
                                                 <th>Status</th>
@@ -86,11 +88,13 @@
                                             @forelse($data as $asset)
                                                 <tr>
                                                     <td>{{ $loop->iteration }}</td>
+                                                    <td>{{ \Carbon\Carbon::parse($asset->document_date)->format('d-m-Y') ??"-"}}</td>
                                                     <td class="fw-bolder text-dark">{{ $asset->asset_name??"-" }}</td>
                                                     <td>{{ $asset->asset_code??"-" }}</td>
                                                     <td>{{ $asset->ledger->name??"-" }}</td>
                                                     <td>{{ \Carbon\Carbon::parse($asset->book_date)->format('d-m-Y')??"-" }}</td>
-                                                    <td>{{ $asset->location ??"-" }}</td>
+                                                    <td>{{ $asset?->location?->store_name ??"-" }}</td>
+                                                    <td>{{ $asset?->cost_center?->name ??"-" }}</td>
                                                     <td>{{ $asset->quantity ??"-" }}</td>
                                                     <td>{{ \Carbon\Carbon::parse($asset->capitalize_date)->format('d-m-Y') ??"-"}}</td>
                                                    

@@ -434,7 +434,7 @@
                                                                     <select class="form-select select2" disabled style="pointer-events: none;" id="vendor" required>
                                                                         <option value="">Select</option>
                                                                         @foreach ($vendors as $vendor)
-                                                                            <option value="{{ $vendor->id }}" {{ $data->vendor_id ? 'selected' : '' }}>
+                                                                            <option value="{{ $vendor->id }}" {{ $data->vendor_id==$vendor->id ? 'selected' : '' }}>
                                                                                 {{ $vendor->name }}
                                                                             </option>
                                                                         @endforeach
@@ -444,18 +444,20 @@
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
-                                                        <div class="mb-1">
+                                                           <div class="mb-1">
                                                             <label class="form-label">Currency <span
                                                                     class="text-danger">*</span></label>
-                                                                    <select class="form-select disabled-select" name="currency_id" id="currency" required>
+                                                                    <select class="form-select" disabled id="currency" required>
                                                                         <option value="">Select</option>
                                                                         @foreach ($currencies as $currency)
-                                                                            <option value="{{ $currency->id }}" {{ $data->currency_id ? 'selected' : '' }}>
+                                                                            <option value="{{ $currency->id }}" {{ $currency->id==$data->currency_id ? 'selected' : '' }}>
                                                                                 {{ $currency->name }}
                                                                             </option>
                                                                         @endforeach
                                                                     </select>
-                                                                    </div>
+                                                                <input type="hidden" name="currency_id" id="currency_id" value="{{old('currency')}}">
+
+                                                                     </div>
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
