@@ -56,6 +56,25 @@ class LedgerReportExport implements FromArray, WithHeadings, WithTitle, ShouldAu
         // Apply bold formatting to the last row only
         $lastRow = $sheet->getHighestRow(); // Get the highest row number with data
         $sheet->getStyle('A' . ($lastRow - 2) . ':H' . $lastRow)->getFont()->setBold(true); // Last two rows
+         $lastRow = $sheet->getHighestRow();
+
+    // "Total" is the second-last row before "Closing Balance"
+    $totalRow = $lastRow - 2;
+
+    $styleArray = [
+        'borders' => [
+            'top' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN],
+            'bottom' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN],
+        ],
+        'font' => [
+            'bold' => true,
+        ],
+    ];
+
+    // Apply the style only to the "Total" row (columns F to H)
+    $sheet->getStyle("F{$totalRow}:H{$totalRow}")->applyFromArray($styleArray);
+
+    return [];
     }
 
     public function title(): string

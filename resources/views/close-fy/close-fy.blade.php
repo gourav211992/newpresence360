@@ -156,94 +156,104 @@
                                         </div>
                                     </div>
                                     <div class="tab-pane" id="Access">
-                                        <div class="text-end mb-2">
-                                            <a id="saveAccessBy" href="#" class="btn-dark btn-sm access-by">
-                                                <i data-feather='check-circle'></i> Save
-                                            </a>
-                                        </div>
-                                        <div class="table-responsive-md">
-                                            <table
-                                                class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border">
-                                                <thead>
-                                                    <tr>
-                                                        <th width="50px">#</th>
-                                                        <th width="480">Authorized By<span class="text-danger">*</span>
-                                                        </th>
-                                                        <th width="400">Permissions</th>
-                                                        <th>Action</th>
-                                                    </tr>
-                                                </thead>
+                                        @if (isset($organizationId) && $organizationId)
+                                            <div class="text-end mb-2">
+                                                <a id="saveAccessBy" href="#" class="btn-dark btn-sm access-by">
+                                                    <i data-feather='check-circle'></i> Save
+                                                </a>
+                                            </div>
+                                            <div class="table-responsive-md">
+                                                <table
+                                                    class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border">
+                                                    <thead>
+                                                        <tr>
+                                                            <th width="50px">#</th>
+                                                            <th width="480">Authorized By<span
+                                                                    class="text-danger">*</span>
+                                                            </th>
+                                                            <th width="400">Permissions</th>
+                                                            <th>Action</th>
+                                                        </tr>
+                                                    </thead>
 
-                                                <tbody>
-                                                    @php $rowNumber = 1; @endphp
-                                                    @if (!is_null($authorized_users))
-                                                        @php
-                                                            $authorizedUsers = $authorized_users['users'] ?? collect();
-                                                            $showAddRowOnly = $authorizedUsers->isEmpty();
+                                                    <tbody>
 
-                                                        @endphp
-                                                        @if ($authorized_users['all'] === true)
+                                                        @if (!is_null($authorized_users))
+                                                            @php
+                                                                $authorizedUsers =
+                                                                    $authorized_users['users'] ?? collect();
+                                                                $showAddRowOnly = $authorizedUsers->isEmpty();
 
-                                                            @foreach ($employees as $employee)
-                                                                <tr>
-                                                                    <td>{{ $rowNumber }}</td>
-                                                                    <td>
-                                                                        <select
-                                                                            class="form-select mw-100 select2 authorize-user"
-                                                                            id="authorize_{{ $rowNumber }}">
-                                                                            <option value="" disabled selected>Select
-                                                                            </option>
-                                                                            @php
-                                                                                $authUser = $employee->authUser();
-                                                                                $permissions = $authUser
-                                                                                    ? $authUser->roles
-                                                                                        ->pluck('name')
-                                                                                        ->toArray()
-                                                                                    : [];
-                                                                            @endphp
-                                                                            @if ($authUser)
-                                                                                <option value="{{ $authUser->id }}"
-                                                                                    data-permissions='@json($permissions)'
-                                                                                    data-authenticable-type="{{ $authUser->authenticable_type }}"
-                                                                                    selected>
-                                                                                    {{ $authUser->name }}
+                                                            @endphp
+
+                                                            @if (!$showAddRowOnly)
+                                                                {{-- Loop through specific authorized users --}}
+                                                                @foreach ($authorizedUsers as $index => $authorizedUser)
+                                                                    <tr>
+                                                                        <td class="sno">{{ $index + 1 }}</td>
+                                                                        <td>
+                                                                            <select
+                                                                                class="form-select mw-100 select2 authorize-user"
+                                                                                id="authorize_{{ $index+1 }}">
+                                                                                <option value="" disabled>Select
                                                                                 </option>
+                                                                                @foreach ($employees as $employee)
+                                                                                    @php
+                                                                                        $authUser = $employee->authUser();
+                                                                                        $permissions = $authUser
+                                                                                            ? $authUser->roles
+                                                                                                ->pluck('name')
+                                                                                                ->toArray()
+                                                                                            : [];
+                                                                                        $isSelected =
+                                                                                            $authUser &&
+                                                                                            $authorizedUser->id ==
+                                                                                                $authUser->id;
+                                                                                    @endphp
+                                                                                    <option value="{{ $authUser?->id }}"
+                                                                                        data-permissions='@json($permissions)'
+                                                                                        data-authenticable-type="{{ $authUser?->authenticable_type }}"
+                                                                                        {{ $isSelected ? 'selected' : '' }}>
+                                                                                        {{ $authUser?->name ?? 'N/A' }}
+                                                                                    </option>
+                                                                                @endforeach
+                                                                            </select>
+                                                                            <input type="hidden"
+                                                                                class="authenticable-type"
+                                                                                name="authenticable_type[]">
+                                                                        </td>
+                                                                        <td>
+                                                                            <select
+                                                                                class="form-select mw-100 select2 permissions-box"
+                                                                                id="permissions_{{ $index + 1 }}"
+                                                                                multiple disabled></select>
+                                                                        </td>
+                                                                        <td>
+                                                                            @if ($authorizedUsers->count() === 1 || $loop->first)
+                                                                                <a href="#" id="saveCloseFyBtn"
+                                                                                    class="text-primary"><i
+                                                                                        data-feather="plus-square"></i></a>
+                                                                            @else
+                                                                                <a href="#"
+                                                                                    class="text-danger deleteAuthorize"><i
+                                                                                        data-feather="trash-2"></i></a>
                                                                             @endif
-                                                                        </select>
-                                                                        <input type="hidden" class="authenticable-type"
-                                                                            name="authenticable_type[]">
-                                                                    </td>
-                                                                    <td>
-                                                                        <select
-                                                                            class="form-select mw-100 select2 permissions-box"
-                                                                            id="permissions_{{ $rowNumber }}" multiple
-                                                                            disabled></select>
-                                                                    </td>
-                                                                    <td>
-                                                                        @if ($employees->count() === 1 || $loop->first)
-                                                                            <a href="#" id="saveCloseFyBtn"
-                                                                                class="text-primary"><i
-                                                                                    data-feather="plus-square"></i></a>
-                                                                        @else
-                                                                            <a href="#"
-                                                                                class="text-danger deleteAuthorize"><i
-                                                                                    data-feather="trash-2"></i></a>
-                                                                        @endif
-                                                                    </td>
-                                                                </tr>
-                                                                @php $rowNumber++; @endphp
-                                                            @endforeach
-                                                        @elseif (!$showAddRowOnly)
-                                                            {{-- Loop through specific authorized users --}}
-                                                            @foreach ($authorizedUsers as $index => $authorizedUser)
-                                                                <tr>
-                                                                    <td>{{ $rowNumber }}</td>
-                                                                    <td>
-                                                                        <select
-                                                                            class="form-select mw-100 select2 authorize-user"
-                                                                            id="authorize_{{ $rowNumber }}">
-                                                                            <option value="" disabled>Select</option>
-                                                                            @foreach ($employees as $employee)
+                                                                        </td>
+                                                                    </tr>
+                                                                @endforeach
+                                                            @endif
+                                                        @else
+                                                            @if (isset($employees) && $employees->isNotEmpty())
+                                                                @foreach ($employees as $index => $employee)
+                                                                    <tr>
+                                                                        <td class="sno">{{ $index + 1 }}</td>
+                                                                        <td>
+                                                                            <select
+                                                                                class="form-select mw-100 select2 authorize-user"
+                                                                                id="authorize_{{ $index + 1 }}">
+                                                                                <option value="" disabled selected>
+                                                                                    Select
+                                                                                </option>
                                                                                 @php
                                                                                     $authUser = $employee->authUser();
                                                                                     $permissions = $authUser
@@ -251,111 +261,58 @@
                                                                                             ->pluck('name')
                                                                                             ->toArray()
                                                                                         : [];
-                                                                                    $isSelected =
-                                                                                        $authUser &&
-                                                                                        $authorizedUser->id ==
-                                                                                            $authUser->id;
                                                                                 @endphp
-                                                                                <option value="{{ $authUser?->id }}"
-                                                                                    data-permissions='@json($permissions)'
-                                                                                    data-authenticable-type="{{ $authUser?->authenticable_type }}"
-                                                                                    {{ $isSelected ? 'selected' : '' }}>
-                                                                                    {{ $authUser?->name ?? 'N/A' }}
-                                                                                </option>
-                                                                            @endforeach
-                                                                        </select>
-                                                                        <input type="hidden" class="authenticable-type"
-                                                                            name="authenticable_type[]">
-                                                                    </td>
-                                                                    <td>
-                                                                        <select
-                                                                            class="form-select mw-100 select2 permissions-box"
-                                                                            id="permissions_{{ $rowNumber }}" multiple
-                                                                            disabled></select>
-                                                                    </td>
-                                                                    <td>
-                                                                        @if ($authorizedUsers->count() === 1 || $loop->first)
-                                                                            <a href="#" id="saveCloseFyBtn"
-                                                                                class="text-primary"><i
-                                                                                    data-feather="plus-square"></i></a>
-                                                                        @else
-                                                                            <a href="#"
-                                                                                class="text-danger deleteAuthorize"><i
-                                                                                    data-feather="trash-2"></i></a>
-                                                                        @endif
-                                                                    </td>
-                                                                </tr>
-                                                                @php $rowNumber++; @endphp
-                                                            @endforeach
-                                                        @endif
-                                                    @else
-                                                        @if (isset($employees) && $employees->isNotEmpty())
-                                                            @foreach ($employees as $employee)
-                                                                <tr>
-                                                                    <td>{{ $rowNumber }}</td>
-                                                                    <td>
-                                                                        <select
-                                                                            class="form-select mw-100 select2 authorize-user"
-                                                                            id="authorize_{{ $rowNumber }}">
-                                                                            <option value="" disabled selected>Select
-                                                                            </option>
-                                                                            @php
-                                                                                $authUser = $employee->authUser();
-                                                                                $permissions = $authUser
-                                                                                    ? $authUser->roles
-                                                                                        ->pluck('name')
-                                                                                        ->toArray()
-                                                                                    : [];
-                                                                            @endphp
-                                                                            @if ($authUser)
-                                                                                <option value="{{ $authUser->id }}"
-                                                                                    data-permissions='@json($permissions)'
-                                                                                    data-authenticable-type="{{ $authUser->authenticable_type }}"
-                                                                                    selected>
-                                                                                    {{ $authUser->name }}
-                                                                                </option>
+                                                                                @if ($authUser)
+                                                                                    <option value="{{ $authUser->id }}"
+                                                                                        data-permissions='@json($permissions)'
+                                                                                        data-authenticable-type="{{ $authUser->authenticable_type }}"
+                                                                                        {{ $authUser ? 'selected' : '' }}>
+                                                                                        {{ $authUser->name }}
+                                                                                    </option>
+                                                                                @endif
+                                                                            </select>
+                                                                            <input type="hidden"
+                                                                                class="authenticable-type"
+                                                                                name="authenticable_type[]">
+                                                                        </td>
+                                                                        <td>
+                                                                            <select
+                                                                                class="form-select mw-100 select2 permissions-box"
+                                                                                id="permissions_{{ $index + 1 }}"
+                                                                                multiple disabled></select>
+                                                                        </td>
+                                                                        <td>
+                                                                            @if ($employees->count() === 1 || $loop->first)
+                                                                                <a href="#" id="saveCloseFyBtn"
+                                                                                    class="text-primary"><i
+                                                                                        data-feather="plus-square"></i></a>
+                                                                            @else
+                                                                                <a href="#"
+                                                                                    class="text-danger deleteAuthorize"><i
+                                                                                        data-feather="trash-2"></i></a>
                                                                             @endif
-                                                                        </select>
-                                                                        <input type="hidden" class="authenticable-type"
-                                                                            name="authenticable_type[]">
-                                                                    </td>
-                                                                    <td>
-                                                                        <select
-                                                                            class="form-select mw-100 select2 permissions-box"
-                                                                            id="permissions_{{ $rowNumber }}" multiple
-                                                                            disabled></select>
-                                                                    </td>
-                                                                    <td>
-                                                                        @if ($employees->count() === 1 || $loop->first)
-                                                                            <a href="#" id="saveCloseFyBtn"
-                                                                                class="text-primary"><i
-                                                                                    data-feather="plus-square"></i></a>
-                                                                        @else
-                                                                            <a href="#"
-                                                                                class="text-danger deleteAuthorize"><i
-                                                                                    data-feather="trash-2"></i></a>
-                                                                        @endif
-                                                                    </td>
+                                                                        </td>
+                                                                    </tr>
+                                                                @endforeach
+                                                            @else
+                                                                {{-- Show one row with plus icon --}}
+                                                                <tr>
+                                                                    <td colspan="4" class="text-center text-muted">No
+                                                                        User
+                                                                        Found</td>
                                                                 </tr>
-                                                                @php $rowNumber++; @endphp
-                                                            @endforeach
-                                                        @else
-                                                            {{-- Show one row with plus icon --}}
-                                                            <tr>
-                                                                <td colspan="4" class="text-center text-muted">No User
-                                                                    Found</td>
-                                                            </tr>
+                                                            @endif
+
+
+
                                                         @endif
+                                                    </tbody>
 
 
 
-                                                    @endif
-                                                </tbody>
-
-
-
-                                            </table>
-                                        </div>
+                                                </table>
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
 
@@ -381,24 +338,36 @@
     </div>
 @endsection
 <!-- END: Content-->
-
+@php
+    $authUsers = $employees
+        ->filter(fn($e) => $e->authUser())
+        ->map(function ($e) {
+            return [
+                'id' => $e->authUser()->id,
+                'name' => $e->authUser()->name,
+                'type' => $e->authUser()->authenticable_type,
+                'permissions' => $e->authUser()->roles->pluck('name'),
+            ];
+        })
+        ->values();
+@endphp
 @section('scripts')
     <script>
-        let counter = $('tbody tr').length + 1;
+        const allUsers = @json($authUsers);
         // 1. Function to create a new row
-        function getNewRowHtml(rowNum) {
+        function getNewRowHtml() {
             return `
                 <tr>
-                    <td>${rowNum}</td>
+                     <td class="sno"></td>
                     <td>
-                        <select class="form-select mw-100 select2 authorize-user" id="authorize_${rowNum}" name="authorized_users[]" required>
+                        <select class="form-select mw-100 select2 authorize-user" name="authorized_users[]" required>
                             <option value="" disabled selected>Select</option>
                             ${getEmployeeOptions()}
                         </select>
                         <input type="hidden" class="authenticable-type" name="authenticable_type[]">
                     </td>
                     <td>
-                        <select class="form-select mw-100 select2 permissions-box" id="permissions_${rowNum}" name="permissions[${rowNum}][]" multiple disabled>
+                        <select class="form-select mw-100 select2 permissions-box" name="permissions[][permissions][]" multiple disabled>
                         </select>
                     </td>
                     <td>
@@ -406,6 +375,13 @@
                     </td>
                 </tr>
             `;
+        }
+
+
+        function updateSerialNumbers() {
+            $('tbody tr').each(function(index) {
+                $(this).find('td.sno').text(index + 1);
+            });
         }
 
         // 2. Blade-generated employee options
@@ -427,67 +403,67 @@
 
         // 3. Disable selected users in other rows
         function updateDisabledUsers() {
-            // Get all currently selected user IDs (except empty selections)
-            const selectedIds = [];
-            $('select.authorize-user').each(function() {
-                const val = $(this).val();
-                if (val) selectedIds.push(val);
-            });
+            const selectedIds = $('select.authorize-user').map(function() {
+                return $(this).val();
+            }).get().filter(Boolean); // currently selected user IDs (strings)
 
-            // Update all dropdowns
             $('select.authorize-user').each(function() {
-                const currentRowVal = $(this).val();
-                $(this).find('option').each(function() {
-                    const optionVal = $(this).val();
-                    // Disable if:
-                    // 1. It's selected in another dropdown (and not the current one)
-                    // 2. It's not the empty "Select" option
-                    if (optionVal && optionVal !== currentRowVal && selectedIds.includes(optionVal)) {
-                        $(this).prop('disabled', true);
-                    } else {
-                        $(this).prop('disabled', false);
-                    }
+                const $select = $(this);
+                const currentVal = $select.val();
+                const $row = $select.closest('tr');
+                const $hiddenType = $row.find('.authenticable-type');
+                const selectedUser = allUsers.find(u => u.id == currentVal);
+
+                // Clear options and rebuild
+                $select.empty().append('<option value="" disabled>Select</option>');
+
+                allUsers.forEach(user => {
+                    const userId = user.id.toString();
+                    const isSelected = userId === currentVal;
+                    const isDisabled = selectedIds.includes(userId) && !isSelected;
+
+                    const $option = $('<option>')
+                        .val(userId)
+                        .text(user.name)
+                        .attr('data-authenticable-type', user.type)
+                        .attr('data-permissions', JSON.stringify(user.permissions))
+                        .prop('selected', isSelected)
+                        .prop('disabled', isDisabled);
+
+                    $select.append($option);
                 });
 
-                // Reinitialize Select2 to reflect changes
-                $(this).trigger('change.select2');
+                $select.trigger('change.select2');
+
+                // Restore auth type
+                if (selectedUser) {
+                    $hiddenType.val(selectedUser.type);
+                }
             });
         }
 
         $(document).ready(function() {
-            // Initialize the first row's permissions if a user is already selected
-            // const initialSelected = $('#authorize_1').find('option:selected');
-            // console.log(initialSelected)
-            // if (initialSelected.val()) {
-            //     const permissions = initialSelected.data('permissions') || [];
-            //     const $permissionsBox = $('#authorize_1').closest('tr').find('.permissions-box');
 
-            //     $permissionsBox.empty().prop('disabled', true);
-            //     const uniquePermissions = [...new Set(permissions)];
-            //     uniquePermissions.forEach(p => {
-            //         $permissionsBox.append(`<option selected value="${p}">${p}</option>`);
-            //     });
-            //     $permissionsBox.trigger('change');
-            // }
+            $('.select2').select2();
+
+            // Delay update so select2 reads current selections
+            setTimeout(() => {
+                updateDisabledUsers();
+            }, 200);
+            updateSerialNumbers();
 
             // 4. Add new row
             $(document).on('click', '#saveCloseFyBtn', function(e) {
                 e.preventDefault();
-                // Get all user IDs already selected
-                const selectedIds = [];
-                $('select.authorize-user').each(function() {
-                    const val = $(this).val();
-                    if (val) selectedIds.push(val);
-                });
 
-                // Get all user IDs available in the select options
-                const allUserIds = [];
-                $('select.authorize-user:first option').each(function() {
-                    const val = $(this).val();
-                    if (val) allUserIds.push(val);
-                });
+                // Get all selected user IDs
+                const selectedIds = $('select.authorize-user').map(function() {
+                    return $(this).val();
+                }).get().filter(Boolean);
 
-                const availableToSelect = allUserIds.filter(id => !selectedIds.includes(id));
+                const availableToSelect = allUsers
+                    .map(user => user.id.toString())
+                    .filter(id => !selectedIds.includes(id));
 
                 if (availableToSelect.length === 0) {
                     Swal.fire({
@@ -498,23 +474,43 @@
                     });
                     return;
                 }
-                const newRowHtml = getNewRowHtml(counter);
+
+                const newRowHtml = getNewRowHtml();
                 $('tbody').append(newRowHtml);
-                $('.select2').select2(); // reinitialize select2
-                feather.replace(); // reinitialize icons
-                updateDisabledUsers(); // prevent duplicates
-                counter++;
+
+                // Initialize select2 for the new row
+                $('.select2').select2();
+                feather.replace();
+                updateDisabledUsers();
+
+                // Auto-select next available user and trigger permission
+                const $newRow = $('tbody tr').last();
+                const $userSelect = $newRow.find('.authorize-user');
+                const nextUserId = availableToSelect[0];
+                $userSelect.val(nextUserId).trigger('change');
             });
+
 
             // 5. Delete row
             $(document).on('click', '.deleteAuthorize', function(e) {
                 e.preventDefault();
-                $(this).closest('tr').remove();
+
+                const $row = $(this).closest('tr');
+                const removedUserId = $row.find('.authorize-user').val(); // capture user ID to free it
+                $row.remove();
+
                 // Renumber the rows
-                $('tbody tr').each(function(index) {
-                    $(this).find('td:first').text(index + 1);
-                });
-                updateDisabledUsers(); // refresh available users
+                // $('tbody tr').each(function(index) {
+                //     $(this).find('td:first').text(index + 1);
+                // });
+
+
+                // Update disabled users in dropdowns
+                updateDisabledUsers();
+                updateSerialNumbers();
+
+
+                $('select.authorize-user').first().focus();
             });
 
             // 6. Handle user selection and populate permissions
@@ -629,10 +625,7 @@
             // Initialize the first row's user dropdown restrictions
             updateDisabledUsers();
         });
-    </script>
-    <script>
         $(document).ready(function() {
-            // $('#authorize_1').select2();
 
             function updatePermissionsBox(selectElement) {
                 let selectedOptions = selectElement.find(':selected');
@@ -681,7 +674,6 @@
     </script>
     <script>
         var reservesSurplus = '';
-
         $(document).ready(function() {
 
             const params = new URLSearchParams(window.location.search);
@@ -1381,9 +1373,6 @@
                 });
             }
         });
-
-
-
         // selected arrow using down, up key
         $(document).ready(function() {
             let selectedRow = null;

@@ -151,9 +151,8 @@ class CloseFyController extends Controller
                     $nextFy->save();
                 }
             }
-                $accessBy = null;
-                if($financialYear && $financialYear->access_by == null)
-                {
+                // $accessBy = null;
+                if($financialYear && $financialYear->access_by == null){
                 $organizationId = $financialYear->organization_id;
                 $employees = Helper::getOrgWiseUserAndEmployees($organizationId);
 
@@ -168,9 +167,9 @@ class CloseFyController extends Controller
                         }
                     }
 
+                    $financialYear->access_by = $accessBy;
+                    $financialYear->save();
                 }
-                $financialYear->access_by = $accessBy;
-                $financialYear->save();
 
             DB::commit();
 

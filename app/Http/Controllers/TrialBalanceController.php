@@ -197,13 +197,24 @@ class TrialBalanceController extends Controller
                 $query->where('organization_id', $r->organization_id);
                 $query->whereBetween('document_date', [$startDate, $endDate])->orderBy('document_date', 'asc');
             })->first();
-        if ($opening && $opening->opening > 0) {
-            $data[] = ['','', '', '', '', 'Opening Balance',$opening->opening_type == 'Cr' ? $opening->opening : '', $opening->opening_type == 'Dr' ? $opening->opening : ''];
-            $totalDebit = $totalDebit + $opening->debit_amt;
-            $totalCredit = $totalCredit + $opening->credit_amt;
-        }else{
-            $data[] = ['','', '', '', '', 'Opening Balance',$opening->opening_type == 'Cr' ? $opening->opening : 0, $opening->opening_type == 'Dr' ? $opening->opening : 0];
-        }
+       if ($opening && $opening->opening > 0) {
+    $data[] = [
+        '', '', '', '', '',
+        'Opening Balance',
+        $opening->opening_type == 'Cr' ? $opening->opening : '',
+        $opening->opening_type == 'Dr' ? $opening->opening : ''
+    ];
+
+    $totalDebit += $opening->debit_amt;
+    $totalCredit += $opening->credit_amt;
+} else {
+    $data[] = [
+        '', '', '', '', '',
+        'Opening Balance',
+        $opening && $opening->opening_type == 'Cr' ? $opening->opening : 0,
+        $opening && $opening->opening_type == 'Dr' ? $opening->opening : 0
+    ];
+}
 
         foreach ($ledgerData as $voucher) {
             $myVoucherData = [];
@@ -256,6 +267,7 @@ class TrialBalanceController extends Controller
 
         $data[] = ['', '', '', '', '', '', '', ''];
         $data[] = ['', '', '', '','', 'Total', Helper::formatIndianNumber($totalDebit), Helper::formatIndianNumber($totalCredit)];
+        $data[] = ['', '', '', '', '', '', '', ''];
         $data[] = ['', '', '', '', '','Closing Balance', $totalDebit > $totalCredit ? abs($finalBalance) : '', $totalCredit > $totalDebit ? abs($finalBalance) : ''];
         // $data[] = ['', '', '', '', '', '',$totalDebit > $totalCredit ? abs($totalDebit) : abs($totalCredit), $totalDebit > $totalCredit ? abs($totalDebit) : abs($totalCredit)];
 
@@ -381,7 +393,7 @@ class TrialBalanceController extends Controller
 
         $dateRange = \Carbon\Carbon::parse($startDate)->format('d-m-Y') . " to " . \Carbon\Carbon::parse($endDate)->format('d-m-Y');
         $orgname=Organization::where('id',Helper::getAuthenticatedUser()->organization_id)->value('name');
-        
+
         $date2 = \Carbon\Carbon::parse($startDate)->format('jS-F-Y') . ' to ' . \Carbon\Carbon::parse($endDate)->format('jS-F-Y');
         return view('trialBalance.view-trial-balance', compact('orgname','cost_centers', 'companies', 'organizationId', 'id', 'date2', 'dateRange'));
     }
