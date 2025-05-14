@@ -236,8 +236,8 @@ class TrialBalanceController extends Controller
                     // $voucherData[] = '';
                     // $voucherData[] = '';
                     // $voucherData[] = $voucher->voucher_no;
-
-                    $voucherData[] = $voucher->date;
+                    $dateFormatted = \Carbon\Carbon::parse($voucher->date)->format('d-m-y');
+                    $voucherData[] = $dateFormatted;
                     // $voucherData[] = ''; //insert empty Cr\Dr for opponents
                     $voucherData[] = $item->ledger->name ?? '';
                     $voucherData[] = Helper::formatIndianNumber(abs($currentBalance)).' '.$currentBalanceType;
