@@ -43,38 +43,66 @@ class LedgerReportExport implements FromArray, WithHeadings, WithTitle, ShouldAu
 
     public function styles(Worksheet $sheet)
     {
-        // Apply bold formatting to the first row (ledger name)
-        $sheet->getStyle('A1')->getFont()->setBold(true);
-        $sheet->getStyle('A3')->getFont()->setBold(true);
-        $sheet->getStyle('F8:G8')->getFont()->setBold(true);
-        $sheet->getStyle('A6:H6')->getFont()->setBold(true);
-        // Align Amount (C), Debit (G), Credit (H) to left
-        $sheet->getStyle('C')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
-        $sheet->getStyle('G')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
-        $sheet->getStyle('H')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
+            // Apply bold formatting to the first row (ledger name)
+            $sheet->getStyle('A1')->getFont()->setBold(true);
+            $sheet->getStyle('A3')->getFont()->setBold(true);
+            $sheet->getStyle('F8:G8')->getFont()->setBold(true);
+            $sheet->getStyle('A6:H6')->getFont()->setBold(true);
+            // Align Amount (C), Debit (G), Credit (H) to left
+            $sheet->getStyle('C')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
+            $sheet->getStyle('G')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
+            $sheet->getStyle('H')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
 
-        // Apply bold formatting to the last row only
-        $lastRow = $sheet->getHighestRow(); // Get the highest row number with data
-        $sheet->getStyle('A' . ($lastRow - 2) . ':H' . $lastRow)->getFont()->setBold(true); // Last two rows
-         $lastRow = $sheet->getHighestRow();
+            // Apply bold formatting to the last row only
+            $lastRow = $sheet->getHighestRow(); // Get the highest row number with data
+            $sheet->getStyle('A' . ($lastRow - 2) . ':H' . $lastRow)->getFont()->setBold(true); // Last two rows
+            $lastRow = $sheet->getHighestRow();
 
-    // "Total" is the second-last row before "Closing Balance"
-    $totalRow = $lastRow - 2;
+        // "Total" is the second-last row before "Closing Balance"
+        $totalRow = $lastRow - 1;
 
-    $styleArray = [
-        'borders' => [
-            'top' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN],
-            'bottom' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN],
-        ],
-        'font' => [
-            'bold' => true,
-        ],
-    ];
+        $styleArray = [
+            'borders' => [
+                'top' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN],
+                'bottom' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN],
+            ],
+            'font' => [
+                'bold' => true,
+            ],
+        ];
 
-    // Apply the style only to the "Total" row (columns F to H)
-    $sheet->getStyle("F{$totalRow}:H{$totalRow}")->applyFromArray($styleArray);
+        // Apply the style only to the "Total" row (columns F to H)
+        $sheet->getStyle("F{$totalRow}:H{$totalRow}")->applyFromArray($styleArray);
+        $rowStart = 9; // Adjust according to your headings
+        $rowEnd = $sheet->getHighestRow();
 
-    return [];
+        $mergeCols = ['A', 'D', 'E', 'F', 'G', 'H']; // Skip B
+
+        $currentStart = $rowStart;
+        $lastVchNo = trim((string) $sheet->getCell("F{$rowStart}")->getValue());
+
+        for ($row = $rowStart + 1; $row <= $rowEnd + 1; $row++) {
+            $currentVchNo = trim((string) $sheet->getCell("F{$row}")->getValue());
+
+            // Stop and merge block if voucher number changes or we're at the end
+            if ($currentVchNo !== $lastVchNo || $row === $rowEnd + 1 || $currentVchNo === '') {
+                $mergeEnd = $row - 1;
+
+                if ($mergeEnd > $currentStart && $lastVchNo !== '') {
+                    foreach ($mergeCols as $col) {
+                        $sheet->mergeCells("{$col}{$currentStart}:{$col}{$mergeEnd}");
+                        $sheet->getStyle("{$col}{$currentStart}")->getAlignment()
+                            ->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER)
+                            ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+                    }
+                }
+
+                $currentStart = $row;
+                $lastVchNo = $currentVchNo;
+            }
+        }
+
+        return [];
     }
 
     public function title(): string

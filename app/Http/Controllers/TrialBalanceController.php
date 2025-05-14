@@ -183,94 +183,140 @@ class TrialBalanceController extends Controller
         $dates = explode(' to ', $r->date);
         $startDate = date('Y-m-d', strtotime($dates[0]));
         $endDate = date('Y-m-d', strtotime($dates[1]));
+        $fy = Helper::getFinancialYear($startDate);
 
+        $non_carry = Helper::getNonCarryGroups();
+        if (in_array($r->ledger_group, $non_carry))
+            $carry = 0;
+        else
+            $carry = 1;
         $ledgerData = Helper::getLedgerData($r->ledger_id, $startDate, $endDate, $r->company_id, $r->organization_id, $r->ledger_group, $currency, $r->cost_center_id);
         $totalDebit = 0;
         $totalCredit = 0;
         $data = [['', '', '', '', '', '', '']];
 
         // Get first opening of ledger
-        $opening = ItemDetail::where('ledger_id', $r->ledger_id)
+        $openingData = ItemDetail::where('ledger_id', $r->ledger_id)
             ->where('ledger_parent_id', $r->ledger_group)
-            ->whereHas('voucher', function ($query) use ($r, $startDate, $endDate) {
+            ->whereHas('voucher', function ($query) use ($startDate, $fy, $carry) {
                 $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
-                $query->where('organization_id', $r->organization_id);
-                $query->whereBetween('document_date', [$startDate, $endDate])->orderBy('document_date', 'asc');
-            })->first();
-       if ($opening && $opening->opening > 0) {
-    $data[] = [
-        '', '', '', '', '',
-        'Opening Balance',
-        $opening->opening_type == 'Cr' ? $opening->opening : '',
-        $opening->opening_type == 'Dr' ? $opening->opening : ''
-    ];
+                $query->where('document_date', '<', $startDate);
+                if (!$carry)
+                    $query->where('document_date', '>=', $fy['start_date']);
+                $query->where('organization_id', Helper::getAuthenticatedUser()->organization_id);
+            })
+            ->selectRaw("SUM(debit_amt_{$currency}) as total_debit, SUM(credit_amt_{$currency}) as total_credit")
+            ->first();
 
-    $totalDebit += $opening->debit_amt;
-    $totalCredit += $opening->credit_amt;
-} else {
-    $data[] = [
-        '', '', '', '', '',
-        'Opening Balance',
-        $opening && $opening->opening_type == 'Cr' ? $opening->opening : 0,
-        $opening && $opening->opening_type == 'Dr' ? $opening->opening : 0
-    ];
-}
+        $opening = $openingData;
+        $opening->opening = ($openingData->total_debit - $openingData->total_credit) ?? 0;
+        $opening->opening_type = ($openingData->total_debit > $openingData->total_credit) ? 'Dr' : 'Cr';
+        // dd($opening,$opening->opening, $opening->opening_type);
+        if ($opening && $opening->opening > 0) {
+            $data[] = [
+                '',
+                '',
+                '',
+                '',
+                '',
+                'Opening Balance',
+                Helper::formatIndianNumber($opening->opening),
+                ''
+            ];
+        } else {
+            $data[] = [
+                '',
+                '',
+                '',
+                '',
+                '',
+                'Opening Balance',
+                Helper::formatIndianNumber($opening->opening),
+                ''
+            ];
+        }
 
         foreach ($ledgerData as $voucher) {
-            $myVoucherData = [];
-            $otherVoucherData = [];
+            $dateFormatted = \Carbon\Carbon::parse($voucher->date)->format('d-m-y');
+            // $voucherData[] = $dateFormatted;
+            $seriesName = $voucher->series->service->name ?? '';
+            $bookCode = $voucher->series->book_code ?? '';
+            $voucherNo = $voucher->voucher_no ?? '';
+            $firstRow = true;
+
+            $currentDebit = 0;
+            $currentCredit = 0;
             foreach ($voucher->items as $item) {
-                $voucherData = [];
-                $currentBalance = $item->debit_amt - $item->credit_amt;
-                $currentBalanceType = $currentBalance >= 0 ? 'Cr' : 'Dr';
-                // dd($item,$voucher,$currentBalance);
-
-                $totalDebit = $totalDebit + $item->debit_amt;
-                $totalCredit = $totalCredit + $item->credit_amt;
-                if ($item->ledger_id != $r->ledger_id) {
-
-                    // $voucherData[] = $voucher->date;
-                    // // $voucherData[] = $currentBalanceType;
-                    // $voucherData[] = $item->ledger->name;
-                    // $voucherData[] = $item->currentBalance;
-                    // $voucherData[] = '';
-                    // $voucherData[] = '';
-                    // $voucherData[] = $voucher->voucher_no;
-                    $dateFormatted = \Carbon\Carbon::parse($voucher->date)->format('d-m-y');
-                    $voucherData[] = $dateFormatted;
-                    // $voucherData[] = ''; //insert empty Cr\Dr for opponents
-                    $voucherData[] = $item->ledger->name ?? '';
-                    $voucherData[] = Helper::formatIndianNumber(abs($currentBalance)).' '.$currentBalanceType;
-                    $voucherData[] = $voucher?->series?->service?->name;
-                    $voucherData[] = $voucher->voucher_name;
-                    $voucherData[] = $voucher->voucher_no;
-                    $voucherData[] = Helper::formatIndianNumber(abs($item->debit_amt));
-                    $voucherData[] = Helper::formatIndianNumber(abs($item->credit_amt));
-                }
-
                 if ($item->ledger_id == $r->ledger_id) {
-                    $myVoucherData = $voucherData;
-                } else {
-                    $otherVoucherData[] = $voucherData;
+                    $currentDebit = $item->debit_amt;
+                    $currentCredit = $item->credit_amt;
+                    $totalDebit += $currentDebit;
+                    $totalCredit += $currentCredit;
+                    continue;
                 }
-            }
 
-            $data[] = $myVoucherData;
-            foreach ($otherVoucherData as $other) {
-                $data[] = $other;
+                $row = [];
+                $currentBalance = $item->debit_amt - $item->credit_amt;
+                $currentBalanceType = $currentBalance >= 0 ? 'Dr' : 'Cr';
+                $formattedBalance = Helper::formatIndianNumber(abs($currentBalance)) . ' ' . $currentBalanceType;
+
+                if ($firstRow) {
+                    $row[] = $dateFormatted;
+                    $row[] = $item->ledger->name ?? '';
+                    $row[] = $formattedBalance;
+                    $row[] = $seriesName;
+                    $row[] = $bookCode;
+                    $row[] = $voucherNo;
+                    $row[] = Helper::formatIndianNumber($currentDebit);
+                    $row[] = Helper::formatIndianNumber($currentCredit);
+                    $firstRow = false;
+                } else {
+                    $row[] = ''; // Date
+                    $row[] = $item->ledger->name ?? '';
+                    $row[] = $formattedBalance;
+                    $row[] = ''; // Series
+                    $row[] = ''; // Book Code
+                    $row[] = $voucherNo; // Voucher No
+                    $row[] = ''; // Debit
+                    $row[] = ''; // Credit
+                }
+
+                $data[] = $row;
             }
         }
 
-        $finalBalance = $totalDebit - $totalCredit;
-        $finalBalanceType = $finalBalance >= 0 ? 'Dr' : 'Cr';
-        $finalBalance = abs($finalBalance);
-
+        // Add empty row
         $data[] = ['', '', '', '', '', '', '', ''];
-        $data[] = ['', '', '', '','', 'Total', Helper::formatIndianNumber($totalDebit), Helper::formatIndianNumber($totalCredit)];
-        $data[] = ['', '', '', '', '', '', '', ''];
-        $data[] = ['', '', '', '', '','Closing Balance', $totalDebit > $totalCredit ? abs($finalBalance) : '', $totalCredit > $totalDebit ? abs($finalBalance) : ''];
-        // $data[] = ['', '', '', '', '', '',$totalDebit > $totalCredit ? abs($totalDebit) : abs($totalCredit), $totalDebit > $totalCredit ? abs($totalDebit) : abs($totalCredit)];
 
+        // Footer - Current Total
+        $data[] = [
+            '',
+            '',
+            '',
+            '',
+            '',
+            'Current Total',
+            Helper::formatIndianNumber($totalDebit),
+            Helper::formatIndianNumber($totalCredit)
+        ];
+
+
+
+        // Footer - Closing Balance
+        $closing = ($opening->opening ?? 0) + $totalDebit - $totalCredit;
+        $closingType = $closing < 0 ? 'Cr' : 'Dr';
+        $closingFormatted = Helper::formatIndianNumber(abs($closing));
+
+        $data[] = [
+            '',
+            '',
+            '',
+            '',
+            '',
+            'Closing Balance',
+            $closingType === 'Dr' ? $closingFormatted : '',
+            $closingType === 'Cr' ? $closingFormatted : ''
+        ];
         return Excel::download(new LedgerReportExport($organizationName, $ledgerName, $dateRange, $data), 'ledgerReport.xlsx');
     }
 
@@ -313,8 +359,7 @@ class TrialBalanceController extends Controller
         $opening->opening = ($openingData->total_debit - $openingData->total_credit) ?? 0;
         $opening->opening_type = ($openingData->total_debit > $openingData->total_credit) ? 'Dr' : 'Cr';
 
-
-
+// dd($data);
         $html = view('ledgers.filterLedgerData', compact('data', 'id', 'opening'))->render();
         return response()->json($html);
     }
