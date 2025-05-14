@@ -28,21 +28,24 @@ class CloseFyController extends Controller
         $organizationId = $request->organization_id;
 
         $companies = $user->access_rights_org;
-        $past_fyears = Helper::getAllPastFinancialYear($organizationId);
-        $financialYear = Helper::getFinancialYear(date('Y-m-d'));
+        $past_fyears = Helper::getAllPastFinancialYear();
         $financialYearAuthUsers = null;
         $currentFy = null;
 
         if ($fyearId == "") {
             $financialYearAuthUsers = Helper::getFyAuthorizedUsers(date('Y-m-d'));
-            $financialYear = Helper::getFinancialYear(date('Y-m-d'));
+            $financialYear = null;
         } else {
-            $currentFy = $past_fyears?->firstWhere('id', $fyearId);
+            $currentFy = ErpFinancialYear::find($fyearId);
             $financialYear = $currentFy;
         }
-
-        $authorized_users = $financialYearAuthUsers['authorized_users'] ?? $currentFy['authorized_users'] ?? null;
         if ($financialYear) {
+            if($financialYear && $financialYear->access_by == null){
+                $organizationId = $financialYear->organization_id;
+                $accessBy = $this->setFinancialYearAccessBy($organizationId);
+                $financialYear->access_by = $accessBy;
+                $financialYear->save();
+            }
             $startYear = \Carbon\Carbon::parse($financialYear['start_date'])->format('Y');
             $endYearShort = \Carbon\Carbon::parse($financialYear['end_date'])->format('y');
         } else {
@@ -51,6 +54,7 @@ class CloseFyController extends Controller
             $endYearShort = $now->copy()->addYear()->format('y'); // next year in 2-digit
         }
 
+        $authorized_users = $financialYearAuthUsers['authorized_users'] ?? ($currentFy ? $currentFy->authorizedUsers() : null);
         $current_range = $startYear . '-' . $endYearShort;
         $employees = Helper::getOrgWiseUserAndEmployees($organizationId);
         return view('close-fy.close-fy',compact('companies', 'organizationId','past_fyears','currentFy','fyearId','employees','current_range','authorized_users','financialYear'));
@@ -151,25 +155,13 @@ class CloseFyController extends Controller
                     $nextFy->save();
                 }
             }
-                // $accessBy = null;
-                if($financialYear && $financialYear->access_by == null){
+            // $accessBy = null;
+            if($financialYear && $financialYear->access_by == null){
                 $organizationId = $financialYear->organization_id;
-                $employees = Helper::getOrgWiseUserAndEmployees($organizationId);
-
-                    foreach ($employees as $employee) {
-                        $authUser = $employee->authUser();
-                        if ($authUser) {
-                            $accessBy[] = [
-                                'user_id' => $authUser->id,
-                                'authenticable_type' => $authUser->authenticable_type?? null,
-                                'authorized' => true,
-                            ];
-                        }
-                    }
-
-                    $financialYear->access_by = $accessBy;
-                    $financialYear->save();
-                }
+                $accessBy = $this->setFinancialYearAccessBy($organizationId);
+                $financialYear->access_by = $accessBy;
+                $financialYear->save();
+            }
 
             DB::commit();
 
@@ -188,6 +180,24 @@ class CloseFyController extends Controller
         }
     }
 
+    public function setFinancialYearAccessBy($organizationId)
+    {
+        $employees = Helper::getOrgWiseUserAndEmployees($organizationId);
+        $accessBy = []; // initialize empty array to avoid undefined error
+
+            foreach ($employees as $employee) {
+                $authUser = $employee->authUser();
+                if ($authUser) {
+                    $accessBy[] = [
+                        'user_id' => $authUser->id,
+                        'authenticable_type' => $authUser->authenticable_type?? null,
+                        'authorized' => true,
+                    ];
+                }
+            }
+
+            return $accessBy;
+    }
     public function lockUnlockFy(Request $request)
     {
         $request->validate([

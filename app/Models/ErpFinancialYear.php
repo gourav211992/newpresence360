@@ -34,11 +34,10 @@ class ErpFinancialYear extends Model
 
     public function authorizedUsers()
     {
+        $access = collect($this->access_by);
         if (empty($this->access_by)) {
             return null;
         }
-
-        $access = collect($this->access_by);
 
         $allAuthorized = $access->every(fn($item) => $item['authorized'] === true);
 
@@ -47,25 +46,12 @@ class ErpFinancialYear extends Model
             ->pluck('user_id')
             ->toArray();
 
-        $users = AuthUser::whereIn('id', $userIds)->get();
-
-        // If all authorized is true and users exist, return null
-        if ($allAuthorized && $users->isNotEmpty()) {
-            return null;
-        }
-
-        // If all authorized is false and users exist, return the array
-        if (!$allAuthorized && $users->isNotEmpty()) {
-            return [
-                'users' => $users,
-                'all' => false
-            ];
-        }
-
-        // For all other cases, return null
-        return null;
+        $access_by = [
+            'users' => AuthUser::whereIn('id', $userIds)->get(),
+            'all' => $allAuthorized ?? true
+        ];
+        return $access_by;
     }
-
 
     protected static function booted()
     {
