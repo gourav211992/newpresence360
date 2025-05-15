@@ -105,6 +105,10 @@ class PurchaseReturnController extends Controller
                 [
                     'items',
                     'vendor',
+                    'erpStore',
+                    'erpSubStore',
+                    'costCenters',
+                    'currency'
                 ]
             )
             ->withDefaultGroupCompanyOrg()
@@ -137,6 +141,21 @@ class PurchaseReturnController extends Controller
                 })
                 ->editColumn('document_date', function ($row) {
                     return date('d/m/Y', strtotime($row->document_date)) ?? 'N/A';
+                })
+                ->editColumn('location', function ($row) {
+                    return strval($row->erpStore?->store_name) ?? 'N/A';
+                })
+                ->editColumn('store', function ($row) {
+                    return strval($row->erpSubStore?->name) ?? 'N/A';
+                })
+                ->editColumn('cost_center', function ($row) {
+                    return strval($row->costCenters?->name) ?? 'N/A';
+                })
+                ->editColumn('return_type', function ($row) {
+                    return strval($row->qty_return_type) ?? 'N/A';
+                })
+                ->editColumn('currency', function ($row) {
+                    return strval($row->currency?->short_name) ?? 'N/A';
                 })
                 ->editColumn('revision_number', function ($row) {
                     return strval($row->revision_number);
@@ -955,6 +974,7 @@ class PurchaseReturnController extends Controller
             $pb->vehicle_no = $request->vehicle_no;
             $pb->final_remark = $request->remarks ?? '';
             $pb->document_status = $request->document_status ?? ConstantHelper::DRAFT;
+            $pb->cost_center_id = $request->cost_center_id ?? '';
             $pb->save();
 
             $vendorBillingAddress = $pb->billingAddress ?? null;
@@ -1481,23 +1501,30 @@ class PurchaseReturnController extends Controller
         $rowCount = intval($request->rowCount) ?? 1;
         $item = Item::find($request->item_id);
         $selectedAttr = $request->selectedAttr ? json_decode($request->selectedAttr, true) : [];
-        $pbDetailId = $request->detail_id ?? null;
+        $prDetailId = $request->detail_id ?? null;
         $itemAttIds = [];
-        if ($pbDetailId) {
-            $pbDetail = PRDetail::find($pbDetailId);
-            if ($pbDetail) {
-                $itemAttIds = $pbDetail->attributes()->pluck('item_attribute_id')->toArray();
+        $itemAttributeArray = [];
+        if ($prDetailId) {
+            $detail = PRDetail::find($prDetailId);
+            if ($detail) {
+                $itemAttIds = collect($detail->attributes)->pluck('item_attribute_id')->toArray();
+                $itemAttributeArray = $detail->item_attributes_array();
             }
         }
         $itemAttributes = collect();
         if (count($itemAttIds)) {
             $itemAttributes = $item?->itemAttributes()->whereIn('id', $itemAttIds)->get();
+            if (count($itemAttributes) < 1) {
+                $itemAttributes = $item?->itemAttributes;
+                $itemAttributeArray = $item->item_attributes_array();
+            }
         } else {
             $itemAttributes = $item?->itemAttributes;
+            $itemAttributeArray = $item->item_attributes_array();
         }
-        $html = view('procurement.purchase-return.partials.comp-attribute', compact('item', 'attributeGroups', 'rowCount', 'selectedAttr'))->render();
+        $html = view('procurement.purchase-return.partials.comp-attribute', compact('item', 'attributeGroups', 'rowCount', 'selectedAttr','itemAttributes'))->render();
         $hiddenHtml = '';
-        foreach ($item->itemAttributes as $attribute) {
+        foreach ($itemAttributes as $attribute) {
             $selected = '';
             foreach ($attribute->attributes() as $value) {
                 if (in_array($value->id, $selectedAttr)) {
@@ -1506,7 +1533,17 @@ class PurchaseReturnController extends Controller
             }
             $hiddenHtml .= "<input type='hidden' name='components[$rowCount][attr_group_id][$attribute->attribute_group_id][attr_name]' value=$selected>";
         }
-        return response()->json(['data' => ['attr' => $item?->itemAttributes->count() ?? 0, 'html' => $html, 'hiddenHtml' => $hiddenHtml], 'status' => 200, 'message' => 'fetched.']);
+
+        if (count($selectedAttr)) {
+            foreach ($itemAttributeArray as &$group) {
+                foreach ($group['values_data'] as $attribute) {
+                    if (in_array($attribute->id, $selectedAttr)) {
+                        $attribute->selected = true;
+                    }
+                }
+            }
+        }
+        return response()->json(['data' => ['attr' => $item->itemAttributes->count(), 'html' => $html, 'hiddenHtml' => $hiddenHtml, 'itemAttributeArray' => $itemAttributeArray], 'status' => 200, 'message' => 'fetched.']);
     }
 
     # Add discount row

@@ -26,27 +26,19 @@
         </td>
     </tr>
 @endif
-@if(isset($item))
-    @if($item?->itemAttributes->count() > 0)
-    <tr> 
-        <td class="poprod-decpt">
-            <span class="mw-100" style="padding: 0%;">
-                <strong style="font-size:11px; color : #6a6a6a;">Attributes</strong>
-            </span>
+@if($item->itemAttributes->count())
+    <tr class="item_detail_row2">
+        <td class="poprod-decpt item_detail_attributes">
+            <span class="poitemtxt mw-100"><strong>Attributes:</strong></span>
             @foreach($item->itemAttributes as $index => $attribute)
-                <span class="badge rounded-pill badge-light-primary">
-                    <strong data-group-id="{{$attribute?->attributeGroup?->id}}">
-                        {{$attribute?->attributeGroup?->name}}
-                    </strong>: @foreach ($attribute?->attributes()  as $value) 
-                                    @if(in_array($value->id ?? 0, $selectedAttr))
-                                        {{ $value->value }}
-                                    @endif
-                                @endforeach
-                </span>
+                <span class="badge rounded-pill badge-light-primary"><strong data-group-id="{{$attribute->attributeGroup->id}}"> {{$attribute->attributeGroup->name}}</strong>: @foreach ($attribute->attributes() as $value)
+                    @if(in_array($value->id, $selectedAttr))
+                        {{ $value->value }}
+                    @endif
+                 @endforeach </span>
             @endforeach
-        </td> 
-    </tr> 
-    @endif
+        </td>
+    </tr>
 @endif
 <tr>
     <td class="poprod-decpt">

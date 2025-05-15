@@ -519,8 +519,10 @@ class PWOController extends Controller
          $detailItemId = $request->pwo_so_mapping_id ?? null;
          $itemAttIds = [];
          $itemAttributeArray = [];
+         $pwo_so_mapping_id = null;
          if($detailItemId) {
-             $detail = PwoSoMapping::find($detailItemId);
+             $detail = PwoSoMapping::where('id', $detailItemId)->where('item_id', $item?->id)->first();
+             $pwo_so_mapping_id = $detail?->so_item_id ?? null;
              if($detail) {
                 $itemAttIds = collect($detail->attributes)->pluck('item_attribute_id')->toArray();
                 $itemAttributeArray = $detail->item_attributes_array(); 
@@ -537,8 +539,7 @@ class PWOController extends Controller
              $itemAttributes = $item?->itemAttributes;
              $itemAttributeArray = $item->item_attributes_array();
          }
- 
-         $html = view('pwo.partials.comp-attribute',compact('item','rowCount','selectedAttr','itemAttributes'))->render();
+         $html = view('pwo.partials.comp-attribute',compact('item','rowCount','selectedAttr','itemAttributes','pwo_so_mapping_id'))->render();
          $hiddenHtml = '';
          foreach ($itemAttributes as $attribute) {
                  $selected = '';
@@ -1374,7 +1375,6 @@ class PWOController extends Controller
         } 
          $pwoItems = ErpSoItem::whereIn('id', $ids)->get(); 
          $rowCount = intval($request->rowCount) ? intval($request->rowCount) + 1  : 1;
-
          $html = view('pwo.partials.mo-item-pull', [
              'pwoItems' => $pwoItems,
              'is_pull' => true,

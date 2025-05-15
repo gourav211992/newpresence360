@@ -38,6 +38,7 @@ class PRHeaderHistory extends Model
         'customer_id',
         'customer_code',
         'document_number',
+        'cost_center_id',
         'document_date',
         'document_status',
         'revision_number',
@@ -312,6 +313,11 @@ class PRHeaderHistory extends Model
     public function irnDetail()
     {
         return $this->morphOne(ErpEinvoice::class, 'morphable', 'morphable_type', 'morphable_id');
+    }
+
+    public function costCenters()
+    {
+        return $this->belongsTo(CostCenter::class, 'cost_center_id');
     }
 
 }

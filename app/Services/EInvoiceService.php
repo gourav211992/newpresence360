@@ -22,7 +22,7 @@ class EInvoiceService
         $this->requestUid = $requestUid;
         $this->eInvoice = false;
         $this->client = new Client(); // Initialize the HTTP client
-        $this->baseURL = "https://einv2api.gstsandbox.nic.in/"; // Set the base URL
+        $this->baseURL = "https://einv1api.gstsandbox.nic.in/"; // Set the base URL
         $this->authDetails = $authDetails; // Set the base URL
     }
 

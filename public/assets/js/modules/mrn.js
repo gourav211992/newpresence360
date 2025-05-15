@@ -121,6 +121,7 @@ $(document).on('change', '[name*="comp_attribute"]', (e) => {
     // closestTr = $(`[name="components[${rowCount}][attr_group_id][${attrGroupId}][attr_name]"]`).closest('tr');
     // getItemDetail(closestTr);
     qtyEnabledDisabled();
+    setSelectedAttribute(rowCount);
 });
 
 // Check Negative Values
@@ -167,7 +168,7 @@ $(document).on('blur',"[name*='accepted_qty']",(e) => {
         '&geDetailId='+geDetailId+
         '&siDetailId='+siDetailId+
         '&qty='+acceptedQuantity.val();
-        
+
         fetch(actionUrl).then(response => {
             return response.json().then(data => {
                 console.log('data.data', data.data);
@@ -789,7 +790,8 @@ function checkBasicFilledDetail()
     let documentDate = $("[name='document_date']").val() || '';
     let storeId = $("[name='header_store_id']").val() || '';
     let subStoreId = $("[name='sub_store_id']").val() || '';
-    if(bookId && documentNumber && documentDate && storeId && subStoreId) {
+    let costCenterId = $("[name='cost_center_id']").val() || '';
+    if(bookId && documentNumber && documentDate && storeId && subStoreId && costCenterId) {
         filled = true;
     }
     return filled;
@@ -824,7 +826,8 @@ function checkComponentRowExist()
 $('#attribute').on('hidden.bs.modal', function () {
    let rowCount = $("[id*=row_].trselected").attr('data-index');
    // $(`[id*=row_${rowCount}]`).find('.addSectionItemBtn').trigger('click');
-   $(`[name="components[${rowCount}][qty]"]`).trigger('focus');
+   let qty = $(`[name="components[${rowCount}][qty]"]`).val() || '';
+     $(`[name="components[${rowCount}][qty]"]`).val(qty).focus();
 });
 
 /*Vendor change update field*/
@@ -1325,6 +1328,7 @@ $(document).on('change', '.header_store_id', function () {
     const selectedStoreId = $(this).val();
     if (selectedStoreId) {
         getSubStores(selectedStoreId);
+        getCostCenters(selectedStoreId);
     }
 });
 
@@ -1332,6 +1336,7 @@ $(document).on('change', '.header_store_id', function () {
 const selectedStoreId = $('.header_store_id').val();
 if (selectedStoreId) {
     getSubStores(selectedStoreId);
+    getCostCenters(selectedStoreId);
 }
 
 // Get SUb Stores
@@ -1346,8 +1351,7 @@ function getSubStores(storeLocationId)
             store_id : storeId,
         },
         success: function(data) {
-            console.log('data', data);
-            
+
             if((data.status == 200) && data.data.length) {
                 let options = '';
                 data.data.forEach(function(location) {
@@ -1363,6 +1367,42 @@ function getSubStores(storeLocationId)
             Swal.fire({
                 title: 'Error!',
                 text: xhr?.responseJSON?.message,
+                icon: 'error',
+            });
+        }
+    });
+}
+
+// Get Cost Centers
+function getCostCenters(storeLocationId) {
+    $("#cost_center_div").hide(); // Hide by default
+
+    $.ajax({
+        url: "/get-cost-centers",
+        method: 'GET',
+        dataType: 'json',
+        data: {
+            locationId: storeLocationId,
+        },
+        success: function(data) {
+            if (Array.isArray(data) && data.length > 0) {
+                let options = '';
+
+                data.forEach(function(costcenter) {
+                    const selected = (costcenter.id == selectedCostCenterId) ? 'selected' : '';
+                    options += `<option value="${costcenter.id}" ${selected}>${costcenter.name}</option>`;
+                });
+
+                $(".cost_center").html(options);
+                $("#cost_center_div").show();
+            } else {
+                $("#cost_center_div").hide();
+            }
+        },
+        error: function(xhr) {
+            Swal.fire({
+                title: 'Error!',
+                text: xhr?.responseJSON?.message || 'Failed to load cost centers.',
                 icon: 'error',
             });
         }
@@ -1398,7 +1438,7 @@ function populateStoragePointsTable(data) {
                     <td>${point.name || '-'}</td>
                     <td>${point.parents || '-'}</td>
                     <td>
-                        <input type="number" step="any" class="form-control form-control-sm quantity-input" 
+                        <input type="number" step="any" class="form-control form-control-sm quantity-input"
                             data-index="${i}" value="${point.quantity || ''}" />
                     </td>
                 </tr>`;

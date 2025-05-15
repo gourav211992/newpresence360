@@ -108,6 +108,18 @@
                                                         </select>
                                                     </div>
                                                 </div>
+                                                <div class="row align-items-center mb-1" id="cost_center_div" style="display:none;">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Cost Center <span class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <select class="form-select cost_center" id="cost_center_id" name="cost_center_id">
+                                                            <option value="{{$mrn->cost_center_id}}">
+                                                                {{ ucfirst($mrn?->costCenters?->name) }}
+                                                            </option>
+                                                        </select>
+                                                    </div>
+                                                </div>
                                                 <!-- <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Reference No </label>
@@ -358,6 +370,7 @@
                                                                 <th width="240px">Item Name</th>
                                                                 <th>Attributes</th>
                                                                 <th>UOM</th>
+                                                                <th class="text-end">PO Qty</th>
                                                                 <th class="text-end">Recpt Qty</th>
                                                                 <th class="text-end">Acpt. Qty</th>
                                                                 <th class="text-end">Rej. Qty</th>
@@ -373,7 +386,7 @@
                                                         </tbody>
                                                         <tfoot>
                                                             <tr class="totalsubheadpodetail">
-                                                                <td colspan="9"></td>
+                                                                <td colspan="10"></td>
                                                                 <td class="text-end" id="totalItemValue">
                                                                     {{@$mrn->items->sum('basic_value')}}
                                                                 </td>
@@ -385,7 +398,7 @@
                                                                 </td>
                                                             </tr>
                                                             <tr valign="top">
-                                                                <td rowspan="10" colspan="8">
+                                                                <td rowspan="10" colspan="9">
                                                                     <table class="table border">
                                                                         <tbody id="itemDetailDisplay">
                                                                             <tr>
@@ -747,6 +760,7 @@
 
 @endsection
 @section('scripts')
+    <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
     <script type="text/javascript">
         var actionUrlTax = '{{route("material-receipt.tax.calculation")}}';
     </script>
@@ -962,6 +976,7 @@
                     closestTr.find('[name*=item_name]').val(itemN);
                     closestTr.find('[name*=hsn_id]').val(hsnId);
                     closestTr.find('[name*=hsn_code]').val(hsnCode);
+                    closestTr.find("td[id*='itemAttribute_']").html(defautAttrBtn);
                     let uomOption = `<option value=${uomId}>${uomName}</option>`;
                     if(ui.item?.alternate_u_o_ms) {
                         for(let alterItem of ui.item.alternate_u_o_ms) {
@@ -1179,7 +1194,7 @@
                 selectedAttr = JSON.stringify(selectedAttr);
             }
             if (item_name && item_id) {
-                let rowCount = e.target.getAttribute('data-row-count');
+                let rowCount = tr.getAttribute('data-index');
                 getItemAttribute(item_id, rowCount, selectedAttr, tr);
             } else {
                 Swal.fire({
@@ -1193,7 +1208,8 @@
 
         /*For comp attr*/
         function getItemAttribute(itemId, rowCount, selectedAttr, tr){
-            let actionUrl = '{{route("material-receipt.item.attr")}}'+'?item_id='+itemId+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
+            let mrn_detail_id = $(tr).find("input[name*='[mrn_detail_id]']").val() || '';
+            let actionUrl = '{{route("material-receipt.item.attr")}}'+'?item_id='+itemId+'&mrn_detail_id='+mrn_detail_id+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if (data.status == 200) {
@@ -1201,6 +1217,7 @@
                         $("#attribute table tbody").append(data.data.html)
                         $(tr).find('td:nth-child(2)').find("[name*=attr_name]").remove();
                         $(tr).find('td:nth-child(2)').append(data.data.hiddenHtml);
+                        $(tr).find("td[id*='itemAttribute_']").attr('attribute-array', JSON.stringify(data.data.itemAttributeArray));
                         if (data.data.attr) {
                             $("#attribute").modal('show');
                             $(".select2").select2();
@@ -1678,7 +1695,6 @@
         /*itemDeliveryScheduleSubmit */
         $(document).on('click', '.itemDeliveryScheduleSubmit', (e) => {
             let rowCount = $('#deliveryScheduleModal .display_delivery_row').find('#row_count').val();
-            console.log(rowCount);
             let hiddenHtml = '';
             $("#deliveryScheduleTable .display_delivery_row").each(function(index,item){
                 let storeId = $(item).find("[name*='erp_store_id']").val();
@@ -1740,7 +1756,6 @@
         $(document).on('change', '.item_store_code', function() {
             var rowKey = $(this).data('id');
             var store_code_id = $(this).val();
-            console.log('rowKey', rowKey);
             $('#erp_store_id_'+rowKey).val(store_code_id).select2();
 
             var data = {
@@ -1980,5 +1995,19 @@
                 $("#mrnEditForm").submit();
             }
         });
+
+        $(document).on('click','td[id*="itemAttribute_"]', (e) => {
+            let dataAttributes = $(e.target).attr('data-attributes');
+            // dataAttributes = JSON.parse(dataAttributes);
+            // dataAttributes.
+        });
+
+        setTimeout(() => {
+            $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+                let currentIndex = index + 1;
+                setAttributesUIHelper(currentIndex,"#itemTable");
+            });
+        },100);
+
     </script>
 @endsection

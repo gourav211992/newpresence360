@@ -305,7 +305,7 @@
                                                 </th>
                                                 <th width="150px">Item Code</th>
                                                 <th width="240px">Item Name</th>
-                                                <th>Attributes</th>
+                                                <th max-width="180px">Attributes</th>
                                                 <th>UOM</th>
                                                 <th>Qty</th>
                                                 <th>Rate</th>
@@ -738,6 +738,7 @@
     let type = '{{ request()->route("type") }}';
     let actionUrlTax = '{{route("po.tax.calculation",["type" => ":type"])}}'.replace(':type',type);
 </script>
+<script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
 <script type="text/javascript" src="{{asset('assets/js/modules/po.js')}}"></script>
 <script>
 
@@ -1229,5 +1230,12 @@ $(document).on('click', '.submitAttributeBtn', (e) => {
     $(`[name="components[${rowCount}][qty]"]`).focus();
     $("#attribute").modal('hide');
 });
+
+setTimeout(() => {
+    $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+        let currentIndex = index + 1;
+        setAttributesUIHelper(currentIndex,"#itemTable");
+    });
+},100);
 </script>
 @endsection

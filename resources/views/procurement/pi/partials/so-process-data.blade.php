@@ -17,6 +17,7 @@ $attrValue = \App\Models\Attribute::where('id', @$attribute['attribute_value'])-
     }
 }
 $inventoryStock = InventoryHelper::totalInventoryAndStock($soProcessItem->item_id, $selectedAttr, $soProcessItem->uom_id, null);
+$soProcessItem->attributes = $soProcessItem->item_attributes_array();
 @endphp
 <tr>
     <td>

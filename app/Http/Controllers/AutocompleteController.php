@@ -131,6 +131,9 @@ class AutocompleteController extends Controller
                 if ($categoryId) {
                     $query->where('parent_id', $categoryId);
                 }
+                else{
+                    $query->whereNotNull('parent_id');
+                }
 
                 $results = $query->get(['id', 'name', 'sub_cat_initials']);
 
@@ -162,6 +165,19 @@ class AutocompleteController extends Controller
                     -> withDefaultGroupCompanyOrg()
                         ->limit(10)
                         ->get(['id', 'code','description']);
+                }
+            }
+            elseif ($type === 'sub_type') {
+                $results = SubType::where('status', ConstantHelper::ACTIVE)
+                ->where(function ($query) use ($term) {
+                    $query->where('name', 'LIKE', "%$term%");
+                })
+                ->get(['id', 'name']);
+
+                if ($results->isEmpty()) {
+                    $results = SubType::where('status', ConstantHelper::ACTIVE)
+                        ->limit(10)
+                        ->get(['id', 'name']);
                 }
             } elseif ($type === 'header_item') {
                 $type = ['WIP/Semi Finished', 'Finished Goods'];

@@ -45,6 +45,9 @@ class JobRequest
 			'location_id' => [
 				'required'
 			],
+			'company_id' => [
+				'required'
+			],
 			'job_description' => [
 				'required'
 			],
@@ -70,6 +73,7 @@ class JobRequest
             'expected_doj.required' => 'Expected DOJ field is required!',
             'priority.required' => 'Priority field is required!',
             'location_id.required' => 'Placed location field is required!',
+            'company_id.required' => 'Company field is required!',
             'job_description.required' => 'Job description field is required!',
             'reason.required' => 'Reason field is required!',
             'status.required' => 'Status field is required!',

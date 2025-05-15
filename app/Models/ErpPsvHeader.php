@@ -57,6 +57,7 @@ class ErpPsvHeader extends Model
 
     protected $hidden = ['deleted_at'];
 
+    
     public function store()
     {
         return $this->belongsTo(ErpStore::class, 'store_id');

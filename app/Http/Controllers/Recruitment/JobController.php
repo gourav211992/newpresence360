@@ -16,6 +16,7 @@ use App\Models\Recruitment\ErpRecruitmentSkill;
 use App\Models\Recruitment\ErpRecruitmentWorkingHour;
 use Illuminate\Http\Request;
 use App\Lib\Validation\Recruitment\Job as Validator;
+use App\Models\OrganizationCompany;
 use App\Models\Recruitment\ErpRecruitmentAssignedCandidate;
 use App\Models\Recruitment\ErpRecruitmentInterviewFeedback;
 use App\Models\Recruitment\ErpRecruitmentJob;
@@ -271,11 +272,16 @@ class JobController extends Controller
             'workingHours' => $masterData['workingHours'],
             'noticePeriods' => $masterData['noticePeriods'],
             'rounds' => $masterData['rounds'],
+            'companies' => $masterData['companies'],
         ]);
     }
 
     private function masterData(){
         $user = Helper::getAuthenticatedUser();
+        $groupId = $user->group_id;
+
+        $companies = OrganizationCompany::where('group_id',$groupId)->get();
+
         $jobTitles = ErpRecruitmentJobTitle::where('status','active')
             ->where('organization_id',$user->organization_id)
             ->get();
@@ -319,6 +325,7 @@ class JobController extends Controller
             'workingHours' => $workingHours,
             'noticePeriods' => $noticePeriods,
             'rounds' => $rounds,
+            'companies' => $companies,
         ];
 
     }
@@ -365,6 +372,7 @@ class JobController extends Controller
             $job->employement_type = $request->employement_type;
             $job->industry_id = $request->industry_id;
             $job->work_mode = $request->work_mode;
+            $job->company_id = $request->company_id;
             $job->location_id = $request->location_id;
             $job->company_detail = $request->company_detail;
             $job->education_id = $request->education_id;
@@ -487,6 +495,7 @@ class JobController extends Controller
             'workingHours' => $masterData['workingHours'],
             'noticePeriods' => $masterData['noticePeriods'],
             'rounds' => $masterData['rounds'],
+            'companies' => $masterData['companies'],
             'jobSkills' => $jobSkills,
             'job' => $job,
             'panelAllocations' => $panelAllocations,
@@ -515,6 +524,7 @@ class JobController extends Controller
             $job->employement_type = $request->employement_type;
             $job->industry_id = $request->industry_id;
             $job->work_mode = $request->work_mode;
+            $job->company_id = $request->company_id;
             $job->location_id = $request->location_id;
             $job->company_detail = $request->company_detail;
             $job->education_id = $request->education_id;

@@ -120,6 +120,7 @@ $(document).on('change', '[name*="comp_attribute"]', (e) => {
     let attrGroupId = e.target.getAttribute('data-attr-group-id');
     $(`[name="components[${rowCount}][attr_group_id][${attrGroupId}][attr_name]"]`).val(e.target.value);
     qtyEnabledDisabled();
+    setSelectedAttribute(rowCount);
 });
 
 /*Each row addDiscountBtn*/
@@ -308,7 +309,6 @@ function setTableCalculation() {
                     rowCount: rowCount3,
                     document_date:document_date
                 }).toString();
-                console.log('queryParams', queryParams);
                 let urlWithParams = `${actionUrlTax}?${queryParams}`;
                 let promise = fetch(urlWithParams)
                     .then(response => response.json())
@@ -508,7 +508,6 @@ $(document).on('click', '.itemDiscountSubmit', (e) => {
 /*Delete deleteItemDiscountRow*/
 $(document).on('click', '.deleteItemDiscountRow', (e) => {
     let rowCount = e.target.closest('a').getAttribute('data-row-count') || 0;
-    // let index = e.target.closest('a').getAttribute('data-index') || 0;
     let id = Number(e.target.closest('a').getAttribute('data-id')) || 0;
     if(!id) {
         e.target.closest('tr').remove();
@@ -685,7 +684,7 @@ $(document).on('click', '.itemDeliveryScheduleSubmit', (e) => {
         }
     });
     if (!isValid) {
-        event.preventDefault();
+        e.preventDefault();
         Swal.fire({
             title: 'Error!',
             text: 'Please fill out all required fields.',

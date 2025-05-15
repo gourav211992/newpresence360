@@ -159,26 +159,28 @@ class Helper
         return $bookTypes;
     }
 
+ 
   public static function getFinancialYear(string $date): mixed
     {
          $user = self::getAuthenticatedUser();
         $startDate = session('fyear_start_date') ?? $date;
         $endDate = session('fyear_end_date') ?? $date;
+        \Log::info('Session Start Date: ' . session('fyear_start_date').session('fyear_end_date'));
         $financialYear = ErpFinancialYear::withDefaultGroupCompanyOrg()
             ->where('start_date', '<=', $startDate)
             ->where('end_date', '>=', $endDate)
             ->first();
-          
-            if (isset($financialYear)) 
+
+            if (isset($financialYear))
             {
                   $startYear = \Carbon\Carbon::parse($financialYear->start_date)->format('Y');
                  $endYearShort = \Carbon\Carbon::parse($financialYear->end_date)->format('y'); // e
                 $authorized = true;
                 $currentUserId =  $user->auth_user_id;
                 $currentUserType = $user->authenticable_type;
-                if ($financialYear->lock_fy == true &&is_array($financialYear->access_by)) 
+                if ($financialYear->lock_fy == true &&is_array($financialYear->access_by))
                 {
-                  
+
                     $authorized = !collect($financialYear->access_by)->contains(function ($entry) use ($currentUserId, $currentUserType) {
                         return isset($entry['user_id'], $entry['authorized'], $entry['authenticable_type']) &&
                                $entry['user_id'] == $currentUserId &&
@@ -275,7 +277,6 @@ class Helper
     {
 
         $book = Book::find($book_id);
-        $user = self::getAuthenticatedUser();
         $data = NumberPattern::where('book_id', $book_id)->orderBy('id', 'DESC')->first();
         $serviceAlias = $data?->book?->org_service?->alias;
         $modelName = isset(ConstantHelper::SERVICE_ALIAS_MODELS[$serviceAlias]) ? ConstantHelper::SERVICE_ALIAS_MODELS[$serviceAlias] : '';
@@ -3055,10 +3056,14 @@ return [
         }
 
 
-       public static function getAllPastFinancialYear(): mixed
+      public static function getAllPastFinancialYear($organizationId = null): mixed
         {
-            $financialYears = ErpFinancialYear::withDefaultGroupCompanyOrg()->get();
+            if($organizationId){
 
+                $financialYears = ErpFinancialYear::where('organization_id', $organizationId)->get();
+            }else{
+                $financialYears = ErpFinancialYear::withDefaultGroupCompanyOrg()->get();
+            }
             if ($financialYears->isNotEmpty()) {
                 return $financialYears
                     ->filter(function ($financialYear) {
@@ -3082,6 +3087,7 @@ return [
 
             return null;
         }
+
 
          public static function getFinancialYears()
         {

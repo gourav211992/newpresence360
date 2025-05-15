@@ -207,7 +207,8 @@ class PoController extends Controller
             'reference_from_title' => $reference_from_title,
             'selectedDepartmentId' => $selectedDepartmentId,
             'departments' => $departments,
-            'locations' => $locations
+            'locations' => $locations,
+            'serviceAlias' => $serviceAlias
         ]);
     }
 
@@ -237,10 +238,12 @@ class PoController extends Controller
         $selectedAttr = $request->selectedAttr ? json_decode($request->selectedAttr,true) : [];
         $poItemId = $request->po_item_id ?? null;
         $itemAttIds = [];
+        $itemAttributeArray = [];
         if($poItemId) {
-            $poItem = PoItem::find($poItemId);
+            $poItem = PoItem::where('id',$poItemId)->where('item_id',$item->id??null)->first();
             if($poItem) {
                 $itemAttIds = $poItem->attributes()->pluck('item_attribute_id')->toArray();
+                $itemAttributeArray = $poItem->item_attributes_array();
             }
         }
         $itemAttributes = collect();
@@ -248,9 +251,11 @@ class PoController extends Controller
             $itemAttributes = $item?->itemAttributes()->whereIn('id',$itemAttIds)->get();
             if(count($itemAttributes) < 1) {
                 $itemAttributes = $item?->itemAttributes;
+                $itemAttributeArray = $item->item_attributes_array();
             }
         } else {
             $itemAttributes = $item?->itemAttributes;
+            $itemAttributeArray = $item->item_attributes_array();
         }
         $html = view('procurement.po.partials.comp-attribute',compact('item','rowCount','selectedAttr','isPi','itemAttributes'))->render();
         $hiddenHtml = '';
@@ -265,7 +270,16 @@ class PoController extends Controller
                 $hiddenHtml .= "<input type='hidden' name='components[$rowCount][attr_group_id][$attribute->attribute_group_id][attr_name]' value=$selected>";
             }
         }
-        return response()->json(['data' => ['attr' => $item?->itemAttributes->count() ?? 0,'html' => $html, 'hiddenHtml' => $hiddenHtml], 'status' => 200, 'message' => 'fetched.']);
+        if(count($selectedAttr)) {
+            foreach ($itemAttributeArray as &$group) {
+                foreach ($group['values_data'] as $attribute) {
+                    if (in_array($attribute->id, $selectedAttr)) {
+                        $attribute->selected = true;
+                    }
+                }
+            }
+        }
+        return response()->json(['data' => ['attr' => $item?->itemAttributes->count() ?? 0,'html' => $html, 'hiddenHtml' => $hiddenHtml, 'itemAttributeArray' => $itemAttributeArray], 'status' => 200, 'message' => 'fetched.']);
     }
 
     # get tax calcualte
@@ -1249,8 +1263,7 @@ class PoController extends Controller
                         'remarks' => $component['remark'] ?? null,
                         'value_after_discount' => $itemValueAfterDiscount,
                         'item_value' => $itemValue,
-                        'pi_item_hidden_ids' => $component['pi_item_hidden_ids']
-
+                        'pi_item_hidden_ids' => $component['pi_item_hidden_ids'] ?? []
                     ];
                 }
 
@@ -1960,7 +1973,8 @@ class PoController extends Controller
             'departments' => $departments,
             'locations' => $locations,
             'shortClose' => $shortClose,
-            'saleOrders' => $saleOrders
+            'saleOrders' => $saleOrders,
+            'serviceAlias' => $serviceAlias
 
         ]);
     }
@@ -2325,12 +2339,12 @@ class PoController extends Controller
             $groupedDiscounts = $discounts
                 ->groupBy('ted_id')
                 ->map(function ($group) {
-                    return $group->sortByDesc('ted_perc')->first(); // Select the record with max `ted_perc`
+                    return $group->sortByDesc('ted_perc')->first();
                 });
             $groupedExpenses = $expenses
                 ->groupBy('ted_id')
                 ->map(function ($group) {
-                    return $group->sortByDesc('ted_perc')->first(); // Select the record with max `ted_perc`
+                    return $group->sortByDesc('ted_perc')->first();
                 });
             $finalDiscounts = $groupedDiscounts->values()->toArray();
             $finalExpenses = $groupedExpenses->values()->toArray();
@@ -2349,8 +2363,6 @@ class PoController extends Controller
             $vendor->shipping = $vendor->addresses()->where(function($query) {
                 $query->where('type', 'shipping')->orWhere('type', 'both');
             })->latest()->first();
-            // $vendor->billing = $vendor->latestBillingAddress();
-            // $vendor->shipping = $vendor->latestShippingAddress();
             $vendor->currency = $vendor->currency;
             $vendor->paymentTerm = $vendor->paymentTerm;
             $html = view('procurement.po.partials.invoice-po-item', ['poItems' => $piItems])->render();
@@ -2367,7 +2379,7 @@ class PoController extends Controller
                         DB::raw("GROUP_CONCAT(
                             CONCAT(erp_pi_item_attributes.item_attribute_id, ':', erp_pi_item_attributes.attribute_value)
                             ORDER BY erp_pi_item_attributes.item_attribute_id SEPARATOR ', '
-                        ) as attributes"), // Concatenate attributes if they exist
+                        ) as attributes"),
                         'erp_pi_items.indent_qty',
                         'erp_pi_items.order_qty'
                     )
@@ -2377,7 +2389,7 @@ class PoController extends Controller
             ->select(
                 'item_id',
                 'uom_id',
-                DB::raw("IFNULL(attributes, '') as attributes"), // Ensure attributes are empty if NULL
+                DB::raw("IFNULL(attributes, '') as attributes"),
                 DB::raw("SUM(indent_qty - order_qty) as total_qty"),
                 DB::raw("GROUP_CONCAT(pi_item_id ORDER BY pi_item_id SEPARATOR ',') as pi_item_ids")
             )
@@ -2440,7 +2452,7 @@ class PoController extends Controller
                         DB::raw("GROUP_CONCAT(
                             CONCAT(erp_pi_item_attributes.item_attribute_id, ':', erp_pi_item_attributes.attribute_value)
                             ORDER BY erp_pi_item_attributes.item_attribute_id SEPARATOR ', '
-                        ) as attributes"), // Concatenate attributes if they exist
+                        ) as attributes"),
                         'erp_pi_items.indent_qty',
                         'erp_pi_items.order_qty'
                     )
@@ -2451,7 +2463,7 @@ class PoController extends Controller
                 'item_id',
                 'so_id',
                 'uom_id',
-                DB::raw("IFNULL(attributes, '') as attributes"), // Ensure attributes are empty if NULL
+                DB::raw("IFNULL(attributes, '') as attributes"),
                 DB::raw("SUM(indent_qty - order_qty) as total_qty"),
                 DB::raw("GROUP_CONCAT(pi_item_id ORDER BY pi_item_id SEPARATOR ',') as pi_item_ids")
             )

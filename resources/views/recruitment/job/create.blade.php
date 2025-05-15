@@ -336,6 +336,27 @@
                                                                         </div>
                                                                     </div>
 
+                                                                    <div class="row mb-1">
+                                                                        <div class="col-md-4">
+                                                                            <label class="form-label">Select Company
+                                                                                <span class="text-danger">*</span></label>
+                                                                        </div>
+
+                                                                        <div class="col-md-6">
+                                                                            <select class="form-control select2"
+                                                                                id="company_id" name="company_id"
+                                                                                onchange="dropdown('{{ url('recruitment/get-locations/') }}/' + this.value, 'location_id', '')">
+                                                                                <option value="">Select Company
+                                                                                </option>
+                                                                                @foreach ($companies as $company)
+                                                                                    <option value="{{ $company->id }}">
+                                                                                        {{ ucfirst($company->name) }}
+                                                                                    </option>
+                                                                                @endforeach
+                                                                            </select>
+                                                                        </div>
+                                                                    </div>
+
 
                                                                     <div class="row mb-1">
                                                                         <div class="col-md-4">
@@ -346,13 +367,6 @@
                                                                         <div class="col-md-6">
                                                                             <select class="form-control select2"
                                                                                 id="location_id" name="location_id">
-                                                                                <option value="">Select Experience
-                                                                                </option>
-                                                                                @foreach ($locations as $location)
-                                                                                    <option value="{{ $location->id }}">
-                                                                                        {{ ucfirst($location->store_name) }}
-                                                                                    </option>
-                                                                                @endforeach
                                                                             </select>
                                                                         </div>
                                                                     </div>

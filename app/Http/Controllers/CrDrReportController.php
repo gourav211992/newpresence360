@@ -535,6 +535,7 @@ class CrDrReportController extends Controller
                     'days_above_180' => 0,
                     'total_outstanding' => 0,
                     'invoice_amount'=>0,
+                    'invoice_amount'=>0,
                     'document_date' => "",
                     'days_diff' => 0
                 ];
@@ -1238,17 +1239,15 @@ class CrDrReportController extends Controller
 
         $groupIdFromRequest = $request->group_id;
 
-        // If group_id is selected, build single group structure
-        $defaultGroupName = $type === 'debit'
-            ? ConstantHelper::RECEIVABLE
-            : ConstantHelper::PAYABLE;
+        $organization = Helper::getAuthenticatedUser()->organization->name ?? '';
+        // $defaultGroupName = ;
 
         // If group_id is selected, use it globally
         if ($groupIdFromRequest) {
-            $groupName = Group::find($groupIdFromRequest)?->name ?? $defaultGroupName;
+            // $groupName = Group::find($groupIdFromRequest)?->name ?? '';
 
             $structuredRecords = [
-                'group_name' => $groupName,
+                'group_name' => $organization,
                 'type' => $type,
                 'entities' => [],
                 'date' => $request->date,
@@ -1268,7 +1267,7 @@ class CrDrReportController extends Controller
         } else {
             // No group_id selected — still provide default group_name
             $structuredRecords = [
-                'group_name' => $defaultGroupName,
+                'group_name' => $organization,
                 'type' => $type,
                 'date' => $request->date,
                 'date2' => $request->date2,
@@ -1293,7 +1292,6 @@ class CrDrReportController extends Controller
                 ];
             }
         }
-
         $filename = $type === 'credit'
             ? 'creditor-ledger.xlsx'
             : ($type === 'debit' ? 'debitor-ledger.xlsx' : 'ledger-report.xlsx');

@@ -49,6 +49,7 @@ $(document).on('change', '[name*="comp_attribute"]', (e) => {
     let attrGroupId = e.target.getAttribute('data-attr-group-id');
     $(`[name="components[${rowCount}][attr_group_id][${attrGroupId}][attr_name]"]`).val(e.target.value);
     qtyEnabledDisabled();
+    setSelectedAttribute(rowCount);
 });
 
 /*Edit mode table calculation filled*/

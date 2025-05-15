@@ -827,6 +827,7 @@ function filterTable() {
     let selectedValue = $("input[name='goodsservice']:checked").attr("id");
     let anyVisible = false;
 
+<<<<<<< HEAD
     $(".table-row").each(function () {
     let outstandingText = $(this).find("td.outstanding").text().trim();
     let overdueText = $(this).find("td.overdue").text().trim();
@@ -841,6 +842,14 @@ function filterTable() {
                 anyVisible = true;
             } else {
                 $(this).hide();
+=======
+            if (selectedValue === "customColorRadio1") {
+                $('.outstanding').show();
+                $('.overdue').hide(); 
+            } else if (selectedValue === "service") {
+                $('.overdue').show();
+                $('.outstanding').hide();
+>>>>>>> 5c3351680a3e6aaef60877bfce4518e11c2539ca
             }
         } else if (selectedValue === "service") {
             $('.overdue').show();
@@ -900,7 +909,11 @@ if ($('#addcoulmn').length && $('#addcoulmn').hasClass('show')) {
             });
         });
     });
+<<<<<<< HEAD
     filterTable();
+=======
+    
+>>>>>>> 5c3351680a3e6aaef60877bfce4518e11c2539ca
 
 
 

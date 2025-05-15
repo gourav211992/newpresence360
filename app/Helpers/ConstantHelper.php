@@ -517,6 +517,7 @@ class ConstantHelper
     const CATEGORY_SERVICE_ALIAS = 'categories';
     const ATTRIBUTE_SERVICE_ALIAS = 'attributes';
     const PRODUCT_SPECIFICATION_ALIAS = 'product-specifications';
+    const DYNAMIC_FIELD_ALIAS = 'dynamic-fields';
     const PAYMENT_TERM_SERVICE_ALIAS = 'payment-terms';
     const UNIT_SERVICE_ALIAS = 'units';
     const STOCK_ACCOUNT_SERVICE_ALIAS = 'stock-accounts';
@@ -957,4 +958,16 @@ class ConstantHelper
     const FY_NOT_CLOSED_STATUS = false;
     const FY_NOT_LOCK_STATUS = false;
 
+
+    const DATA_TYPE_TEXT = 'text';
+    const DATA_TYPE_NUMBER = 'number';
+    const DATA_TYPE_DATE = 'date';
+    const DATA_TYPE_BOOLEAN = 'boolean';
+
+    const DATA_TYPES = [
+        ['label' => 'Text', 'value' => self::DATA_TYPE_TEXT],
+        ['label' => 'Number', 'value' => self::DATA_TYPE_NUMBER],
+        ['label' => 'Date', 'value' => self::DATA_TYPE_DATE],
+        ['label' => 'Boolean (Yes/No)', 'value' => self::DATA_TYPE_BOOLEAN],
+    ];
 }

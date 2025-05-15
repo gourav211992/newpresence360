@@ -2,11 +2,14 @@
 @php
    $rowCount = $key + 1;
    $item = \App\Models\Item::find(@$so_item['item_id']);
-   $selectedAttr = [];
-   $selAttributes = @$so_item['attributes'] ? json_decode($so_item['attributes'], TRUE) : [];
-    if(count($selAttributes)) {
-       $selectedAttr = array_column($selAttributes, 'attribute_value');
-    }
+    $selectedAttr = collect($so_item['attributes'] ?? [])
+    ->flatMap(function ($attr) {
+        return collect($attr['values_data'] ?? [])
+            ->filter(fn($val) => $val['selected'] ?? false)
+            ->pluck('id');
+    })
+    ->values()
+    ->all();
 @endphp
 <tr id="row_{{$rowCount}}" data-index="{{$rowCount}}">
   <td class="customernewsection-form">
@@ -33,20 +36,17 @@
                 <input type="hidden" name="components[{{$rowCount}}][attr_group_id][{{$itemAttribute?->attribute_group_id}}][attr_name]" value="">
             @endif
       @endforeach
+    
 </td>
 <td>
     <input type="text" name="components[{{$rowCount}}][item_name]" class="form-control mw-100 mb-25" readonly value="{{$item?->item_name}}" />
 </td>
-<td class="poprod-decpt"> 
-    <button type="button" class="btn p-25 btn-sm btn-outline-secondary attributeBtn" data-row-count="{{$rowCount}}" style="font-size: 10px">Attributes</button>
+<td class="poprod-decpt attributeBtn" id="itemAttribute_{{$rowCount}}" data-count="{{$rowCount}}" attribute-array="{{json_encode($so_item['attributes']) ?? []}}">
 </td>
 <td>
     <input type="hidden" name="components[{{$rowCount}}][inventoty_uom_id]" value="" @readonly(true)>
     <select class="form-select mw-100 " name="components[{{$rowCount}}][uom_id]">
         <option value="{{$item?->uom?->id}}">{{ucfirst($item?->uom?->name)}}</option>
-        {{-- @foreach($item?->alternateUOMs ?? [] as $alternateUOM)
-         <option value="{{$alternateUOM?->uom?->id}}" {{$alternateUOM?->uom?->id == @$item?->inventory_uom_id ? 'selected' : '' }}>{{$alternateUOM?->uom?->name}}</option>
-         @endforeach --}}
     </select>
 </td>
 <td>

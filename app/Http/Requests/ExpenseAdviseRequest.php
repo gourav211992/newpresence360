@@ -101,9 +101,9 @@ class ExpenseAdviseRequest extends FormRequest
         $rules['component_item_name.*'] = 'required';
         $rules['components.*.accepted_qty'] = 'required|numeric|min:0.01';
         $rules['components.*.rate'] = 'required|numeric|min:0.01';
-        $rules['components.*.cost_center_id'] = 'required';
+        // $rules['components.*.cost_center_id'] = 'required';
         $rules['components.*.remark'] = 'nullable|max:250';
-        
+
         foreach ($this->input('components', []) as $index => $component) {
             $item_id = $component['item_id'] ?? null;
             $item = Item::find($item_id);
@@ -140,7 +140,7 @@ class ExpenseAdviseRequest extends FormRequest
             'components.*.rate.numeric' => 'Rate must be a number.',
             'components.*.rate.min' => 'Rate can not be negative',
             'components.*.attr_group_id.*.attr_name.required' => 'Select Attribute',
-            'components.*.cost_center_id.required' => 'Cost Center is required',
+            // 'components.*.cost_center_id.required' => 'Cost Center is required',
         ];
 
     }
@@ -192,7 +192,7 @@ class ExpenseAdviseRequest extends FormRequest
                         })
                         ->selectRaw('SUM(order_qty - expense_advise_qty) as balance_qty')
                         ->value('balance_qty') ?? 0;
-                    
+
                     if($expenseItem) {
                         $inputQty = (floatval($component['accepted_qty']) - $expenseItem->accepted_qty) ?? 0;
                     } else {

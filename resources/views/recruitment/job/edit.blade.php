@@ -354,6 +354,28 @@
                                                                         </div>
                                                                     </div>
 
+                                                                    <div class="row mb-1">
+                                                                        <div class="col-md-4">
+                                                                            <label class="form-label">Select Company
+                                                                                <span class="text-danger">*</span></label>
+                                                                        </div>
+
+                                                                        <div class="col-md-6">
+                                                                            <select class="form-control select2"
+                                                                                id="company_id" name="company_id"
+                                                                                onchange="dropdown('{{ url('recruitment/get-locations/') }}/' + this.value, 'location_id', '')">
+                                                                                <option value=""
+                                                                                    {{ $job->company_id == '' ? 'selected' : '' }}>
+                                                                                    Select Company</option>
+                                                                                @foreach ($companies as $company)
+                                                                                    <option value="{{ $company->id }}"
+                                                                                        {{ $job->company_id == $company->id ? 'selected' : '' }}>
+                                                                                        {{ ucfirst($company->name) }}
+                                                                                    </option>
+                                                                                @endforeach
+                                                                            </select>
+                                                                        </div>
+                                                                    </div>
 
                                                                     <div class="row mb-1">
                                                                         <div class="col-md-4">
@@ -364,15 +386,6 @@
                                                                         <div class="col-md-6">
                                                                             <select class="form-control select2"
                                                                                 id="location_id" name="location_id">
-                                                                                <option value=""
-                                                                                    {{ $job->location_id == '' ? 'selected' : '' }}>
-                                                                                    Select Experience</option>
-                                                                                @foreach ($locations as $location)
-                                                                                    <option value="{{ $location->id }}"
-                                                                                        {{ $job->location_id == $location->id ? 'selected' : '' }}>
-                                                                                        {{ ucfirst($location->store_name) }}
-                                                                                    </option>
-                                                                                @endforeach
                                                                             </select>
                                                                         </div>
                                                                     </div>
@@ -709,6 +722,8 @@
     <script>
         $(document).ready(function() {
             fetchJobRequests('{{ $job->job_title_id }}');
+            dropdown("{{ url('recruitment/get-locations') }}/" + '{{ $job->company_id }}', 'location_id',
+                '{{ $job->location_id }}');
         });
 
         function fetchJobRequests(val) {

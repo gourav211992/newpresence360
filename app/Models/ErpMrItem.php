@@ -155,6 +155,22 @@ class ErpMrItem extends Model
     {
         return $this -> belongsTo(ErpStore::class, 'to_store_id');
     }
+    public function erpSubstore()
+    {
+        return $this -> belongsTo(ErpSubStore::class, 'sub_store_id');
+    }
+    public function toErpSubStore()
+    {
+        return $this -> belongsTo(ErpSubStore::class, 'to_sub_store_id');
+    }
+    public function erpStation()
+    {
+        return $this -> belongsTo(Station::class, 'station_id');
+    }
+    public function toErpStation()
+    {
+        return $this -> belongsTo(Station::class, 'to_station_id');
+    }
     public function department()
     {
         return $this->belongsTo(Department::class, 'department_id');

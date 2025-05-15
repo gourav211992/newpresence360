@@ -156,6 +156,16 @@
                                                         </select>
                                                     </div>
                                                 </div>
+                                                <div class="row align-items-center mb-1" id="cost_center_div" style="display:none;">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Cost Center <span class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <select class="form-select cost_center" id="cost_center_id" name="cost_center_id">
+                                                            <!-- Options will be populated here by the AJAX request -->
+                                                        </select>
+                                                    </div>
+                                                </div>
                                                 <div class="row align-items-center mb-1 d-none" id="reference_from">
                                                     <div class="col-md-3">
                                                         <label class="form-label">
@@ -391,7 +401,7 @@
                                                                 <td class="text-end" id="TotalEachRowAmount">0.00</td>
                                                             </tr>
                                                             <tr valign="top">
-                                                                <td rowspan="10" colspan="7">
+                                                                <td rowspan="10" colspan="6">
                                                                     <table class="table border" id="itemDetailDisplay">
                                                                         <tr>
                                                                             <td class="p-0">
@@ -650,12 +660,14 @@
     @include('procurement.purchase-return.partials.tax-detail-modal')
 @endsection
 @section('scripts')
+    <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
     <script type="text/javascript">
         let actionUrlTax = '{{route("purchase-return.tax.calculation")}}';
     </script>
     <script type="text/javascript" src="{{asset('assets/js/modules/purchase-return.js')}}"></script>
     <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
     <script>
+        const selectedCostCenterId = "";
         $(document).on('change','#book_id',(e) => {
             let bookId = e.target.value;
             if (bookId) {
@@ -983,6 +995,7 @@
                         closestTr.find('[name*=item_name]').val(itemN);
                         closestTr.find('[name*=hsn_id]').val(hsnId);
                         closestTr.find('[name*=hsn_code]').val(hsnCode);
+                        closestTr.find("td[id*='itemAttribute_']").html(defautAttrBtn);
                         $input.val(itemCode);
                         let uomOption = `<option value=${uomId}>${uomName}</option>`;
                         if(ui.item?.alternate_u_o_ms) {
@@ -1126,7 +1139,7 @@
                 selectedAttr = JSON.stringify(selectedAttr);
             }
             if (item_name && item_id) {
-                let rowCount = e.target.getAttribute('data-row-count');
+                let rowCount = tr.getAttribute('data-index');
                 getItemAttribute(item_id, rowCount, selectedAttr, tr);
             } else {
                 Swal.fire({
@@ -1139,7 +1152,8 @@
 
         /*For comp attr*/
         function getItemAttribute(itemId, rowCount, selectedAttr, tr){
-            let actionUrl = '{{route("purchase-return.item.attr")}}'+'?item_id='+itemId+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
+            let detail_id = "";
+            let actionUrl = '{{route("purchase-return.item.attr")}}'+'?item_id='+itemId+'&detail_id='+detail_id+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if (data.status == 200) {
@@ -1147,6 +1161,7 @@
                         $("#attribute table tbody").append(data.data.html);
                         $(tr).find('td:nth-child(2)').find("[name*=attr_name]").remove();
                         $(tr).find('td:nth-child(2)').append(data.data.hiddenHtml);
+                        $(tr).find("td[id*='itemAttribute_']").attr('attribute-array', JSON.stringify(data.data.itemAttributeArray));
                         if (data.data.attr) {
                             $("#attribute").modal('show');
                             $(".select2").select2();
@@ -1639,6 +1654,7 @@
                         $input.closest('tr').find('[name*=item_name]').val(itemN);
                         $input.closest('tr').find('[name*=hsn_id]').val(hsnId);
                         $input.closest('tr').find('[name*=hsn_code]').val(hsnCode);
+                        $input.closest('tr').find("td[id*='itemAttribute_']").html(defautAttrBtn);
                         $input.val(itemCode);
                         let uomOption = `<option value=${uomId}>${uomName}</option>`;
                         if(ui.item?.alternate_u_o_ms) {
@@ -1710,7 +1726,7 @@
                         $(".editAddressBtn").addClass('d-none');
                         let locationId = $("[name='header_store_id']").val();
                         getLocation(locationId);
-                        
+
                         if(finalDiscounts.length) {
                             let rows = '';
                             finalDiscounts.forEach(function(item,index) {
@@ -1775,6 +1791,10 @@
                         }
                         setTimeout(() => {
                             setTableCalculation();
+                            $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+                                let currentIndex = index + 1;
+                                setAttributesUIHelper(currentIndex,"#itemTable");
+                            });
                         },500);
                     }
                     if(data.status == 422) {

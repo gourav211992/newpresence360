@@ -311,6 +311,11 @@ Route::middleware(['user.auth'])->group(function () {
     Route::resource('cost-center', CostCenterController::class)->except(['show']);
     Route::post('getLocations', [CostCenterController::class, 'getLocation'])->name('cost-center.getLocations');
     Route::get('get-cost-center/{id}', [CostCenterController::class, 'getCostCenter'])->name('cost-center.get-cost-center');
+<<<<<<< HEAD
+=======
+
+    Route::get('get-cost-centers', [CostCenterController::class, 'getCostCenterLocationBasis'])->name('locations.getCostCenter');
+>>>>>>> 5c3351680a3e6aaef60877bfce4518e11c2539ca
 
     Route::get('/city', [CityController::class, 'index']);
 
@@ -826,17 +831,17 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
 
     Route::prefix('physical-stock-accounts')->controller(PhysicalStockAccountController::class)->group(function () {
         Route::get('/', 'index')->name('physical-stock-account.index');
-        Route::post('/', 'store')->name('physical-stock-account.store'); 
+        Route::post('/', 'store')->name('physical-stock-account.store');
         Route::delete('/{id}', 'destroy')->name('physical-stock-account.destroy');
         Route::get('/test-ledger', 'testLedgerGroupAndLedgerId')->name('physical-stock-account.test-stock');
         Route::get('organizations/{companyId}', 'getOrganizationsByCompany')->name('physical-stock-account.organizations.by-company');
-        Route::get('data-by-organization/{organizationId}', 'getDataByOrganization')->name('physical-stock-account.data.by-organization'); 
+        Route::get('data-by-organization/{organizationId}', 'getDataByOrganization')->name('physical-stock-account.data.by-organization');
         Route::get('items-and-subcategories-by-category', 'getItemsAndSubCategoriesByCategory')->name('physical-stock-account.items-and-subcategories.by-category');
-        Route::get('items-by-subcategory', 'getItemsBySubCategory')->name('physical-stock-account.items.by-subcategory'); 
-        Route::get('ledgers-by-organization/{organizationId}', 'getLedgersByOrganization')->name('physical-stock-account.ledgers.by-organization'); 
-        Route::get('categories-by-organization/{organizationId}', 'getCategoriesByOrganization')->name('physical-stock-account.categories.by-organization'); 
+        Route::get('items-by-subcategory', 'getItemsBySubCategory')->name('physical-stock-account.items.by-subcategory');
+        Route::get('ledgers-by-organization/{organizationId}', 'getLedgersByOrganization')->name('physical-stock-account.ledgers.by-organization');
+        Route::get('categories-by-organization/{organizationId}', 'getCategoriesByOrganization')->name('physical-stock-account.categories.by-organization');
         Route::get('sub-categories-by-category/{categoryId}', 'getSubcategoriesByCategory')->name('physical-stock-account.subcategories.by-category');
-        Route::get('ledgers-by-group', 'getLedgerGroupByLedger')->name('physical-stock-account.ledgers.by-group'); 
+        Route::get('ledgers-by-group', 'getLedgerGroupByLedger')->name('physical-stock-account.ledgers.by-group');
     });
 
     Route::get('/loan', [LoanController::class, 'index']);

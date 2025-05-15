@@ -11,48 +11,48 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class PbDetail extends Model
 {
     use HasFactory, SoftDeletes;
-    
+
     protected $table = 'erp_pb_details';
     protected $fillable = [
-        'header_id', 
+        'header_id',
         'mrn_detail_id',
         'so_id',
-        'item_id', 
-        'item_code', 
-        'item_name', 
-        'hsn_id', 
-        'hsn_code', 
+        'item_id',
+        'item_code',
+        'item_name',
+        'hsn_id',
+        'hsn_code',
         'cost_center_id',
-        'uom_id', 
-        'uom_code', 
-        'order_qty', 
-        'accepted_qty', 
-        'rejected_qty', 
-        'inventory_uom', 
-        'inventory_uom_id', 
-        'inventory_uom_code', 
-        'inventory_uom_qty', 
+        'uom_id',
+        'uom_code',
+        'order_qty',
+        'accepted_qty',
+        'rejected_qty',
+        'inventory_uom',
+        'inventory_uom_id',
+        'inventory_uom_code',
+        'inventory_uom_qty',
         'po_rate',
         'rate',
-        'variance', 
-        'basic_value', 
-        'discount_percentage', 
-        'discount_amount', 
-        'header_discount_amount', 
-        'net_value', 
-        'sgst_percentage', 
-        'cgst_percentage', 
-        'igst_percentage', 
-        'tax_value', 
-        'taxable_amount', 
-        'sub_total', 
-        'item_exp_amount', 
-        'header_exp_amount', 
-        'company_currency', 
-        'exchange_rate_to_company_currency', 
-        'group_currency', 
-        'exchange_rate_to_group_currency', 
-        'selected_item', 
+        'variance',
+        'basic_value',
+        'discount_percentage',
+        'discount_amount',
+        'header_discount_amount',
+        'net_value',
+        'sgst_percentage',
+        'cgst_percentage',
+        'igst_percentage',
+        'tax_value',
+        'taxable_amount',
+        'sub_total',
+        'item_exp_amount',
+        'header_exp_amount',
+        'company_currency',
+        'exchange_rate_to_company_currency',
+        'group_currency',
+        'exchange_rate_to_group_currency',
+        'selected_item',
         'remark'
     ];
 
@@ -98,7 +98,7 @@ class PbDetail extends Model
     {
         return $this->belongsTo(Hsn::class, 'hsn_id');
     }
-    
+
     public function costCenter()
     {
         return $this->belongsTo(CostCenter::class,'cost_center_id');
@@ -172,8 +172,8 @@ class PbDetail extends Model
             ->where('ted_level', '=', 'D')
             ->where('ted_code', '=', 'CGST')
             ->first();
-            
-        
+
+
         return [
             'rate' => @$tedRecord->taxDetail->tax_percentage,
             'value' => $tedRecords ?? 0.00
@@ -187,7 +187,7 @@ class PbDetail extends Model
             ->where('ted_level', '=', 'D')
             ->where('ted_code', '=', 'SGST')
             ->sum('ted_amount');
-        
+
             $tedRecord = PbTed::with(['taxDetail'])
             ->where('detail_id', $this->id)
             ->where('header_id', $this->header_id)
@@ -195,8 +195,8 @@ class PbDetail extends Model
             ->where('ted_level', '=', 'D')
             ->where('ted_code', '=', 'SGST')
             ->first();
-            
-        
+
+
         return [
             'rate' => @$tedRecord->taxDetail->tax_percentage,
             'value' => $tedRecords ?? 0.00
@@ -210,7 +210,7 @@ class PbDetail extends Model
             ->where('ted_level', '=', 'D')
             ->where('ted_code', '=', 'IGST')
             ->sum('ted_amount');
-        
+
             $tedRecord = PbTed::with(['taxDetail'])
             ->where('detail_id', $this->id)
             ->where('header_id', $this->header_id)
@@ -218,11 +218,51 @@ class PbDetail extends Model
             ->where('ted_level', '=', 'D')
             ->where('ted_code', '=', 'IGST')
             ->first();
-            
-        
+
+
         return [
             'rate' => @$tedRecord->taxDetail->tax_percentage,
             'value' => $tedRecords ?? 0.00
         ];
+    }
+
+    public function item_attributes_array()
+    {
+        $itemId = $this -> getAttribute('item_id');
+        if (isset($itemId)) {
+            $itemAttributes = ErpItemAttribute::where('item_id', $this -> item_id) -> get();
+        } else {
+            $itemAttributes = [];
+        }
+        $processedData = [];
+        foreach ($itemAttributes as $attribute) {
+            $existingAttribute = PbItemAttribute::where('detail_id', $this -> getAttribute('id')) -> where('item_attribute_id', $attribute -> id) -> first();
+            if (!isset($existingAttribute)) {
+                continue;
+            }
+            $attributesArray = array();
+            $attribute_ids = [];
+            if ($attribute -> all_checked) {
+                $attribute_ids = ErpAttribute::where('attribute_group_id', $attribute -> attribute_group_id) -> get() -> pluck('id') -> toArray();
+            } else {
+                $attribute_ids = $attribute -> attribute_id ? json_decode($attribute -> attribute_id) : [];
+            }
+            $attribute -> group_name = $attribute -> group ?-> name;
+            $attribute -> short_name = $attribute -> group ?-> short_name;
+            foreach ($attribute_ids as $attributeValue) {
+                    $attributeValueData = ErpAttribute::where('id', $attributeValue) -> select('id', 'value') -> where('status', 'active') -> first();
+                    if (isset($attributeValueData))
+                    {
+                        $isSelected = PbItemAttribute::where('detail_id', $this -> getAttribute('id')) -> where('item_attribute_id', $attribute -> id) -> where('attr_value', $attributeValueData -> id) -> first();
+                        $attributeValueData -> selected = $isSelected ? true : false;
+                        array_push($attributesArray, $attributeValueData);
+                    }
+            }
+           $attribute -> values_data = $attributesArray;
+           $attribute = $attribute -> only(['id','group_name', 'short_name' ,'values_data', 'attribute_group_id']);
+           array_push($processedData, ['id' => $attribute['id'], 'group_name' => $attribute['group_name'], 'values_data' => $attributesArray, 'attribute_group_id' => $attribute['attribute_group_id'],'short_name' => $attribute['short_name']]);
+        }
+        $processedData = collect($processedData);
+        return $processedData;
     }
 }

@@ -131,6 +131,16 @@
                                                         </select>
                                                     </div>
                                                 </div>
+                                                <div class="row align-items-center mb-1" id="cost_center_div" style="display:none;">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Cost Center <span class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <select class="form-select cost_center" id="cost_center_id" name="cost_center_id">
+                                                            <!-- Options will be populated here by the AJAX request -->
+                                                        </select>
+                                                    </div>
+                                                </div>
                                                 <!-- <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Reference No </label>
@@ -302,7 +312,6 @@
                                                                 <th class="text-end">Value</th>
                                                                 <th>Discount</th>
                                                                 <th class="text-end">Total</th>
-                                                                <th>Cost Center</th>
                                                                 <th width="50px">Action</th>
                                                             </tr>
                                                         </thead>
@@ -310,13 +319,13 @@
                                                         </tbody>
                                                         <tfoot>
                                                             <tr class="totalsubheadpodetail">
-                                                                <td colspan="7"></td>
+                                                                <td colspan="6"></td>
                                                                 <td class="text-end" id="totalItemValue">0.00</td>
                                                                 <td class="text-end" id="totalItemDiscount">0.00</td>
                                                                 <td class="text-end" id="TotalEachRowAmount">0.00</td>
                                                             </tr>
                                                             <tr valign="top">
-                                                                <td colspan="8" rowspan="12">
+                                                                <td colspan="7" rowspan="12">
                                                                     <table class="table border" id="itemDetailDisplay">
                                                                         <tr>
                                                                             <td class="p-0">
@@ -574,12 +583,14 @@
     @include('procurement.expense-advise.partials.tax-detail-modal')
 @endsection
 @section('scripts')
+    <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
     <script type="text/javascript">
         let actionUrlTax = '{{route("expense-adv.tax.calculation")}}';
     </script>
     <script type="text/javascript" src="{{asset('assets/js/modules/expense-advise.js')}}"></script>
     <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
     <script>
+        const selectedCostCenterId = "";
         $(document).on('change','#book_id',(e) => {
             let bookId = e.target.value;
             if (bookId) {
@@ -885,6 +896,7 @@
                             closestTr.find('[name*=item_name]').val(itemN);
                             closestTr.find('[name*=hsn_id]').val(hsnId);
                             closestTr.find('[name*=hsn_code]').val(hsnCode);
+                            closestTr.find("td[id*='itemAttribute_']").html(defautAttrBtn);
                             $input.val(itemCode);
                             let uomOption = `<option value=${uomId}>${uomName}</option>`;
                             if(ui.item?.alternate_u_o_ms) {
@@ -1083,7 +1095,7 @@
                 selectedAttr = JSON.stringify(selectedAttr);
             }
             if (item_name && item_id) {
-                let rowCount = e.target.getAttribute('data-row-count');
+                let rowCount = tr.getAttribute('data-index');
                 getItemAttribute(item_id, rowCount, selectedAttr, tr);
             } else {
                 Swal.fire({
@@ -1096,7 +1108,8 @@
 
         /*For comp attr*/
         function getItemAttribute(itemId, rowCount, selectedAttr, tr){
-            let actionUrl = '{{route("expense-adv.item.attr")}}'+'?item_id='+itemId+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
+            let expense_detail_id = "";
+            let actionUrl = '{{route("expense-adv.item.attr")}}'+'?item_id='+itemId+'&expense_detail_id='+expense_detail_id+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if (data.status == 200) {
@@ -1104,7 +1117,8 @@
                         $("#attribute table tbody").append(data.data.html)
                         $("#attribute").modal('show');
                         $(tr).find('td:nth-child(2)').find("[name*=attr_name]").remove();
-                        $(tr).find('td:nth-child(2)').append(data.data.hiddenHtml)
+                        $(tr).find('td:nth-child(2)').append(data.data.hiddenHtml);
+                        $(tr).find("td[id*='itemAttribute_']").attr('attribute-array', JSON.stringify(data.data.itemAttributeArray));
                     }
                 });
             });
@@ -1513,6 +1527,7 @@
                         $input.closest('tr').find('[name*=item_name]').val(itemN);
                         $input.closest('tr').find('[name*=hsn_id]').val(hsnId);
                         $input.closest('tr').find('[name*=hsn_code]').val(hsnCode);
+                        $input.closest('tr').find("td[id*='itemAttribute_']").html(defautAttrBtn);
                         $input.val(itemCode);
                         let uomOption = `<option value=${uomId}>${uomName}</option>`;
                         if(ui.item?.alternate_u_o_ms) {
@@ -1657,6 +1672,12 @@
                             $("#summaryExpTable tbody").find('#expSummaryFooter').before(rows);
                         }
                         setTableCalculation();
+                        setTimeout(() => {
+                            $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+                                let currentIndex = index + 1;
+                                setAttributesUIHelper(currentIndex,"#itemTable");
+                            });
+                        },500);
                     }
                     if(data.status == 422) {
                         $(".editAddressBtn").removeClass('d-none');

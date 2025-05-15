@@ -59,7 +59,7 @@ class ErpPsvItem extends Model
             $attributesArray = [];
             $attribute_ids = [];
             if ($attribute->all_checked) {
-                $attribute_ids = ErpAttribute::where('attribute_group_id', $attribute->attribute_group_id)
+                $attribute_ids = Attribute::where('attribute_group_id', $attribute->attribute_group_id)
                     ->get()
                     ->pluck('id')
                     ->toArray();
@@ -70,7 +70,7 @@ class ErpPsvItem extends Model
             $attribute->short_name = $attribute->group?->short_name;
 
             foreach ($attribute_ids as $attributeValue) {
-                $attributeValueData = ErpAttribute::where('id', $attributeValue)
+                $attributeValueData = Attribute::where('id', $attributeValue)
                     ->select('id', 'value')
                     ->where('status', 'active')
                     ->first();
@@ -96,6 +96,49 @@ class ErpPsvItem extends Model
         $processedData = collect($processedData);
         return $processedData;
     }
+
+
+    public function get_attributes_array()
+    {
+        $psvItemId = $this->getAttribute('id');
+
+        if (!$psvItemId) {
+            return collect();
+        }
+
+        // Step 1: Load all item attributes for this item
+        $psvItemAttributes = ErpPsvItemAttribute::where('psv_item_id', $psvItemId)->get();
+
+        if ($psvItemAttributes->isEmpty()) {
+            return collect();
+        }
+
+        // Step 2: Get all unique attribute group IDs and preload them
+        $groupIds = $psvItemAttributes->pluck('attr_name')->unique()->filter();
+        $attributeGroups = AttributeGroup::whereIn('id', $groupIds)->get()->keyBy('id');
+
+        // Step 3: Process data
+        $processedData = $psvItemAttributes->map(function ($attribute) use ($attributeGroups) {
+            $group = $attributeGroups->get($attribute->attr_name);
+
+            return [
+                'id' => $attribute->item_attribute_id,
+                'group_name' => $group?->name,
+                'short_name' => $group?->short_name,
+                'values_data' => [
+                    [
+                        'id' => $attribute->attr_value,
+                        'value' => $attribute->attribute_value,
+                        'selected' => true,
+                    ]
+                ],
+                'attribute_group_id' => $group?->id,
+            ];
+        });
+
+        return $processedData;
+    }
+
 
     public function hsn()
     {

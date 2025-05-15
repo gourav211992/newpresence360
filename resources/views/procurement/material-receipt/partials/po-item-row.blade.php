@@ -54,8 +54,7 @@
         <td>
             <input type="text" name="components[{{$rowCount}}][item_name]" value="{{$item?->item?->item_name}}" class="form-control mw-100 mb-25" readonly/>
         </td>
-        <td class="poprod-decpt">
-            <button type="button" class="btn p-25 btn-sm btn-outline-secondary attributeBtn" data-row-count="{{$rowCount}}" style="font-size: 10px" readonly>Attributes</button>
+        <td class="poprod-decpt" id="itemAttribute_{{$rowCount}}" data-count="{{$rowCount}}" attribute-array="{{$item->item_attributes_array()}}">
         </td>
         <td>
             <input type="hidden" name="components[{{$rowCount}}][inventoty_uom_id]" value="{{$item->inventoty_uom_id}}">
@@ -67,6 +66,9 @@
                     @endforeach
                 @endif
             </select>
+        </td>
+        <td>
+            <input type="number" class="form-control mw-100 po_qty text-end checkNegativeVal" value="{{$item->order_qty}}" step="any" readonly />
         </td>
         <td>
             <input type="hidden" name="module-type" id="module-type" value="{{ $moduleType }}">

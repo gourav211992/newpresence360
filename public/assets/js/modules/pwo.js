@@ -189,12 +189,14 @@ $(document).on('change','#itemTable > thead .form-check-input',(e) => {
      $(`[name="components[${rowCount}][qty]"]`).val(qty).focus();
   });
   
-function updateRowIndex() {
+function updateRowIndex(is_render = false) {
     $("#itemTable tbody tr[id*='row_']").each(function(index, item) {
         let currentIndex = index + 1;
         $(item).attr('id', 'row_' + currentIndex);
         $(item).attr('data-index', currentIndex);
         $(item).find('#Email_'+currentIndex).val(currentIndex);
+        $(item).find("td[id*='itemAttribute_']").attr('id','itemAttribute_'+currentIndex);
+        $(item).find("td[name*='itemAttribute_']").attr('data-count', currentIndex);
         $(item).find("input, select, button, label").each(function() {
             let nameAttr = $(this).attr("name");
             let idAttr = $(this).attr("id");
@@ -214,4 +216,12 @@ function updateRowIndex() {
             }
         });
     });
+    if(is_render) {
+        setTimeout(() => {
+            $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+                let currentIndex = index + 1;
+                setAttributesUIHelper(currentIndex,"#itemTable");
+            });
+        },100);
+    }
 }

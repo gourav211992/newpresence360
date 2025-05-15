@@ -362,6 +362,7 @@
 
 @endsection
 @section('scripts')
+<script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
 <script type="text/javascript" src="{{asset('assets/js/modules/pi.js')}}"></script>
 <script>
 
@@ -477,5 +478,11 @@ $(document).on('input change focus', '#itemTable tr input', (e) => {
       });
    }
 });
+setTimeout(() => {
+    $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+        let currentIndex = index + 1;
+        setAttributesUIHelper(currentIndex,"#itemTable");
+    });
+},100);
 </script>
 @endsection

@@ -1189,6 +1189,12 @@ $(document).on('click', '.soProcess', (e) => {
                 } else {
                     localStorage.setItem('selectedSoItemIds', JSON.stringify(newIds));
                 }
+                setTimeout(() => {
+                    $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+                        let currentIndex = index + 1;
+                        setAttributesUIHelper(currentIndex, "#itemTable");
+                    });
+                }, 100);
             }
             if(data.status == 422) {
                 Swal.fire({
@@ -1348,13 +1354,6 @@ $(document).on('click','#deleteConfirm', (e) => {
     // deletedSoItemIds = deletedSoItemIds.filter(id => !newDeletedSoItemIds.includes(id));
     // localStorage.setItem("selectedSoItemIds", JSON.stringify(deletedSoItemIds));
 });
-
-$(document).on('click','td[id*="itemAttribute_"]', (e) => {
-    let dataAttributes = $(e.target).attr('data-attributes');
-    // dataAttributes = JSON.parse(dataAttributes);
-    // dataAttributes.
-});
-
 setTimeout(() => {
     $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
         let currentIndex = index + 1;

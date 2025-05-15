@@ -26,6 +26,7 @@ class MrnHeaderHistory extends Model
         'company_id',
         'vendor_id',
         'purchase_order_id',
+        'cost_center_id',
         'mrn_code',
         'mrn_no',
         'mrn_date',
@@ -109,6 +110,10 @@ class MrnHeaderHistory extends Model
         return $this->belongsTo(MrnHeader::class);
     }
 
+    public function costCenters()
+    {
+        return $this->belongsTo(CostCenter::class, 'cost_center_id');
+    }
     public function book()
     {
         return $this->belongsTo(Book::class, 'series_id');

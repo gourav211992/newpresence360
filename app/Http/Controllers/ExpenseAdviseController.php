@@ -105,6 +105,9 @@ class ExpenseAdviseController extends Controller
                 [
                     'items',
                     'vendor',
+                    'erpStore',
+                    'costCenters',
+                    'currency'
                 ]
             )
             ->where('organization_id', $user->organization_id)
@@ -131,11 +134,20 @@ class ExpenseAdviseController extends Controller
                         </div>
                     </div>";
                 })
-                ->addColumn('book_name', function ($row) {
-                    return $row->book ? $row->book?->book_name : 'N/A';
+                ->addColumn('book_code', function ($row) {
+                    return $row->book ? $row->book?->book_code : 'N/A';
                 })
                 ->editColumn('document_date', function ($row) {
                     return date('d/m/Y', strtotime($row->document_date)) ?? 'N/A';
+                })
+                ->editColumn('location', function ($row) {
+                    return strval($row->erpStore?->store_name) ?? 'N/A';
+                })
+                ->editColumn('cost_center', function ($row) {
+                    return strval($row->costCenters?->name) ?? 'N/A';
+                })
+                ->editColumn('currency', function ($row) {
+                    return strval($row->currency?->short_name) ?? 'N/A';
                 })
                 ->editColumn('revision_number', function ($row) {
                     return strval($row->revision_number);
@@ -887,6 +899,8 @@ class ExpenseAdviseController extends Controller
             $expense->supplier_invoice_date = $request->supplier_invoice_date ? date('Y-m-d', strtotime($request->supplier_invoice_date)) : '';
             $expense->supplier_invoice_no = $request->supplier_invoice_no ?? '';
             $expense->final_remark = $request->remarks ?? '';
+            $expense->store_id = $request->header_store_id ?? '';
+            $expense->cost_center_id = $request->cost_center_id ?? '';
             $expense->document_status = $request->document_status ?? ConstantHelper::DRAFT;
             $expense->save();
 
@@ -1434,33 +1448,50 @@ class ExpenseAdviseController extends Controller
         $attributeGroups = AttributeGroup::with('attributes')->where('status', ConstantHelper::ACTIVE)->get();
         $rowCount = intval($request->rowCount) ?? 1;
         $item = Item::find($request->item_id);
-        $selectedAttr = $request->selectedAttr ? json_decode($request->selectedAttr,true) : [];
+        $selectedAttr = $request->selectedAttr ? json_decode($request->selectedAttr, true) : [];
         $expenseDetailId = $request->expense_detail_id ?? null;
         $itemAttIds = [];
-        if($expenseDetailId) {
-            $expenseDetail = ExpenseDetail::find($expenseDetailId);
-            if($expenseDetail) {
-                $itemAttIds = $expenseDetail->attributes()->pluck('item_attribute_id')->toArray();
+        $itemAttributeArray = [];
+        if ($expenseDetailId) {
+            $detail = ExpenseDetail::find($expenseDetailId);
+            if ($detail) {
+                $itemAttIds = collect($detail->attributes)->pluck('item_attribute_id')->toArray();
+                $itemAttributeArray = $detail->item_attributes_array();
             }
         }
         $itemAttributes = collect();
-        if(count($itemAttIds)) {
-            $itemAttributes = $item?->itemAttributes()->whereIn('id',$itemAttIds)->get();
+        if (count($itemAttIds)) {
+            $itemAttributes = $item?->itemAttributes()->whereIn('id', $itemAttIds)->get();
+            if (count($itemAttributes) < 1) {
+                $itemAttributes = $item?->itemAttributes;
+                $itemAttributeArray = $item->item_attributes_array();
+            }
         } else {
             $itemAttributes = $item?->itemAttributes;
+            $itemAttributeArray = $item->item_attributes_array();
         }
-        $html = view('procurement.expense-advise.partials.comp-attribute',compact('item','attributeGroups','rowCount','selectedAttr'))->render();
+        $html = view('procurement.expense-advise.partials.comp-attribute', compact('item', 'attributeGroups', 'rowCount', 'selectedAttr','itemAttributes'))->render();
         $hiddenHtml = '';
-        foreach ($item->itemAttributes as $attribute) {
-                $selected = '';
-                foreach ($attribute->attributes() as $value){
-                    if (in_array($value->id, $selectedAttr)){
-                        $selected = $value->id;
-                    }
+        foreach ($itemAttributes as $attribute) {
+            $selected = '';
+            foreach ($attribute->attributes() as $value) {
+                if (in_array($value->id, $selectedAttr)) {
+                    $selected = $value->id;
                 }
+            }
             $hiddenHtml .= "<input type='hidden' name='components[$rowCount][attr_group_id][$attribute->attribute_group_id][attr_name]' value=$selected>";
         }
-        return response()->json(['data' => ['attr' => $item?->itemAttributes->count() ?? 0, 'html' => $html, 'hiddenHtml' => $hiddenHtml], 'status' => 200, 'message' => 'fetched.']);
+
+        if (count($selectedAttr)) {
+            foreach ($itemAttributeArray as &$group) {
+                foreach ($group['values_data'] as $attribute) {
+                    if (in_array($attribute->id, $selectedAttr)) {
+                        $attribute->selected = true;
+                    }
+                }
+            }
+        }
+        return response()->json(['data' => ['attr' => $item->itemAttributes->count(), 'html' => $html, 'hiddenHtml' => $hiddenHtml, 'itemAttributeArray' => $itemAttributeArray], 'status' => 200, 'message' => 'fetched.']);
     }
 
     # Add discount row

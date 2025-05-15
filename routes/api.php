@@ -38,7 +38,9 @@ Route::group(['middleware' => ['apiresponse']], function () {
         Route::post('transporter-requests/close','close')->name('close');
         // Route::post('transporter-requests/reopen','reopen')->name('reopen');
     });
-    Route::controller(BookController::class)->prefix('book')->group(function(){
-        Route::get('get-document-number','generateDocumentNumber')->name('book.get.docNo');
+    Route::group(['middleware' => ['auth:api']], function () {
+        Route::controller(BookController::class)->prefix('book')->group(function(){
+            Route::get('get-document-number','generateDocumentNumber')->name('book.get.docNo');
+        });
     });
 });

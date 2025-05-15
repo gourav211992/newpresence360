@@ -97,6 +97,9 @@ class PurchaseBillController extends Controller
                 [
                     'items',
                     'vendor',
+                    'erpStore',
+                    'costCenters',
+                    'currency'
                 ]
             )
             ->withDefaultGroupCompanyOrg()
@@ -124,17 +127,26 @@ class PurchaseBillController extends Controller
                         </div>
                     </div>";
                 })
-                ->addColumn('book_name', function ($row) {
-                    return $row->book ? $row->book?->book_name : 'N/A';
+                ->addColumn('book_code', function ($row) {
+                    return $row->book ? $row->book?->book_code : 'N/A';
                 })
                 ->editColumn('document_date', function ($row) {
                     return date('d/m/Y', strtotime($row->document_date)) ?? 'N/A';
+                })
+                ->editColumn('location', function ($row) {
+                    return strval($row->erpStore?->store_name) ?? 'N/A';
+                })
+                ->editColumn('cost_center', function ($row) {
+                    return strval($row->costCenters?->name) ?? 'N/A';
                 })
                 ->editColumn('revision_number', function ($row) {
                     return strval($row->revision_number);
                 })
                 ->addColumn('vendor_name', function ($row) {
                     return $row->vendor ? $row->vendor?->company_name : 'N/A';
+                })
+                ->editColumn('currency', function ($row) {
+                    return strval($row->currency?->short_name) ?? 'N/A';
                 })
                 ->addColumn('total_items', function ($row) {
                     return $row->items ? count($row->items) : 0;
@@ -893,6 +905,8 @@ class PurchaseBillController extends Controller
             $pb->supplier_invoice_no = $request->supplier_invoice_no ?? '';
             $pb->final_remark = $request->remarks ?? '';
             $pb->document_status = $request->document_status ?? ConstantHelper::DRAFT;
+            $pb->store_id = $request->header_store_id ?? '';
+            $pb->cost_center_id = $request->cost_center_id ?? '';
             $pb->save();
 
             $vendorBillingAddress = $pb->billingAddress ?? null;
@@ -1396,23 +1410,30 @@ class PurchaseBillController extends Controller
         $rowCount = intval($request->rowCount) ?? 1;
         $item = Item::find($request->item_id);
         $selectedAttr = $request->selectedAttr ? json_decode($request->selectedAttr, true) : [];
-        $pbDetailId = $request->detail_id ?? null;
+        $pbDetailId = $request->pb_detail_id ?? null;
         $itemAttIds = [];
+        $itemAttributeArray = [];
         if ($pbDetailId) {
-            $pbDetail = PbDetail::find($pbDetailId);
-            if ($pbDetail) {
-                $itemAttIds = $pbDetail->attributes()->pluck('item_attribute_id')->toArray();
+            $detail = PbDetail::find($pbDetailId);
+            if ($detail) {
+                $itemAttIds = collect($detail->attributes)->pluck('item_attribute_id')->toArray();
+                $itemAttributeArray = $detail->item_attributes_array();
             }
         }
         $itemAttributes = collect();
         if (count($itemAttIds)) {
             $itemAttributes = $item?->itemAttributes()->whereIn('id', $itemAttIds)->get();
+            if (count($itemAttributes) < 1) {
+                $itemAttributes = $item?->itemAttributes;
+                $itemAttributeArray = $item->item_attributes_array();
+            }
         } else {
             $itemAttributes = $item?->itemAttributes;
+            $itemAttributeArray = $item->item_attributes_array();
         }
-        $html = view('procurement.purchase-bill.partials.comp-attribute', compact('item', 'attributeGroups', 'rowCount', 'selectedAttr'))->render();
+        $html = view('procurement.purchase-bill.partials.comp-attribute', compact('item', 'attributeGroups', 'rowCount', 'selectedAttr','itemAttributes'))->render();
         $hiddenHtml = '';
-        foreach ($item->itemAttributes as $attribute) {
+        foreach ($itemAttributes as $attribute) {
             $selected = '';
             foreach ($attribute->attributes() as $value) {
                 if (in_array($value->id, $selectedAttr)) {
@@ -1421,7 +1442,17 @@ class PurchaseBillController extends Controller
             }
             $hiddenHtml .= "<input type='hidden' name='components[$rowCount][attr_group_id][$attribute->attribute_group_id][attr_name]' value=$selected>";
         }
-        return response()->json(['data' => ['attr' => $item?->itemAttributes->count() ?? 0, 'html' => $html, 'hiddenHtml' => $hiddenHtml], 'status' => 200, 'message' => 'fetched.']);
+
+        if (count($selectedAttr)) {
+            foreach ($itemAttributeArray as &$group) {
+                foreach ($group['values_data'] as $attribute) {
+                    if (in_array($attribute->id, $selectedAttr)) {
+                        $attribute->selected = true;
+                    }
+                }
+            }
+        }
+        return response()->json(['data' => ['attr' => $item->itemAttributes->count(), 'html' => $html, 'hiddenHtml' => $hiddenHtml, 'itemAttributeArray' => $itemAttributeArray], 'status' => 200, 'message' => 'fetched.']);
     }
 
     # Add discount row

@@ -25,6 +25,7 @@ class MrnHeader extends Model
         'company_id',
         'vendor_id',
         'purchase_order_id',
+        'cost_center_id',
         'mrn_date',
         'document_date',
         'document_status',
@@ -169,6 +170,11 @@ class MrnHeader extends Model
     public function erpSubStore()
     {
         return $this->belongsTo(ErpSubStore::class, 'sub_store_id');
+    }
+
+    public function costCenters()
+    {
+        return $this->belongsTo(CostCenter::class, 'cost_center_id');
     }
 
     public function vendor()
