@@ -161,7 +161,7 @@ class Helper
 
   public static function getFinancialYear(string $date): mixed
     {
-        $user = self::getAuthenticatedUser();
+         $user = self::getAuthenticatedUser();
         $startDate = request()->cookie('fyear_start_date') ?? $date;
         $endDate = request()->cookie('fyear_end_date') ?? $date;
 
@@ -172,22 +172,22 @@ class Helper
             ->first();
 
         if (isset($financialYear)) {
-            $startYear = \Carbon\Carbon::parse($financialYear->start_date)->format('Y');
-            $endYearShort = \Carbon\Carbon::parse($financialYear->end_date)->format('y'); // e
-            $authorized = true;
-            $currentUserId =  $user->auth_user_id;
-            $currentUserType = $user->authenticable_type;
+                  $startYear = \Carbon\Carbon::parse($financialYear->start_date)->format('Y');
+                 $endYearShort = \Carbon\Carbon::parse($financialYear->end_date)->format('y'); // e
+                $authorized = true;
+                $currentUserId =  $user->auth_user_id;
+                $currentUserType = $user->authenticable_type;
             if ($financialYear->fy_close == true && is_array($financialYear->access_by)) {
 
-                $authorized = !collect($financialYear->access_by)->contains(function ($entry) use ($currentUserId, $currentUserType) {
+                    $authorized = !collect($financialYear->access_by)->contains(function ($entry) use ($currentUserId, $currentUserType) {
                     return isset($entry['user_id'], $entry['authorized'], $entry['authenticable_type'], $entry['locked']) &&
-                        $entry['user_id'] == $currentUserId &&
-                        $entry['authenticable_type'] == $currentUserType &&
+                               $entry['user_id'] == $currentUserId &&
+                               $entry['authenticable_type'] == $currentUserType &&
                         (
                             $entry['authorized'] == false || $entry['locked'] == true
                         );
-                });
-            }
+                    });
+                }
             return [
                 'alias' => $financialYear->alias,
                 'start_date' => $financialYear->start_date,
@@ -276,7 +276,6 @@ class Helper
     {
 
         $book = Book::find($book_id);
-        $user = self::getAuthenticatedUser();
         $data = NumberPattern::where('book_id', $book_id)->orderBy('id', 'DESC')->first();
         $serviceAlias = $data?->book?->org_service?->alias;
         $modelName = isset(ConstantHelper::SERVICE_ALIAS_MODELS[$serviceAlias]) ? ConstantHelper::SERVICE_ALIAS_MODELS[$serviceAlias] : '';
@@ -2199,7 +2198,7 @@ return [
                  $subQuery->where('organization_id', $organizationId);
              })->orWhere('organization_id', $organizationId);
         })->get()->pluck('id');
-        // dd($employeeIds);
+
         $userIds= User::where(function ($query) use ($organizationId) {
             $query->whereHas('access_rights_org', function ($subQuery) use ($organizationId) {
                  $subQuery->where('organization_id', $organizationId);
@@ -2207,7 +2206,6 @@ return [
         })->get()->pluck('id');
 
         $user = self::getAuthenticatedUser();
-        // dd($user);
         $employees = AuthUser::where('db_name', $user->db_name)
         ->where(function ($empQuery) use($employeeIds) {
             $empQuery -> where('authenticable_type', 'employee') -> whereIn('authenticable_id', $employeeIds);
@@ -3057,7 +3055,7 @@ return [
         }
 
 
-       public static function getAllPastFinancialYear($organizationId = null): mixed
+      public static function getAllPastFinancialYear($organizationId = null): mixed
         {
             if($organizationId){
 

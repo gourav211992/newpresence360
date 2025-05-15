@@ -63,8 +63,8 @@
                                                 @forelse($data as $key => $item)
                                                     <tr>
                                                         <td>{{ $key + 1 }}</td>
-                                                        <td>{{ $item->asset->asset_name }}</td>
-                                                        <td>{{ $item->asset->asset_code }}</td>
+                                                        <td>{{ $item?->asset?->asset_name }}</td>
+                                                        <td>{{ $item?->asset?->asset_code }}</td>
                                                         <td>{{ $item->renewal_date }}</td>
                                                         <td>{{ $item->insured_value }}</td>
                                                         <td>{{ $item->expiry_date }}</td>

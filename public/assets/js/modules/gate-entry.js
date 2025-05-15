@@ -121,6 +121,7 @@ $(document).on('change', '[name*="comp_attribute"]', (e) => {
     // closestTr = $(`[name="components[${rowCount}][attr_group_id][${attrGroupId}][attr_name]"]`).closest('tr');
     // getItemDetail(closestTr);
     qtyEnabledDisabled();
+    setSelectedAttribute(rowCount);
 });
 
 // Check Negative Values
@@ -442,7 +443,7 @@ function setTableCalculation() {
                     document_date:document_date
                 }).toString();
                 console.log('queryParams', queryParams);
-                
+
                 let urlWithParams = `${actionUrlTax}?${queryParams}`;
                 let promise = fetch(urlWithParams)
                     .then(response => response.json())
@@ -824,8 +825,8 @@ function checkComponentRowExist()
 
 $('#attribute').on('hidden.bs.modal', function () {
    let rowCount = $("[id*=row_].trselected").attr('data-index');
-   // $(`[id*=row_${rowCount}]`).find('.addSectionItemBtn').trigger('click');
-   $(`[name="components[${rowCount}][qty]"]`).trigger('focus');
+   let qty = $(`[name="components[${rowCount}][qty]"]`).val() || '';
+     $(`[name="components[${rowCount}][qty]"]`).val(qty).focus();
 });
 
 /*Vendor change update field*/

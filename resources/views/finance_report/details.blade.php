@@ -64,8 +64,8 @@
                                     </div>
 
                                     <div class="col-md-8 text-sm-end pofilterboxcenter mb-0 d-flex flex-wrap align-items-center justify-content-sm-end">
-                                        {{-- <a href="javascript: history.go(-1)" class="btn btn-secondary btn-sm"><i
-                                            data-feather="arrow-left-circle"></i> Back </a> &nbsp; --}}
+                                        <a href="javascript: history.go(-1)" class="btn btn-secondary btn-sm"><i
+                                            data-feather="arrow-left-circle"></i> Back </a> &nbsp;
                                         <a id="printButton" href="{{route('crdr.report.ledger.print',[$type,$ledger,$group])}}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 me-25"><i data-feather='printer'></i> Print</a>
                                         <button data-bs-toggle="modal" data-bs-target="#addcoulmn" class="btn btn-primary btn-sm mb-0 waves-effect"><i data-feather="filter"></i> Advance Filter</button>
                                     </div>
@@ -105,10 +105,14 @@
                                                         <span class="badge rounded-pill @if($credit_days<$d->overdue_days) badge-light-danger @else badge-light-secondary @endif  badgeborder-radius">{{$d->overdue_days}}</span>
                                                         @endif
                                                     </td>
-                                                        <td class="text-end">@if($d->invoice_amount!=""){{ number_format($d->invoice_amount,2)}}@endif</td>
-                                                    <td class="outstanding text-end">{{ $d->total_outstanding < 0 ? 0: number_format($d->total_outstanding,2) }}</td>
+                                                    @if($type=="debit")
 
-                                                    <td class="overdue text-end"> {{$d->overdue > 0 ? number_format($d->overdue) : '' }}</td>
+                                                        <td class="outstanding text-end">{{ number_format(abs($d->total_outstanding), 2) }}  {{ $d->total_outstanding < 0 ? 'Cr' : 'Dr' }}</td>
+                                                    @else
+                                                    <td class="outstanding text-end">{{ number_format(abs($d->total_outstanding), 2) }}  {{ $d->total_outstanding < 0 ? 'Dr' : 'Cr' }}</td>
+
+                                                    @endif
+												        <td class="overdue text-end"> {{$d->overdue > 0 ? number_format($d->overdue) : '' }}</td>
 
                                                         <td>
                                                         @if($d->view_route)
@@ -483,7 +487,6 @@ if (dt_basic_table.length) {
         },
         displayLength: 10,
         lengthMenu: [10, 25, 50, 75, 100],
-
         buttons: [{
             extend: 'collection',
             className: 'btn btn-outline-secondary dropdown-toggle',
@@ -820,8 +823,7 @@ function getSelectedData() {
             let overdueAmount = parseFloat($(this).attr("data-overdue")) || 0;
 
             if (selectedValue === "customColorRadio1") {
-                $('.outstanding').show();
-                $('.overdue').hide();
+                $(this).show(); // Show all rows when "Total Outstanding" is selected
             } else if (selectedValue === "service") {
                 $('.overdue').show();
                 $('.outstanding').hide();
@@ -849,6 +851,7 @@ function getSelectedData() {
             });
         });
     });
+
 
 
 

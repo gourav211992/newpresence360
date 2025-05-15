@@ -37,7 +37,8 @@ class OrganizationMenu extends Model
         $baseUrl = '/';
 
         $baseUrls = [
-            'erp' => env("ERP_URL", 'http://erp.thepresence360.com/'),
+            'app' => env("APP_PORTAL_URL", 'https://app.thepresence360.com/'),
+            'erp' => env("ERP_URL", 'https://erp.thepresence360.com/'),
             'hrms_member' => env("HRMS_URL", 'https://login.thepresence360.com/'),
             'hrms' => env("HRMS_URL", 'https://login.thepresence360.com/'),
             'portal' => env("PORTAL_URL", 'https://portal.thepresence360.com/'),

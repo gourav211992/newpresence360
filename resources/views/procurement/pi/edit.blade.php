@@ -254,7 +254,7 @@
                                                 </th>
                                                 <th width="200px">Item Code</th>
                                                 <th width="300px">Item Name</th>
-                                                <th>Attributes</th>
+                                                <th max-width="180px">Attributes</th>
                                                 <th >UOM</th>
                                                 <th class="text-end">Quantity</th>
                                                 {{-- <th width="150px">Preferred Vendor</th>
@@ -483,6 +483,7 @@
 @include('procurement.pi.partials.so-modal-submit')
 @endsection
 @section('scripts')
+<script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
 <script type="text/javascript" src="{{asset('assets/js/modules/pi.js')}}"></script>
 <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
 <script>
@@ -653,63 +654,6 @@ function setServiceParameters(parameters) {
 }
 let selectedBookId = $("#book_id").val() || '';
 getDocNumberByBookId(selectedBookId);
-/*Vendor drop down*/
-// function initializeAutocomplete1(selector, type) {
-//     $(selector).autocomplete({
-//         minLength: 0,
-//         source: function(request, response) {
-//             let item_id = $(this.element).closest('tr').find("[name*='[item_id]']").val();
-//             $.ajax({
-//                 url: '/search',
-//                 method: 'GET',
-//                 dataType: 'json',
-//                 data: {
-//                     q: request.term,
-//                     type:'vendor_list',
-//                     item_id:item_id
-//                 },
-//                 success: function(data) {
-//                     response($.map(data, function(item) {
-//                         return {
-//                             id: item.id,
-//                             label: item.company_name,
-//                             code: item.vendor_code,
-//                             addresses: item.addresses
-//                         };
-//                     }));
-//                 },
-//                 error: function(xhr) {
-//                     console.error('Error fetching customer data:', xhr.responseText);
-//                 }
-//             });
-//         },
-//         select: function(event, ui) {
-//             var $input = $(this);
-//             var itemName = ui.item.value;
-//             var itemId = ui.item.id;
-//             var itemCode = ui.item.code;
-//             $input.attr('data-name', itemName);
-//             $input.val(itemCode);
-//             $input.closest('tr').find("[name*='[vendor_name]']").val(itemName);
-//             $input.closest('tr').find("[name*='[vendor_id]']").val(itemId);
-//         },
-//         change: function(event, ui) {
-//             if (!ui.item) {
-//                 $(this).val("");
-//                 $(this).attr('data-name', '');
-//                 $(this).closest('tr').find("[name*='[vendor_name]']").val('');
-//                 $(this).closest('tr').find("[name*='[vendor_id]']").val('');
-//             }
-//         }
-//     }).focus(function() {
-//         if (this.value === "") {
-//             $(this).autocomplete("search", "");
-//             $(this).closest('tr').find("[name*='[vendor_name]']").val('');
-//             $(this).closest('tr').find("[name*='[vendor_id]']").val('');
-//         }
-//     });
-// }
-
 /*Add New Row*/
 // for component item code
 function initializeAutocomplete2(selector, type) {
@@ -803,6 +747,16 @@ function initializeAutocomplete2(selector, type) {
 }).focus(function() {
     if (this.value === "") {
         $(this).autocomplete("search", "");
+    }
+}).on("input", function () {
+    if ($(this).val().trim() === "") {
+        $(this).removeData("selected");
+        $(this).closest('tr').find("input[name*='component_item_name']").val('');
+        $(this).closest('tr').find("input[name*='item_name']").val('');
+        $(this).closest('tr').find("td[id*='itemAttribute_']").html(defautAttrBtn);
+        $(this).closest('tr').find("input[name*='item_id']").val('');
+        $(this).closest('tr').find("input[name*='item_code']").val('');
+        $(this).closest('tr').find("input[name*='attr_name']").remove();
     }
 });
 }
@@ -932,7 +886,7 @@ $(document).on('click', '.attributeBtn', (e) => {
         selectedAttr = JSON.stringify(selectedAttr);
     }
     if (item_name && item_id) {
-        let rowCount = e.target.getAttribute('data-row-count');
+        let rowCount = tr.getAttribute('data-index');
         getItemAttribute(item_id, rowCount, selectedAttr, tr);
     } else {
         alert("Please select first item name.");
@@ -940,11 +894,16 @@ $(document).on('click', '.attributeBtn', (e) => {
 });
 
 /*For comp attr*/
-function getItemAttribute(itemId, rowCount, selectedAttr, tr){
+function getItemAttribute(itemId, rowCount, selectedAttr, tr) {
     let piItemId = $(tr).find('[name*="[pi_item_id]"]').length ? $(tr).find('[name*="[pi_item_id]"]').val() : '';
     let isSo = $(tr).find('[name*="so_item_id"]').length ? 1 : 0;
     if(!isSo) {
         isSo = $(tr).find('[name*="so_pi_mapping_item_id"]').length ? 1 : 0;
+    }
+    if(!isSo) {
+        if($(tr).find('td[id*="itemAttribute_"]').data('disabled')) {
+            isSo = 1;
+        }
     }
 
     let actionUrl = '{{route("pi.item.attr")}}'+'?item_id='+itemId+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}&pi_item_id=${piItemId}&isSo=${isSo}`;
@@ -955,6 +914,7 @@ function getItemAttribute(itemId, rowCount, selectedAttr, tr){
                 $("#attribute table tbody").append(data.data.html)
                 $(tr).find('td:nth-child(2)').find("[name*='[attr_name]']").remove();
                 $(tr).find('td:nth-child(2)').append(data.data.hiddenHtml);
+                $(tr).find("td[id*='itemAttribute_']").attr('attribute-array', JSON.stringify(data.data.itemAttributeArray));
                 if (data.data.attr) {
                     $("#attribute").modal('show');
                     $(".select2").select2();
@@ -994,7 +954,8 @@ $(document).on('input change focus', '#itemTable tr input', (e) => {
       let qty = $(currentTr).find("[name*='[qty]']").val() || '';
       let pi_item_id = $(currentTr).find("[name*='[pi_item_id]']").val() || '';
       let so_id = $(currentTr).find("[name*='[so_id]']").val() || '';
-      let actionUrl = '{{route("pi.get.itemdetail")}}'+'?item_id='+itemId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&delivery='+JSON.stringify(selectedDelivery)+'&pi_item_id='+pi_item_id+'&so_id='+so_id;
+      let store_id = $("#store_id").val() || '';
+      let actionUrl = '{{route("pi.get.itemdetail")}}'+'?item_id='+itemId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&delivery='+JSON.stringify(selectedDelivery)+'&pi_item_id='+pi_item_id+'&so_id='+so_id+'&store_id='+store_id;
       fetch(actionUrl).then(response => {
          return response.json().then(data => {
             if(data.status == 200) {
@@ -1360,6 +1321,16 @@ $(document).on('click', '.soProcess', (e) => {
         if (this.value === "") {
             $(this).autocomplete("search", "");
         }
+    }).on("input", function () {
+        if ($(this).val().trim() === "") {
+            $(this).removeData("selected");
+            $(this).closest('tr').find("input[name*='component_item_name']").val('');
+            $(this).closest('tr').find("input[name*='item_name']").val('');
+            $(this).closest('tr').find("td[id*='itemAttribute_']").html(defautAttrBtn);
+            $(this).closest('tr').find("input[name*='item_id']").val('');
+            $(this).closest('tr').find("input[name*='item_code']").val('');
+            $(this).closest('tr').find("input[name*='attr_name']").remove();
+        }
     });
 }
 
@@ -1549,6 +1520,13 @@ setTimeout(() => {
     if(storeId) {
         updateDropdown(storeId);
     }
+},100);
+
+setTimeout(() => {
+    $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+        let currentIndex = index + 1;
+        setAttributesUIHelper(currentIndex,"#itemTable");
+    });
 },100);
 </script>
 @endsection

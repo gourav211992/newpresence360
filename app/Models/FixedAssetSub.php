@@ -38,7 +38,7 @@ class FixedAssetSub extends Model
     public static function regenerateSubAssets($parentId, $assetCode, $quantity, $totalValue,$salvageValue)
 {
     // Delete all existing sub-assets with the same parent_id
-    self::where('parent_id', $parentId)->delete();
+    self::withTrashed()->where('parent_id', $parentId)->forceDelete();
 
     $subAssets = [];
     $unitValue = $totalValue / $quantity;
@@ -56,5 +56,38 @@ class FixedAssetSub extends Model
     
     return $subAssets;
 }
+
+
+public static function oldSubAssets($merger = null, $split = null)
+{
+    // Get sub_asset_ids from FixedAssetSplit excluding given $split ids
+    $splitQuery = FixedAssetSplit::query();
+    if (!is_null($split)) {
+        $splitQuery->whereNotIn('id', (array)$split);
+    }
+    $splitSubAssetIds = $splitQuery->pluck('sub_asset_id')->filter();
+
+    // Get sub_asset_ids from FixedAssetMerger excluding given $merger ids
+    $mergerQuery = FixedAssetMerger::query();
+    if (!is_null($merger)) {
+        $mergerQuery->whereNotIn('id', (array)$merger);
+    }
+
+    $mergerSubAssetIds = $mergerQuery->pluck('asset_details')
+        ->flatMap(function ($json) {
+            $decoded = json_decode($json, true);
+            return is_array($decoded)
+                ? collect($decoded)->flatMap(function ($item) {
+                    return isset($item['sub_asset_id']) && is_array($item['sub_asset_id'])
+                        ? collect($item['sub_asset_id'])->map(fn($id) => (int) $id)
+                        : [];
+                })
+                : [];
+        });
+
+    return $splitSubAssetIds->merge($mergerSubAssetIds)->unique()->values()->all();
+}
+
+
     
 }

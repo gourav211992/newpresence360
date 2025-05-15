@@ -17,6 +17,7 @@ use App\Models\Recruitment\ErpRecruitmentSkill;
 use App\Models\Recruitment\ErpRecruitmentWorkExperience;
 use Illuminate\Http\Request;
 use App\Lib\Validation\Recruitment\JobRequest as Validator;
+use App\Models\OrganizationCompany;
 use App\Models\Recruitment\ErpRecruitmentJob;
 use App\Models\Recruitment\ErpRecruitmentJobInterview;
 use App\Models\Recruitment\ErpRecruitmentJobLog;
@@ -83,6 +84,10 @@ class RequestController extends Controller
 
     private function masterData(){
         $user = Helper::getAuthenticatedUser();
+        $groupId = $user->group_id;
+
+        $companies = OrganizationCompany::where('group_id',$groupId)->get();
+
         $jobTitles = ErpRecruitmentJobTitle::where('status','active')
             ->where('organization_id',$user->organization_id)
             ->get();
@@ -116,6 +121,7 @@ class RequestController extends Controller
             'workExperiences' => $workExperiences,
             'skills' => $skills,
             'locations' => $locations,
+            'companies' => $companies,
         ];
 
     }
@@ -193,6 +199,9 @@ class RequestController extends Controller
             // }
 
             // dd($query->toSql(), $query->getBindings());
+        }, function ($query) {
+            // Default sort
+            $query->orderBy('created_at', 'desc');
         });
         
         return $query;
@@ -379,6 +388,7 @@ class RequestController extends Controller
             'priorities' => CommonHelper::PRIORITY,
             'skills' => $masterData['skills'],
             'locations' => $masterData['locations'],
+            'companies' => $masterData['companies'],
         ]);
     }
 
@@ -396,6 +406,7 @@ class RequestController extends Controller
             $jobRequest = new ErpRecruitmentJobRequests();
             $jobRequest->job_type = $request->job_type;
             $jobRequest->organization_id = $user->organization_id;
+            $jobRequest->company_id = $request->company_id;
             $jobRequest->job_title_id = $request->job_title_id;
             $jobRequest->no_of_position = $request->no_of_position;
             $jobRequest->education_id = $request->education_id;
@@ -503,6 +514,7 @@ class RequestController extends Controller
             'jobRequest' => $jobRequest,
             'requestSkills' => $requestSkills,
             'requestCertifications' => $requestCertifications,
+            'companies' => $masterData['companies'],
         ]);
     }
 
@@ -531,6 +543,7 @@ class RequestController extends Controller
             $jobRequest->reason = $request->reason; 
             // $jobRequest->assessment_required = $request->assessment_required; 
             $jobRequest->status = CommonHelper::PENDING; 
+            $jobRequest->company_id = $request->company_id;
             $jobRequest->location_id = $request->location_id; 
             $jobRequest->emp_id = $request->emp_id ?? NULL; 
             $jobRequest->save();

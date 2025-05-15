@@ -157,6 +157,10 @@
                                                                 <a class="nav-link" data-bs-toggle="tab"
                                                                     href="#gl_params">Financial Parameters</a>
                                                             </li>
+                                                            <li class="nav-item" id = "dynamic_field_tab_header">
+                                                                <a class="nav-link" data-bs-toggle="tab"
+                                                                    href="#dynamic_field_section">Dynamic Fields</a>
+                                                            </li>
                                                         </ul>
                                                     </div>
                                                     <div class="tab-content ">
@@ -839,6 +843,28 @@
                                                             </div>
                                                             @endforelse
                                                         </div>
+                                                        <div class="tab-pane" id="dynamic_field_section">
+                                                            <div class='row align-items-center mb-1'>
+                                                                <div class='col-md-2'>
+                                                                    <label class='form-label'>Dynamic Fields</label>
+                                                                </div>
+                                                                <div class='col-md-5'>
+                                                                    <select
+                                                                        class='form-select mw-100 select2'
+                                                                        multiple
+                                                                        placeholder = 'Select Fields'
+                                                                        name = 'dynamic_fields[]'
+                                                                        id = 'dynamic_fields_input'
+                                                                        oninput = "getDynamicFields(this);"
+                                                                        >
+                                                                        @foreach ($dynamicFields as $dynamicField)
+                                                                            <option value = "{{$dynamicField -> id}}" {{in_array($dynamicField -> id, $selectedDynamicFieldIds) ? 'selected' : ''}}>{{$dynamicField -> name}}</option>
+                                                                        @endforeach
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                            <div class='row align-items-center mb-1' id = "dynamic_fields_value"></div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -958,6 +984,7 @@
 
                 $('.select2').select2();
             });
+            getDynamicFields(document.getElementById('dynamic_fields_input'));
         });
 
         $(document).on('click', '.remove-item', function() {
@@ -1709,6 +1736,50 @@ $(document).on('input', '.amendment_organizations', function (e) {
                 document.getElementById('gl_seperate_discount_posting_header').style.visibility = "hidden";
                 document.getElementById('gl_seperate_discount_posting_header').style.pointerEvents = "none";
             }
+        }
+
+        function getDynamicFields(element)
+        {
+            let dynamicFieldsValueSection = document.getElementById('dynamic_fields_value');
+            dynamicFieldsValueSection.innerHTML = ``;
+            let selectedDynamicFieldIds = $('#dynamic_fields_input').val();
+            $.ajax({
+                url: "{{route('dynamic-fields.detail')}}",
+                type: "GET",
+                dataType: "json",
+                data : {
+                    dynamic_field_ids : selectedDynamicFieldIds
+                },
+                success: function(data) {
+                    if (data.status === 'success') {
+                        let newHTML = ``;
+                        data.data.forEach(field => {
+                            newHTML += `
+                            <div class = "col-md-auto mb-1">
+                            <span class="badge rounded-pill badge-light-primary badgeborder-radius font-small-2"><strong>${field.name}</strong>: <span class="text-secondary">${capitalizeFirstLetter(field.data_type)}</span></span>
+                            </div>
+                            `;
+                        });
+                        dynamicFieldsValueSection.innerHTML = newHTML;
+                    } else {
+                        dynamicFieldsValueSection.innerHTML = ``;
+                        Swal.fire({
+                            title: 'Error!',
+                            text: "Some internal error occured",
+                            icon: 'error',
+                        });
+                    }
+                    
+                },
+                error: function () {
+                    dynamicFieldsValueSection.innerHTML = ``;
+                    Swal.fire({
+                        title: 'Error!',
+                        text: "Some internal error occured",
+                        icon: 'error',
+                    });
+                }
+            });
         }
     </script>
 @endsection

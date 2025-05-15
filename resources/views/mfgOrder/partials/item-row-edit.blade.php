@@ -31,17 +31,8 @@
   <td>
       <input type="text" name="components[{{$rowCount}}][item_name]" value="{{$moProduct?->item?->item_name}}" class="form-control mw-100 mb-25" readonly/>
   </td>
-   <td class="poprod-decpt"> 
-
-      @foreach($moProduct?->item?->itemAttributes as $index => $attribute) 
-      <span class="badge rounded-pill badge-light-primary"><strong data-group-id="{{$attribute->attributeGroup->id}}"> {{$attribute->attributeGroup->name}}</strong>: @foreach ($attribute->attributes() as $value) 
-         @if(in_array($value->id, $selectedAttr))
-               {{ $value->value }}
-         @endif
-      @endforeach </span>
-   @endforeach
-
-      {{-- <button type="button" class="btn p-25 btn-sm btn-outline-secondary attributeBtn" data-row-count="{{$rowCount}}" style="font-size: 10px">Attributes</button> --}}
+   <td class="poprod-decpt" id="itemAttribute_{{$rowCount}}" data-count="{{$rowCount}}" attribute-array="{{$moProduct->item_attributes_array()}}">
+       
    </td>
    <td>
       <select disabled class="form-select mw-100 " name="components[{{$rowCount}}][uom_id]">

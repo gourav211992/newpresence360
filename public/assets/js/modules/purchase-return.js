@@ -742,7 +742,8 @@ function checkBasicFilledDetail()
     let documentDate = $("[name='document_date']").val() || '';
     let storeId = $("[name='header_store_id']").val() || '';
     let subStoreId = $("[name='sub_store_id']").val() || '';
-    if(bookId && documentNumber && documentDate && storeId && subStoreId) {
+    let costCenterId = $("[name='cost_center_id']").val() || '';
+    if(bookId && documentNumber && documentDate && storeId && subStoreId && costCenterId) {
         filled = true;
     }
     return filled;
@@ -1296,6 +1297,7 @@ $(document).on('change', '.header_store_id', function () {
     const selectedStoreId = $(this).val();
     if (selectedStoreId) {
         getSubStores(selectedStoreId);
+        getCostCenters(selectedStoreId);
     }
 });
 
@@ -1303,6 +1305,7 @@ $(document).on('change', '.header_store_id', function () {
 const selectedStoreId = $('.header_store_id').val();
 if (selectedStoreId) {
     getSubStores(selectedStoreId);
+    getCostCenters(selectedStoreId);
 }
 
 function getSubStores(storeLocationId, item='')
@@ -1332,6 +1335,42 @@ function getSubStores(storeLocationId, item='')
             Swal.fire({
                 title: 'Error!',
                 text: xhr?.responseJSON?.message,
+                icon: 'error',
+            });
+        }
+    });
+}
+
+// Get Cost Centers
+function getCostCenters(storeLocationId) {
+    $("#cost_center_div").hide(); // Hide by default
+
+    $.ajax({
+        url: "/get-cost-centers",
+        method: 'GET',
+        dataType: 'json',
+        data: {
+            locationId: storeLocationId,
+        },
+        success: function(data) {
+            if (Array.isArray(data) && data.length > 0) {
+                let options = '';
+
+                data.forEach(function(costcenter) {
+                    const selected = (costcenter.id == selectedCostCenterId) ? 'selected' : '';
+                    options += `<option value="${costcenter.id}" ${selected}>${costcenter.name}</option>`;
+                });
+
+                $(".cost_center").html(options);
+                $("#cost_center_div").show();
+            } else {
+                $("#cost_center_div").hide();
+            }
+        },
+        error: function(xhr) {
+            Swal.fire({
+                title: 'Error!',
+                text: xhr?.responseJSON?.message || 'Failed to load cost centers.',
                 icon: 'error',
             });
         }

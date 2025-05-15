@@ -166,7 +166,7 @@
                                     </select> 
                                     </div> 
                                 </div>
-                                 <div class="row align-items-center mb-1 d-none" id="reference_from"> 
+                                <div class="row align-items-center mb-1 d-none" id="reference_from"> 
                                     <div class="col-md-3"> 
                                         <label class="form-label">Reference from</label>  
                                     </div> 
@@ -218,8 +218,8 @@
                                         <a href="javascript:;" class="btn btn-sm btn-outline-danger me-50" id="deleteBtn">
                                             <i data-feather="x-circle"></i> Delete</a>
                                     @endif
-                                    <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary">
-                                    <i data-feather="plus"></i> Add Items</a>
+                                    {{-- <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary">
+                                    <i data-feather="plus"></i> Add Items</a> --}}
                                 </div>
                             </div>
                             </div>
@@ -496,6 +496,7 @@
 
 @endsection
 @section('scripts')
+<script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
 <script type="text/javascript" src="{{asset('assets/js/modules/mo.js')}}"></script>
 <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
 <script type="text/javascript">
@@ -683,15 +684,12 @@ $(function(){
            docDateInput.removeAttr('min');
            docDateInput.removeAttr('max');
        }
-
        if (parameters.station_wise_consumption && parameters.station_wise_consumption.includes('yes')) {
             $("#station_div").removeClass('d-none');
         } else {
            $("#station_div").addClass('d-none');
        }
-       
        let reference_from_service = parameters.reference_from_service;
-
         if(reference_from_service.length) {
             let c_bom = '{{ConstantHelper::PWO_SERVICE_ALIAS}}';
             if(reference_from_service.includes(c_bom)) {
@@ -715,7 +713,7 @@ $(function(){
             // },1500);
         }
    }
-//    setServiceParameters
+
     function itemCodeChange(itemId) {
         let actionUrl = '{{route("mo.item.code")}}'+'?item_id='+itemId;
         fetch(actionUrl).then(response => {
@@ -1042,7 +1040,13 @@ function fetchItemDetails2(currentTr) {
     let itemId = $(currentTr).find("[name*='[item_id_2]']").val();
     let moItemId = $(currentTr).find("[name*='[mo_item_id_2]']").val();
     if (itemId) {
-        let actionUrl = `{{route("mo.get.itemdetail2")}}?item_id=${itemId}&mo_item_id=${moItemId}`;
+        let selectedAttr = [];
+        $(currentTr).find("[name*='attr_name_2']").each(function(index, item) {
+            if ($(item).val()) {
+                selectedAttr.push($(item).val());
+            }
+        });
+        let actionUrl = `{{route("mo.get.itemdetail2")}}?item_id=${itemId}&selectedAttr=${JSON.stringify(selectedAttr)}&mo_item_id=${moItemId}`;
         fetch(actionUrl).then(response => {
             return response.json().then(data => {
                 if (data.status == 200) {
@@ -1162,6 +1166,32 @@ function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1,
     });
 }
 
+// function getPwo() 
+// {
+//     let itemId = $("#item_id").val() || '';
+//     let storeId = $("#filter_store_id").val() || '';
+//     let header_book_id = $("#book_id").val() || '';
+//     let stationId = $("#station_id").val() || '';
+//     let series_id = $("#pwo_book_id_qt_val").val() || ''; // pwo
+//     let document_number = $("#pwo_document_no_input_qt").val() || '';// pwo
+//     let so_series_id = $("#so_book_id_qt_val").val() || ''; // so
+//     let so_document_number = $("#so_document_no_input_qt").val() || '';// so
+//     let actionUrl = '{{ route("mo.get.pwo.create") }}';
+//     let customerId = $("#customer_id_qt_val").val() || '';
+//     let fullUrl = `${actionUrl}?series_id=${encodeURIComponent(series_id)}&document_number=${encodeURIComponent(document_number)}&so_series_id=${encodeURIComponent(so_series_id)}&so_document_number=${encodeURIComponent(so_document_number)}&header_book_id=${encodeURIComponent(header_book_id)}&customer_id=${customerId}&item_id=${itemId}&store_id=${storeId}`;
+//     fetch(fullUrl).then(response => {
+//         return response.json().then(data => {
+//             $("#itemTable .mrntableselectexcel").empty().append(data.data.pis);
+            // setTimeout(() => {
+            //     $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+            //         let currentIndex = index + 1;
+            //         setAttributesUIHelper(currentIndex,"#itemTable");
+            //     });
+            // },100);
+//         });
+//     });
+// }
+
 function getPwo() 
 {
     let itemId = $("#item_id").val() || '';
@@ -1172,12 +1202,8 @@ function getPwo()
     let series_id = $("#book_id_qt_val").val() || '';
     let stationId = $("#station_id").val() || '';
     let document_number = $("#document_no_input_qt").val() || '';
-    // let item_id = $("#item_id_qt_val").val() || '';
-    // &item_id=${encodeURIComponent(item_id)}
     let actionUrl = '{{ route("mo.get.pwo") }}';
     let customerId = $("#customer_id_qt_val").val() || '';
-    // let item_search = $("#item_name_search").val() || '';
-    // &item_search=${item_search}
     let fullUrl = `${actionUrl}?series_id=${encodeURIComponent(series_id)}&document_number=${encodeURIComponent(document_number)}&header_book_id=${encodeURIComponent(header_book_id)}&customer_id=${customerId}&selected_pwo_ids=${selectedPiIds}&station_id=${stationId}&item_id=${itemId}`;
     fetch(fullUrl).then(response => {
         return response.json().then(data => {
@@ -1434,5 +1460,17 @@ $(document).on('click','#deleteConfirm', (e) => {
           $('#store_id').prop('disabled',false);
       }
 });
+
+setTimeout(() => {
+    $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+        let currentIndex = index + 1;
+        setAttributesUIHelper(currentIndex,"#itemTable");
+    });
+    $("#itemTable2 .mrntableselectexcel tr").each(function(index, item) {
+        let currentIndex = index + 1;
+        setAttributesUIHelper(currentIndex,"#itemTable2");
+    });
+},100);
+
 </script>
 @endsection

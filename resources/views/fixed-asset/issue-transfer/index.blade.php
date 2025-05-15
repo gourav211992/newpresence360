@@ -61,11 +61,11 @@
                                         @forelse($data as $key => $item)
                                             <tr>
                                                 <td>{{ $key + 1 }}</td>
-                                                <td>{{ $item->asset->asset_name }}</td>
-                                                <td>{{ $item->asset->asset_code }}</td>
+                                                <td>{{ $item?->asset?->asset_name }}</td>
+                                                <td>{{ $item?->asset?->asset_code }}</td>
                                                 <td>{{ $item->created_at->format('d-m-Y') }}</td>
                                                 <td>{{ $item->location }}</td>
-                                                <td>{{ $item->asset->quantity }}</td>
+                                                <td>{{ $item?->asset?->quantity }}</td>
                                                 <td>{{ $item->authorizedPerson->name }}</td>
                                                 <td>{{ $item->status }}</td>
 

@@ -90,48 +90,47 @@ class PiItem extends Model
     {
         return $this->hasMany(PiItemAttribute::class,'pi_item_id');
     }
+
     public function item_attributes_array()
     {
-        $itemId = $this -> getAttribute('item_id');
-        if (isset($itemId)) {
-            $itemAttributes = ErpItemAttribute::where('item_id', $this -> item_id) -> get();
-        } else {
-            $itemAttributes = [];
+        $itemId = $this->getAttribute('item_id');
+        if (!$itemId) {
+            return collect([]);
         }
+        $itemAttributes = ItemAttribute::where('item_id', $itemId)->get();
         $processedData = [];
+        $mappingAttributes = PiItemAttribute::where('pi_item_id', $this->getAttribute('id'))
+        ->select(['item_attribute_id as attribute_id', 'attribute_value as attribute_value_id'])
+        ->get()
+        ->toArray();
         foreach ($itemAttributes as $attribute) {
-            $existingAttribute = PiItemAttribute::where('pi_item_id', $this -> getAttribute('id')) -> where('item_attribute_id', $attribute -> id) -> first();
-            if (!isset($existingAttribute)) {
-                continue;
-            }
-            $attributesArray = array();
-            $attribute_ids = [];
-            if ($attribute -> all_checked) {
-                $attribute_ids = ErpAttribute::where('attribute_group_id', $attribute -> attribute_group_id) -> get() -> pluck('id') -> toArray();
-            } else {
-                $attribute_ids = $attribute -> attribute_id ? json_decode($attribute -> attribute_id) : [];
-            }
-            $attribute -> group_name = $attribute -> group ?-> name;
-            $attributesArray = array();
-            $attribute -> group_name = $attribute -> group ?-> name;
-            foreach (isset($attribute_ids) ? $attribute_ids : [] as $attributeValue) {
-                $attributeValueData = ErpAttribute::where('id', $attributeValue) -> select('id', 'value') -> where('status', 'active') -> first();
-                if (isset($attributeValueData))
-                {
-                    $isSelected = PiItemAttribute::where('pi_item_id', $this -> getAttribute('id')) -> where('item_attribute_id', $attribute -> id) -> where('attribute_value', $attributeValueData -> id) -> first();
-                    $attributeValueData -> selected = $isSelected ? true : false;
-                    array_push($attributesArray, $attributeValueData);
+            $attributeIds = is_array($attribute->attribute_id) ? $attribute->attribute_id : [$attribute->attribute_id];
+            $attribute->group_name = $attribute->group?->name;
+            $valuesData = [];
+            foreach ($attributeIds as $attributeValueId) {
+                $attributeValueData = ErpAttribute::where('id', $attributeValueId)
+                    ->where('status', 'active')
+                    ->select('id', 'value')
+                    ->first();
+                if ($attributeValueData) {
+                    $isSelected = collect($mappingAttributes)->contains(function ($itemAttr) use ($attribute, $attributeValueData) {
+                        return $itemAttr['attribute_id'] == $attribute->id &&
+                            $itemAttr['attribute_value_id'] == $attributeValueData->id;
+                    });
+                    $attributeValueData->selected = $isSelected;
+                    $valuesData[] = $attributeValueData;
                 }
             }
-           $attribute -> values_data = $attributesArray;
-           $attribute = $attribute -> only(['id','group_name', 'values_data', 'attribute_group_id']);
-           array_push($processedData, ['id' => $attribute['id'], 'group_name' => $attribute['group_name'], 'values_data' => $attributesArray, 'attribute_group_id' => $attribute['attribute_group_id']]);
-
+            $processedData[] = [
+                'id' => $attribute->id,
+                'group_name' => $attribute->group_name,
+                'values_data' => $valuesData,
+                'attribute_group_id' => $attribute->attribute_group_id,
+            ];
         }
-        $processedData = collect($processedData);
-        return $processedData;
+        return collect($processedData);
     }
-
+    
     public function po_item()
     {
         return $this->hasOne(PoItem::class,'pi_item_id','id');

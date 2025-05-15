@@ -162,13 +162,14 @@ class PiController extends Controller
         $rowCount = intval($request->rowCount) ?? 1;
         $item = Item::find($request->item_id);
         $selectedAttr = $request->selectedAttr ? json_decode($request->selectedAttr,true) : [];
-
+        $itemAttributeArray = [];
         $piItemId = $request->pi_item_id ?? null;
         $itemAttIds = [];
         if($piItemId) {
-            $piItem = PiItem::find($piItemId);
+            $piItem = PiItem::where('id',$piItemId)->where('item_id',$item->id ?? null)->first();
             if($piItem) {
                 $itemAttIds = $piItem->attributes()->pluck('item_attribute_id')->toArray();
+                $itemAttributeArray = $piItem->item_attributes_array();
             }
         }
         $itemAttributes = collect();
@@ -176,9 +177,11 @@ class PiController extends Controller
             $itemAttributes = $item?->itemAttributes()->whereIn('id',$itemAttIds)->get();
             if(count($itemAttributes) < 1) {
                 $itemAttributes = $item?->itemAttributes;
+                $itemAttributeArray = $item->item_attributes_array();
             }
         } else {
             $itemAttributes = $item?->itemAttributes;
+            $itemAttributeArray = $item->item_attributes_array();
         }
 
         $html = view('procurement.pi.partials.comp-attribute',compact('item','rowCount','selectedAttr','isSo','itemAttributes'))->render();
@@ -192,7 +195,16 @@ class PiController extends Controller
                 }
             $hiddenHtml .= "<input type='hidden' name='components[$rowCount][attr_group_id][$attribute->attribute_group_id][attr_name]' value=$selected>";
         }
-        return response()->json(['data' => ['attr' => $item->itemAttributes->count(),'html' => $html, 'hiddenHtml' => $hiddenHtml], 'status' => 200, 'message' => 'fetched.']);
+        if(count($selectedAttr)) {
+            foreach ($itemAttributeArray as &$group) {
+                foreach ($group['values_data'] as $attribute) {
+                    if (in_array($attribute->id, $selectedAttr)) {
+                        $attribute->selected = true;
+                    }
+                }
+            }
+        }
+        return response()->json(['data' => ['attr' => $item->itemAttributes->count(),'html' => $html, 'hiddenHtml' => $hiddenHtml, 'itemAttributeArray' => $itemAttributeArray], 'status' => 200, 'message' => 'fetched.']);
     }
 
 
@@ -636,16 +648,14 @@ class PiController extends Controller
                         if (isset($component['attr_group_id'][$itemAttribute->attribute_group_id])) {
                         $piAttrId = @$component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_id'];
                         $piAttrName = @$component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_name'];
-                            if(!$piDetail->po_item) {
-                                $piAttr = PiItemAttribute::find($piAttrId) ?? new PiItemAttribute;
-                                $piAttr->pi_id = $pi->id;
-                                $piAttr->pi_item_id = $piDetail->id;
-                                $piAttr->item_attribute_id = $itemAttribute->id;
-                                $piAttr->item_code = $component['item_code'] ?? null;
-                                $piAttr->attribute_name = $itemAttribute->attribute_group_id;
-                                $piAttr->attribute_value = $piAttrName ?? null;
-                                $piAttr->save();
-                            }
+                        $piAttr = PiItemAttribute::find($piAttrId) ?? new PiItemAttribute;
+                        $piAttr->pi_id = $pi->id;
+                        $piAttr->pi_item_id = $piDetail->id;
+                        $piAttr->item_attribute_id = $itemAttribute->id;
+                        $piAttr->item_code = $component['item_code'] ?? null;
+                        $piAttr->attribute_name = $itemAttribute->attribute_group_id;
+                        $piAttr->attribute_value = $piAttrName ?? null;
+                        $piAttr->save();
                         }
                     }
                     #Save Componet Delivery
@@ -755,11 +765,11 @@ class PiController extends Controller
         $remark = $request->remark ?? null;
         $delivery = isset($delivery) ? $delivery  : null;
         $piItemIds = $request->pi_item_id ? [$request->pi_item_id] : []; 
+        $storeId = $request->store_id ?? null;
         $soId = $request->so_id ?? null; 
         $uniqueSoIds = PiItem::whereIn('id',$piItemIds)->whereNotNull('so_id')->pluck('so_id')->toArray();
         $saleReferences = ErpSaleOrder::whereIn('id', $uniqueSoIds)->get();
-
-        $inventoryStock = InventoryHelper::totalInventoryAndStock($item->id, $selectedAttr, $item->uom_id, null);
+        $inventoryStock = InventoryHelper::totalInventoryAndStock($item->id, $selectedAttr, $item->uom_id, $storeId);
         $html = view('procurement.pi.partials.comp-item-detail',compact('item','selectedAttr','remark','uomName','qty','delivery','specifications','saleReferences','inventoryStock'))->render();
         return response()->json(['data' => ['html' => $html], 'status' => 200, 'message' => 'fetched.']);
     }
@@ -1123,7 +1133,6 @@ class PiController extends Controller
        DB::commit();
 
        $html = view('procurement.pi.partials.so-process-data', ['soTracking' => $soTracking,'soProcessItems' => $soProcessItems])->render();
-       // $html = view('procurement.pi.partials.item-row-so', ['soItems' => $soItems])->render();
        return response()->json(['data' => ['pos' => $html], 'status' => 200, 'message' => "fetched!"]);
    }
 

@@ -88,6 +88,8 @@ class GateEntryController extends Controller
                 [
                     'items',
                     'vendor',
+                    'erpStore',
+                    'currency'
                 ]
             )
             ->withDefaultGroupCompanyOrg()
@@ -116,11 +118,17 @@ class GateEntryController extends Controller
                         </div>
                     </div>";
                 })
-                ->addColumn('book_name', function ($row) {
-                    return $row->book ? $row->book?->book_name : 'N/A';
+                ->addColumn('book_code', function ($row) {
+                    return $row->book ? $row->book?->book_code : 'N/A';
                 })
                 ->editColumn('document_date', function ($row) {
                     return date('d/m/Y', strtotime($row->document_date)) ?? 'N/A';
+                })
+                ->editColumn('location', function ($row) {
+                    return strval($row->erpStore?->store_name) ?? 'N/A';
+                })
+                ->editColumn('currency', function ($row) {
+                    return strval($row->currency?->short_name) ?? 'N/A';
                 })
                 ->editColumn('revision_number', function ($row) {
                     return strval($row->revision_number);
@@ -816,7 +824,7 @@ class GateEntryController extends Controller
         if($request->has('revisionNumber') && $request->revisionNumber != $mrn->revision_number) {
             $mrn = $mrn->source;
             $mrn = GateEntryHeaderHistory::where('revision_number', $request->revisionNumber)
-                ->where('source_id', $mrn->source_id)
+                ->where('source_id', $mrn->id)
                 ->first();
             $view = 'procurement.gate-entry.view';
         }
@@ -833,7 +841,6 @@ class GateEntryController extends Controller
         $erpStores = ErpStore::where('organization_id', $user->organization_id)
             ->orderBy('id', 'DESC')
             ->get();
-
         return view($view, [
             'deliveryAddress'=> $deliveryAddress,
             'orgAddress'=> $orgAddress,
@@ -1421,27 +1428,34 @@ class GateEntryController extends Controller
     # On change item attribute
     public function getItemAttribute(Request $request)
     {
-        $attributeGroups = AttributeGroup::with('attributes')->where('status', ConstantHelper::ACTIVE)->get();
         $rowCount = intval($request->rowCount) ?? 1;
         $item = Item::find($request->item_id);
         $selectedAttr = $request->selectedAttr ? json_decode($request->selectedAttr,true) : [];
-        $GateEntryDetailId = $request->detail_id ?? null;
+        $detailItemId = $request->detail_id ?? null;
         $itemAttIds = [];
-        if($GateEntryDetailId) {
-            $GateEntryDetail = GateEntryDetail::find($GateEntryDetailId);
-            if($GateEntryDetail) {
-                $itemAttIds = $GateEntryDetail->attributes()->pluck('item_attribute_id')->toArray();
+        $itemAttributeArray = [];
+        if($detailItemId) {
+            $detail = GateEntryDetail::find($detailItemId);
+            if($detail) {
+            $itemAttIds = collect($detail->attributes)->pluck('item_attribute_id')->toArray();
+            $itemAttributeArray = $detail->item_attributes_array();
             }
         }
         $itemAttributes = collect();
         if(count($itemAttIds)) {
             $itemAttributes = $item?->itemAttributes()->whereIn('id',$itemAttIds)->get();
+            if(count($itemAttributes) < 1) {
+                $itemAttributes = $item?->itemAttributes;
+                $itemAttributeArray = $item->item_attributes_array();
+            }
         } else {
             $itemAttributes = $item?->itemAttributes;
+            $itemAttributeArray = $item->item_attributes_array();
         }
-        $html = view('procurement.gate-entry.partials.comp-attribute',compact('item','attributeGroups','rowCount','selectedAttr'))->render();
+
+        $html = view('procurement.gate-entry.partials.comp-attribute',compact('item','rowCount','selectedAttr','itemAttributes'))->render();
         $hiddenHtml = '';
-        foreach ($item->itemAttributes as $attribute) {
+        foreach ($itemAttributes as $attribute) {
                 $selected = '';
                 foreach ($attribute->attributes() as $value){
                     if (in_array($value->id, $selectedAttr)){
@@ -1450,8 +1464,19 @@ class GateEntryController extends Controller
                 }
             $hiddenHtml .= "<input type='hidden' name='components[$rowCount][attr_group_id][$attribute->attribute_group_id][attr_name]' value=$selected>";
         }
-        return response()->json(['data' => ['attr' => $item?->itemAttributes->count() ?? 0, 'html' => $html, 'hiddenHtml' => $hiddenHtml], 'status' => 200, 'message' => 'fetched.']);
+
+    if(count($selectedAttr)) {
+        foreach ($itemAttributeArray as &$group) {
+            foreach ($group['values_data'] as $attribute) {
+                if (in_array($attribute->id, $selectedAttr)) {
+                    $attribute->selected = true;
+                }
+            }
+        }
     }
+        return response()->json(['data' => ['attr' => $item->itemAttributes->count(),'html' => $html, 'hiddenHtml' => $hiddenHtml, 'itemAttributeArray' => $itemAttributeArray], 'status' => 200, 'message' => 'fetched.']);
+    }
+
 
     # Add discount row
     public function addDiscountRow(Request $request)
@@ -2162,7 +2187,6 @@ class GateEntryController extends Controller
             // Ensure remaining quantity condition
             $query->whereRaw('((order_qty - short_close_qty) > ge_qty)');
         })->get();
-
         $html = view('procurement.gate-entry.partials.po-item-list', [
             'poItems' => $poItems,
             'poData' => $poData

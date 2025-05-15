@@ -95,6 +95,14 @@ $(document).on('submit', '.ajax-input-form', function (e) {
             data.append(`item_locations[${index}]`, (decodeURIComponent(itemLocations[index].getAttribute('data-stores'))));
         }
     }
+    if (this.classList.contains('psv_form')) {
+        const items = document.getElementsByClassName('comp_item_code');
+        for (let index = 0; index < items.length; index++) {
+            console.log(items[index].getAttribute('selected-attribute'),'ajax-common');
+            data.append(`item_attributes[${index}]`, items[index].getAttribute('selected-attribute'));
+        }
+        
+    }
     if (this.classList.contains('material_issue')) {
         const items = document.getElementsByClassName('comp_item_code');
         const itemLocations = document.getElementsByClassName('item_locations_to');

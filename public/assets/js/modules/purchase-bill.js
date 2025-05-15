@@ -121,7 +121,57 @@ $(document).on('change', '[name*="comp_attribute"]', (e) => {
     // closestTr = $(`[name="components[${rowCount}][attr_group_id][${attrGroupId}][attr_name]"]`).closest('tr');
     // getItemDetail(closestTr);
     qtyEnabledDisabled();
+    setSelectedAttribute(rowCount);
 });
+
+$(document).on('change', '.header_store_id', function () {
+    const selectedStoreId = $(this).val();
+    if (selectedStoreId) {
+
+        getCostCenters(selectedStoreId);
+    }
+});
+
+// 2. On page load: trigger if already selected
+const selectedStoreId = $('.header_store_id').val();
+if (selectedStoreId) {
+    getCostCenters(selectedStoreId);
+}
+
+// Get Cost Centers
+function getCostCenters(storeLocationId) {
+    $("#cost_center_div").hide(); // Hide by default
+
+    $.ajax({
+        url: "/get-cost-centers",
+        method: 'GET',
+        dataType: 'json',
+        data: {
+            locationId: storeLocationId,
+        },
+        success: function(data) {
+            if (Array.isArray(data) && data.length > 0) {
+                let options = '';
+                data.forEach(function(costcenter) {
+                    const selected = (costcenter.id == selectedCostCenterId) ? 'selected' : '';
+                    options += `<option value="${costcenter.id}" ${selected}>${costcenter.name}</option>`;
+                });
+
+                $(".cost_center").html(options);
+                $("#cost_center_div").show();
+            } else {
+                $("#cost_center_div").hide();
+            }
+        },
+        error: function(xhr) {
+            Swal.fire({
+                title: 'Error!',
+                text: xhr?.responseJSON?.message || 'Failed to load cost centers.',
+                icon: 'error',
+            });
+        }
+    });
+}
 
 // Check Negative Values
 let oldValue;
@@ -158,7 +208,7 @@ $(document).on('change',"[name*='accepted_qty']",(e) => {
     }
     let aq = parseFloat(acceptedQuantity.val());
     acceptedQuantity.val(aq.toFixed(2));
-    
+
     if (Number(itemCost.val())) {
         let totalItemValue = parseFloat(acceptedQuantity.val()) * parseFloat(itemCost.val());
         itemValue.val(totalItemValue.toFixed(2));
@@ -168,7 +218,7 @@ $(document).on('change',"[name*='accepted_qty']",(e) => {
 });
 
 /*rate on change*/
-$(document).on('blur',"[name*='rate']",(e) => {    
+$(document).on('blur',"[name*='rate']",(e) => {
     let tr = e.target.closest('tr');
     let rate = e.target;
     let dataIndex = $(e.target).closest('tr').attr('data-index');
@@ -297,11 +347,11 @@ function setTableCalculation() {
         }
         totalItemVariance+=itemVariance;
         console.log('itemVariance', itemVariance);
-        
+
         $(item).find("[name*='[item_total_cost]']").val(itemCost.toFixed(2));
         $(item).find("[name*='[po_total_cost]']").val(poItemCost.toFixed(2));
         $(item).find("[name*='[item_variance]']").val(itemVariance.toFixed(2));
-        
+
         /*Bind Item Discount*/
     });
 
@@ -751,7 +801,8 @@ function checkBasicFilledDetail()
     let documentNumber = $("#document_number").val() || '';
     let documentDate = $("[name='document_date']").val() || '';
     let referenceNumber = $("[name='reference_number']").val() || '';
-    if(bookId && documentNumber && documentDate && referenceNumber) {
+    let costCenterId = $("[name='cost_center_id']").val() || '';
+    if(bookId && documentNumber && documentDate && referenceNumber && costCenterId) {
         filled = true;
     }
     return filled;
@@ -785,8 +836,8 @@ function checkComponentRowExist()
 
 $('#attribute').on('hidden.bs.modal', function () {
    let rowCount = $("[id*=row_].trselected").attr('data-index');
-   // $(`[id*=row_${rowCount}]`).find('.addSectionItemBtn').trigger('click');
-   $(`[name="components[${rowCount}][qty]"]`).trigger('focus');
+   let qty = $(`[name="components[${rowCount}][qty]"]`).val() || '';
+     $(`[name="components[${rowCount}][qty]"]`).val(qty).focus();
 });
 
 /*Vendor change update field*/

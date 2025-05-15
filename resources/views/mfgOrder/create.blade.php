@@ -395,6 +395,7 @@
 @include('mfgOrder.partials.pwo-modal')
 @endsection
 @section('scripts')
+<script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
 <script type="text/javascript" src="{{asset('assets/js/modules/mo.js')}}"></script>
 <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
 <script type="text/javascript">
@@ -623,7 +624,7 @@ function fetchItemDetails(currentTr) {
 }
 
 // Attach event listener
-$(document).on('input change focus', '#itemTable tr input', function(e) {
+$(document).on('input change focus', '#itemTable tr td input', function(e) {
     let currentTr = e.target.closest('tr'); 
     fetchItemDetails(currentTr);
 });
@@ -723,6 +724,12 @@ function getPwo()
     fetch(fullUrl).then(response => {
         return response.json().then(data => {
             $("#itemTable .mrntableselectexcel").empty().append(data.data.pis);
+            setTimeout(() => {
+                $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+                    let currentIndex = index + 1;
+                    setAttributesUIHelper(currentIndex,"#itemTable");
+                });
+            },100);
         });
     });
 }

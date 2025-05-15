@@ -124,6 +124,8 @@ Route::middleware(['user.auth'])->group(function () {
          
         Route::controller(IndexController::class)->group(function () {
             Route::post('/user-configuration', 'userConfiguration')->name('recruitment.user-configuration');
+            Route::get('/get-locations/{groupId}', 'getLocations')->name('recruitment.get-locations');
+
         });
     });
 });

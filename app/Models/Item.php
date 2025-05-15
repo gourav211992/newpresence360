@@ -169,8 +169,9 @@ class Item extends Model
         return $this->belongsTo(AuthUser::class, 'created_by', 'id');
     }
 
-    public function item_attributes_array()
+    public function item_attributes_array(array $arr = [])
     {
+        $mappingAttributes = $arr ?? [];
         $itemId = $this->getAttribute('id');
         if (!$itemId) {
             return collect([]);
@@ -186,8 +187,14 @@ class Item extends Model
                     ->where('status', 'active')
                     ->select('id', 'value')
                     ->first();
-                $attributeValueData->selected = false;
-                $valuesData[] = $attributeValueData;
+                    if ($attributeValueData) {
+                        $isSelected = collect($mappingAttributes)->contains(function ($itemAttr) use ($attribute, $attributeValueData) {
+                            return $itemAttr['attribute_id'] == $attribute->id &&
+                                $itemAttr['attribute_value_id'] == $attributeValueData->id;
+                        });
+                        $attributeValueData->selected = $isSelected;
+                        $valuesData[] = $attributeValueData;
+                    }
             }
             $processedData[] = [
                 'id' => $attribute->id,

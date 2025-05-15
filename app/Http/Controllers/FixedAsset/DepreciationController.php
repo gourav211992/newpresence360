@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use App\Models\FixedAssetSetup;
 use App\Models\ErpAssetCategory;
 use App\Helpers\Helper;
+use App\Models\ErpStore;
 use Carbon\Carbon;
 use App\Helpers\ConstantHelper;
 use App\Models\FixedAssetRegistration;
@@ -63,9 +64,10 @@ class DepreciationController extends Controller
         $fy = date('Y', strtotime($financialYear['start_date']))."-".date('Y', strtotime($financialYear['end_date']));
         
     
-       
+       $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
         
-        return view('fixed-asset.depreciation.create',compact('series', 'periods','fy','dep_type'));
+        
+        return view('fixed-asset.depreciation.create',compact('locations','series', 'periods','fy','dep_type'));
     }
 
     /**
@@ -223,10 +225,11 @@ public function store(DepreciationRequest $request)
         }
 
         $approvalHistory = Helper::getApprovalHistory($data->book_id, $id, $revNo, $data->grand_total_current_value, $data -> created_by);
-            
+        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
+        
 
 
-        return view('fixed-asset.depreciation.show', compact('data','series','buttons','docStatusClass','endDate','fy','totalDays','assetDetails','revision_number', 'currNumber','approvalHistory'));
+        return view('fixed-asset.depreciation.show', compact('locations','data','series','buttons','docStatusClass','endDate','fy','totalDays','assetDetails','revision_number', 'currNumber','approvalHistory'));
     }
 
     /**
@@ -277,14 +280,14 @@ public function store(DepreciationRequest $request)
             ->with('category')
             ->get()
             ->where('last_dep_date', '<', $endDate)
-            ->filter(function ($asset) {
+            ->filter(function ($asset) use ($endDate) {
                 // Calculate the capitalized date + useful life in years
                 $usefulLifeInYears = $asset->useful_life; // Assuming `useful_life_years` is the field
                 $capitalizedDate = Carbon::parse($asset->capitalize_date); // Assuming `capitalized_date` is the field
                 $capitalizedDateWithLife = $capitalizedDate->addYears($usefulLifeInYears); // Add useful life years to capitalized date
                 
                 // Compare if the new date is greater than today's date
-                return $capitalizedDateWithLife->greaterThanOrEqualTo(Carbon::today());
+                return $capitalizedDateWithLife->greaterThanOrEqualTo($endDate);
             })->values();
         
             

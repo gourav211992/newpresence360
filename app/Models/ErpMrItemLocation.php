@@ -52,6 +52,14 @@ class ErpMrItemLocation extends Model
     {
         return $this->belongsTo(ErpStore::class, 'store_id');
     }
+    public function erpSubStore()
+    {
+        return $this->belongsTo(ErpSubStore::class, 'sub_store_id');
+    }
+    public function erpStation()
+    {
+        return $this->belongsTo(Station::class, 'station_id');
+    }
 
     public function erpRack()
     {

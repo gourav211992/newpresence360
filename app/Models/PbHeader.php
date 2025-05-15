@@ -32,6 +32,7 @@ class PbHeader extends Model
         'series_id',
         'book_code',
         'document_number',
+        'cost_center_id',
         'document_date',
         'document_status',
         'revision_number',
@@ -100,7 +101,7 @@ class PbHeader extends Model
         'org_currency' => 'org_currency_id',
         'comp_currency' => 'comp_currency_id',
     ];
-    
+
     public static function boot()
     {
         parent::boot();
@@ -322,5 +323,10 @@ class PbHeader extends Model
     public function latestShippingAddress()
     {
         return $this->addresses()->where('type', 'shipping')->latest()->first();
+    }
+
+    public function costCenters()
+    {
+        return $this->belongsTo(CostCenter::class, 'cost_center_id');
     }
 }

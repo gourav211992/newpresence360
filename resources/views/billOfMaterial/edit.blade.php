@@ -287,6 +287,7 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                                                         <th id="component_overhead_required">Overheads</th>
                                                         <th>Total Cost</th>
                                                         <th width="125px" id="station_required">Station</th>
+                                                        <th>Vendor</th>
                                                         <th></th>
                                                     </tr>
                                                 </thead>
@@ -1180,6 +1181,7 @@ $(document).on('click','#addNewItemBtn', (e) => {
                 }
                 initializeAutocomplete2(".comp_item_code");
                 initializeStationAutocomplete();
+                initializeVendorAutocomplete();
                 initializeProductSectionAutocomplete();
                 $(".prSelect").prop('disabled',true);
             } else if(data.status == 422) {
@@ -1430,6 +1432,10 @@ function getItemAttribute(itemId, rowCount, selectedAttr, tr){
                   if (data.data.attr) {
                    $("#attribute").modal('show');
                    $(".select2").select2();
+                  }
+                  if(data.data.vendor_id) {
+                    $(tr).find("[name='product_vendor']").val(data.data.vendor_name);
+                    $(tr).find("[name*='vendor_id']").val(data.data.vendor_id);
                   }
                   qtyEnabledDisabled();
             }
@@ -1905,6 +1911,62 @@ function initializeStationAutocomplete() {
     });
 }
 
+function initializeVendorAutocomplete() {
+    $("[name*='product_vendor']").autocomplete({
+        source: function (request, response) {
+            const $input = this.element;
+            const $row = $input.closest('tr');
+            let itemId = $row.find("[name*='item_id']").val() || ''; 
+            $.ajax({
+                url: '/search',
+                method: 'GET',
+                dataType: 'json',
+                data: {
+                    q: request.term,
+                    type: 'vendor_list',
+                    item_id: itemId
+                },
+                success: function (data) {
+                    const mappedData = $.map(data, function (item) {
+                        return {
+                            id: item.id,
+                            label: item.company_name,
+                        };
+                    });
+                    response(mappedData);
+
+                },
+                error: function (xhr) {
+                    console.error('Error fetching data:', xhr.responseText);
+                }
+            });
+        },
+        minLength: 0,
+        select: function (event, ui) {
+            $(this).val(ui.item.label);
+            $(this).closest('td').find("[name*='[vendor_id]']").val(ui.item.id);
+            return false;
+        },
+        change: function (event, ui) {
+            if (!ui.item) {
+               $(this).val("");
+               $(this).closest('td').find("[name*='[vendor_id]']").val("");
+            }
+        }
+    }).focus(function () {
+        if (this.value === "") {
+            $(this).closest('td').find("[name*='[vendor_id]']").val("");
+            $(this).autocomplete("search", "");
+        }
+    }).on("input", function () {
+        if ($(this).val().trim() === "") {
+            $(this).removeData("selected");
+            $(this).closest('tr').find("input[name*='vendor_id']").val('');
+        }
+    });
+}
+
+
 function initializeInstructionStationAutocomplete() {
     $("#itemTable3 [name*='instruction_station']").autocomplete({
         source: function (request, response) {
@@ -2066,8 +2128,10 @@ function getBomItemCost(itemId,itemAttributes)
          if (data.status == 200) {
             if(data.data.cost) {
                $("tr.trselected").find("[name*='[item_cost]']").val((data.data.cost).toFixed(2));
-               $("tr.trselected .linkAppend").removeClass('d-none');
-               $("tr.trselected .linkAppend a").attr('href', data.data.route);
+               if(data.data.route) {
+                   $("tr.trselected .linkAppend").removeClass('d-none');
+                   $("tr.trselected .linkAppend a").attr('href', data.data.route);
+               }
             } else {
                $("tr.trselected .linkAppend").addClass('d-none');
                $("tr.trselected").find("[name*='[item_cost]']").val(''); 
@@ -2076,24 +2140,12 @@ function getBomItemCost(itemId,itemAttributes)
             $("tr.trselected .linkAppend").addClass('d-none');
             $("tr.trselected").find("[name*='[item_cost]']").val('');  
          }
-        //  $("#attribute").modal("hide");
       });
    });
 }
 
 $(document).on('click', '.submit_attribute', (e) => {
     $("#attribute").modal('hide');
-//    let itemId = $("#attribute tbody tr").find('[name*="[item_id]"]').val();
-//    let itemAttributes = [];
-//    $("#attribute tbody tr").each(function(index, item) {
-//       let attr_id = $(item).find('[name*="[attribute_id]"]').val();
-//       let attr_value = $(item).find('[name*="[attribute_value]"]').val();
-//       itemAttributes.push({
-//             'attr_id': attr_id,
-//             'attr_value': attr_value
-//         });
-//    });
-//    getBomItemCost(itemId,itemAttributes);
 });
 // # Revision Number On Chage
 $(document).on('change', '#revisionNumber', (e) => {

@@ -1,6 +1,7 @@
 @foreach($pwoItems as $key => $pwoItem)
 @php
-   $rowCount = $rowCount + $key;
+   // $rowCount = $rowCount + $key;
+   $rowCount = $key + 1;
 @endphp
 <tr id="row_{{$rowCount}}" data-index="{{$rowCount}}">
    <td class="customernewsection-form">
@@ -39,15 +40,7 @@
   <td>
       <input type="text" name="components[{{$rowCount}}][item_name]" value="{{$pwoItem?->item?->item_name}}" class="form-control mw-100 mb-25" readonly/>
   </td>
-   <td class="poprod-decpt"> 
-      {{-- <button type="button" disabled class="btn p-25 btn-sm btn-outline-secondary attributeBtn" data-row-count="{{$rowCount}}" style="font-size: 10px">Attributes</button> --}}
-      @foreach($pwoItem?->item?->itemAttributes as $index => $attribute) 
-         <span class="badge rounded-pill badge-light-primary"><strong data-group-id="{{$attribute->attributeGroup->id}}"> {{$attribute->attributeGroup->name}}</strong>: @foreach ($attribute->attributes() as $value) 
-            @if(in_array($value->id, $selectedAttrValues))
-                  {{ $value->value }}
-            @endif
-         @endforeach</span>
-      @endforeach
+   <td class="poprod-decpt" id="itemAttribute_{{$rowCount}}" data-count="{{$rowCount}}" attribute-array="{{$pwoItem->item_attributes_array()}}"> 
    </td>
    <td>
       <select disabled class="form-select mw-100 " name="components[{{$rowCount}}][uom_id]">

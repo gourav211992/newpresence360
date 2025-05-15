@@ -6,6 +6,7 @@ use App\Helpers\CommonHelper;
 use App\Helpers\Helper;
 use App\Http\Controllers\Controller;
 use App\Models\Employee;
+use App\Models\Organization;
 use App\Models\Recruitment\ErpRecruitmentJob;
 use App\Models\Recruitment\ErpRecruitmentJobCandidate;
 use App\Models\Recruitment\ErpRecruitmentJobInterview;
@@ -433,5 +434,12 @@ class IndexController extends Controller
                 'more' => $employees->hasMorePages() // Indicate if there are more pages
             ]
         ]);
+    }
+
+    public function getLocations($groupId){
+        $organizations = Organization::select('id','name')->where('group_id',$groupId)->get();
+        return [
+            'data' => $organizations
+        ];
     }
 }

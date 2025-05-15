@@ -227,7 +227,7 @@
                                                                 <td class="sno">{{ $rowNumber }}</td>
                                                                 <td>
                                                                     <select class="form-select mw-100 select2 authorize-user" id="authorize_{{ $rowNumber }}"
-                                                                        @if(!$financialYear['fy_close'] && !$locked) disabled @endif>
+                                                                        @if(!$financialYear['fy_close'] || $locked) disabled @endif>
                                                                         <option value="" disabled>Select</option>
                                                                         @foreach ($employees as $employee)
                                                                             @php
@@ -936,12 +936,12 @@
                             '_token': '{!! csrf_token() !!}'
                         };
                         var selectedValues = $('#organization_id').val() || [];
-                        var filteredValues = selectedValues.filter(function(value) {
-                            return value !== null && value.trim() !== '';
-                        });
-                        if (filteredValues.length > 0) {
-                            obj.organization_id = filteredValues
-                        }
+                        // var filteredValues = selectedValues.filter(function(value) {
+                        //     return value !== null && value.trim() !== '';
+                        // });
+                        // if (filteredValues.length > 0) {
+                        obj.organization_id = selectedValues
+                        // }
 
                         $.ajax({
                             headers: {

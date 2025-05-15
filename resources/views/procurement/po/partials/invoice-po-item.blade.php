@@ -10,7 +10,7 @@
      </div>
  </td>
  <td class="poprod-decpt"> 
-    <input type="text" @if($po_item->pi_item_id) readonly @endif name="component_item_name[{{$rowCount}}]" placeholder="Select" class="form-control mw-100 mb-25 ledgerselecct comp_item_code " value="{{$po_item->item_code}}" />
+    <input type="text" readonly name="component_item_name[{{$rowCount}}]" placeholder="Select" class="form-control mw-100 mb-25 ledgerselecct comp_item_code " value="{{$po_item->item_code}}" />
     <input type="hidden" name="components[{{$rowCount}}][item_id]" value="{{$po_item->item_id}}" />
     <input type="hidden" name="components[{{$rowCount}}][item_code]" value="{{$po_item->item_code}}" /> 
     <input type="hidden" name="components[{{$rowCount}}][item_name]" value="{{$po_item?->item?->name}}" />
@@ -37,8 +37,8 @@
 <td>
     <input type="text" name="components[{{$rowCount}}][item_name]" value="{{$po_item?->item?->item_name}}" class="form-control mw-100 mb-25" readonly/>
 </td>
-<td class="poprod-decpt"> 
-    <button type="button" {{-- data-bs-toggle="modal" data-bs-target="#attribute" --}} class="btn p-25 btn-sm btn-outline-secondary attributeBtn" data-row-count="{{$rowCount}}" style="font-size: 10px">Attributes</button>
+<td class="poprod-decpt attributeBtn" data-disabled="true" id="itemAttribute_{{$rowCount}}" data-count="{{$rowCount}}" attribute-array="{{$po_item->item_attributes_array()}}"> 
+
 </td>
 <td>
     <input type="hidden" name="components[{{$rowCount}}][inventoty_uom_id]" value="{{$po_item->inventoty_uom_id}}">

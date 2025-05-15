@@ -53,8 +53,10 @@
                                                 <th>Series</th>
                                                 <th>Document No.</th>
                                                 <th>Document Date</th>
+                                                <th>Location</th>
                                                 <th>Rev. No</th>
                                                 <th>Vendor</th>
+                                                <th>Currency</th>
                                                 <th>Item</th>
                                                 <th>Item Value</th>
                                                 <th>Discount</th>
@@ -148,7 +150,7 @@
                 }
                 var columns = [
                     { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
-                    { data: 'book_name', name: 'book_name', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+                    { data: 'book_code', name: 'book_code', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('no-wrap');
                         }
                     },
@@ -160,9 +162,26 @@
                         $(td).addClass('no-wrap');
                         }
                     },
-                    { data: 'revision_number', name: 'revision_number', render: renderData },
-                    { data: 'vendor_name', name: 'vendor_name', render: renderData},
-                    { data: 'total_items', name: 'total_items', render: renderData },
+                    { data: 'location', name: 'location', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('no-wrap');
+                        }
+                    },
+                    { data: 'revision_number', name: 'revision_number', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('no-wrap');
+                        }
+                    },
+                    { data: 'vendor_name', name: 'vendor_name', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('no-wrap');
+                        }
+                    },
+                    { data: 'currency', name: 'currency', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('no-wrap');
+                        }
+                    },
+                    { data: 'total_items', name: 'lot_no', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('no-wrap');
+                        }
+                    },
                     { data: 'total_item_amount', name: 'total_item_amount', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                         }

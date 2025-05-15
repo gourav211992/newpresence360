@@ -274,7 +274,7 @@
                                 </th>
                                 <th width="150px">Item Code</th>
                                 <th width="240px">Item Name</th>
-                                <th>Attributes</th>
+                                <th max-width="180px">Attributes</th>
                                 <th>UOM</th>
                                 <th>Qty</th>
                                 <th>Rate</th>
@@ -613,6 +613,7 @@
  let type = '{{ request()->route("type") }}';
  let actionUrlTax = '{{route("po.tax.calculation",["type" => ":type"])}}'.replace(':type',type);
 </script>
+<script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
 <script type="text/javascript" src="{{asset('assets/js/modules/po.js')}}"></script>
 <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
 <script>
@@ -968,6 +969,16 @@ $(document).on('click','#addNewItemBtn', (e) => {
         if (this.value === "") {
             $(this).autocomplete("search", "");
         }
+    }).on("input", function () {
+        if ($(this).val().trim() === "") {
+            $(this).removeData("selected");
+            $(this).closest('tr').find("input[name*='component_item_name']").val('');
+            $(this).closest('tr').find("input[name*='item_name']").val('');
+            $(this).closest('tr').find("td[id*='itemAttribute_']").html(defautAttrBtn);
+            $(this).closest('tr').find("input[name*='item_id']").val('');
+            $(this).closest('tr').find("input[name*='item_code']").val('');
+            $(this).closest('tr').find("input[name*='attr_name']").remove();
+        }
     });
 }
 let rowsLength = $("#itemTable > tbody > tr").length;
@@ -1089,7 +1100,7 @@ $(document).on('click', '.attributeBtn', (e) => {
         selectedAttr = JSON.stringify(selectedAttr);
     }
     if (item_name && item_id) {
-        let rowCount = e.target.getAttribute('data-row-count');
+        let rowCount = tr.getAttribute('data-index');
         getItemAttribute(item_id, rowCount, selectedAttr, tr);
     } else {
         alert("Please select first item name.");
@@ -1099,6 +1110,11 @@ $(document).on('click', '.attributeBtn', (e) => {
 /*For comp attr*/
 function getItemAttribute(itemId, rowCount, selectedAttr, tr){
     let isPi = $(tr).find('[name*="pi_item_id"]').length ? 1 : 0;
+    if(!isPi) {
+        if($(tr).find('td[id*="itemAttribute_"]').data('disabled')) {
+            isPi = 1;
+        }
+    }
     let type = '{{ request()->route("type") }}';
     let actionUrl = '{{ route("po.item.attr", ["type" => ":type"]) }}'
     .replace(':type', type)
@@ -1111,6 +1127,7 @@ function getItemAttribute(itemId, rowCount, selectedAttr, tr){
                 $("#attribute table tbody").append(data.data.html)
                 $(tr).find('td:nth-child(2)').find("[name*='[attr_name]']").remove();
                 $(tr).find('td:nth-child(2)').append(data.data.hiddenHtml);
+                $(tr).find("td[id*='itemAttribute_']").attr('attribute-array', JSON.stringify(data.data.itemAttributeArray));
                 if (data.data.attr) {
                     $("#attribute").modal('show');
                     $(".select2").select2();
@@ -1466,7 +1483,7 @@ function getIndents()
         return response.json().then(data => {
             $(".po-order-detail #prDataTable").empty().append(data.data.pis);
             $('.select2').select2({
-                dropdownParent: $('#prModal') // Ensure dropdown is rendered inside the modal
+                dropdownParent: $('#prModal')
             });
         });
     });
@@ -1477,6 +1494,7 @@ $(document).on('keyup', '#item_name_search', (e) => {
 });
 
 /*Checkbox for pi item list*/
+@if($serviceAlias == 'po')
 $(document).on('change','.po-order-detail > thead .form-check-input',(e) => {
   if (e.target.checked) {
       if($('.pi_item_checkbox').first().closest('tr').find("[name='vend_name']").length) {
@@ -1506,14 +1524,15 @@ $(document).on('change','.po-order-detail > thead .form-check-input',(e) => {
       localStorage.removeItem('selectedVendorId');
   }
 });
-
-// $(document).on('change','.po-order-detail > tbody .form-check-input',(e) => {
-//   if(!$(".po-order-detail > tbody .form-check-input:not(:checked)").length) {
-//       $('.po-order-detail > thead .form-check-input').prop('checked', true);
-//   } else {
-//       $('.po-order-detail > thead .form-check-input').prop('checked', false);
-//   }
-// });
+@else
+$(document).on('change','.po-order-detail > tbody .form-check-input',(e) => {
+  if(!$(".po-order-detail > tbody .form-check-input:not(:checked)").length) {
+      $('.po-order-detail > thead .form-check-input').prop('checked', true);
+  } else {
+      $('.po-order-detail > thead .form-check-input').prop('checked', false);
+  }
+});
+@endif
 
 
 function getSelectedPiIDS()
@@ -1525,26 +1544,10 @@ function getSelectedPiIDS()
     return ids;
 }
 
-// $(document).on('change','#prDataTable .pi_item_checkbox',(e) => {
-//     let allSelected = $('.pi_item_checkbox:checked').map(function() {
-//         return Number($(this).closest('tr').find("[name='vend_name']").val());
-//     }).get();
-//     let currentCheckedVendorId = $(e.target).closest('tr').find("[name='vend_name']").val();
-//     if($(e.target).closest('tr').find("[name='vend_name']").length) {
-//         if(!currentCheckedVendorId) {
-//           e.target.checked = false;
-//         }
-//         if(e.target.checked && allSelected.length) {
-//             if(allSelected.at(-1) != Number(currentCheckedVendorId)) {
-//                 e.target.checked = false;
-//             }
-            
-//         }
-//     }
-// });
 $(document).ready(function () {
     localStorage.removeItem('selectedVendorId');
 });
+@if($serviceAlias == 'po')
 $(document).on('change', '#prDataTable .pi_item_checkbox', function (e) {
     let selectedVendorId = localStorage.getItem('selectedVendorId') || null;
     let currentCheckedVendorId = $(this).closest('tr').find("[name='vend_name']").val();
@@ -1571,7 +1574,7 @@ $(document).on('change', '#prDataTable .pi_item_checkbox', function (e) {
         }
     }
 });
-
+@endif
 $(document).on('click', '.prProcess', (e) => {
     let ids = getSelectedPiIDS();
     if (!ids.length) {
@@ -1696,6 +1699,16 @@ $(document).on('click', '.prProcess', (e) => {
         if (this.value === "") {
             $(this).autocomplete("search", "");
         }
+    }).on("input", function () {
+        if ($(this).val().trim() === "") {
+            $(this).removeData("selected");
+            $(this).closest('tr').find("input[name*='component_item_name']").val('');
+            $(this).closest('tr').find("input[name*='item_name']").val('');
+            $(this).closest('tr').find("td[id*='itemAttribute_']").html(defautAttrBtn);
+            $(this).closest('tr').find("input[name*='item_id']").val('');
+            $(this).closest('tr').find("input[name*='item_code']").val('');
+            $(this).closest('tr').find("input[name*='attr_name']").remove();
+        }
     });
 }
     let vendorId = uniqueVendor[0];
@@ -1740,14 +1753,18 @@ $(document).on('click', '.prProcess', (e) => {
                 let vendor = data?.data?.vendor || '';
                 let finalDiscounts = data?.data?.finalDiscounts;
                 let finalExpenses = data?.data?.finalExpenses;
-                
-                console.clear();
-                console.log(data.data.pos);
                 if ($("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length) {
                     $("#itemTable .mrntableselectexcel tr[id*='row_']:last").after(data.data.pos);
                 } else {
                     $("#itemTable .mrntableselectexcel").empty().append(data.data.pos);
                 }
+
+                setTimeout(() => {
+                    $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+                        let currentIndex = index + 1;
+                        setAttributesUIHelper(currentIndex,"#itemTable");
+                    });
+                },100);
                 //Update Qnt
                 if(data?.data?.updatedGroupItems?.length) {
                     $('tr[data-group-item]').each(function () {

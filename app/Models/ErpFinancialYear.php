@@ -35,6 +35,9 @@ class ErpFinancialYear extends Model
     public function authorizedUsers()
     {
         $access = collect($this->access_by);
+        if (empty($this->access_by)) {
+            return null;
+        }
 
         if (empty($this->access_by)) {
             return null;
@@ -48,11 +51,12 @@ class ErpFinancialYear extends Model
             ->pluck('user_id')
             ->toArray();
 
-        return [
+        $access_by = [
             'users' => AuthUser::whereIn('id', $userIds)->get(),
             'all' => $allAuthorized,
             'locked' => $allLocked
         ];
+        return $access_by;
     }
 
 

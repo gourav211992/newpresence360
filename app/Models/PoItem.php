@@ -260,4 +260,44 @@ class PoItem extends Model
     {
         return $this->hasMany(PiPoMapping::class,'po_item_id');
     }
+
+    public function item_attributes_array()
+    {
+        $itemId = $this->getAttribute('item_id');
+        if (!$itemId) {
+            return collect([]);
+        }
+        $itemAttributes = ItemAttribute::where('item_id', $itemId)->get();
+        $processedData = [];
+        $mappingAttributes = PoItemAttribute::where('po_item_id', $this->getAttribute('id'))
+        ->select(['item_attribute_id as attribute_id', 'attribute_value as attribute_value_id'])
+        ->get()
+        ->toArray();
+        foreach ($itemAttributes as $attribute) {
+            $attributeIds = is_array($attribute->attribute_id) ? $attribute->attribute_id : [$attribute->attribute_id];
+            $attribute->group_name = $attribute->group?->name;
+            $valuesData = [];
+            foreach ($attributeIds as $attributeValueId) {
+                $attributeValueData = ErpAttribute::where('id', $attributeValueId)
+                    ->where('status', 'active')
+                    ->select('id', 'value')
+                    ->first();
+                if ($attributeValueData) {
+                    $isSelected = collect($mappingAttributes)->contains(function ($itemAttr) use ($attribute, $attributeValueData) {
+                        return $itemAttr['attribute_id'] == $attribute->id &&
+                            $itemAttr['attribute_value_id'] == $attributeValueData->id;
+                    });
+                    $attributeValueData->selected = $isSelected;
+                    $valuesData[] = $attributeValueData;
+                }
+            }
+            $processedData[] = [
+                'id' => $attribute->id,
+                'group_name' => $attribute->group_name,
+                'values_data' => $valuesData,
+                'attribute_group_id' => $attribute->attribute_group_id,
+            ];
+        }
+        return collect($processedData);
+    }
 }

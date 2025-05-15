@@ -379,7 +379,7 @@ class InventoryHelper
                 $reservedStocks += $stock->reservations->sum('quantity');
             }
         }
-
+        $rate = $stockLedger->pluck('cost_per_unit')->first();
         $pendingStockAltUom = $pendingStocks;
         $reservedStockAltUom = $reservedStocks;
         $confirmedStockAltUom = $confirmedStocks;
@@ -397,6 +397,7 @@ class InventoryHelper
             'pendingStockAltUom' => $pendingStockAltUom ?? 0,
             'reservedStockAltUom' => $reservedStockAltUom ?? 0,
             'confirmedStockAltUom' => $confirmedStockAltUom ?? 0,
+            'rate' => $rate ?? 0,
         ];
         return $data;
     }
@@ -865,6 +866,8 @@ class InventoryHelper
                 $stockLedger->sub_store_id = $documentDetail->header->sub_store_id ?? null;
                 $stockLedger->sub_store = @$documentDetail->header->sub_store->store_code;
             }
+            
+
         }
         
         $inventoryUom = Unit::find($documentDetail->item->uom_id);
@@ -909,7 +912,7 @@ class InventoryHelper
         $stockLedger->updated_by = @$user->id;
         $stockLedger->save();
         $stockLedger->refresh();
-
+        
         self::updateStockCost($stockLedger);
 
         $attributeArray = array();

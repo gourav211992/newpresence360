@@ -843,6 +843,7 @@
 
 @endsection
 @section('scripts')
+    <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
     <script type="text/javascript">
         var actionUrlTax = '{{route("gate-entry.tax.calculation")}}';
     </script>
@@ -1163,6 +1164,7 @@
                     closestTr.find('[name*=item_name]').val(itemN);
                     closestTr.find('[name*=hsn_id]').val(hsnId);
                     closestTr.find('[name*=hsn_code]').val(hsnCode);
+                    closestTr.find("td[id*='itemAttribute_']").html(defautAttrBtn);
                     let uomOption = `<option value=${uomId}>${uomName}</option>`;
                     if(ui.item?.alternate_u_o_ms) {
                         for(let alterItem of ui.item.alternate_u_o_ms) {
@@ -1357,7 +1359,7 @@
                 selectedAttr = JSON.stringify(selectedAttr);
             }
             if (item_name && item_id) {
-                let rowCount = e.target.getAttribute('data-row-count');
+                let rowCount = tr.getAttribute('data-index');
                 getItemAttribute(item_id, rowCount, selectedAttr, tr);
             } else {
                 Swal.fire({
@@ -1371,7 +1373,8 @@
 
         /*For comp attr*/
         function getItemAttribute(itemId, rowCount, selectedAttr, tr){
-            let actionUrl = '{{route("gate-entry.item.attr")}}'+'?item_id='+itemId+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
+            let detail_id = $(tr).find("input[name*='[mrn_detail_id]']").val() || '';
+            let actionUrl = '{{route("gate-entry.item.attr")}}'+'?item_id='+itemId+'&detail_id='+detail_id+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if (data.status == 200) {
@@ -1379,6 +1382,7 @@
                         $("#attribute table tbody").append(data.data.html)
                         $(tr).find('td:nth-child(2)').find("[name*=attr_name]").remove();
                         $(tr).find('td:nth-child(2)').append(data.data.hiddenHtml);
+                        $(tr).find("td[id*='itemAttribute_']").attr('attribute-array', JSON.stringify(data.data.itemAttributeArray));
                         if (data.data.attr) {
                             $("#attribute").modal('show');
                             $(".select2").select2();
@@ -2579,5 +2583,18 @@
                 });
             });
         });
+
+        $(document).on('click','td[id*="itemAttribute_"]', (e) => {
+            let dataAttributes = $(e.target).attr('data-attributes');
+            // dataAttributes = JSON.parse(dataAttributes);
+            // dataAttributes.
+        });
+
+        setTimeout(() => {
+            $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+                let currentIndex = index + 1;
+                setAttributesUIHelper(currentIndex,"#itemTable");
+            });
+        },100);
     </script>
 @endsection

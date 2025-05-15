@@ -91,6 +91,55 @@ $(document).on('keydown', function(e) {
     // }
 });
 
+$(document).on('change', '.header_store_id', function () {
+    const selectedStoreId = $(this).val();
+    if (selectedStoreId) {
+        getCostCenters(selectedStoreId);
+    }
+});
+
+// 2. On page load: trigger if already selected
+const selectedStoreId = $('.header_store_id').val();
+if (selectedStoreId) {
+    getCostCenters(selectedStoreId);
+}
+
+// Get Cost Centers
+function getCostCenters(storeLocationId) {
+    $("#cost_center_div").hide(); // Hide by default
+
+    $.ajax({
+        url: "/get-cost-centers",
+        method: 'GET',
+        dataType: 'json',
+        data: {
+            locationId: storeLocationId,
+        },
+        success: function(data) {
+            if (Array.isArray(data) && data.length > 0) {
+                let options = '';
+
+                data.forEach(function(costcenter) {
+                    const selected = (costcenter.id == selectedCostCenterId) ? 'selected' : '';
+                    options += `<option value="${costcenter.id}" ${selected}>${costcenter.name}</option>`;
+                });
+
+                $(".cost_center").html(options);
+                $("#cost_center_div").show();
+            } else {
+                $("#cost_center_div").hide();
+            }
+        },
+        error: function(xhr) {
+            Swal.fire({
+                title: 'Error!',
+                text: xhr?.responseJSON?.message || 'Failed to load cost centers.',
+                icon: 'error',
+            });
+        }
+    });
+}
+
 /*Check box check and uncheck*/
 $(document).on('change','#itemTable > thead .form-check-input',(e) => {
     if (e.target.checked) {
@@ -121,6 +170,7 @@ $(document).on('change', '[name*="comp_attribute"]', (e) => {
     // closestTr = $(`[name="components[${rowCount}][attr_group_id][${attrGroupId}][attr_name]"]`).closest('tr');
     // getItemDetail(closestTr);
     qtyEnabledDisabled();
+    setSelectedAttribute(rowCount);
 });
 
 // Check Negative Values
@@ -767,7 +817,8 @@ function checkBasicFilledDetail()
     let documentNumber = $("#document_number").val() || '';
     let documentDate = $("[name='document_date']").val() || '';
     let referenceNumber = $("[name='reference_number']").val() || '';
-    if(bookId && documentNumber && documentDate && referenceNumber) {
+    let costCenterId = $("[name='cost_center_id']").val() || '';
+    if(bookId && documentNumber && documentDate && referenceNumber && costCenterId) {
         filled = true;
     }
     return filled;
@@ -801,8 +852,8 @@ function checkComponentRowExist()
 
 $('#attribute').on('hidden.bs.modal', function () {
    let rowCount = $("[id*=row_].trselected").attr('data-index');
-   // $(`[id*=row_${rowCount}]`).find('.addSectionItemBtn').trigger('click');
-   $(`[name="components[${rowCount}][qty]"]`).trigger('focus');
+   let qty = $(`[name="components[${rowCount}][qty]"]`).val() || '';
+     $(`[name="components[${rowCount}][qty]"]`).val(qty).focus();
 });
 
 /*Vendor change update field*/

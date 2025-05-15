@@ -128,10 +128,22 @@
                                                         <select class="form-select header_store_id" id="header_store_id" name="header_store_id">
                                                             @foreach($locations as $erpStore)
                                                                 <option value="{{$erpStore->id}}"
-                                                                    {{ old('header_store_id', $selectedStoreId ?? '') == $erpStore->id ? 'selected' : '' }}>
+                                                                    {{ $mrn->store_id == $erpStore->id ? 'selected' : '' }}>
                                                                     {{ ucfirst($erpStore->store_name) }}
                                                                 </option>
                                                             @endforeach
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div class="row align-items-center mb-1" id="cost_center_div" style="display:none;">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Cost Center <span class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <select class="form-select cost_center" id="cost_center_id" name="cost_center_id">
+                                                            <option value="{{$mrn->cost_center_id}}">
+                                                                {{ ucfirst($mrn?->costCenters?->name) }}
+                                                            </option>
                                                         </select>
                                                     </div>
                                                 </div>
@@ -309,7 +321,6 @@
                                                                 <th class="text-end">Value</th>
                                                                 <th>Discount</th>
                                                                 <th class="text-end">Total</th>
-                                                                <th>Cost Center</th>
                                                                 <th width="50px">Action</th>
                                                             </tr>
                                                         </thead>
@@ -757,12 +768,14 @@
 	</div>
 @endsection
 @section('scripts')
+    <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
     <script type="text/javascript">
         var actionUrlTax = '{{route("expense-adv.tax.calculation")}}';
     </script>
     <script type="text/javascript" src="{{asset('assets/js/modules/expense-advise.js')}}"></script>
     <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
     <script>
+        const selectedCostCenterId = "{{ $mrn->cost_center_id ?? '' }}";
         /*Clear local storage*/
         setTimeout(() => {
             localStorage.removeItem('deletedItemDiscTedIds');
@@ -828,11 +841,9 @@
             let actionUrl = '{{route("book.get.doc_no_and_parameters")}}'+'?book_id='+bookId+'&document_date='+document_date;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
-                    // console.log(data.data);
                     if (data.status == 200) {
 
                         const parameters = data.data.parameters;
-                        // console.log('parameters', parameters);
                         setServiceParameters(parameters);
 
                         if(parameters?.tax_required.some(val => val.toLowerCase() === 'yes')) {
@@ -925,7 +936,6 @@
                 },
                 minLength: 0,
                 select: function(event, ui) {
-                    console.log(ui.item);
                     var $input = $(this);
                     var itemName = ui.item.value;
                     var itemId = ui.item.id;
@@ -1049,6 +1059,7 @@
                     closestTr.find('[name*=item_name]').val(itemN);
                     closestTr.find('[name*=hsn_id]').val(hsnId);
                     closestTr.find('[name*=hsn_code]').val(hsnCode);
+                    closestTr.find("td[id*='itemAttribute_']").html(defautAttrBtn);
                     let uomOption = `<option value=${uomId}>${uomName}</option>`;
                     if(ui.item?.alternate_u_o_ms) {
                         for(let alterItem of ui.item.alternate_u_o_ms) {
@@ -1249,7 +1260,7 @@
                 selectedAttr = JSON.stringify(selectedAttr);
             }
             if (item_name && item_id) {
-                let rowCount = e.target.getAttribute('data-row-count');
+                let rowCount = tr.getAttribute('data-index');
                 getItemAttribute(item_id, rowCount, selectedAttr, tr);
             } else {
                 Swal.fire({
@@ -1263,7 +1274,8 @@
 
         /*For comp attr*/
         function getItemAttribute(itemId, rowCount, selectedAttr, tr){
-            let actionUrl = '{{route("expense-adv.item.attr")}}'+'?item_id='+itemId+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
+            let expense_detail_id = $(tr).find("input[name*='[expense_detail_id]']").val() || '';
+            let actionUrl = '{{route("expense-adv.item.attr")}}'+'?item_id='+itemId+'&expense_detail_id='+expense_detail_id+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if (data.status == 200) {
@@ -1271,6 +1283,7 @@
                         $("#attribute table tbody").append(data.data.html)
                         $(tr).find('td:nth-child(2)').find("[name*=attr_name]").remove();
                         $(tr).find('td:nth-child(2)').append(data.data.hiddenHtml);
+                        $(tr).find("td[id*='itemAttribute_']").attr('attribute-array', JSON.stringify(data.data.itemAttributeArray));
                         if (data.data.attr) {
                             $("#attribute").modal('show');
                             $(".select2").select2();
@@ -1896,5 +1909,26 @@
                 });
             });
         });
+
+        $(document).on('click','td[id*="itemAttribute_"]', (e) => {
+
+            let dataAttributes = $(e.target).attr('data-attributes');
+
+            // dataAttributes = JSON.parse(dataAttributes);
+
+            // dataAttributes.
+
+        });
+        setTimeout(() => {
+
+            $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+
+                let currentIndex = index + 1;
+
+                setAttributesUIHelper(currentIndex,"#itemTable");
+
+            });
+
+        },100);
     </script>
 @endsection

@@ -187,13 +187,39 @@
                                                             </select>
                                                         </div>
                                                     </div>
+                                                    <div class="row align-items-center mb-1 lease-hidden">
+                                                        <div class="col-md-3"> 
+                                                            <label class="form-label">Store<span class="text-danger">*</span></label>  
+                                                        </div>  
+
+                                                        <div class="col-md-5">  
+                                                            <select class="form-select disable_on_edit" name = "sub_store_from_id" id = "sub_store_id_input" oninput = "headerSubStoreChange(this, 'from')">
+                                                                @if(isset($order) && $order->sub_store_id)
+                                                                    <option value = "{{$order -> sub_store_id}}" selected data-name = "{{$order -> sub_store_code}}">{{$order -> sub_store_code}}</option> 
+                                                                @endif
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row align-items-center mb-1 lease-hidden">
+                                                        <div class="col-md-3"> 
+                                                            <label class="form-label">Station<span class="text-danger">*</span></label>  
+                                                        </div>  
+
+                                                        <div class="col-md-5">  
+                                                            <select class="form-select disable_on_edit" name = "station_from_id" id = "station_from_id_input"  >
+                                                                @if(isset($order) && $order->station_id)
+                                                                    <option value = "{{$order -> station_id}}" selected data-name = "{{$order -> station_code}}">{{$order -> station_code}}</option> 
+                                                                @endif
+                                                            </select>
+                                                        </div>
+                                                    </div>
                                                     <div class="row align-items-center mb-1 lease-hidden vendor_id sub_contracting {{ isset($order) && $order->vendor_id ? '' : 'd-none' }}">
                                                         <div class="col-md-3"> 
                                                             <label class="form-label">Vendor<span class="text-danger">*</span></label>  
                                                         </div>  
 
                                                         <div class="col-md-5">  
-                                                            <select class="form-select disable_on_edit" name = "vendor_id" id = "vendor_id_input">
+                                                            <select class="form-select disable_on_edit" name = "vendor_id" id = "vendor_id_input" >
                                                             <option value = "" disabled selected>Select</option>
                                                             @if(isset($order) && $order->vendor_id)
                                                                 <option value = "{{ $order->vendor_id }}" selected>{{ $order->vendor_code }}</option>
@@ -219,15 +245,41 @@
                                                             </select>
                                                         </div>
                                                     </div>--}}
-                                                    <div class="row align-items-center mb-1 lease-hidden return_location {{ isset($order) && $order->store_id && $order->return_type != 'Consumption' ? '' : 'd-none' }}">
+                                                    <div class="row align-items-center mb-1 lease-hidden return_location {{ isset($order) && $order->to_store_id && $order->return_type != 'Consumption' ? '' : 'd-none' }}">
                                                         <div class="col-md-3"> 
-                                                            <label class="form-label">Return Location<span class="text-danger">*</span></label>  
+                                                            <label class="form-label">To Location<span class="text-danger">*</span></label>  
                                                         </div>  
                                                         
                                                         <div class="col-md-5">  
-                                                            <select class="form-control disable_on_edit" name="return_location" id="return_location_input" disabled>
+                                                            <select class="form-control disable_on_edit" name="to_store_id" id="to_store_id_input" oninput="onHeaderStoreChange(this, 'to');" disabled>
                                                             @if(isset($order) && $order?->items?->first()?->to_store_id)
                                                                 <option value = "{{ $order->items->first()->to_store_id }}" selected>{{ $order->items->first()->toErpStore -> store_name }}</option>
+                                                            @endif
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row align-items-center mb-1 lease-hidden to_store to_sub_store_dependent  {{ isset($order) && $order->to_sub_store_id && $order->return_type != 'Consumption' ? '' : 'd-none' }}">
+                                                        <div class="col-md-3"> 
+                                                            <label class="form-label">To Store<span class="text-danger">*</span></label>  
+                                                        </div>  
+                                                        
+                                                        <div class="col-md-5">  
+                                                            <select class="form-control disable_on_edit" name="to_sub_store_id" id="to_sub_store_id_input" disabled>
+                                                            @if(isset($order) && $order?->items?->first()?->to_sub_store_id)
+                                                                <option value = "{{ $order->items->first()->to_sub_store_id }}" selected>{{ $order->items->first()->toErpSubStore -> store_name }}</option>
+                                                            @endif
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row align-items-center mb-1 lease-hidden to_station to_station_header_label {{ isset($order) && $order->to_station_id && $order->return_type != 'Consumption' ? '' : 'd-none' }}">
+                                                        <div class="col-md-3"> 
+                                                            <label class="form-label">To Station<span class="text-danger">*</span></label>  
+                                                        </div>  
+                                                        
+                                                        <div class="col-md-5">  
+                                                            <select class="form-control disable_on_edit" name="to_station_id" id="station_to_id_input" disabled>
+                                                            @if(isset($order) && $order?->items?->first()?->to_station_id)
+                                                                <option value = "{{ $order->items->first()->to_station_id }}" selected>{{ $order->items->first()->toErpStation -> name }}</option>
                                                             @endif
                                                             </select>
                                                         </div>
@@ -3893,10 +3945,10 @@
 
         $("#issue_type").val(type);
         // Always handle return_location as a <select>
-        $('#return_location_input').empty(); // Clear all previous options
+        $('#to_store_id_input').empty(); // Clear all previous options
 
-        if ($('#return_location_input option[value="' + s_id + '"]').length === 0) {
-            $('#return_location_input').append(
+        if ($('#to_store_id_input option[value="' + s_id + '"]').length === 0) {
+            $('#to_store_id_input').append(
                 $('<option>', {
                     value: s_id,
                     text: s_value
@@ -3904,8 +3956,8 @@
             );
         }
 
-        $('#return_location_input').prop('disabled', false);
-        $('#return_location_input').val(s_id); // Set the selected value
+        $('#to_store_id_input').prop('disabled', false);
+        $('#to_store_id_input').val(s_id); // Set the selected value
         $('.return_location').removeClass('d-none');
         $('.user_field').addClass('d-none');
         $('.department_field').addClass('d-none');
@@ -3986,8 +4038,8 @@
 
                 // Hide return location for consumption
                 $('#vendor_id_input').empty();
-                $('#return_location_input').empty();         
-                $('#return_location_input').prop('disabled', true);
+                $('#to_store_id_input').empty();         
+                $('#to_store_id_input').prop('disabled', true);
                 $('#vendor_id_input').prop('disabled', true);
                 $('.return_location').addClass('d-none');
                 $('.vendor_id').addClass('d-none');
@@ -5043,7 +5095,79 @@ document.addEventListener('input', function (e) {
         }
         
     }
+    function headerSubStoreChange(element, type = 'from')
+    {
+        let currentOrder = @json(isset($order) ? $order : null);
+        let currentVal = element.value;
+        let selected_id = '';
+        let only_id = '';
+        let newTargetHTML = ``;
+        let targetElement = document.getElementById('station_from_id_input');
+        let targetElementHeader = document.getElementById('from_station_header_label');
+        if (type === 'to') {
+            targetElement = document.getElementById('station_to_id_input');
+            targetElementHeader = document.getElementById('to_station_header_label');
+        }
+        $.ajax({
+            url: "{{route('stations.stocking.get.subStore')}}",
+            method: 'GET',
+            dataType: 'json', 
+            data: {
+                sub_store_id : currentVal,
+                selected_id : selected_id,
+                only_id : only_id
+            },
+            success: function(data) {
+                if (data.status === 'success' && data.data.length > 0) {
+                    let newTargetHTML = ``;
+                    data.data.forEach(station => {
+                        newTargetHTML += `<option value = "${station.id}">${station.name}</option>`
+                    });
+                    targetElement.innerHTML = newTargetHTML;
+                    targetElementHeader.classList.remove('d-none');
+                    enableDisableQtButton();
+                } else {
+                    targetElement.innerHTML = newTargetHTML;
+                    targetElementHeader.classList.add('d-none');
+                    enableDisableQtButton();
+                }
+            },
+            error: function(xhr) {
+                targetElement.innerHTML = newTargetHTML;
+                targetElementHeader.classList.add('d-none');
+                enableDisableQtButton();
+            }
+        });
+    }
 
+    function checkSameLocationCondition()
+    {
+        const currentFromLocation = $("#store_from_id_input").val();
+        const currentToLocation = $("#store_to_id_input").val();
+
+        const currentFromStore = $("#sub_store_from_id_input").val();
+        const currentToStore = $("#sub_store_to_id_input").val();
+
+        const currentFromStation = $("#station_from_id_input").val();
+        const currentToStation = $("#station_to_id_input").val();
+
+        const fromPoint = currentFromLocation + "-" + currentFromStore + "-" + currentFromStation;
+        const toPoint = currentToLocation + "-" + currentToStore + "-" + currentToStation;
+
+        if (fromPoint == toPoint) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+    
+    function setSubStoreForSubContracting()
+    {
+        const issueType = $("#issue_type_input").val();
+        if (issueType === 'Sub Contracting') {
+            $("#sub_store_to_id_input").val($("#vendor_store_id_input").val());
+        }
+    }
 </script>
 @endsection
 @endsection

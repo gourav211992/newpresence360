@@ -211,7 +211,6 @@ class UserAuthenticate
             if(in_array($authType, array('IAM-SUPER', 'IAM-ADMIN', 'IAM-ROOT'))) {
                 $authType = 'user';
                 $user = User::find($authUser->authenticable_id);
-
                 Auth::guard('web')->login($user);
             }else {
                 $authType = 'employee';

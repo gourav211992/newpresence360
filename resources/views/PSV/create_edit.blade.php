@@ -39,7 +39,7 @@
                         @if(!isset(request() -> revisionNumber))
                         <button type = "button" onclick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>  
                             @if (isset($order))
-                                @if($buttons['print'])
+                                {{--@if($buttons['print'])
                                 @php
                                     $printOption = 'Physical Stock Verification';
                                     if ($order -> issue_type === 'Location Transfer')
@@ -56,7 +56,7 @@
                                     </svg>
                                     Print  <i class="fa-regular fa-circle-down"></i>
                                 </a>
-                                @endif
+                                @endif--}}
                                 @if($buttons['draft'])
                                     <button type="button" onclick = "submitForm('draft');" name="action" value="draft" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" id="save-draft-button" name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
                                 @endif
@@ -241,6 +241,61 @@
                                 </div>
                             </div>
 
+                            <div class="card Item_Search_section">
+                                <div class="card-body customernewsection-form"> 
+                                    <div class="bo_Sear-bottom mb-1 pb-10">
+                                        <div class="row">
+                                            <div class="col-md-10">
+                                                <div class="newheader "> 
+                                                    <h4 class="card-title text-theme">Item {{!isset($order)?'Filter':'Search'}}</h4>
+                                                </div>
+                                            </div>
+                                            
+                                        </div> 
+                                        <div class = "row">
+                                            <div class="col-md-2">
+                                                <label for="filter_sub_type" class="form-label">Item Type</label>
+                                                <input type="text" id="filter_sub_type" name="sub_type_id" class="form-control ledgerselecct ui-autocomplete-input"  autocomplete="off" placeholder="Enter Item Type">
+                                                <input type="hidden" id="filter_sub_type_id" name="filter_sub_type_id" value=''>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label for="filter_category" class="form-label">Category</label>
+                                                <input type="text" id="filter_category" name="category_id" class="form-control ledgerselecct ui-autocomplete-input"  autocomplete="off" placeholder="Enter Category">
+                                                <input type="hidden" id="filter_category_id" name="filter_category_id" value=''>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label for="filter_sub_category" class="form-label">Sub Category</label>
+                                                <input type="text" id="filter_sub_category" name="subcategory_id" class="form-control ledgerselecct ui-autocomplete-input"  autocomplete="off" placeholder="Enter Sub Category">
+                                                <input type="hidden" id="filter_sub_category_id" name="filter_sub_category_id" value=''>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label for="filter_hsn" class="form-label">HSN</label>
+                                                <input type="text" id="filter_hsn" name="hsn_id" class="form-control ledgerselecct ui-autocomplete-input"  autocomplete="off" placeholder="Enter HSN">
+                                                <input type="hidden" id="filter_hsn_id" name="filter_hsn_id" value=''>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label for="filter_item_name_code" class="form-label">Item Name/Code</label>
+                                                <input type="text" id="filter_item_name_code" name="item" class="form-control ledgerselecct ui-autocomplete-input"  autocomplete="off" placeholder="Enter Item Name/Code">
+                                                <input type="hidden" id="filter_item_name_code_id" name="filter_item_name_code_id" value=''>
+                                            </div>
+                                            <div class = "col-md-2">
+                                                <button type="button" class="btn btn-warning btn-sm my-2 mx-3 clearPiFilter" onclick="clearFilters()"><i data-feather="x-circle"></i> Clear</button>
+                                            </div>
+                                        </div>
+                                        <div id = 'filter_attribute'>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-12 d-flex justify-content-end">
+                                            @if(!isset($order))
+                                            <button type="button" name="action" class="btn btn-primary btn-sm mx-5 justify-content-end generateReport" id="generateReport"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate Report</button>
+                                            <input type="hidden" name="generated" id="generated" value='0'></input>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="card">
                                 <div class="card-body customernewsection-form"> 
                                     <div class="border-bottom mb-2 pb-25">
@@ -256,181 +311,16 @@
                                                 <a href="#" onclick = "deleteItemRows();" class="btn btn-sm btn-outline-danger me-50"><i data-feather="x-circle"></i> Delete</a>
                                                 <a href="#" onclick = "addItemRow();" id = "add_item_section" style = "display:none;" class="btn btn-sm btn-outline-primary"><i data-feather="plus"></i> Add Item</a>
                                             </div>
+                                            @include('PSV.items_table')
                                         </div> 
                                     </div>
 
                                     <div class="row"> 
                                         <div class="col-md-12">
-                                            <div class="table-responsive pomrnheadtffotsticky">
-                                                <table class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"> 
-                                                    <thead>
-                                                        <tr>
-                                                            <th class="customernewsection-form">
-                                                                <div class="form-check form-check-primary custom-checkbox">
-                                                                    <input type="checkbox" class="form-check-input" id="select_all_items_checkbox" oninput="checkOrRecheckAllItems(this);">
-                                                                    <label class="form-check-label" for="select_all_items_checkbox"></label>
-                                                                </div>
-                                                            </th>
-                                                            <th width="150px">Item Code</th>
-                                                            <th width="240px">Item Name</th>
-                                                            <th>Attributes</th>
-                                                            <th>UOM</th>
-                                                            <th class="numeric-alignment">Physical Stock</th>
-                                                            <th class="numeric-alignment">Book Stk(Confirmed)</th>
-                                                            <th class="numeric-alignment">Book Stk(Unconfirmed)</th>
-                                                            <th class="numeric-alignment">Variance</th>
-                                                            <th class="numeric-alignment">Rate</th>
-                                                            <th class="numeric-alignment">Value</th>
-                                                            <th>Action</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody class="mrntableselectexcel" id="item_header">
-                                                        @if (isset($order))
-                                                            @php
-                                                                $docType = $order->document_type;
-                                                            @endphp
-                                                            @foreach ($order->items as $orderItemIndex => $orderItem)
-                                                                <tr id="item_row_{{$orderItemIndex}}" class="item_header_rows" onclick="onItemClick('{{$orderItemIndex}}');" data-detail-id="{{$orderItem->id}}" data-id="{{$orderItem->id}}">
-                                                                    <input type="hidden" name="psv_item_id[]" value="{{$orderItem->id}}" {{$orderItem->is_editable ? '' : 'readonly'}}>
-                                                                    <td class="customernewsection-form">
-                                                                        <div class="form-check form-check-primary custom-checkbox">
-                                                                            <input type="checkbox" class="form-check-input item_row_checks" id="item_checkbox_{{$orderItemIndex}}" del-index="{{$orderItemIndex}}">
-                                                                            <label class="form-check-label" for="item_checkbox_{{$orderItemIndex}}"></label>
-                                                                        </div>
-                                                                    </td>
-                                                                    <td class="poprod-decpt">
-                                                                        <input type="text" id="items_dropdown_{{$orderItemIndex}}" name="item_code[{{$orderItemIndex}}]" placeholder="Select" class="form-control mw-100 ledgerselecct comp_item_code ui-autocomplete-input {{$orderItem->is_editable ? '' : 'restrict'}}" autocomplete="off" data-name="{{$orderItem->item?->item_name}}" data-code="{{$orderItem->item?->item_code}}" data-id="{{$orderItem->item?->id}}" hsn_code="{{$orderItem->item?->hsn?->code}}" item-name="{{$orderItem->item?->item_name}}" specs="{{$orderItem->item?->specifications}}" attribute-array="{{$orderItem->item_attributes_array()}}" value="{{$orderItem->item?->item_code}}" {{$orderItem->is_editable ? '' : 'readonly'}} item-location="[]">
-                                                                        <input type="hidden" name="item_id[]" id="items_dropdown_{{$orderItemIndex}}_value" value="{{$orderItem->item_id}}">
-                                                                        {{-- @if ($orderItem->mo_item_id)
-                                                                            <input type="hidden" name="mo_item_id[{{$orderItemIndex}}]" id="mo_id_{{$orderItemIndex}}" value="{{$orderItem->mo_item_id}}">
-                                                                        @endif
-                                                                        @if ($orderItem->pwo_item_id)
-                                                                            <input type="hidden" name="pwo_item_id[{{$orderItemIndex}}]" id="pwo_id_{{$orderItemIndex}}" value="{{$orderItem->pwo_item_id}}">
-                                                                        @endif --}}
-                                                                    </td>
-                                                                    <td class="poprod-decpt">
-                                                                        <input type="text" id="items_name_{{$orderItemIndex}}" class="form-control mw-100" value="{{$orderItem->item?->item_name}}" name="item_name[{{$orderItemIndex}}]" readonly>
-                                                                    </td>
-                                                                    <td class="poprod-decpt" id="attribute_section_{{$orderItemIndex}}">
-                                                                        <button id="attribute_button_{{$orderItemIndex}}" {{count($orderItem->item_attributes_array()) > 0 ? '' : 'disabled'}} type="button" data-bs-toggle="modal" onclick="setItemAttributes('items_dropdown_{{$orderItemIndex}}', '{{$orderItemIndex}}', {{ json_encode(!$orderItem->is_editable) }});" data-bs-target="#attribute" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">Attributes</button>
-                                                                        <input type="hidden" name="attribute_value_{{$orderItemIndex}}">
-                                                                    </td>
-                                                                    <td>
-                                                                        <select class="form-select" name="uom_id[]" id="uom_dropdown_{{$orderItemIndex}}">
-                                                                        </select>
-                                                                    </td>
-                                                                    <td class="numeric-alignment">
-                                                                        <input type="text" id="item_physical_qty_{{$orderItemIndex}}" value="{{$orderItem->verified_qty}}" name="item_physical_qty[{{$orderItemIndex}}]" oninput='setVariance(this,{{$orderItemIndex}});setValue({{$orderItemIndex}});' class="form-control mw-100 text-end" >
-                                                                    </td>
-                                                                    <td class="numeric-alignment">
-                                                                        <input type="text" id="item_confirmed_qty_{{$orderItemIndex}}" 
-                                                                        value="{{ $order->document_status !== 'approved' && $order->document_status !== 'approval_not_required' ? 0.00 : $orderItem->confirmed_qty }}" 
-                                                                        name="item_confirmed_qty[{{$orderItemIndex}}]" 
-                                                                        class="form-control mw-100 text-end" 
-                                                                        readonly>
-                                                                    </td>
-                                                                    <td class="numeric-alignment">
-                                                                        <input type="text" id="item_unconfirmed_qty_{{$orderItemIndex}}" 
-                                                                            value="{{ $order->document_status !== 'approved' && $order->document_status !== 'approval_not_required' ? 0.00 : $orderItem->unconfirmed_qty }}" 
-                                                                            name="item_unconfirmed_qty[{{$orderItemIndex}}]" 
-                                                                            class="form-control mw-100 text-end" 
-                                                                            readonly>
-                                                                    </td>
-                                                                    <td class="numeric-alignment">
-                                                                        <input type="text" id="item_variance_qty_{{$orderItemIndex}}" value="{{ $orderItem->verified_qty - $orderItem->confirmed_qty }}" name="item_balance_qty[{{$orderItemIndex}}]" class="form-control mw-100 text-end" readonly>
-                                                                    </td>
-                                                                    <td class="numeric-alignment">
-                                                                        <input type="text" id="item_rate_{{$orderItemIndex}}" value="{{ $orderItem -> rate }}" name="item_rate[${newIndex}]" class="form-control mw-100 text-end" oninput="setValue({{$orderItemIndex}});" >
-                                                                    </td>
-                                                                    <td class="numeric-alignment">
-                                                                        <input type="text" id="item_value_{{$orderItemIndex}}" value="{{ $orderItem -> total_amount }}" name="item_value[${newIndex}]" class="form-control mw-100 text-end" readonly>
-                                                                    </td>
-                                                                    <td>
-                                                                        <div class="d-flex">
-                                                                            <div class="me-50 cursor-pointer" data-bs-toggle="modal" data-bs-target="#Remarks" onclick="setItemRemarks('item_remarks_{{$orderItemIndex}}');">
-                                                                                <span data-bs-toggle="tooltip" data-bs-placement="top" title="Remarks" class="text-primary"><i data-feather="file-text"></i></span>
-                                                                            </div>
-                                                                        </div>
-                                                                        <input type="hidden" id="item_remarks_{{$orderItemIndex}}" name="item_remarks[{{$orderItemIndex}}]">
-                                                                    </td>
-                                                                </tr>
-                                                            @endforeach
-                                                        @endif
-                                                    </tbody>
-                                                    <tfoot>
-                                                        <tr class="totalsubheadpodetail"> 
-                                                            <td colspan="12"></td>
-                                                        </tr>  
-                                                        <tr valign="top">
-                                                            <td id = "item_details_td" colspan="12" rowspan="10">
-                                                                <table class="table border">
-                                                                    <tr>
-                                                                        <td class="p-0">
-                                                                            <h6 class="text-dark mb-0 bg-light-primary py-1 px-50"><strong>Item Details</strong></h6>
-                                                                        </td>
-                                                                    </tr>   
-                                                                    <tr> 
-                                                                        <td class="poprod-decpt">
-                                                                            <div id ="current_item_cat_hsn">
-
-                                                                            </div>
-                                                                        </td> 
-                                                                    </tr>
-                                                                    <tr id = "current_item_specs_row"> 
-                                                                        <td class="poprod-decpt">
-                                                                            <div id ="current_item_specs">
-
-                                                                            </div>
-                                                                        </td> 
-                                                                    </tr> 
-                                                                    <tr id = "current_item_attribute_row"> 
-                                                                        <td class="poprod-decpt">
-                                                                            <div id ="current_item_attributes">
-
-                                                                            </div>
-                                                                        </td> 
-                                                                    </tr> 
-                                                                    
-                                                                    
-                                                                    <tr id = "current_item_qt_no_row"> 
-                                                                        <td class="poprod-decpt">
-                                                                            <div id ="current_item_qt_no">
-
-                                                                            </div>
-                                                                        </td> 
-                                                                    </tr>
-
-                                                                    <tr id = "current_item_store_location_row"> 
-                                                                        <td class="poprod-decpt">
-                                                                            <div id ="current_item_store_location">
-
-                                                                            </div>
-                                                                        </td> 
-                                                                    </tr>
-
-                                                                    <tr id = "current_item_description_row">
-                                                                        <td class="poprod-decpt">
-                                                                            <span class="badge rounded-pill badge-light-secondary"><strong>Remarks</strong>: <span style = "text-wrap:auto;" id = "current_item_description"></span></span>
-                                                                        </td>
-                                                                    </tr>
-
-                                                                    <tr id = "current_item_land_lease_agreement_row">
-                                                                        <td class="poprod-decpt">
-                                                                            <div id ="current_item_land_lease_agreement">
-
-                                                                            </div>
-                                                                        </td>
-                                                                    </tr>
-                                                                </table> 
-                                                            </td>
-                                                        </tr>
-                                                    </tfoot>
-                                                </table>
-                                                    </div>
-                                                     <div class="row mt-2">
-                                                     <div class="col-md-12">
-                                                            <div class = "row">
-                                                             <div class="col-md-4">
+                                                <div class="row mt-2">
+                                                    <div class="col-md-12">
+                                                        <div class = "row">
+                                                            <div class="col-md-4">
                                                                 <div class="mb-1">
                                                                     <label class="form-label">Upload Document</label>
                                                                     <input type="file" class="form-control" name = "attachments[]" onchange = "addFiles(this,'main_order_file_preview')" max_file_count = "{{isset($maxFileCount) ? $maxFileCount : 10}}" multiple >
@@ -441,191 +331,191 @@
                                                                 <div class = "row" id = "main_order_file_preview">
                                                                 </div>
                                                             </div>
-                                                            </div>
-                                                     </div>
-                                                        <div class="col-md-12">
-                                                            <div class="mb-1">  
-                                                                <label class="form-label">Final Remarks</label> 
-                                                                <textarea type="text" rows="4" class="form-control" placeholder="Enter Remarks here..." name = "final_remarks">{{isset($order) ? $order -> remarks : '' }}</textarea> 
-                                                            </div>
                                                         </div>
-
-                                                     </div> 
-												</div>
-                                             </div>
-								</div>
+                                                    </div>
+                                                    <div class="col-md-12">
+                                                        <div class="mb-1">  
+                                                         <label class="form-label">Final Remarks</label> 
+                                                            <textarea type="text" rows="4" class="form-control" placeholder="Enter Remarks here..." name = "final_remarks">{{isset($order) ? $order -> remarks : '' }}</textarea> 
+                                                        </div>
+                                                    </div>
+                                                </div> 
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </section>
+                    </section>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="modal fade" id="Remarks" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
-		<div class="modal-dialog  modal-dialog-centered" >
-			<div class="modal-content">
-				<div class="modal-header p-0 bg-transparent">
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-				</div>
-				<div class="modal-body px-sm-2 mx-50 pb-2">
-					<h1 class="text-center mb-1" id="shareProjectTitle">Add/Edit Remarks</h1>
-					<p class="text-center">Enter the details below.</p>
-                     <div class="row mt-2">
-						<div class="col-md-12 mb-1">
-							<label class="form-label">Remarks</label>
-							<textarea class="form-control" current-item = "item_remarks_0" onchange = "changeItemRemarks(this);" id ="current_item_remarks_input" placeholder="Enter Remarks"></textarea>
-						</div> 
+        <div class="modal fade" id="Remarks" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
+            <div class="modal-dialog  modal-dialog-centered" >
+                <div class="modal-content">
+                    <div class="modal-header p-0 bg-transparent">
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-				</div>
-				<div class="modal-footer justify-content-center">  
-						<button type="button" class="btn btn-outline-secondary me-1" onclick="closeModal('Remarks');">Cancel</button> 
-					<button type="button" class="btn btn-primary" onclick="closeModal('Remarks');">Submit</button>
-				</div>
-			</div>
-		</div>
-	</div>
-    
-    <div class="modal fade" id="attribute" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
-		<div class="modal-dialog  modal-dialog-centered">
-			<div class="modal-content">
-				<div class="modal-header p-0 bg-transparent">
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-				</div>
-				<div class="modal-body px-sm-2 mx-50 pb-2">
-					<h1 class="text-center mb-1" id="shareProjectTitle">Select Attribute</h1>
-					<p class="text-center">Enter the details below.</p>
-
-					<div class="table-responsive-md customernewsection-form">
-								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail" id = "attributes_table_modal" item-index = ""> 
-									<thead>
-										 <tr>  
-											<th>Attribute Name</th>
-											<th>Attribute Value</th>
-										  </tr>
-										</thead>
-										<tbody id = "attribute_table">	 
-
-									   </tbody>
-
-
-								</table>
-							</div>
-				</div>
-				
-				<div class="modal-footer justify-content-center">  
-						<button type="button" class="btn btn-outline-secondary me-1" onclick = "closeModal('attribute');">Cancel</button> 
-					    <button type="button" class="btn btn-primary" onclick = "submitAttr('attribute');">Select</button>
-				</div>
-			</div>
-		</div>
-	</div>
-    
-    <div class="modal fade text-start show" id="postvoucher" tabindex="-1" aria-labelledby="postVoucherModal" aria-modal="true" role="dialog">
-		<div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 1000px">
-			<div class="modal-content">
-				<div class="modal-header">
-					<div>
-                        <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="postVoucherModal"> Voucher Details</h4>
-                    </div>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-				</div>
-				<div class="modal-body">
-					 <div class="row"> 
-                        <div class="col-md-3">
-                            <div class="mb-1">
-                                <label class="form-label">Series <span class="text-danger">*</span></label>
-                                <input id = "voucher_book_code" class="form-control" disabled="" >
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="mb-1">
-                                <label class="form-label">Voucher No <span class="text-danger">*</span></label>
-                                <input id = "voucher_doc_no" class="form-control" disabled="" value="">
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="mb-1">
-                                <label class="form-label">Voucher Date <span class="text-danger">*</span></label>
-                                <input id = "voucher_date" class="form-control" disabled="" value="">
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="mb-1">
-                                <label class="form-label">Currency <span class="text-danger">*</span></label>
-                                <input id = "voucher_currency" class="form-control" disabled="" value="">
-                            </div>
-                        </div>
-                        <div class="col-md-12">
-							<div class="table-responsive">
-								<table class="mt-1 table table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"> 
-									<thead>
-										 <tr>
-											<th>Type</th>  
-											<th>Group</th>
-											<th>Leadger Code</th>
-											<th>Leadger Name</th>
-                                            <th class="text-end">Debit</th>
-                                            <th class="text-end">Credit</th>
-										  </tr>
-										</thead>
-										<tbody id = "posting-table">
-									   </tbody>
-								</table>
-							</div>
-						</div>
-					 </div>
-				</div>
-				<div class="modal-footer text-end">
-					<button onclick = "postVoucher(this);" id = "posting_button" type = "button" class="btn btn-primary btn-sm waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Submit</button>
-				</div>
-			</div>
-		</div>
-	</div>
-
-
-    <div class="modal fade" id="amendConfirmPopup" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <div>
-                        <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="myModalLabel17">Amend Physical Stock Verification
-                        </h4>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    <input type="hidden" name="action_type" id="action_type_main">
-                </div>
-                <div class="modal-body pb-2">
-                    <div class="row mt-1">
-                        <div class="col-md-12">
-                            <div class="mb-1">
+                    <div class="modal-body px-sm-2 mx-50 pb-2">
+                        <h1 class="text-center mb-1" id="shareProjectTitle">Add/Edit Remarks</h1>
+                        <p class="text-center">Enter the details below.</p>
+                        <div class="row mt-2">
+                            <div class="col-md-12 mb-1">
                                 <label class="form-label">Remarks</label>
-                                <textarea name="amend_remarks" class="form-control cannot_disable"></textarea>
-                            </div>
-                            <div class = "row">
-                                <div class = "col-md-8">
-                                    <div class="mb-1">
-                                        <label class="form-label">Upload Document</label>
-                                        <input name = "amend_attachments[]" onchange = "addFiles(this, 'amend_files_preview')" type="file" class="form-control cannot_disable" max_file_count = "2" multiple/>
-                                    </div>
-                                </div>
-                                <div class = "col-md-4" style = "margin-top:19px;">
-                                    <div class="row" id = "amend_files_preview">
-                                    </div>
-                                </div>
-                            </div>
-                            <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
+                                <textarea class="form-control" current-item = "item_remarks_0" onchange = "changeItemRemarks(this);" id ="current_item_remarks_input" placeholder="Enter Remarks"></textarea>
+                            </div> 
                         </div>
                     </div>
+                    <div class="modal-footer justify-content-center">  
+                            <button type="button" class="btn btn-outline-secondary me-1" onclick="closeModal('Remarks');">Cancel</button> 
+                        <button type="button" class="btn btn-primary" onclick="closeModal('Remarks');">Submit</button>
+                    </div>
                 </div>
-                <div class="modal-footer justify-content-center">  
-                    <button type="button" class="btn btn-outline-secondary me-1" onclick = "closeModal('amendConfirmPopup');">Cancel</button> 
-                    <button type="button" class="btn btn-primary" onclick = "submitAmend();">Submit</button>
+            </div>
+        </div>
+        
+        <div class="modal fade" id="attribute" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
+            <div class="modal-dialog  modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header p-0 bg-transparent">
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body px-sm-2 mx-50 pb-2">
+                        <h1 class="text-center mb-1" id="shareProjectTitle">Select Attribute</h1>
+                        <p class="text-center">Enter the details below.</p>
+
+                        <div class="table-responsive-md customernewsection-form">
+                                    <table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail" id = "attributes_table_modal" item-index = ""> 
+                                        <thead>
+                                            <tr>  
+                                                <th>Attribute Name</th>
+                                                <th>Attribute Value</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody id = "attribute_table">	 
+
+                                        </tbody>
+
+
+                                    </table>
+                                </div>
+                    </div>
+                    
+                    <div class="modal-footer justify-content-center">  
+                            <button type="button" class="btn btn-outline-secondary me-1" onclick = "closeModal('attribute');">Cancel</button> 
+                            <button type="button" class="btn btn-primary" onclick = "submitAttr('attribute');">Select</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="modal fade text-start show" id="postvoucher" tabindex="-1" aria-labelledby="postVoucherModal" aria-modal="true" role="dialog">
+            <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 1000px">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <div>
+                            <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="postVoucherModal"> Voucher Details</h4>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row"> 
+                            <div class="col-md-3">
+                                <div class="mb-1">
+                                    <label class="form-label">Series <span class="text-danger">*</span></label>
+                                    <input id = "voucher_book_code" class="form-control" disabled="" >
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-1">
+                                    <label class="form-label">Voucher No <span class="text-danger">*</span></label>
+                                    <input id = "voucher_doc_no" class="form-control" disabled="" value="">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-1">
+                                    <label class="form-label">Voucher Date <span class="text-danger">*</span></label>
+                                    <input id = "voucher_date" class="form-control" disabled="" value="">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-1">
+                                    <label class="form-label">Currency <span class="text-danger">*</span></label>
+                                    <input id = "voucher_currency" class="form-control" disabled="" value="">
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="table-responsive">
+                                    <table class="mt-1 table table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"> 
+                                        <thead>
+                                            <tr>
+                                                <th>Type</th>  
+                                                <th>Group</th>
+                                                <th>Leadger Code</th>
+                                                <th>Leadger Name</th>
+                                                <th class="text-end">Debit</th>
+                                                <th class="text-end">Credit</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody id = "posting-table">
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer text-end">
+                        <button onclick = "postVoucher(this);" id = "posting_button" type = "button" class="btn btn-primary btn-sm waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Submit</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="modal fade" id="amendConfirmPopup" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <div>
+                            <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="myModalLabel17">Amend Physical Stock Verification
+                            </h4>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <input type="hidden" name="action_type" id="action_type_main">
+                    </div>
+                    <div class="modal-body pb-2">
+                        <div class="row mt-1">
+                            <div class="col-md-12">
+                                <div class="mb-1">
+                                    <label class="form-label">Remarks</label>
+                                    <textarea name="amend_remarks" class="form-control cannot_disable"></textarea>
+                                </div>
+                                <div class = "row">
+                                    <div class = "col-md-8">
+                                        <div class="mb-1">
+                                            <label class="form-label">Upload Document</label>
+                                            <input name = "amend_attachments[]" onchange = "addFiles(this, 'amend_files_preview')" type="file" class="form-control cannot_disable" max_file_count = "2" multiple/>
+                                        </div>
+                                    </div>
+                                    <div class = "col-md-4" style = "margin-top:19px;">
+                                        <div class="row" id = "amend_files_preview">
+                                        </div>
+                                    </div>
+                                </div>
+                                <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer justify-content-center">  
+                        <button type="button" class="btn btn-outline-secondary me-1" onclick = "closeModal('amendConfirmPopup');">Cancel</button> 
+                        <button type="button" class="btn btn-primary" onclick = "submitAmend();">Submit</button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</form>
+    </form>
 
 <div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -737,7 +627,7 @@
                 });
             }
         })
-
+        const order = @json(isset($order) ? $order : null);
         $('#issues').on('change', function() {
             var issue_id = $(this).val();
             var seriesSelect = $('#series');
@@ -838,7 +728,61 @@
                 }
             });
     }
-
+    function initializeAutocompleteSearch(selector, siblingSelector, type, labelField) {
+            $("#" + selector).autocomplete({
+                source: function(request, response) {
+                    let dataPayload = {
+                        q:request.term,
+                        type : type
+                    };
+                    if(type == "sub_type") {
+                        dataPayload.category_id = $("#filter_category_id").val()
+                    }
+                    $.ajax({
+                        url: '/search',
+                        method: 'GET',
+                        dataType: 'json',
+                        data: dataPayload,
+                        success: function(data) {
+                            response($.map(data, function(item) {
+                                return {
+                                    id: item.id,
+                                    label: item[labelField],
+                                };
+                            }));
+                        },
+                        error: function(xhr) {
+                            console.error('Error fetching customer data:', xhr.responseText);
+                        }
+                    });
+                },
+                minLength: 0,
+                select: function(event, ui) {
+                    var $input = $(this);
+                    var itemCode = ui.item.label;
+                    var itemId = ui.item.id;
+                    $input.val(itemCode);
+                    $("#" + siblingSelector).val(itemId);
+                    $("#" + siblingSelector).trigger('change');
+                    return false;
+                },
+                change: function(event, ui) {
+                    if (!ui.item) {
+                        $(this).val("");
+                        $("#" + siblingSelector).val("");
+                    }
+                }
+            }).focus(function() {
+                if (this.value === "") {
+                    $(this).autocomplete("search", "");
+                }
+            });
+    }
+initializeAutocompleteSearch('filter_sub_type','filter_sub_type_id','sub_type','name');
+initializeAutocompleteSearch('filter_category','filter_category_id','category','name');
+initializeAutocompleteSearch('filter_sub_category','filter_sub_category_id','subcategory','name');
+initializeAutocompleteSearch('filter_hsn','filter_hsn_id','hsn','code');
+initializeAutocompleteSearch('filter_item_name_code','filter_item_name_code_id','inventory_items','item_name');
     function resetStoreFields()
     {
         $("#new_store_id_input").val("")
@@ -1090,12 +1034,11 @@
                     },
                 }).then(response => response.json()).then(data => {
                     const response = data.data;
-                    console.log(response,'reponse');
                     selectedElement.setAttribute('attribute-array', JSON.stringify(response.attributes));
                     selectedElement.setAttribute('item-name', response.item.item_name);
                     document.getElementById('items_name_' + index).value = response.item.item_name;
                     selectedElement.setAttribute('hsn_code', (response.item_hsn));
-                    setItemAttributes('items_dropdown_' + index, index);
+                    setItemAttributes('items_dropdown_' + index, index,true);
                     let rateElement = document.getElementById('item_rate_' + index);
                     if (rateElement && response.item.sell_price) {
                         rateElement.value = parseFloat(response.item.sell_price);
@@ -1131,7 +1074,7 @@
                     ${element.group_name}
                     </td>
                     <td>
-                    <select ${disabled ? 'disabled' : ''} class="form-select select2" id = "attribute_val_${index}" style = "max-width:100% !important;" onchange = "changeAttributeVal(this, ${elementIdForDropdown}, ${index});">
+                    <select ${disabled ? '' : 'disabled'} class="form-select select2" id = "attribute_val_${index}" style = "max-width:100% !important;" onchange = "changeAttributeVal(this, ${elementIdForDropdown}, ${index});">
                         <option>Select</option>
                         ${optionsHtml}
                     </select> 
@@ -1148,7 +1091,10 @@
                     document.getElementById('attribute_button_' + index).disabled = false;
                 }
                 const input = document.getElementById('item_confirmed_qty_' + index);
-                getStoresData(index, input ? input.value ?? 0 : 0);
+                if(!(order && !order.document_status=={{App\Helpers\ConstantHelper::DRAFT}}))
+                {
+                    getStoresData(index, input ? input.value ?? 0 : 0);
+                }
             }
 
         }
@@ -1188,9 +1134,9 @@
                 });
                 return;
                 }
-
+                $(".Item_Search_section").hide();
             } else {
-                let addRow = $('#items_dropdown_' + (newIndex - 1)).val() &&  parseFloat($('#item_confirmed_qty_' + (newIndex - 1)).val()) > 0;
+                let addRow = $('#items_dropdown_' + (newIndex - 1)).val();
                 if (!addRow) {
                     Swal.fire({
                     title: 'Error!',
@@ -1257,7 +1203,7 @@
                     <input type="text" id="items_name_${newIndex}" name="item_name[${newIndex}]" class="form-control mw-100" value="" readonly>
                 </td>
                 <td id="attribute_section_${newIndex}">
-                    <button id="attribute_button_${newIndex}" type="button" data-bs-toggle="modal" onclick="setItemAttributes('items_dropdown_${newIndex}', '${newIndex}');" data-bs-target="#attribute" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">Attributes</button>
+                    <button id="attribute_button_${newIndex}" type="button" data-bs-toggle="modal" onclick="setItemAttributes('items_dropdown_${newIndex}', '${newIndex}',true);" data-bs-target="#attribute" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">Attributes</button>
                     <input type="hidden" name="attribute_value_${newIndex}">
                 </td>
                 <td>
@@ -1336,6 +1282,7 @@
             if (allRowsNew.length > 0) {
                 disableHeader();
             } else {
+                $(".Item_Search_section").show();
                 enableHeader();
             }
             
@@ -1440,39 +1387,40 @@
 
         $("#store_id_input").on('change', function() {
             const storeId = $(this).val();
+            $("#item_header").html('');
             const sub_store_id = "{{ isset($order) && $order->sub_store_id ? $order->sub_store_id : '' }}";
             if (storeId) {
-            $.ajax({
-                url: "{{ route('subStore.get.from.stores') }}",
-                method: 'GET',
-                dataType: 'json',
-                data: {
-                store_id: storeId,
-                types : "{{ App\Helpers\ConstantHelper::STOCKK }}",
-                },
-                success: function(data) {
-                console.log('Sub-stores fetched successfully:', data);
-                if (data.data && data.data.length > 0) {
-                    let options = '<option value="" disabled selected>Select</option>';
-                    data.data.forEach(function(subStore) {
-                        options += `<option value="${subStore.id}" ${subStore.id == sub_store_id ? 'selected' : ''}>${subStore.name}</option>`;
-                    });
-                    $('#sub_store_id_input').empty().html(options);
-                }
-                else{
-                    $('#sub_store_id_input').empty();
-                    Swal.fire({
-                        title: 'Error!',
-                        text: 'No Store Found On this Location.',
-                        icon: 'warning',
-                    });
-                }
-                // Handle the response data as needed
-                },
-                error: function(xhr) {
-                console.error('Error fetching sub-stores:', xhr.responseText);
-                }
-            });
+                $.ajax({
+                    url: "{{ route('subStore.get.from.stores') }}",
+                    method: 'GET',
+                    dataType: 'json',
+                    data: {
+                    store_id: storeId,
+                    types : "{{ App\Helpers\ConstantHelper::STOCKK }}",
+                    },
+                    success: function(data) {
+                    console.log('Sub-stores fetched successfully:', data);
+                    if (data.data && data.data.length > 0) {
+                        let options = '<option value="" disabled selected>Select</option>';
+                        data.data.forEach(function(subStore) {
+                            options += `<option value="${subStore.id}" ${subStore.id == sub_store_id ? 'selected' : ''}>${subStore.name}</option>`;
+                        });
+                        $('#sub_store_id_input').empty().html(options);
+                    }
+                    else{
+                        $('#sub_store_id_input').empty();
+                        Swal.fire({
+                            title: 'Error!',
+                            text: 'No Store Found On this Location.',
+                            icon: 'warning',
+                        });
+                    }
+                    // Handle the response data as needed
+                    },
+                    error: function(xhr) {
+                    console.error('Error fetching sub-stores:', xhr.responseText);
+                    }
+                });
             }
         });
 
@@ -1576,25 +1524,6 @@
             }
             
 
-            const leaseAgreementDetailsRow = document.getElementById('current_item_land_lease_agreement_row');
-            const leaseAgreementDetails = document.getElementById('current_item_land_lease_agreement');
-            //assign agreement details
-            let agreementNo = document.getElementById('land_lease_agreement_no_' + itemRowId)?.value;
-            let leaseEndDate = document.getElementById('land_lease_end_date_' + itemRowId)?.value;
-            let leaseDueDate = document.getElementById('land_lease_due_date_' + itemRowId)?.value;
-            let repaymentPeriodType = document.getElementById('land_lease_repayment_period_' + itemRowId)?.value;
-
-            if (agreementNo && leaseEndDate && leaseDueDate && repaymentPeriodType) {
-                leaseAgreementDetails.style.display = "table-row";
-                leaseAgreementDetails.innerHTML = `<strong style = "font-size:11px; color : #6a6a6a;">Agreement Details</strong>:<span class="badge rounded-pill badge-light-primary"><strong>Agreement No</strong>: ${agreementNo}</span><span class="badge rounded-pill badge-light-primary"><strong>Lease End Date</strong>: ${leaseEndDate}</span><span class="badge rounded-pill badge-light-primary"><strong>Repayment Schedule</strong>: ${repaymentPeriodType}</span><span class="badge rounded-pill badge-light-primary"><strong>Due Date</strong>: ${leaseDueDate}</span>`;
-            } else {
-                leaseAgreementDetails.style.display = "none";
-                leaseAgreementDetails.innerHTML = "";
-            }
-            //assign land plot details
-            let parcelName = document.getElementById('land_lease_land_parcel_' + itemRowId)?.value;
-            let plotsName = document.getElementById('land_lease_land_plots_' + itemRowId)?.value;
-
             let qtDocumentNo = document.getElementById('qt_document_no_'+ itemRowId);
             let qtBookCode = document.getElementById('qt_book_code_'+ itemRowId);
             let qtDocumentDate = document.getElementById('qt_document_date_'+ itemRowId);
@@ -1603,18 +1532,6 @@
             qtBookCode = qtBookCode?.value ? qtBookCode.value : '';
             qtDocumentDate = qtDocumentDate?.value ? qtDocumentDate.value : '';
 
-            // if (qtDocumentNo && qtBookCode && qtDocumentDate) {
-            //     qtDetailsRow.style.display = "table-row";
-            //     qtDetails.innerHTML = `<strong style = "font-size:11px; color : #6a6a6a;">Reference From</strong>:<span class="badge rounded-pill badge-light-primary"><strong>Document No: </strong>: ${qtBookCode + "-" + qtDocumentNo}</span><span class="badge rounded-pill badge-light-primary"><strong>Document Date: </strong>: ${qtDocumentDate}</span>`;
-
-            //     if (parcelName && plotsName) {
-            //         qtDetails.innerHTML =  qtDetails.innerHTML + `<span class="badge rounded-pill badge-light-primary"><strong>Land Parcel</strong>: ${parcelName}</span><span class="badge rounded-pill badge-light-primary"><strong>Plots</strong>: ${plotsName}</span>`;
-            //     }
-            // } else {
-            //     qtDetailsRow.style.display = "none";
-            //     qtDetails.innerHTML = ``;
-            // }
-            // document.getElementById('current_item_hsn_code').innerText = hsn_code;
             var innerHTMLAttributes = ``;
             attributes.forEach(element => {
                 var currentOption = '';
@@ -1627,7 +1544,8 @@
             });
             var specsInnerHTML = ``;
             specs.forEach(spec => {
-                specsInnerHTML +=  `<span class="badge rounded-pill badge-light-primary "><strong>${spec.specification_name}</strong>: ${spec.value}</span>`;
+                    specsInnerHTML +=  `<span class="badge rounded-pill badge-light-primary "><strong>${spec.specification_name}</strong>: ${spec.value ?? " "}</span>`;
+            
             });
 
             document.getElementById('current_item_attributes').innerHTML = `<strong style = "font-size:11px; color : #6a6a6a;">Attributes</strong>:` + innerHTMLAttributes;
@@ -1693,6 +1611,7 @@
                                     `;
                                 }
                                 //Stocks
+                                console.log(data?.stocks);
                                     if (data?.stocks) {
                                     // document.getElementById('current_item_stocks_row').style.display = "table-row";
                                     // document.getElementById('current_item_stocks').innerHTML = `
@@ -1700,12 +1619,23 @@
                                     // <span class="badge rounded-pill badge-light-primary"><strong>Pending Stocks</strong>: <span id = "item_category">${data?.stocks?.pendingStockAltUom}</span></span>
                                     // `;
                                     if (({{ isset($order) && in_array($order->document_status, [App\Helpers\ConstantHelper::DRAFT]) ? 'true' : 'false' }} || {{ !isset($order) ? 'true' : 'false' }})) {
-                                        $(`#item_confirmed_qty_${itemRowId}`).val(data?.stocks?.confirmedStockAltUom ?? 0.00);
+                                        $(`#item_confirmed_qty_${itemRowId}`).val(data?.stocks?.confirmedStockAltUom  ?? 0.00);
                                         $(`#item_unconfirmed_qty_${itemRowId}`).val(data?.stocks?.pendingStockAltUom ?? 0.00);
-                                        getStoresData(itemRowId,data?.stocks?.confirmedStockAltUom ?? 0.00,false);
+                                        if(!order && order.document_status !={{App\Helpers\ConstantHelper::DRAFT}})
+                                        {
+                                            getStoresData(itemRowId,data?.stocks?.confirmedStockAltUom ?? 0.00,false);
+                                        }
                                     }
                                     if(!$(`#item_variance_qty_${itemRowId}`).val() || (!$(`#item_physical_qty_${itemRowId}`).val() || $(`#item_physical_qty_${itemRowId}`).val() == 0)) {
                                         $(`#item_variance_qty_${itemRowId}`).val(data?.stocks?.confirmedStockAltUom);
+                                    }
+                                    if(data.stocks.confirmedStocks)
+                                    {
+                                        $(`#item_rate_${itemRowId}`).attr('disabled',true);
+                                    }
+                                    else
+                                    {
+                                        $(`#item_rate_${itemRowId}`).attr('disabled',false);
                                     }
                                     var inputQtyBox = document.getElementById('item_confirmed_qty_' + itemRowId);
 
@@ -1756,27 +1686,32 @@
             const currentQty = parseFloat(element.value) || 0; // Get the current element's value
             const variance = $(`#item_variance_qty_${index}`); // Get the next <td> element
             const confirmedQty = $(`#item_confirmed_qty_${index}`).val();
-            console.log(variance);
             if (variance) {
                 if (currentQty) {
                     const varianceQty = parseFloat(variance.val()) || 0; // Get the next input's value
                     variance.val((currentQty - confirmedQty ).toFixed(4)); // Subtract and update the value
-                    console.log(variance);
                     
                 }
                 else{
-                    console.log(variance);
                     variance.val(confirmedQty);
                 }
             }
         }
-
         function setValue(index)
         {
             const currentQty = $(`#item_physical_qty_${index}`).val();
             const currentRate = $(`#item_rate_${index}`).val();
+            const variance = $(`#item_variance_qty_${index}`); // Get the next <td> element
             const value = currentQty * currentRate;
             $(`#item_value_${index}`).val(value);
+            selectedName = $("#psv_item_id_" + index).val();
+            selectedValue = {'physical_qty': currentQty, 'rate': currentRate, 'variance': variance.val()};
+            if (selectedValue) {
+                changed_item[selectedName] = selectedValue;
+            } else {
+                delete changed_item[selectedName];
+            }
+            console.log(changed_item);
         }
 
         function checkStockData(itemRowId)
@@ -1892,21 +1827,11 @@
                                         totalValue+= parseFloat(storeData.cost_per_unit) * parseFloat(storeData.allocated_quantity_alt_uom);
                                     });
                                     var actualQty = qtyElement.value;
-                                    console.log('hehe',actualQty,qty);
                                     if (actualQty > 0) {
                                         totalRate = parseFloat(totalValue) / parseFloat(qty ? qty : qtyElement.value); 
                                         rateInput.value = parseFloat(totalRate).toFixed(2);
-                                        console.log('data',totalRate);
-                                        if(totalRate > 0)
-                                        {
-                                            rateInput.setAttribute('disabled',true);
-                                        }
-                                        else{
-                                            rateInput.removeAttribute('disabled');
-                                        }
                                     } else {
                                         rateInput.value = 0.00;
-                                        rateInput.removeAttribute('disabled');
                                         valueInput.value = 0.00;
                                     }
                                     // storeElement.setAttribute('data-stores', encodeURIComponent(JSON.stringify(storesArray)));
@@ -2006,6 +1931,8 @@
 
         function submitForm(status) {
             // Create FormData object
+            changed_item= {};
+            selectedValues = {};
             enableHeader();
         }
 
@@ -2163,23 +2090,22 @@
         localStorage.setItem('deletedSiItemIds', JSON.stringify([]));
         localStorage.setItem('deletedAttachmentIds', JSON.stringify([]));
 
-        const order = @json(isset($order) ? $order : null);
-        if (order) {
+        const items = @json(isset($items) ? $items : null);
+        if (items) {
             //Disable header fields which cannot be changed
             disableHeader();
-            if ($("#store_id_input").length) {
-                $("#store_id_input").trigger('change');
-            }
+            // if ($("#store_id_input").length) {
+            //     $("#store_id_input").trigger('change');
+            // }
             //Item Discount
-            order.items.forEach((item, itemIndex) => {
-                setValue(itemIndex);
+            items.data.forEach((item, itemIndex) => {
                 itemUomsHTML = ``;
                 if (item.item.uom && item.item.uom.id) {
                     itemUomsHTML += `<option selected value = '${item.item.uom.id}' ${item.item.uom.id == item.uom_id ? "selected" : ""}>${item.item.uom.alias}</option>`;
                 }
                 document.getElementById('uom_dropdown_' + itemIndex).innerHTML = itemUomsHTML;
-                onItemClick(itemIndex);
                 setAttributesUI(itemIndex);
+                onItemClick(itemIndex);
             });
             //Disable header fields which cannot be changed
             disableHeader();
@@ -2195,7 +2121,7 @@
         viewModeScript(finalAmendSubmitButton ? false : true);
 
     }
-
+    editScript();
     document.addEventListener('DOMContentLoaded', function() {
         const order = @json(isset($order) ? $order : null);
         onServiceChange(document.getElementById('service_id_input'), order ? false : true);
@@ -2209,7 +2135,8 @@
         if (selectionSection) {
             selectionSection.style.display = "none";
         }
-        document.getElementById('add_item_section').style.display = "none";
+        let addItemSec = document.getElementById('add_item_section');
+        if (addItemSec) addItemSec.style.display = "none";
         $("#order_date_input").attr('max', "<?php echo date('Y-m-d'); ?>");
         $("#order_date_input").attr('min', "<?php echo date('Y-m-d'); ?>");
         $("#order_date_input").off('input');
@@ -2350,7 +2277,10 @@
                         }
                     }
                     if (selectSingleVal == 'd') {
-                        document.getElementById('add_item_section').style.display = "";
+                        let addItemSection = document.getElementById('add_item_section');
+                        if (addItemSection) {
+                            addItemSection.style.display = "";
+                        }
                     }
                 });
             }
@@ -2974,7 +2904,7 @@
 
 
 
-    editScript();
+    // editScript();
 
     
     function checkItemAddValidation()
@@ -4218,11 +4148,12 @@ document.addEventListener('input', function (e) {
     // }
     function submitAttr(id) {
         var item_index = $('#attributes_table_modal').attr('item-index');
-        console.log('item-index',item_index);
         onItemClick(item_index);
         const input = document.getElementById('item_physical_qty_' + item_index);
-        console.log(input);
-        getStoresData(item_index, input ? (input.value ?? 0) : 0);
+        if(!(order && !order.document_status=={{App\Helpers\ConstantHelper::DRAFT}}))
+        {
+            getStoresData(item_index, input ? (input.value ?? 0) : 0);
+        }
         setAttributesUI(item_index);
         closeModal(id);
     }
@@ -4238,7 +4169,6 @@ document.addEventListener('input', function (e) {
         } else {
             currentItemIndex = currentSelectedItemIndex;
         }
-        console.log('current-item-index',currentItemIndex);
         //Attribute modal is closed
         let itemIdDoc = document.getElementById('items_dropdown_' + currentItemIndex);
         if (!itemIdDoc) {
@@ -4249,11 +4179,11 @@ document.addEventListener('input', function (e) {
         if (!attributesArray) {
             return;
         }
-        attributesArray = JSON.parse(attributesArray);
+        attributesArray = typeof attributesArray === 'string' ? JSON.parse(decodeURIComponent(attributesArray)) : attributesArray;
         if (attributesArray.length == 0) {
             return;
         }
-        let attributeUI = `<div data-bs-toggle="modal" id="attribute_button_${currentItemIndex}" onclick = "setItemAttributes('items_dropdown_${currentItemIndex}', ${currentItemIndex});" data-bs-target="#attribute" style = "white-space:nowrap; cursor:pointer;">`;
+        let attributeUI = `<div data-bs-toggle="modal" id="attribute_button_${currentItemIndex}" onclick = "setItemAttributes('items_dropdown_${currentItemIndex}', ${currentItemIndex},{{ isset($order) && !$order->document_status==App\Helpers\ConstantHelper::DRAFT ? '' : 'true' }});" data-bs-target="#attribute" style = "white-space:nowrap; cursor:pointer;">`;
         let maxCharLimit = 15;
         let attrTotalChar = 0;
         let total_selected = 0;
@@ -4265,7 +4195,6 @@ document.addEventListener('input', function (e) {
             }
             let short = false;
             total_atts += 1;
-            console.log(attrArr);
 
             if(attrArr.short_name.length > 0)
             {
@@ -4277,7 +4206,6 @@ document.addEventListener('input', function (e) {
             attrArr.values_data.forEach((attrVal) => {
                 if (attrVal.selected === true) {
                     total_selected += 1;
-                    console.log('in If' , total_selected);
                     // Add character length with selected value
                     currentStringLength += Number(attrVal.value.length);
                     currentSelectedValue = attrVal.value;
@@ -4304,19 +4232,16 @@ document.addEventListener('input', function (e) {
             attrTotalChar += Number(currentStringLength);
         });
         let attributeSection = document.getElementById('attribute_section_' + currentItemIndex);
-        console.log(attributeSection,'section before if');
         if (attributeSection) {
             attributeSection.innerHTML = attributeUI + '</div>';
-            console.log(attributeSection,'section after if');
         }
-        console.log('before If' , total_selected);
         if(total_selected == 0){
             attributeSection.innerHTML = `
                 <button id = "attribute_button_${currentItemIndex}" 
                     ${attributesArray.length > 0 ? '' : 'disabled'} 
                     type = "button" 
                     data-bs-toggle="modal" 
-                    onclick = "setItemAttributes('items_dropdown_${currentItemIndex}', '${currentItemIndex}', false);" 
+                    onclick = "setItemAttributes('items_dropdown_${currentItemIndex}', '${currentItemIndex}', true);" 
                     data-bs-target="#attribute" 
                     class="btn p-25 btn-sm btn-outline-secondary" 
                     style="font-size: 10px">Attributes</button>
@@ -4326,163 +4251,390 @@ document.addEventListener('input', function (e) {
         
     }
 
-    function openImportItemModal(type, psvHeaderId = null) {
-    // Check if the store is selected
-    const storeId = $('#store_id_input').val();
-    if (!storeId) {
-        Swal.fire({
-            title: 'Error!',
-            text: 'Please select a store first.',
-            icon: 'error',
-        });
-        return false;
-    }
+    // function openImportItemModal(type, psvHeaderId = null) {
+    //     // Check if the store is selected
+    //     const storeId = $('#store_id_input').val();
+    //     if (!storeId) {
+    //         Swal.fire({
+    //             title: 'Error!',
+    //             text: 'Please select a store first.',
+    //             icon: 'error',
+    //         });
+    //         return false;
+    //     }
 
-    // Open the modal
-    $("#importItemModal").modal('show');
+    //     // Open the modal
+    //     $("#importItemModal").modal('show');
 
-    // Remove existing hidden inputs to avoid duplicates
-    $('#importItemModal').find('input[name="store_id"]').remove();
-    $('#importItemModal').find('input[name="type"]').remove();
-    $('#importItemModal').find('input[name="psv_header_id"]').remove();
+    //     // Remove existing hidden inputs to avoid duplicates
+    //     $('#importItemModal').find('input[name="store_id"]').remove();
+    //     $('#importItemModal').find('input[name="type"]').remove();
+    //     $('#importItemModal').find('input[name="psv_header_id"]').remove();
 
-    // Append new hidden inputs
-    $('#importItemModal').find('form').append(`<input type="hidden" name="store_id" value="${storeId}">`);
-    $('#importItemModal').find('form').append(`<input type="hidden" name="type" value="${type}">`);
-    $('#importItemModal').find('form').append(`<input type="hidden" name="psv_header_id" value="${psvHeaderId}">`);
+    //     // Append new hidden inputs
+    //     $('#importItemModal').find('form').append(`<input type="hidden" name="store_id" value="${storeId}">`);
+    //     $('#importItemModal').find('form').append(`<input type="hidden" name="type" value="${type}">`);
+    //     $('#importItemModal').find('form').append(`<input type="hidden" name="psv_header_id" value="${psvHeaderId}">`);
+    // }
+
+// // File upload handling
+// $(document).on('change', '#fileUpload', function (e) {
+//     const file = e.target.files[0];
+//     if (!file) {
+//         console.warn("No file selected.");
+//         return;
+//     }
+
+//     handleFileSelected(file);
+// });
+
+// function handleFileSelected(file) {
+//     const fileName = file.name;
+//     const fileSize = file.size;
+//     const fileExtension = fileName.split('.').pop().toLowerCase();
+//     const ALLOWED_EXTENSIONS = ['xls', 'xlsx'];
+//     const MAX_FILE_SIZE = 30 * 1024 * 1024; // 30 MB
+
+//     $('#upload-error').hide().html('');
+
+//     // Validate file extension
+//     if (!ALLOWED_EXTENSIONS.includes(fileExtension)) {
+//         displayError(`Invalid file type. Allowed types are: ${ALLOWED_EXTENSIONS.join(', ')}`);
+//         $('#fileUpload').val('');
+//         return;
+//     }
+
+//     // Validate file size
+//     if (fileSize > MAX_FILE_SIZE) {
+//         displayError(`File size exceeds ${MAX_FILE_SIZE / 1024 / 1024} MB. Please upload a smaller file.`);
+//         $('#fileUpload').val('');
+//         return;
+//     }
+
+//     // Display file name and enable the proceed button
+//     $('#selectedFileName').text(fileName);
+//     $('#fileNameDisplay').show();
+//     $('#proceedBtn').show();
+// }
+
+// function displayError(message) {
+//     $('#upload-error').html(message).show();
+//     $('#fileNameDisplay').hide();
+//     $('#proceedBtn').hide();
+// }
+
+// // Cancel button functionality
+// $('#cancelBtn').on('click', function () {
+//     $('#fileUpload').val('');
+//     $('#fileNameDisplay').hide();
+//     $('#proceedBtn').hide();
+//     $('#upload-error').hide();
+// });
+
+// // Submit the import form
+// $(document).on('submit', '.importForm', function (e) {
+//     e.preventDefault();
+
+//     const form = $(this);
+//     const submitButton = form.find(':submit');
+//     const originalButtonHtml = submitButton.html();
+
+//     submitButton.html('<i class="fa fa-spinner fa-spin"></i>').prop('disabled', true);
+
+//     const formData = new FormData(this);
+
+//     $.ajax({
+//         url: form.attr('action'),
+//         type: form.attr('method'),
+//         data: formData,
+//         contentType: false,
+//         processData: false,
+//         success: function (response) {
+//             submitButton.html(originalButtonHtml).prop('disabled', false);
+
+//             if (response.status === 'success') {
+//                 Swal.fire({
+//                     title: 'Success!',
+//                     text: response.message,
+//                     icon: 'success',
+//                 });
+//                 // Handle successful items
+//                 populateTable('#success-table-body', response.successful_items);
+//                 $('#success-count').text(`(${response.successful_items.length})`);
+//             } else {
+//                 Swal.fire({
+//                     title: 'Error!',
+//                     text: response.message,
+//                     icon: 'error',
+//                 });
+//             }
+
+//             // Handle failed items
+//             populateTable('#failed-table-body', response.failed_items);
+//             $('#failed-count').text(`(${response.failed_items.length})`);
+//         },
+//         error: function (xhr) {
+//             submitButton.html(originalButtonHtml).prop('disabled', false);
+//             const errorMessage = xhr.responseJSON?.message || 'An error occurred while processing the file.';
+//             displayError(errorMessage);
+//         },
+//     });
+// });
+
+// function populateTable(tableBodySelector, items) {
+//     const tableBody = $(tableBodySelector);
+//     tableBody.empty();
+
+//     if (items.length > 0) {
+//         items.forEach((item, index) => {
+//             const row = `
+//                 <tr>
+//                     <td>${index + 1}</td>
+//                     <td>${item.item_code}</td>
+//                     <td>${item.item_name}</td>
+//                     <td>${item.uom_code}</td>
+//                     <td>${item.hsn_code}</td>
+//                     <td>${item.store_code}</td>
+//                     <td>${item.order_qty}</td>
+//                     <td>${item.rate}</td>
+//                     <td class="${item.status === 'success' ? 'text-success' : 'text-danger'}">
+//                         ${item.status === 'success' ? 'Success' : item.reason}
+//                     </td>
+//                 </tr>
+//             `;
+//             tableBody.append(row);
+//         });
+//     } else {
+//         tableBody.append('<tr><td colspan="9" class="text-center">No records found</td></tr>');
+//     }
+// }
+let selectedValues = {};
+
+let itemData = {};
+let debounceTimer = null;
+
+if ({{ isset($order) ? 'true' : 'false' }}) {
+    $("#filter_sub_type_id, #filter_category_id, #filter_sub_category_id, #filter_hsn_id, #filter_item_name_code_id").on('change', function () {
+        searchAjax();
+    });
 }
+function createAttributeSearch(attribute_data) {
+    console.log("attribute_data:", attribute_data); // Log for debugging
 
-// File upload handling
-$(document).on('change', '#fileUpload', function (e) {
-    const file = e.target.files[0];
-    if (!file) {
-        console.warn("No file selected.");
-        return;
-    }
+    let attributeSearchHTML = ''; // Start with an empty string
 
-    handleFileSelected(file);
-});
-
-function handleFileSelected(file) {
-    const fileName = file.name;
-    const fileSize = file.size;
-    const fileExtension = fileName.split('.').pop().toLowerCase();
-    const ALLOWED_EXTENSIONS = ['xls', 'xlsx'];
-    const MAX_FILE_SIZE = 30 * 1024 * 1024; // 30 MB
-
-    $('#upload-error').hide().html('');
-
-    // Validate file extension
-    if (!ALLOWED_EXTENSIONS.includes(fileExtension)) {
-        displayError(`Invalid file type. Allowed types are: ${ALLOWED_EXTENSIONS.join(', ')}`);
-        $('#fileUpload').val('');
-        return;
-    }
-
-    // Validate file size
-    if (fileSize > MAX_FILE_SIZE) {
-        displayError(`File size exceeds ${MAX_FILE_SIZE / 1024 / 1024} MB. Please upload a smaller file.`);
-        $('#fileUpload').val('');
-        return;
-    }
-
-    // Display file name and enable the proceed button
-    $('#selectedFileName').text(fileName);
-    $('#fileNameDisplay').show();
-    $('#proceedBtn').show();
-}
-
-function displayError(message) {
-    $('#upload-error').html(message).show();
-    $('#fileNameDisplay').hide();
-    $('#proceedBtn').hide();
-}
-
-// Cancel button functionality
-$('#cancelBtn').on('click', function () {
-    $('#fileUpload').val('');
-    $('#fileNameDisplay').hide();
-    $('#proceedBtn').hide();
-    $('#upload-error').hide();
-});
-
-// Submit the import form
-$(document).on('submit', '.importForm', function (e) {
-    e.preventDefault();
-
-    const form = $(this);
-    const submitButton = form.find(':submit');
-    const originalButtonHtml = submitButton.html();
-
-    submitButton.html('<i class="fa fa-spinner fa-spin"></i>').prop('disabled', true);
-
-    const formData = new FormData(this);
-
-    $.ajax({
-        url: form.attr('action'),
-        type: form.attr('method'),
-        data: formData,
-        contentType: false,
-        processData: false,
-        success: function (response) {
-            submitButton.html(originalButtonHtml).prop('disabled', false);
-
-            if (response.status === 'success') {
-                Swal.fire({
-                    title: 'Success!',
-                    text: response.message,
-                    icon: 'success',
-                });
-                // Handle successful items
-                populateTable('#success-table-body', response.successful_items);
-                $('#success-count').text(`(${response.successful_items.length})`);
-            } else {
-                Swal.fire({
-                    title: 'Error!',
-                    text: response.message,
-                    icon: 'error',
-                });
+    if (attribute_data && attribute_data.length > 0) {
+        attribute_data.forEach((attr, index) => {
+            // Start new row every 6 attributes
+            if (index % 6 === 0) {
+                attributeSearchHTML += `<div class="row">`;
             }
 
-            // Handle failed items
-            populateTable('#failed-table-body', response.failed_items);
-            $('#failed-count').text(`(${response.failed_items.length})`);
-        },
-        error: function (xhr) {
-            submitButton.html(originalButtonHtml).prop('disabled', false);
-            const errorMessage = xhr.responseJSON?.message || 'An error occurred while processing the file.';
-            displayError(errorMessage);
-        },
-    });
-});
-
-function populateTable(tableBodySelector, items) {
-    const tableBody = $(tableBodySelector);
-    tableBody.empty();
-
-    if (items.length > 0) {
-        items.forEach((item, index) => {
-            const row = `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${item.item_code}</td>
-                    <td>${item.item_name}</td>
-                    <td>${item.uom_code}</td>
-                    <td>${item.hsn_code}</td>
-                    <td>${item.store_code}</td>
-                    <td>${item.order_qty}</td>
-                    <td>${item.rate}</td>
-                    <td class="${item.status === 'success' ? 'text-success' : 'text-danger'}">
-                        ${item.status === 'success' ? 'Success' : item.reason}
-                    </td>
-                </tr>
+            attributeSearchHTML += `
+                <div class="col-md-2">
+                    <label for="filter_${attr.group_name}" class="form-label attsearch">${attr.group_name}</label>
+                    <select id="filter_${attr.group_name}" name="${attr.group_name}" oninput="onSearchAttributeChange(this)" class="form-select item_attribute_search">
+                        <option value="">Select ${attr.group_name}</option>
+                        ${attr.values_data.map(value => `<option value="${value.id}" ${value.id == selectedValues[attr.group_name] ? 'selected' : ''}>${value.value}</option>`).join('')}
+                    </select>
+                </div>
             `;
-            tableBody.append(row);
+
+            // Close the row after every 6 items or at the end of the loop
+            if ((index + 1) % 6 === 0 || index === attribute_data.length - 1) {
+                attributeSearchHTML += `</div>`;
+            }
         });
-    } else {
-        tableBody.append('<tr><td colspan="9" class="text-center">No records found</td></tr>');
+
+
     }
+
+    console.log("attributeSearchHTML:", attributeSearchHTML); // Log for debugging
+    $('#filter_attribute').html(attributeSearchHTML); // Set HTML instead of appending
 }
+
+function populateDataTable(items) {
+    const order = {!! isset($order) ? json_encode($order) : 'null' !!};
+    let tableBody = '';
+
+    items.forEach((item, index) => {
+        tableBody += `
+            <tr id="item_row_${index}" class="item_header_rows" onclick="onItemClick('${index}');" data-detail-id="${item.id}" data-id="${item.id}">
+                <input type="hidden" id="psv_item_id_${index}" name="psv_item_id[]" value="${item.id}" ${item.is_editable ? '' : 'readonly'}>
+                <td class="customernewsection-form">
+                    <div class="form-check form-check-primary custom-checkbox">
+                        <input type="checkbox" class="form-check-input item_row_checks" id="item_checkbox_${index}" del-index="${index}">
+                        <label class="form-check-label" for="item_checkbox_${index}"></label>
+                    </div>
+                </td>
+                <td class="poprod-decpt">
+                    <input type="text" id="items_dropdown_${index}" name="item_code[${index}]" placeholder="Select" class="form-control mw-100 ledgerselecct comp_item_code ui-autocomplete-input" autocomplete="off"
+                        data-name="${item.item?.item_name}" 
+                        data-code="${item.item?.item_code}" 
+                        data-id="${item.item?.id}" 
+                        hsn_code="${item.item?.hsn?.code}" 
+                        item-name="${item.item?.item_name}" 
+                        specs='${JSON.stringify(item.item?.specifications ?? [])}' 
+                        attribute-array='${JSON.stringify(item.attributes_array ?? [])}' 
+                        value="${item.item?.item_code}" readonly>
+                    <input type="hidden" name="item_id[]" id="items_dropdown_${index}_value" value="${item.item_id ?? item.item.id}">
+                </td>
+                <td class="poprod-decpt">
+                    <input type="text" id="items_name_${index}" class="form-control mw-100" value="${item.item?.item_name}" name="item_name[${index}]" readonly>
+                </td>
+                <td class="poprod-decpt" id="attribute_section_${index}">
+                    <button id="attribute_button_${index}" type="button" data-bs-toggle="modal" onclick="setItemAttributes('items_dropdown_${index}', '${index}', 'true')" data-bs-target="#attribute" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">Attributes</button>
+                    <input type="hidden" name="attribute_value_${index}">
+                </td>
+                <td><select class="form-select" readonly name="uom_id[]" id="uom_dropdown_${index}">
+                <option selected value="${item.uom_id}">${item.uom_code}</option></select></td>
+                <td class="numeric-alignment">
+                    <input type="text" id="item_physical_qty_${index}" value="${item.verified_qty}" name="item_physical_qty[${index}]" oninput='setVariance(this,${index});setValue(${index});' class="form-control physical_qty mw-100 text-end">
+                </td>
+                <td class="numeric-alignment">
+                    <input type="text" id="item_confirmed_qty_${index}" 
+                        value="${order.document_status !== 'approved' && order.document_status !== 'approval_not_required' ? 0.00 : item.confirmed_qty}" 
+                        name="item_confirmed_qty[${index}]" 
+                        class="form-control mw-100 text-end" readonly>
+                </td>
+                <td class="numeric-alignment">
+                    <input type="text" id="item_unconfirmed_qty_${index}" 
+                        value="${order.document_status !== 'approved' && order.document_status !== 'approval_not_required' ? 0.00 : item.unconfirmed_qty}" 
+                        name="item_unconfirmed_qty[${index}]" 
+                        class="form-control mw-100 text-end" readonly>
+                </td>
+                <td class="numeric-alignment">
+                    <input type="text" id="item_variance_qty_${index}" value="${item.verified_qty - item.confirmed_qty}" name="item_balance_qty[${index}]" class="form-control mw-100 text-end" readonly>
+                </td>
+                <td class="numeric-alignment">
+                    <input type="text" id="item_rate_${index}" value="${item.rate}" name="item_rate[${index}]" class="form-control mw-100 rate text-end" oninput="setValue(${index});">
+                </td>
+                <td class="numeric-alignment">
+                    <input type="text" id="item_value_${index}" value="${item.total_amount}" name="item_value[${index}]" class="form-control mw-100 text-end" readonly>
+                </td>
+                <td>
+                    <div class="d-flex">
+                        <div class="me-50 cursor-pointer" data-bs-toggle="modal" data-bs-target="#Remarks" onclick="setItemRemarks('item_remarks_${index}');">
+                            <span data-bs-toggle="tooltip" data-bs-placement="top" title="Remarks" class="text-primary"><i data-feather="file-text"></i></span>
+                        </div>
+                    </div>
+                    <input type="hidden" id="item_remarks_${index}" name="item_remarks[${index}]">
+                </td>
+            </tr>
+        `;
+    });
+
+    // Inject table body
+    $('#item_header').html(tableBody);
+    $(".physical_qty, .rate").on('input', function() {
+        const itemIndex = $(this).attr('item-index');
+        if (changed_item[itemIndex]) {
+            changed_item[itemIndex][this.name] = $(this).val();
+            console.log(changed_item);
+        }
+    });
+    // Call `setAttributesUi` for each item
+    items.forEach((item, index) => {
+        setAttributesUI(index);
+        onItemClick(index);
+    });
+    renderIcons();
+}
+
+
+function clearFilters() {
+        document.getElementById('filter_sub_type').value = '';
+        document.getElementById('filter_category').value = '';
+        document.getElementById('filter_sub_category').value = '';
+        document.getElementById('filter_hsn').value = '';
+        document.getElementById('filter_item_name_code').value = '';
+        document.getElementById('filter_sub_type_id').value = '';
+        document.getElementById('filter_category_id').value = '';
+        document.getElementById('filter_sub_category_id').value = '';
+        document.getElementById('filter_hsn_id').value = '';
+        document.getElementById('filter_attribute').innerHTML = '';
+        document.getElementById('filter_item_name_code_id').value = '';
+        $("#filter_item_name_code_id").trigger('change');
+        selectedValues={};
+    }
+$("#generateReport").on('click', function() {
+    $('#generated').val(1);
+    $("#save-draft-button").trigger('click');
+});
+function onSearchAttributeChange(element)
+{
+    const selectedValue = element.value;
+    const selectedName = element.name;
+    if (selectedValue) {
+        selectedValues[selectedName] = selectedValue;
+    } else {
+        delete selectedValues[selectedName];
+    }
+    searchAjax();
+}
+function searchAjax()
+{
+    if (debounceTimer) {
+        clearTimeout(debounceTimer);
+    }
+    debounceTimer = setTimeout(function() {
+        itemData = {
+            sub_type: $("#filter_sub_type_id").val(),
+            category: $("#filter_category_id").val(),
+            sub_category: $("#filter_sub_category_id").val(),
+            hsn: $("#filter_hsn_id").val(),
+            item_name_code: $("#filter_item_name_code_id").val(),
+            document_id: "{{ isset($order) ? $order->id : null }}",
+            selected_attributes: selectedValues,
+            changed_item: changed_item,
+        };
+
+        $.ajax({
+            url: "{{ route('psv.search.items') }}",
+            type: "GET",
+            dataType: "json",
+            data: itemData,
+            success: function (data) {
+                if (Array.isArray(data.data) && data.data.length > 0) {
+                    const items = data.data;
+                    $('#item_header').html('');
+                    console.log("items:", items); // Log for debugging
+                    const attribute_data = items[0]?.attributes_array;
+                    if($("#filter_item_name_code_id").val())
+                    {
+                        createAttributeSearch(attribute_data);
+                    }
+                    populateDataTable(items);
+                    changed_item = {};
+                } else {
+                    Swal.fire({
+                        title: 'No Items Found',
+                        text: data.message || 'No matching items found.',
+                        icon: 'info',
+                    });
+                }
+            },
+            error: function (xhr) {
+                console.error('Error fetching item data:', xhr.responseText);
+            }
+        });
+    }, 500); // Adjust the delay as needed
+}
+let changed_item = {};
+window.addEventListener("beforeunload", function (e) {
+  if (changed_item && Object.keys(changed_item).length > 0) {
+    e.preventDefault(); // Most browsers ignore this
+    e.returnValue = "There are Some Unsaved Changes"; // Required for the prompt to show in some browsers
+  }
+});
+$(document).on('click', '#pagination-wrapper .pagination a', function (e) {
+    e.preventDefault(); // Stop the default link behavior
+
+    const url = $(this).attr('href');
+    if (url) {
+        customPaginate(url);
+    }
+});
 </script>
 @endsection
 @endsection

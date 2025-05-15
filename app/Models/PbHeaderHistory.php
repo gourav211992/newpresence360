@@ -33,6 +33,7 @@ class PbHeaderHistory extends Model
         'customer_code',
         'mrn_header_id',
         'document_number',
+        'cost_center_id',
         'document_date',
         'document_status',
         'revision_number',
@@ -300,6 +301,11 @@ class PbHeaderHistory extends Model
     public function store_address()
     {
         return $this->morphOne(ErpAddress::class, 'addressable', 'addressable_type', 'addressable_id')->where('type','location')->with(['city', 'state', 'country']);
+    }
+
+    public function costCenters()
+    {
+        return $this->belongsTo(CostCenter::class, 'cost_center_id');
     }
 
 }

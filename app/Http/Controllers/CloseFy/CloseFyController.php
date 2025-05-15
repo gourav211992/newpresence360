@@ -218,7 +218,7 @@ class CloseFyController extends Controller
                 $isSelected = $selectedUsers->has($userId);
 
                 return [
-                    'user_id' => $userId,
+                'user_id' => $userId,
                     'authenticable_type' => $entry['authenticable_type'] ?? $selectedUsers[$userId]['authenticable_type'] ?? null,
                     'authorized' => $isSelected,
                     'locked' => $financialYear->lock_fy == 1

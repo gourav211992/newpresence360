@@ -78,12 +78,12 @@ class ErpRecruitmentJobRequests extends Model
 
     public function placedLocation()
     {
-        return $this->belongsTo(ErpStore::class, 'location_id');
+        return $this->belongsTo(Organization::class, 'location_id');
     }
 
     public function getPlacedLocationNameAttribute()
     {
-        return optional($this->placedLocation)->store_name;
+        return optional($this->placedLocation)->name;
     }
 
 
