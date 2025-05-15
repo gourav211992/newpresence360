@@ -51,6 +51,7 @@ class InsuranceController extends Controller
                 $query->whereBetween('created_at', [$start_date, $end_date]);
             }
         }
+       
 
         // Get the filtered data
         $data = $query->get();

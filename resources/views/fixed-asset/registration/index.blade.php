@@ -92,7 +92,7 @@
                                                     <td class="fw-bolder text-dark">{{ $asset->asset_name??"-" }}</td>
                                                     <td>{{ $asset->asset_code??"-" }}</td>
                                                     <td>{{ $asset->ledger->name??"-" }}</td>
-                                                    <td>{{ \Carbon\Carbon::parse($asset->book_date)->format('d-m-Y')??"-" }}</td>
+                                                    <td>{{ $asset->book_date!=null?\Carbon\Carbon::parse($asset->book_date)->format('d-m-Y'):"-" }}</td>
                                                     <td>{{ $asset?->location?->store_name ??"-" }}</td>
                                                     <td>{{ $asset?->cost_center?->name ??"-" }}</td>
                                                     <td>{{ $asset->quantity ??"-" }}</td>
@@ -118,13 +118,13 @@
                                                             <div class="dropdown-menu dropdown-menu-end">
                                                                 @if($asset->document_status=='draft')
                                                                 <a class="dropdown-item" href="{{route('finance.fixed-asset.registration.edit', $asset->id)}}">
-                                                                    <i data-feather="edit-3" class="me-50"></i>
-                                                                    <span>Edit</span>
+                                                                    <i data-feather="edit" class="me-50"></i>
+                                                                   <span>View</span>
                                                                 </a>
                                                                 @else
                                                                 <a class="dropdown-item" href="{{route('finance.fixed-asset.registration.show', $asset->id)}}">
                                                                     <i data-feather="edit" class="me-50"></i>
-                                                                    <span>View Detail</span>
+                                                                    <span>View</span>
                                                                 </a>
                                                                 @endif    
                                                             </div>

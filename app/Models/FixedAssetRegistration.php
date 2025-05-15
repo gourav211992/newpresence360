@@ -119,5 +119,12 @@ class FixedAssetRegistration extends Model
             [json_encode((string) $this->id)]
         )->get();
     }
+    public function updateTotalDep()
+{
+    $total = $this->subAsset()->sum('total_depreciation'); // Soft-deleted are excluded automatically
+    $this->total_depreciation = $total;
+    $this->save();
+    return $total;
+}
    
 }

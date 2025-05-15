@@ -29,17 +29,35 @@ class RegistrationController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         $parentURL = request()->segments()[0];
         $parentURL = "fixed-asset_registration";
 
-
+        $data = FixedAssetRegistration::withDefaultGroupCompanyOrg()->orderBy('id', 'desc');
+        
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
         if (count($servicesBooks['services']) == 0) {
             return redirect()->route('/');
         }
-        $data = FixedAssetRegistration::withDefaultGroupCompanyOrg()->orderBy('id', 'desc')->get();
+        if ($request->date) {
+            $dates = explode(' to ', $request->date);
+            $start = date('Y-m-d', strtotime($dates[0]));
+            $end = date('Y-m-d', strtotime($dates[1]));
+            $data = $data->whereDate('document_date', '>=', $start)
+                ->whereDate('document_date', '<=', $end);
+        }
+        else{
+           $fyear = Helper::getFinancialYear(date('Y-m-d'));
+
+            $data = $data->whereDate('document_date', '>=',$fyear['start_date'])
+                ->whereDate('document_date', '<=',$fyear['end_date']);
+                $start = $fyear['start_date'];
+                $end = $fyear['end_date'];
+            
+        
+        }
+        $data = $data->get();
         return view('fixed-asset.registration.index', compact('data'));
     }
 
@@ -96,8 +114,8 @@ class RegistrationController extends Controller
         $dep_percentage = $organization->dep_percentage;
         $dep_type = $organization->dep_type;
 
-        $financialEndDate = Helper::getFinancialYear(\Carbon\Carbon::parse(date('Y-m-d'))->subYear()->format('Y-m-d'))['end_date'];
-        $financialStartDate = Helper::getFinancialYear(\Carbon\Carbon::parse(date('Y-m-d'))->subYear()->format('Y-m-d'))['start_date'];
+        $financialEndDate = Helper::getFinancialYear(date('Y-m-d'))['end_date'];
+        $financialStartDate = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
         $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
 
 
@@ -281,8 +299,8 @@ class RegistrationController extends Controller
         $dep_method = $organization->dep_method;
         $dep_percentage = $organization->dep_percentage;
         $dep_type = $organization->dep_type;
-        $financialEndDate = Helper::getFinancialYear(\Carbon\Carbon::parse(date('Y-m-d'))->subYear()->format('Y-m-d'))['end_date'];
-        $financialStartDate = Helper::getFinancialYear(\Carbon\Carbon::parse(date('Y-m-d'))->subYear()->format('Y-m-d'))['start_date'];
+        $financialEndDate = Helper::getFinancialYear(date('Y-m-d'))['end_date'];
+        $financialStartDate = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
         $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
 
         return view('fixed-asset.registration.edit', compact('locations', 'sub_assets', 'series', 'data', 'ledgers', 'categories', 'grns', 'vendors', 'currencies', 'grn_details', 'financialEndDate', 'dep_type', 'dep_method', 'dep_percentage', 'financialStartDate'));
@@ -556,24 +574,32 @@ class RegistrationController extends Controller
     {
         $q = $request->input('q');
         $ids = $request->input('ids');
+         $oldAssets = FixedAssetSub::oldSubAssets();
+        if ($request->merger)
+            $oldAssets = FixedAssetSub::oldSubAssets($request->merger, null);
+        if ($request->split)
+            $oldAssets = FixedAssetSub::oldSubAssets(null, $request->split);
+       
         
         if($ids){
             $ids = array_map('intval', $ids); 
-         return FixedAssetRegistration::withDefaultGroupCompanyOrg()
-            ->whereNotIn('id',$ids)
-            ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
-            ->where('asset_code', 'like', "%$q%")
-            ->whereHas('subAsset')
-            ->limit(20)
-            ->get();
-        }
+        return FixedAssetRegistration::withDefaultGroupCompanyOrg()
+                ->whereNotIn('id', $ids)
+                ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
+                ->where('asset_code', 'like', "%$q%")
+                ->whereHas('subAsset', function ($query) use ($oldAssets) {
+                    $query->whereNotIn('id', $oldAssets);
+                })->limit(20)
+                ->get();
+}
         
             else
             return FixedAssetRegistration::withDefaultGroupCompanyOrg()
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
             ->where('asset_code', 'like', "%$q%")
-            ->whereHas('subAsset')
-            ->limit(20)
+            ->whereHas('subAsset', function ($query) use ($oldAssets) {
+                    $query->whereNotIn('id', $oldAssets);
+                })->limit(20)
             ->get();
     }
     public function subAssetSearch(Request $request)
@@ -595,4 +621,5 @@ class RegistrationController extends Controller
             ->limit(20)
             ->get();
     }
+    
 }

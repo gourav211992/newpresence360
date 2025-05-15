@@ -58,8 +58,8 @@
                                             @forelse($data as $key => $item)
                                                 <tr>
                                                     <td>{{ $key + 1 }}</td>
-                                                    <td>{{ $item->asset->asset_name }}</td>
-                                                    <td>{{ $item->asset->asset_code }}</td>
+                                                    <td>{{ $item?->asset?->asset_name }}</td>
+                                                    <td>{{ $item?->asset?->asset_code }}</td>
                                                     <td>{{ $item->verf_date }}</td>
                                                     <td>{{ $item->condition }}</td>
                                                     <td class="tableactionnew">

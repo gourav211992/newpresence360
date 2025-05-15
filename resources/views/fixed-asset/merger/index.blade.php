@@ -87,14 +87,15 @@
                                 @if($d->document_status=="draft")
                                 <a class="dropdown-item" href="{{ route('finance.fixed-asset.merger.edit', $d->id) }}">
 																	<i data-feather="edit" class="me-50"></i>
-																	<span>Edit</span>
+																		<span>View</span>
 																</a>
-                                @endif
+                                @else
                                
                                 <a class="dropdown-item" href="{{ route('finance.fixed-asset.merger.show', $d->id) }}">
-																	<i data-feather="eye" class="me-50"></i>
-																	<span>View Detail</span>
+																	<i data-feather="edit" class="me-50"></i>
+																	<span>View</span>
 																</a>
+                                @endif
                               
 															</div>
 														</div>

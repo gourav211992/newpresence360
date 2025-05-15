@@ -64,7 +64,7 @@
                             <button type="button" id="reject-button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg> Reject</button>
                     @endif
                     
-                    @if($buttons['amend'])
+                    @if($buttons['amend'] && $data->mrn_detail_id!=null)
                     <button type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i> Amendment</button>
                     @endif
                     </div>
@@ -208,12 +208,12 @@
                                                     </div>
                                                 </div>
 
-                                                <div class="row align-items-center mb-1">
+                                                <div @if($data->mrn_detail_id==null) hidden @endif class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label" for="reference_from">Reference From
                                                             <span class="text-danger">*</span></label>
                                                     </div>
-                                                    <div class="col-md-3 action-button">
+                                                    <div @if($data->mrn_detail_id==null) hidden @endif class="col-md-3 action-button">
                                                         <a data-bs-toggle="modal" data-bs-target="#rescdule"
                                                             class="btn btn-outline-primary btn-sm mb-0 w-100"><i
                                                                 data-feather="plus-square"></i> GRN</a>
@@ -403,7 +403,7 @@
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Total Dep. <span class="text-danger">*</span></label>
-                                                            <input type="number" readonly id="total_depreciation" name="total_depreciation" class="form-control" value="{{$data->total_depreciation}}" disabled /> 
+                                                            <input type="number" readonly id="total_depreciation" name="total_depreciation" class="form-control" value="{{ $data?->subAsset?->sum('total_depreciation')}}" disabled /> 
                                                         </div>
                                                     </div>
                                                     
@@ -415,16 +415,40 @@
                                                                     class="text-danger">*</span></label>
                                                             <input type="text" class="form-control"
                                                                 name="current_value" id="current_value"
-                                                                value="{{ $data->current_value}}" readonly />
+                                                                value="{{ $data?->subAsset?->sum('current_value')}}" readonly />
                                                         </div>
                                                     </div>
+                                                    @php
+                                                        use Carbon\Carbon;
+                                                        $lastDepMinusOne = $data->last_dep_date ? Carbon::parse($data->last_dep_date)->subDay()->toDateString() : '';
+                                                    @endphp
+                                                     @if($data->last_dep_date!=$data->capitalize_date)
+                                                   
+
+                                                    <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">Return Down Value</label>
+                                                            <input type="text" class="form-control"
+                                                                name="current_value" id="current_value"
+                                                                value="{{ $data?->subAsset?->sum('current_value_after_dep')}}" readonly />
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">Last Dep. Date</label>
+                                                            <input type="date" class="form-control"
+                                                                name="last_dep_minus_one" id="last_dep_minus_one"
+                                                                value="{{ $lastDepMinusOne }}" readonly />
+                                                        </div>
+                                                    </div>
+                                                    @endif
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div class="row customernewsection-form">
+                                <div class="row customernewsection-form" @if($data->mrn_detail_id==null) hidden @endif> 
                                     <div class="col-md-12">
                                         <div class="card quation-card">
                                             <div class="card-header newheader">

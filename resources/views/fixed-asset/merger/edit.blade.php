@@ -225,7 +225,11 @@
                                                         </thead>
                                                         <tbody class="mrntableselectexcel">
                                                             @foreach(json_decode($data->asset_details) as $i => $assetRow)
-                                                            @php $key = $i+1; @endphp
+                                                            @php $key = $i+1; 
+                                                                         $selectedSubAssets = is_array($assetRow->sub_asset_id) ? $assetRow->sub_asset_id : [];
+                                                                        $fixedAsset = App\Models\FixedAssetRegistration::find($assetRow->asset_id);
+                                                                        $subAssets = $fixedAsset?->subAsset ?? [];
+                                                                 @endphp
                                                             <tr>
                                                                 <td class="customernewsection-form">
                                                                     <div class="form-check form-check-primary custom-checkbox">
@@ -233,23 +237,13 @@
                                                                         <label class="form-check-label" for="Email_{{$key}}"></label>
                                                                     </div>
                                                                 </td>
-                                                                <td class="poprod-decpt">
-                                                                    <select name="asset_id[]" id="asset_id_{{$key}}" class="form-control select2 asset_id" required data-id="{{ $key }}">
-                                                                        <option value="">Select</option>
-                                                                        @foreach ($assets as $asset)
-                                                                            <option value="{{ $asset->id }}" 
-                                                                                {{ $asset->id == $assetRow->asset_id ? 'selected' : '' }}>
-                                                                                {{ $asset->asset_code }} ({{ $asset->asset_name }})
-                                                                            </option>
-                                                                        @endforeach
-                                                                    </select>
+                                                                  <td class="poprod-decpt">   
+                                                                    <input type="text" class="form-control asset-search-input mw-100"  value="{{ $fixedAsset?->asset_code }} ({{ $fixedAsset?->asset_name }})" required />
+                                                                    <input type="hidden" name="asset_id[]" class="asset_id" value="{{$assetRow->asset_id}}" data-id="{{$key}}" id="asset_id_{{$key}}"/> 
                                                                 </td>
+                                                                
                                                                 <td class="poprod-decpt">
-                                                                    @php
-                                                                        $selectedSubAssets = is_array($assetRow->sub_asset_id) ? $assetRow->sub_asset_id : [];
-                                                                        $fixedAsset = App\Models\FixedAssetRegistration::find($assetRow->asset_id);
-                                                                        $subAssets = $fixedAsset?->subAsset ?? [];
-                                                                 @endphp
+                                                                 
                                                                     
                                                                     <select name="sub_asset_id[]" id="sub_asset_id_{{ $key }}" class="form-select select2 sub_asset_id" multiple required data-id="{{ $key }}">
                                                                         @foreach ($subAssets as $subAsset)
@@ -846,17 +840,10 @@ $('#addNewRowBtn').on('click', function () {
                 <label class="form-check-label" for="Email_${rowCount}"></label>
             </div>
         </td>
-        <td class="poprod-decpt">   
-            <select id="asset_id_${rowCount}" name="asset_id[]" data-id="${rowCount}"
-                class="form-control mw-100 p_ledgerselecct select2 asset_id" required>
-                <option value="">Select</option>
-             @foreach ($assets as $asset)
-                                                                        <option value="{{ $asset->id }}">
-                                                                            {{ $asset->asset_code }} ({{ $asset->asset_name }})
-                                                                        </option>
-                                                                    @endforeach
-                                                                    </select>
-        </td>
+         <td class="poprod-decpt">   
+            <input type="text" class="form-control asset-search-input mw-100" required />
+            <input type="hidden" name="asset_id[]" class="asset_id" data-id="${rowCount}" id="asset_id_${rowCount}"/> 
+         </td>
         <td class="poprod-decpt">
             <select id="sub_asset_id_${rowCount}" name="sub_asset_id[]" data-id="${rowCount}"
                 class="form-select mw-100 select2 sub_asset_id" multiple required>
@@ -879,6 +866,8 @@ $('#addNewRowBtn').on('click', function () {
     $('.mrntableselectexcel').append(newRow);
     $(".select2").select2();
     refreshAssetSelects();
+        initializeAssetAutocomplete('.asset-search-input');
+
 });
 function refreshAssetSelects() {
     let selectedAssets = [];
@@ -964,60 +953,107 @@ function getAllRowsAsJson() {
 
 
 
-$(document).on('change', '.asset_id', function () {
-                let assetId = $(this).val();
-                
-                let row = $(this).data('id');
-                let subAssetSelect = $('#sub_asset_id_'+row);
-                
-                if(assetId!=""){
-                    subAssetSelect.val("");
-                    $('#last_dep_date_'+row).val("");
-                    $('#currentvalue_'+row).val("");
-                    $('#quantity_'+row).val("");
-                    
-                    subAssetSelect.empty();
-
-                subAssetSelect.html('<option value="">Loading...</option>');
-
-                $.ajax({
-                    url: '{{ route('finance.fixed-asset.sub_asset') }}', // Update this route
-                    type: 'GET',
-                    data: {
-                        id: assetId,
-                        merger:"{{$data->id}}"
-                    },
-                    success: function(response) {
-                        subAssetSelect.html('<option value="">Select</option>');
-                        $.each(response, function(key, subAsset) {
-                            subAssetSelect.append(
-                                '<option value="' + subAsset.id + '">' + subAsset
-                                .sub_asset_code + '</option>'
-                            );
-                        });
-                        let lastDepDate = new Date(response[0].asset.last_dep_date);
-
-
-                        // Add 1 day
-                        lastDepDate.setDate(lastDepDate.getDate() - 1);
-
-                        // Format as YYYY-MM-DD
-                        let nextDate = lastDepDate.toISOString().split('T')[0];
-                        console.log(nextDate);
-
-                          $('#last_dep_date_'+row).val(nextDate);
-                    },
-                    error: function() {
-                        showToast('error', 'Failed to load sub-assets.');
-                    }
-                });
-                }else{
-                    subAssetSelect.empty();
+function initializeAssetAutocomplete(selector) {
+    $(selector).autocomplete({
+        source: function (request, response) {
+            $.ajax({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                url: '{{ route("finance.fixed-asset.asset-search") }}',
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    merger:"{{$data->id}}",
+                    q: request.term,
+                    ids:getAllAssetIds(),
+                },
+                success: function (data) {
+                    response(data.map(function (item) {
+                        return {
+                            label: item.asset_code + ' (' + item.asset_name + ')',
+                            value: item.id,
+                            asset: item
+                        };
+                    }));
+                },
+                error: function () {
+                    response([]);
                 }
+            });
+        },
+        minLength: 0,
+        select: function (event, ui) {
+            const asset = ui.item.asset;
+            const row = $(this).closest('tr');
+            const rowId = row.data('id'); // assuming you set `data-id` on the <tr>
+
+            // Set visible label and hidden ID
+            $(this).val(ui.item.label);
+            row.find('.asset_id').val(ui.item.value);
+
+            let subAssetSelect = row.find('.sub_asset_id');
+            let last_dep = row.find('.last_dep_date');
+            subAssetSelect.html('<option value="">Loading...</option>');
+
+            $.ajax({
+                url: '{{ route("finance.fixed-asset.sub_asset") }}',
+                type: 'GET',
+                data: { id: ui.item.value,merger:"{{$data->id}}"},
+                success: function (response) {
+                subAssetSelect.empty();
+                    subAssetSelect.html('<option value="">Select</option>');
+                    $.each(response, function (key, subAsset) {
+                        subAssetSelect.append(
+                            '<option value="' + subAsset.id + '">' + subAsset.sub_asset_code + '</option>'
+                        );
+                    });
+
+                    if (response[0].asset) {
+                        if(response[0].asset.last_dep_date!=response[0].asset.capitalize_date){
+                        let lastDepDate = new Date(response[0].asset.last_dep_date);
+                        lastDepDate.setDate(lastDepDate.getDate() - 1);
+                        let formatted = lastDepDate.toISOString().split('T')[0];
+                        last_dep.val(formatted);
+                    }
+                    }
+                row.find('.quantity').val('');
+                row.find('.currentvalue').val('');
+                row.find('.salvagevalue').val('');
+                    refreshAssetSelects();
+                    updateSum();
+                },
+                error: function () {
+                    showToast('error', 'Failed to load sub-assets.');
+                }
+            });
+
+            return false;
+        },
+        change: function (event, ui) {
+            const row = $(this).closest('tr');
+            let subAssetSelect = row.find('.sub_asset_id');
+            if (!ui.item) {
+                $(this).val('');
+                subAssetSelect.empty();
+                row.find('.sub_asset_id').empty();
+                row.find('.asset_id').val('');
+                row.find('.quantity').val('');
+                row.find('.currentvalue').val('');
+                row.find('.salvagevalue').val('');
+                row.find('.last_dep_date').val('');
                 refreshAssetSelects();
                 updateSum();
-                   
-            });
+            }
+        }
+    }).focus(function () {
+        if (this.value === '') {
+            $(this).autocomplete('search');
+        }
+    });
+}
+
+    initializeAssetAutocomplete('.asset-search-input');
 
             // On Sub-Asset change, get value and last dep date
             $(document).on('change', '.sub_asset_id', function () {
@@ -1032,6 +1068,7 @@ $(document).on('change', '.asset_id', function () {
                 url: '{{ route('finance.fixed-asset.sub_asset_details') }}',
                 type: 'GET',
                 data: {
+                    merger:"{{$data->id}}",
                     id: assetId,
                     sub_asset_id: subAssetId
                 },

@@ -858,6 +858,7 @@ function initializeAssetAutocomplete(selector) {
             row.find('.asset_id').val(ui.item.value);
 
             let subAssetSelect = row.find('.sub_asset_id');
+            let last_dep = row.find('.last_dep_date');
             subAssetSelect.html('<option value="">Loading...</option>');
 
             $.ajax({
@@ -865,6 +866,7 @@ function initializeAssetAutocomplete(selector) {
                 type: 'GET',
                 data: { id: ui.item.value },
                 success: function (response) {
+                subAssetSelect.empty();
                     subAssetSelect.html('<option value="">Select</option>');
                     $.each(response, function (key, subAsset) {
                         subAssetSelect.append(
@@ -872,12 +874,19 @@ function initializeAssetAutocomplete(selector) {
                         );
                     });
 
-                    if (response.length && response[0].asset) {
+                    if (response[0].asset) {
+                        if(response[0].asset.last_dep_date!=response[0].asset.capitalize_date){
                         let lastDepDate = new Date(response[0].asset.last_dep_date);
                         lastDepDate.setDate(lastDepDate.getDate() - 1);
                         let formatted = lastDepDate.toISOString().split('T')[0];
-                        $('#last_dep_date_' + rowId).val(formatted);
+                        last_dep.val(formatted);
                     }
+                    }
+                row.find('.quantity').val('');
+                row.find('.currentvalue').val('');
+                row.find('.salvagevalue').val('');
+                    refreshAssetSelects();
+                    updateSum();
                 },
                 error: function () {
                     showToast('error', 'Failed to load sub-assets.');
@@ -888,10 +897,18 @@ function initializeAssetAutocomplete(selector) {
         },
         change: function (event, ui) {
             const row = $(this).closest('tr');
+            let subAssetSelect = row.find('.sub_asset_id');
             if (!ui.item) {
                 $(this).val('');
+                subAssetSelect.empty();
                 row.find('.sub_asset_id').empty();
                 row.find('.asset_id').val('');
+                row.find('.quantity').val('');
+                row.find('.currentvalue').val('');
+                row.find('.salvagevalue').val('');
+                row.find('.last_dep_date').val('');
+                refreshAssetSelects();
+                updateSum();
             }
         }
     }).focus(function () {
@@ -901,51 +918,9 @@ function initializeAssetAutocomplete(selector) {
     });
 }
 
+
    initializeAssetAutocomplete('.asset-search-input');
-        $(document).on('change', '.asset_id', function () {
-                let assetId = $(this).val();
-                
-                let row = $(this).data('id');
-                let subAssetSelect = $('#sub_asset_id_'+row);
-                
-                if(assetId!=""){
-                subAssetSelect.html('<option value="">Loading...</option>');
-
-                $.ajax({
-                    url: '{{ route('finance.fixed-asset.sub_asset') }}', // Update this route
-                    type: 'GET',
-                    data: {
-                        id: assetId
-                    },
-                    success: function(response) {
-                        subAssetSelect.html('<option value="">Select</option>');
-                        $.each(response, function(key, subAsset) {
-                            subAssetSelect.append(
-                                '<option value="' + subAsset.id + '">' + subAsset
-                                .sub_asset_code + '</option>'
-                            );
-                        });
-                        let lastDepDate = new Date(response[0].asset.last_dep_date);
-
-                        // Add 1 day
-                        lastDepDate.setDate(lastDepDate.getDate() - 1);
-
-                        // Format as YYYY-MM-DD
-                        let nextDate = lastDepDate.toISOString().split('T')[0];
-
-                          $('#last_dep_date_'+row).val(nextDate);
-                    },
-                    error: function() {
-                        showToast('error', 'Failed to load sub-assets.');
-                    }
-                });
-                }else{
-                    subAssetSelect.empty();
-                }
-                refreshAssetSelects();
-                   
-            });
-
+        
             // On Sub-Asset change, get value and last dep date
 $(document).on('change', '.sub_asset_id', function () {
     let subAssetIds = $(this).val();

@@ -285,8 +285,8 @@
                                                                 <th>Asset Name</th>
                                                                 <th width="200">Sub Asset Code</th>
                                                                 <th width="100">Quantity</th>
-                                                                <th>Current Value</th>
-                                                                <th>Salvage Value</th>
+                                                                <th class="text-end">Current Value</th>
+                                                                <th class="text-end">Salvage Value</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody class="mrntableselectexcel">

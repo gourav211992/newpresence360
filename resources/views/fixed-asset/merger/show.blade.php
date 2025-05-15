@@ -39,6 +39,11 @@
                         @if($buttons['post'])
                         <button id="postButton" onclick="onPostVoucherOpen();" type="button" class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Post</button>
                     @endif
+                     @if ($buttons['voucher'])
+                                    <button type="button" onclick="onPostVoucherOpen('posted');"
+                                        class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
+                                        <i data-feather="file-text"></i> Voucher</button>
+                                @endif
                               
 
                         </div>
@@ -161,7 +166,7 @@
                                                 </div>
 
                                             </div>
-                                            @include('partials.approval-history', ['document_status' =>$data->document_status, 'revision_number' => $data->revision_number]); 
+                                            @include('partials.approval-history', ['document_status' =>$data->document_status, 'revision_number' => $data->revision_number])
                                         
 
                                             

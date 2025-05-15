@@ -87,13 +87,14 @@
                                 @if($d->document_status == "draft")
                                 <a class="dropdown-item" href="{{ route('finance.fixed-asset.split.edit', $d->id) }}">
 																	<i data-feather="edit" class="me-50"></i>
-																	<span>Edit</span>
+																	<span>View</span>
+																</a>
+                                @else
+                                <a class="dropdown-item" href="{{ route('finance.fixed-asset.split.show', $d->id) }}">
+																	<i data-feather="edit" class="me-50"></i>
+																	<span>View</span>
 																</a>
                                 @endif
-                                <a class="dropdown-item" href="{{ route('finance.fixed-asset.split.show', $d->id) }}">
-																	<i data-feather="eye" class="me-50"></i>
-																	<span>View Detail</span>
-																</a>
 															</div>
 														</div>
 													</td>
