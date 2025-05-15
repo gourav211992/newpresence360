@@ -142,7 +142,7 @@
                                         </div>
                                         <div class="earn-dedtable trail-balancefinance trailbalnewdesfinance">
                                             <div class="table-responsive">
-                                                <table class="table border">
+                                                <table class="table border" id="tranferLedger">
                                                     <thead>
                                                         <tr>
                                                             <th id="company_name"></th>
@@ -156,15 +156,20 @@
                                         </div>
                                     </div>
                                     <div class="tab-pane" id="Access">
+                                        @php
+                                        $locked = $authorized_users['locked'] ?? false;
+                                        @endphp
                                         @if (isset($organizationId) && $organizationId)
                                         <div class="text-end mb-2">
+                                            @if($financialYear['fy_close'] == true && !$locked)
                                             <a id="saveAccessBy" href="#" class="btn-dark btn-sm access-by">
                                                 <i data-feather='check-circle'></i> Save
                                             </a>
+                                            @endif
                                         </div>
                                         <div class="table-responsive-md">
                                             <table
-                                                class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border">
+                                                class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border" id="accessData">
                                                 <thead>
                                                     <tr>
                                                         <th width="50px">#</th>
@@ -209,7 +214,9 @@
                                                                 <select class="form-select mw-100 select2 permissions-box" id="permissions_{{ $rowNumber }}" multiple disabled></select>
                                                             </td>
                                                             <td>
+                                                            @if(($financialYear['fy_close'] ?? false) || !($locked === true))
                                                                 <a href="#" id="saveCloseFyBtn" class="text-primary"><i data-feather="plus-square"></i></a>
+                                                                @endif
                                                             </td>
                                                         </tr>
 
@@ -219,7 +226,8 @@
                                                             <tr>
                                                                 <td class="sno">{{ $rowNumber }}</td>
                                                                 <td>
-                                                                    <select class="form-select mw-100 select2 authorize-user" id="authorize_{{ $rowNumber }}">
+                                                                    <select class="form-select mw-100 select2 authorize-user" id="authorize_{{ $rowNumber }}"
+                                                                        @if(!$financialYear['fy_close'] && !$locked) disabled @endif>
                                                                         <option value="" disabled>Select</option>
                                                                         @foreach ($employees as $employee)
                                                                             @php
@@ -241,6 +249,7 @@
                                                                 <td>
                                                                     <select class="form-select mw-100 select2 permissions-box" id="permissions_{{ $rowNumber }}" multiple disabled></select>
                                                                 </td>
+                                                                 @if($financialYear['fy_close'] == true && !$locked)
                                                                 <td>
                                                                     @if ($authorizedUsers->count() === 1 || $loop->first)
                                                                         <a href="#" id="saveCloseFyBtn" class="text-primary"><i data-feather="plus-square"></i></a>
@@ -248,6 +257,7 @@
                                                                         <a href="#" class="text-danger deleteAuthorize"><i data-feather="trash-2"></i></a>
                                                                     @endif
                                                                 </td>
+                                                                @endif
                                                             </tr>
                                                             @php $rowNumber++; @endphp
                                                         @endforeach
@@ -288,12 +298,11 @@
 
 @section('scripts')
     <script>
-// let counter = $('tbody tr').length + 1;
 // 1. Function to create a new row
-        function getNewRowHtml(rowNum) {
+    function getNewRowHtml(rowNum) {
             return `
                 <tr>
-                    <td class="sno"></td>
+                    <td class="">${rowNum} </td>
                     <td>
                         <select class="form-select mw-100 select2 authorize-user" id="authorize_${rowNum}" name="authorized_users[]" required>
                             <option value="" disabled selected>Select</option>
@@ -312,7 +321,7 @@
             `;
         }
         function updateSerialNumbers() {
-            $('tbody tr').each(function(index) {
+            $('#accessData tbody tr').each(function(index) {
                 $(this).find('td.sno').text(index + 1);
             });
         }
@@ -406,8 +415,9 @@
                     });
                     return;
                 }
-                const newRowHtml = getNewRowHtml();
-                $('tbody').append(newRowHtml);
+                let counter = $('#accessData tbody tr').length + 1;
+                const newRowHtml = getNewRowHtml(counter);
+                $('#accessData tbody').append(newRowHtml);
                 $('.select2').select2(); // reinitialize select2
                 feather.replace(); // reinitialize icons
                 updateSerialNumbers(); // ✅ here
@@ -420,7 +430,7 @@
                 e.preventDefault();
                 $(this).closest('tr').remove();
                 // Renumber the rows
-                $('tbody tr').each(function(index) {
+                $('#accessData tbody tr').each(function(index) {
                     $(this).find('td:first').text(index + 1);
                 });
                 updateDisabledUsers(); // refresh available users
@@ -764,8 +774,7 @@
 												${data['data'][i].name}
 											</a>
 										</td>
-
-										<td class="close_amt">${Math.abs(closing).toLocaleString('en-IN')} ${closingText}</td>
+                                        <td class="open_amt">${Math.abs(parseFloat(data['data'][i].open)).toLocaleString('en-IN')} ${data['data'][i].opening_type}</td>
 									</tr>`;
                             }
 
@@ -912,13 +921,10 @@
                     const padding = getIncrementalPadding(parentPadding);
 
                     let html = `
-						<tr class="trail-sub-list-open parent-${id}">
-							<td style="padding-left: ${padding}px">Profit & Loss</td>
-							<td>${parseFloat(reservesSurplus['closingFinal']).toLocaleString('en-IN')} ${reservesSurplus['closing_type']}</td>
-							<td></td>
-							<td></td>
-							<td>${parseFloat(reservesSurplus['closingFinal']).toLocaleString('en-IN')} ${reservesSurplus['closing_type']}</td>
-						</tr>`;
+                    <tr class="trail-sub-list-open parent-${id}">
+                        <td style="padding-left: ${padding}px">Profit & Loss</td>
+                        <td>${parseFloat(reservesSurplus['closingFinal']).toLocaleString('en-IN')} ${reservesSurplus['closing_type']}</td>
+                    </tr>`;
                     $('#' + id).closest('tr').after(html);
                 } else {
                     if ($('#check' + id).val() == "") {
@@ -930,12 +936,12 @@
                             '_token': '{!! csrf_token() !!}'
                         };
                         var selectedValues = $('#organization_id').val() || [];
-                        // var filteredValues = selectedValues.filter(function(value) {
-                        //     return value !== null && value.trim() !== '';
-                        // });
-                        // if (filteredValues.length > 0) {
-                        obj.organization_id = selectedValues
-                        // }
+                        var filteredValues = selectedValues.filter(function(value) {
+                            return value !== null && value.trim() !== '';
+                        });
+                        if (filteredValues.length > 0) {
+                            obj.organization_id = filteredValues
+                        }
 
                         $.ajax({
                             headers: {
@@ -952,7 +958,7 @@
                                     if (data['type'] == "group") {
                                         for (let i = 0; i < data['data'].length; i++) {
                                             const padding = getIncrementalPadding(
-                                                parentPadding);
+                                            parentPadding);
                                             var closingText = '';
                                             const closing = data['data'][i].open + (data['data']
                                                 [i].total_debit - data['data'][i]
@@ -965,40 +971,36 @@
 
                                             if (data['data'][i].name == "Reserves & Surplus") {
                                                 html += `
-												<tr class="trail-sub-list-open expandable parent-${id}" id="${data['data'][i].id}">
-													<input type="hidden" id="check${data['data'][i].id}">
-													<td style="padding-left: ${padding}px">
-														<a href="#" class="trail-open-new-listplus-sub-btn text-dark expand exp${data['data'][i].id}" data-id="${data['data'][i].id}">
-															<i data-feather='plus-circle'></i>
-														</a>
-														<a href="#" class="trail-open-new-listminus-sub-btn text-dark collapse" style="display:none;">
-															<i data-feather='minus-circle'></i>
-														</a>
-														<span id="name${data['data'][i].id}">${data['data'][i].name}</span>
-													</td>
-													<td>${parseFloat(reservesSurplus['closingFinal']).toLocaleString('en-IN')} ${reservesSurplus['closing_type']}</td>
-													<td></td>
-													<td></td>
-													<td>${parseFloat(reservesSurplus['closingFinal']).toLocaleString('en-IN')} ${reservesSurplus['closing_type']}</td>
-												</tr>`;
+                                            <tr class="trail-sub-list-open expandable parent-${id}" id="${data['data'][i].id}">
+                                                <input type="hidden" id="check${data['data'][i].id}">
+                                                <td style="padding-left: ${padding}px">
+                                                    <a href="#" class="trail-open-new-listplus-sub-btn text-dark expand exp${data['data'][i].id}" data-id="${data['data'][i].id}">
+                                                        <i data-feather='plus-circle'></i>
+                                                    </a>
+                                                    <a href="#" class="trail-open-new-listminus-sub-btn text-dark collapse" style="display:none;">
+                                                        <i data-feather='minus-circle'></i>
+                                                    </a>
+                                                    <span id="name${data['data'][i].id}">${data['data'][i].name}</span>
+                                                </td>
+                                                <td>${parseFloat(reservesSurplus['closingFinal']).toLocaleString('en-IN')} ${reservesSurplus['closing_type']}</td>
+                                            </tr>`;
                                             } else {
                                                 html += `
-												<tr class="trail-sub-list-open expandable parent-${id}" id="${data['data'][i].id}">
-													<input type="hidden" id="check${data['data'][i].id}">
-													<td style="padding-left: ${padding}px">
-														<a href="#" class="trail-open-new-listplus-sub-btn text-dark expand exp${data['data'][i].id}" data-id="${data['data'][i].id}">
-															<i data-feather='plus-circle'></i>
-														</a>
-														<a href="#" class="trail-open-new-listminus-sub-btn text-dark collapse" style="display:none;">
-															<i data-feather='minus-circle'></i>
-														</a>
-														<a class="urls" href="${groupUrl}">
-															${data['data'][i].name}
-														</a>
-													</td>
-
-													<td>${parseFloat(closing < 0 ? -closing : closing).toLocaleString('en-IN')} ${closingText}</td>
-												</tr>`;
+                                            <tr class="trail-sub-list-open expandable parent-${id}" id="${data['data'][i].id}">
+                                                <input type="hidden" id="check${data['data'][i].id}">
+                                                <td style="padding-left: ${padding}px">
+                                                    <a href="#" class="trail-open-new-listplus-sub-btn text-dark expand exp${data['data'][i].id}" data-id="${data['data'][i].id}">
+                                                        <i data-feather='plus-circle'></i>
+                                                    </a>
+                                                    <a href="#" class="trail-open-new-listminus-sub-btn text-dark collapse" style="display:none;">
+                                                        <i data-feather='minus-circle'></i>
+                                                    </a>
+                                                    <a class="urls" href="${groupUrl}">
+                                                        ${data['data'][i].name}
+                                                    </a>
+                                                </td>
+                                                <td>${parseFloat(Math.abs(data['data'][i].open)).toLocaleString('en-IN')} ${data['data'][i].opening_type}</td>
+                                            </tr>`;
                                             }
                                         }
                                     } else {
@@ -1006,7 +1008,7 @@
                                         let tot_credit = 0;
                                         for (let i = 0; i < data['data'].length; i++) {
                                             const padding = getIncrementalPadding(
-                                                parentPadding);
+                                            parentPadding);
                                             var closingText = '';
                                             const closing = data['data'][i].open + (data['data']
                                                 [i].details_sum_debit_amt - data['data'][i]
@@ -1016,23 +1018,22 @@
                                             }
 
                                             html += `
-												<tr class="trail-sub-list-open parent-${id}">
-													<td style="padding-left: ${padding}px">
+                                            <tr class="trail-sub-list-open parent-${id}">
+                                                <td style="padding-left: ${padding}px">
 														<i data-feather='arrow-right'></i>${data['data'][i].name}
-													</td>
-
-													<td>${parseFloat(closing < 0 ? -closing : closing).toLocaleString('en-IN')} ${closingText}</td>
-												</tr>`;
+                                                </td>
+                                                <td>${parseFloat(Math.abs(data['data'][i].open)).toLocaleString('en-IN')} ${data['data'][i].opening_type ?? ''}</td>
+                                            </tr>`;
                                             tot_debt += data['data'][i].details_sum_debit_amt;
                                             tot_credit += data['data'][i]
-                                                .details_sum_credit_amt;
+                                            .details_sum_credit_amt;
                                         }
                                     }
                                     $('#' + id).closest('tr').after(html);
                                     $('.urls').each(function() {
                                         let currentHref = $(this).attr('href') || '';
                                         let baseUrl = currentHref.split('?')[
-                                            0]; // remove old query params if any
+                                        0]; // remove old query params if any
 
                                         // Append new query parameters
                                         let updatedUrl =
@@ -1086,7 +1087,7 @@
             $('#expand-all').click(function() {
                 $('.expand').hide();
 
-                var trIds = $('tbody tr').map(function() {
+                var trIds = $('#tranferLedger tbody tr').map(function() {
                     return this.id; // Return the ID of each tr element
                 }).get().filter(function(id) {
                     return id !== "" && $('#check' + id).val() == ""; // Filter out any empty IDs
@@ -1137,9 +1138,9 @@
 
                                         let html = `
 											<tr class="trail-sub-list-open parent-${data['id']}">
-
-												<td>${parseFloat(reservesSurplus['closingFinal']).toLocaleString('en-IN')} ${reservesSurplus['closing_type']}</td>
-											</tr>`;
+                                            <td style="padding-left: ${padding}px">Profit & Loss</td>
+                                            <td>${parseFloat(reservesSurplus['closingFinal']).toLocaleString('en-IN')} ${reservesSurplus['closing_type']}</td>
+                                        </tr>>`;
                                         $('#' + data['id']).closest('tr').after(html);
                                     } else {
                                         if (data['data'].length > 0) {
@@ -1180,7 +1181,6 @@
 																</a>
 																<span id="name${data['data'][i].id}">${data['data'][i].name}</span>
 															</td>
-
 															<td>${parseFloat(reservesSurplus['closingFinal']).toLocaleString('en-IN')} ${reservesSurplus['closing_type']}</td>
 														</tr>`;
                                                     } else {
@@ -1199,7 +1199,7 @@
 																</a>
 															</td>
 
-															<td>${parseFloat(closing < 0 ? -closing : closing).toLocaleString('en-IN')} ${closingText}</td>
+                                                        <td>${parseFloat(Math.abs(data['data'][i].open)).toLocaleString('en-IN')} ${data['data'][i].opening_type}</td>
 														</tr>`;
                                                     }
                                                 }
@@ -1229,7 +1229,7 @@
 																<i data-feather='arrow-right'></i>${data['data'][i].name}
 															</td>
 
-															<td>${parseFloat(closing < 0 ? -closing : closing).toLocaleString('en-IN')} ${closingText}</td>
+                                                        <td>${parseFloat(Math.abs(data['data'][i].open)).toLocaleString('en-IN')} ${data['data'][i].opening_type ?? ''}</td>
 														</tr>`;
                                                     tot_debt += data['data'][i]
                                                         .details_sum_debit_amt;
@@ -1265,7 +1265,7 @@
 
             // Collapse All rows
             $('#collapse-all').click(function() {
-                $('tbody tr').each(function() {
+                $('#tranferLedger tbody tr').each(function() {
                     const id = $(this).attr('id');
                     if (id) {
                         collapseChildren(id); // Collapse all children for each parent row
@@ -1324,7 +1324,7 @@
 
             // Arrow key navigation
             $(document).keydown(function(e) {
-                const rows = $('tbody tr');
+                const rows = $('#tranferLedger tbody tr');
                 if (rows.length === 0) return;
 
                 let currentIndex = rows.index(selectedRow);
@@ -1368,8 +1368,6 @@
 
 
         });
-    </script>
-    <script>
         document.querySelectorAll('.swal-action-btn').forEach(button => {
             button.addEventListener('click', function() {
                 console.log('save button hit')

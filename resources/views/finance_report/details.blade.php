@@ -64,8 +64,8 @@
                                     </div>
 
                                     <div class="col-md-8 text-sm-end pofilterboxcenter mb-0 d-flex flex-wrap align-items-center justify-content-sm-end">
-                                        <a href="javascript: history.go(-1)" class="btn btn-secondary btn-sm"><i
-                                            data-feather="arrow-left-circle"></i> Back </a> &nbsp;
+                                        {{-- <a href="javascript: history.go(-1)" class="btn btn-secondary btn-sm"><i
+                                            data-feather="arrow-left-circle"></i> Back </a> &nbsp; --}}
                                         <a id="printButton" href="{{route('crdr.report.ledger.print',[$type,$ledger,$group])}}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 me-25"><i data-feather='printer'></i> Print</a>
                                         <button data-bs-toggle="modal" data-bs-target="#addcoulmn" class="btn btn-primary btn-sm mb-0 waves-effect"><i data-feather="filter"></i> Advance Filter</button>
                                     </div>
@@ -82,8 +82,9 @@
 												<th>Invoice No.</th>
 												<th>Voucher No.</th>
 												<th>O/S Days</th>
-												<th class="outstanding text-end">Invoice Amt.</th>
-												<th class="overdue text-end">Balance Amt.</th>
+                                                <th class="text-end">Invoice Amt.</th>
+												<th class="outstanding text-end">Balance Amt.</th>
+                                                <th class="overdue text-end">Overdue Amt.</th>
 												<th>Action</th>
 											  </tr>
 											</thead>
@@ -104,14 +105,10 @@
                                                         <span class="badge rounded-pill @if($credit_days<$d->overdue_days) badge-light-danger @else badge-light-secondary @endif  badgeborder-radius">{{$d->overdue_days}}</span>
                                                         @endif
                                                     </td>
-                                                    @if($type=="debit")
+                                                        <td class="text-end">@if($d->invoice_amount!=""){{ number_format($d->invoice_amount,2)}}@endif</td>
+                                                    <td class="outstanding text-end">{{ $d->total_outstanding < 0 ? 0: number_format($d->total_outstanding,2) }}</td>
 
-                                                        <td class="outstanding text-end">{{ number_format(abs($d->total_outstanding), 2) }}  {{ $d->total_outstanding < 0 ? 'Cr' : 'Dr' }}</td>
-                                                    @else
-                                                    <td class="outstanding text-end">{{ number_format(abs($d->total_outstanding), 2) }}  {{ $d->total_outstanding < 0 ? 'Dr' : 'Cr' }}</td>
-
-                                                    @endif
-												        <td class="overdue text-end"> {{$d->overdue > 0 ? number_format($d->overdue) : '' }}</td>
+                                                    <td class="overdue text-end"> {{$d->overdue > 0 ? number_format($d->overdue) : '' }}</td>
 
                                                         <td>
                                                         @if($d->view_route)
@@ -458,7 +455,7 @@
     <script>
         let baseUrl = "{{ route('crdr.report.ledger.print', [$type, $ledger, $group,'outstanding']) }}";
         printButton.setAttribute("href", baseUrl);
-        //  $(".overdue").hide();
+        $(".overdue").hide();
 
 function filter() {
     let range = $('#fp-range').val();
@@ -486,6 +483,7 @@ if (dt_basic_table.length) {
         },
         displayLength: 10,
         lengthMenu: [10, 25, 50, 75, 100],
+
         buttons: [{
             extend: 'collection',
             className: 'btn btn-outline-secondary dropdown-toggle',
@@ -501,8 +499,28 @@ if (dt_basic_table.length) {
                     className: 'dropdown-item',
                     filename: 'Billing Report',
                     exportOptions: {
-                        columns: ':not(:last-child)' // Excludes "Action" column (last column)
-                    }
+        columns: function (idx, data, node) {
+            // Determine which radio is selected
+            let isServiceSelected = document.querySelector('input[type="radio"]#service')?.checked;
+
+            // Hide last column (assumed action column)
+            const isLastColumn = node.cellIndex === node.parentNode.cells.length - 1;
+
+            if (isLastColumn) {
+                return false;
+            }
+
+            // If 'service' is selected, hide column 7 (index 6)
+            // Else hide column 6 (index 5)
+            if (isServiceSelected && node.cellIndex === 6) {
+                return false;
+            } else if (!isServiceSelected && node.cellIndex === 7) {
+                return false;
+            }
+
+            return true;
+        }
+    },
                 },
                 {
                     extend: 'pdf',
@@ -512,8 +530,28 @@ if (dt_basic_table.length) {
                     className: 'dropdown-item',
                     filename: 'Billing Report',
                     exportOptions: {
-                        columns: ':not(:last-child)' // Excludes "Action" column (last column)
-                    }
+        columns: function (idx, data, node) {
+            // Determine which radio is selected
+            let isServiceSelected = document.querySelector('input[type="radio"]#service')?.checked;
+
+            // Hide last column (assumed action column)
+            const isLastColumn = node.cellIndex === node.parentNode.cells.length - 1;
+
+            if (isLastColumn) {
+                return false;
+            }
+
+            // If 'service' is selected, hide column 7 (index 6)
+            // Else hide column 6 (index 5)
+            if (isServiceSelected && node.cellIndex === 6) {
+                return false;
+            } else if (!isServiceSelected && node.cellIndex === 7) {
+                return false;
+            }
+
+            return true;
+        }
+    },
                 },
                 {
                     extend: 'copy',
@@ -523,8 +561,28 @@ if (dt_basic_table.length) {
                     className: 'dropdown-item',
                     filename: 'Billing Report',
                     exportOptions: {
-                        columns: ':not(:last-child)' // Excludes "Action" column (last column)
-                    }
+        columns: function (idx, data, node) {
+            // Determine which radio is selected
+            let isServiceSelected = document.querySelector('input[type="radio"]#service')?.checked;
+
+            // Hide last column (assumed action column)
+            const isLastColumn = node.cellIndex === node.parentNode.cells.length - 1;
+
+            if (isLastColumn) {
+                return false;
+            }
+
+            // If 'service' is selected, hide column 7 (index 6)
+            // Else hide column 6 (index 5)
+            if (isServiceSelected && node.cellIndex === 6) {
+                return false;
+            } else if (!isServiceSelected && node.cellIndex === 7) {
+                return false;
+            }
+
+            return true;
+        }
+    },
                 }
             ],
             init: function(api, node, config) {
@@ -762,13 +820,11 @@ function getSelectedData() {
             let overdueAmount = parseFloat($(this).attr("data-overdue")) || 0;
 
             if (selectedValue === "customColorRadio1") {
-                $(this).show(); // Show all rows when "Total Outstanding" is selected
+                $('.outstanding').show();
+                $('.overdue').hide();
             } else if (selectedValue === "service") {
-                if (overdueAmount > 0) {
-                    $(this).show(); // Show only rows where overdue > 0
-                } else {
-                    $(this).hide(); // Hide rows with overdue = 0
-                }
+                $('.overdue').show();
+                $('.outstanding').hide();
             }
         });
         $('#addcoulmn').modal('hide');
@@ -793,6 +849,7 @@ function getSelectedData() {
             });
         });
     });
+
 
 
 

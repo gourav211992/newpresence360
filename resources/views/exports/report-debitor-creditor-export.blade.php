@@ -6,7 +6,8 @@
         <td>{{ isset($type) && $type == 'credit' ? 'Account Payable ' : 'Account Receivable ' }}</td>
     </tr>
     <tr>
-        <td>{{ $date ?? $date2 }}</td>
+
+    <td>{{ isset($date) ? $date  : 'As on' .' '. $date2 }}</td>
     </tr>
     <tr></tr> {{-- empty row --}}
     <tr>
@@ -35,16 +36,10 @@
                     <td>{{ $record->bill_no ?? null}}</td>
                     <td>{{ $record->voucher_no ?? null }}</td>
                     <td>@if($record->overdue_days!="-")
-                                                        <span class="badge rounded-pill @if($item['credit_days']<$record->overdue_days) badge-light-danger @else badge-light-secondary @endif  badgeborder-radius">{{$record->overdue_days}}</span>
-                                                        @endif</td>
-                    @if ($type == 'debit')
-                        <td  align="right">{{ number_format(abs($record->total_outstanding), 2) }}
-                            {{ $record->total_outstanding < 0 ? 'Cr' : 'Dr' }}</td>
-                    @else
-                        <td  align="right">{{ number_format(abs($record->total_outstanding), 2) }}
-                            {{ $record->total_outstanding < 0 ? 'Dr' : 'Cr' }}</td>
-                    @endif
-                    <td  align="right">{{ $record->overdue > 0 ? number_format($record->overdue) : '' }}</td>
+                    <span class="badge rounded-pill @if($item['credit_days']<$record->overdue_days) badge-light-danger @else badge-light-secondary @endif  badgeborder-radius">{{$record->overdue_days}}</span>
+                    @endif</td>
+                    <td align="right">@if($record->invoice_amount!=""){{ number_format($record->invoice_amount,2)}}@endif</td>
+                    <td align="right">{{ $record->total_outstanding < 0 ? 0: number_format($record->total_outstanding,2) }}</td>
                 </tr>
             @endforeach
         @endforeach

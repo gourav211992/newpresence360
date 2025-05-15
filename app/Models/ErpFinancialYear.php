@@ -35,23 +35,26 @@ class ErpFinancialYear extends Model
     public function authorizedUsers()
     {
         $access = collect($this->access_by);
+
         if (empty($this->access_by)) {
             return null;
         }
 
-        $allAuthorized = $access->every(fn($item) => $item['authorized'] === true);
+        $allAuthorized = $access->every(fn($item) => $item['authorized'] == true);
+        $allLocked = $access->every(fn($item) => isset($item['locked']) && $item['locked'] == true);
 
         $userIds = $access
             ->where('authorized', true)
             ->pluck('user_id')
             ->toArray();
 
-        $access_by = [
+        return [
             'users' => AuthUser::whereIn('id', $userIds)->get(),
-            'all' => $allAuthorized ?? true
+            'all' => $allAuthorized,
+            'locked' => $allLocked
         ];
-        return $access_by;
     }
+
 
     protected static function booted()
     {
