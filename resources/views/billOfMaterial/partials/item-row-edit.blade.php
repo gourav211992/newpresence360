@@ -120,6 +120,10 @@
    </td>
    @endif
    <td>
+      <input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct" value="{{$bomDetail?->vendor?->company_name}}" name="product_vendor" />
+      <input type="hidden" name="components[{{$rowCount}}][vendor_id]" value="{{$bomDetail?->vendor_id}}">
+   </td>
+   <td>
       <input type="hidden" name="components[{{$rowCount}}][remark]" value="{{$bomDetail->remark}}" />
       <div class="d-flex align-items-center justify-content-center">
          <div class="me-50 mx-1 cursor-pointer addRemarkBtn" data-row-count="{{$rowCount}}">

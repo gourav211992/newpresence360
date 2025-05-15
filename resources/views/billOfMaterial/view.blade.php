@@ -225,6 +225,7 @@ if($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS)
                                                     <th id="component_overhead_required">Overheads</th>
                                                     <th>Total Cost</th>
                                                     <th id="station_required">Station</th>
+                                                    <th>Vendor</th>
                                                     <th></th>
                                                     </tr>
                                                 </thead>

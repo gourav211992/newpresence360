@@ -534,6 +534,7 @@ class CrDrReportController extends Controller
                     'days_120_180' => 0,
                     'days_above_180' => 0,
                     'total_outstanding' => 0,
+                    'invoice_amount'=>0,
                     'document_date' => "",
                     'days_diff' => 0
                 ];
@@ -560,6 +561,7 @@ class CrDrReportController extends Controller
                     } else {
                         $totals->days_above_180 += $item->$amount;
                     }
+                    $totals->invoice_amount+=$item->$amount;
                     $totals->total_outstanding += $item->$amount;
                     $totals->days_diff = $days_diff;
                 }
@@ -574,6 +576,7 @@ class CrDrReportController extends Controller
             $ages = self::getAgedReceipts([$vendor->id], $ages_all, $doc_types, $start, $end);
             $voucher = Voucher::withDefaultGroupCompanyOrg()->find($vendor->id);
             $bill_no = "";
+            $invoice_amount="";
             $view_route = "";
             if ($voucher->reference_service != null) {
                 $model = Helper::getModelFromServiceAlias($voucher->reference_service);
@@ -587,6 +590,7 @@ class CrDrReportController extends Controller
                                 ($referenceDoc->doc_suffix ? '-' . $referenceDoc->doc_suffix : ''),
                             '-'
                         );
+                    $invoice_amount =$vendor->invoice_amount;
                     $view_route = Helper::getRouteNameFromServiceAlias($voucher->reference_service, $voucher->reference_doc_id);
                 }
             }
@@ -610,6 +614,8 @@ class CrDrReportController extends Controller
                 'overdue' => 0,
                 'overdue_days' => 0,
                 'diff_days' => $vendor->days_diff,
+                'invoice_amount'=>$invoice_amount,
+
             ];
         }
 
@@ -1038,7 +1044,6 @@ class CrDrReportController extends Controller
         $data = json_decode(json_encode($data));
         $date = $request->date;
         $date2 = $end? \Carbon\Carbon::parse($end)->format('jS-F-Y'):\Carbon\Carbon::parse(date('Y-m-d'))->format('jS-F-Y'); ;
-
         return view('finance_report.details', compact('ledger_name', 'scheduler', 'group_name', 'credit_days', 'data', 'cc_users', 'to_users', 'to_user_mail', 'to_type', 'ledger', 'group', 'type','date','date2'));
     }
     public function addScheduler(Request $request)
@@ -1233,17 +1238,15 @@ class CrDrReportController extends Controller
 
         $groupIdFromRequest = $request->group_id;
 
-        // If group_id is selected, build single group structure
-        $defaultGroupName = $type === 'debit'
-            ? ConstantHelper::RECEIVABLE
-            : ConstantHelper::PAYABLE;
+        $organization = Helper::getAuthenticatedUser()->organization->name ?? '';
+        // $defaultGroupName = ;
 
         // If group_id is selected, use it globally
         if ($groupIdFromRequest) {
-            $groupName = Group::find($groupIdFromRequest)?->name ?? $defaultGroupName;
+            // $groupName = Group::find($groupIdFromRequest)?->name ?? '';
 
             $structuredRecords = [
-                'group_name' => $groupName,
+                'group_name' => $organization,
                 'type' => $type,
                 'entities' => [],
                 'date' => $request->date,
@@ -1263,7 +1266,7 @@ class CrDrReportController extends Controller
         } else {
             // No group_id selected — still provide default group_name
             $structuredRecords = [
-                'group_name' => $defaultGroupName,
+                'group_name' => $organization,
                 'type' => $type,
                 'date' => $request->date,
                 'date2' => $request->date2,
@@ -1288,7 +1291,6 @@ class CrDrReportController extends Controller
                 ];
             }
         }
-
         $filename = $type === 'credit'
             ? 'creditor-ledger.xlsx'
             : ($type === 'debit' ? 'debitor-ledger.xlsx' : 'ledger-report.xlsx');

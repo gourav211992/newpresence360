@@ -3,9 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\ConstantHelper;
+use App\Helpers\DynamicFieldHelper;
 use App\Helpers\Helper;
 use App\Helpers\ServiceParametersHelper;
 use App\Models\AuthUser;
+use App\Models\BookDynamicField;
+use App\Models\DynamicField;
+use App\Models\DynamicFieldDetail;
 use App\Models\ErpSaleOrder;
 use App\Models\Group;
 use App\Models\OrganizationBookParameter;
@@ -128,7 +132,9 @@ class BookController extends Controller
             $subQuery->whereIn('id', $orgIds);
         })->get();
         $people = [];
-        return view('book.create-book', compact('companies', 'people', 'services'));
+        $dynamicFields = DynamicField::select('id', 'name') -> withDefaultGroupCompanyOrg() -> whereHas('items')
+        -> where('status', ConstantHelper::ACTIVE) -> get();
+        return view('book.create-book', compact('companies', 'people', 'services', 'dynamicFields'));
     }
 
     public function store(Request $request)
@@ -440,6 +446,17 @@ class BookController extends Controller
                                 'status' => ConstantHelper::ACTIVE,
                             ]);
                         }
+                }
+            }
+
+            //Dynamic Fields
+            if ($request -> dynamic_fields && count($request -> dynamic_fields) > 0) {
+                $dynamicFieldIds = $request -> dynamic_fields;
+                foreach ($dynamicFieldIds as $dynamicFieldId) {
+                    BookDynamicField::create([
+                        'book_id' => $insert -> id,
+                        'dynamic_field_id' => $dynamicFieldId
+                    ]);
                 }
             }
 
@@ -780,10 +797,15 @@ class BookController extends Controller
        $companies = OrganizationCompany::whereIn('id', $companyIds) -> with('organizations', function ($subQuery) use($orgIds) {
            $subQuery -> whereIn('id', $orgIds);
        }) -> get();
-    //    $people = Employee::whereIn('organization_id', $orgIds) -> get();
-       $people = collect([]);
+        $selectedDynamicFieldIds = $book -> dynamic_fields() -> pluck('dynamic_field_id') -> toArray();
+        $people = collect([]);
+        $dynamicFields = DynamicField::select('id', 'name') -> withDefaultGroupCompanyOrg() -> whereHas('items')
+            -> where(function ($subQuery) use($selectedDynamicFieldIds) {
+                $subQuery -> where('status', ConstantHelper::ACTIVE)
+                -> orWhereIn('id', $selectedDynamicFieldIds);
+            }) -> get();
 
-        return view('book.edit-book', compact('book', 'companies', 'people'));
+        return view('book.edit-book', compact('book', 'companies', 'people', 'dynamicFields', 'selectedDynamicFieldIds'));
     }
 
     public function update_book(Request $request, $id)
@@ -927,6 +949,20 @@ class BookController extends Controller
                     }
                 }
             }
+            //Dynamic Fields
+            $newInsertedDynamicFieldIds = [];
+            if ($request -> dynamic_fields && count($request -> dynamic_fields) > 0) {
+                $dynamicFieldIds = $request -> dynamic_fields;
+                foreach ($dynamicFieldIds as $dynamicFieldId) {
+                    BookDynamicField::firstOrCreate([
+                        'book_id' => $update -> id,
+                        'dynamic_field_id' => $dynamicFieldId
+                    ]);
+                    array_push($newInsertedDynamicFieldIds, $dynamicFieldId);
+                }
+            }
+            //Delete all non-linked previous records
+            BookDynamicField::where('book_id', $update -> id) -> whereNotIn('dynamic_field_id', $newInsertedDynamicFieldIds) -> delete();
             DB::commit();
             return response()->json([
                 'message' => __("message.updated", ['module' => "Series"]),
@@ -1201,7 +1237,6 @@ class BookController extends Controller
                 ], 422);
             }
         } catch (Exception $ex) {
-            dd($ex);
             return response()->json([
                 'status' => 'exception',
                 'message' => $ex->getMessage()
@@ -1213,7 +1248,6 @@ class BookController extends Controller
     {
         try {
             $book = Book::find($request->book_id);
-            // dd($book);
             if (isset($book)) {
                 $parameters = new stdClass();
                 foreach (ServiceParametersHelper::SERVICE_PARAMETERS as $paramName => $paramNameVal) {
@@ -1226,11 +1260,33 @@ class BookController extends Controller
                 if (isset($docNum['error'])) {
                     return response()->json(['data' => [], 'message' => $docNum['error'], 'status' => 500]);
                 }
+                $selectedDynamicFields = $book -> dynamic_fields() -> pluck('dynamic_field_id') -> toArray();
+                $dynamicFields = DynamicFieldDetail::select('id', 'header_id', 'name', 'data_type') -> whereIn('header_id', $selectedDynamicFields) -> whereHas('header') -> get();
+                $dynamicFieldsHTML = "";
+                foreach ($dynamicFields as $dynamicField) {
+                    $dynamicFieldsHTML .= DynamicFieldHelper::generateFieldUI($dynamicField);
+                }
+                $dynamicFieldsBaseHTML = "
+                        <div class='card quation-card'>
+                            <div class='card-header newheader'>
+                                <div>
+                                    <h4 class='card-title'>Dynamic Fields</h4> 
+                                </div>
+                            </div>
+                            <div class='card-body'> 
+                                <div class='row'>
+                                    $dynamicFieldsHTML
+                                </div>
+                            </div>                                                                                                
+                        </div>
+                    ";
                 return response()->json([
                     'data' => [
                         'doc' => $docNum,
                         'book_code' => $book->book_code,
-                        'parameters' => $parameters
+                        'parameters' => $parameters,
+                        'dynamic_fields' => $dynamicFields,
+                        'dynamic_fields_html' => $dynamicFieldsBaseHTML
                     ],
                     'message' => "fetched!",
                     'status' => 200

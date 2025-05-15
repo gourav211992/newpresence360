@@ -158,6 +158,10 @@
                                                                 <a class="nav-link" data-bs-toggle="tab"
                                                                     href="#gl_params">Financial Parameters</a>
                                                             </li>
+                                                            <li class="nav-item" id = "dynamic_field_tab_header">
+                                                                <a class="nav-link" data-bs-toggle="tab"
+                                                                    href="#dynamic_field_section">Dynamic Fields</a>
+                                                            </li>
                                                         </ul>
                                                     </div>
                                                     <div class="tab-content ">
@@ -501,6 +505,27 @@
                                                         <div class="tab-pane" style = "display:none;" id="gl_params">
                                                             
                                                         </div>
+                                                        <div class="tab-pane" id="dynamic_field_section">
+                                                            <div class='row align-items-center mb-1'>
+                                                                <div class='col-md-2'>
+                                                                    <label class='form-label'>Dynamic Fields</label>
+                                                                </div>
+                                                                <div class='col-md-5'>
+                                                                    <select
+                                                                        class='form-select mw-100 select2'
+                                                                        multiple
+                                                                        name = 'dynamic_fields[]'
+                                                                        id = 'dynamic_fields_input'
+                                                                        oninput = "getDynamicFields(this);"
+                                                                        >
+                                                                        @foreach ($dynamicFields as $dynamicField)
+                                                                            <option value = "{{$dynamicField -> id}}">{{$dynamicField -> name}}</option>
+                                                                        @endforeach
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                            <div class='row align-items-center mb-1' id = "dynamic_fields_value"></div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -716,6 +741,7 @@
 
                 $('.select2').select2();
             });
+            initializeDynamicFieldDropdown();
         });
 
         $(document).on('click', '.remove-item', function() {
@@ -809,8 +835,9 @@
         });
 
         $(document).ready(function() {
-            $(".select2").select2();
-
+            $(".select2").select2({
+                placeholder: "Select an option"
+            });
             function populateDropdowns(data) {
                 let companies = data.map(item => ({
                     id: item.organization_id,
@@ -908,7 +935,8 @@
         $(document).ready(function() {
             function initializeSelect2() {
                 $('.select2').select2({
-                    width: '100%'
+                    width: '100%',
+                    placeholder : 'Select an option'
                 });
             }
 
@@ -1157,8 +1185,9 @@ $(document).on('click', '.amendment_plus', function (e) {
     $('#tableBody').append(newRow);
 
     // Re-initialize Select2 (or any other plugin if needed)
-    $('.select2').select2();
-
+    $(".select2").select2({
+        placeholder: "Select an option"
+    });
     // Reload Feather icons to ensure they appear
     feather.replace();
 
@@ -1459,6 +1488,59 @@ $(document).on('change', '.AmendmentCompanySelect', function() {
             } else {
                 manualEntryDetailsElement.style.display = "none";
             }
+        }
+
+        function getDynamicFields(element)
+        {
+            let dynamicFieldsValueSection = document.getElementById('dynamic_fields_value');
+            dynamicFieldsValueSection.innerHTML = ``;
+            let selectedDynamicFieldIds = $('#dynamic_fields_input').val();
+            $.ajax({
+                url: "{{route('dynamic-fields.detail')}}",
+                type: "GET",
+                dataType: "json",
+                data : {
+                    dynamic_field_ids : selectedDynamicFieldIds
+                },
+                success: function(data) {
+                    if (data.status === 'success') {
+                        let newHTML = ``;
+                        data.data.forEach(field => {
+                            newHTML += `
+                            <div class = "col-md-auto mb-1">
+                            <span class="badge rounded-pill badge-light-primary badgeborder-radius font-small-2"><strong>${field.name}</strong>: <span class="text-secondary">${capitalizeFirstLetter(field.data_type)}</span></span>
+                            </div>
+                            `;
+                        });
+                        dynamicFieldsValueSection.innerHTML = newHTML;
+                    } else {
+                        dynamicFieldsValueSection.innerHTML = ``;
+                        Swal.fire({
+                            title: 'Error!',
+                            text: "Some internal error occured",
+                            icon: 'error',
+                        });
+                    }
+                    
+                },
+                error: function () {
+                    dynamicFieldsValueSection.innerHTML = ``;
+                    Swal.fire({
+                        title: 'Error!',
+                        text: "Some internal error occured",
+                        icon: 'error',
+                    });
+                }
+            });
+        }
+
+        function initializeDynamicFieldDropdown()
+        {
+            $("#dynamic_fields_input").select2({
+                placeholder: "Select an option",
+                allowClear: true,
+                closeOnSelect: false // Ensures dropdown stays open for multiple selection
+            });
         }
     </script>
 @endsection

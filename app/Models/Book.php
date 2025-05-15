@@ -76,5 +76,10 @@ class Book extends Model
     {
         return $this -> hasMany(OrganizationBookParameter::class, 'book_id') -> where('type', ServiceParametersHelper::GL_PARAMETERS);
     }
+
+    public function dynamic_fields()
+    {
+        return $this -> hasMany(BookDynamicField::class, 'book_id');
+    }
     
 }

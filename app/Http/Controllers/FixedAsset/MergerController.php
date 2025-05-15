@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Log;
 use App\Helpers\FinancialPostingHelper;
 use App\Models\FixedAssetMergerHistory;
 use App\Models\FixedAssetSub;
+use App\Models\ErpStore;
 use Exception;
 
 
@@ -77,7 +78,7 @@ class MergerController extends Controller
         $firstService = $servicesBooks['services'][0];
         $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
         $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()->whereIn('document_status',ConstantHelper::DOCUMENT_STATUS_APPROVED)->get();
-        $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->where('organization_id', Helper::getAuthenticatedUser()->organization_id)->select('id', 'name')->get();
+        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         $group_name = ConstantHelper::FIXED_ASSETS;
         
         $group = Group::withDefaultGroupCompanyOrg()->where('name', $group_name)->first() ?: Group::where('edit',0)->where('name', $group_name)->first();
@@ -97,7 +98,9 @@ class MergerController extends Controller
                 $dep_percentage = $organization->dep_percentage;
                 $dep_type = $organization->dep_type;
                 $dep_method = $organization->dep_method;
-                return view('fixed-asset.merger.create', compact('assets','series','assets', 'categories','ledgers','financialEndDate','financialStartDate','dep_percentage','dep_type','dep_method'));
+                $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
+       
+                return view('fixed-asset.merger.create', compact('locations','assets','series','assets', 'categories','ledgers','financialEndDate','financialStartDate','dep_percentage','dep_type','dep_method'));
        
         
     }
@@ -177,8 +180,9 @@ class MergerController extends Controller
         
         $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()->whereIn('document_status',ConstantHelper::DOCUMENT_STATUS_APPROVED)->get();
         
-        
-        return view('fixed-asset.merger.show', compact('assets','data', 'buttons', 'docStatusClass', 'approvalHistory','revision_number'));
+        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
+       
+        return view('fixed-asset.merger.show', compact('locations','assets','data', 'buttons', 'docStatusClass', 'approvalHistory','revision_number'));
         
     }
 
@@ -197,7 +201,7 @@ class MergerController extends Controller
         $firstService = $servicesBooks['services'][0];
         $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
         $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()->whereIn('document_status',ConstantHelper::DOCUMENT_STATUS_APPROVED)->get();
-        $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->where('organization_id', Helper::getAuthenticatedUser()->organization_id)->select('id', 'name')->get();
+        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         $group_name = ConstantHelper::FIXED_ASSETS;
 
         
@@ -219,7 +223,9 @@ class MergerController extends Controller
                 $dep_type = $organization->dep_type;
                 $dep_method = $organization->dep_method;
                 $data = FixedAssetMerger::find($id);
-                return view('fixed-asset.merger.edit', compact('data','assets','series','assets', 'categories','ledgers','financialEndDate','financialStartDate','dep_percentage','dep_type','dep_method'));
+                $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
+       
+                return view('fixed-asset.merger.edit', compact('locations','data','assets','series','assets', 'categories','ledgers','financialEndDate','financialStartDate','dep_percentage','dep_type','dep_method'));
        
         
     }

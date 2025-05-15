@@ -159,6 +159,18 @@
                                                         </select>
                                                     </div>
                                                 </div>
+                                                <div class="row align-items-center mb-1" id="cost_center_div" style="display:none;">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Cost Center <span class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <select class="form-select cost_center" id="cost_center_id" name="cost_center_id">
+                                                            <option value="{{$mrn->cost_center_id}}">
+                                                                {{ ucfirst($mrn?->cost_centers?->name) }}
+                                                            </option>
+                                                        </select>
+                                                    </div>
+                                                </div>
                                                 <!-- <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Reference No </label>
@@ -420,6 +432,7 @@
                                                                 <th width="240px">Item Name</th>
                                                                 <th>Attributes</th>
                                                                 <th>UOM</th>
+                                                                <th class="text-end">PO Qty</th>
                                                                 <th class="text-end">Recpt Qty</th>
                                                                 <th class="text-end">Acpt. Qty</th>
                                                                 <th class="text-end">Rej. Qty</th>
@@ -435,7 +448,7 @@
                                                         </tbody>
                                                         <tfoot>
                                                             <tr class="totalsubheadpodetail">
-                                                                <td colspan="9"></td>
+                                                                <td colspan="10"></td>
                                                                 <td class="text-end" id="totalItemValue">
                                                                     {{@$mrn->items->sum('basic_value')}}
                                                                 </td>
@@ -447,7 +460,7 @@
                                                                 </td>
                                                             </tr>
                                                             <tr valign="top">
-                                                                <td rowspan="10" colspan="8">
+                                                                <td rowspan="10" colspan="9">
                                                                     <table class="table border">
                                                                         <tbody id="itemDetailDisplay">
                                                                             <tr>
@@ -878,6 +891,7 @@
 
 @endsection
 @section('scripts')
+    <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
     <script type="text/javascript">
         var actionUrlTax = '{{route("material-receipt.tax.calculation")}}';
     </script>
@@ -886,6 +900,7 @@
     <script type="text/javascript" src="{{asset('assets/js/modules/import-item.js')}}"></script>
     <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
     <script>
+        const selectedCostCenterId = "{{ $mrn->cost_center_id ?? '' }}";
         /*Clear local storage*/
         setTimeout(() => {
             localStorage.removeItem('deletedItemDiscTedIds');
@@ -962,10 +977,8 @@
             let actionUrl = '{{route("book.get.doc_no_and_parameters")}}'+'?book_id='+bookId+'&document_date='+document_date;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
-                    // console.log(data.data);
                     if (data.status == 200) {
                         const parameters = data.data.parameters;
-                        // console.log('parameters', parameters);
                         setServiceParameters(parameters);
 
                         if(parameters?.tax_required.some(val => val.toLowerCase() === 'yes')) {
@@ -1209,6 +1222,7 @@
                     closestTr.find('[name*=item_name]').val(itemN);
                     closestTr.find('[name*=hsn_id]').val(hsnId);
                     closestTr.find('[name*=hsn_code]').val(hsnCode);
+                    closestTr.find("td[id*='itemAttribute_']").html(defautAttrBtn);
                     let uomOption = `<option value=${uomId}>${uomName}</option>`;
                     if(ui.item?.alternate_u_o_ms) {
                         for(let alterItem of ui.item.alternate_u_o_ms) {
@@ -1232,7 +1246,6 @@
                     }).toString();
                     getItemDetail(closestTr);
                     let storeLocation = $('.header_store_id').val();
-                    updateItemStores();
                     getSubStores(storeLocation, itemId);
                     setTimeout(() => {
                         if(ui.item.is_attr) {
@@ -1264,7 +1277,6 @@
         $(document).on('click','#addNewItemBtn', (e) => {
             // for component item code
             let storeLocation = $('.header_store_id').val();
-            updateItemStores();
             getSubStores(storeLocation);
             var supplierName = $('#vendor_name').val();
             if(!supplierName){
@@ -1409,7 +1421,7 @@
                 selectedAttr = JSON.stringify(selectedAttr);
             }
             if (item_name && item_id) {
-                let rowCount = e.target.getAttribute('data-row-count');
+                let rowCount = tr.getAttribute('data-index');
                 getItemAttribute(item_id, rowCount, selectedAttr, tr);
             } else {
                 Swal.fire({
@@ -1423,7 +1435,8 @@
 
         /*For comp attr*/
         function getItemAttribute(itemId, rowCount, selectedAttr, tr){
-            let actionUrl = '{{route("material-receipt.item.attr")}}'+'?item_id='+itemId+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
+            let mrn_detail_id = $(tr).find("input[name*='[mrn_detail_id]']").val() || '';
+            let actionUrl = '{{route("material-receipt.item.attr")}}'+'?item_id='+itemId+'&mrn_detail_id='+mrn_detail_id+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if (data.status == 200) {
@@ -1431,6 +1444,7 @@
                         $("#attribute table tbody").append(data.data.html)
                         $(tr).find('td:nth-child(2)').find("[name*=attr_name]").remove();
                         $(tr).find('td:nth-child(2)').append(data.data.hiddenHtml);
+                        $(tr).find("td[id*='itemAttribute_']").attr('attribute-array', JSON.stringify(data.data.itemAttributeArray));
                         if (data.data.attr) {
                             $("#attribute").modal('show');
                             $(".select2").select2();
@@ -1488,7 +1502,9 @@
                         if (data.status == 200) {
                             $("#itemDetailDisplay").html(data.data.html);
                             var approvedStockLedger = data.data.checkApprovedQuantity;
-                            if ((approvedStockLedger['code'] == 200) && (approvedStockLedger['status'] == 'error')) {
+                            if(approvedStockLedger)
+                            {
+                                if ((approvedStockLedger['code'] == 200) && (approvedStockLedger['status'] == 'error')) {
                                 let approved_stock = approvedStockLedger['approvedStock'];
                                 let receipt_qty = $(currentTr).find("[name*='[order_qty]']").val() || '';
                                 let rejQtyElement = $(currentTr).find("[name*='[rejected_qty]']");  // Get the jQuery object, not the value
@@ -1511,7 +1527,9 @@
                                         icon: 'error',
                                     });
                                 }
+                                }
                             }
+
                         }
                     });
                 });
@@ -1759,7 +1777,6 @@
                     let shelfVal = $(item).closest('td').find(`[name="components[${rowCount}][erp_store][${index+1}][erp_shelf_id]"]`).val();
                     let binVal = $(item).closest('td').find(`[name="components[${rowCount}][erp_store][${index+1}][erp_bin_id]"]`).val();
                     let storeQty = $(item).closest('td').find(`[name="components[${rowCount}][erp_store][${index+1}][store_qty]"]`).val();
-                    // console.log('store rack shelf', storeVal, rackVal, shelfVal, binVal);
                     // Trigger the change event after setting values to ensure racks, shelves, etc. are updated
                     // $(`#erp_store_id_${index+1}`).val(storeVal).trigger('change');
                     // $(`#erp_rack_id_${index+1}`).val(rackVal);
@@ -1828,7 +1845,6 @@
             .val();
                 let erp_bin_id = binVal || $(`#erp_bin_id_${rowCount}`)
             .val();
-                // console.log('erp_rack_id---->>', erp_rack_id, erp_shelf_id, erp_bin_id);
 
                 var data = {
                     store_code_id: store_id
@@ -1994,13 +2010,11 @@
         /*itemDeliveryScheduleSubmit */
         $(document).on('click', '.itemDeliveryScheduleSubmit', (e) => {
             let rowCount = $('#deliveryScheduleModal .display_delivery_row').find('#row_count').val();
-            // console.log(rowCount);
             let qty = 0.00;
             $("#deliveryScheduleTable [name*='[store_qty]']").each(function(index, item) {
                 qty = qty + Number($(item).val());
             });
             let itemQty = Number($('#deliveryScheduleModal #deliveryFooter #total').attr('qty'));
-            // console.log('itemQty------>>',rowCount, qty, itemQty);
             if (qty < itemQty) {
                 Swal.fire({
                     title: 'Error!',
@@ -2036,7 +2050,6 @@
         $(document).on('click', '.deleteItemDeliveryRow', (e) => {
             let id = e.target.getAttribute('data-index');
             // let id = $(`.display_discount_row`).find(`.deleteItemDeliveryRow`).getAttribute('data-index');
-            console.log('id----->>', id);
 
             let dataRowId = Number(e.target.getAttribute('data-row-count'));
             if($(e.target).closest('tbody').find('.display_delivery_row').length ==1) {
@@ -2049,7 +2062,6 @@
             }
             $(e.target).closest('tr').remove();
             let ids = JSON.parse(localStorage.getItem('deletedItemLocationIds')) || [];
-            console.log('ids----->>', ids);
 
             if (!ids.includes(id)) {
                 ids.push(id);
@@ -2082,7 +2094,6 @@
         $(document).on('change', '.item_store_code', function() {
             var rowKey = $(this).data('id');
             var store_code_id = $(this).val();
-            // console.log('rowKey', rowKey);
             $('#erp_store_id_'+rowKey).val(store_code_id).select2();
 
             var data = {
@@ -2733,8 +2744,6 @@
 
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
-                    console.log(actionUrl, data);
-
                     if(data.status == 200) {
                         $(".header_store_id").prop('disabled', true);
                         initializeAutocomplete2(".comp_item_code");
@@ -2781,5 +2790,18 @@
                 });
             });
         });
+
+        $(document).on('click','td[id*="itemAttribute_"]', (e) => {
+            let dataAttributes = $(e.target).attr('data-attributes');
+            // dataAttributes = JSON.parse(dataAttributes);
+            // dataAttributes.
+        });
+
+        setTimeout(() => {
+            $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+                let currentIndex = index + 1;
+                setAttributesUIHelper(currentIndex,"#itemTable");
+            });
+        },100);
     </script>
 @endsection

@@ -205,9 +205,12 @@
                 <td
                     style="font-weight: bold; padding: 2px; border: 1px solid #000;  border-left: none; background: #80808070; text-align: center;">
                     O/S Days</td>
+                    <td
+                    style="font-weight: bold; padding: 2px; border: 1px solid #000;  border-left: none; background: #80808070; text-align: right;padding-right:30px">
+                    Invoice Amt.</td>
                 <td
                     style="font-weight: bold; padding: 2px; border: 1px solid #000;  border-left: none; background: #80808070; text-align: right;padding-right:30px">
-                    Amount</td>
+                    Balance Amt.</td>
             </tr>
             @php $index=0; @endphp
             
@@ -228,7 +231,10 @@
                 <td
                     style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none;  text-align: center;">
                     {{@$row->overdue_days}}</td>
-                
+                    
+                    <td
+                    style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;padding-right:30px">
+                    {{$row->invoice_amount!=""?App\Helpers\Helper::formatIndianNumber($row->invoice_amount):""}}</td>  
                 <td
                     style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;padding-right:30px">
                     {{App\Helpers\Helper::formatIndianNumber($row->total_outstanding)}}</td>
@@ -250,6 +256,10 @@
                 <td
                     style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none;  text-align: center;">
                     {{@$row->overdue_days}}</td>
+                    <td
+                    style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;padding-right:30px">
+                    {{$row->invoice_amount!=""?App\Helpers\Helper::formatIndianNumber($row->invoice_amount):""}}</td>  
+                
                 
                 <td
                     style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;padding-right:30px">

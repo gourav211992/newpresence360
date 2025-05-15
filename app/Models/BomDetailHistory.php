@@ -30,7 +30,8 @@ class BomDetailHistory extends Model
         'sub_section_name',
         'station_id',
         'station_name',
-        'remark'
+        'remark',
+        'vendor_id'
     ];
 
     public $referencingRelationships = [
@@ -61,6 +62,11 @@ class BomDetailHistory extends Model
     public function item()
     {
         return $this->belongsTo(Item::class, 'item_id');
+    }
+
+    public function vendor()
+    {
+        return $this->belongsTo(Vendor::class, 'vendor_id');
     }
 
     public function attributes()

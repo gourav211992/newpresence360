@@ -35,6 +35,7 @@ class ExpenseHeaderHistory extends Model
         'book_id',
         'book_code',
         'document_number',
+        'cost_center_id',
         'document_date',
         'document_status',
         'revision_number',
@@ -257,5 +258,10 @@ class ExpenseHeaderHistory extends Model
     public function media()
     {
         return $this->morphMany(GateEntryMedia::class, 'model');
+    }
+
+    public function costCenters()
+    {
+        return $this->belongsTo(CostCenter::class, 'cost_center_id');
     }
 }

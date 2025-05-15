@@ -33,6 +33,7 @@ class ExpenseHeader extends Model
         'series_id',
         'book_code',
         'document_number',
+        'cost_center_id',
         'document_date',
         'document_status',
         'revision_number',
@@ -323,6 +324,11 @@ class ExpenseHeader extends Model
     public function latestShippingAddress()
     {
         return $this->addresses()->where('type', 'shipping')->latest()->first();
+    }
+
+    public function costCenters()
+    {
+        return $this->belongsTo(CostCenter::class, 'cost_center_id');
     }
 
 }

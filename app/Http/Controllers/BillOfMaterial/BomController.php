@@ -297,6 +297,7 @@ class BomController extends Controller
                     $bomDetail = new BomDetail;
                     $bomDetail->bom_id = $bom->id;
                     $bomDetail->item_id = $component['item_id'];
+                    $bomDetail->vendor_id = $component['vendor_id'] ?? null;
                     $bomDetail->item_code = $component['item_code'];
                     $bomDetail->qty = $component['qty'] ?? 0.00;
                     $bomDetail->uom_id = $component['uom_id'] ?? null;
@@ -539,7 +540,15 @@ class BomController extends Controller
                 $hiddenHtml .= "<input type='hidden' name='components[$rowCount][attr_group_id][$attribute->attribute_group_id][attr_name]' value=$selected>";
             }
         }
-        return response()->json(['data' => ['attr' => $item->itemAttributes->count(),'html' => $html, 'hiddenHtml' => $hiddenHtml], 'status' => 200, 'message' => 'fetched.']);
+        $vendorItem = $item?->approvedVendors?->first() ?? null;
+        $vendorName = ""; 
+        $vendorId = ""; 
+        if($vendorItem) {
+            $vendorName = $vendorItem->vendor ? $vendorItem->vendor->company_name : '';  
+            $vendorId = $vendorItem->vendor ? $vendorItem->vendor->id : '';  
+        }
+
+        return response()->json(['data' => ['vendor_id' => $vendorId, 'vendor_name' => $vendorName, 'attr' => $item->itemAttributes->count(),'html' => $html, 'hiddenHtml' => $hiddenHtml,], 'status' => 200, 'message' => 'fetched.']);
     }
 
     # Add item row
@@ -931,6 +940,7 @@ class BomController extends Controller
                     # Bom Detail Save
                     $bomDetail = BomDetail::find(@$component['bom_detail_id']) ?? new BomDetail;
                     $bomDetail->bom_id = $bom->id;
+                    $bomDetail->vendor_id = $component['vendor_id'] ?? null;
                     $bomDetail->item_id = $component['item_id'];
                     $bomDetail->item_code = $component['item_code'];
                     $bomDetail->qty = $component['qty'] ?? 0.00;

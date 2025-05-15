@@ -37,8 +37,7 @@
 <td>
     <input type="text" name="components[{{$rowCount}}][item_name]" class="form-control mw-100 mb-25" readonly value="{{$pi_item?->item?->item_name}}" />
 </td>
-<td class="poprod-decpt"> 
-    <button {{$pi_item?->so_pi_mapping_item?->count() ? 'disabled' : ''}} type="button" {{-- data-bs-toggle="modal" data-bs-target="#attribute" --}} class="btn p-25 btn-sm btn-outline-secondary attributeBtn" data-row-count="{{$rowCount}}" style="font-size: 10px">Attributes</button>
+<td class="poprod-decpt attributeBtn" {{$pi_item?->so_pi_mapping_item?->count() ? 'data-disabled="true" ' : ''}} id="itemAttribute_{{$rowCount}}" data-count="{{$rowCount}}" attribute-array="{{$pi_item->item_attributes_array()}}"> 
 </td>
 <td>
     <input type="hidden" name="components[{{$rowCount}}][inventoty_uom_id]" value="{{$pi_item->inventoty_uom_id}}">

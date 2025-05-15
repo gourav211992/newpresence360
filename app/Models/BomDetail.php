@@ -29,7 +29,8 @@ class BomDetail extends Model
         'sub_section_name',
         'station_id',
         'station_name',
-        'remark'
+        'remark',
+        'vendor_id'
     ];
 
     public $referencingRelationships = [
@@ -55,6 +56,11 @@ class BomDetail extends Model
     public function uom()
     {
         return $this->belongsTo(Unit::class, 'uom_id');
+    }
+
+    public function vendor()
+    {
+        return $this->belongsTo(Vendor::class, 'vendor_id');
     }
 
     public function item()

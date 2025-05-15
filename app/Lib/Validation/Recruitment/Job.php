@@ -70,6 +70,9 @@ class Job
 			'location_id' => [
 				'required'
 			],
+			'company_id' => [
+				'required'
+			],
 			'working_hour_id' => [
 				'required'
 			],
@@ -123,6 +126,7 @@ class Job
 			'education_id.required' => 'Education field is required!',
 			'work_exp_min.required' => 'Work experience min field is required!',
 			'work_exp_max.required' => 'Work experience max field is required!',
+			'company_id.required' => 'Company field is required!',
 			'location_id.required' => 'Location field is required!',
 			'working_hour_id.required' => 'Working hour field is required!',
 			'annual_salary_min.required' => 'Annual salary min field is required!',
@@ -213,6 +217,9 @@ class Job
 			'work_exp_max' => [
 				'required'
 			],
+			'company_id' => [
+				'required'
+			],
 			'location_id' => [
 				'required'
 			],
@@ -266,6 +273,7 @@ class Job
 			'education_id.required' => 'Education field is required!',
 			'work_exp_min.required' => 'Work experience min field is required!',
 			'work_exp_max.required' => 'Work experience max field is required!',
+			'company_id.required' => 'Company field is required!',
 			'location_id.required' => 'Location field is required!',
 			'working_hour_id.required' => 'Working hour field is required!',
 			'annual_salary_min.required' => 'Annual salary min field is required!',

@@ -3385,6 +3385,7 @@ public static function depVoucherDetails(int $documentId, string $type)
         'book_id' => $glPostingBookId,
         'date' => $document -> document_date,
         'amount' => $totalCreditAmount,
+        'location'=>$document->location_id??null,
         'currency_id' => $document -> currency_id,
         'currency_code' => $currencyExc['party_currency_code'],
         'org_currency_id' => $currencyExc['org_currency_id'],
@@ -3468,6 +3469,21 @@ public static function depVoucherDetails(int $documentId, string $type)
                 $ledgerErrorStatus = self::ERROR_PREFIX.'Old Assets Account not setup';
                 break;
             }
+
+            
+            $depLedgerId = $document->ledger_id;
+            $depLedgerGroupId = $document->ledger_group_id;
+            $depLedger = Ledger::find($depLedgerId);
+            $depLedgerGroup = Group::find($depLedgerGroupId);
+            if (!isset($depLedger) || !isset($depLedgerGroup)) {
+                $ledgerErrorStatus = self::ERROR_PREFIX.'New Asset Account not setup';
+                break;
+            }
+            if ($depLedgerId == $assetsLedgerId)
+            {
+                $ledgerErrorStatus = self::ERROR_PREFIX . 'Old Asset Ledger cannot be the same as New Asset Ledger';
+                break;
+            }
             //Check for same ledger and group in SALES ACCOUNT
             $existingAssetsLedger = array_filter($postingArray[self::OLD_ASSET], function ($posting) use($assetsLedgerId, $assetsLedgerGroupId) {
                 return $posting['ledger_id'] == $assetsLedgerId && $posting['ledger_group_id'] == $assetsLedgerGroupId;
@@ -3491,14 +3507,6 @@ public static function depVoucherDetails(int $documentId, string $type)
                 ]);
             }
             
-            $depLedgerId = $document->ledger_id;
-            $depLedgerGroupId = $document->ledger_group_id;
-            $depLedger = Ledger::find($depLedgerId);
-            $depLedgerGroup = Group::find($depLedgerGroupId);
-            if (!isset($depLedger) || !isset($depLedgerGroup)) {
-                $ledgerErrorStatus = self::ERROR_PREFIX.'New Asset Account not setup';
-                break;
-            }
 
             //Check for same ledger and group in SALES ACCOUNT
             $existingdepLedger = array_filter($postingArray[self::NEW_ASSET], function ($posting) use($depLedgerId, $depLedgerGroupId) {
@@ -3567,6 +3575,7 @@ public static function depVoucherDetails(int $documentId, string $type)
             'book_id' => $glPostingBookId,
             'date' => $document -> document_date,
             'amount' => $totalCreditAmount,
+            'location'=>$document->location_id??null,
             'currency_id' => $document -> currency_id,
             'currency_code' => $currencyExc['party_currency_code'],
             'org_currency_id' => $currencyExc['org_currency_id'],
@@ -3629,20 +3638,34 @@ public static function depVoucherDetails(int $documentId, string $type)
 
         //Status to check if all ledger entries were properly set
         $ledgerErrorStatus = null;
-        $oldLedgerId = $document->ledger_id;
-            $depLedgerGroupId = $document->ledger_group_id;
-            $depLedger = Ledger::find($oldLedgerId);
-            $depLedgerGroup = Group::find($depLedgerGroupId);
-            if (!isset($depLedger) || !isset($depLedgerGroup)) {
+            $oldLedgerId = $document->asset->ledger_id;
+            $oldLedgerGroupId = $document->asset->ledger_group_id;
+            $oldLedger = Ledger::find($oldLedgerId);
+            $oldLedgerGroup = Group::find($oldLedgerGroupId);
+            if (!isset($oldLedger) || !isset($oldLedgerGroup)) {
+                $ledgerErrorStatus = self::ERROR_PREFIX.'Old Asset Account not setup';
+                
+            }
+            $newLedgerId = $document->ledger_id;
+            $newLedgerGroupId = $document->ledger_group_id;
+            $newLedger = Ledger::find($newLedgerId);
+            $newLedgerGroup = Group::find($newLedgerGroupId);
+            if (!isset($newLedger) || !isset($newLedgerGroup)) {
                 $ledgerErrorStatus = self::ERROR_PREFIX.'New Asset Account not setup';
                 
             }
+            
+
+            if ($oldLedgerId == $newLedgerId)
+            {
+                $ledgerErrorStatus = self::ERROR_PREFIX . 'Old Asset Ledger cannot be the same as New Asset Ledger';
+            }
             array_push($postingArray[self::OLD_ASSET], [
                     'ledger_id' => $oldLedgerId,
-                    'ledger_group_id' => $depLedgerGroupId,
-                    'ledger_code' => $depLedger ?-> code,
-                    'ledger_name' => $depLedger ?-> name,
-                    'ledger_group_code' => $depLedgerGroup ?-> name,
+                    'ledger_group_id' => $oldLedgerGroupId,
+                    'ledger_code' => $oldLedger ?-> code,
+                    'ledger_name' => $oldLedger ?-> name,
+                    'ledger_group_code' => $oldLedgerGroup ?-> name,
                     'credit_amount' => $assetsAmount,
                     'credit_amount_org' => $assetsAmount,
                     'debit_amount' => 0,
@@ -3650,20 +3673,12 @@ public static function depVoucherDetails(int $documentId, string $type)
                 ]);
             
 
-            $depLedgerId = $document->ledger_id;
-            $depLedgerGroupId = $document->ledger_group_id;
-            $depLedger = Ledger::find($depLedgerId);
-            $depLedgerGroup = Group::find($depLedgerGroupId);
-            if (!isset($depLedger) || !isset($depLedgerGroup)) {
-                $ledgerErrorStatus = self::ERROR_PREFIX.'New Asset Account not setup';
-                
-            }
              array_push($postingArray[self::NEW_ASSET], [
-                    'ledger_id' => $depLedgerId,
-                    'ledger_group_id' => $depLedgerGroupId,
-                    'ledger_code' => $depLedger ?-> code,
-                    'ledger_name' => $depLedger ?-> name,
-                    'ledger_group_code' => $depLedgerGroup ?-> name,
+                    'ledger_id' => $newLedgerId,
+                    'ledger_group_id' => $newLedgerGroupId,
+                    'ledger_code' => $newLedger ?-> code,
+                    'ledger_name' => $newLedger ?-> name,
+                    'ledger_group_code' => $newLedgerGroup ?-> name,
                     'credit_amount' => 0,
                     'credit_amount_org' => 0,
                     'debit_amount' => $assetsAmount,
@@ -3716,6 +3731,7 @@ public static function depVoucherDetails(int $documentId, string $type)
             'date' => $document -> document_date,
             'amount' => $totalCreditAmount,
             'currency_id' => $document -> currency_id,
+            'location'=>$document->location_id??null,
             'currency_code' => $currencyExc['party_currency_code'],
             'org_currency_id' => $currencyExc['org_currency_id'],
             'org_currency_code' => $currencyExc['org_currency_code'],
@@ -5649,11 +5665,14 @@ public static function depVoucherDetails(int $documentId, string $type)
         foreach ($items as $item) {
             if(!empty($vocuherdata))
             {
-                $BankLedgerId = 1;
-                $BankLedgerGroupId = 19;
-                $BankLedger = Ledger::find($BankLedgerId);
-                $BankLedgerGroup = Group::find($BankLedgerGroupId);
-    
+                $psvAccountLedgerDetails = AccountHelper::getStockLedgerGroupAndLedgerId($document -> organization_id ,$item -> item_id,$document->book_id);
+                $psvAccountLedgerId = is_a($psvAccountLedgerDetails, Collection::class) ? $psvAccountLedgerDetails -> first()['ledger_id'] : null;
+                $psvAccountLedgerGroupId = is_a($psvAccountLedgerDetails, Collection::class) ? $psvAccountLedgerDetails-> first()['ledger_group'] : null;
+                $BankLedger = Ledger::find($psvAccountLedgerId);
+                $BankLedgerGroup = Group::find($psvAccountLedgerGroupId);
+                $BankLedgerId = $BankLedger->id;
+                $BankLedgerGroupId = $BankLedgerGroup->id;
+                
             }
     
             if (!isset($BankLedger) || !isset($BankLedgerGroup)) {
@@ -5685,11 +5704,13 @@ public static function depVoucherDetails(int $documentId, string $type)
 
             if(!empty($item))
             {
-                $VendorLedgerId = 11;
-                $VendorLedgerGroupId = 8;
-                $VendorLedger = Ledger::find($VendorLedgerId);
-                $VendorLedgerGroup = Group::find($VendorLedgerGroupId);
-
+                $psvAccountLedgerDetails = AccountHelper::getPhysicalStockLedgerGroupAndLedgerId($document -> organization_id ,$item -> item_id);
+                $psvAccountLedgerId = is_a($psvAccountLedgerDetails, Collection::class) ? $psvAccountLedgerDetails -> first()['ledger_id'] : null;
+                $psvAccountLedgerGroupId = is_a($psvAccountLedgerDetails, Collection::class) ? $psvAccountLedgerDetails-> first()['ledger_group'] : null;
+                $VendorLedger = Ledger::find($psvAccountLedgerId);
+                $VendorLedgerGroup = Group::find($psvAccountLedgerGroupId);
+                $VendorLedgerId = $VendorLedger->id;
+                $VendorLedgerGroupId = $VendorLedgerGroup->id;
             }
 
             if (!isset($VendorLedger) || !isset($VendorLedgerGroup)) {

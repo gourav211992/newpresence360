@@ -329,9 +329,11 @@
                                                                 class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-3">
-                                                        <input type="text" class="form-control bankInput"
+                                              
+                                                        <input type="text" class="form-control bankInput" id="reference_no"
                                                             name="reference_no" value="{{ $data->reference_no }}"
                                                             @if ($data->payment_type == 'Bank') required @endif />
+                                                             <span class="text-danger bankInput" id="reference_error"></span>
                                                     </div>
                                                 </div>
 
@@ -1346,23 +1348,36 @@ $('.settleInput').each(function () {
                 });
             });
         });
-
-        function check_amount() {
+function check_amount() {
+            $('#draft').attr('disabled', true);
+            $('#submitted').attr('disabled', true);
         
             let rowCount = document.querySelectorAll('.mrntableselectexcel tr').length;
             for (let index = 1; index <= rowCount; index++) {
                 if (parseFloat($('#excAmount' + index).val()) == 0) {
-                    showToast('error','Can not save Settle with Zero Balance');
+                    showToast('error', 'Can not save ledger with amount 0');
+                            $('#draft').attr('disabled', false);
+            $('#submitted').attr('disabled', false);
                     return false;
                 }
             }
 
             if (parseFloat(removeCommas($('.currentCurrencySum').text())) == 0) {
-                showToast('error','Total amount should be greater than 0');
+                showToast('error', 'Total amount should be greater than 0');
+                        $('#draft').attr('disabled', false);
+            $('#submitted').attr('disabled', false);
                 return false;
             }
+              if ($('#reference_no').hasClass('is-invalid') && $("#Bank").is(":checked")){
+                showToast('error', 'Reference no. Already exist');
+                 $('#draft').attr('disabled', false);
+            $('#submitted').attr('disabled', false);
+                return false;
+           
+        
+              }
         }
-
+        
         function selectAllVouchers() {
             $('.vouchers').each(function() {
                 if (this.checked) {
@@ -1447,6 +1462,7 @@ $('.settleInput').each(function () {
 
 
         $(document).ready(function() {
+            $('#reference_no').trigger('input');
 
             @if (!$buttons['draft'])
 $('#voucherForm').find('input, select, textarea').prop('disabled', true);
@@ -1705,10 +1721,7 @@ $('#revisionNumber').prop('disabled', false);
             $('#submitButton').click();
           
         }
-        $('#voucherForm').on('submit', function() {
-        $('#draft').attr('disabled', true);
-        $('#submitted').attr('disabled', true);
-    });
+      
 
 
         function getAccounts() {
@@ -2156,6 +2169,40 @@ function showToast(icon, title) {
         $costCenterRow.hide();
         $dropdown.empty();
     }
-});                                                  
+});  
+let timer;
+
+        $('#reference_no').on('input', function () {
+            clearTimeout(timer);
+            const refNo = $(this).val();
+
+            if (refNo.length > 0) {
+                timer = setTimeout(function () {
+                    $.ajax({
+                        url: '{{ route("voucher.checkReference") }}', // route defined below
+                        method: 'POST',
+                        data: {
+                            _token: '{{ csrf_token() }}',
+                            reference_no: refNo,
+                            edit_id:"{{$data->id}}",
+                            
+                        },
+                        success: function (response) {
+                            if (response.exists) {
+                                $('#reference_error').text('This reference number already exists.');
+                                $('#reference_no').addClass('is-invalid');
+                            } else {
+                                $('#reference_error').text('');
+                                $('#reference_no').removeClass('is-invalid');
+                            }
+                        }
+                    });
+                }, 500); // debounce
+            } else {
+                $('#reference_error').text('');
+                $('#reference_no').removeClass('is-invalid');
+            }
+        });
+
     </script>
 @endsection

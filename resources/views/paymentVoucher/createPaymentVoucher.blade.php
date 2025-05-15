@@ -119,7 +119,7 @@
                                                             required onchange="getDocNumberByBookId()">
                                                             <option disabled selected value="">Select</option>
                                                             @foreach ($books as $book)
-                                                                <option value="{{ $book->id }}">
+                                                                <option value="{{ $book->id }}" {{ old('book_id') == $book->id ? 'selected' : '' }}>
                                                                     {{ strtoupper($book->book_code) }}
                                                                 </option>
                                                             @endforeach
@@ -151,7 +151,7 @@
 
                                                     <div class="col-md-5">
                                                         <input type="date" class="form-control" name="date"
-                                                            id="date" required value="{{ date('Y-m-d') }}"
+                                                            id="date" required value="{{ old('document_date') ?? date('Y-m-d') }}"
                                                             min="{{ $fyear['start_date'] }}" 
                                                         max="{{ $fyear['end_date'] }}" />
                                                     </div>
@@ -165,21 +165,22 @@
                                                     </div>
 
                                                     <div class="col-md-5">
-                                                        <div class="demo-inline-spacing">
-                                                            <div class="form-check form-check-primary mt-25">
-                                                                <input type="radio" id="Bank" value="Bank"
-                                                                    name="payment_type" class="form-check-input" checked>
-                                                                <label class="form-check-label fw-bolder"
-                                                                    for="Bank">Bank</label>
-                                                            </div>
-                                                            <div class="form-check form-check-primary mt-25">
-                                                                <input type="radio" id="Cash" value="Cash"
-                                                                    name="payment_type" class="form-check-input">
-                                                                <label class="form-check-label fw-bolder"
-                                                                    for="Cash">Cash</label>
-                                                            </div>
+                                                    <div class="demo-inline-spacing">
+                                                        <div class="form-check form-check-primary mt-25">
+                                                            <input type="radio" id="Bank" value="Bank"
+                                                                name="payment_type" class="form-check-input"
+                                                                {{ old('payment_type', 'Bank') == 'Bank' ? 'checked' : '' }}>
+                                                            <label class="form-check-label fw-bolder" for="Bank">Bank</label>
+                                                        </div>
+                                                        <div class="form-check form-check-primary mt-25">
+                                                            <input type="radio" id="Cash" value="Cash"
+                                                                name="payment_type" class="form-check-input"
+                                                                {{ old('payment_type') == 'Cash' ? 'checked' : '' }}>
+                                                            <label class="form-check-label fw-bolder" for="Cash">Cash</label>
                                                         </div>
                                                     </div>
+                                                </div>
+
                                                 </div>
 
                                                 <div class="row align-items-center mb-1">
@@ -189,7 +190,7 @@
                                                     </div>
                                                     <div class="col-md-5">
                                                         <input type="date" class="form-control" name="payment_date"
-                                                            id="payment_date" required value="{{ date('Y-m-d') }}"
+                                                            id="payment_date" required value="{{ old('payment_date') ??date('Y-m-d') }}"
                                                             min="{{ $fyear['start_date'] }}" 
                                                         max="{{ $fyear['end_date'] }}" />
                                                     </div>
@@ -207,7 +208,7 @@
                                                             id="bank_id" onchange="getAccounts()" required>
                                                             <option selected disabled value="">Select Bank</option>
                                                             @foreach ($banks as $bank)
-                                                                <option value="{{ $bank->id }}">
+                                                                <option value="{{ $bank->id }}" {{ old('bank_id') == $bank->id ? 'selected' : '' }}>
                                                                     {{ $bank->bank_name }}</option>
                                                             @endforeach
                                                         </select>
@@ -246,9 +247,10 @@
                                                                 class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-3">
-                                                        <input type="text" class="form-control bankInput"
-                                                            name="reference_no" required />
-                                                    </div>
+                                                    <input type="text" class="form-control bankInput" name="reference_no" id="reference_no" required />
+                                                    <span class="text-danger bankInput" id="reference_error"></span>
+                                                </div>
+
                                                 </div>
 
                                                 <div class="row align-items-center mb-1 cashfield" style="display: none">
@@ -281,7 +283,7 @@
                                                             <option>Select Currency</option>
                                                             @foreach ($currencies as $currency)
                                                                 <option value="{{ $currency->id }}"
-                                                                    @if ($orgCurrency == $currency->id) selected @endif>
+                                                                    @if (old('currency_id') ?? $orgCurrency == $currency->id) selected @endif>
                                                                     {{ $currency->name . ' (' . $currency->short_name . ')' }}
                                                                 </option>
                                                             @endforeach
@@ -882,18 +884,33 @@
 
 
         function check_amount() {
+            $('#draft').attr('disabled', true);
+            $('#submitted').attr('disabled', true);
+        
             let rowCount = document.querySelectorAll('.mrntableselectexcel tr').length;
             for (let index = 1; index <= rowCount; index++) {
                 if (parseFloat($('#excAmount' + index).val()) == 0) {
                     showToast('error', 'Can not save ledger with amount 0');
+                            $('#draft').attr('disabled', false);
+            $('#submitted').attr('disabled', false);
                     return false;
                 }
             }
 
             if (parseFloat(removeCommas($('.currentCurrencySum').text())) == 0) {
                 showToast('error', 'Total amount should be greater than 0');
+                        $('#draft').attr('disabled', false);
+            $('#submitted').attr('disabled', false);
                 return false;
             }
+              if ($('#reference_no').hasClass('is-invalid') && $("#Bank").is(":checked")){
+                showToast('error', 'Reference no. Already exist');
+                 $('#draft').attr('disabled', false);
+            $('#submitted').attr('disabled', false);
+                return false;
+           
+        
+              }
         }
 
 
@@ -1194,29 +1211,26 @@
             $('#submitButton').click();
 
         }
-        $('#voucherForm').on('submit', function() {
-            $('#draft').attr('disabled', true);
-            $('#submitted').attr('disabled', true);
-        });
+        
+       function getAccounts() {
+    var accounts = [];
+    var oldSelected = "{{ old('account_id') }}"; // Inject the old value from Laravel
+    $('#account_id').empty();
+    $('#account_id').prepend('<option disabled value="">Select Bank Account</option>');
 
-
-        function getAccounts() {
-            var accounts = [];
-            $('#account_id').empty();
-            $('#account_id').prepend('<option disabled selected value="">Select Bank Account</option>');
-
-            const bank_id = $('#bank_id').val();
-            $.each(banks, function(key, value) {
-                if (value['id'] == bank_id) {
-                    accounts = value['bank_details'];
-                }
-            });
-
-            $.each(accounts, function(key, value) {
-                $("#account_id").append("<option value ='" + value['id'] + "'>" + value['account_number'] +
-                    " </option>");
-            });
+    const bank_id = $('#bank_id').val();
+    $.each(banks, function(key, value) {
+        if (value['id'] == bank_id) {
+            accounts = value['bank_details'];
         }
+    });
+
+    $.each(accounts, function(key, value) {
+        const isSelected = (value['id'] == oldSelected) ? 'selected' : '';
+        $("#account_id").append("<option value='" + value['id'] + "' " + isSelected + ">" + value['account_number'] + "</option>");
+    });
+}
+
 
         function getExchangeRate() {
             if ($('#currency_id').val() != "") {
@@ -1279,7 +1293,24 @@
         }
         $(document).ready(function() {
             bind();
-            if (orgCurrency != "") {
+            if ($("#Bank").is(":checked")) {
+                    $(".bankfield").show();
+                    $(".cashfield").hide();
+                    $('.bankInput').attr('required', true);
+                    $('#ledger_id').attr('required', false);
+                } else {
+                    $(".cashfield").show();
+                    $(".bankfield").hide();
+                    $('.bankInput').attr('required', false);
+                    $('#ledger_id').attr('required', true);
+                }
+            if($('#book_id').val())
+            $('#book_id').trigger('change');
+                if($('#bank_id').val())
+                getAccounts();
+            if($('#currency_id').val())
+            getExchangeRate();
+         if (orgCurrency != "") {
                 $.each(currencies, function(key, value) {
                     if (value['id'] == orgCurrency) {
                         orgCurrencyName = value['short_name'];
@@ -1563,6 +1594,37 @@
         $dropdown.empty();
     }
 });
+        let timer;
+
+        $('#reference_no').on('input', function () {
+            clearTimeout(timer);
+            const refNo = $(this).val();
+
+            if (refNo.length > 0) {
+                timer = setTimeout(function () {
+                    $.ajax({
+                        url: '{{ route("voucher.checkReference") }}', // route defined below
+                        method: 'POST',
+                        data: {
+                            _token: '{{ csrf_token() }}',
+                            reference_no: refNo
+                        },
+                        success: function (response) {
+                            if (response.exists) {
+                                $('#reference_error').text('This reference number already exists.');
+                                $('#reference_no').addClass('is-invalid');
+                            } else {
+                                $('#reference_error').text('');
+                                $('#reference_no').removeClass('is-invalid');
+                            }
+                        }
+                    });
+                }, 500); // debounce
+            } else {
+                $('#reference_error').text('');
+                $('#reference_no').removeClass('is-invalid');
+            }
+        });
 
     </script>
 @endsection

@@ -99,6 +99,7 @@ class BomRequest extends FormRequest
                 }
             }
         }
+        $rules['components.*.vendor_id'] = 'nullable';
         $rules['component_item_name.*'] = 'required';
         $rules['components.*.qty'] = 'required|numeric|min:0.000001';
         $rules['components.*.item_cost'] = 'required|numeric';

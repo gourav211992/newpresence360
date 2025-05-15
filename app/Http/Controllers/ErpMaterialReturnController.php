@@ -41,6 +41,7 @@ use App\Models\Organization;
 use App\Models\PiItem;
 use App\Models\PurchaseIndent;
 use App\Models\PwoSoMapping;
+use App\Models\Station;
 use App\Models\StockLedger;
 use App\Models\Unit;
 use App\Models\Vendor;
@@ -508,6 +509,8 @@ class ErpMaterialReturnController extends Controller
                             $uom = Unit::find($request -> uom_id[$itemKey] ?? null);
                             $fromStoreItem = ErpStore::find($request -> store_from_id);
                             $toStoreItem = ErpStore::find( $request ?-> return_location);
+                            $fromStation = Station::find($request->from_station_id ?? null);
+                            $toStation = Station::find($request->to_station_id ?? null);
                             $department = Department::find($request ?-> department_id[$itemKey] ?? NULL);
                             $miItem = ErpMiItem::find($request ?-> mi_item_id[$itemKey] ?? NULL); 
                             if (isset($miItem)) {
@@ -533,6 +536,10 @@ class ErpMaterialReturnController extends Controller
                                 'store_code' => $materialReturn->return_type === 'Consumption' ? null : ($fromStoreItem?->store_name ?? null),
                                 'to_store_id'   => $materialReturn->return_type === 'Consumption' ? ($fromStoreItem?->id ?? null) : ($toStoreItem?->id ?? null),
                                 'to_store_code' => $materialReturn->return_type === 'Consumption' ? ($fromStoreItem?->store_name ?? null) : ($toStoreItem?->store_name ?? null),
+                                'from_station_id' => $materialReturn->return_type === 'Consumption' ? null : ($fromStation?->id ?? null),
+                                'from_station_code' => $materialReturn->return_type === 'Consumption' ? null : ($fromStation?->name ?? null),
+                                'to_station_id'   => $materialReturn->return_type === 'Consumption' ? ($fromStation?->id ?? null) : ($toStation?->id ?? null),
+                                'to_station_code' => $materialReturn->return_type === 'Consumption' ? ($fromStation?->name ?? null) : ($toStation?->name ?? null),
                                 'from_sub_store_id' => $miItem -> from_sub_store_id ?? null,
                                 'from_sub_store_code' => $fromSubStore->name ?? null,
                                 'to_sub_store_id' => $miItem -> to_sub_store_id ?? null,
@@ -581,6 +588,10 @@ class ErpMaterialReturnController extends Controller
                             'department_code' => $itemDataValue['department_code'],
                             'to_store_id' => $itemDataValue['to_store_id'],
                             'to_store_code' => $itemDataValue['to_store_code'],
+                            'to_station_id' => $itemDataValue['to_station_id'],
+                            'to_station_code' => $itemDataValue['to_station_code'],
+                            'from_station_id' => $itemDataValue['from_station_id'],
+                            'from_station_code' => $itemDataValue['from_station_code'],
                             'from_sub_store_id' => $itemDataValue['from_sub_store_id'],
                             'from_sub_store_code' => $itemDataValue['from_sub_store_code'],
                             'to_sub_store_id' => $itemDataValue['to_sub_store_id'],
@@ -742,6 +753,10 @@ class ErpMaterialReturnController extends Controller
                                 'item_code' => $miItem -> item_code,
                                 'store_id' =>  $miItem -> to_store_id,
                                 'store_code' => $miItem -> toErpStore -> store_name,
+                                'sub_store_id' =>  $miItem -> to_sub_store_id,
+                                'sub_store_code' => $miItem -> toErpSubStore -> name,
+                                'station_id' =>  $miItem -> to_station_id,
+                                'station_code' => $miItem -> toErpStation -> name,
                                 'rack_id' => null,
                                 'rack_code' =>null,
                                 'shelf_id' => null,

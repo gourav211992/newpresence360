@@ -346,7 +346,7 @@ $pi_item_ids = $po->pi_item_mappings()->pluck('pi_item_id')->implode(',');
                                                 </th>
                                                 <th width="150px">Item Code</th>
                                                 <th width="240px">Item Name</th>
-                                                <th>Attributes</th>
+                                                <th max-width="180px">Attributes</th>
                                                 <th>UOM</th>
                                                 <th>Qty</th>
                                                 <th>Rate</th>
@@ -894,6 +894,7 @@ $pi_item_ids = $po->pi_item_mappings()->pluck('pi_item_id')->implode(',');
     let type = '{{ request()->route("type") }}';
     let actionUrlTax = '{{route("po.tax.calculation",["type" => ":type"])}}'.replace(':type',type);
 </script>
+<script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
 <script type="text/javascript" src="{{asset('assets/js/modules/po.js')}}"></script>
 <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
 <script>
@@ -1307,6 +1308,16 @@ function vendorOnChange(vendorId) {
         if (this.value === "") {
             $(this).autocomplete("search", "");
         }
+    }).on("input", function () {
+        if ($(this).val().trim() === "") {
+            $(this).removeData("selected");
+            $(this).closest('tr').find("input[name*='component_item_name']").val('');
+            $(this).closest('tr').find("input[name*='item_name']").val('');
+            $(this).closest('tr').find("td[id*='itemAttribute_']").html(defautAttrBtn);
+            $(this).closest('tr').find("input[name*='item_id']").val('');
+            $(this).closest('tr').find("input[name*='item_code']").val('');
+            $(this).closest('tr').find("input[name*='attr_name']").remove();
+        }
     });
     }
 
@@ -1483,7 +1494,7 @@ $(document).on('click', '.attributeBtn', (e) => {
         selectedAttr = JSON.stringify(selectedAttr);
     }
     if (item_name && item_id) {
-        let rowCount = e.target.getAttribute('data-row-count');
+        let rowCount = tr.getAttribute('data-index');
         getItemAttribute(item_id, rowCount, selectedAttr, tr);
     } else {
         alert("Please select first item name.");
@@ -1496,6 +1507,11 @@ function getItemAttribute(itemId, rowCount, selectedAttr, tr){
     let isPi = 0;
     if($(tr).find('[name*="pi_item_id"]').length) {
         isPi = Number($(tr).find('[name*="pi_item_id"]').val()) || 0;
+    }
+    if(!isPi) {
+        if($(tr).find('td[id*="itemAttribute_"]').data('disabled')) {
+            isPi = 1;
+        }
     }
     let poItemId = 0;
     if($(tr).find('[name*="po_item_id"]').length) {
@@ -1512,6 +1528,7 @@ function getItemAttribute(itemId, rowCount, selectedAttr, tr){
                 $("#attribute table tbody").append(data.data.html)
                 $(tr).find('td:nth-child(2)').find("[name*='[attr_name]']").remove();
                 $(tr).find('td:nth-child(2)').append(data.data.hiddenHtml);
+                $(tr).find("td[id*='itemAttribute_']").attr('attribute-array', JSON.stringify(data.data.itemAttributeArray));
                 if (data.data.attr) {
                     $("#attribute").modal('show');
                     $(".select2").select2();
@@ -1927,6 +1944,7 @@ $(document).on('keyup', '#item_name_search', (e) => {
 });
 
 /*Checkbox for pi item list*/
+@if($serviceAlias == 'po')
 $(document).on('change','#prModal .po-order-detail > thead .form-check-input',(e) => {
   if (e.target.checked) {
       if($('.pi_item_checkbox').first().closest('tr').find("[name='vend_name']").length) {
@@ -1956,14 +1974,15 @@ $(document).on('change','#prModal .po-order-detail > thead .form-check-input',(e
       localStorage.removeItem('selectedVendorId');
   }
 });
-
-// $(document).on('change','.po-order-detail > tbody .form-check-input',(e) => {
-//   if(!$(".po-order-detail > tbody .form-check-input:not(:checked)").length) {
-//       $('.po-order-detail > thead .form-check-input').prop('checked', true);
-//   } else {
-//       $('.po-order-detail > thead .form-check-input').prop('checked', false);
-//   }
-// });
+@else
+$(document).on('change','.po-order-detail > tbody .form-check-input',(e) => {
+  if(!$(".po-order-detail > tbody .form-check-input:not(:checked)").length) {
+      $('.po-order-detail > thead .form-check-input').prop('checked', true);
+  } else {
+      $('.po-order-detail > thead .form-check-input').prop('checked', false);
+  }
+});
+@endif
 
 function getSelectedPiIDS()
 {
@@ -1977,6 +1996,7 @@ function getSelectedPiIDS()
 $(document).ready(function () {
     localStorage.removeItem('selectedVendorId');
 });
+@if($serviceAlias == 'po')
 $(document).on('change', '#prDataTable .pi_item_checkbox', function (e) {
     let selectedVendorId = localStorage.getItem('selectedVendorId') || null;
     let currentCheckedVendorId = $(this).closest('tr').find("[name='vend_name']").val();
@@ -2001,7 +2021,7 @@ $(document).on('change', '#prDataTable .pi_item_checkbox', function (e) {
         }
     }
 });
-
+@endif
 $(document).on('click', '.prProcess', (e) => {
     let ids = getSelectedPiIDS();
     if (!ids.length) {
@@ -2124,6 +2144,16 @@ $(document).on('click', '.prProcess', (e) => {
     }).focus(function() {
         if (this.value === "") {
             $(this).autocomplete("search", "");
+        }
+    }).on("input", function () {
+        if ($(this).val().trim() === "") {
+            $(this).removeData("selected");
+            $(this).closest('tr').find("input[name*='component_item_name']").val('');
+            $(this).closest('tr').find("input[name*='item_name']").val('');
+            $(this).closest('tr').find("td[id*='itemAttribute_']").html(defautAttrBtn);
+            $(this).closest('tr').find("input[name*='item_id']").val('');
+            $(this).closest('tr').find("input[name*='item_code']").val('');
+            $(this).closest('tr').find("input[name*='attr_name']").remove();
         }
     });
 }
@@ -2760,5 +2790,11 @@ $(document).on("autocompletechange autocompleteselect", "#store_po", function (e
     let storeId = ui?.item?.id || '';
     initializeAutocompleteQt("sub_store_po", "sub_store_id_po", "sub_store", "name", "");
 });
+setTimeout(() => {
+    $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+        let currentIndex = index + 1;
+        setAttributesUIHelper(currentIndex,"#itemTable");
+    });
+},100);
 </script>
 @endsection

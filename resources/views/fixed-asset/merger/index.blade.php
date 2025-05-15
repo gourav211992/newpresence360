@@ -272,6 +272,10 @@
         },
          
       ],
+      drawCallback: function() {
+                    feather.replace();
+                },
+                
       
       language: {
         paginate: {

@@ -1401,7 +1401,13 @@ class ErpSaleInvoiceController extends Controller
                 //     $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType);
                 // }
                 if ($saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS) {
-                    self::maintainStockLedger($saleInvoice);
+                    $status = self::maintainStockLedger($saleInvoice);
+                    if (!$status) {     
+                        DB::rollBack();
+                        return response() -> json([
+                            'message' => 'Stock not available'
+                        ], 422);
+                    }
                 }
                 $gstInvoiceType = EInvoiceHelper::getGstInvoiceType($saleInvoice -> customer_id, $saleInvoice ?->shipping_address_details  ?-> country_id, $saleInvoice -> location_address_details ?-> country_id);
                 if ($saleInvoice -> document_status === ConstantHelper::POSTED){
@@ -2254,7 +2260,7 @@ class ErpSaleInvoiceController extends Controller
         $user = Helper::getAuthenticatedUser();
         $detailIds = $saleInvoice->items->pluck('id')->toArray();
         $issueRecords = InventoryHelper::settlementOfInventoryAndStock($saleInvoice->id, $detailIds, $saleInvoice -> document_type, $saleInvoice->document_status, 'issue');
-        if(!empty($issueRecords['data'])){
+        if(!empty($issueRecords['data']) && count($issueRecords['data']) > 0){
             ErpInvoiceItemLocation::where('sale_invoice_id', $saleInvoice->id)
                 ->whereIn('invoice_item_id', $detailIds)
                 ->delete();
@@ -2281,20 +2287,9 @@ class ErpSaleInvoiceController extends Controller
                 ]);
             }
             return true;
+        } else {
+            return false;
         }
-            // $stockLedgers = StockLedger::where('book_type',ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS)
-            //                     ->where('document_header_id',$materialIssue->id)
-            //                     ->where('organization_id',$materialIssue->organization_id)
-            //                     ->selectRaw('document_detail_id,sum(org_currency_cost) as cost')
-            //                     ->groupBy('document_detail_id')
-            //                     ->get();
-
-            // foreach($stockLedgers as $stockLedger) {
-            //     $miItem = ErpMiItem::find($stockLedger->document_detail_id);
-            //     $miItem->rate = floatval($stockLedger->cost) / floatval($miItem->qty);
-            //     $miItem->save();
-            // }
-        return true;
     }
 
     public function getBundlesForPulledSo(Request $request)

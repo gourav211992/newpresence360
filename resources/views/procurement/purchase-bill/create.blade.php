@@ -131,6 +131,16 @@
                                                         </select>
                                                     </div>
                                                 </div>
+                                                <div class="row align-items-center mb-1" id="cost_center_div" style="display:none;">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Cost Center <span class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <select class="form-select cost_center" id="cost_center_id" name="cost_center_id">
+                                                            <!-- Options will be populated here by the AJAX request -->
+                                                        </select>
+                                                    </div>
+                                                </div>
                                                 <!-- <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Reference No </label>
@@ -575,12 +585,14 @@
     @include('procurement.purchase-bill.partials.tax-detail-modal')
 @endsection
 @section('scripts')
+    <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
     <script type="text/javascript">
         let actionUrlTax = '{{route("purchase-bill.tax.calculation")}}';
     </script>
     <script type="text/javascript" src="{{asset('assets/js/modules/purchase-bill.js')}}"></script>
     <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
     <script>
+        const selectedCostCenterId = "";
         $(document).on('change','#book_id',(e) => {
             let bookId = e.target.value;
             if (bookId) {
@@ -891,6 +903,7 @@
                         closestTr.find('[name*=item_name]').val(itemN);
                         closestTr.find('[name*=hsn_id]').val(hsnId);
                         closestTr.find('[name*=hsn_code]').val(hsnCode);
+                        closestTr.find("td[id*='itemAttribute_']").html(defautAttrBtn);
                         $input.val(itemCode);
                         let uomOption = `<option value=${uomId}>${uomName}</option>`;
                         if(ui.item?.alternate_u_o_ms) {
@@ -1058,7 +1071,7 @@
                 $("select[name='payment_term_id']").prop('disabled', false);
                 $(".editAddressBtn").removeClass('d-none');
                 $("#vendor_name").prop('readonly',false);
-                $(".header_store_id").prop('readonly',false);
+                // $(".header_store_id").prop('readonly',false);
                 getLocation();
             }
             setTableCalculation();
@@ -1076,7 +1089,7 @@
                 selectedAttr = JSON.stringify(selectedAttr);
             }
             if (item_name && item_id) {
-                let rowCount = e.target.getAttribute('data-row-count');
+                let rowCount = tr.getAttribute('data-index');
                 getItemAttribute(item_id, rowCount, selectedAttr, tr);
             } else {
                 Swal.fire({
@@ -1089,7 +1102,8 @@
 
         /*For comp attr*/
         function getItemAttribute(itemId, rowCount, selectedAttr, tr){
-            let actionUrl = '{{route("purchase-bill.item.attr")}}'+'?item_id='+itemId+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
+            let pb_detail_id = "";
+            let actionUrl = '{{route("purchase-bill.item.attr")}}'+'?item_id='+itemId+'&pb_detail_id='+pb_detail_id+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if (data.status == 200) {
@@ -1097,6 +1111,7 @@
                         $("#attribute table tbody").append(data.data.html);
                         $(tr).find('td:nth-child(2)').find("[name*=attr_name]").remove();
                         $(tr).find('td:nth-child(2)').append(data.data.hiddenHtml);
+                        $(tr).find("td[id*='itemAttribute_']").attr('attribute-array', JSON.stringify(data.data.itemAttributeArray));
                         if (data.data.attr) {
                             $("#attribute").modal('show');
                             $(".select2").select2();
@@ -1518,6 +1533,7 @@
                         $input.closest('tr').find('[name*=item_name]').val(itemN);
                         $input.closest('tr').find('[name*=hsn_id]').val(hsnId);
                         $input.closest('tr').find('[name*=hsn_code]').val(hsnCode);
+                        $input.closest('tr').find("td[id*='itemAttribute_']").html(defautAttrBtn);
                         $input.val(itemCode);
                         let uomOption = `<option value=${uomId}>${uomName}</option>`;
                         if(ui.item?.alternate_u_o_ms) {
@@ -1590,7 +1606,7 @@
                         $("select[name='payment_term_id']").prop('disabled', true);
                         $("#vendor_name").prop('readonly',true);
                         $(".editAddressBtn").addClass('d-none');
-                        $(".header_store_id").prop('disabled', true);
+                        // $(".header_store_id").prop('disabled', true);
 
                         let newIds = getSelectedPoIDS();
                         let existingIds = localStorage.getItem('selectedMrnIds');
@@ -1672,6 +1688,10 @@
                         }
                         setTimeout(() => {
                             setTableCalculation();
+                            $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+                                let currentIndex = index + 1;
+                                setAttributesUIHelper(currentIndex,"#itemTable");
+                            });
                         },500);
                     }
                     if(data.status == 422) {

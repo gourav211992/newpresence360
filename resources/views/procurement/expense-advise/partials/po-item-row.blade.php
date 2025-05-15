@@ -7,7 +7,7 @@
         @if($item->po?->type == 'supplier-invoice')
             <input type="hidden" name="components[{{$rowCount}}][po_detail_id]" value="{{$item->po_item?->id}}">
             <input type="hidden" name="components[{{$rowCount}}][supplier_inv_detail_id]" value="{{$item->id}}">
-        @else 
+        @else
             <input type="hidden" name="components[{{$rowCount}}][po_detail_id]" value="{{$item->id}}">
             <input type="hidden" name="components[{{$rowCount}}][supplier_inv_detail_id]" value="">
         @endif
@@ -20,12 +20,12 @@
         <td>
             <input type="text" name="component_item_name[{{$rowCount}}]" placeholder="Select" class="form-control mw-100 ledgerselecct comp_item_code" value="{{$item->item_code}}" readonly />
             <input type="hidden" name="components[{{$rowCount}}][item_id]" value="{{@$item->item_id}}" />
-            <input type="hidden" name="components[{{$rowCount}}][item_code]" value="{{@$item->item_code}}" /> 
+            <input type="hidden" name="components[{{$rowCount}}][item_code]" value="{{@$item->item_code}}" />
             <input type="hidden" name="components[{{$rowCount}}][item_name]" value="{{@$item->item->name}}" />
-            <input type="hidden" name="components[{{$rowCount}}][hsn_id]" value="{{@$item->hsn_id}}" /> 
+            <input type="hidden" name="components[{{$rowCount}}][hsn_id]" value="{{@$item->hsn_id}}" />
             <input type="hidden" name="components[{{$rowCount}}][hsn_code]" value="{{$item?->item?->hsn?->code}}" />
             @php
-                $selectedAttr = @$item->attributes ? @$item->attributes()->whereNotNull('attribute_value')->pluck('attribute_value')->all() : []; 
+                $selectedAttr = @$item->attributes ? @$item->attributes()->whereNotNull('attribute_value')->pluck('attribute_value')->all() : [];
             @endphp
             @foreach(@$item->attributes as $attributeHidden)
                 <input type="hidden" name="components[{{$rowCount}}][attr_group_id][{{$attributeHidden->attribute_name}}][attr_id]" value="{{$attributeHidden->id}}">
@@ -45,8 +45,7 @@
         <td>
             <input type="text" name="components[{{$rowCount}}][item_name]" value="{{$item?->item?->item_name}}" class="form-control mw-100 mb-25" readonly/>
         </td>
-        <td class="poprod-decpt"> 
-            <button type="button" class="btn p-25 btn-sm btn-outline-secondary attributeBtn" data-row-count="{{$rowCount}}" style="font-size: 10px" readonly>Attributes</button>
+        <td class="poprod-decpt attributeBtn" id="itemAttribute_{{$rowCount}}" data-count="{{$rowCount}}" attribute-array="{{$item->item_attributes_array()}}">
         </td>
         <td>
             <input type="hidden" name="components[{{$rowCount}}][inventoty_uom_id]" value="{{$item->inventoty_uom_id}}">
@@ -79,7 +78,7 @@
                     @php
                         $tedPerc = $itemDiscount->ted_perc;
                     @endphp
-                    @if (!intval($itemDiscount->ted_perc)) 
+                    @if (!intval($itemDiscount->ted_perc))
                         @php
                             $tedPerc = (floatval($itemDiscount->ted_amount) / floatval($itemDiscount->assessment_amount)) * 100;
                         @endphp
@@ -93,7 +92,7 @@
                 <div class="ms-50">
                     <button type="button" data-row-count="{{$rowCount}}" class="btn p-25 btn-sm btn-outline-secondary addDiscountBtn" style="font-size: 10px">Add</button>
                 </div>
-            </div>  
+            </div>
         </td>
         <td>
             <input type="text" id="item_total_cost_{{$rowCount}}" name="components[{{$rowCount}}][item_total_cost]" value="{{($item->order_qty*$item->rate) - $item->discount_amount}}" readonly class="form-control mw-100 text-end item_total_cost" step="any"/>
@@ -106,16 +105,6 @@
                 <input type="hidden" value="{{@$item_tax->ted_perc}}" name="components[{{$rowCount}}][taxes][{{$tax_key + 1}}][t_perc]">
                 <input type="hidden" value="{{@$item_tax->ted_amount}}" name="components[{{$rowCount}}][taxes][{{$tax_key + 1}}][t_value]">
             @endforeach
-        </td>
-        <td>
-            <select class="form-select mw-100 " name="components[{{$rowCount}}][cost_center_id]">
-                <option value="">Select</option>
-                @foreach($costCenters as $costCenter)
-                    <option value="{{$costCenter->id}}">
-                        {{$costCenter->name}}
-                    </option>
-                @endforeach
-            </select>
         </td>
         <td>
             <div class="d-flex">

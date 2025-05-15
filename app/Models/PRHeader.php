@@ -37,6 +37,7 @@ class PRHeader extends Model
         'customer_id',
         'customer_code',
         'document_number',
+        'cost_center_id',
         'document_date',
         'document_status',
         'revision_number',
@@ -182,12 +183,12 @@ class PRHeader extends Model
     {
         return $this->belongsTo(ErpSubStore::class, 'sub_store_id');
     }
-    
+
     public function vendor()
     {
         return $this->belongsTo(Vendor::class);
     }
-    
+
     public function customer()
     {
         return $this->belongsTo(Customer::class);
@@ -247,7 +248,7 @@ class PRHeader extends Model
     {
         return $this->morphOne(ErpAddress::class, 'addressable', 'addressable_type', 'addressable_id')->where('type', 'billing');
     }
-    
+
     public function ship_address_details()
     {
         return $this->morphOne(ErpAddress::class, 'addressable', 'addressable_type', 'addressable_id')->where('type', 'shipping')->with(['city', 'state', 'country']);
@@ -355,5 +356,10 @@ class PRHeader extends Model
     public function irnDetail()
     {
         return $this->morphOne(ErpEinvoice::class, 'morphable', 'morphable_type', 'morphable_id');
+    }
+
+    public function costCenters()
+    {
+        return $this->belongsTo(CostCenter::class, 'cost_center_id');
     }
 }

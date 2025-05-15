@@ -52,19 +52,19 @@
                         <li class="nav-item d-none d-lg-block select-organization-menu">
                             <form action="{{ route('update-organization') }}" method="POST">
                                 @csrf
-                                <select class="form-select" name="fyear" id="fyear" >
+                                <select class="form-select" name="financial_year" id="financial_year" >
                                     <option value="">-- Select F.Y --</option>
                                     @if(isset($fyears) && is_iterable($fyears))
                                     @foreach ($fyears as $year)
                                     <option value="{{ $year['id'] }}"
                                         data-start="{{ $year['start_date'] }}"
                                         data-end="{{ $year['end_date'] }}"
-                                        {{ $year['range'] == isset($c_fyear) && $c_fyear ? 'selected' : '' }}>
+                                        {{ isset($c_fyear) && $c_fyear == $year['range'] ? 'selected' : '' }}>
                                         FY {{ $year['range'] }}
                                     </option>
                                     @endforeach
                                     @endif
-                                </select>  
+                                </select>
                             </form>
                         </li>
                         @endif
@@ -448,13 +448,13 @@
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-    const select = document.getElementById('fyear');
+    const select = document.getElementById('financial_year');
 
     select.addEventListener('change', function () {
         const selected = this.options[this.selectedIndex];
 
         if (selected && selected.value.trim() !== "") {
-            const id = selected.value; // ✅ properly defined now
+            const id = selected.value;
             const start = selected.getAttribute('data-start');
             const end = selected.getAttribute('data-end');
 

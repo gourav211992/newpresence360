@@ -521,7 +521,6 @@ class MoController extends Controller
     # On change item attribute
     public function getItemAttribute(Request $request)
     {
-
         $rowCount = intval($request->rowCount) ?? 1;
         $item = Item::find($request->item_id);
         $selectedAttr = $request->selectedAttr ? json_decode($request->selectedAttr,true) : [];
@@ -529,7 +528,7 @@ class MoController extends Controller
         $detailItemId = $request->mo_item_id ?? null;
         $itemAttIds = [];
         if($detailItemId) {
-            $detail = BomDetail::find($detailItemId);
+            $detail = MoItem::where('id',$detailItemId)->where('item_id',$item?->id)->first();
             if($detail) {
                 $itemAttIds = $detail->attributes()->pluck('item_attribute_id')->toArray();
             }
@@ -612,13 +611,13 @@ class MoController extends Controller
     {
         $item = Item::find($request->item_id ?? null);
         $moItem = MoItem::find($request->mo_item_id ?? null);
+        $selectedAttr = json_decode($request->selectedAttr,200) ?? [];
         $inventoryStock = [];
         if($moItem) {
-            $selectedAttr = $moItem->attributes->map(fn($attribute) => intval($attribute->attribute_value))->toArray();
             $inventoryStock = InventoryHelper::totalInventoryAndStock($moItem->item_id, $selectedAttr, $moItem->uom_id, $moItem->mo->store_id);
         }
         $specifications = $item->specifications()->whereNotNull('value')->get();
-        $html = view('mfgOrder.partials.comp-item-detail2',compact('item','specifications','inventoryStock'))->render();
+        $html = view('mfgOrder.partials.comp-item-detail2',compact('item','specifications','inventoryStock','selectedAttr'))->render();
         return response()->json(['data' => ['html' => $html], 'status' => 200, 'message' => 'fetched.']);
     }
 

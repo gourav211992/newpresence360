@@ -15,6 +15,8 @@ use App\Helpers\ServiceParametersHelper;
 use App\Helpers\UserHelper;
 use App\Http\Requests\ErpPSVRequest;
 use App\Models\Address;
+use App\Models\Attribute;
+use App\Models\AttributeGroup;
 use App\Models\AuthUser;
 use App\Models\Country;
 use App\Models\Department;
@@ -36,6 +38,7 @@ use App\Models\ErpStore;
 use App\Models\ErpSubStore;
 use App\Models\ErpVendor;
 use App\Models\Item;
+use App\Models\ItemAttribute;
 use App\Models\MfgOrder;
 use App\Models\MoItem;
 use App\Models\Organization;
@@ -172,20 +175,18 @@ class ErpPSVController extends Controller
             $servicesBooks = [];
             if (isset($request -> revisionNumber))
             {
-                $doc = ErpPsvHeaderHistory::with(['book']) -> with('items', function ($query) {
-                    $query -> with(['item' => function ($itemQuery) {
-                        $itemQuery -> with(['specifications', 'alternateUoms.uom', 'uom']);
-                    }]);
-                }) -> where('source_id', $id)->first();
-                $ogDoc = ErpPsvHeader::find($id);
+                $doc = ErpPsvHeaderHistory::with(['book'])
+                ->where('source_id', $id)
+                ->first();
+        
+            $ogDoc = ErpPsvHeader::find($id);
             } else {
-                $doc = ErpPsvHeader::with(['book']) -> with('items', function ($query) {
-                    $query -> with(['item' => function ($itemQuery) {
-                        $itemQuery -> with(['specifications', 'alternateUoms.uom', 'uom']);
-                    }]);
-                }) -> find($id);
-                $ogDoc = $doc;
+                $doc = ErpPsvHeader::with(['book'])
+                ->find($id);
+        
+            $ogDoc = $doc;
             }
+            $items = self::pullItems($doc);
             $stores = InventoryHelper::getAccessibleLocations([ConstantHelper::STOCKK, ConstantHelper::SHOP_FLOOR]);
             if (isset($doc)) {
                 $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl,$doc -> book ?-> service ?-> alias);
@@ -208,8 +209,6 @@ class ErpPSVController extends Controller
             $approvalHistory = Helper::getApprovalHistory($doc->book_id, $ogDoc->id, $revNo, $docValue, $doc -> created_by);
             $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$doc->document_status] ?? '';
             $typeName = "Physical Stock Verification";
-            $vendors = Vendor::select('id', 'company_name') -> withDefaultGroupCompanyOrg()->where('status', ConstantHelper::ACTIVE) 
-            -> get();
             $stations = Station::withDefaultGroupCompanyOrg()
             ->where('status', ConstantHelper::ACTIVE)
             ->get();
@@ -232,6 +231,7 @@ class ErpPSVController extends Controller
                 'user' => $user,
                 'series' => $books,
                 'order' => $doc,
+                'items' => $items,
                 'countries' => $countries,
                 'buttons' => $buttons,
                 'approvalHistory' => $approvalHistory,
@@ -239,7 +239,6 @@ class ErpPSVController extends Controller
                 'docStatusClass' => $docStatusClass,
                 'typeName' => $typeName,
                 'stores' => $stores,
-                'vendors' => $vendors,
                 'stations' => $stations,
                 'maxFileCount' => isset($order -> mediaFiles) ? (10 - count($doc -> media_files)) : 10,
                 'services' => $servicesBooks['services'],
@@ -258,103 +257,111 @@ class ErpPSVController extends Controller
     public function store(Request $request)
     {
         try {
-            //Reindex
-            $request -> item_qty =  array_values($request -> item_physical_qty);
-            $request -> item_remarks =  array_values($request -> item_remarks ?? []);
-            $request -> uom_id =  array_values($request -> uom_id);
-
+            if(!$request->filled('store_id')){
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Location is required.',
+                ], 400);
+            }
+            if(!$request->filled('sub_store_id')){
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Store is required.',
+                ], 400);
+            }
             DB::beginTransaction();
             $user = Helper::getAuthenticatedUser();
-            //Auth credentials
-            $organization = Organization::find($user -> organization_id);
-            $organizationId = $organization ?-> id ?? null;
-            $groupId = $organization ?-> group_id ?? null;
-            $companyId = $organization ?-> company_id ?? null;
-            $itemAttributeIds = [];
-            $currencyExchangeData = CurrencyHelper::getCurrencyExchangeRates($organization -> currency -> id, $request -> document_date);
+            $organization = Organization::find($user->organization_id);
+    
+            $organizationId = $organization?->id;
+            $groupId = $organization?->group_id;
+            $companyId = $organization?->company_id;
+    
+            $currencyExchangeData = CurrencyHelper::getCurrencyExchangeRates($organization->currency->id, $request->document_date);
             if ($currencyExchangeData['status'] == false) {
                 return response()->json([
                     'message' => $currencyExchangeData['message']
-                ], 422); 
+                ], 422);
             }
-
-            if (!$request -> psv_header_id)
-            {
-                $numberPatternData = Helper::generateDocumentNumberNew($request -> book_id, $request -> document_date);
+    
+            $itemAttributeIds = [];
+            $isUpdate = $request->psv_header_id ? true : false;
+    
+            if (!$isUpdate) {
+                $numberPatternData = Helper::generateDocumentNumberNew($request->book_id, $request->document_date);
                 if (!isset($numberPatternData)) {
                     return response()->json([
                         'message' => "Invalid Book",
                         'error' => "",
                     ], 422);
                 }
-                $document_number = $numberPatternData['document_number'] ? $numberPatternData['document_number'] : $request -> document_no;
-                $regeneratedDocExist = ErpPsvHeader::withDefaultGroupCompanyOrg() -> where('book_id',$request->book_id)
-                    ->where('document_number',$document_number)->first();
-                    //Again check regenerated doc no
-                    if (isset($regeneratedDocExist)) {
-                        return response()->json([
-                            'message' => ConstantHelper::DUPLICATE_DOCUMENT_NUMBER,
-                            'error' => "",
-                        ], 422);
-                    }
+                $document_number = $numberPatternData['document_number'] ?? $request->document_no;
+                $regeneratedDocExist = ErpPsvHeader::where('book_id', $request->book_id)
+                    ->where('document_number', $document_number)->first();
+                if ($regeneratedDocExist) {
+                    return response()->json([
+                        'message' => ConstantHelper::DUPLICATE_DOCUMENT_NUMBER,
+                        'error' => "",
+                    ], 422);
+                }
             }
-            $psv = null;
-            $store = ErpStore::find($request -> store_id);
-            $sub_store = ErpSubStore::find($request ?-> sub_store_id);
-            $toStoreId = ($request -> issue_type === 'Sub Contracting' ? $request -> vendor_store_id : $request -> store_to_id);
-            $toStore = ErpStore::find($toStoreId);
-            $vendor = Vendor::find($request -> vendor_id);
-            if($request -> requester_type == 'User') {
+    
+            $store = ErpStore::find($request->store_id);
+            $sub_store = ErpSubStore::find($request->sub_store_id);
+            $vendor = Vendor::find($request->vendor_id);
+    
+            if ($request->requester_type == 'User') {
                 $user = AuthUser::find($request->user_id);
             } else {
-                $department = Department::find($request -> department_id);
+                $department = Department::find($request->department_id);
             }
-                        
-            if ($request -> psv_header_id) { //Update
-                $psv = ErpPsvHeader::find($request -> psv_header_id);
+    
+            if ($isUpdate) {
+                $psv = ErpPsvHeader::find($request->psv_header_id);
                 $psv -> document_date = $request -> document_date;
                 //Store and department keys
                 $psv -> store_id = $request -> store_id ?? null;
                 $psv -> sub_store_id = $request -> sub_store_id ?? null;
                 $psv -> remarks = $request -> final_remarks;
-                $actionType = $request -> action_type ?? '';
-                //Amend backup
-                if(($psv -> document_status == ConstantHelper::APPROVED || $psv -> document_status == ConstantHelper::APPROVAL_NOT_REQUIRED) && $actionType == 'amendment')
-                {
+                $actionType = $request->action_type ?? '';
+    
+                if (($psv->document_status == ConstantHelper::APPROVED || $psv->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED) && $actionType == 'amendment') {
                     $revisionData = [
                         ['model_type' => 'header', 'model_name' => 'ErpPsvHeader', 'relation_column' => ''],
                         ['model_type' => 'detail', 'model_name' => 'ErpPsvItem', 'relation_column' => 'psv_header_id'],
                         ['model_type' => 'sub_detail', 'model_name' => 'ErpPsvItemAttribute', 'relation_column' => 'psv_item_id'],
                     ];
-                    $a = Helper::documentAmendment($revisionData, $psv->id);
-
+                    Helper::documentAmendment($revisionData, $psv->id);
                 }
-                $keys = ['deletedSiItemIds', 'deletedAttachmentIds'];
-                $deletedData = [];
-
-                foreach ($keys as $key) {
-                    $deletedData[$key] = json_decode($request->input($key, '[]'), true);
+    
+                $psv->fill([
+                    'document_date' => $request->document_date,
+                    'store_id' => $request->store_id,
+                    'sub_store_id' => $request->sub_store_id,
+                    'remarks' => $request->final_remarks,
+                ])->save();
+    
+                $deletedData = [
+                    'deletedSiItemIds' => json_decode($request->input('deletedSiItemIds', '[]'), true),
+                    'deletedAttachmentIds' => json_decode($request->input('deletedAttachmentIds', '[]'), true)
+                ];
+    
+                foreach ($deletedData['deletedSiItemIds'] as $deletedId) {
+                    $psvItem = ErpPsvItem::find($deletedId);
+                    $psvItem?->attributes()->delete();
+                    $psvItem?->delete();
                 }
-
-                if (count($deletedData['deletedSiItemIds'])) {
-                    $psvItems = ErpPsvItem::whereIn('id',$deletedData['deletedSiItemIds'])->get();
-                    # all ted remove item level
-                    foreach($psvItems as $psvItem) {
-                        $psvItem->attributes()->delete();
-                        $psvItem->delete();
-                    }
-                }
-            } else { //Create
+            } else {
                 $psv = ErpPsvHeader::create([
                     'organization_id' => $organizationId,
                     'group_id' => $groupId,
                     'company_id' => $companyId,
                     'book_id' => $request->book_id,
                     'book_code' => $request->book_code,
-                    'store_id' => $request->store_id ?? null,
-                    'sub_store_id' => $request->sub_store_id ?? null,
-                    'store_code' => $store?->store_name ?? null,
-                    'sub_store_code' => $sub_store ? $sub_store->name : null,
+                    'store_id' => $request->store_id,
+                    'sub_store_id' => $request->sub_store_id,
+                    'store_code' => $store?->store_name,
+                    'sub_store_code' => $sub_store?->name,
                     'doc_number_type' => $numberPatternData['type'],
                     'doc_reset_pattern' => $numberPatternData['reset_pattern'],
                     'doc_prefix' => $numberPatternData['prefix'],
@@ -364,7 +371,6 @@ class ErpPSVController extends Controller
                     'document_date' => $request->document_date,
                     'document_status' => ConstantHelper::DRAFT,
                     'revision_number' => 0,
-                    'revision_date' => null,
                     'approval_level' => 1,
                     'reference_number' => $request->reference_number ?? null,
                     'currency_id' => $currencyExchangeData['data']['org_currency_id'],
@@ -378,221 +384,218 @@ class ErpPSVController extends Controller
                     'group_currency_id' => $currencyExchangeData['data']['group_currency_id'],
                     'group_currency_code' => $currencyExchangeData['data']['group_currency_code'],
                     'group_currency_exg_rate' => $currencyExchangeData['data']['group_currency_exg_rate'],
-                    'total_item_count' => 0,
-                    'total_verified_count' => 0,
-                    'total_discrepancy_count' => 0,
                     'remarks' => $request->final_remarks,
                 ]);
-
-                // Shipping Address
-                $vendorShippingAddress = ErpAddress::find($request -> vendor_address_id);
-                if (isset($vendorShippingAddress)) {
-                    $shippingAddress = $psv -> vendor_shipping_address() -> create([
-                        'address' => $vendorShippingAddress -> address,
-                        'country_id' => $vendorShippingAddress -> country_id,
-                        'state_id' => $vendorShippingAddress -> state_id,
-                        'city_id' => $vendorShippingAddress -> city_id,
-                        'type' => 'shipping',
-                        'pincode' => $vendorShippingAddress -> pincode,
-                        'phone' => $vendorShippingAddress -> phone,
-                        'fax_number' => $vendorShippingAddress -> fax_number
-                    ]);
-                }
             }
-                $psv -> save();
-                //Seperate array to store each item calculation
-                $itemsData = array();
-                if ($request->item_id && count($request->item_id) > 0) {
-                    foreach ($request->item_id as $itemKey => $itemId) {
-                        $item = Item::find($itemId);
-                        if (isset($item)) {
-                            $confirmedQty = isset($request->item_confirmed_qty[$itemKey]) ? $request->item_confirmed_qty[$itemKey] : 0;
-                            $unconfirmedQty = isset($request->item_unconfirmed_qty[$itemKey]) ? $request->item_unconfirmed_qty[$itemKey] : 0;
-                            $verifiedQty = isset($request->item_physical_qty[$itemKey]) ? $request->item_physical_qty[$itemKey] : 0;
-                            $adjustedQty = isset($request->item_balance_qty[$itemKey]) ? $request->item_balance_qty[$itemKey] : 0;
-                            $rate = isset($request->item_rate[$itemKey]) ? $request->item_rate[$itemKey] : 0;
-                            $total_amount = isset($request->item_value[$itemKey]) ? $request->item_value[$itemKey] : 0;
-
-                            $uom = Unit::find($request->uom_id[$itemKey] ?? null);
-
-                            $psvItemData = [
-                                'psv_header_id' => $psv->id,
-                                'item_id' => $item->id,
-                                'item_code' => $item->item_code,
-                                'item_name' => $item->item_name,
-                                'uom_id' => isset($request->uom_id[$itemKey]) ? $request->uom_id[$itemKey] : null,
-                                'uom_code' => isset($uom) ? $uom->name : null,
-                                'confirmed_qty' => $confirmedQty,
-                                'unconfirmed_qty' => $unconfirmedQty,
-                                'verified_qty' => $verifiedQty,
-                                'adjusted_qty' => $adjustedQty,
-                                'rate' => $rate,
-                                'total_amount' => $total_amount,
-                                'remarks' => isset($request->item_remarks[$itemKey]) ? $request->item_remarks[$itemKey] : null,
-                            ];
-
-                            $psvItem = ErpPsvItem::updateOrCreate(
-                                ['psv_header_id' => $psv->id, 'item_id' => $item->id],
-                                $psvItemData
-                            );
-
-                            if (isset($request -> item_attributes[$itemKey])) {
-                                $attributesArray = json_decode($request -> item_attributes[$itemKey], true);
-                                if (json_last_error() === JSON_ERROR_NONE && is_array($attributesArray)) {
-                                    foreach ($attributesArray as $attributeKey => $attribute) {
-                                        $attributeVal = "";
-                                        $attributeValId = null;
-                                        foreach ($attribute['values_data'] as $valData) {
-                                            if ($valData['selected']) {
-                                                $attributeVal = $valData['value'];
-                                                $attributeValId = $valData['id'];
-                                                break;
-                                            }
-                                        }
-                                        if(isset($attributeVal) && $attributeValId){
+            
+            if ($request->item_id && count($request->item_id) > 0) {
+                $data = $request->item_id;
+            } else if($request->generated == 1) {
+                $data = self::getAllItems($request);
+            } else {
+                $data = [];
+            }
+            if (empty($data)) {
+                DB::rollBack();
+                return response()->json([
+                    'message' => 'Please select Items',
+                    'error' => "",
+                ], 422);
+            }
+            foreach ($data as $itemKey => $items) {
+                $uom = Unit::find($items['uom_id'] ?? ($request->uom_id[$itemKey] ?? null));
+                if(!isset($items['psv_item_id']) && !isset($request->psv_item_id[$itemKey])){
+                    $item = Item::find($items['item_id'] ?? ($request->item_id[$itemKey] ?? null));
+                }
+                else{
+                    $item = ErpPsvItem::find($items['psv_item_id'] ?? ($request->psv_item_id[$itemKey] ?? null));
+                }
+                $confirmedQty = $item->confirmed_qty ?? (isset($request->item_confirmed_qty[$itemKey]) ? $request->item_confirmed_qty[$itemKey] : 0);
+                $unconfirmedQty = $item->unconfirmed_qty ?? (isset($request->item_unconfirmed_qty[$itemKey]) ? $request->item_unconfirmed_qty[$itemKey] : 0);
+                $verifiedQty = isset($request->item_physical_qty[$itemKey]) ? $request->item_physical_qty[$itemKey] : 0;
+                $adjustedQty = $verifiedQty - $confirmedQty;
+                $rate = $item->rate ?? (isset($request->item_rate[$itemKey]) ? $request->item_rate[$itemKey] : 0);
+                $total_amount = $rate * $verifiedQty;
     
-                                            $itemAttribute = ErpPsvItemAttribute::updateOrCreate(
-                                                [
-                                                    'psv_id' => $psv -> id,
-                                                    'psv_item_id' => $psvItem -> id,
-                                                    'item_attribute_id' => $attribute['id'],
-                                                ],
-                                                [
-                                                    'item_code' => $psvItem -> item_code,
-                                                    'attribute_name' => $attribute['group_name'],
-                                                    'attr_name' => $attribute['attribute_group_id'],
-                                                    'attribute_value' => $attributeVal,
-                                                    'attr_value' => $attributeValId,
-                                                    ]
-                                                );
-                                                array_push($itemAttributeIds, $itemAttribute -> id);
-                                        }
-                                    }
-                                } else {
-                                    return response() -> json([
-                                        'message' => 'Item No. ' . ($itemKey + 1) . ' has invalid attributes',
-                                        'error' => ''
-                                    ], 422);
-                                }
+                $psvItemData = [
+                    'psv_header_id'   => $psv->id,
+                    'item_id'         => $item->item_id ?? $item->id,
+                    'item_code'       => $item->item_code,
+                    'item_name'       => $item->item_name,
+                    'uom_id'          => $uom->id ?? null,
+                    'uom_code'        => $uom->name ?? null,
+                    'confirmed_qty'   => $confirmedQty,
+                    'unconfirmed_qty' => $unconfirmedQty,
+                    'verified_qty'    => $verifiedQty,
+                    'adjusted_qty'    => $adjustedQty,
+                    'rate'            => $rate,
+                    'total_amount'    => $total_amount,
+                    'remarks'         => $items['item_remarks'] ?? ($request->item_remarks[$itemKey] ?? null),
+                ];
+                // dd($request->psv_item_id[$itemKey]);
+                    $psvItemId = $request->psv_item_id[$itemKey] ?? null;
+                
+                if ($psvItemId) {
+                    $psvItem = ErpPsvItem::find($psvItemId);
+                
+                    // Check if item exists before updating
+                    if ($psvItem) {
+                        $psvItem->fill($psvItemData);
+                        $psvItem->save();
+                    } else {
+                        // Fallback to create if somehow item is not found
+                        $psvItem = ErpPsvItem::create($psvItemData);
+                    }
+                } else {
+                    // Create new record
+                    $psvItem = ErpPsvItem::create($psvItemData);
+                }
+
+                   
+                if(is_array($items))
+                {
+                    $itemAtts = $items['item_attributes'] ?? [];
+                }
+                else
+                {
+                    $itemAtts = isset($request->item_attributes[$itemKey]) ? json_decode($request->item_attributes[$itemKey],true) : ($items['item_attributes'] ?? []);
+                    if (json_last_error() === JSON_ERROR_NONE && is_array($itemAtts)) {
+                        
+                    }
+                    else {
+                        return response() -> json([
+                            'message' => 'Item No. ' . ($itemKey + 1) . ' has invalid attributes',
+                            'error' => ''
+                        ], 422);
+                    }
+                }
+                foreach ($itemAtts as $attribute) {
+                    $attribute = is_array($attribute)? $attribute : $attribute->toArray();  
+                    $attributeVal = "";
+                    $attributeValId = null;
+                    $attributeGrp = "";
+                    $attributeGrpId = null;
+                    if(isset($attribute['values_data']))
+                    {
+                        foreach ($attribute['values_data'] as $valData) {
+                            if ($valData['selected']) {
+                                $attributeVal = $valData['value'];
+                                $attributeValId = $valData['id'];
+                                $attributeGrp = $attribute['group_name'];
+                                $attributeGrpId = $attribute['attribute_group_id'];
+                                break;
                             }
                         }
                     }
-                } else {
+                    else {
+                        $attributeVal = $attribute['attribute_value'] ?? null;
+                        $attributeValId = $attribute['attribute_id'] ?? null;
+                        $attributeGrp = $attribute['attribute_name'] ?? null;
+                        $attributeGrpId = $attribute['group_id'] ?? null;
+                    }
+                    $itemAttribute = ErpPsvItemAttribute::updateOrCreate([
+                        'psv_id' => $psv->id,
+                        'psv_item_id' => $psvItem->id,
+                        'item_attribute_id' => $attribute['item_attribute_id'] ?? $attribute['id'],
+                    ], [
+                        'item_code' => $psvItem->item_code,
+                        'attribute_name' => $attributeGrp,
+                        'attr_name' => $attributeGrpId,
+                        'attribute_value' => $attributeVal,
+                        'attr_value' => $attributeValId,
+                    ]);
+                    $itemAttributeIds[] = $itemAttribute->id;
+                }
+            }
+            if ($request->document_status == ConstantHelper::SUBMITTED) {
+                $approvalLogic = self::handleApprovalLogic($request, $psv);
+            }
+            if ($request->hasFile('attachments')) {
+                foreach ($request->file('attachments') as $file) {
+                    $psv->uploadDocuments($file, 'psv_header', false);
+                }
+            }
+    
+            if (in_array($psv->document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
+                if (!self::maintainStockLedger($psv)) {
                     DB::rollBack();
-                    return response()->json([
-                        'message' => 'Please select Items',
-                        'error' => "",
-                    ], 422);
-                } //Approval check
-                ErpPsvItemAttribute::where([
-                    'psv_id' => $psv -> id,
-                    'psv_item_id' => $psvItem -> id,
-                ]) -> whereNotIn('id', $itemAttributeIds) -> delete();
-                if ($request->psv_header_id) { // Update condition
-                    $bookId = $psv->book_id;
-                    $docId = $psv->id;
-                    $amendRemarks = $request->amend_remarks ?? null;
-                    $remarks = $psv->remarks;
-                    $amendAttachments = $request->file('amend_attachments');
-                    $attachments = $request->file('attachments');
-                    $currentLevel = $psv->approval_level;
-                    $modelName = get_class($psv);
-                    $actionType = $request->action_type ?? "";
-
-                    if (($psv->document_status == ConstantHelper::APPROVED || $psv->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED) && $actionType == 'amendment') {
-                        $revisionNumber = $psv->revision_number + 1;
-                        $actionType = 'amendment';
-                        $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $amendRemarks, $amendAttachments, $currentLevel, $actionType, 0, $modelName);
-                        $psv->revision_number = $revisionNumber;
-                        $psv->approval_level = 1;
-                        $psv->revision_date = now();
-                        $amendAfterStatus = $psv->document_status;
-                        $checkAmendment = Helper::checkAfterAmendApprovalRequired($request->book_id);
-
-                        if (isset($checkAmendment->approval_required) && $checkAmendment->approval_required) {
-                            $totalValue = $psv->grand_total_amount ?? 0;
-                            $amendAfterStatus = Helper::checkApprovalRequired($request->book_id, $totalValue);
-                        } else {
-                            $actionType = 'approve';
-                            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, 0, $modelName);
-                        }
-
-                        if ($amendAfterStatus == ConstantHelper::SUBMITTED) {
-                            $actionType = 'submit';
-                            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, 0, $modelName);
-                        }
-
-                        $psv->document_status = $amendAfterStatus;
-                        $psv->save();
-                    } else {
-                        if ($request->document_status == ConstantHelper::SUBMITTED) {
-                            $revisionNumber = $psv->revision_number ?? 0;
-                            $actionType = 'submit';
-                            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, 0, $modelName);
-
-                            $totalValue = $psv->grand_total_amount ?? 0;
-                            $document_status = Helper::checkApprovalRequired($request->book_id, $totalValue);
-                            $psv->document_status = $document_status;
-                        } else {
-                            $psv->document_status = $request->document_status ?? ConstantHelper::DRAFT;
-                        }
-                    }
-                } else { // Create condition
-                    if ($request->document_status == ConstantHelper::SUBMITTED) {
-                        $bookId = $psv->book_id;
-                        $docId = $psv->id;
-                        $remarks = $psv->remarks;
-                        $attachments = $request->file('attachments');
-                        $currentLevel = $psv->approval_level;
-                        $revisionNumber = $psv->revision_number ?? 0;
-                        $actionType = 'submit';
-                        $modelName = get_class($psv);
-                        $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, 0, $modelName);
-                    }
-
-                    if ($request->document_status == 'submitted') {
-                        $totalValue = $psv->total_amount ?? 0;
-                        $document_status = Helper::checkApprovalRequired($request->book_id, $totalValue);
-                        $psv->document_status = $document_status;
-                    } else {
-                        $psv->document_status = $request->document_status ?? ConstantHelper::DRAFT;
-                    }
-                    $psv->save();
+                    return response()->json(['message' => 'Stock not available'], 422);
                 }
-
-                $psv->save();
-
-                // Media
-                if ($request->hasFile('attachments')) {
-                    foreach ($request->file('attachments') as $singleFile) {
-                        $mediaFiles = $psv->uploadDocuments($singleFile, 'psv_header', false);
+                else{
+                    $items = $psv->items->where('adjusted_qty',0);
+                    foreach ($items as $item) {
+                        $atts_data = $item->attributes;
+                        foreach ($atts_data as $att) {
+                            $att->delete();
+                        }
+                        $item->delete();
                     }
                 }
-                // Maintain Stock Ledger
-                if($psv->document_status == ConstantHelper::APPROVED || $psv->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED)
-                {
-                    $status = self::maintainStockLedger($psv);
-                    if (!$status) {     
-                        DB::rollBack();
-                        return response() -> json([
-                                'message' => 'Stock not available'
-                            ], 422);
-                    }
-                }
-                DB::commit();
-                $module = "Physical Stock Verification";
-                return response() -> json([
-                    'message' => $module .  " created successfully",
-                    'redirect_url' => route('psv.index')
-                ]);
-        } catch(Exception $ex) {
+            }
+            DB::commit();
+            return response()->json([
+                'message' => "Physical Stock Verification created successfully",
+                'redirect_url' => route('psv.index')
+            ]);
+        } catch (Exception $ex) {
             DB::rollBack();
             return response()->json([
                 'message' => 'Error occurred while creating the record.',
-                'error' => $ex->getMessage() . ' at ' . $ex -> getLine() . ' in ' . $ex -> getFile(),
+                'error' => $ex->getMessage() . ' at ' . $ex->getLine() . ' in ' . $ex->getFile(),
             ], 500);
         }
     }
+    
+    private function handleApprovalLogic(Request $request, ErpPsvHeader $psv)
+    {
+        $bookId = $psv->book_id;
+        $docId = $psv->id;
+        $currentLevel = $psv->approval_level;
+        $revisionNumber = $psv->revision_number ?? 0;
+        $modelName = get_class($psv);
+        $attachments = $request->file('attachments');
+        $actionType = $request->action_type ?? '';
+        $remarks = $psv->remarks;
+
+        if (($psv->document_status === ConstantHelper::APPROVED ||
+            $psv->document_status === ConstantHelper::APPROVAL_NOT_REQUIRED) && 
+            $actionType === 'amendment') {
+
+            $revisionNumber++;
+            $psv->revision_number = $revisionNumber;
+            $psv->approval_level = 1;
+            $psv->revision_date = now();
+
+            $amendRemarks = $request->amend_remarks ?? $remarks;
+            $amendAttachments = $request->file('amend_attachments') ?? $attachments;
+
+            Helper::approveDocument($bookId, $docId, $revisionNumber, $amendRemarks, $amendAttachments, $currentLevel, 'amendment', 0, $modelName);
+
+            $checkAmendment = Helper::checkAfterAmendApprovalRequired($bookId);
+            if (isset($checkAmendment->approval_required) && $checkAmendment->approval_required) {
+                $totalValue = $psv->grand_total_amount ?? 0;
+                $psv->document_status = Helper::checkApprovalRequired($bookId, $totalValue);
+            } else {
+                Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, 'approve', 0, $modelName);
+                $psv->document_status = ConstantHelper::APPROVED;
+            }
+
+            if ($psv->document_status === ConstantHelper::SUBMITTED) {
+                Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, 'submit', 0, $modelName);
+            }
+        } else {
+            if ($request->document_status === ConstantHelper::SUBMITTED) {
+                Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, 'submit', 0, $modelName);
+                $totalValue = $psv->grand_total_amount ?? $psv->total_amount ?? 0;
+                $psv->document_status = Helper::checkApprovalRequired($bookId, $totalValue);
+            } else {
+                $psv->document_status = $request->document_status ?? ConstantHelper::DRAFT;
+            }
+        }
+
+        $psv->save();
+    }
+
 
     private static function maintainStockLedger(ErpPsvHeader $psv)
     {
@@ -601,22 +604,7 @@ class ErpPSVController extends Controller
         $receiptDetailIds = $items -> where('adjusted_qty',">",0) -> pluck('id') -> toArray();
         $issueRecords = InventoryHelper::settlementOfInventoryAndStock($psv->id, $issueDetailIds, ConstantHelper::PSV_SERVICE_ALIAS, $psv->document_status, 'issue');
         $receiptRecords = InventoryHelper::settlementOfInventoryAndStock($psv->id, $receiptDetailIds, ConstantHelper::PSV_SERVICE_ALIAS, $psv->document_status, 'receipt');
-        
         if((!empty($issueRecords['data']) && (count($issueRecords['data']) > 0 && count($issueDetailIds)>0))||(($receiptRecords['message'] == 'success' || $receiptRecords['message']['status'] == 'success') && count($receiptDetailIds)>0) ){
-            // $stockLedgers = StockLedger::where('book_type',ConstantHelper::PSV_SERVICE_ALIAS)
-            //                     ->where('document_header_id',$psv->id)
-            //                     ->where('organization_id',$psv->organization_id)
-            //                     ->where('transaction_type','issue')
-            //                     ->selectRaw('document_detail_id,sum(org_currency_cost) as cost')
-            //                     ->groupBy('document_detail_id')
-            //                     ->get();
-
-            // foreach($stockLedgers as $stockLedger) {
-            //     $psvItem = ErpPsvItem::find($stockLedger->document_detail_id);
-            //     // dd(floatval($stockLedger->cost) , floatval($psvItem->issue_qty));
-            //     $psvItem->confirmed_qty = $psvItem->verified_qty;
-            //     $psvItem->save();
-            // }
             return true;
         } else {
             return false;
@@ -651,21 +639,6 @@ class ErpPSVController extends Controller
             }
         } catch(Exception $ex) {
             DB::rollBack();
-            throw new ApiGenericException($ex -> getMessage());
-        }
-    }
-    public function getVendorStores(Request $request)
-    {
-        try {
-            $stores = ErpStore::select('id', 'store_name') -> withDefaultGroupCompanyOrg() -> where('status', ConstantHelper::ACTIVE)
-                -> whereHas('vendor_stores', function ($subQuery) use($request) {
-                    $subQuery -> where('vendor_id', $request -> vendor_id);
-                }) -> get();
-            return response() -> json([
-                'data' => $stores,
-                'status' => 'success'
-            ]);
-        } catch(Exception $ex) {
             throw new ApiGenericException($ex -> getMessage());
         }
     }
@@ -804,85 +777,85 @@ class ErpPSVController extends Controller
         }
     }
     public function generatePdf(Request $request, $id, $pattern)
-        {
-            $user = Helper::getAuthenticatedUser();
-            $organization = Organization::where('id', $user->organization_id)->first();
-            $organizationAddress = Address::with(['city', 'state', 'country'])
-                ->where('addressable_id', $user->organization_id)
-                ->where('addressable_type', Organization::class)
-                ->first();
-            $mx = ErpPsvHeader::with(
-                [
-                    'from_store',
-                    'to_store',
-                    'vendor',
-                ]
-            )
-                ->with('items', function ($query) {
-                    $query->with('from_item_locations','to_item_locations')->with([
-                        'item' => function ($itemQuery) {
-                            $itemQuery->with(['specifications', 'alternateUoms.uom', 'uom']);
-                        }
-                    ]);
-                })
-                ->find($id);
-            // $creator = AuthUser::with(['authUser'])->find($mx->created_by);
-            // dd($creator,$mx->created_by);
-            $shippingAddress = $mx?->from_store?->address;
-            $billingAddress = $mx?->to_store?->address;
+    {
+        $user = Helper::getAuthenticatedUser();
+        $organization = Organization::where('id', $user->organization_id)->first();
+        $organizationAddress = Address::with(['city', 'state', 'country'])
+            ->where('addressable_id', $user->organization_id)
+            ->where('addressable_type', Organization::class)
+            ->first();
+        $mx = ErpPsvHeader::with(
+            [
+                'from_store',
+                'to_store',
+                'vendor',
+            ]
+        )
+            ->with('items', function ($query) {
+                $query->with('from_item_locations','to_item_locations')->with([
+                    'item' => function ($itemQuery) {
+                        $itemQuery->with(['specifications', 'alternateUoms.uom', 'uom']);
+                    }
+                ]);
+            })
+            ->find($id);
+        // $creator = AuthUser::with(['authUser'])->find($mx->created_by);
+        // dd($creator,$mx->created_by);
+        $shippingAddress = $mx?->from_store?->address;
+        $billingAddress = $mx?->to_store?->address;
 
-            $approvedBy = Helper::getDocStatusUser(get_class($mx), $mx -> id, $mx -> document_status);
+        $approvedBy = Helper::getDocStatusUser(get_class($mx), $mx -> id, $mx -> document_status);
 
-            // dd($user);
-            // $type = ConstantHelper::SERVICE_LABEL[$mx->document_type];
-            $totalItemValue = $mx->total_item_value ?? 0.00;
-            $totalTaxes = $mx->total_tax_value ?? 0.00;
-            $totalAmount = ($totalItemValue + $totalTaxes);
-            $amountInWords = NumberHelper::convertAmountToWords($totalAmount);
-            // $storeAddress = ErpStore::with('address')->where('id',$mx->store_id)->get();
-            // dd($mx->location->address);
-            // Path to your image (ensure the file exists and is accessible)
-            $approvedBy = Helper::getDocStatusUser(get_class($mx), $mx -> id, $mx -> document_status);
-            $imagePath = public_path('assets/css/midc-logo.jpg'); // Store the image in the public directory
-            $data_array = [
-                'print_type' => $pattern,
-                'mx' => $mx,
-                'user' => $user,
-                'shippingAddress' => $shippingAddress,
-                'billingAddress' => $billingAddress,
-                'organization' => $organization,
-                'amountInWords' => $amountInWords,
-                'organizationAddress' => $organizationAddress,
-                'totalItemValue' => $totalItemValue,
-                'totalTaxes' => $totalTaxes,
-                'totalAmount' => $totalAmount,
-                'imagePath' => $imagePath,
-                'approvedBy' => $approvedBy,
-            ];
-            $pdf = PDF::loadView(
+        // dd($user);
+        // $type = ConstantHelper::SERVICE_LABEL[$mx->document_type];
+        $totalItemValue = $mx->total_item_value ?? 0.00;
+        $totalTaxes = $mx->total_tax_value ?? 0.00;
+        $totalAmount = ($totalItemValue + $totalTaxes);
+        $amountInWords = NumberHelper::convertAmountToWords($totalAmount);
+        // $storeAddress = ErpStore::with('address')->where('id',$mx->store_id)->get();
+        // dd($mx->location->address);
+        // Path to your image (ensure the file exists and is accessible)
+        $approvedBy = Helper::getDocStatusUser(get_class($mx), $mx -> id, $mx -> document_status);
+        $imagePath = public_path('assets/css/midc-logo.jpg'); // Store the image in the public directory
+        $data_array = [
+            'print_type' => $pattern,
+            'mx' => $mx,
+            'user' => $user,
+            'shippingAddress' => $shippingAddress,
+            'billingAddress' => $billingAddress,
+            'organization' => $organization,
+            'amountInWords' => $amountInWords,
+            'organizationAddress' => $organizationAddress,
+            'totalItemValue' => $totalItemValue,
+            'totalTaxes' => $totalTaxes,
+            'totalAmount' => $totalAmount,
+            'imagePath' => $imagePath,
+            'approvedBy' => $approvedBy,
+        ];
+        $pdf = PDF::loadView(
 
-                // return view(
-                'pdf.material_document',
-                $data_array
-            );
+            // return view(
+            'pdf.material_document',
+            $data_array
+        );
 
-            return $pdf->stream('psv_header.pdf');
-        }
-        // public function report(){
-        //     $issue_data = ErpPsvHeader::where('issue_type', 'Consumption')
-        //         ->withWhereHas('items', function ($query) {
-        //             $query->whereHas('attributes', function ($subQuery) {
-        //                 $subQuery->where('attribute_name', 'TYPE'); // Ensure the attribute name is 'TYPE'
-        //             }, '=', 1); // Ensure only one attribute exists
-        //         })
-        //         ->get();
-        //     $issue_items_ids = ErpPsvItem::whereIn('psv_header_id',[$issue_data->pluck('id')])->pluck('id');
-        //     $return_data = ErpMrItem::whereIn('psv_item_id',[$issue_items_ids])->get();
-        //     return view('psv.report',[
-        //         'issues' =>$issue_data,
-        //         'return' =>$return_data,
-        //     ]);
-        // }
+        return $pdf->stream('psv_header.pdf');
+    }
+    // public function report(){
+    //     $issue_data = ErpPsvHeader::where('issue_type', 'Consumption')
+    //         ->withWhereHas('items', function ($query) {
+    //             $query->whereHas('attributes', function ($subQuery) {
+    //                 $subQuery->where('attribute_name', 'TYPE'); // Ensure the attribute name is 'TYPE'
+    //             }, '=', 1); // Ensure only one attribute exists
+    //         })
+    //         ->get();
+    //     $issue_items_ids = ErpPsvItem::whereIn('psv_header_id',[$issue_data->pluck('id')])->pluck('id');
+    //     $return_data = ErpMrItem::whereIn('psv_item_id',[$issue_items_ids])->get();
+    //     return view('psv.report',[
+    //         'issues' =>$issue_data,
+    //         'return' =>$return_data,
+    //     ]);
+    // }
     public function report(Request $request)
     {
         $pathUrl = request()->segments()[0];
@@ -1328,4 +1301,243 @@ class ErpPSVController extends Controller
             ], 500);
         }
     }
+    public function itemList(Request $request)
+    {
+        $items = StockLedger::whereNull('utilized_id')->where('store_id',$request->store_id)->where('sub_store_id',$request->sub_store_id)->where('transaction_type',"receipt");
+
+        $items = $items->get()->groupBy(function ($item) {
+            return $item->item_id . '-' . json_encode($item->item_attributes);
+        })->map(function ($group) {
+            $firstItem = $group->first();
+            $confirmedQty = 0;
+            $unconfirmedQty = 0;
+            $attributes = json_decode($firstItem->item_attributes, true);
+            foreach ($attributes as $index => $attribute) {
+                $att_grp = $attribute['attr_name'] ?? null;
+                $att_g = AttributeGroup::find($att_grp);
+                $attributes[$index]['short_name'] = $att_g->short_name ?? $att_g->name ?? null;
+            }
+            $firstItem->item_attributes = json_encode($attributes);
+            foreach ($group as $item) {
+                if (in_array($item->document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
+                    $confirmedQty += $item->receipt_qty;
+                } else {
+                    $unconfirmedQty += $item->receipt_qty;
+                }
+            }
+
+            $firstItem->confirmed_qty = $confirmedQty;
+            $firstItem->unconfirmed_qty = $unconfirmedQty;
+
+            return $firstItem;
+        })->values();
+        return response()->json([
+            'status' => 'success',
+            'data' => $items,
+        ]);
+    }
+    public function getAllItems(Request $request){
+        $user = Helper::getAuthenticatedUser();
+        if($request?->generated)
+        {
+            $model= Item::class;
+        }
+        else{
+            $model = ErpPsvItem::class;
+        }
+        $items = $model::with(['subTypes', 'hsn', 'uom', 'category', 'subcategory','itemAttributes'])
+            ->when($request->filled('hsn_id'), function ($query) use ($request) {
+            $query->where('hsn_id', $request->hsn_id);
+            })
+            ->when($request->filled('category_id'), function ($query) use ($request) {
+            $query->where('category_id', $request->category_id);
+            })
+            ->when($request->filled('subcategory_id'), function ($query) use ($request) {
+            $query->where('subcategory_id', $request->subcategory_id);
+            })
+            ->when($request->filled('type'), function ($query) use ($request) {
+            $query->whereHas('subtype', function ($subQuery) use ($request) {
+                $subQuery->where('sub_type_id', $request->type);
+            });
+            })
+            ->when($request->filled('item'), function ($query) use ($request) {
+            $query->where(function ($subQuery) use ($request) {
+                $subQuery->where('item_name', 'like', '%' . $request->item . '%')
+                ->orWhere('item_code', 'like', '%' . $request->item . '%');
+            });
+            })
+            ->where('status', ConstantHelper::ACTIVE)
+            ->where('type', ConstantHelper::GOODS)
+            ->withDefaultGroupCompanyOrg()
+            ->get();
+        $index=0;
+        $itemCombinations = $items->flatMap(function ($item) use ($request, &$index) {
+            $combinations = [];
+            $attributes = json_decode($item->itemAttributes, true) ?? [];
+        
+            $groupedAttributes = collect($attributes)->groupBy('attribute_group_id');
+            $attributeCombinations = [[]]; // Start with a base empty combination
+        
+            foreach ($groupedAttributes as $groupId => $groupAttributes) {
+                $attgroup = AttributeGroup::find($groupId);
+        
+                // Resolve actual attributes for this group
+                $attributeOptions = collect();
+        
+                $attributeOptions = collect();
+
+                foreach ($groupAttributes as $attribute) {
+                    // Get all attributes from the group, based on all_checked or specific ids
+                    if (!empty($attribute['all_checked'])) {
+                        $options = Attribute::where('attribute_group_id', $groupId)
+                            ->get(['id', 'value']);
+                    } else {
+                        $options = Attribute::whereIn('id', $attribute['attribute_id'] ?? [])
+                            ->get(['id', 'value']);
+                    }
+                    // Get the item_attribute_id for the current group
+                    $options = $options->map(function ($option) use ($attribute) {
+                        return [
+                            'id' => $option->id,
+                            'value' => $option->value,
+                            'item_attribute_id' => $attribute['id'] ?? null,
+                        ];
+                    });
+                    $attributeOptions = $attributeOptions->merge($options);
+                }
+
+                $newCombinations = [];
+                foreach ($attributeCombinations as $combination) {
+                    foreach ($attributeOptions as $attr) {
+                        $newCombinations[] = array_merge($combination, [
+                            [
+                                'group_id' => $groupId,
+                                'attribute_id' => $attr['id'],
+                                'attribute_value' => $attr['value'],
+                                'attribute_name' => $attgroup?->name,
+                                'short_name' => $attgroup?->short_name,
+                                'item_attribute_id' => $attr['item_attribute_id'] ?? null,
+                            ]
+                        ]);
+                    }
+                }
+        
+                $attributeCombinations = $newCombinations;
+            }
+            foreach ($attributeCombinations as $combination) {
+                $attributeIds = array_column($combination, 'attribute_id');
+                $stock = InventoryHelper::totalInventoryAndStock($item->id, $attributeIds, $item->uom_id, $request->store_id, $request->sub_store_id);
+                
+                $combinations[] = [
+                    'item_id' => $item->id,
+                    'item_name' => $item->item_name,
+                    'item_code' => $item->item_code,
+                    'item_attributes' => $combination,
+                    'selected' => $attributeIds,
+                    'item' => $item,
+                    'uom_id' => $item->uom_id,
+                    'inventory_uom_id' => $item->uom_id,
+                    'inventory_uom' => $item->uom->name,
+                    'confirmed_qty'=> $stock['confirmedStocks'] ?? 0,
+                    'unconfirmed_qty'=> $stock['pendingStocks'] ?? 0,
+                    'reserve_qty'=> $stock['reserve_qty'] ?? 0,
+                    'rate' => $stock['rate'] ?? null,
+                ];
+            }
+            
+            $index++;
+            return $combinations;
+        });
+        $paginatedCombinations = collect($itemCombinations);
+        return $paginatedCombinations->toArray();
+
+    }
+    public function pullItems($doc)
+    {
+         // Now manually load paginated items (25 per page)
+         $items = ErpPsvItem::with([
+            'item.specifications',
+            'item.alternateUoms.uom',
+            'item.uom',
+            'item.hsn',
+        ])
+        ->where('psv_header_id', $doc->id)
+        ->paginate(25); // Laravel paginator
+
+        $items->getCollection()->transform(function ($item) {
+            $item->attributes_array = $item->get_attributes_array();
+            return $item;
+        });
+    // Pass $items separately to the view or return response accordingly
+            return $items;
+    }
+    public function searchItems(Request $request)
+    {
+        $items = ErpPsvItem::with([
+            'item.specifications',
+            'item.alternateUoms.uom',
+            'item.uom'
+        ])
+        ->where('psv_header_id', $request->document_id)
+        ->when($request->filled('item_name_code'), function ($query) use ($request) {
+            $query->where(function ($q) use ($request) {
+                $q->where('item_id', $request->item_name_code);
+            });
+        })
+        ->when($request->filled('hsn'), function ($query) use ($request) {
+            $query->whereHas('item.hsn', function ($subQuery) use ($request) {
+                $subQuery->where('id', $request->hsn);
+            });
+        })
+        ->when($request->filled('category'), function ($query) use ($request) {
+            $query->whereHas('item.category', function ($subQuery) use ($request) {
+                $subQuery->where('id', $request->category);
+            });
+        })
+        ->when($request->filled('sub_category'), function ($query) use ($request) {
+            $query->whereHas('item.subCategory', function ($subQuery) use ($request) {
+                $subQuery->where('id', $request->sub_category);
+            });
+        })
+        ->when($request->filled('sub_type'), function ($query) use ($request) {
+            $query->whereHas('item.subTypes', function ($subQuery) use ($request) {
+                $subQuery->where('id', $request->sub_type);
+            });
+        })
+        ->when($request->filled('selected_attributes'), function ($query) use ($request) {
+            foreach ($request->selected_attributes as $attributeId) {
+                $query->whereHas('attributes', function ($subQuery) use ($attributeId) {
+                    $subQuery->where('attr_value', $attributeId);
+                });
+            }
+        });
+
+        if($request->filled('changed_item'))
+        {
+            $item = ErpPsvItem::whereIn('id',array_keys($request->changed_item))->get();
+            foreach($item as $i)
+            {
+                $i->verified_qty = $request->changed_item[$i->id]['physical_qty'];
+                $balanceQty = $i->verified_qty - $i->confirmed_qty;
+                $i->adjusted_qty = $balanceQty;
+                $i->rate = $request->changed_item[$i->id]['rate'];
+                $i->total_amount = $i->verified_qty * $i->rate;
+                $i->save();
+            }
+        }
+
+        // Paginate the results
+        $paginatedItems = $items->paginate(20);
+
+        // Transform each item to include 'attributes_array'
+        $paginatedItems->getCollection()->transform(function ($item) {
+            $item->attributes_array = $item->get_attributes_array();
+            return $item;
+        });
+
+        return response()->json($paginatedItems, 200);
+    }
+
+   
+
 }

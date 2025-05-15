@@ -114,6 +114,7 @@
                                                                     {{ $jobRequest->job_title_id == $title->id ? 'selected' : '' }}>
                                                                     {{ $title->title }}</option>
                                                             @empty
+                                                                <option disabled>No job titles available</option>
                                                             @endforelse
                                                         </select>
                                                     </div>
@@ -139,8 +140,7 @@
                                                     </div>
 
                                                     <div class="col-md-5">
-                                                        <select class="form-select select2" name="education_id"
-                                                            value="{{ old('education_id') }}">
+                                                        <select class="form-select select2" name="education_id">
                                                             <option value=""
                                                                 {{ $jobRequest->education_id == '' ? 'selected' : '' }}>
                                                                 Select</option>
@@ -248,6 +248,28 @@
 
                                                 <div class="row mb-1">
                                                     <div class="col-md-3">
+                                                        <label class="form-label">Select Company
+                                                            <span class="text-danger">*</span></label>
+                                                    </div>
+
+                                                    <div class="col-md-5">
+                                                        <select class="form-control select2" id="company_id"
+                                                            name="company_id"
+                                                            onchange="dropdown('{{ url('recruitment/get-locations/') }}/' + this.value, 'location_id', '')">
+                                                            <option value=""
+                                                                {{ $jobRequest->company_id == '' ? 'selected' : '' }}>
+                                                                Select Company</option>
+                                                            @foreach ($companies as $company)
+                                                                <option value="{{ $company->id }}"
+                                                                    {{ $jobRequest->company_id == $company->id ? 'selected' : '' }}>
+                                                                    {{ ucfirst($company->name) }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                <div class="row mb-1">
+                                                    <div class="col-md-3">
                                                         <label class="form-label">Placed Location
                                                             <span class="text-danger">*</span></label>
                                                     </div>
@@ -255,14 +277,6 @@
                                                     <div class="col-md-5">
                                                         <select class="form-control select2" id="location_id"
                                                             name="location_id">
-                                                            <option value=""
-                                                                {{ $jobRequest->location_id == '' ? 'selected' : '' }}>
-                                                                Select Experience</option>
-                                                            @foreach ($locations as $location)
-                                                                <option value="{{ $location->id }}"
-                                                                    {{ $jobRequest->location_id == $location->id ? 'selected' : '' }}>
-                                                                    {{ ucfirst($location->store_name) }}</option>
-                                                            @endforeach
                                                         </select>
                                                     </div>
                                                 </div>
@@ -365,20 +379,33 @@
             });
 
             toggleReplacementField($('.job_type:checked').val());
+
+            dropdown("{{ url('recruitment/get-locations') }}/" + '{{ $jobRequest->company_id }}', 'location_id',
+                '{{ $jobRequest->location_id }}');
+
         });
 
         function toggleReplacementField(type) {
+            const positionField = $('input[name="no_of_position"]');
+
             if (type === 'replacement') {
                 $('.replacementTypeField').show();
-                $('input[name="no_of_position"]').val(1);
-                $('input[name="no_of_position"]').prop('readonly', true);
+
+                // Set to 1 only if not already filled or filled with other than 1
+                if (positionField.val() === '' || positionField.val() != 1) {
+                    positionField.val(1);
+                }
+
+                positionField.prop('readonly', true);
             } else {
                 $('.replacementTypeField').hide();
-                $('input[name="no_of_position"]').prop('readonly', false);
-                $('input[name="no_of_position"]').val('');
 
+                // Remove readonly but don't clear value if one exists
+                positionField.prop('readonly', false);
+                positionField.val('{{ $jobRequest->no_of_position }}');
             }
         }
+
 
         $(document).ready(function() {
             const selectedEmpId = "{{ $jobRequest->emp_id }}";

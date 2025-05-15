@@ -156,21 +156,6 @@
                               </select>  
                           </div>
                       </div>
-
-                      {{-- <div class="row align-items-center mb-1" id = "department_id_header">
-                            <div class="col-md-3"> 
-                                <label class="form-label">Department <span class="text-danger">*</span></label>  
-                            </div>  
-                            <div class="col-md-5">  
-                                <select class="form-select" id="department_id" name="department_id">
-                                    <option value="">Select</option>
-                                  @foreach($departments as $department)
-                                  <option value="{{$department->id}}" {{$selectedDepartmentId == $department->id ? 'selected' : ''}}>{{ucfirst($department->name)}}</option>
-                                  @endforeach 
-                              </select>  
-                          </div>
-                      </div> --}}
-                      
                         <div class="row align-items-center mb-1 d-none" id="reference_from"> 
                             <div class="col-md-3"> 
                                 <label class="form-label">Reference from</label>  
@@ -216,7 +201,7 @@
                                 </th>
                                 <th width="200px">Item Code</th>
                                 <th width="300px">Item Name</th>
-                                <th>Attributes</th>
+                                <th max-width="180px">Attributes</th>
                                 <th >UOM</th>
                                 <th class="text-end">Quantity</th>
                                 {{-- <th width="150px">Preferred Vendor</th>
@@ -396,6 +381,7 @@
 @include('procurement.pi.partials.so-modal-submit')
 @endsection
 @section('scripts')
+<script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
 <script type="text/javascript" src="{{asset('assets/js/modules/pi.js')}}"></script>
 <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
 <script>
@@ -695,6 +681,16 @@ function initializeAutocomplete2(selector, type) {
     if (this.value === "") {
         $(this).autocomplete("search", "");
     }
+}).on("input", function () {
+    if ($(this).val().trim() === "") {
+        $(this).removeData("selected");
+        $(this).closest('tr').find("input[name*='component_item_name']").val('');
+        $(this).closest('tr').find("input[name*='item_name']").val('');
+        $(this).closest('tr').find("td[id*='itemAttribute_']").html(defautAttrBtn);
+        $(this).closest('tr').find("input[name*='item_id']").val('');
+        $(this).closest('tr').find("input[name*='item_code']").val('');
+        $(this).closest('tr').find("input[name*='attr_name']").remove();
+    }
 });
 }
 
@@ -747,7 +743,6 @@ fetch(actionUrl).then(response => {
             } else {
                 $("#itemTable > tbody").html(data.data.html);
             }
-            // initializeAutocomplete1("[name*='[vendor_code]']");
             initializeAutocomplete2('.comp_item_code');
             $(".soSelect").prop('disabled',true);
         } else if(data.status == 422) {
@@ -796,7 +791,7 @@ $(document).on('click', '.attributeBtn', (e) => {
         selectedAttr = JSON.stringify(selectedAttr);
     }
     if (item_name && item_id) {
-        let rowCount = e.target.getAttribute('data-row-count');
+        let rowCount = tr.getAttribute('data-index');
         getItemAttribute(item_id, rowCount, selectedAttr, tr);
     } else {
         alert("Please select first item name.");
@@ -809,6 +804,11 @@ function getItemAttribute(itemId, rowCount, selectedAttr, tr){
     if(!isSo) {
         isSo = $(tr).find('[name*="so_pi_mapping_item_id"]').length ? 1 : 0;
     }
+    if(!isSo) {
+        if($(tr).find('td[id*="itemAttribute_"]').data('disabled')) {
+            isSo = 1;
+        }
+    }
     let actionUrl = '{{route("pi.item.attr")}}'+'?item_id='+itemId+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}&isSo=${isSo}`;
     fetch(actionUrl).then(response => {
         return response.json().then(data => {
@@ -817,7 +817,7 @@ function getItemAttribute(itemId, rowCount, selectedAttr, tr){
                 $("#attribute table tbody").append(data.data.html)
                 $(tr).find('td:nth-child(2)').find("[name*='[attr_name]']").remove();
                 $(tr).find('td:nth-child(2)').append(data.data.hiddenHtml);
-                console.log($(tr).find('td:nth-child(2)'));
+                $(tr).find("td[id*='itemAttribute_']").attr('attribute-array', JSON.stringify(data.data.itemAttributeArray));
                 if (data.data.attr) {
                     $("#attribute").modal('show');
                     $(".select2").select2();
@@ -856,7 +856,8 @@ if (itemId) {
   let uomId = $(currentTr).find("[name*='[uom_id]']").val() || '';
   let qty = $(currentTr).find("[name*='[qty]']").val() || '';
   let pi_item_id = '';
-  let actionUrl = '{{route("pi.get.itemdetail")}}'+'?item_id='+itemId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&delivery='+JSON.stringify(selectedDelivery);
+  let store_id = $("#store_id").val() || '';
+  let actionUrl = '{{route("pi.get.itemdetail")}}'+'?item_id='+itemId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&delivery='+JSON.stringify(selectedDelivery)+'&store_id='+store_id;;
   fetch(actionUrl).then(response => {
    return response.json().then(data => {
     if(data.status == 200) {
@@ -1169,6 +1170,16 @@ $(document).on('click', '.soProcess', (e) => {
         if (this.value === "") {
             $(this).autocomplete("search", "");
         }
+    }).on("input", function () {
+        if ($(this).val().trim() === "") {
+            $(this).removeData("selected");
+            $(this).closest('tr').find("input[name*='component_item_name']").val('');
+            $(this).closest('tr').find("input[name*='item_name']").val('');
+            $(this).closest('tr').find("td[id*='itemAttribute_']").html(defautAttrBtn);
+            $(this).closest('tr').find("input[name*='item_id']").val('');
+            $(this).closest('tr').find("input[name*='item_code']").val('');
+            $(this).closest('tr').find("input[name*='attr_name']").remove();
+        }
     });
 }
 
@@ -1232,6 +1243,12 @@ $(document).on('click', '.soSubmitProcess', (e) => {
                         initializeAutocomplete2(".comp_item_code");
                         $(".soSelect").prop('disabled',true);
                         $("#soSubmitModal").modal('hide');
+                        setTimeout(() => {
+                            $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+                                let currentIndex = index + 1;
+                                setAttributesUIHelper(currentIndex,"#itemTable");
+                            });
+                        },100);
                     }
 
                 });

@@ -3,7 +3,7 @@ var defautAttrBtn = `<button id="attribute_button_1" type="button" class="btn p-
 function setAttributesUIHelper(paramIndex = null, selectorPrifix = '')
 {
     let currentItemIndex = paramIndex;
-    const container = document.querySelector(selectorPrifix) || document.querySelector("#itemTable tbody");    
+    const container = document.querySelector(selectorPrifix) || document.querySelector("#itemTable tbody");
     let itemIdDoc = container.querySelector('#itemAttribute_' + currentItemIndex);
     if (!itemIdDoc) {
         return;
@@ -63,10 +63,10 @@ function setAttributesUIHelper(paramIndex = null, selectorPrifix = '')
     }
     if(total_selected == 0){
         attributeSection.innerHTML = `
-            <button id = "attribute_button_${currentItemIndex}" 
-                ${attributesArray.length > 0 ? '' : 'disabled'} 
-                type = "button"                  
-                class="btn p-25 btn-sm btn-outline-secondary" 
+            <button id = "attribute_button_${currentItemIndex}"
+                ${attributesArray.length > 0 ? '' : 'disabled'}
+                type = "button"
+                class="btn p-25 btn-sm btn-outline-secondary"
                 style="font-size: 10px">Attributes</button>
             <input type = "hidden" name = "attribute_value_${currentItemIndex}" />
         `;

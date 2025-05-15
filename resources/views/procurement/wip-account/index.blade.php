@@ -151,19 +151,25 @@
                                                                             </select>
                                                                         </div>
                                                                     </td>
-                                                                        <td>
-                                                                            <div class="setup-td-width">
-                                                                                <select class="form-select select2 book-select" name="wip_accounts[{{ $index }}][book_id][]" multiple data-row="{{ $index }}">
-                                                                                        <option value="">Select Book</option>
-                                                                                        @if($item->organization && $item->organization->books)
-                                                                                            @foreach($item->organization->books as $book)
-                                                                                                    <option value="{{ $book->id }}" {{ in_array($book->id, is_array($item->book_id) ? $item->book_id : json_decode($item->book_id, true) ?? []) ? 'selected' : '' }}>
-                                                                                                        {{ $book->book_code }}
-                                                                                                    </option>
-                                                                                            @endforeach
-                                                                                        @else
-                                                                                            <option value="">No Books Available</option>
-                                                                                        @endif
+                                                                    <td>
+                                                                    <div class="setup-td-width">
+                                                                            <select class="form-select select2 book-select" name="wip_accounts[{{ $index }}][book_id][]" multiple data-row="{{ $index }}">
+                                                                                    <option value="">Select Book</option>
+                                                                                    @if($item->organization && $item->organization->books->isNotEmpty())
+                                                                                        @foreach($item->organization->books as $book)
+                                                                                            <option value="{{ $book->id }}" {{ in_array($book->id, is_array($item->book_id) ? $item->book_id : json_decode($item->book_id, true) ?? []) ? 'selected' : '' }}>
+                                                                                                {{ $book->book_code }}
+                                                                                            </option>
+                                                                                        @endforeach
+                                                                                    @elseif($item->organization && $item->organization->books->isEmpty())
+                                                                                        @foreach($erpBooks as $book) 
+                                                                                            <option value="{{ $book->id }}" {{ in_array($book->id, is_array($item->book_id) ? $item->book_id : json_decode($item->book_id, true) ?? []) ? 'selected' : '' }}>
+                                                                                                {{ $book->book_code }}
+                                                                                            </option>
+                                                                                        @endforeach
+                                                                                    @else
+                                                                                        <option value="">No Books Available</option>
+                                                                                    @endif
                                                                                 </select>
                                                                             </div>
                                                                         </td>

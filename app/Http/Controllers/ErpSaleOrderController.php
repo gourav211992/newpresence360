@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Exceptions\ApiGenericException;
 use App\Helpers\ConstantHelper;
 use App\Helpers\CurrencyHelper;
+use App\Helpers\DynamicFieldHelper;
 use App\Helpers\EInvoiceHelper;
 use App\Helpers\Helper;
 use App\Helpers\InventoryHelper;
@@ -26,6 +27,7 @@ use App\Models\Department;
 use App\Models\ErpAddress;
 use App\Models\ErpAttribute;
 use App\Models\ErpSaleOrderHistory;
+use App\Models\ErpSoDynamicField;
 use App\Models\ErpSoItemBom;
 use App\Models\ErpSoMedia;
 use App\Models\ErpStore;
@@ -293,6 +295,7 @@ class ErpSaleOrderController extends Controller
                 } else {
                     $shortClose = 0;
                 }
+                $dynamicFieldsUI = $order -> dynamicfieldsUi();
                 $data = [
                     'user' => $user,
                     'series' => $books,
@@ -308,7 +311,8 @@ class ErpSaleOrderController extends Controller
                     'shortClose' => $shortClose,
                     'maxFileCount' => isset($order -> mediaFiles) ? (10 - count($order -> media_files)) : 10,
                     'services' => $servicesBooks['services'],
-                    'redirectUrl' => $redirectUrl
+                    'redirectUrl' => $redirectUrl,
+                    'dynamicFieldsUi' => $dynamicFieldsUI
                 ];
                 return view('salesOrder.create_edit', $data);
             
@@ -635,6 +639,15 @@ class ErpSaleOrderController extends Controller
                     'fax_number' => $orgLocationAddress -> address -> fax_number
                 ]);
             }
+                //Dynamic Fields
+                $status = DynamicFieldHelper::saveDynamicFields(ErpSoDynamicField::class, $saleOrder -> id, $request -> dynamic_field ?? []);
+                if ($status && !$status['status'] ) {
+                    DB::rollBack();
+                    return response() -> json([
+                        'message' => $status['message'],
+                        'error' => ''
+                    ], 422);
+                }
                 //Get Header Discount
                 $totalHeaderDiscount = 0;
                 $totalHeaderDiscountArray = [];

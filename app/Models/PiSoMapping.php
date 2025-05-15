@@ -97,4 +97,41 @@ class PiSoMapping extends Model
     {
         return $this->hasOne(PiSoMappingItem::class,'pi_so_mapping_id');
     }
+
+    public function item_attributes_array()
+    {
+        $itemId = $this->getAttribute('item_id');
+        if (!$itemId) {
+            return collect([]);
+        }
+        $itemAttributes = ItemAttribute::where('item_id', $itemId)->get();
+        $processedData = [];
+        $mappingAttributes = is_array($this->getAttribute('attributes')) ? $this->getAttribute('attributes') : json_decode($this->getAttribute('attributes'),true);
+        foreach ($itemAttributes as $attribute) {
+            $attributeIds = is_array($attribute->attribute_id) ? $attribute->attribute_id : [$attribute->attribute_id];
+            $attribute->group_name = $attribute->group?->name;
+            $valuesData = [];
+            foreach ($attributeIds as $attributeValueId) {
+                $attributeValueData = ErpAttribute::where('id', $attributeValueId)
+                    ->where('status', 'active')
+                    ->select('id', 'value')
+                    ->first();
+                if ($attributeValueData) {
+                    $isSelected = collect($mappingAttributes)->contains(function ($itemAttr) use ($attribute, $attributeValueData) {
+                        return $itemAttr['attribute_id'] == $attribute->id &&
+                            $itemAttr['attribute_value'] == $attributeValueData->id;
+                    });
+                    $attributeValueData->selected = $isSelected;
+                    $valuesData[] = $attributeValueData;
+                }
+            }
+            $processedData[] = [
+                'id' => $attribute->id,
+                'group_name' => $attribute->group_name,
+                'values_data' => $valuesData,
+                'attribute_group_id' => $attribute->attribute_group_id,
+            ];
+        }
+        return collect($processedData);
+    }
 }

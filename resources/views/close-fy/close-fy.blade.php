@@ -62,7 +62,7 @@
                                                 <div class="col-md-3">
                                                     <div class="mb-1 mb-sm-0">
                                                         <label class="form-label">Select Organization</label>
-                                                        <select id="organization_id" class="form-select select2" multiple>
+                                                        <select id="organization_id" class="form-select select2">
                                                             <option value="">Select</option>
                                                             @foreach ($companies as $organization)
                                                                 <option value="{{ $organization->organization->id }}"
@@ -76,16 +76,17 @@
 
                                                 <div class="col-md-3">
                                                     <div class="mb-1 mb-sm-0">
-                                                        {{-- {{ dd($current_range) }} --}}
                                                         <label class="form-label">Select F.Y</label>
                                                         <select id="fyear_id" class="form-select select2">
                                                             <option value="">Select</option>
+                                                            @if (isset($past_fyears) && is_iterable($past_fyears))
                                                             @foreach ($past_fyears as $fyear)
                                                                 <option value="{{ $fyear['id'] }}"
                                                                     {{ $fyear['id'] == $fyearId ? 'selected' : '' }}>
                                                                     {{ $fyear['range'] }}
                                                                 </option>
                                                             @endforeach
+                                                            @endif
                                                         </select>
                                                     </div>
                                                 </div>
@@ -155,6 +156,7 @@
                                         </div>
                                     </div>
                                     <div class="tab-pane" id="Access">
+                                        @if (isset($organizationId) && $organizationId)
                                         <div class="text-end mb-2">
                                             <a id="saveAccessBy" href="#" class="btn-dark btn-sm access-by">
                                                 <i data-feather='check-circle'></i> Save
@@ -166,106 +168,98 @@
                                                 <thead>
                                                     <tr>
                                                         <th width="50px">#</th>
-                                                        <th width="480">Authorized By<span class="text-danger">*</span>
+                                                            <th width="480">Authorized By<span
+                                                                    class="text-danger">*</span>
                                                         </th>
                                                         <th width="400">Permissions</th>
                                                         <th>Action</th>
                                                     </tr>
                                                 </thead>
 
-                                                <tbody>
+                                               <tbody>
                                                     @php
                                                         $authorizedUsers = $authorized_users['users'] ?? collect();
                                                         $showAddRowOnly = $authorizedUsers->isEmpty();
                                                         $rowNumber = 1;
                                                     @endphp
-{{-- {{ dd($authorizedUsers, $authorized_users, !$showAddRowOnly && $authorized_users['all'] == true) }} --}}
-                                                    {{-- If there are pre-selected users --}}
-                                                    @if ($authorized_users['all'] == true)
-                                                    {{-- Always show one last row with plus icon --}}
-                                                    <tr>
-                                                        <td>{{ $rowNumber }}</td>
-                                                        <td>
-                                                            <select class="form-select mw-100 select2 authorize-user" id="authorize_{{ $rowNumber }}">
-                                                                <option value="" disabled {{  $authorized_users['all'] == true ? 'selected' : '' }}>Select</option>
-                                                                @foreach ($employees as $employee)
-                                                                    @php
-                                                                        $authUser = $employee->authUser();
-                                                                        $permissions = $authUser ? $authUser->roles->pluck('name')->toArray() : [];
-                                                                    @endphp
-                                                                    <option
-                                                                        value="{{ $authUser ? $authUser->id : '' }}"
-                                                                        data-permissions='@json($permissions)'
-                                                                        data-authenticable-type="{{ $authUser ? $authUser->authenticable_type : '' }}">
-                                                                        {{ $authUser ? $authUser->name : 'N/A' }}
-                                                                    </option>
-                                                                @endforeach
-                                                            </select>
-                                                            <input type="hidden" class="authenticable-type" name="authenticable_type[]">
-                                                        </td>
-                                                        <td>
-                                                            <select class="form-select mw-100 select2 permissions-box" id="permissions_{{ $rowNumber }}" multiple disabled>
-                                                                <!-- Options will populate dynamically -->
-                                                            </select>
-                                                        </td>
-                                                        <td>
-                                                            <a href="#" id="saveCloseFyBtn" class="text-primary"><i data-feather="plus-square"></i></a>
-                                                        </td>
-                                                    </tr>
-                                                     @elseif(!$showAddRowOnly)
-                                                     @foreach ($authorizedUsers as $index => $authorizedUser)
-                                                     <tr>
-                                                         <td>{{ $rowNumber }}</td>
-                                                         <td>
-                                                             <select class="form-select mw-100 select2 authorize-user" id="authorize_{{ $rowNumber }}">
-                                                                 <option value="" disabled>Select</option>
-                                                                 @foreach ($employees as $employee)
-                                                                     @php
-                                                                         $authUser = $employee->authUser();
-                                                                         $permissions =  $employee->authUser() ? $authUser->roles->pluck('name')->toArray() : [];
-                                                                         $isSelected = $authUser && $authorizedUser->id == $authUser->id;
-                                                                     @endphp
-                                                                     <option
-                                                                         value="{{ $authUser ? $authUser->id : '' }}"
-                                                                         data-permissions='@json($permissions)'
-                                                                         data-authenticable-type="{{ $authUser ? $authUser->authenticable_type : '' }}"
-                                                                         {{ $isSelected ? 'selected' : '' }}>
-                                                                         {{ $authUser ? $authUser->name : 'N/A' }}
-                                                                     </option>
-                                                                 @endforeach
-                                                             </select>
-                                                             <input type="hidden" class="authenticable-type" name="authenticable_type[]">
-                                                         </td>
-                                                         <td>
-                                                             <select class="form-select mw-100 select2 permissions-box" id="permissions_{{ $rowNumber }}" multiple disabled>
-                                                                 {{-- Populated dynamically --}}
-                                                             </select>
-                                                         </td>
 
-                                                         {{-- Conditionally show "+" only on first row if multiple, or always if only one --}}
-                                                         @if ($authorizedUsers->count() === 1 || $loop->first)
-                                                             <td>
-                                                                 <a href="#" id="saveCloseFyBtn" class="text-primary"><i data-feather="plus-square"></i></a>
-                                                             </td>
-                                                         @else
-                                                         <td>
-                                                            <a href="#" class="text-danger deleteAuthorize"><i data-feather="trash-2"></i></a>
-                                                        </td>
-                                                                                                                 @endif
+                                                    {{-- If all are authorized, show one empty row with plus icon --}}
+                                                    @if (is_null($authorized_users))
+                                                        <tr>
+                                                            <td class="sno">{{ $rowNumber }}</td>
+                                                            <td>
+                                                                <select class="form-select mw-100 select2 authorize-user" id="authorize_{{ $rowNumber }}">
+                                                                    <option value="" disabled selected>Select</option>
+                                                                    @foreach ($employees as $employee)
+                                                                        @php
+                                                                            $authUser = $employee->authUser();
+                                                                            $permissions = $authUser ? $authUser->roles->pluck('name')->toArray() : [];
+                                                                        @endphp
+                                                                        <option
+                                                                            value="{{ $authUser ? $authUser->id : '' }}"
+                                                                            data-permissions='@json($permissions)'
+                                                                            data-authenticable-type="{{ $authUser ? $authUser->authenticable_type : '' }}">
+                                                                            {{ $authUser ? $authUser->name : 'N/A' }}
+                                                                        </option>
+                                                                    @endforeach
+                                                                </select>
+                                                                <input type="hidden" class="authenticable-type" name="authenticable_type[]">
+                                                            </td>
+                                                            <td>
+                                                                <select class="form-select mw-100 select2 permissions-box" id="permissions_{{ $rowNumber }}" multiple disabled></select>
+                                                            </td>
+                                                            <td>
+                                                                <a href="#" id="saveCloseFyBtn" class="text-primary"><i data-feather="plus-square"></i></a>
+                                                            </td>
+                                                        </tr>
 
-
-                                                     </tr>
-                                                     @php $rowNumber++; @endphp
-                                                 @endforeach
-
+                                                    {{-- Else show all authorized users --}}
+                                                    @elseif(!$showAddRowOnly)
+                                                        @foreach ($authorizedUsers as $index => $authorizedUser)
+                                                            <tr>
+                                                                <td class="sno">{{ $rowNumber }}</td>
+                                                                <td>
+                                                                    <select class="form-select mw-100 select2 authorize-user" id="authorize_{{ $rowNumber }}">
+                                                                        <option value="" disabled>Select</option>
+                                                                        @foreach ($employees as $employee)
+                                                                            @php
+                                                                                $authUser = $employee->authUser();
+                                                                                $permissions = $authUser ? $authUser->roles->pluck('name')->toArray() : [];
+                                                                                $isSelected = $authUser && $authorizedUser->id == $authUser->id;
+                                                                            @endphp
+                                                                            <option
+                                                                                value="{{ $authUser ? $authUser->id : '' }}"
+                                                                                data-permissions='@json($permissions)'
+                                                                                data-authenticable-type="{{ $authUser ? $authUser->authenticable_type : '' }}"
+                                                                                {{ $isSelected ? 'selected' : '' }}>
+                                                                                {{ $authUser ? $authUser->name : 'N/A' }}
+                                                                            </option>
+                                                                        @endforeach
+                                                                    </select>
+                                                                    <input type="hidden" class="authenticable-type" name="authenticable_type[]">
+                                                                </td>
+                                                                <td>
+                                                                    <select class="form-select mw-100 select2 permissions-box" id="permissions_{{ $rowNumber }}" multiple disabled></select>
+                                                                </td>
+                                                                <td>
+                                                                    @if ($authorizedUsers->count() === 1 || $loop->first)
+                                                                        <a href="#" id="saveCloseFyBtn" class="text-primary"><i data-feather="plus-square"></i></a>
+                                                                    @else
+                                                                        <a href="#" class="text-danger deleteAuthorize"><i data-feather="trash-2"></i></a>
+                                                                    @endif
+                                                                </td>
+                                                            </tr>
+                                                            @php $rowNumber++; @endphp
+                                                        @endforeach
                                                     @endif
-
 
                                                 </tbody>
 
 
+
                                             </table>
                                         </div>
+                                        @endif
                                     </div>
                                 </div>
 
@@ -294,12 +288,12 @@
 
 @section('scripts')
     <script>
-let counter = $('tbody tr').length + 1;
+// let counter = $('tbody tr').length + 1;
 // 1. Function to create a new row
         function getNewRowHtml(rowNum) {
             return `
                 <tr>
-                    <td>${rowNum}</td>
+                    <td class="sno"></td>
                     <td>
                         <select class="form-select mw-100 select2 authorize-user" id="authorize_${rowNum}" name="authorized_users[]" required>
                             <option value="" disabled selected>Select</option>
@@ -317,7 +311,11 @@ let counter = $('tbody tr').length + 1;
                 </tr>
             `;
         }
-
+        function updateSerialNumbers() {
+            $('tbody tr').each(function(index) {
+                $(this).find('td.sno').text(index + 1);
+            });
+        }
         // 2. Blade-generated employee options
         function getEmployeeOptions() {
         return `
@@ -408,12 +406,13 @@ let counter = $('tbody tr').length + 1;
                     });
                     return;
                 }
-                const newRowHtml = getNewRowHtml(counter);
+                const newRowHtml = getNewRowHtml();
                 $('tbody').append(newRowHtml);
                 $('.select2').select2(); // reinitialize select2
                 feather.replace(); // reinitialize icons
+                updateSerialNumbers(); // ✅ here
                 updateDisabledUsers(); // prevent duplicates
-                counter++;
+                // counter++;
             });
 
             // 5. Delete row
@@ -428,7 +427,7 @@ let counter = $('tbody tr').length + 1;
             });
 
             // 6. Handle user selection and populate permissions
-            $(document).on('change', '.authorize-user', function () {
+            $(document).on('change', '.authorize-user', function() {
                 const selected = $(this).find('option:selected');
                 const permissions = selected.data('permissions') || [];
                 const authType = selected.data('authenticable-type') || '';
@@ -539,10 +538,7 @@ let counter = $('tbody tr').length + 1;
             // Initialize the first row's user dropdown restrictions
             updateDisabledUsers();
         });
-    </script>
-      <script>
         $(document).ready(function() {
-            // $('#authorize_1').select2();
 
             function updatePermissionsBox(selectElement) {
                 let selectedOptions = selectElement.find(':selected');
@@ -578,12 +574,12 @@ let counter = $('tbody tr').length + 1;
             }
 
             // Trigger once on page load for all authorize-user dropdowns
-            $('.authorize-user').each(function () {
+            $('.authorize-user').each(function() {
                 updatePermissionsBox($(this));
             });
 
             // Trigger on change for all authorize-user dropdowns
-            $(document).on('change', '.authorize-user', function () {
+            $(document).on('change', '.authorize-user', function() {
                 updatePermissionsBox($(this));
             });
 
@@ -591,11 +587,29 @@ let counter = $('tbody tr').length + 1;
     </script>
     <script>
         var reservesSurplus = '';
-
         $(document).ready(function() {
 
+            const params = new URLSearchParams(window.location.search);
+            const fyearId = params.get('fyear');
+            const organizationId = params.get('organization_id');
 
+            // Check if both parameters are present and non-empty
+            if (fyearId && organizationId) {
+
+                // Update the displayed labels
+                $('#fy_range').text(`F.Y ${$('#fyear_id option:selected').text()} Closing Balance`);
+                $('#company_name').text(
+                    $('#organization_id option:selected')
+                    .map(function() {
+                        return $(this).text();
+                    })
+                    .get()
+                    .join(', ')
+                );
+
+                // Call the function to fetch filtered data
             getInitialGroups();
+            }
 
             $('#company_name').text(
                 $('#organization_id option:selected')
@@ -608,7 +622,7 @@ let counter = $('tbody tr').length + 1;
             const selectedOption = $('#fyear_id option:selected');
             const selectedValue = selectedOption.val()?.trim();
 
-            const selectedText = selectedValue !== "" ? selectedOption.text() : '{{ $current_range }}';
+            const selectedText = selectedValue !== "" ? selectedOption.text() : '';
 
             $('#fy_range').text(`F.Y ${selectedText} Closing Balance`);
 
@@ -617,21 +631,28 @@ let counter = $('tbody tr').length + 1;
 
             // Filter record
             $(".apply-filter").on("click", function() {
-                // Hide the modal
+                // Hide modal and reset
                 $(".modal").modal("hide");
                 $('.collapse').click();
                 $('#tableData').html('');
+
+                // Get selected values
+                const fyearId = $('#fyear_id').val()?.trim();
+                const organizationId = $('#organization_id').val() || [];
+
+                // Build URL params
                 let params = new URLSearchParams(window.location.search);
-                params.set('fyear', $('#fyear_id').val());
+                params.set('fyear', fyearId);
+                params.set('organization_id', organizationId);
                 // params.set('cost_center_id', $('#cost_center_id').val());
 
+                // Update URL in browser without reloading
+                const currentUrl = window.location.pathname + '?' + params.toString();
+                window.history.pushState({}, '', currentUrl);
 
-                let newUrl = window.location.pathname + '?' + params.toString();
-                window.history.pushState({}, '', newUrl);
-                getInitialGroups();
 
-                var selectedValues = $('#organization_id').val() || [];
-                if (selectedValues.length === 0) {
+                // Update company name label
+                if (organizationId.length === 0) {
                     $('#company_name').text('All Companies');
                 } else {
                     $('#company_name').text(
@@ -643,14 +664,27 @@ let counter = $('tbody tr').length + 1;
                         .join(', ')
                     );
                 }
+
+
+
+
+                // Validate filters before redirect
+                const isValid = fyearId !== "" && organizationId.length > 0;
+                if (isValid) {
+                    // Update financial year label
                 const selectedOption = $('#fyear_id option:selected');
-                const selectedValue = selectedOption.val()?.trim();
+                    const selectedText = fyearId !== "" ? selectedOption.text() : '{{ $current_range }}';
+                    // $('#fy_range').text(`F.Y ${selectedText} Closing Balance`);
+                    window.location.href = currentUrl; // ✅ Perform redirect
+                } else {
+                    Swal.fire({
+                        title: 'Not Valid Filters!',
+                        text: "Please select both Financial Year and Organization to proceed.",
+                        icon: 'error'
+                    });
+                }
+            });
 
-                const selectedText = selectedValue !== "" ? selectedOption.text() : '{{ $current_range }}';
-
-                $('#fy_range').text(`F.Y ${selectedText} Closing Balance`);
-                setTimeout(() => location.reload(), 1000);
-            })
 
             function getInitialGroups() {
 
@@ -661,13 +695,13 @@ let counter = $('tbody tr').length + 1;
                     // currency: $('#currency').val(),
                     '_token': '{!! csrf_token() !!}'
                 };
-                var selectedValues = $('#organization_id').val() || [];
-                var filteredValues = selectedValues.filter(function(value) {
-                    return value !== null && value.trim() !== '';
-                });
-                if (filteredValues.length > 0) {
-                    obj.organization_id = filteredValues
-                }
+                var selectedValues = $('#organization_id').val();
+                // var filteredValues = selectedValues.filter(function(value) {
+                //     return value !== null && value.trim() !== '';
+                // });
+                // if (filteredValues.length > 0) {
+                obj.organization_id = selectedValues
+                // }
 
                 $.ajax({
                     headers: {
@@ -896,12 +930,12 @@ let counter = $('tbody tr').length + 1;
                             '_token': '{!! csrf_token() !!}'
                         };
                         var selectedValues = $('#organization_id').val() || [];
-                        var filteredValues = selectedValues.filter(function(value) {
-                            return value !== null && value.trim() !== '';
-                        });
-                        if (filteredValues.length > 0) {
-                            obj.organization_id = filteredValues
-                        }
+                        // var filteredValues = selectedValues.filter(function(value) {
+                        //     return value !== null && value.trim() !== '';
+                        // });
+                        // if (filteredValues.length > 0) {
+                        obj.organization_id = selectedValues
+                        // }
 
                         $.ajax({
                             headers: {
@@ -1068,12 +1102,12 @@ let counter = $('tbody tr').length + 1;
                         '_token': '{!! csrf_token() !!}'
                     };
                     var selectedValues = $('#organization_id').val() || [];
-                    var filteredValues = selectedValues.filter(function(value) {
-                        return value !== null && value.trim() !== '';
-                    });
-                    if (filteredValues.length > 0) {
-                        obj.organization_id = filteredValues
-                    }
+                    // var filteredValues = selectedValues.filter(function(value) {
+                    //     return value !== null && value.trim() !== '';
+                    // });
+                    // if (filteredValues.length > 0) {
+                    obj.organization_id = selectedValues
+                    // }
 
                     $.ajax({
                         headers: {
@@ -1252,9 +1286,6 @@ let counter = $('tbody tr').length + 1;
                 });
             }
         });
-
-
-
         // selected arrow using down, up key
         $(document).ready(function() {
             let selectedRow = null;

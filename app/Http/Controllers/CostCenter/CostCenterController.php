@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\CostCenter;
 
 use App\Helpers\ConstantHelper;
+use App\Helpers\CostCenterHelper;
 use App\Helpers\Helper;
 use App\Http\Controllers\Controller;
 use App\Models\CostCenterOrgLocations;
@@ -27,7 +28,7 @@ class CostCenterController extends Controller
         $centers = CostCenter::withDefaultGroupCompanyOrg()->get();
         $companies = Helper::getAuthenticatedUser()->access_rights_org;
         $organizationId = Helper::getAuthenticatedUser()->organization_id;
-        
+
         return view('costCenter.view', compact('centers','companies','organizationId'));
     }
 
@@ -68,7 +69,7 @@ class CostCenterController extends Controller
         $existingName = CostCenter::withDefaultGroupCompanyOrg()
         ->where('name', $request->name)
         ->first();
-     
+
             if ($existingName) {
                 return back()->withErrors(['name' => 'The name has already been taken.'])->withInput();
             }
@@ -109,7 +110,7 @@ class CostCenterController extends Controller
         $data = CostCenter::find($id);
         $user = Helper::getAuthenticatedUser();
         $companies = $user -> access_rights_org;
-        
+
         $groups = CostGroup::where('organization_id',Helper::getAuthenticatedUser()->organization_id)->where('status','active')->orWhere('id',$data->cost_group_id)->get();
         return view('costCenter.edit', compact('groups', 'data', 'companies'));
     }
@@ -140,11 +141,11 @@ class CostCenterController extends Controller
         ->where('name', $request->name)
         ->where('id', '!=', $id)
         ->first();
-     
+
             if ($existingName) {
                 return back()->withErrors(['name' => 'The name has already been taken.'])->withInput();
             }
-        
+
 
         $update = CostCenter::find($id);
         $update->update($request->all());
@@ -181,4 +182,30 @@ class CostCenterController extends Controller
         $location = Helper::getStoreLocation($organizations);
         return response()->json($location);
     }
+    public function getCostCenter($id){
+        $cost_centers =  CostCenterOrgLocations::where('location_id',$id)->with(['costCenter' => function ($query) {
+            $query->where('status', 'active');
+            $query->withDefaultGroupCompanyOrg();
+        }])
+        ->get()
+        ->filter(function ($item) {
+            return $item->costCenter !== null;
+        })
+        ->map(function ($item) {
+            return [
+                'id' => $item->costCenter->id,
+                'name' => $item->costCenter->name,
+            ];
+        })
+        ->toArray();
+        return $cost_centers;
+
+    }
+
+    public function getCostCenterLocationBasis(Request $r){
+        $locationId = $r->locationId;
+        $location = CostCenterHelper::getAccessibleCostCenters($locationId);
+        return response()->json($location);
+    }
+
 }

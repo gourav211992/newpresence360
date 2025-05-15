@@ -4,19 +4,30 @@
    $pi_item = \App\Models\Item::find($piItemGroup->item_id);
    $attribiteArr = explode(',',$piItemGroup->attributes) ?? [];
    $attribiteArr = array_filter($attribiteArr, function ($value) {
-        return !empty(trim((string)$value)); // Removes empty, null, false, 0, or strings with only spaces
+        return !empty(trim((string)$value));
     });
+
    $selectedAttr = array_map(function ($item) {
         return (int)explode(':', $item)[1];
     }, $attribiteArr);
     
     $alUom = \App\Models\Unit::find($piItemGroup->uom_id);
     $cost = \App\Helpers\ItemHelper::getItemCostPrice($piItemGroup->item_id, $attributes ?? [], $piItemGroup->uom_id, $currencyId, $transactionDate, $vendorId);
+
+    $formatted = collect($attribiteArr ?? [])
+    ->map(function ($item) {
+        [$attributeId, $attributeValueId] = explode(':', $item);
+        return [
+            'attribute_id' => $attributeId,
+            'attribute_value_id' => (int) $attributeValueId,
+        ];
+    })
+    ->toArray();
+    $dataAttribute = $pi_item->item_attributes_array($formatted);
 @endphp
 <tr data-group-item="{{json_encode($piItemGroup)}}" id="row_{{$rowCount}}" data-index="{{$rowCount}}" @if($rowCount < 2 ) class="trselected" @endif>
   <td class="customernewsection-form">
       <div class="form-check form-check-primary custom-checkbox">
-         {{-- <input type="checkbox" class="form-check-input" id="Email_{{$rowCount}}" value="{{$rowCount}}" data-id="{{$pi_item->id}}"> --}}
          <input type="checkbox" class="form-check-input" id="Email_{{$rowCount}}" value="{{$rowCount}}">
          <label class="form-check-label" for="Email_{{$rowCount}}"></label>
      </div>
@@ -48,18 +59,13 @@
 <td>
     <input type="text" name="components[{{$rowCount}}][item_name]" value="{{$pi_item?->item_name}}" class="form-control mw-100 mb-25" readonly/>
 </td>
-<td class="poprod-decpt"> 
-    <button disabled type="button" {{-- data-bs-toggle="modal" data-bs-target="#attribute" --}} class="btn p-25 btn-sm btn-outline-secondary attributeBtn" data-row-count="{{$rowCount}}" style="font-size: 10px">Attributes</button>
+<td class="poprod-decpt attributeBtn" data-disabled="true" id="itemAttribute_{{$rowCount}}" data-count="{{$rowCount}}" attribute-array="{{json_encode($dataAttribute)}}"> 
+    <button disabled type="button" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">Attributes</button>
 </td>
 <td>
     <input type="hidden" name="components[{{$rowCount}}][inventoty_uom_id]" value="{{$piItemGroup?->uom_id}}">
     <select disabled class="form-select mw-100 " name="components[{{$rowCount}}][uom_id]">
          <option value="{{$piItemGroup?->uom_id}}">{{ucfirst($alUom?->name)}}</option>
-         {{-- @if($pi_item?->alternateUOMs)
-             @foreach($pi_item?->alternateUOMs as $alternateUOM)
-             <option value="{{$alternateUOM?->uom?->id}}" {{$alternateUOM?->uom?->id == $pi_item?->inventory_uom_id ? 'selected' : '' }}>{{$alternateUOM?->uom?->name}}</option>
-             @endforeach
-         @endif --}}
       </select>
 </td>
 <td><input type="number" class="form-control mw-100 text-end" value="{{$piItemGroup->total_qty}}" name="components[{{$rowCount}}][qty]" step="any"></td>

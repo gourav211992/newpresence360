@@ -104,6 +104,37 @@
                                                         <input type="date" id="document_date" name="document_date" class="form-control" value="{{date('Y-m-d')}}" required>
                                                     </div>
                                                 </div>
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Location <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+
+                                                    <div class="col-md-5">
+                                                        <select id="location" class="form-select"
+                                                            name="location_id" required>
+                                                            @foreach ($locations as $location)
+                                                                <option value="{{ $location->id }}">
+                                                                    {{ $location->store_name }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+
+                                                </div>
+                                                <div class="row align-items-center mb-1 cost_center">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Cost Center <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+
+                                                    <div class="col-md-5">
+                                                        <select id="cost_center" class="form-select"
+                                                            name="cost_center_id" required>
+                                                        </select>
+                                                    </div>
+
+                                                </div>
+
                                             
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
@@ -171,8 +202,8 @@
                                                                     <th>#</th>
                                                                     <th>Category</th>
                                                                     <th>Asset Code</th>
-                                                                    <th>Asset Name</th>
                                                                     <th>Sub Asset Code</th>
+                                                                    <th>Asset Name</th>
                                                                     <th>Ledger Name</th>
                                                                     <th>FY</th>
                                                                     <th>From Date</th>
@@ -716,6 +747,42 @@ document.getElementById("process_btn").addEventListener("click", function () {
             document.getElementById('document_status').value = 'submitted';
         });
 
+        $('#location').on('change', function () {
+    var locationId = $(this).val();
+
+    if (locationId) {
+        // Build the route manually
+        var url = '{{ route("cost-center.get-cost-center", ":id") }}'.replace(':id', locationId);
+
+        $.ajax({
+            url: url,
+            type: 'GET',
+            dataType: 'json',
+            success: function (data) {
+                if(data.length==0){
+                    $('#cost_center').empty(); 
+                $('#cost_center').prop('required', false);
+                $('.cost_center').hide();
+                }
+                else{
+                    $('.cost_center').show();
+                    $('#cost_center').prop('required', true);
+                $('#cost_center').empty(); // Clear previous options
+                $.each(data, function (key, value) {
+                    $('#cost_center').append('<option value="' + value.id + '">' + value.name + '</option>');
+                });
+            }
+            },
+            error: function () {
+                $('#cost_center').empty();
+            }
+        });
+    } else {
+        $('#cost_center').empty();
+    }
+});
+
+$('#location').trigger('change');
 
     </script>
 @endsection

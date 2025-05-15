@@ -100,6 +100,18 @@
                                                         </select>
                                                     </div>
                                                 </div>
+                                                <div class="row align-items-center mb-1" id="cost_center_div" style="display:none;">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Cost Center <span class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <select class="form-select cost_center" id="cost_center_id" name="cost_center_id">
+                                                            <option value="{{$mrn->cost_center_id}}">
+                                                                {{ ucfirst($mrn?->costCenters?->name) }}
+                                                            </option>
+                                                        </select>
+                                                    </div>
+                                                </div>
                                                 <!-- <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Reference No </label>
@@ -717,6 +729,7 @@
 	</div>
 @endsection
 @section('scripts')
+    <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
     <script type="text/javascript">
         var actionUrlTax = '{{route("purchase-bill.tax.calculation")}}';
     </script>
@@ -1927,5 +1940,17 @@
                 });
             });
         });
+        $(document).on('click','td[id*="itemAttribute_"]', (e) => {
+            let dataAttributes = $(e.target).attr('data-attributes');
+            // dataAttributes = JSON.parse(dataAttributes);
+            // dataAttributes.
+        });
+
+        setTimeout(() => {
+            $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+                let currentIndex = index + 1;
+                setAttributesUIHelper(currentIndex,"#itemTable");
+            });
+        },100);
     </script>
 @endsection

@@ -125,6 +125,41 @@
                                                                value="{{ isset($data->document_date) ? $data->document_date : date('Y-m-d') }}" required>
                                                     </div>
                                                 </div>
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Location <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+
+                                                    <div class="col-md-5">
+                                                        <select id="location" class="form-select" disabled
+                                                            name="location_id" required>
+                                                            @if($data->location_id!=null)
+                                                            @foreach ($locations as $location)
+                                                                <option value="{{ $location->id }}" {{$data->location_id==$location->id?"selected":""}}>
+                                                                    {{ $location->store_name }}</option>
+                                                            @endforeach
+                                                            @else
+                                                            <option value=""></option>
+                                                            @endif
+                                                        </select>
+                                                    </div>
+
+                                                </div>
+                                                <div class="row align-items-center mb-1 cost_center">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Cost Center <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+
+                                                    <div class="col-md-5">
+                                                        <select id="cost_center" class="form-select"
+                                                            name="cost_center_id" required disabled>
+                                                        </select>
+                                                    </div>
+
+                                                </div>
+
                                             
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
@@ -622,44 +657,46 @@ $(document).on('click', '#reject-button', (e) => {
 
             }
         }
-        $(document).on('click', '#amendmentSubmit', (e) => {
-let actionUrl = "{{ route('finance.fixed-asset.depreciation.amendment', $data->id) }}";
-fetch(actionUrl).then(response => {
-    return response.json().then(data => {
-        if (data.status == 200) {
-            Swal.fire({
-                title: 'Success!',
-                text: data.message,
-                icon: 'success'
-            });
-            location.reload();
-   
-        } else {
-            Swal.fire({
-                title: 'Error!',
-                text: data.message,
-                icon: 'error'
-            });
-            $('#amendmentconfirm').modal('hide');
-        }
-    });
-});
-});
-// # Revision Number On Chage
-$(document).on('change', '#revisionNumber', (e) => {
-    let actionUrl = location.pathname + '?revisionNumber='+e.target.value;
-    let revision_number = Number("{{$revision_number}}");
-    let revisionNumber = Number(e.target.value);
-    if(revision_number == revisionNumber) {
-        location.href = actionUrl;
+        $('#location').on('change', function () {
+    var locationId = $(this).val();
+
+    if (locationId) {
+        // Build the route manually
+        var url = '{{ route("cost-center.get-cost-center", ":id") }}'.replace(':id', locationId);
+        var selectedCostCenterId = '{{ $data->cost_center_id ?? '' }}'; // Use null coalescing for safety
+
+        $.ajax({
+            url: url,
+            type: 'GET',
+            dataType: 'json',
+            success: function (data) {
+                if(data.length==0){
+                    $('#cost_center').empty(); 
+                $('#cost_center').prop('required', false);
+                $('.cost_center').hide();
+                }
+                else{
+                    $('.cost_center').show();
+                    $('#cost_center').prop('required', true);
+                $('#cost_center').empty(); // Clear previous options
+                $.each(data, function (key, value) {
+                        let selected = (value.id == selectedCostCenterId) ? 'selected' : '';
+                        $('#cost_center').append('<option value="' + value.id + '" ' + selected + '>' + value.name + '</option>');
+                    });
+            }
+            },
+            error: function () {
+                $('.cost_center').hide();
+                $('#cost_center').empty();
+            }
+        });
     } else {
-        window.open(actionUrl, '_blank');
+        $('.cost_center').hide();
+        $('#cost_center').empty();
     }
 });
 
-
-
-        
+$('#location').trigger('change');
 
 
     </script>

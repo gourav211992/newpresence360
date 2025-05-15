@@ -589,7 +589,7 @@ $(document).on('click','#addNewItemBtn', (e) => {
                 } else {
                     $("#itemTable > tbody").html(data.data.html);
                 }
-                updateRowIndex();
+                updateRowIndex(false);
                 initializeAutocomplete2(".comp_item_code");
                 initializeAutocompleteCustomer("[name*='[customer_code]']");
                // $(".prSelect").prop('disabled',true);
@@ -679,6 +679,10 @@ $(document).on('click', '.attributeBtn', (e) => {
 /*For comp attr*/
 function getItemAttribute(itemId, rowCount, selectedAttr, tr) {
     let pwo_so_mapping_id = "";
+    let soItemId = $(tr).find("input[name*='so_item_id']").val() || '';
+    if(soItemId) {
+        pwo_so_mapping_id = "1";
+    }
     let actionUrl = '{{route("pwo.item.attr")}}'+'?item_id='+itemId+'&pwo_so_mapping_id='+pwo_so_mapping_id+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
     fetch(actionUrl).then(response => {
         return response.json().then(data => {
@@ -944,7 +948,7 @@ $(document).on('click', '.soProcess', (e) => {
                 } else {
                     $("#itemTable > tbody").empty().append(data.data.pos);
                 }
-                updateRowIndex();
+                updateRowIndex(true);
                 $("#prModal").modal('hide');
                 initializeAutocomplete2(".comp_item_code");
                 initializeAutocompleteCustomer("[name*='[customer_code]']");

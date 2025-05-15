@@ -381,6 +381,16 @@ class PaymentVoucherController extends Controller
             ->route($request->document_type . '.create')
             ->withErrors(['voucher_no' => $request->voucher_no . ' Voucher No. Already Exist!']);
     }
+if($request->reference_no!="" && $request->payment_type === "Bank"){
+$ref = PaymentVoucher::where('reference_no', $request->reference_no)->exists();
+
+if ($ref) {
+    return redirect()
+        ->route($request->document_type . '.create')
+        ->withErrors(['Reference No. Already Exist!'])->withInput();
+}
+}
+   
         
                        
         // Begin transaction
@@ -428,7 +438,7 @@ class PaymentVoucherController extends Controller
 
             $voucher->payment_date = $request->payment_date;
             $voucher->payment_mode = $request->payment_mode;
-            $voucher->reference_no = $request->reference_no;
+            $voucher->reference_no = $request->payment_type === "Bank"?$request->reference_no:"";
             $voucher->revision_number = 0;
 
             // Currency details
@@ -679,6 +689,16 @@ class PaymentVoucherController extends Controller
 
     public function update(Request $request, string $id)
     {
+if($request->reference_no!="" && $request->payment_type === "Bank"){
+$ref = PaymentVoucher::where('reference_no', $request->reference_no)->exists();
+
+if ($ref) {
+    return redirect()
+        ->route($request->document_type . '.create')
+        ->withErrors(['Reference No. Already Exist!'])->withInput();
+}
+}
+
         DB::beginTransaction();
     
         try {
@@ -751,7 +771,7 @@ class PaymentVoucherController extends Controller
                 $account = BankDetail::find($request->account_id);
                 $voucher->accountNo = $account->account_number;
                 $voucher->payment_mode = $request->payment_mode;
-                $voucher->reference_no = $request->reference_no;
+                $voucher->reference_no = $request->payment_type === "Bank"?$request->reference_no:"";
                 $voucher->ledger_id = $bank->ledger_id;
                 $voucher->ledger_group_id = $bank->ledger_group_id;
             } else {
@@ -1606,4 +1626,13 @@ class PaymentVoucherController extends Controller
     //     }
     // }
     }
+    public function checkReference(Request $request)
+{
+    if($request->edit_id)
+    $exists = PaymentVoucher::where('reference_no', $request->reference_no)->where('id','!=',$request->edit_id)->exists();
+    else
+    $exists = PaymentVoucher::where('reference_no', $request->reference_no)->exists();
+
+    return response()->json(['exists' => $exists]);
+}
 }
