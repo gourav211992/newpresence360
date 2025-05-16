@@ -85,7 +85,7 @@
                                                 <th class="text-end">Invoice Amt.</th>
 												<th class="outstanding text-end">Balance Amt.</th>
                                                 <th class="overdue text-end">Overdue Amt.</th>
-												<th>Action</th>
+												{{-- <th>Action</th> --}}
 											  </tr>
 											</thead>
 											<tbody>
@@ -504,115 +504,43 @@ if (dt_basic_table.length) {
         },
         displayLength: 10,
         lengthMenu: [10, 25, 50, 75, 100],
-        buttons: [{
-            extend: 'collection',
-            className: 'btn btn-outline-secondary dropdown-toggle',
-            text: feather.icons['share'].toSvg({
-                class: 'font-small-3 me-50'
-            }) + 'Export',
-        buttons: [
-    {
-        extend: 'excel',
-        text: feather.icons['file'].toSvg({
-            class: 'font-small-4 me-50'
-        }) + 'Excel',
-                    className: 'dropdown-item',
-        filename: 'Billing Report',
-        exportOptions: {
-        columns: function (idx, data, node) {
-            // Determine which radio is selected
-            let isServiceSelected = document.querySelector('input[type="radio"]#service')?.checked;
+           buttons:
+            [{
+                extend: 'excel',
+                        text: feather.icons['file'].toSvg({ class: 'font-small-4 me-50' }) + 'Excel',
+                        className: 'btn btn-outline-secondary',
+                        filename: 'Billing Report',
+                        exportOptions: {
+                        columns: function (idx, data, node) {
+                            // Determine which radio is selected
+                            let isServiceSelected = document.querySelector('input[type="radio"]#service')?.checked;
 
-            // Hide last column (assumed action column)
-            const isLastColumn = node.cellIndex === node.parentNode.cells.length - 1;
+                            // Hide last column (assumed action column)
+                            const isLastColumn = node.cellIndex === node.parentNode.cells.length - 1;
 
-            if (isLastColumn) {
-                return false;
-            }
+                            if (isLastColumn) {
+                                return false;
+                            }
 
-            // If 'service' is selected, hide column 7 (index 6)
-            // Else hide column 6 (index 5)
-            if (isServiceSelected && node.cellIndex === 6) {
-                return false;
-            } else if (!isServiceSelected && node.cellIndex === 7) {
-                return false;
-            }
+                            // If 'service' is selected, hide column 7 (index 6)
+                            // Else hide column 6 (index 5)
+                            if (isServiceSelected && node.cellIndex === 6) {
+                                return false;
+                            } else if (!isServiceSelected && node.cellIndex === 7) {
+                                return false;
+                            }
 
-            return true;
-        }
-    },
-                },
-                {
-                    extend: 'pdf',
-                    text: feather.icons['clipboard'].toSvg({
-                        class: 'font-small-4 me-50'
-                    }) + 'PDF',
-                    className: 'dropdown-item',
-                    filename: 'Billing Report',
-                    exportOptions: {
-        columns: function (idx, data, node) {
-            // Determine which radio is selected
-            let isServiceSelected = document.querySelector('input[type="radio"]#service')?.checked;
-
-            // Hide last column (assumed action column)
-            const isLastColumn = node.cellIndex === node.parentNode.cells.length - 1;
-
-            if (isLastColumn) {
-                return false;
-            }
-
-            // If 'service' is selected, hide column 7 (index 6)
-            // Else hide column 6 (index 5)
-            if (isServiceSelected && node.cellIndex === 6) {
-                return false;
-            } else if (!isServiceSelected && node.cellIndex === 7) {
-                return false;
-            }
-
-            return true;
-        }
-    },
-                },
-                {
-                    extend: 'copy',
-                    text: feather.icons['copy'].toSvg({
-                        class: 'font-small-4 me-50'
-                    }) + 'Copy',
-                    className: 'dropdown-item',
-                    filename: 'Billing Report',
-                    exportOptions: {
-        columns: function (idx, data, node) {
-            // Determine which radio is selected
-            let isServiceSelected = document.querySelector('input[type="radio"]#service')?.checked;
-
-            // Hide last column (assumed action column)
-            const isLastColumn = node.cellIndex === node.parentNode.cells.length - 1;
-
-            if (isLastColumn) {
-                return false;
-            }
-
-            // If 'service' is selected, hide column 7 (index 6)
-            // Else hide column 6 (index 5)
-            if (isServiceSelected && node.cellIndex === 6) {
-                return false;
-            } else if (!isServiceSelected && node.cellIndex === 7) {
-                return false;
-            }
-
-            return true;
-        }
-    },
+                            return true;
+                        }
+                    },
+                init: function (api, node, config) {
+                    $(node).removeClass('btn-secondary');
+                    $(node).parent().removeClass('btn-group');
+                    setTimeout(function () {
+                        $(node).closest('.dt-buttons').removeClass('btn-group').addClass('d-inline-flex');
+                    }, 50);
                 }
-            ],
-            init: function(api, node, config) {
-                $(node).removeClass('btn-secondary');
-                $(node).parent().removeClass('btn-group');
-                setTimeout(function() {
-                    $(node).closest('.dt-buttons').removeClass('btn-group').addClass('d-inline-flex');
-                }, 50);
-            }
-        }],
+            }],
         language: {
             search: '',
             searchPlaceholder: "Search...",
