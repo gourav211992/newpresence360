@@ -3087,10 +3087,17 @@ return [
             return null;
         }
 
-         public static function getFinancialYears()
+         public static function getFinancialYears($organizationId = null)
         {
-            $financialYears = ErpFinancialYear::withDefaultGroupCompanyOrg()
-            ->orderBy('id', 'desc')->get();
+            if ($organizationId) {
+
+                $financialYears = ErpFinancialYear::withDefaultGroupCompanyOrg()->where('organization_id', $organizationId)
+                    ->orderBy('id', 'desc')->get();
+            } else {
+                $financialYears = ErpFinancialYear::withDefaultGroupCompanyOrg()
+                    ->orderBy('id', 'desc')->get();
+            }
+
             if ($financialYears->isNotEmpty()) {
                 return $financialYears
                ->map(function ($financialYear) {
@@ -3110,23 +3117,22 @@ return [
             return null;
         }
 
-        public static function getFyAuthorizedUsers(string $date): mixed
-        {
-            $financialYear = ErpFinancialYear::withDefaultGroupCompanyOrg()
-                ->where('start_date', '<=', $date)
-                ->where('end_date', '>=', $date)
-                ->orWhere('fy_status',ConstantHelper::FY_CURRENT_STATUS)
-                // ->where('fy_close', ConstantHelper::FY_NOT_CLOSED_STATUS)
-                ->first();
-            if (isset($financialYear)) {
-                return [
-                    'alias' => $financialYear->alias,
-                    'authorized_users' => $financialYear->authorizedUsers()
-                ];
-            } else {
-                return null;
-            }
-        }
+        // public static function getFyAuthorizedUsers(string $date): mixed
+        // {
+        //     $financialYear = ErpFinancialYear::withDefaultGroupCompanyOrg()
+        //         ->where('start_date', '<=', $date)
+        //         ->where('end_date', '>=', $date)
+        //         ->orWhere('fy_status',ConstantHelper::FY_CURRENT_STATUS)
+        //         ->first();
+        //     if (isset($financialYear)) {
+        //         return [
+        //             'alias' => $financialYear->alias,
+        //             'authorized_users' => $financialYear->authorizedUsers()
+        //         ];
+        //     } else {
+        //         return null;
+        //     }
+        // }
 
         public static function getGroupsQuery($organizations=[])
         {

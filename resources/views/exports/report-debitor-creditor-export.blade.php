@@ -24,6 +24,8 @@
     </tr>
     @if (isset($entities))
         @php $serial = 1; @endphp
+
+
         {{-- {{ dd($entities) }} --}}
         @foreach ($entities as $item)
             @foreach ($item['records'] as $record)
@@ -38,8 +40,8 @@
                     <td>@if($record->overdue_days!="-")
                     <span class="badge rounded-pill @if($item['credit_days']<$record->overdue_days) badge-light-danger @else badge-light-secondary @endif  badgeborder-radius">{{$record->overdue_days}}</span>
                     @endif</td>
-                    <td align="right">@if($record->invoice_amount!=""){{ number_format($record->invoice_amount,2)}}@endif</td>
-                    <td align="right">{{ $record->total_outstanding < 0 ? 0: number_format($record->total_outstanding,2) }}</td>
+                    <td align="right">@if($record->invoice_amount!=""){{ \App\Helpers\Helper::formatIndianNumber($record->invoice_amount ??0)}}@endif</td>
+                    <td align="right">{{  \App\Helpers\Helper::formatIndianNumber($record->total_outstanding ??0)}}</td>
                 </tr>
             @endforeach
         @endforeach

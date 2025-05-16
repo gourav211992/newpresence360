@@ -62,7 +62,7 @@
                                     <div
                                         class="col-md-8 text-sm-end pofilterboxcenter mb-0 d-flex flex-wrap align-items-center justify-content-sm-end">
                                         <a id="printButton"    href="{{ route('finance.cashflow', 'print') }}?range={{ $range }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 me-25"><i data-feather='printer'></i> Print</a>
-                                     
+
                                         <button data-bs-toggle="modal" data-bs-target="#filter"
                                             class="btn btn-warning btn-sm mb-50 mb-sm-0 me-25"><i data-feather="filter"></i>
                                             Filter</button>
@@ -252,28 +252,28 @@
                                          <div class="compoenentboxreport advanced-filterpopup customernewsection-form mb-1">
                                             <div class="row">
                                                 <div class="col-md-12">
-                                                    <div class="form-check ps-0"> 
+                                                    <div class="form-check ps-0">
                                                         <label class="form-check-label">Add Scheduler</label>
                                                     </div>
                                                 </div>
                                             </div>
                                             <div class="row camparboxnewcen mt-1">
-                                                <div class="col-md-8 mb-1"> 
+                                                <div class="col-md-8 mb-1">
                                                     <label class="form-label">To <label class="text-danger">*</label></label>
                                                     <select class="form-select select2" id="to" name="to" multiple>
                                                         @foreach($users as $to)
                                                             <option value="{{ $to->id }}" @if($scheduler?->toable_id==$to->id) selected @endif>{{ $to->email }}</option>
                                                         @endforeach
-                                                    </select>  
+                                                    </select>
                                                 </div>
-                                                <div class="col-md-8 mb-1"> 
+                                                <div class="col-md-8 mb-1">
                                                     <label class="form-label">CC <label class="text-danger">*</label></label>
                                                     @php
                                                         $selectedCc = $scheduler && $scheduler?->cc
                                                             ? json_decode($scheduler?->cc, true)
                                                             : [App\Helpers\Helper::getAuthenticatedUser()->auth_user_id];
                                                     @endphp
-                                                    
+
                                                     <select class="form-select select2" name="cc" multiple>
                                                         <option disabled>Select</option>
                                                         @foreach($users as $cc)
@@ -282,68 +282,68 @@
                                                             </option>
                                                         @endforeach
                                                     </select>
-                                                    
+
                                                 </div>
                                              </div>
                                              <div class="row camparboxnewcen">
                                                 @php
                                                     $selectedType = old('type', $scheduler?->type ?? '');
                                                 @endphp
-                                                
-                                                <div class="col-md-4"> 
+
+                                                <div class="col-md-4">
                                                     <label class="form-label">Type <label class="text-danger">*</label></label>
-                                                    <select class="form-select" name="type" id="type" required> 
+                                                    <select class="form-select" name="type" id="type" required>
                                                         <option value="">Select</option>
                                                         <option value="daily" {{ $selectedType == 'daily' ? 'selected' : '' }}>Daily</option>
                                                         <option value="weekly" {{ $selectedType == 'weekly' ? 'selected' : '' }}>Weekly</option>
                                                         <option value="monthly" {{ $selectedType == 'monthly' ? 'selected' : '' }}>Monthly</option>
-                                                    </select> 
+                                                    </select>
                                                 </div>
-                                                
-            
-                                                <div class="col-md-4"> 
+
+
+                                                <div class="col-md-4">
                                                     <label class="form-label">Select Date <label class="text-danger">*</label></label>
-                                                    <input 
-                                                        type="datetime-local" 
-                                                        class="form-select" 
-                                                        name="date" 
-                                                        min="{{ now()->format('Y-m-d\TH:i') }}" 
+                                                    <input
+                                                        type="datetime-local"
+                                                        class="form-select"
+                                                        name="date"
+                                                        min="{{ now()->format('Y-m-d\TH:i') }}"
                                                         value="{{ old('date', isset($scheduler) ? \Carbon\Carbon::parse($scheduler?->date)->format('Y-m-d\TH:i') : '') }}"
                                                         required
                                                     />
                                                 </div>
-                                                
-                                                <div class="col-md-12"> 
+
+                                                <div class="col-md-12">
                                                     <label class="form-label">Remarks  <label class="text-danger">*</label></label>
-                                                    <textarea 
-                                                        class="form-control" 
-                                                        placeholder="Enter Remarks" 
-                                                        id="remarks" 
-                                                        name="remarks" 
+                                                    <textarea
+                                                        class="form-control"
+                                                        placeholder="Enter Remarks"
+                                                        id="remarks"
+                                                        name="remarks"
                                                         required
                                                     >{{ old('remarks', $scheduler?->remarks ?? '') }}</textarea>
                                                 </div>
-                                                
-            
-            
-            
+
+
+
+
                                             </div>
-            
+
                                         </div>
                                      </div>
-            
-            
+
+
                                  </div>
-                                
-                                
+
+
                             </div>
-            
-                            <div class="modal-footer"> 
+
+                            <div class="modal-footer">
                                 <button type="reset" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                                 <button type="button" id="applyBtn" class="btn btn-primary data-submit mr-1">Submit</button>
                             </div>
-            
-            
+
+
                         </div>
                     </div>
                 </div>
@@ -365,7 +365,7 @@
                                     <label class="form-label" for="organization">Organization</label>
                               <select id="organization" name="organization" class="form-select select2" required>
                                     <option value="" disabled>Select</option>
-            
+
                                     @foreach ($mappings as $organization)
                                     <option value="{{ $organization->organization->id }}"
                                         {{ $organization->organization->id == $organization_id ? 'selected' : '' }}>
@@ -379,8 +379,8 @@
                                     <button type="reset" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                                 </div>
                         </form>
-            
-            
+
+
                     </div>
                 </div>
                 <div class="modal fade text-start filterpopuplabel " id="errorenteries"
@@ -442,18 +442,18 @@
                                                 <td class="text-danger">Multiple Entry</td>
                                                 <td><a href="#" class="text-primary"><i data-feather="eye"></i></a></td>
                                             </tr>
-            
+
                                         </tbody>
                                     </table>
                                 </div>
                             </div>
-            
+
                         </div>
                     </div>
                 </div>
           </div>
         </div>
-    
+
     </div>
     {{-- for customized excel --}}
     <form id="customExcelExportForm"  action="{{ route('cashflow.export') }}" method="POST">
@@ -462,13 +462,13 @@
         <input type="hidden" name="closing" value="{{ $closing }}">
         <input type="hidden" name="fy" value="{{ $fy }}">
         <input type="hidden" name="organization_id" value="{{ $organization_id }}">
-        
+
         <!-- Serialize complex arrays to JSON -->
         <input type="hidden" name="payment_made" value="{{ json_encode($payment_made) }}">
         <input type="hidden" name="payment_made_t" value="{{ $payment_made_t }}">
         <input type="hidden" name="payment_received" value="{{ json_encode($payment_received) }}">
         <input type="hidden" name="payment_received_t" value="{{ $payment_received_t }}">
-    
+
         {{-- <button type="submit" class="btn btn-success">
             <i data-feather="file-text"></i> Export Excel
         </button> --}}
@@ -530,38 +530,13 @@
                 lengthMenu: [8, 10, 25, 50, 75, 100],
                 buttons: [
                     {
-                        extend: 'collection',
-                        className: 'btn btn-outline-secondary dropdown-toggle',
-                        text: feather.icons['share'].toSvg({ class: 'font-small-3 me-50' }) + 'Export',
-                        buttons: [
-                            {
-                                extend: 'excel',
+                        extend: 'excel',
                                 text: feather.icons['file'].toSvg({ class: 'font-small-4 me-50' }) + 'Excel',
-                                className: 'dropdown-item',
-                                // exportOptions: {
-                                //     columns: [0, 1, 2] // Adjusted to match your table: #, Particulars, Total Amount
-                                // }
+                                className: 'btn btn-outline-secondary',
                                 action: function (e, dt, node, config) {
                                         document.getElementById('customExcelExportForm').submit();
                                     }
-                            },
-                            {
-                                extend: 'pdf',
-                                text: feather.icons['clipboard'].toSvg({ class: 'font-small-4 me-50' }) + 'PDF',
-                                className: 'dropdown-item',
-                                exportOptions: {
-                                    columns: [0, 1, 2]
-                                }
-                            },
-                            {
-                                extend: 'copy',
-                                text: feather.icons['mail'].toSvg({ class: 'font-small-4 me-50' }) + 'Copy',
-                                className: 'dropdown-item',
-                                exportOptions: {
-                                    columns: [0, 1, 2]
-                                }
-                            }
-                        ],
+                       ,
                         init: function (api, node, config) {
                             $(node).removeClass('btn-secondary');
                             $(node).parent().removeClass('btn-group');
@@ -571,6 +546,49 @@
                         }
                     }
                 ],
+                // buttons: [
+                //     {
+                //         extend: 'collection',
+                //         className: 'btn btn-outline-secondary dropdown-toggle',
+                //         text: feather.icons['share'].toSvg({ class: 'font-small-3 me-50' }) + 'Export',
+                //         buttons: [
+                //             {
+                //                 extend: 'excel',
+                //                 text: feather.icons['file'].toSvg({ class: 'font-small-4 me-50' }) + 'Excel',
+                //                 className: 'dropdown-item',
+                //                 // exportOptions: {
+                //                 //     columns: [0, 1, 2] // Adjusted to match your table: #, Particulars, Total Amount
+                //                 // }
+                //                 action: function (e, dt, node, config) {
+                //                         document.getElementById('customExcelExportForm').submit();
+                //                     }
+                //             },
+                //             // {
+                //             //     extend: 'pdf',
+                //             //     text: feather.icons['clipboard'].toSvg({ class: 'font-small-4 me-50' }) + 'PDF',
+                //             //     className: 'dropdown-item',
+                //             //     exportOptions: {
+                //             //         columns: [0, 1, 2]
+                //             //     }
+                //             // },
+                //             // {
+                //             //     extend: 'copy',
+                //             //     text: feather.icons['mail'].toSvg({ class: 'font-small-4 me-50' }) + 'Copy',
+                //             //     className: 'dropdown-item',
+                //             //     exportOptions: {
+                //             //         columns: [0, 1, 2]
+                //             //     }
+                //             // }
+                //         ],
+                //         init: function (api, node, config) {
+                //             $(node).removeClass('btn-secondary');
+                //             $(node).parent().removeClass('btn-group');
+                //             setTimeout(function () {
+                //                 $(node).closest('.dt-buttons').removeClass('btn-group').addClass('d-inline-flex');
+                //             }, 50);
+                //         }
+                //     }
+                // ],
                 language: {
                     search: '',
                     searchPlaceholder: 'Search...',
@@ -609,7 +627,7 @@ $(document).ready(function() {
             });
         });
         $('#applyBtn').on('click', function (e) {
-            
+
             // Close the modal
             var filterModal = bootstrap.Modal.getInstance(document.getElementById('addcoulmn'));
 
@@ -632,7 +650,7 @@ $(document).ready(function() {
             let remarks= $('textarea[name="remarks"]').val();
             let to = $('select[name="to"]').val();
             let cc = $('select[name="cc"]').val();
-                
+
             var requiredFields = {
             "To": to,
             "CC": cc,
@@ -648,7 +666,7 @@ $(document).ready(function() {
         //         missingFields.push(key);
         //     }
         // });
-        
+
 
         // // If missing fields exist, show an alert and stop execution
         // if (missingFields.length > 0) {
@@ -657,7 +675,7 @@ $(document).ready(function() {
         // }
 
             if (formData) {
-                
+
 
                 // AJAX request
                 let isValid=true;
@@ -786,6 +804,6 @@ $(document).ready(function() {
                 }
             }
         });
- 
+
     </script>
 @endsection

@@ -197,13 +197,13 @@
                                                                     <option value="" disabled selected>Select</option>
                                                                     @foreach ($employees as $employee)
                                                                         @php
-                                                                            $authUser = $employee->authUser();
+                                                                        $authUser = $employee->authUser();
                                                                             $permissions = $authUser ? $authUser->roles->pluck('name')->toArray() : [];
                                                                         @endphp
                                                                         <option
-                                                                            value="{{ $authUser ? $authUser->id : '' }}"
+                                                                            value="{{ $employee->id }}"
                                                                             data-permissions='@json($permissions)'
-                                                                            data-authenticable-type="{{ $authUser ? $authUser->authenticable_type : '' }}">
+                                                                            data-authenticable-type="{{ $employee->authenticable_type }}">
                                                                             {{ $authUser ? $authUser->name : 'N/A' }}
                                                                         </option>
                                                                     @endforeach
@@ -233,12 +233,12 @@
                                                                             @php
                                                                                 $authUser = $employee->authUser();
                                                                                 $permissions = $authUser ? $authUser->roles->pluck('name')->toArray() : [];
-                                                                                $isSelected = $authUser && $authorizedUser->id == $authUser->id;
+                                                                                $isSelected =  $authorizedUser->id ==  $employee->id;
                                                                             @endphp
                                                                             <option
-                                                                                value="{{ $authUser ? $authUser->id : '' }}"
+                                                                                value="{{ $employee->id }}"
                                                                                 data-permissions='@json($permissions)'
-                                                                                data-authenticable-type="{{ $authUser ? $authUser->authenticable_type : '' }}"
+                                                                                data-authenticable-type="{{ $employee->authenticable_type }}"
                                                                                 {{ $isSelected ? 'selected' : '' }}>
                                                                                 {{ $authUser ? $authUser->name : 'N/A' }}
                                                                             </option>
@@ -333,9 +333,9 @@
                     $authUser = $employee->authUser();
                     $permissions = $authUser ? $authUser->roles->pluck('name')->toArray() : [];
                 @endphp
-                <option value="{{ $authUser ? $authUser->id : '' }}"
+                <option value="{{ $employee->id }}"
                         data-permissions='@json($permissions)'
-                        data-authenticable-type="{{ $authUser ? $authUser->authenticable_type : '' }}">
+                        data-authenticable-type="{{  $employee->authenticable_type  }}">
                     {{ $authUser ? $authUser->name : 'N/A' }}
                 </option>
             @endforeach
@@ -372,6 +372,7 @@
         }
 
         $(document).ready(function() {
+            console.log('{{ App\Helpers\Helper::getAuthenticatedUser()->auth_user_id }}','auth id');
             // Initialize the first row's permissions if a user is already selected
             // const initialSelected = $('#authorize_1').find('option:selected');
             // console.log(initialSelected)
@@ -722,6 +723,15 @@
                     dataType: "JSON",
                     data: obj,
                     success: function(data) {
+                         if (data.message) {
+                            Swal.fire({
+                                icon: 'info',
+                                title: 'Notice',
+                                text: data.message,
+                                confirmButtonText: 'OK'
+                            });
+                            return; // Stop further execution if needed
+                        }
                         if (data['data'].length > 0) {
                             reservesSurplus = data['profitLoss'];
                             let html = '';

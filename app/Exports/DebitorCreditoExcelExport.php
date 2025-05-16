@@ -6,8 +6,11 @@ use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 
-class DebitorCreditoExcelExport implements FromView, WithStyles
+
+class DebitorCreditoExcelExport implements FromView, WithStyles, WithColumnFormatting
 {
     public function __construct(
         public $data,
@@ -42,4 +45,12 @@ class DebitorCreditoExcelExport implements FromView, WithStyles
 
         ];
     }
+
+     public function columnFormats(): array
+        {
+            return [
+                'I' => NumberFormat::FORMAT_NUMBER_00, // force 2 decimal places in column I
+                'H' => NumberFormat::FORMAT_NUMBER_00, // force 2 decimal places in column I
+            ];
+        }
 }

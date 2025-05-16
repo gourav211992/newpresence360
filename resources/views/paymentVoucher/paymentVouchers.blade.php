@@ -1,6 +1,29 @@
 @extends('layouts.app')
 
 @section('styles')
+<style>
+    /* Hover effect */
+    .myrequesttablecbox tbody tr:hover * {
+        background-color: #d3a8f7 !important; /* lighter purple for hover */
+        color: white !important;
+    }
+
+    /* Selected row (via keyboard) */
+    .myrequesttablecbox tbody tr.selected * {
+        background-color: #6b12b7 !important;
+        color: white !important;
+
+    }
+
+    .myrequesttablecbox tbody tr.selected * {
+        color: white !important;
+    }
+
+    .myrequesttablecbox tbody tr {
+        transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, transform 0.2s ease-in-out;
+    }
+</style>
+
 @endsection
 
 @section('content')
@@ -9,7 +32,7 @@
     <div class="content-overlay"></div>
     <div class="header-navbar-shadow"></div>
     <div class="content-wrapper container-xxl p-0">
-       
+
         <div class="content-body">
 
             <section id="basic-datatable">
@@ -26,7 +49,7 @@
                                 @if(isset($fyearLocked) && $fyearLocked)
                                 <a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{ $createRoute }}"><i data-feather="plus-circle"></i> Add New</a>
                                 @endif
-                           
+
                             </div>
                         </div>
                     </div>
@@ -78,9 +101,9 @@
                                                 <td class="tableactionnew">
                                                     <div class="d-flex align-items-center justify-content-end">
                                                     @php $statusClasss = App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$item->document_status??"draft"];  @endphp
-                                                    
+
                                                     <span class='badge rounded-pill {{$statusClasss}} badgeborder-radius'>@if($item->document_status==App\Helpers\ConstantHelper::APPROVAL_NOT_REQUIRED) Approved @else {{ucfirst($item->document_status)}} @endif</span>
-                                                    
+
                                                     <div class="dropdown">
                                                         <button type="button" class="btn btn-sm dropdown-toggle hide-arrow p-0" data-bs-toggle="dropdown">
                                                             <i data-feather="more-vertical"></i>
@@ -123,7 +146,7 @@
                       <input type="text" id="fp-range" class="form-control flatpickr-range bg-white" placeholder="YYYY-MM-DD to YYYY-MM-DD" value="{{$date}}" name="date"/>
                 </div>
 
-               
+
 
 
                 <div class="mb-1">
@@ -199,57 +222,77 @@
         dom:
 					'<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-3 withoutheadbuttin dt-action-buttons text-end"B><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
 				  lengthMenu: [7, 10, 25, 50, 75, 100], // Options for number of rows to show
-        buttons: [
-            {
-                extend: 'collection',
-                className: 'btn btn-outline-secondary dropdown-toggle',
-                text: feather.icons['share'].toSvg({ class: 'font-small-4 mr-50' }) + 'Export',
-                buttons: [
-                    {
-                        extend: 'print',
-                        text: feather.icons['printer'].toSvg({ class: 'font-small-4 mr-50' }) + 'Print',
-                        className: 'dropdown-item',
-                        exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6 ,7] },
-                        filename: 'Vouchers Report'
-                    },
-                    {
-                        extend: 'csv',
-                        text: feather.icons['file-text'].toSvg({ class: 'font-small-4 mr-50' }) + 'Csv',
-                        className: 'dropdown-item',
-                        exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6 ,7] },
-                        filename: 'Vouchers Report'
-                    },
-                    {
-                        extend: 'excel',
-                        text: feather.icons['file'].toSvg({ class: 'font-small-4 mr-50' }) + 'Excel',
-                        className: 'dropdown-item',
-                        exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6 ,7] },
-                        filename: 'Vouchers Report'
-                    },
-                    {
-                        extend: 'pdf',
-                        text: feather.icons['clipboard'].toSvg({ class: 'font-small-4 mr-50' }) + 'Pdf',
-                        className: 'dropdown-item',
-                        exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6 ,7] },
-                        filename: 'Vouchers Report'
-                    },
-                    {
-                        extend: 'copy',
-                        text: feather.icons['copy'].toSvg({ class: 'font-small-4 mr-50' }) + 'Copy',
-                        className: 'dropdown-item',
-                        exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6 ,7] },
-                        filename: 'Vouchers Report'
+                   buttons:
+                [{
+                    extend: 'excel',
+                            text: feather.icons['file'].toSvg({ class: 'font-small-4 me-50' }) + 'Excel',
+                            className: 'btn btn-outline-secondary',
+                            exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6 ,7] },
+                            filename: function () {
+                                let path = window.location.pathname.toLowerCase();
+                                return path.includes('receipts')
+                                    ? 'Receipts Report'
+                                    : 'Payment Vouchers Report';
+                            }                    ,
+                    init: function (api, node, config) {
+                        $(node).removeClass('btn-secondary');
+                        $(node).parent().removeClass('btn-group');
+                        setTimeout(function () {
+                            $(node).closest('.dt-buttons').removeClass('btn-group').addClass('d-inline-flex');
+                        }, 50);
                     }
-                ],
-                init: function (api, node, config) {
-                    $(node).removeClass('btn-secondary');
-                    $(node).parent().removeClass('btn-group');
-                    setTimeout(function () {
-                        $(node).closest('.dt-buttons').removeClass('btn-group').addClass('d-inline-flex');
-                    }, 50);
-                }
-            }
-        ],
+                    }],
+        // buttons: [
+        //     {
+        //         extend: 'collection',
+        //         className: 'btn btn-outline-secondary dropdown-toggle',
+        //         text: feather.icons['share'].toSvg({ class: 'font-small-4 mr-50' }) + 'Export',
+        //         buttons: [
+        //             {
+        //                 extend: 'print',
+        //                 text: feather.icons['printer'].toSvg({ class: 'font-small-4 mr-50' }) + 'Print',
+        //                 className: 'dropdown-item',
+        //                 exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6 ,7] },
+        //                 filename: 'Vouchers Report'
+        //             },
+        //             {
+        //                 extend: 'csv',
+        //                 text: feather.icons['file-text'].toSvg({ class: 'font-small-4 mr-50' }) + 'Csv',
+        //                 className: 'dropdown-item',
+        //                 exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6 ,7] },
+        //                 filename: 'Vouchers Report'
+        //             },
+        //             {
+        //                 extend: 'excel',
+        //                 text: feather.icons['file'].toSvg({ class: 'font-small-4 mr-50' }) + 'Excel',
+        //                 className: 'dropdown-item',
+        //                 exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6 ,7] },
+        //                 filename: 'Vouchers Report'
+        //             },
+        //             {
+        //                 extend: 'pdf',
+        //                 text: feather.icons['clipboard'].toSvg({ class: 'font-small-4 mr-50' }) + 'Pdf',
+        //                 className: 'dropdown-item',
+        //                 exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6 ,7] },
+        //                 filename: 'Vouchers Report'
+        //             },
+        //             {
+        //                 extend: 'copy',
+        //                 text: feather.icons['copy'].toSvg({ class: 'font-small-4 mr-50' }) + 'Copy',
+        //                 className: 'dropdown-item',
+        //                 exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6 ,7] },
+        //                 filename: 'Vouchers Report'
+        //             }
+        //         ],
+        //         init: function (api, node, config) {
+        //             $(node).removeClass('btn-secondary');
+        //             $(node).parent().removeClass('btn-group');
+        //             setTimeout(function () {
+        //                 $(node).closest('.dt-buttons').removeClass('btn-group').addClass('d-inline-flex');
+        //             }, 50);
+        //         }
+        //     }
+        // ],
         columnDefs: [
             { "orderable": false, "targets": [8] }  // Disable sorting on the action column
         ],
@@ -264,5 +307,47 @@
     // Optionally, you can add some custom logic or event listeners here
 });
 
+
 </script>
+<script>
+    $(document).ready(function () {
+        let selectedIndex = 0;
+
+        function updateSelectedRow(index) {
+            const rows = $('.myrequesttablecbox tbody tr');
+            rows.removeClass('selected');
+            if (rows.eq(index).length) {
+                rows.eq(index).addClass('selected');
+                rows.eq(index)[0].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                selectedIndex = index;
+            }
+        }
+
+        // Keyboard navigation
+        $(document).on('keydown', function (e) {
+            const rows = $('.myrequesttablecbox tbody tr');
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+
+                if (e.key === 'ArrowDown') {
+                    selectedIndex = (selectedIndex + 1) % rows.length;
+                } else if (e.key === 'ArrowUp') {
+                    selectedIndex = (selectedIndex - 1 + rows.length) % rows.length;
+                }
+
+                updateSelectedRow(selectedIndex);
+            }
+        });
+
+        // Mouse hover (works with pagination)
+        $(document).on('mouseenter', '.myrequesttablecbox tbody tr', function () {
+            $('.myrequesttablecbox tbody tr').removeClass('selected');
+            $(this).addClass('selected');
+            selectedIndex = $(this).index();
+        });
+    });
+</script>
+
+
+
 @endsection

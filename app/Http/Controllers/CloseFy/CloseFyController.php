@@ -9,6 +9,7 @@ use App\Models\ErpFinancialYear;
 use App\Models\Group;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class CloseFyController extends Controller
 {
@@ -17,14 +18,13 @@ class CloseFyController extends Controller
         $fyearId = $request->fyear;
         $user = Helper::getAuthenticatedUser();
         $organizationId = $request->organization_id;
-
         $companies = $user->access_rights_org;
-        $past_fyears = Helper::getAllPastFinancialYear();
-        $financialYear = $fyearId ? ErpFinancialYear::find($fyearId) : null;
-        $financialYearAuthUsers = $fyearId ? null : Helper::getFyAuthorizedUsers(date('Y-m-d'));
+        $past_fyears = Helper::getAllPastFinancialYear($organizationId);
+        $financialYear = $fyearId ? ErpFinancialYear::where('organization_id',$organizationId)->find($fyearId) : null;
+        // $financialYearAuthUsers = $fyearId ? null : Helper::getFyAuthorizedUsers(date('Y-m-d'));
 
         if ($financialYear) {
-            $organizationId = $financialYear->organization_id;
+            // $organizationId = $financialYear->organization_id;
             $financialYear->access_by = $this->setFinancialYearAccessBy(
                 $organizationId,
                 $financialYear->lock_fy,
@@ -40,9 +40,12 @@ class CloseFyController extends Controller
             $endYearShort = $now->copy()->addYear()->format('y');
         }
 
-        $authorized_users = $financialYearAuthUsers['authorized_users'] ?? ($financialYear ? $financialYear->authorizedUsers() : null);
+        $authorized_users = ($financialYear ? $financialYear->authorizedUsers() : null);
         $current_range = $startYear . '-' . $endYearShort;
         $employees = Helper::getOrgWiseUserAndEmployees($organizationId);
+        // for testing
+        Log::info('Authenticated User ID: ' . Helper::getAuthenticatedUser()->auth_user_id);
+        Log::info('Financial Year: ' .$financialYear);
 
         return view('close-fy.close-fy', compact(
             'companies', 'organizationId', 'past_fyears', 'financialYear', 'fyearId',
@@ -52,29 +55,48 @@ class CloseFyController extends Controller
 
     public function getFyInitialGroups(Request $r)
     {
-        $financialYear = $r->fyear
-            ? Helper::getAllPastFinancialYear()?->firstWhere('id', $r->fyear)
-            : Helper::getFinancialYear(date('Y-m-d'));
+        $financialYear = null;
+        $organizationId = $r->organization_id;
+        if($r->fyear){
+           $allFyears = Helper::getFinancialYears($organizationId);
+            $currentFy = $allFyears->firstWhere('id', $r->fyear);
 
-        $startDate = $financialYear['start_date'];
-        $endDate = $financialYear['end_date'];
+            if ($currentFy && isset($currentFy['range'])) {
+                [$start, $end] = explode('-', $currentFy['range']);
+                $nextStart = (int)$start + 1;
+                $nextEnd = (int)$end + 1;
+                $nextRange = $nextStart . '-' . str_pad($nextEnd % 100, 2, '0', STR_PAD_LEFT);
 
-        $organizations = $r->organization_id && is_array($r->organization_id)
+                $financialYear = $allFyears->first(function ($item) use ($nextRange) {
+                    return trim($item['range']) === trim($nextRange);
+                });
+            }
+        }
+         $organizations = $r->organization_id && is_array($r->organization_id)
             ? $r->organization_id
             : [Helper::getAuthenticatedUser()->organization_id];
 
         $currency = $r->currency ?: 'org';
-
-        $groups = Group::query()
-            ->where(function ($query) use ($organizations) {
-                $query->whereIn('organization_id', $organizations)
-                      ->orWhereNull('organization_id');
-            })
+        $groups = Helper::getGroupsQuery($organizations)
             ->when($r->group_id, fn($q) => $q->whereIn('id', [1, 2])->where('id', $r->group_id))
-            ->when(!$r->group_id, fn($q) => $q->where('status', 'active')->whereNull('parent_group_id')->whereIn('id', [1, 2]))
+            ->when(!$r->group_id, fn($q) => $q->whereNull('parent_group_id')->whereIn('id', [1, 2]))
             ->select('id', 'name')
             ->with('children.children')
             ->get();
+        if ($financialYear === null) {
+            return response()->json([
+                 'currency' => $currency,
+                'data' => null,
+                'type' => 'group',
+                'startDate' => null,
+                'endDate' => null,
+                'profitLoss' => null,
+                'groups' => $groups,
+                'message' => 'No Data found related to financial year.'
+            ]);
+        }
+        $startDate = $financialYear['start_date'] ?? null;
+        $endDate = $financialYear['end_date'] ?? null;
 
         $profitLoss = Helper::getReservesSurplus($startDate, $endDate, $organizations, 'trialBalance', $currency, $r->cost_center_id);
         $data = Helper::getGroupsData($groups, $startDate, $endDate, $organizations, $currency, $r->cost_center_id);
@@ -136,15 +158,15 @@ class CloseFyController extends Controller
 
         $accessBy = [];
         foreach ($employees as $employee) {
-            $authUser = $employee->authUser();
-            if (!$authUser) continue;
+            // $authUser = $employee->authUser();
+            // if (!$authUser) continue;
 
-            $key = $authUser->id . '|' . $authUser->authenticable_type;
+            $key = $employee->id . '|' . $employee->authenticable_type;
             $existing = $existingAccessMap[$key] ?? null;
 
             $accessBy[] = [
-                'user_id' => $authUser->id,
-                'authenticable_type' => $authUser->authenticable_type ?? null,
+                'user_id' => $employee->id,
+                'authenticable_type' => $employee->authenticable_type ?? null,
                 'authorized' => $existing['authorized'] ?? true,
                 'locked' => $existing['locked'] ?? ($lock == 1),
             ];
