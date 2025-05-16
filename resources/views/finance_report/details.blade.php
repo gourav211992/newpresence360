@@ -65,9 +65,8 @@
 
                                     <div class="col-md-8 text-sm-end pofilterboxcenter mb-0 d-flex flex-wrap align-items-center justify-content-sm-end">
                                         {{-- <a href="javascript: history.go(-1)" class="btn btn-secondary btn-sm"><i
-                                            data-feather="arrow-left-circle"></i> Back </a> 
-                                            &nbsp; --}}
-                                        <a id="printButton" href="{{route('crdr.report.ledger.print',[$type,$ledger,$group])}}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 me-25"><i data-feather='printer'></i> Print</a>
+                                            data-feather="arrow-left-circle"></i> Back </a> &nbsp; --}}
+                                        <a id="printButton" href="{{route('crdr.report.ledger.print',[$type,$ledger,$group])}}" class="btn btn-dark btn-sm mb-50 mb-sm-0 me-25"><i data-feather='printer'></i> Print</a>
                                         <button data-bs-toggle="modal" data-bs-target="#addcoulmn" class="btn btn-primary btn-sm mb-0 waves-effect"><i data-feather="filter"></i> Advance Filter</button>
                                     </div>
                                 </div>
@@ -86,7 +85,7 @@
                                                 <th class="text-end">Invoice Amt.</th>
 												<th class="outstanding text-end">Balance Amt.</th>
                                                 <th class="overdue text-end">Overdue Amt.</th>
-												<th>Action</th>
+												{{-- <th>Action</th> --}}
 											  </tr>
 											</thead>
 											<tbody>
@@ -106,16 +105,14 @@
                                                         <span class="badge rounded-pill @if($credit_days<$d->overdue_days) badge-light-danger @else badge-light-secondary @endif  badgeborder-radius">{{$d->overdue_days}}</span>
                                                         @endif
                                                     </td>
-                                                        <td class="text-end">@if($d->invoice_amount!=""){{ number_format($d->invoice_amount,2)}}@endif</td>
-                                                    <td class="outstanding text-end">{{ $d->total_outstanding < 0 ? 0: number_format($d->total_outstanding,2) }}</td>
+                                                    @if($type=="debit")
 
-                                                    <td class="overdue text-end">
-                                                          @if($d->overdue_days!="-")
-                                                           {{number_format($d->overdue,2)}}
-                                                           @else
-                                                           0
-                                                          @endif
-                                                        </td>
+                                                        <td class="outstanding text-end">{{ number_format(abs($d->total_outstanding), 2) }}  {{ $d->total_outstanding < 0 ? 'Cr' : 'Dr' }}</td>
+                                                    @else
+                                                    <td class="outstanding text-end">{{ number_format(abs($d->total_outstanding), 2) }}  {{ $d->total_outstanding < 0 ? 'Dr' : 'Cr' }}</td>
+
+                                                    @endif
+												        <td class="overdue text-end"> {{$d->overdue > 0 ? number_format($d->overdue) : '' }}</td>
 
                                                         <td>
                                                         @if($d->view_route)
@@ -456,6 +453,23 @@
 @endsection
 
 @section('scripts')
+ @if (session('print_error'))
+            <script>
+                const Toast = Swal.mixin({
+                   toast: true,
+                position: "top-end",
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+
+                });
+
+                Toast.fire({
+                    icon: 'error',
+                    title: '{{ session("print_error") }}'
+                });
+            </script>
+        @endif
     <!-- BEGIN: Dashboard Custom Code JS-->
     <script src="https://unpkg.com/feather-icons"></script>
 
@@ -490,116 +504,43 @@ if (dt_basic_table.length) {
         },
         displayLength: 10,
         lengthMenu: [10, 25, 50, 75, 100],
-        
-        buttons: [{
-            extend: 'collection',
-            className: 'btn btn-outline-secondary dropdown-toggle',
-            text: feather.icons['share'].toSvg({
-                class: 'font-small-3 me-50'
-            }) + 'Export',
-            buttons: [
-                {
-                    extend: 'excel',
-                    text: feather.icons['file'].toSvg({
-                        class: 'font-small-4 me-50'
-                    }) + 'Excel',
-                    className: 'dropdown-item',
-                    filename: 'Billing Report',
-                    exportOptions: {
-        columns: function (idx, data, node) {
-            // Determine which radio is selected
-            let isServiceSelected = document.querySelector('input[type="radio"]#service')?.checked;
+           buttons:
+            [{
+                extend: 'excel',
+                        text: feather.icons['file'].toSvg({ class: 'font-small-4 me-50' }) + 'Excel',
+                        className: 'btn btn-outline-secondary',
+                        filename: 'Billing Report',
+                        exportOptions: {
+                        columns: function (idx, data, node) {
+                            // Determine which radio is selected
+                            let isServiceSelected = document.querySelector('input[type="radio"]#service')?.checked;
 
-            // Hide last column (assumed action column)
-            const isLastColumn = node.cellIndex === node.parentNode.cells.length - 1;
+                            // Hide last column (assumed action column)
+                            const isLastColumn = node.cellIndex === node.parentNode.cells.length - 1;
 
-            if (isLastColumn) {
-                return false;
-            }
+                            if (isLastColumn) {
+                                return false;
+                            }
 
-            // If 'service' is selected, hide column 7 (index 6)
-            // Else hide column 6 (index 5)
-            if (isServiceSelected && node.cellIndex === 6) {
-                return false;
-            } else if (!isServiceSelected && node.cellIndex === 7) {
-                return false;
-            }
+                            // If 'service' is selected, hide column 7 (index 6)
+                            // Else hide column 6 (index 5)
+                            if (isServiceSelected && node.cellIndex === 6) {
+                                return false;
+                            } else if (!isServiceSelected && node.cellIndex === 7) {
+                                return false;
+                            }
 
-            return true;
-        }
-    },
-                },
-                {
-                    extend: 'pdf',
-                    text: feather.icons['clipboard'].toSvg({
-                        class: 'font-small-4 me-50'
-                    }) + 'PDF',
-                    className: 'dropdown-item',
-                    filename: 'Billing Report',
-                    exportOptions: {
-        columns: function (idx, data, node) {
-            // Determine which radio is selected
-            let isServiceSelected = document.querySelector('input[type="radio"]#service')?.checked;
-
-            // Hide last column (assumed action column)
-            const isLastColumn = node.cellIndex === node.parentNode.cells.length - 1;
-
-            if (isLastColumn) {
-                return false;
-            }
-
-            // If 'service' is selected, hide column 7 (index 6)
-            // Else hide column 6 (index 5)
-            if (isServiceSelected && node.cellIndex === 6) {
-                return false;
-            } else if (!isServiceSelected && node.cellIndex === 7) {
-                return false;
-            }
-
-            return true;
-        }
-    },
-                },
-                {
-                    extend: 'copy',
-                    text: feather.icons['copy'].toSvg({
-                        class: 'font-small-4 me-50'
-                    }) + 'Copy',
-                    className: 'dropdown-item',
-                    filename: 'Billing Report',
-                    exportOptions: {
-        columns: function (idx, data, node) {
-            // Determine which radio is selected
-            let isServiceSelected = document.querySelector('input[type="radio"]#service')?.checked;
-
-            // Hide last column (assumed action column)
-            const isLastColumn = node.cellIndex === node.parentNode.cells.length - 1;
-
-            if (isLastColumn) {
-                return false;
-            }
-
-            // If 'service' is selected, hide column 7 (index 6)
-            // Else hide column 6 (index 5)
-            if (isServiceSelected && node.cellIndex === 6) {
-                return false;
-            } else if (!isServiceSelected && node.cellIndex === 7) {
-                return false;
-            }
-
-            return true;
-        }
-    },
+                            return true;
+                        }
+                    },
+                init: function (api, node, config) {
+                    $(node).removeClass('btn-secondary');
+                    $(node).parent().removeClass('btn-group');
+                    setTimeout(function () {
+                        $(node).closest('.dt-buttons').removeClass('btn-group').addClass('d-inline-flex');
+                    }, 50);
                 }
-            ],
-            init: function(api, node, config) {
-                $(node).removeClass('btn-secondary');
-                $(node).parent().removeClass('btn-group');
-                setTimeout(function() {
-                    $(node).closest('.dt-buttons').removeClass('btn-group').addClass('d-inline-flex');
-                }, 50);
-            }
-        }],
+            }],
         language: {
             search: '',
             searchPlaceholder: "Search...",
@@ -827,8 +768,7 @@ function getSelectedData() {
             let overdueAmount = parseFloat($(this).attr("data-overdue")) || 0;
 
             if (selectedValue === "customColorRadio1") {
-                $('.outstanding').show();
-                $('.overdue').hide(); 
+                $(this).show(); // Show all rows when "Total Outstanding" is selected
             } else if (selectedValue === "service") {
                 $('.overdue').show();
                 $('.outstanding').hide();
@@ -856,7 +796,8 @@ function getSelectedData() {
             });
         });
     });
-    
+
+
 
 
 

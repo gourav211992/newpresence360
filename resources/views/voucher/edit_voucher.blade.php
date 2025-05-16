@@ -116,10 +116,10 @@
                                 @endif
                                 @if($buttons['revoke'])
                                 <a id = "revokeButton" type="button" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i> Revoke</a>
-                                @endif 
+                                @endif
                                 @if($buttons['cancel'])
                                 <a id = "cancelButton" type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0"><i data-feather="x-circle"></i> Cancel</a>
-                                @endif  
+                                @endif
                                 @if ($buttons['reference'])
                                 <a type="button" href="{{$ref_view_route}}"
                                     class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg
@@ -134,9 +134,9 @@
                                         <polyline points="10 9 9 9 8 9"></polyline>
                                     </svg> View REF</a>
                             @endif
-        
-                             
-              
+
+
+
                                 <input id="submitButton" type="submit" value="Submit" class="hidden" />
                             </div>
                         </div>
@@ -199,7 +199,7 @@
                                                                     {{ ucfirst($data->document_status) }}
                                                                 @endif
                                                             </span>
-                                                            </span>      
+                                                            </span>
                                                     </div>
                                                     </div>
                                                 </div>
@@ -222,7 +222,7 @@
                                                             id="book_type_id" required onchange="getBooks()" disabled>
                                                             <option value="{{ $data?->series?->org_service_id }}" selected>
                                                                     {{ $data?->series?->org_service?->name }}</option>
-                                                        
+
                                                         </select>
                                                     </div>
                                                 </div>
@@ -237,9 +237,9 @@
                                                         <select class="form-select" id="book_id" name="book_id"
                                                             required onchange="get_voucher_details()" disabled>
                                                              <option value="{{ $data?->book_id }}" selected>{{ $data?->series?->book_code }}</option>
-                                                                       
-                                                                  
-                                                              
+
+
+
                                                         </select>
                                                     </div>
                                                 </div>
@@ -284,7 +284,7 @@
                                                     <div class="col-md-6">
                                                         <input type="date" class="form-control" name="date"
                                                             id="date" required value="{{ $data->document_date }}"
-                                                            min="{{ $fyear['start_date'] }}" 
+                                                            min="{{ $fyear['start_date'] }}"
                                                             max="{{ $fyear['end_date'] }}"
                                                              />
                                                     </div>
@@ -302,11 +302,11 @@
                                                             <option value="{{ $location->id }}"
                                                                 {{ (isset($data->location) && $data->location == $location->id) ? 'selected' : '' }}>
                                                                 {{ $location->store_name }}
-                                                            </option>       
-                                                            @endforeach                                     
+                                                            </option>
+                                                            @endforeach
                                                         </select>
                                                     </div>
-                                                    
+
                                                 </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-2">
@@ -329,7 +329,7 @@
 
                                                 </div>
                                                 <div class="row align-items-center mb-1">
-                                                    
+
                                                    <div class="col-md-2">
                                                     <label class="form-label mt-50">Exchange Rate</label>
 
@@ -381,12 +381,12 @@
                                                 </div>
                                             </div>
                                                  {{-- History Code --}}
-                           @include('partials.approval-history', ['document_status' => $data->approvalStatus, 'revision_number' => $data->revision_number]) 
-                     
-                                           
+                           @include('partials.approval-history', ['document_status' => $data->approvalStatus, 'revision_number' => $data->revision_number])
+
+
                                 <div @if($data->approvalStatus==="cancel") style="display:none;" @endif>
                                         </div>
-                                            <div 
+                                            <div
                                             class="newheader d-flex justify-content-between align-items-end mt-2 border-top pt-2">
                                             <div class="header-left" @if($data->approvalStatus==="cancel") style="display:none;" @endif>
                                                 <h4 class="card-title text-theme">Item Wise Detail</h4>
@@ -404,7 +404,7 @@
 
 
                                         <div class="table-responsive pomrnheadtffotsticky mt-1" @if($data->approvalStatus==="cancel") style="display:none;" @endif>
-                                            <table 
+                                            <table
                                                 class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
                                                 <thead>
                                                     <tr>
@@ -433,8 +433,8 @@
                                                                     placeholder="Select Ledger"
                                                                     name="ledger_name{{ $no }}" required
                                                                     id="ledger_name{{ $no }}" required
-                                                                    data-id="{{ $no }}" 
-                                                                    value="{{ $item->ledger->name }}" />
+                                                                    data-id="{{ $no }}"
+                                                                    value="{{ $item->ledger->name ?? '' }}" />
                                                                 <input type="hidden" name="ledger_id[]" type="hidden"
                                                                     id="ledger_id{{ $no }}"
                                                                     value="{{ $item->ledger_id }}" class="ledgers" />
@@ -446,13 +446,13 @@
                                                                 <select id="groupSelect{{ $no }}"
                                                                     name="parent_ledger_id[]"
                                                                     class="ledgerGroup form-select mw-100" data-ledger="{{$item->ledger_id}}" required  >
-                                                                    @if(method_exists($item->ledger, 'groups') && $item->ledger->groups() instanceof \Illuminate\Database\Eloquent\Relations\Relation)
+                                                                    @if ($item->ledger && method_exists($item->ledger, 'groups') && $item->ledger->groups() instanceof \Illuminate\Database\Eloquent\Relations\Relation)
                                                                      @if(is_array($item->ledger->groups))
                                                                     @foreach ($item->ledger->groups as $group)
                                                                       <option value="{{ $group->id }}"
                                                                             @if ($group->id == $item->ledger_parent_id) selected @endif>
                                                                             {{ $group->name }}</option>
-                                                              
+
 
                                                                             @endforeach
                                                                             @else
@@ -462,11 +462,11 @@
                                                                     @endif
                                                                     @else
                                                                     @foreach ($groups as $group)
-                                                                  
+
                                                                         @if ($group->id == $item->ledger_parent_id)
-                                                                         
+
                                                                          <option value="{{ $group->id }}" selected> {{ $group->name }}</option>
-                                                                         
+
                                                                         @endif
                                                                 @endforeach
                                                                     @endif
@@ -497,12 +497,12 @@
                                                                 value="{{ $item->credit_amt_org }}" />
 
 
-                                                            <td><input type="number" 
+                                                            <td><input type="number"
                                                                     class="form-control mw-100 dbt_amt debt_{{ $no }} text-end"
                                                                     name="debit_amt[]" id="dept_{{ $no }}" onfocus="focusInput(this)"
                                                                     min="0" step="0.01" value="{{ $item->debit_amt }}" /></td>
 
-                                                            <td><input type="number" 
+                                                            <td><input type="number"
                                                                     class="form-control mw-100 crd_amt crd_{{ $no }} text-end"
                                                                     name="credit_amt[]" id="crd_{{ $no }}" onfocus="focusInput(this)"
                                                                     min="0" step="0.01" value="{{ $item->credit_amt }}" />
@@ -516,14 +516,14 @@
 
                                                         <select class="costCenter form-select mw-100" name="cost_center_id[]" id="cost_center_id{{ $no }}">
                                                             @foreach ($locationCostCenters as $value)
-                                                                <option value="{{ $value['id'] }}" 
+                                                                <option value="{{ $value['id'] }}"
                                                                     @if($value['id'] == $item->cost_center_id) selected @endif>
                                                                     {{ $value['name'] }}
                                                                 </option>
                                                             @endforeach
                                                         </select>
 
-                                                              
+
                                                             </td>
                                                             <td>
                                                                 <input type="text" class="form-control mw-100 remarks_" placeholder="Enter Remarks"
@@ -544,8 +544,8 @@
                                                                     @if ($buttons['draft'])
 
                                                                     <div class="me-50 cursor-pointer"><span
-                                                                            
-                                                                            data-bs-placement="top" 
+
+                                                                            data-bs-placement="top"
                                                                             class="text-danger remove-item"><i
                                                                                 data-feather="trash-2"></i></span>
                                                                     </div>
@@ -681,7 +681,7 @@
                                                     @php $documents = $data->document? json_decode($data->document, true): [];
                                                     if(!is_array($documents) && $data->document)
                                                     $documents[] = $data->document;
-                                                                    
+
                                                                     @endphp
 
                                                         @isset($documents)
@@ -730,12 +730,12 @@
                                                                         class="fileuploadicon"></i>
                                                                      </div>
                                                                     </a>
-                                                                     
+
                                                             @endforeach
                                                         @endisset
                                                     </td>
                                                  </div>
-                                                
+
                                             </div>
 
 
@@ -871,7 +871,7 @@
             // Check if selected option's data-alias is equal to contra_alias (e.g., 'cv')
             if (selectedOption.data('alias') === cv) {
                 $('.ledgerGroup').each(function () {
-                    let text = $(this).text().trim(); 
+                    let text = $(this).text().trim();
                     console.log("allowed "+allowedNames,text);
                     // get the visible text of each ledger group
                     if (!allowedNames.includes(text) && (text!="")) {
@@ -888,7 +888,7 @@
                     if (excludeNames.includes(text) && (text!="")) {
                         let id =  $(this).closest('tr').attr('id');
                         console.log(excludeNames,text,id);
-                    
+
                         $('#ledger_name'+id).val('');
                         $('#ledger_id'+id).val('');
                         $('#groupSelect'+id).val('');
@@ -916,7 +916,7 @@
 
             // Unified event handler for row and input/select clicks
             $('#item-details-body').on('click', 'tr, input, select', function(event) {
-                const row = $(this).closest('tr'); 
+                const row = $(this).closest('tr');
                 const rowId = row.attr('id'); // Get the row ID
                 $('#item-details-body tr').removeClass('trselected');
                 row.addClass('trselected');
@@ -1045,7 +1045,7 @@
             $('#status').val(status);
             $('#submitButton').click();
         }
-      
+
 
         var costcenters = {!! json_encode($cost_centers) !!};
         var bookTypes = {!! json_encode($bookTypes) !!};
@@ -1064,7 +1064,7 @@
             $('.ledgerGroup').each(function(index) {
                 let ledgerGroup = $(this).val(); // Get the selected value
                 let ledger_id = $(this).data('ledger'); // Get ledger ID from data attribute
-                
+
                 let key = ledger_id + '-' + ledgerGroup; // Create a unique key for comparison
 
                 if (seen.has(key)) {
@@ -1078,7 +1078,7 @@
             if (duplicateFound) {
                 showToast("error", "Duplicate ledger groups found. Please correct and try again.");
                 return false;
-            } 
+            }
             let stop=false;
 
 
@@ -1190,7 +1190,7 @@ function rate_change(){
     $('.voucher_details').hide();
 
 }
- 
+
 function populateCostCenterDropdowns() {
             let selectedLocationIds = $('#locations').val();
 
@@ -1329,7 +1329,7 @@ function calculate_cr_dr() {
                 $(this).val(value.toFixed(2));
 
             });
-               
+
                 if (parseFloat(removeCommas($('#crd_total').text())) == parseFloat(removeCommas($('#dbt_total')
                         .text()))) {} else if (
                     parseFloat(removeCommas($('#crd_total').text())) > parseFloat(removeCommas($('#dbt_total').text()))) {
@@ -1342,7 +1342,7 @@ function calculate_cr_dr() {
 
                 let rowCount = document.querySelectorAll('#item-details-body tr').length;
                 rowCount =  Number($('#item-details-body tr:last').attr('id'));
-                
+
                 let totalDebit=parseFloat(removeCommas($('#dbt_total').text()));
                 let totalCredit=parseFloat(removeCommas($('#crd_total').text()));
                 let balanceDebit = totalDebit - totalCredit; // Calculate the balance for debit
@@ -1350,7 +1350,7 @@ function calculate_cr_dr() {
 
                 balanceDebit = balanceDebit.toFixed(2);
                 balanceCredit = balanceCredit.toFixed(2);
-               
+
                 let newRow = `
                 <tr id="${rowCount + 1}">
                     <td class="number">${rowCount + 1}</td>
@@ -1400,8 +1400,8 @@ function calculate_cr_dr() {
                                                                     @if ($buttons['draft'])
 
                                                                     <div class="me-50 cursor-pointer"><span
-                                                                            
-                                                                            data-bs-placement="top" 
+
+                                                                            data-bs-placement="top"
                                                                             class="text-danger remove-item"><i
                                                                                 data-feather="trash-2"></i></span>
                                                                     </div>
@@ -1421,13 +1421,13 @@ function calculate_cr_dr() {
                 // Populate cost centers for the new row's dropdown
                 populateSingleCostCenterDropdown($(`#cost_center_id${rowCount + 1}`));
                  updateRowNumbers();
-                
-                 
-   
 
-              
+
+
+
+
             });
-            
+
         });
             function getBooks() {
             $('#book_id').empty();
@@ -1443,7 +1443,7 @@ function calculate_cr_dr() {
             $.each(books, function(key, value) {
                 $("#book_id").append("<option value ='" + value['id'] + " '>" + value['book_code'] + " </option>");
             });
-            
+
         }
 
         function get_voucher_details() {
@@ -1815,7 +1815,7 @@ function focusInput(inputElement) {
                 title
             });
         }
-        
+
         $(document).on('click', '#revokeButton', (e) => {
     let actionUrl = '{{ route("voucher.revoke.document") }}'+ '?id='+'{{$data->id}}';
     fetch(actionUrl).then(response => {
@@ -1835,7 +1835,7 @@ function focusInput(inputElement) {
             }
             location.reload();
         });
-    }); 
+    });
 });
 $(document).on('click', '#cancelButton', (e) => {
     e.preventDefault(); // Prevent default behavior
@@ -1852,7 +1852,7 @@ $(document).on('click', '#cancelButton', (e) => {
         if (result.isConfirmed) {
             // Proceed with AJAX request after confirmation
             let actionUrl = '{{ route("voucher.cancel.document") }}' + '?id=' + '{{$data->id}}';
-            
+
             fetch(actionUrl)
                 .then(response => response.json())
                 .then(data => {
@@ -1891,7 +1891,7 @@ $(document).on('click', '#cancelButton', (e) => {
         $('#locations').on('change', function() {
             populateCostCenterDropdowns();
         });
-        
+
 
 $(document).on('input', '.ledgerselect', function () {
     const currentRow = $(this).closest('tr');
@@ -1967,7 +1967,7 @@ function initializeLedgerAutocomplete(context) {
                             ledger_id: ledgerId
                         },
                         success: function (response) {
-                            
+
                             groupDropdown.empty();
                             response.forEach(item => {
                                 groupDropdown.append(`<option value="${item.id}">${item.name}</option>`);
@@ -1975,7 +1975,7 @@ function initializeLedgerAutocomplete(context) {
                             groupDropdown.removeAttr('style');
                             groupDropdown.data('ledger', ledgerId);
                             ledgerIdInput.val(ledgerId);
-                            
+
                             handleRowClick(currentRow);
                         },
                         error: function (xhr) {

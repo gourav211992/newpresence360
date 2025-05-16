@@ -74,7 +74,7 @@
 														<i data-feather="more-vertical"></i>
 													</button>
 													<div class="dropdown-menu dropdown-menu-end">
-														
+
 														<a class="dropdown-item"
 															href="{{ route('ledger-groups.edit', ['ledger_group' => $item->id]) }}">
 															<i data-feather="edit-3" class="me-50"></i>
@@ -90,7 +90,7 @@
 															</button>
 														</form> --}}
 														@endif
-														
+
 													</div>
 												</div>
 											</td>
@@ -186,63 +186,79 @@
 				drawCallback: function() {
                                 feather.replace();
                             },
-                            
+
 				dom:
 					'<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-3 withoutheadbuttin dt-action-buttons text-end"B><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
 				displayLength: 7,
 				lengthMenu: [7, 10, 25, 50, 75, 100],
-				buttons: [
-					{
-						extend: 'collection',
-						className: 'btn btn-outline-secondary dropdown-toggle',
-						text: feather.icons['share'].toSvg({ class: 'font-small-4 mr-50' }) + 'Export',
-						buttons: [
-							{
-								extend: 'print',
-								text: feather.icons['printer'].toSvg({ class: 'font-small-4 mr-50' }) + 'Print',
-								className: 'dropdown-item',
-								exportOptions: { columns: [1,2,3, 4] },
-                                filename: 'Ledger Group Report'
-							},
-							{
-								extend: 'csv',
-								text: feather.icons['file-text'].toSvg({ class: 'font-small-4 mr-50' }) + 'Csv',
-								className: 'dropdown-item',
-								exportOptions: { columns: [1,2,3, 4] },
-                                filename: 'Ledger Group Report'
-							},
-							{
-								extend: 'excel',
-								text: feather.icons['file'].toSvg({ class: 'font-small-4 mr-50' }) + 'Excel',
-								className: 'dropdown-item',
-								exportOptions: { columns: [1,2,3, 4] },
-                                filename: 'Ledger Group Report'
-							},
-							{
-								extend: 'pdf',
-								text: feather.icons['clipboard'].toSvg({ class: 'font-small-4 mr-50' }) + 'Pdf',
-								className: 'dropdown-item',
-								exportOptions: { columns: [1,2,3, 4] },
-                                filename: 'Ledger Group Report'
-							},
-							{
-								extend: 'copy',
-								text: feather.icons['copy'].toSvg({ class: 'font-small-4 mr-50' }) + 'Copy',
-								className: 'dropdown-item',
-								exportOptions: { columns: [1,2,3, 4] },
-                                filename: 'Ledger Group Report'
-							}
-						],
-						init: function (api, node, config) {
-							$(node).removeClass('btn-secondary');
-							$(node).parent().removeClass('btn-group');
-							setTimeout(function () {
-								$(node).closest('.dt-buttons').removeClass('btn-group').addClass('d-inline-flex');
-							}, 50);
-						}
-					},
+                buttons:
+                [{
+                    extend: 'excel',
+                            text: feather.icons['file'].toSvg({ class: 'font-small-4 me-50' }) + 'Excel',
+                            className: 'btn btn-outline-secondary',
+                            exportOptions: { columns: [1,2,3, 4] },
+                            filename: 'Ledger Group Report'
+                    ,
+                    init: function (api, node, config) {
+                        $(node).removeClass('btn-secondary');
+                        $(node).parent().removeClass('btn-group');
+                        setTimeout(function () {
+                            $(node).closest('.dt-buttons').removeClass('btn-group').addClass('d-inline-flex');
+                        }, 50);
+                    }
+                    }],
+				// buttons: [
+				// 	{
+				// 		extend: 'collection',
+				// 		className: 'btn btn-outline-secondary dropdown-toggle',
+				// 		text: feather.icons['share'].toSvg({ class: 'font-small-4 mr-50' }) + 'Export',
+				// 		buttons: [
+				// 			{
+				// 				extend: 'print',
+				// 				text: feather.icons['printer'].toSvg({ class: 'font-small-4 mr-50' }) + 'Print',
+				// 				className: 'dropdown-item',
+				// 				exportOptions: { columns: [1,2,3, 4] },
+                //                 filename: 'Ledger Group Report'
+				// 			},
+				// 			{
+				// 				extend: 'csv',
+				// 				text: feather.icons['file-text'].toSvg({ class: 'font-small-4 mr-50' }) + 'Csv',
+				// 				className: 'dropdown-item',
+				// 				exportOptions: { columns: [1,2,3, 4] },
+                //                 filename: 'Ledger Group Report'
+				// 			},
+				// 			{
+				// 				extend: 'excel',
+				// 				text: feather.icons['file'].toSvg({ class: 'font-small-4 mr-50' }) + 'Excel',
+				// 				className: 'dropdown-item',
+				// 				exportOptions: { columns: [1,2,3, 4] },
+                //                 filename: 'Ledger Group Report'
+				// 			},
+				// 			{
+				// 				extend: 'pdf',
+				// 				text: feather.icons['clipboard'].toSvg({ class: 'font-small-4 mr-50' }) + 'Pdf',
+				// 				className: 'dropdown-item',
+				// 				exportOptions: { columns: [1,2,3, 4] },
+                //                 filename: 'Ledger Group Report'
+				// 			},
+				// 			{
+				// 				extend: 'copy',
+				// 				text: feather.icons['copy'].toSvg({ class: 'font-small-4 mr-50' }) + 'Copy',
+				// 				className: 'dropdown-item',
+				// 				exportOptions: { columns: [1,2,3, 4] },
+                //                 filename: 'Ledger Group Report'
+				// 			}
+				// 		],
+				// 		init: function (api, node, config) {
+				// 			$(node).removeClass('btn-secondary');
+				// 			$(node).parent().removeClass('btn-group');
+				// 			setTimeout(function () {
+				// 				$(node).closest('.dt-buttons').removeClass('btn-group').addClass('d-inline-flex');
+				// 			}, 50);
+				// 		}
+				// 	},
 
-				],
+				// ],
 				columnDefs: [
 					{ "orderable": false, "targets": [5] }
 				],

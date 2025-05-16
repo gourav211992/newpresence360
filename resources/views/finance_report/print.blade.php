@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    @php 
+    @php
     $title = $type == "debit" ? str_replace(' ', '_', $ledger_name).'_Account_Statment (Debtor)' : str_replace(' ', '_', $ledger_name).'_Account_Statment (Creditor)';
     @endphp
     <title>{{$title}}</title>
@@ -25,7 +25,7 @@
                 window.print();
         });
     </script>
-    
+
 </head>
 
 <body>
@@ -38,7 +38,7 @@
                 <td style="vertical-align: top;">
                     <img src="{{@$orgLogo ?? url('')."/public/assets/sheela-logonew.jpeg"}}" height="50px">
                 </td>
-                
+
                 <td style="text-align: center;  font-weight: bold; font-size: 20px;">
                     Account Statement
                 </td>
@@ -59,7 +59,7 @@
                         <tr>
                             <td colspan="2">
                                 <span style="font-weight: 700; font-size: 13px; padding-top: 5px">{{ Str::ucfirst(@$organization->name) }}</span> <br>
-                               
+
                             </td>
                         </tr>
                         <tr valign="top">
@@ -67,7 +67,7 @@
                             <td style="padding-top: 10px;">
                                 {{ @$organizationAddress->line_1 }} @if (!empty($organizationAddress->line_2)), {{ $organizationAddress->line_2 }}@endif @if (!empty($organizationAddress->line_3)), {{ $organizationAddress->line_3 }}@endif
                             </td>
-                        </tr> 
+                        </tr>
                         <tr>
                             <td style="padding-top: 5px;">City:</td>
                             <td style="padding-top: 5px;">{{ @$organizationAddress?->city?->name }}</td>
@@ -77,7 +77,7 @@
                             <td style="padding-top: 5px;">State: </td>
                             <td style="padding-top: 5px;">{{ @$organizationAddress?->state?->name }}</td>
                         </tr>
-						
+
 						 <tr>
                             <td style="padding-top: 5px;">State Code: </td>
                             <td style="padding-top: 5px;">{{ @$organizationAddress?->state?->state_code }}</td>
@@ -91,7 +91,7 @@
                         <tr>
                             <td style="padding-top: 5px;">Pin Code:</td>
                             <td style="padding-top: 5px;">{{ @$organizationAddress?->postal_code }}</td>
-                        </tr>  
+                        </tr>
 
                         <tr>
                             <td style="padding-top: 5px;">Phone:</td>
@@ -101,14 +101,14 @@
                         <tr>
                             <td style="padding-top: 5px;">Email ID:</td>
                             <td style="padding-top: 5px;">{{ @$organizationAddress?->email }}</td>
-                        </tr> 
-						
+                        </tr>
+
 						<tr>
                             <td style="padding-top: 5px;">GSTIN No:</td>
                             <td style="padding-top: 5px;"><strong>{{@$organization?->gst_number}}</strong></td>
                         </tr>
- 
-                      
+
+
 
                     </table>
                 </td>
@@ -120,7 +120,7 @@
                         </tr>
                         <tr>
                             <td colspan="2" style="font-weight: 700; font-size: 13px; padding-top: 5px">
-                                {{strtoupper($party?->company_name)}} 
+                                {{strtoupper($party?->company_name)}}
                             </td>
                         </tr>
                         <tr valign="top">
@@ -136,7 +136,7 @@
                             <td style="padding-top: 5px;">State: </td>
                             <td style="padding-top: 5px;">{{@$party_address?->state?->name}}</td>
                         </tr>
-						
+
 						 <tr>
                             <td style="padding-top: 5px;">State Code: </td>
                             <td style="padding-top: 5px;">{{@$party_address?->state?->state_code}}</td>
@@ -150,7 +150,7 @@
                         <tr>
                             <td style="padding-top: 5px;">Pin Code:</td>
                             <td style="padding-top: 5px;">{{@$party_address?->pincode}}</td>
-                        </tr>  
+                        </tr>
 
                         <tr>
                             <td style="padding-top: 5px;">Phone:</td>
@@ -160,20 +160,20 @@
                         <tr>
                             <td style="padding-top: 5px;">Email ID:</td>
                             <td style="padding-top: 5px;">{{@$party?->email}}</td>
-                        </tr> 
-						
+                        </tr>
+
 						<tr>
                             <td style="padding-top: 5px;">GSTIN No:</td>
                             <td style="padding-top: 5px;"><strong>{{@$party?->compliances?->gstin_no}}</strong></td>
-                        </tr> 
+                        </tr>
                     </table>
-                </td> 
-                
+                </td>
+
                 <td rowspan="2" style="border: 1px solid #000; padding: 3px; vertical-align: top;">
                     <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
-                 
-                
-                           
+
+
+
                             <tr>
                                 <td style="padding: 5px;"><strong>Date:</strong> {{date('d-m-Y')}}</td>
                             </tr>
@@ -185,11 +185,11 @@
                             </tr>
                         </table>
                     </td>
-             
-          
-              
+
+
+
           </tr>
-           
+
         </table>
 
         <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
@@ -201,7 +201,7 @@
                     Invoice Date</td>
                 <td
                     style="font-weight: bold; padding: 2px; border: 1px solid #000;  border-left: none; text-align: center; background: #80808070; text-align: center;">
-                    Invoice No</td> 
+                    Invoice No</td>
                 <td
                     style="font-weight: bold; padding: 2px; border: 1px solid #000;  border-left: none; background: #80808070; text-align: center;">
                     O/S Days</td>
@@ -213,12 +213,12 @@
                     Balance Amt.</td>
             </tr>
             @php $index=0; @endphp
-            
+
             @foreach($data as $key => $row)
             @if($bill_type=="outstanding")
             @if($row->total_outstanding > 0)
             @php $index++; @endphp
-            
+
             <tr>
                 <td
                     style="padding: 2px; border: 1px solid #000; border-top: none; text-align: center; font-weight: bold;">{{@$index}}</td>
@@ -227,14 +227,14 @@
                     {{@$row->document_date}}</td>
                 <td
                     style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;text-align: center;">
-                    {{@$row->bill_no}}</td> 
+                    {{@$row->bill_no}}</td>
                 <td
                     style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none;  text-align: center;">
                     {{@$row->overdue_days}}</td>
-                    
+
                     <td
                     style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;padding-right:30px">
-                    {{$row->invoice_amount!=""?App\Helpers\Helper::formatIndianNumber($row->invoice_amount):""}}</td>  
+                    {{$row->invoice_amount!=""?App\Helpers\Helper::formatIndianNumber($row->invoice_amount):""}}</td>
                 <td
                     style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;padding-right:30px">
                     {{App\Helpers\Helper::formatIndianNumber($row->total_outstanding)}}</td>
@@ -243,7 +243,7 @@
             @else
             @if($row->overdue > 0)
             @php $index++; @endphp
-            
+
             <tr>
                 <td
                     style="padding: 2px; border: 1px solid #000; border-top: none; text-align: center; font-weight: bold;">{{@$index}}</td>
@@ -252,21 +252,21 @@
                     {{@$row->document_date}}</td>
                 <td
                     style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;text-align: center;">
-                    {{@$row->bill_no}}</td> 
+                    {{@$row->bill_no}}</td>
                 <td
                     style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none;  text-align: center;">
                     {{@$row->overdue_days}}</td>
                     <td
                     style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;padding-right:30px">
-                    {{$row->invoice_amount!=""?App\Helpers\Helper::formatIndianNumber($row->invoice_amount):""}}</td>  
-                
-                
+                    {{$row->invoice_amount!=""?App\Helpers\Helper::formatIndianNumber($row->invoice_amount):""}}</td>
+
+
                 <td
                     style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;padding-right:30px">
                     {{App\Helpers\Helper::formatIndianNumber($row->overdue)}}</td>
             </tr>
             @endif
-            
+
             @endif
             @endforeach
 
@@ -285,7 +285,7 @@
                         </tr>
                         <tr>
                             <td style="padding-top: 15px;"><strong>Payment Terms :</strong> {{@$party?->paymentTerm?->name}}</td>
-                        </tr> 
+                        </tr>
 
                     </table>
 
@@ -306,7 +306,7 @@
                     <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
                         <tr>
                             <td style="font-size: 13px; text-align: right; font-style: italic; padding-right: 15px"> E. & O.E</td>
-                        </tr> 
+                        </tr>
                     </table>
 
                 </td>
@@ -333,15 +333,15 @@
                 </td>
             </tr>
 
-             
+
 
             <!--  -->
 
-            <tr> 
+            <tr>
             <td
                 style="padding: 3px; border: 1px solid #000; width: 50%; border-top: none; border-right: none; vertical-align: top;">
                 <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
-                     
+
                     <tr>
                         <td style="padding-top: 5px;width: 70px">Created By :</td>
                         <td style="padding-top: 5px;">{{@$auth_user?->name}}</td>
@@ -373,10 +373,10 @@
                 </td>
             </tr>
 
-        </table> 
+        </table>
 
     </div>
-    
+
 </body>
 
 

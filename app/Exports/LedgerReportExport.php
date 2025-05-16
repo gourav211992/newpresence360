@@ -91,9 +91,15 @@ class LedgerReportExport implements FromArray, WithHeadings, WithTitle, ShouldAu
                 if ($mergeEnd > $currentStart && $lastVchNo !== '') {
                     foreach ($mergeCols as $col) {
                         $sheet->mergeCells("{$col}{$currentStart}:{$col}{$mergeEnd}");
-                        $sheet->getStyle("{$col}{$currentStart}")->getAlignment()
-                            ->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER)
-                            ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+                        $alignment = $sheet->getStyle("{$col}{$currentStart}")->getAlignment();
+                        $alignment->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER);
+
+                        // Set horizontal alignment based on column
+                        if (in_array($col, ['A', 'D', 'E', 'F'])) {
+                            $alignment->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT);
+                        } elseif (in_array($col, ['G', 'H'])) {
+                            $alignment->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
+                        }
                     }
                 }
 
