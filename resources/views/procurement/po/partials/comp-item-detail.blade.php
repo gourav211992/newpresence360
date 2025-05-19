@@ -46,15 +46,15 @@
 <tr>
     <td class="poprod-decpt">
         <span class="badge rounded-pill badge-light-primary"><strong>Inv. UOM</strong>:  {{$uomName}}</span>
-        <span class="badge rounded-pill badge-light-primary"><strong>Qty.</strong>: {{$qty}}</span>
+        <span class="badge rounded-pill badge-light-primary"><strong>Qty.</strong>: {{number_format($qty,2)}}</span>
     </td>
 </tr>
-@if(isset($delivery) && $delivery)
+@if(isset($delivery) && $delivery && count($delivery['delivery'] ?? 0))
 <tr>
     <td class="poprod-decpt">
         <span class="poitemtxt mw-100"><strong>Delivery Schedule</strong>:</span>
-        @foreach($delivery as $d)
-        <span class="badge rounded-pill badge-light-secondary"><strong>{{ \Carbon\Carbon::parse(@$d['dDate'])->format('d-m-y') }}</strong> : {{@$d['dQty']}}</span>
+        @foreach($delivery['delivery'] ?? [] as $d)
+        <span class="badge rounded-pill badge-light-secondary"><strong>{{ \Carbon\Carbon::parse(@$d['dDate'])->format('d-m-y') }}</strong> : {{number_format(($d['dQty'] ?? 0), 2)}}</span>
         @endforeach
     </td>
 </tr>
@@ -72,7 +72,7 @@
     <td class="poprod-decpt">
         <span class="poitemtxt mw-100"><strong>Purchase Indent:</strong></span>
         @foreach($piItems as $piItem)
-        <span class="badge rounded-pill badge-light-primary text-wrap">{{$piItem?->pi?->book_code}} - {{$piItem?->pi?->document_number ?? ''}} : {{$piItem->po_qty ?? 0}}</span>
+        <span class="badge rounded-pill badge-light-primary text-wrap">{{$piItem?->pi?->book_code}} - {{$piItem?->pi?->document_number ?? ''}} : {{number_format($piItem->po_qty,2)}}</span>
         @endforeach
     </td>
 </tr>
@@ -91,14 +91,16 @@
 @endif
 <tr>
     <td class="poprod-decpt">
-        {{-- <span class="poitemtxt mw-100"><strong>Short Close Details:</strong></span> --}}
+        <span class="poitemtxt mw-100"><strong>PO Details:</strong></span>
+        <span class="badge rounded-pill badge-light-primary text-wrap">Receipt Qty : </strong> {{number_format($poItem?->grn_qty,2)}}</span>
+        <span class="badge rounded-pill badge-light-primary text-wrap">Short Closed Qty : </strong> {{number_format($poItem?->short_close_qty,2)}}</span>
+        <span class="badge rounded-pill badge-light-primary text-wrap">Bal Qty : </strong> {{number_format($poItem?->short_bal_qty,2)}}</span>
         @if($poItem?->mrn_details?->count())
             <span class="poitemtxt mw-100"><strong>Receipt Details:</strong></span>
             @foreach($poItem?->mrn_details as $mrn_detail)
-                <span class="badge rounded-pill badge-light-primary text-wrap">{{$mrn_detail?->header?->book?->book_code}} - {{$mrn_detail?->header?->document_number}} : {{$mrn_detail?->accepted_qty}}</span>
+                <span class="badge rounded-pill badge-light-primary text-wrap">{{$mrn_detail?->header?->book?->book_code}} - {{$mrn_detail?->header?->document_number}} : {{number_format($mrn_detail?->accepted_qty,2)}}</span>
             @endforeach
         @endif
-        <span class="badge rounded-pill badge-light-primary text-wrap">Close Qty : </strong> {{$poItem?->short_close_qty}}</span>
-        <span class="badge rounded-pill badge-light-primary text-wrap">Bal Qty : </strong> {{$poItem?->short_bal_qty}}</span>
+        
     </td>
 </tr>

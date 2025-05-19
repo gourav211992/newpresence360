@@ -139,8 +139,8 @@ if (selectedStoreId) {
 }
 
 // Get Cost Centers
-function getCostCenters(storeLocationId) {
-    $("#cost_center_div").hide(); // Hide by default
+function getCostCenters(storeLocationId, disabled=false) {
+    $("#cost_center_div").hide();
 
     $.ajax({
         url: "/get-cost-centers",
@@ -159,7 +159,9 @@ function getCostCenters(storeLocationId) {
 
                 $(".cost_center").html(options);
                 $("#cost_center_div").show();
+                $(".cost_center").prop('disabled', disabled);
             } else {
+                $(".cost_center").empty();
                 $("#cost_center_div").hide();
             }
         },
@@ -346,7 +348,6 @@ function setTableCalculation() {
             itemVariance = 0;
         }
         totalItemVariance+=itemVariance;
-        console.log('itemVariance', itemVariance);
 
         $(item).find("[name*='[item_total_cost]']").val(itemCost.toFixed(2));
         $(item).find("[name*='[po_total_cost]']").val(poItemCost.toFixed(2));
@@ -801,8 +802,7 @@ function checkBasicFilledDetail()
     let documentNumber = $("#document_number").val() || '';
     let documentDate = $("[name='document_date']").val() || '';
     let referenceNumber = $("[name='reference_number']").val() || '';
-    let costCenterId = $("[name='cost_center_id']").val() || '';
-    if(bookId && documentNumber && documentDate && referenceNumber && costCenterId) {
+    if(bookId && documentNumber && documentDate && referenceNumber) {
         filled = true;
     }
     return filled;

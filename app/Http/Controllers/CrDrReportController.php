@@ -51,7 +51,8 @@ class CrDrReportController extends Controller
         $drp_group = Helper::getGroupsQuery()->where('name', ConstantHelper::RECEIVABLE)->first();
 
         if ($group) {
-            $ledger_groups = $group->children->pluck('id');
+            $ledger_groups =  Helper::getGroupsQuery()->where('parent_group_id',$group->id)->pluck('id');
+            
             if (count($ledger_groups) > 0) {
 
                 $all_ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($ledger_groups) {
@@ -102,8 +103,8 @@ class CrDrReportController extends Controller
         $drp_group = Helper::getGroupsQuery()->where('name', ConstantHelper::PAYABLE)->first();
 
         if ($group) {
-            $ledger_groups = $group->children->pluck('id');
-            if (count($ledger_groups) > 0) {
+           $ledger_groups =  Helper::getGroupsQuery()->where('parent_group_id',$group->id)->pluck('id');
+             if (count($ledger_groups) > 0) {
                 $ages_all = [$request->age0 ?? 30, $request->age1 ?? 60, $request->age2 ?? 90, $request->age3 ?? 120, $request->age4 ?? 180];
                 $all_ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($ledger_groups) {
                     $query->whereIn('ledger_group_id', $ledger_groups)
@@ -1120,85 +1121,86 @@ class CrDrReportController extends Controller
     }
     public static function getLedgerDetailsPrint($type, $ledger, $group, $bill_type = "outstanding", $organization_id = null, $auth_user = null)
     {
+        try {
+            $start = null;
+            $end = null;
 
-        $start = null;
-        $end = null;
-        if ($organization_id == null)
-            $organization_id = Helper::getAuthenticatedUser()->organization_id;
-        $ages_all = [$request->age0 ?? 30, $request->age1 ?? 60, $request->age2 ?? 90, $request->age3 ?? 120, $request->age4 ?? 180];
+            if ($organization_id == null)
+                $organization_id = Helper::getAuthenticatedUser()->organization_id;
 
-        $ledger_name = Ledger::find($ledger)?->name;
-        $group_name = Group::find($group)?->name;
-        $model = $type == 'debit' ? Customer::class : Vendor::class;
-        $credit_days = $model::where('ledger_group_id', $group)
-            ->where('ledger_id', $ledger)
-            ->value('credit_days');
-        $credit_days = $credit_days ?? 0;
-        $doc_types = $type === 'debit' ? [ConstantHelper::RECEIPTS_SERVICE_ALIAS, 'Receipt'] : [ConstantHelper::PAYMENTS_SERVICE_ALIAS, 'Payment'];
-        $cus_type = $type === 'debit' ? 'customer' : 'vendor';
-        $vouchers = Voucher::withDefaultGroupCompanyOrg()->withWhereHas('items', function ($query) use ($ledger, $group, $type) {
-            $query->where('ledger_id', $ledger);
-            $query->where('ledger_parent_id', $group);
-            $query->where($type . '_amt_org', '>', 0);
-        })
-            // ->where('organization_id', $organization_id)
-            ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED);
+            $ages_all = [$request->age0 ?? 30, $request->age1 ?? 60, $request->age2 ?? 90, $request->age3 ?? 120, $request->age4 ?? 180];
 
-        if (!empty($start) && !empty($end)) {
-            $vouchers->whereBetween('document_date', [$start, $end]); // Apply filter for document_date
-        }
+            $ledger_name = Ledger::find($ledger)?->name;
+            $group_name = Group::find($group)?->name;
+            $model = $type == 'debit' ? Customer::class : Vendor::class;
+            $credit_days = $model::where('ledger_group_id', $group)
+                ->where('ledger_id', $ledger)
+                ->value('credit_days') ?? 0;
 
-        $vouchers = $vouchers->orderBy('document_date', 'asc')
-            ->orderBy('created_at', 'asc')
-            ->pluck('id')
-            ->toArray();
-        if ($vouchers)
-            $data = self::get_overdue($type, $ages_all, $doc_types, $cus_type, $vouchers, $credit_days, $group, $ledger, 1, $start, $end);
-        else $data = [];
+            $doc_types = $type === 'debit' ? [ConstantHelper::RECEIPTS_SERVICE_ALIAS, 'Receipt'] : [ConstantHelper::PAYMENTS_SERVICE_ALIAS, 'Payment'];
+            $cus_type = $type === 'debit' ? 'customer' : 'vendor';
 
+            $vouchers = Voucher::withDefaultGroupCompanyOrg()->withWhereHas('items', function ($query) use ($ledger, $group, $type) {
+                $query->where('ledger_id', $ledger);
+                $query->where('ledger_parent_id', $group);
+                $query->where($type . '_amt_org', '>', 0);
+            })
+                ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED);
 
-        $data = json_decode(json_encode($data));
-        $model = $type == 'debit' ? Customer::class : Vendor::class;
-        $party = $model::where('ledger_group_id', $group)
-            ->where('ledger_id', $ledger)
-            ->first();
-        //$user = Helper::getAuthenticatedUser();
+            if (!empty($start) && !empty($end)) {
+                $vouchers->whereBetween('document_date', [$start, $end]);
+            }
 
-        $organization = Organization::find($organization_id);
-        //  $organization = Organization::where('id', $user->organization_id)->first();
-        $organizationAddress = Address::with(['city', 'state', 'country'])
-            ->where('addressable_id', $organization_id)
-            ->where('addressable_type', Organization::class)
-            ->first();
+            $vouchers = $vouchers->orderBy('document_date', 'asc')
+                ->orderBy('created_at', 'asc')
+                ->pluck('id')
+                ->toArray();
 
-        $party_address = ErpAddress::with(['city', 'state', 'country'])
-            ->where('addressable_id', $party->id)
-            ->where('addressable_type', $model)
-            ->first();
+            $data = $vouchers
+                ? self::get_overdue($type, $ages_all, $doc_types, $cus_type, $vouchers, $credit_days, $group, $ledger, 1, $start, $end)
+                : [];
 
-        if ($bill_type == "outstanding")
-            $total_value = array_sum(array_column(array_filter($data, function ($item) {
-                return $item->total_outstanding > 0;
-            }), 'total_outstanding'));
-        else
-            $total_value = array_sum(array_column(array_filter($data, function ($item) {
-                return $item->overdue > 0;
-            }), 'overdue'));
+            $data = json_decode(json_encode($data));
+            $party = $model::where('ledger_group_id', $group)
+                ->where('ledger_id', $ledger)
+                ->first();
 
-        $in_words = Helper::numberToWords($total_value) . " only.";
-        if ($total_value == 0)
-            return redirect()->back()->with('error', 'No Outstanding Due for this Ledger');
+            $organization = Organization::find($organization_id);
+            $organizationAddress = Address::with(['city', 'state', 'country'])
+                ->where('addressable_id', $organization_id)
+                ->where('addressable_type', Organization::class)
+                ->first();
 
-        $total_value = Helper::formatIndianNumber($total_value);
-        if ($auth_user == null)
-            $auth_user = Helper::getAuthenticatedUser();
-        else
-            $auth_user = AuthUser::find($auth_user);
-        $orgLogo = Helper::getOrganizationLogo($organization_id);
+            if (!$party || !$organization || !$organizationAddress) {
+                return redirect()->route('crdr.report.ledger.details', [
+                    'type' => $type,
+                    'ledger' => $ledger,
+                    'group' => $group
+                ])->with('print_error', 'Data is missing.');
+            }
 
-        $pdf = PDF::loadView(
-            'finance_report.print',
-            [
+            $party_address = ErpAddress::with(['city', 'state', 'country'])
+                ->where('addressable_id', $party->id)
+                ->where('addressable_type', $model)
+                ->first();
+
+            $total_value = $bill_type == "outstanding"
+                ? array_sum(array_column(array_filter($data, fn($item) => $item->total_outstanding > 0), 'total_outstanding'))
+                : array_sum(array_column(array_filter($data, fn($item) => $item->overdue > 0), 'overdue'));
+
+            if ($total_value == 0)
+                return redirect()->back()->with('error', 'No Outstanding Due for this Ledger');
+
+            $in_words = Helper::numberToWords($total_value) . " only.";
+            $total_value = Helper::formatIndianNumber($total_value);
+
+            $auth_user = $auth_user
+                ? AuthUser::find($auth_user)
+                : Helper::getAuthenticatedUser();
+
+            $orgLogo = Helper::getOrganizationLogo($organization_id);
+
+            $pdf = PDF::loadView('finance_report.print', [
                 'orgLogo' => $orgLogo,
                 'ledger_name' => $ledger_name,
                 'group_name' => $group_name,
@@ -1215,13 +1217,22 @@ class CrDrReportController extends Controller
                 'auth_user' => $auth_user,
                 'bill_type' => $bill_type,
                 'organizationAddress' => $organizationAddress,
-            ]
+            ]);
 
-        );
+            $fileName = str_replace(' ', '_', $ledger_name)
+                . '_Account_Statment (' . ($type == "debit" ? 'Debtor' : 'Creditor') . ')'
+                . date('Y-m-d') . '.pdf';
 
-        $fileName = $type == "debit" ? str_replace(' ', '_', $ledger_name).'_Account_Statment (Debtor)' . date('Y-m-d') . '.pdf' : str_replace(' ', '_', $ledger_name).'_Account_Statment (Creditor)' . date('Y-m-d') . '.pdf';
-        $pdf->setPaper('A4', 'portrait');
-        return $pdf->stream($fileName);
+            $pdf->setPaper('A4', 'portrait');
+            return $pdf->stream($fileName);
+
+        } catch (\Throwable $e) {
+            return redirect()->route('crdr.report.ledger.details', [
+                'type' => $type,
+                'ledger' => $ledger,
+                'group' => $group
+            ])->with('print_error', 'Data is missing.');
+        }
     }
 
     public function exportDebitorCreditor(Request $request)

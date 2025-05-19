@@ -44,6 +44,7 @@ use App\Helpers\BookHelper;
 use App\Helpers\NumberHelper;
 use App\Helpers\ConstantHelper;
 use App\Helpers\CurrencyHelper;
+use App\Helpers\DynamicFieldHelper;
 use App\Helpers\InventoryHelper;
 use App\Helpers\FinancialPostingHelper;
 use App\Helpers\ServiceParametersHelper;
@@ -51,6 +52,7 @@ use App\Jobs\SendEmailJob;
 use App\Models\AuthUser;
 use App\Models\Category;
 use App\Models\Employee;
+use App\Models\ErpGeDynamicField;
 use App\Models\ErpItem;
 use App\Models\ErpVendor;
 use App\Services\MrnService;
@@ -187,7 +189,7 @@ class GateEntryController extends Controller
             'vendors' => $vendors,
             'locations'=>$locations,
             'servicesBooks'=>$servicesBooks,
-            'purchaseOrders' => $purchaseOrders,
+            'purchaseOrders' => $purchaseOrders
         ]);
     }
 
@@ -195,7 +197,6 @@ class GateEntryController extends Controller
     public function store(GateEntryRequest $request)
     {
         $user = Helper::getAuthenticatedUser();
-
         DB::beginTransaction();
         try {
             $parameters = [];
@@ -736,6 +737,15 @@ class GateEntryController extends Controller
                 $redirectUrl = url($parentUrl. '/' . $mrn->id . '/pdf');
             }
 
+            $status = DynamicFieldHelper::saveDynamicFields(ErpGeDynamicField::class, $mrn -> id, $request -> dynamic_field ?? []);
+            if ($status && !$status['status'] ) {
+                DB::rollBack();
+                return response() -> json([
+                    'message' => $status['message'],
+                    'error' => ''
+                ], 422);
+            }
+
             DB::commit();
 
             return response()->json([
@@ -841,6 +851,7 @@ class GateEntryController extends Controller
         $erpStores = ErpStore::where('organization_id', $user->organization_id)
             ->orderBy('id', 'DESC')
             ->get();
+        $dynamicFieldsUI = $mrn -> dynamicfieldsUi();
         return view($view, [
             'deliveryAddress'=> $deliveryAddress,
             'orgAddress'=> $orgAddress,
@@ -855,7 +866,8 @@ class GateEntryController extends Controller
             'approvalHistory' => $approvalHistory,
             'services' => $servicesBooks['services'],
             'servicesBooks' => $servicesBooks,
-            'erpStores' => $erpStores
+            'erpStores' => $erpStores,
+            'dynamicFieldsUI' => $dynamicFieldsUI
         ]);
     }
 
@@ -1386,6 +1398,15 @@ class GateEntryController extends Controller
             if(($mrn->document_status == ConstantHelper::APPROVED) || ($mrn->document_status == ConstantHelper::POSTED)) {
                 $parentUrl = request() -> segments()[0];
                 $redirectUrl = url($parentUrl. '/' . $mrn->id . '/pdf');
+            }
+
+            $status = DynamicFieldHelper::saveDynamicFields(ErpGeDynamicField::class, $mrn -> id, $request -> dynamic_field ?? []);
+            if ($status && !$status['status'] ) {
+                DB::rollBack();
+                return response() -> json([
+                    'message' => $status['message'],
+                    'error' => ''
+                ], 422);
             }
 
             DB::commit();
@@ -2723,10 +2744,9 @@ class GateEntryController extends Controller
         $user = Helper::getAuthenticatedUser();
         $pathUrl = route('gate-entry.index');
         $orderType = ConstantHelper::GATE_ENTRY_SERVICE_ALIAS;
-        $gateEntries = GateEntryHeader::with(['items'])
+        $gateEntries = GateEntryHeader::withDefaultGroupCompanyOrg()
             // ->where('document_type', $orderType)
-            ->bookViewAccess($pathUrl)
-            ->withDefaultGroupCompanyOrg()
+            // ->bookViewAccess($pathUrl)
             ->withDraftListingLogic()
             ->orderByDesc('id');
 
@@ -2807,8 +2827,7 @@ class GateEntryController extends Controller
             'items.so',
             'po',
             'items.erpStore'
-        ])
-        ->where('organization_id', $user->organization_id);
+        ]);
 
         $gateEntries = $gateEntries->get();
         $processedGateEntries = collect([]);

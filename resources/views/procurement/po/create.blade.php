@@ -1279,19 +1279,23 @@ $(document).on('input change focus', '#itemTable tr input', (e) => {
    }
    if (itemId) {
       let selectedAttr = [];
-      let selectedDelivery = {};
       $(currentTr).find("[name*='attr_name']").each(function(index, item) {
          if($(item).val()) {
             selectedAttr.push($(item).val());
          }
       });
+      
+    let selectedDelivery = { delivery: [] };
+    $(currentTr).find("[name*='delivery'][name*='[d_qty]']").each(function(index, item) {
+        let $td = $(item).closest('td');
+        let dQty = $(item).val();
+        let dDate = $td.find('[name*="[d_date]"]').val();
 
-      $(currentTr).find("[name*='delivery']").each(function(index, item) {
-        let dDate = $(item).closest('td').find('[name*="[d_date]"]').val();   
-        let dQty = $(item).closest('td').find('[name*="[d_qty]"]').val();
-           selectedDelivery.delivery = {"dDate" : dDate, dQty : dQty};
-      });
-
+        selectedDelivery.delivery.push({
+            dDate: dDate,
+            dQty: dQty
+        });
+    });
       let uomId = $(currentTr).find("[name*='[uom_id]']").val() || '';
       let qty = $(currentTr).find("[name*='[qty]']").val() || '';
       let type = '{{ request()->route("type") }}';

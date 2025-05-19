@@ -37,7 +37,25 @@ class DepreciationController extends Controller
          if (count($servicesBooks['services']) == 0) {
             return redirect() -> route('/');
         }
-       $data=FixedAssetDepreciation::withDefaultGroupCompanyOrg()->orderBy('id','desc')->get();
+       $data = FixedAssetDepreciation::withDefaultGroupCompanyOrg()->orderBy('id','desc');
+       if ($request->date) {
+            $dates = explode(' to ', $request->date);
+            $start = date('Y-m-d', strtotime($dates[0]));
+            $end = date('Y-m-d', strtotime($dates[1]));
+            $data = $data->whereDate('document_date', '>=', $start)
+                ->whereDate('document_date', '<=', $end);
+        }
+        else{
+           $fyear = Helper::getFinancialYear(date('Y-m-d'));
+
+            $data = $data->whereDate('document_date', '>=',$fyear['start_date'])
+                ->whereDate('document_date', '<=',$fyear['end_date']);
+                $start = $fyear['start_date'];
+                $end = $fyear['end_date'];
+            
+        
+        }
+        $data= $data->get();
         return view('fixed-asset.depreciation.index',compact('data'));
     }
 
@@ -48,9 +66,7 @@ class DepreciationController extends Controller
     {
         $parentURL = "fixed-asset_depreciation";
         $organization = Helper::getAuthenticatedUser()->organization;
-        $financialYear = Helper::getFinancialYear(Carbon::now()
-        ->subYear()
-        ->format('Y-m-d'));
+        $financialYear = Helper::getFinancialYear(date('Y-m-d'));
          $dep_type = $organization->dep_type; 
         
         $periods = $this->getPeriods($financialYear['start_date'], $financialYear['end_date'], $dep_type);
@@ -62,12 +78,14 @@ class DepreciationController extends Controller
         $firstService = $servicesBooks['services'][0];
         $series = Helper::getBookSeriesNew($firstService -> alias, $parentURL)->get();
         $fy = date('Y', strtotime($financialYear['start_date']))."-".date('Y', strtotime($financialYear['end_date']));
-        
+        $financialEndDate = Helper::getFinancialYear(date('Y-m-d'))['end_date'];
+        $financialStartDate = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
+                
     
        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
         
         
-        return view('fixed-asset.depreciation.create',compact('locations','series', 'periods','fy','dep_type'));
+        return view('fixed-asset.depreciation.create',compact('financialEndDate','financialStartDate','locations','series', 'periods','fy','dep_type'));
     }
 
     /**
@@ -132,6 +150,14 @@ public function store(DepreciationRequest $request)
                 $subAsset->save();
             }
         }
+        
+        foreach ($assets as $asset) {
+            $index = array_search($asset, array_column($sub_assets, 'asset_id'));
+            $asset = $sub_assets[$index];
+            $assetReg = FixedAssetRegistration::find($asset['asset_id']);
+            $assetReg->updateTotalDep();
+        }
+
         
         if ($insert->document_status == ConstantHelper::SUBMITTED) {
             Helper::approveDocument($request->book_id, $insert->id, $insert->revision_number, "", null, 1, 'submit', 0, get_class($insert));
@@ -271,13 +297,12 @@ public function store(DepreciationRequest $request)
         }
         $asset_details=[];
         $asset_details = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-            ->whereHas('subAsset')
-            ->with('subAsset')
+            ->withWhereHas('subAsset')
             ->whereNotNull('depreciation_percentage')
             ->whereNotNull('depreciation_percentage_year')
-            ->with('ledger')
+            ->withWhereHas('ledger')
             ->whereIn('document_status',ConstantHelper::DOCUMENT_STATUS_APPROVED)
-            ->with('category')
+            ->withWhereHas('category')
             ->get()
             ->where('last_dep_date', '<', $endDate)
             ->filter(function ($asset) use ($endDate) {

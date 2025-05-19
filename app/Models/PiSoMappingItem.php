@@ -24,6 +24,6 @@ class PiSoMappingItem extends Model
 
     public function pi_so_mapping()
     {
-        return $this->belongsTo(PiSoMapping::class,'pi_so_mapping_id');
+        return $this->belongsTo(PiSoMapping::class, 'pi_so_mapping_id', 'id');
     }
 }

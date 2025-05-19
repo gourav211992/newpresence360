@@ -102,12 +102,6 @@
                             <td style="padding-top: 3px;"><b>Requester:</b></td>
                             <td style="padding-top: 3px;">{{$pi?->sub_store ? $pi?->sub_store?->name : $pi?->requester?->name }}</td>
                         </tr>
-                        @if($saleReferences)
-                        <tr>
-                            <td style="padding-top: 3px;"><b>SO :</b></td>
-                            <td style="padding-top: 3px;">{{$saleReferences}}</td>
-                        </tr>
-                        @endif
                     </table>
                 </td>
             </tr>
@@ -143,6 +137,16 @@
                     style="font-weight: bold; padding: 2px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
                     Quantity
                 </td>
+                <td
+                    style="font-weight: bold; padding: 2px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
+                    Vendor Name
+                </td>
+                @if(strtolower($pi->so_tracking_required) == 'yes')
+                <td
+                    style="font-weight: bold; padding: 2px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
+                    SO No.
+                </td>
+                @endif
                 <td
                     style="font-weight: bold; padding: 2px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
                     Remarks
@@ -204,6 +208,16 @@
                         style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
                         {{@$piItem->indent_qty}}
                     </td>
+                    <td
+                        style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: left;">
+                        {{@$piItem?->vendor?->company_name}}
+                    </td>
+                    @if(strtolower($pi->so_tracking_required) == 'yes')
+                    <td
+                        style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: left;">
+                        {{@$piItem?->so?->full_document_number ?? ''}}
+                    </td>
+                    @endif
                     <td
                         style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: left;">
                         {{ $piItem->remarks }}

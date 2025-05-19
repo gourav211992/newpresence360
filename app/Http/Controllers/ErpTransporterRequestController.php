@@ -70,8 +70,7 @@ class ErpTransporterRequestController extends Controller
 
         if ($request->ajax()) {
             $TransporterRequests = ErpTransporterRequest::withDefaultGroupCompanyOrg()
-                ->orderByDesc('id')
-                ->get();
+                ->orderByDesc('id');
             return DataTables::of($TransporterRequests)
                 ->addIndexColumn()
                 ->editColumn('document_status', function ($row) use ($orderType) {

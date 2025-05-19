@@ -14,24 +14,20 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\PiRequest;
 use App\Models\Address;
 use App\Models\ErpSaleOrder;
-use App\Models\AttributeGroup;
 use App\Models\Bom;
 use App\Models\ErpSoItem;
 use App\Models\Item;
-use App\Models\NumberPattern;
 use App\Models\Organization;
 use App\Models\PiItem;
 use App\Models\PiItemAttribute;
-use App\Models\PiItemDelivery;
 use App\Models\PiSoMapping;
 use App\Models\PurchaseIndent;
 use App\Models\BomDetail;
 use App\Models\PurchaseIndentMedia;
 use App\Models\PiSoMappingItem;
-use App\Models\Department;
 use App\Models\ErpSoItemBom;
 use App\Models\Unit;
-use Auth;
+use App\Models\Vendor;
 use DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -44,59 +40,41 @@ class PiController extends Controller
     public function index(Request $request)
     {
         if (request()->ajax()) {
-
             $pis = PurchaseIndent::withDefaultGroupCompanyOrg()
                     ->withDraftListingLogic()
-                    ->latest()
                     ->with('vendor')
-                    ->get();
-
+                    ->latest();
             return DataTables::of($pis)
             ->addIndexColumn()
             ->editColumn('document_status', function ($row) {
-                $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->document_status];
-                $displayStatus = $row->display_status;
-                $editRoute = route('pi.edit', $row->id);
-                return "<div style='text-align:right;'>
-                    <span class='badge rounded-pill $statusClasss badgeborder-radius'>$displayStatus</span>
-                    <div class='dropdown' style='display:inline;'>
-                        <button type='button' class='btn btn-sm dropdown-toggle hide-arrow py-0 p-0' data-bs-toggle='dropdown'>
-                            <i data-feather='more-vertical'></i>
-                        </button>
-                        <div class='dropdown-menu dropdown-menu-end'>
-                            <a class='dropdown-item' href='" . $editRoute . "'>
-                                <i data-feather='edit-3' class='me-50'></i>
-                                <span>View/ Edit Detail</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>";
+                return view('partials.action-dropdown', [
+                    'statusClass' => ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->document_status] ?? 'badge-light-secondary',
+                    'displayStatus' => $row->display_status,
+                    'row' => $row,
+                    'actions' => [
+                        [
+                            'url' => fn($r) => route('pi.edit', $r->id),
+                            'icon' => 'edit-3',
+                            'label' => 'View/ Edit Detail',
+                        ]
+                    ]
+                ])->render();
             })
             ->addColumn('book_name', function ($row) {
-                return $row->book ? $row->book?->book_code : 'N/A';
-            })
-            ->addColumn('sales_order', function ($row) {
-                $saleReferences = ErpSaleOrder::whereIn('id', $row->so_id)
-                ->get()
-                ->map(function ($item) {
-                    return strtoupper($item->book_code) . ' - ' . $item->document_number;
-                })
-                ->unique()
-                ->implode(', ');
-                return $saleReferences;
+                return $row->book ? $row->book?->book_code : '';
             })
             ->addColumn('location', function ($row) {
-                return $row?->store ? $row?->store?->store_name : 'N/A';
+                return $row?->store ? $row?->store?->store_name : '';
             })
             ->addColumn('department', function ($row) {
                 if($row->sub_store_id) {
-                    return $row?->sub_store ? $row?->sub_store?->name : 'N/A';
+                    return $row?->sub_store ? $row?->sub_store?->name : '';
                 } else {
-                    return $row?->requester ? $row->requester?->name : 'N/A';
+                    return $row?->requester ? $row->requester?->name : '';
                 }
             })
             ->editColumn('document_date', function ($row) {
-                return $row->getFormattedDate('document_date') ?? 'N/A';
+                return $row->getFormattedDate('document_date') ?? '';
             })
             ->editColumn('revision_number', function ($row) {
                 return strval($row->revision_number);
@@ -107,7 +85,6 @@ class PiController extends Controller
             ->rawColumns(['document_status'])
             ->make(true);
         }
-
         $parentUrl = request()->segments()[0];
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
         return view('procurement.pi.index',['servicesBooks' => $servicesBooks]);
@@ -124,15 +101,12 @@ class PiController extends Controller
         $user = Helper::getAuthenticatedUser();
         $serviceAlias = ConstantHelper::PI_SERVICE_ALIAS;
         $books = Helper::getBookSeriesNew($serviceAlias,$parentUrl)->get();
-        // $deparmentData = UserHelper::getDepartments($user->auth_user_id);
         $users = UserHelper::getUserSubOrdinates($user->auth_user_id);
         $selecteduserId = $user -> auth_user_id;
         $locations = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
 
         return view('procurement.pi.create', [
             'books'=> $books,
-            // 'departments' => $deparmentData['departments'],
-            // 'selectedDepartmentId' => $deparmentData['selectedDepartmentId'],
             'users' => $users['data'],
             'selecteduserId' => $selecteduserId,
             'locations' => $locations
@@ -151,7 +125,8 @@ class PiController extends Controller
             }
         }
         $rowCount = intval($request->count) == 0 ? 1 : intval($request->count) + 1;
-        $html = view('procurement.pi.partials.item-row',compact('rowCount'))->render();
+        $soTrackingRequired = strtolower($request->so_tracking_required) == 'yes' ? true : false; 
+        $html = view('procurement.pi.partials.item-row',compact('rowCount', 'soTrackingRequired'))->render();
         return response()->json(['data' => ['html' => $html], 'status' => 200, 'message' => 'fetched.']);
     }
 
@@ -281,25 +256,32 @@ class PiController extends Controller
                     $piDetail->hsn_code = $component['hsn_code'] ?? null;
                     $piDetail->uom_id = $component['uom_id'] ?? null;
                     $piDetail->uom_code = $unit?->name ?? null;
-                    $piDetail->indent_qty = $component['qty'] ?? 0.00;
+                    $piDetail->required_qty = $component['qty'] ?? 0.00;
+                    $piDetail->adjusted_qty = $component['adj_qty'] ?? 0.00;
+                    $piDetail->indent_qty = $component['indent_qty'] ?? 0.00;
                     $piDetail->inventory_uom_code = $item->uom->name ?? null;
                     if(@$component['uom_id'] == $item->uom_id) {
                         $piDetail->inventory_uom_id = $component['uom_id'] ?? null;
                         $piDetail->inventory_uom_code = $component['uom_code'] ?? null;
-                        $piDetail->inventory_uom_qty = $component['qty'] ;
+                        $piDetail->inventory_uom_qty = $component['indent_qty'] ;
                     } else {
                         $piDetail->inventory_uom_id = $component['uom_id'] ?? null;
                         $piDetail->inventory_uom_code = $component['uom_code'] ?? null;
                         $alUom = $item->alternateUOMs()->where('uom_id',$component['uom_id'])->first();
                         if($alUom) {
-                            $piDetail->inventory_uom_qty = floatval($component['qty']) * $alUom->conversion_to_inventory;
+                            $piDetail->inventory_uom_qty = floatval($component['indent_qty']) * $alUom->conversion_to_inventory;
                         }
                     }
 
                     $piDetail->remarks = $component['remark'] ?? null;
-                    $piDetail->vendor_id = $component['vendor_id'] ?? null;
-                    $piDetail->vendor_code = $component['vendor_code'] ?? null;
-                    $piDetail->vendor_name = $component['vendor_name'] ?? null;
+                    if($component['vendor_id']) {
+                        $vendor = Vendor::where('id', $component['vendor_id'])->first();
+                        if($vendor) {
+                            $piDetail->vendor_id = $vendor?->id ?? null;
+                            $piDetail->vendor_code = $vendor?->vendor_code ?? null;
+                            $piDetail->vendor_name = $vendor?->company_name ?? null;
+                        }
+                    }
                     $piDetail->so_id = $component['so_id'] ?? null; 
                     $piDetail->save();
                     $piDetail->refresh();
@@ -329,8 +311,11 @@ class PiController extends Controller
                                         ->whereIn('so_item_id',$so_item_ids)
                                         ->whereJsonContains('attributes', $attributes)
                                         ->where(function($query) use($piDetail) {
-                                            if($piDetail->so_id) {
+                                            if($piDetail?->so_id) {
                                                 $query->where('so_id', $piDetail->so_id);
+                                            }
+                                            if($piDetail?->vendor_id) {
+                                                $query->where('vendor_id', $piDetail->vendor_id);
                                             }
                                         })
                                         ->get();
@@ -371,20 +356,6 @@ class PiController extends Controller
                         $piAttr->attribute_group_id = $itemAttribute->attribute_group_id;
                         $piAttr->attribute_id = $piAttrName ?? null;
                         $piAttr->save();
-                        }
-                    }
-
-                    #Save Componet Delivery
-                    if(isset($component['delivery'])) {
-                        foreach($component['delivery'] as $delivery) {
-                            if(isset($delivery['d_qty']) && $delivery['d_qty']) {
-                                $piItemDelivery = new PiItemDelivery;
-                                $piItemDelivery->pi_id = $pi->id;
-                                $piItemDelivery->pi_item_id = $piDetail->id;
-                                $piItemDelivery->qty = $delivery['d_qty'] ?? 0.00;
-                                $piItemDelivery->delivery_date = $delivery['d_date'] ?? now();
-                                $piItemDelivery->save();
-                            }
                         }
                     }
                 }
@@ -459,12 +430,11 @@ class PiController extends Controller
                 $revisionData = [
                     ['model_type' => 'header', 'model_name' => 'PurchaseIndent', 'relation_column' => ''],
                     ['model_type' => 'detail', 'model_name' => 'PiItem', 'relation_column' => 'pi_id'],
-                    ['model_type' => 'sub_detail', 'model_name' => 'PiItemAttribute', 'relation_column' => 'pi_item_id'],
-                    ['model_type' => 'sub_detail', 'model_name' => 'PiItemDelivery', 'relation_column' => 'pi_item_id']
+                    ['model_type' => 'sub_detail', 'model_name' => 'PiItemAttribute', 'relation_column' => 'pi_item_id']
                 ];
                 $a = Helper::documentAmendment($revisionData, $id);
             }
-            $keys = ['deletedPiItemIds', 'deletedDelivery', 'deletedAttachmentIds'];
+            $keys = ['deletedPiItemIds', 'deletedAttachmentIds'];
             $deletedData = [];
             foreach ($keys as $key) {
                 $deletedData[$key] = json_decode($request->input($key, '[]'), true);
@@ -478,9 +448,6 @@ class PiController extends Controller
                     $media->delete();
                 }
             }
-            if (count($deletedData['deletedDelivery'])) {
-                PiItemDelivery::whereIn('id',$deletedData['deletedDelivery'])->delete();
-            }
             if (count($deletedData['deletedPiItemIds'])) {
                 $piItems = PiItem::whereIn('id',$deletedData['deletedPiItemIds'])->get();
                 foreach($piItems as $piItem) {
@@ -492,7 +459,6 @@ class PiController extends Controller
                         }
                     }
                     $piItem->attributes()->delete();
-                    $piItem->itemDelivery()->delete();
                     $piItem->delete();
                 }
             }
@@ -520,24 +486,33 @@ class PiController extends Controller
                         $piDetail->hsn_code = $component['hsn_code'] ?? null;
                         $piDetail->uom_id = $component['uom_id'] ?? null;
                         $piDetail->uom_code = $unit?->name ?? null;
-                        $piDetail->indent_qty = $component['qty'] ?? 0.00;
+                        $piDetail->required_qty = $component['qty'] ?? 0.00;
+                        $piDetail->adjusted_qty = $component['adj_qty'] ?? 0.00;
+                        $piDetail->indent_qty = $component['indent_qty'] ?? 0.00;
+
                         $piDetail->inventory_uom_id = $item->uom_id ?? null;
                         $piDetail->inventory_uom_code = $item->uom->name ?? null;
                         if(@$component['uom_id'] == $item->uom_id) {
                             $piDetail->inventory_uom_id = $component['uom_id'];
                             $piDetail->inventory_uom_code = $component['uom_code'] ?? null;
-                            $piDetail->inventory_uom_qty = $component['qty'] ;
+                            $piDetail->inventory_uom_qty = $component['indent_qty'] ;
                         } else {
                             $alUom = $item->alternateUOMs()->where('uom_id',$component['uom_id'])->first();
                             if($alUom) {
-                                $piDetail->inventory_uom_qty = floatval($component['qty']) * $alUom->conversion_to_inventory;
+                                $piDetail->inventory_uom_qty = floatval($component['indent_qty']) * $alUom->conversion_to_inventory;
                             }
                         }
                     }
                     $piDetail->remarks = $component['remark'] ?? null;
-                    $piDetail->vendor_id = $component['vendor_id'] ?? null;
-                    $piDetail->vendor_code = $component['vendor_code'] ?? null;
-                    $piDetail->vendor_name = $component['vendor_name'] ?? null;
+                    if($component['vendor_id']) {
+                        $vendor = Vendor::where('id', $component['vendor_id'])->first();
+                        if($vendor) {
+                            $piDetail->vendor_id = $vendor?->id ?? null;
+                            $piDetail->vendor_code = $vendor?->vendor_code ?? null;
+                            $piDetail->vendor_name = $vendor?->company_name ?? null;
+                        }
+                    }
+
                     $piDetail->so_id = $component['so_id'] ?? null;
                     $piDetail->save();
 
@@ -618,6 +593,9 @@ class PiController extends Controller
                                         if($piDetail->so_id) {
                                             $query->where('so_id', $piDetail->so_id);
                                         }
+                                        if($piDetail?->vendor_id) {
+                                            $query->where('vendor_id', $piDetail->vendor_id);
+                                        }
                                     })
                                     ->get();
 
@@ -656,19 +634,6 @@ class PiController extends Controller
                         $piAttr->attribute_name = $itemAttribute->attribute_group_id;
                         $piAttr->attribute_value = $piAttrName ?? null;
                         $piAttr->save();
-                        }
-                    }
-                    #Save Componet Delivery
-                    if(isset($component['delivery'])) {
-                        foreach($component['delivery'] as $delivery) {
-                            if(isset($delivery['d_qty']) && $delivery['d_qty']) {
-                                $piItemDelivery = PiItemDelivery::find($delivery['id'] ?? null) ?? new PiItemDelivery;
-                                $piItemDelivery->pi_id = $pi->id;
-                                $piItemDelivery->pi_item_id = $piDetail->id;
-                                $piItemDelivery->qty = $delivery['d_qty'] ?? 0.00;
-                                $piItemDelivery->delivery_date = $delivery['d_date'] ?? now();
-                                $piItemDelivery->save();
-                            }
                         }
                     }
                 }
@@ -744,11 +709,119 @@ class PiController extends Controller
         }
     }
 
+    # Update after submit
+    public function updateApprove(PiRequest $request, $id)
+    {
+        DB::beginTransaction();
+        try {
+            $pi = PurchaseIndent::find($id);
+            $actionType = $request->action_type;
+            if (isset($request->all()['components']) && count($request->all()['components'])) {
+                foreach($request->all()['components'] as $c_key => $component) {
+                    $item = Item::find($component['item_id'] ?? null);
+                    # Purchase Order Detail Save
+                    $piDetail = PiItem::find($component['pi_item_id'] ?? null) ?? new PiItem;
+                    $updatedQty = 0;
+                    if(isset($piDetail->id)) {
+                        $updatedQty =  floatval($component['qty']) - $piDetail->indent_qty;
+                    }
+                    // $piDetail->required_qty = $component['qty'] ?? 0.00;
+                    $piDetail->adjusted_qty = $component['adj_qty'] ?? 0.00;
+                    $piDetail->indent_qty = $component['indent_qty'] ?? 0.00;
+                    if(@$component['uom_id'] == $item->uom_id) {
+                        $piDetail->inventory_uom_qty = $component['indent_qty'] ;
+                    } else {
+                        $alUom = $item->alternateUOMs()->where('uom_id',$component['uom_id'])->first();
+                        if($alUom) {
+                            $piDetail->inventory_uom_qty = floatval($component['indent_qty']) * $alUom->conversion_to_inventory;
+                        }
+                    }
+                    if($component['vendor_id']) {
+                        $vendor = Vendor::where('id', $component['vendor_id'])->first();
+                        if($vendor) {
+                            $piDetail->vendor_id = $vendor?->id ?? null;
+                            $piDetail->vendor_code = $vendor?->vendor_code ?? null;
+                            $piDetail->vendor_name = $vendor?->company_name ?? null;
+                        }
+                    }
+                    $piDetail->save();
+                    $piDetail->refresh();
+                    /*Pi_So_Mapping Update*/
+                    if($updatedQty < 0) {
+                        $poSiMappingItems = PiSoMappingItem::where('pi_item_id', $piDetail->id)
+                            ->leftJoin('erp_pi_so_mapping', 'erp_pi_so_mapping_items.pi_so_mapping_id', '=', 'erp_pi_so_mapping.id')
+                            ->selectRaw('erp_pi_so_mapping_items.id, erp_pi_so_mapping.id as mapping_id, (erp_pi_so_mapping.qty - erp_pi_so_mapping.pi_item_qty) as balQty')
+                            ->orderBy('balQty', 'desc')
+                            ->get();
+                    } else {
+                        $poSiMappingItems = PiSoMappingItem::where('pi_item_id', $piDetail->id)
+                            ->leftJoin('erp_pi_so_mapping', 'erp_pi_so_mapping_items.pi_so_mapping_id', '=', 'erp_pi_so_mapping.id')
+                            ->selectRaw('erp_pi_so_mapping_items.id, erp_pi_so_mapping.id as mapping_id, (erp_pi_so_mapping.qty - erp_pi_so_mapping.pi_item_qty) as balQty')
+                            ->orderBy('balQty', 'asc')
+                            ->get();
+                    }
+                    foreach ($poSiMappingItems as $poSiMappingItem) {
+                        $piSoMapping = PiSoMapping::find($poSiMappingItem->mapping_id);
+                        if (!$piSoMapping) {
+                            continue;
+                        }
+                        if ($updatedQty < 0) {
+                            $balQty = $piSoMapping->pi_item_qty;    
+                        } else {
+                            $balQty = $poSiMappingItem->balQty;
+                        }
+                        $allowedQty = min($updatedQty, $balQty);
+                        if ($allowedQty < 0) {
+                            if (abs($allowedQty) >= $balQty) {
+                                $allowedQty = $balQty * -1;
+                            }
+                        }
+                        $piSoMapping->pi_item_qty += $allowedQty;
+                        $piSoMapping->save();
+                        $poSiMapItem = PiSoMappingItem::find($poSiMappingItem->id);
+                        $poSiMapItem->qty += $allowedQty;
+                        $poSiMapItem->save();
+                        $updatedQty -= $allowedQty;
+                        if (0 == $updatedQty) {
+                            break;
+                        }
+                    }
+                }
+            }
+            $bookId = $pi->book_id; 
+            $docId = $pi->id;
+            $remarks = $request->remarks;
+            $revisionNumber = $pi->revision_number ?? 0;
+            $attachments = $request->file('attachment');
+            $currentLevel = $pi->approval_level;
+            $modelName = get_class($pi);     
+            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, 0, $modelName);
+            $pi->approval_level = $approveDocument['nextLevel'];
+            $pi->document_status = $approveDocument['approvalStatus'];
+            $pi->save();
+            $redirectUrl = '';
+            if($pi->document_status == ConstantHelper::APPROVED) {
+                $redirectUrl = route('pi.generate-pdf', $pi->id);
+            }
+            DB::commit();
+            return response()->json([
+                'message' => 'Record updated successfully',
+                'data' => $pi,
+                'redirect_url' => $redirectUrl
+            ]);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Error occurred while creating the record.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     # On select row get item detail
     public function getItemDetail(Request $request)
     {
         $selectedAttr = json_decode($request->selectedAttr,200) ?? [];
-        $delivery = json_decode($request->delivery,200) ?? [];
         $item = Item::find($request->item_id ?? null);
         $uomId = $request->uom_id ?? null;
         $qty = floatval($request->qty) ?? 0;
@@ -757,21 +830,18 @@ class PiController extends Controller
         } else {
             $alUom = $item->alternateUOMs()->where('uom_id', $uomId)->first();
             $qty = $alUom?->conversion_to_inventory * $qty;
-            // $uomName = $alUom->uom->name ?? 'NA';
         }
 
         $specifications = $item->specifications()->whereNotNull('value')->get();
 
         $remark = $request->remark ?? null;
-        $delivery = isset($delivery) ? $delivery  : null;
         $piItemIds = $request->pi_item_id ? [$request->pi_item_id] : []; 
         $storeId = $request->store_id ?? null;
         $soId = $request->so_id ?? null; 
         $uniqueSoIds = PiItem::whereIn('id',$piItemIds)->whereNotNull('so_id')->pluck('so_id')->toArray();
-        $saleReferences = ErpSaleOrder::whereIn('id', $uniqueSoIds)->get();
         $inventoryStock = InventoryHelper::totalInventoryAndStock($item->id, $selectedAttr, $item->uom_id, $storeId);
-        $html = view('procurement.pi.partials.comp-item-detail',compact('item','selectedAttr','remark','uomName','qty','delivery','specifications','saleReferences','inventoryStock'))->render();
-        return response()->json(['data' => ['html' => $html], 'status' => 200, 'message' => 'fetched.']);
+        $html = view('procurement.pi.partials.comp-item-detail',compact('item','selectedAttr','remark','uomName','qty','specifications','inventoryStock'))->render();
+        return response()->json(['data' => ['html' => $html, 'inventoryStock' => $inventoryStock], 'status' => 200, 'message' => 'fetched.']);
     }
 
     # Edit Po
@@ -818,6 +888,13 @@ class PiController extends Controller
         $locations = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
         $saleOrders = ErpSaleOrder::whereIn('id', $pi->so_id ?? [])
         ->get();
+
+        $parameters = [];
+        $response = BookHelper::fetchBookDocNoAndParameters($pi->book_id, $pi->document_date);
+        if ($response['status'] === 200) {
+            $parameters = json_decode(json_encode($response['data']['parameters']), true);
+        }
+        $soTrackingRequired = in_array('yes',$parameters['so_tracking_required']) ? true : false;
         return view($view, [
             'isEdit'=> $isEdit,
             'books'=> $books,
@@ -831,7 +908,8 @@ class PiController extends Controller
             'users' => $users['data'],
             'selecteduserId' => $selecteduserId,
             'locations' => $locations,
-            'saleOrders' => $saleOrders
+            'saleOrders' => $saleOrders,
+            'soTrackingRequired' => $soTrackingRequired
         ]);
     }
 
@@ -846,46 +924,17 @@ class PiController extends Controller
             ->first();
         $pi = PurchaseIndent::with(['vendor', 'pi_items', 'book'])
             ->findOrFail($id);
-        $shippingAddress = $pi->shippingAddress;
 
-        $totalItemValue = 0.00;
-        $totalItemDiscount = 0.00;
-        $totalHeaderDiscount = 0.00;
-        $totalTaxes = 0.00;
-        $totalTaxableValue = ($totalItemValue - ($totalItemDiscount + $totalHeaderDiscount));
-        $totalAfterTax = ($totalTaxableValue + $totalTaxes);
-        $totalAmount = ($totalAfterTax + $pi->total_expense_value ?? 0.00);
-        $amountInWords = NumberHelper::convertAmountToWords($totalAmount);
-        // Path to your image (ensure the file exists and is accessible)
-        $imagePath = public_path('assets/css/midc-logo.jpg'); // Store the image in the public directory
+        $imagePath = public_path('assets/css/midc-logo.jpg');
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$pi->document_status] ?? '';
-        $saleReferences = ErpSaleOrder::whereIn('id', $pi->so_id)
-        ->get()
-        ->map(function ($item) {
-            return strtoupper($item->book_code) . ' - ' . $item->document_number;
-        })
-        ->unique()
-        ->implode(', ');
-
         $pdf = PDF::loadView(
-            // return view(
             'pdf.pi',
             [
                 'pi'=> $pi,
                 'organization' => $organization,
                 'organizationAddress' => $organizationAddress,
-                'shippingAddress' =>     $shippingAddress,
-                'totalItemValue' => $totalItemValue,
-                'totalItemDiscount' =>$totalItemDiscount,
-                'totalHeaderDiscount' => $totalHeaderDiscount,
-                'totalTaxes' =>$totalTaxes,
-                'totalTaxableValue' =>$totalTaxableValue,
-                'totalAfterTax' =>$totalAfterTax,
-                'totalAmount'=>$totalAmount,
-                'amountInWords'=>$amountInWords,
                 'imagePath' => $imagePath,
-                'docStatusClass' => $docStatusClass,
-                'saleReferences' => $saleReferences
+                'docStatusClass' => $docStatusClass
             ]
         );
         return $pdf->stream('Purchase-Indent-' . date('Y-m-d') . '.pdf');
@@ -1041,16 +1090,9 @@ class PiController extends Controller
            $soId = $soItem?->header?->id ?? null;
            $soItemId = $soItem->id;
            $itemId = $soItem->item_id;
-        //    $uomConversion = floatval($soItem->inventory_uom_qty) / floatval($soItem->order_qty);
-        //    $q = $soItem?->soItemMapping->count() ? $soItem?->soItemMapping->first()->qty : 0;
-        //    $avlQty = $soItem->order_qty - $soItem->invoice_qty;
-        //    $avlQty = round($avlQty * $uomConversion,2);
-        //    $avlQty = $avlQty - $q;
-        //    $avlQty = max($avlQty, 0);
             $q = $soItem?->soItemMapping->count() ? $soItem?->soItemMapping->first()->order_qty : 0;
             $avlQty = $soItem->order_qty - $soItem->invoice_qty - $q;
             $avlQty = max($avlQty, 0);
-           // if($soItem?->soItemMapping->count() < 1) {
                if($avlQty > 0) {
                 $soAttribute = $soItem->attributes->map(fn($soAttribute) => [
                     'attribute_id' => $soAttribute->item_attribute_id,
@@ -1063,16 +1105,13 @@ class PiController extends Controller
                    }
 
                }
-           // }
        }
 
        do {
            $soProcessItems = PiSoMapping::whereIn('so_item_id', $soItemIdArr)
            ->where('created_by', $user->auth_user_id)
-           // ->whereNull('pi_item_id')
            ->whereNotNull('child_bom_id')
            ->get();
-        //    dd($soProcessItems);
            foreach($soProcessItems as $soProcessItem) {
                $soId = $soProcessItem->so_id;
                $soItemId = $soProcessItem->so_item_id;
@@ -1100,36 +1139,34 @@ class PiController extends Controller
            }
        } while(PiSoMapping::whereIn('so_item_id', $soItemIdArr)
        ->where('created_by', $user->auth_user_id)
-       // ->whereNull('pi_item_id')
        ->whereNotNull('child_bom_id')
        ->exists());
-
        $soTracking = $request?->so_tracking_required ?? 'no';
-
         if ($soTracking === 'yes') {
             $soProcessItems = PiSoMapping::whereIn('so_item_id', $soItemIdArr)
             ->select(
+                'erp_pi_so_mapping.vendor_id',
                 'erp_pi_so_mapping.so_id',
                 'erp_pi_so_mapping.item_id',
                 DB::raw('erp_pi_so_mapping.attributes'),
                 DB::raw('ROUND(SUM(erp_pi_so_mapping.qty - erp_pi_so_mapping.pi_item_qty),2) as total_qty')
             )
-            ->groupBy('erp_pi_so_mapping.so_id','erp_pi_so_mapping.item_id', 'erp_pi_so_mapping.attributes')
+            ->groupBy('erp_pi_so_mapping.so_id', 'erp_pi_so_mapping.item_id', 'erp_pi_so_mapping.attributes','erp_pi_so_mapping.vendor_id')
             ->havingRaw('total_qty > 0')
             ->get();
         } else {
             $soProcessItems = PiSoMapping::whereIn('so_item_id', $soItemIdArr)
             ->select(
                 DB::raw('NULL as so_id'),
+                'erp_pi_so_mapping.vendor_id',
                 'erp_pi_so_mapping.item_id',
                 DB::raw('erp_pi_so_mapping.attributes'),
                 DB::raw('ROUND(SUM(erp_pi_so_mapping.qty - erp_pi_so_mapping.pi_item_qty),2) as total_qty')
             )
-            ->groupBy('erp_pi_so_mapping.item_id', 'erp_pi_so_mapping.attributes')
+            ->groupBy('erp_pi_so_mapping.item_id', 'erp_pi_so_mapping.attributes','erp_pi_so_mapping.vendor_id')
             ->havingRaw('total_qty > 0')
             ->get();
         }
-
        DB::commit();
 
        $html = view('procurement.pi.partials.so-process-data', ['soTracking' => $soTracking,'soProcessItems' => $soProcessItems])->render();
@@ -1147,13 +1184,13 @@ class PiController extends Controller
        $checkBomExist = ItemHelper::checkItemBomExists($itemId, $attr);
        if($checkBomExist['bom_id']) {
             $bom = Bom::find($checkBomExist['bom_id']);
+            $bufferPerc = ItemHelper::getBomSafetyBufferPerc($bom->id);
             $bomDetails = (strtolower($bom->customizable) === 'no')
                 ? BomDetail::where('bom_id', $checkBomExist['bom_id'])->get()
                 : ErpSoItemBom::where('bom_id', $checkBomExist['bom_id'])
                     ->where('sale_order_id', $soId)
                     ->where('so_item_id', $soItemId)
                     ->get();
-
             if (strtolower($bom->customizable) === 'yes' && $bomDetails->isEmpty()) {
                 $bomDetails = BomDetail::where('bom_id', $checkBomExist['bom_id'])->get();
             }
@@ -1162,6 +1199,7 @@ class PiController extends Controller
                 foreach($bomDetails as $bomDetail) {
                     
                     $bomDetailId = null;
+                    $vendorId = null;
                     $attributes = [];
                     if ($bomDetail instanceof \App\Models\BomDetail) {
                         $attributes = $bomDetail->attributes->map(fn($attribute) => [
@@ -1169,6 +1207,7 @@ class PiController extends Controller
                             'attribute_value' => intval($attribute->attribute_value),
                         ])->toArray();
                         $bomDetailId = $bomDetail->id;
+                        $vendorId = $bomDetail?->vendor_id;
                     } elseif ($bomDetail instanceof \App\Models\ErpSoItemBom) {
                         $attributes = array_map(function ($attribute) {
                             return [
@@ -1177,6 +1216,7 @@ class PiController extends Controller
                             ];
                         }, $bomDetail->item_attributes ?? []);
                         $bomDetailId = $bomDetail->bom_detail_id;
+                        $vendorId = $bomDetail?->bomDetail?->vendor_id;
                     }
 
                        $checkBomExist = ItemHelper::checkItemBomExists($bomDetail->item_id, $attributes);
@@ -1188,6 +1228,11 @@ class PiController extends Controller
                                return ['status' => 422, 'message' => $message];
                            }
                        }
+                       $requiredQty = floatval($soQty) * floatval($bomDetail->qty);
+                       if($bufferPerc > 0) {
+                            $requiredQty += $requiredQty*$bufferPerc/100;
+                       }
+                       $requiredQty = ceil($requiredQty);
                        if(!in_array($checkBomExist['sub_type'], ['Expense'])) {
                            $mappingData = [
                                'so_id' => $soId,
@@ -1196,10 +1241,11 @@ class PiController extends Controller
                                'created_by' => $createdBy,
                                'bom_id' => $bomDetail->bom_id ?? null,
                                'bom_detail_id' => $bomDetailId ?? null,
+                               'vendor_id' => $vendorId ?? null,
                                'item_code' => $bomDetail->item_code,
                                'order_qty' => floatval($soItemOrderQty),
                                'bom_qty' => floatval($bomDetail->qty),
-                               'qty' => floatval($soQty) * floatval($bomDetail->qty),
+                               'qty' => $requiredQty,
                                'attributes' => json_encode($attributes),
                                'child_bom_id' => $checkBomExist['bom_id']
                            ];
@@ -1240,6 +1286,12 @@ class PiController extends Controller
                     'attribute_value' => intval($attribute->attribute_value),
                 ])->toArray();
 
+                $requiredQty = floatval($soQty) * floatval($bom->qty_produced ?? 1);
+                if($bufferPerc > 0) {
+                    $requiredQty += $requiredQty*$bufferPerc/100;
+                }
+                $requiredQty = ceil($requiredQty);
+                
                 $mappingData = [
                     'so_id' => $soId,
                     'so_item_id' => $soItemId,
@@ -1247,10 +1299,11 @@ class PiController extends Controller
                     'created_by' => $createdBy,
                     'bom_id' => $bom->id ?? null,
                     'bom_detail_id' => null,
+                    'vendor_id' => null,
                     'item_code' => $bom->item_code,
                     'order_qty' => floatval($soQty),
                     'bom_qty' => floatval($bom->qty_produced),
-                    'qty' => floatval($soQty) * floatval($bom->qty_produced ?? 1),
+                    'qty' => $requiredQty,
                     'attributes' => json_encode($attributes),
                     'child_bom_id' => null
                 ];
@@ -1282,8 +1335,10 @@ class PiController extends Controller
 
    public function processSoItemSubmit(Request $request) 
    {
+       $storeId = $request->store_id ?? null;
        $soItems = $request->selectedData ? json_decode($request->selectedData, TRUE) : [];
-       $html = view('procurement.pi.partials.item-row-so', ['soItems' => $soItems])->render();
+       $soTrackingRequired = strtolower($request->so_tracking_required) == 'yes' ? true : false;
+       $html = view('procurement.pi.partials.item-row-so', ['soItems' => $soItems, 'soTrackingRequired' => $soTrackingRequired, 'storeId' => $storeId])->render();
        return response()->json(['data' => ['pos' => $html], 'status' => 200, 'message' => "fetched!"]);
    }
 

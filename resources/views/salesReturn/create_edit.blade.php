@@ -487,6 +487,11 @@
 									</div>
 								
 								</div>
+                                 <div class="col-md-12 {{(isset($order) && count($order -> dynamic_fields)) > 0 ? '' : 'd-none'}}" id = "dynamic_fields_section">
+                                        @if (isset($dynamicFieldsUi))
+                                            {!! $dynamicFieldsUi !!}
+                                        @endif
+                                    </div>
                             </div>
                             
                             <div class="card">
@@ -4021,6 +4026,9 @@
                   {
                     implementBookParameters(data.data.parameters);
                   }
+                  if (reset) {
+                      implementBookDynamicFields(data.data.dynamic_fields_html, data.data.dynamic_fields);
+                  }
                 }
                 if(data.status == 404) {
                     if (reset) {
@@ -4043,6 +4051,17 @@
                 }
             });
         }); 
+    }
+
+    function implementBookDynamicFields(html, data)
+    {
+        let dynamicBookSection = document.getElementById('dynamic_fields_section');
+        dynamicBookSection.innerHTML = html;
+        if (data && data.length > 0) {
+            dynamicBookSection.classList.remove('d-none');
+        } else {
+            dynamicBookSection.classList.add('d-none');
+        }
     }
 
     function onDocDateChange()

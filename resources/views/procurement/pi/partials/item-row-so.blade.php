@@ -1,6 +1,8 @@
 @foreach($soItems as $key => $so_item)
 @php
    $rowCount = $key + 1;
+   $so = \App\Models\ErpSaleOrder::find(@$so_item['so_id']);
+   $vendor = \App\Models\Vendor::find(@$so_item['vendor_id']);
    $item = \App\Models\Item::find(@$so_item['item_id']);
     $selectedAttr = collect($so_item['attributes'] ?? [])
     ->flatMap(function ($attr) {
@@ -10,6 +12,7 @@
     })
     ->values()
     ->all();
+    $stocks = \App\Helpers\InventoryHelper::totalInventoryAndStock($item?->id, $selectedAttr, $item?->uom_id, $storeId);
 @endphp
 <tr id="row_{{$rowCount}}" data-index="{{$rowCount}}">
   <td class="customernewsection-form">
@@ -52,11 +55,24 @@
 <td>
     <input type="number" step="any" class="form-control mw-100 text-end"  name="components[{{$rowCount}}][qty]" value="{{@$so_item['total_qty']}}">
 </td>
-{{-- <td>
-    <input type="hidden" name="components[{{$rowCount}}][vendor_id]" />
-    <input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct" name="components[{{$rowCount}}][vendor_code]" />
+<td>
+    <input type="number" step="any" class="form-control mw-100 text-end disabled-input"  name="components[{{$rowCount}}][avl_stock]" value="{{$stocks['confirmedStocks'] ?? 0}}">
 </td>
-<td><input type="text" class="form-control mw-100" name="components[{{$rowCount}}][vendor_name]" readonly/></td> --}}
+<td>
+    <input type="number" step="any" class="form-control mw-100 text-end"  name="components[{{$rowCount}}][adj_qty]">
+</td>
+<td>
+    <input type="number" step="any" class="form-control mw-100 text-end disabled-input"  name="components[{{$rowCount}}][indent_qty]" value="{{@$so_item['total_qty']}}">
+</td>
+<td>
+    <input type="text" name="components[{{$rowCount}}][vendor_code]" class="form-control mw-100 mb-25" value="{{@$vendor?->company_name}}" />
+    <input type="hidden" name="components[{{$rowCount}}][vendor_id]" value="{{@$vendor?->id}}">
+</td>
+@if(isset($soTrackingRequired) && $soTrackingRequired)
+<td>
+    <input readonly type="text" name="components[{{$rowCount}}][so_no]" class="form-control mw-100 mb-25" value="{{isset($so) && $so ? $so->full_document_number : '' }}" />
+</td>
+@endif
 <td>
     <input type="text" name="components[{{$rowCount}}][remark]" class="form-control mw-100 mb-25"/>
 </td>

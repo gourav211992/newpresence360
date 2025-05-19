@@ -532,6 +532,7 @@ $(document).on('click', '.deleteItemDiscountRow', (e) => {
     setTableCalculation();
 });
 
+
 // addDeliveryScheduleBtn
 $(document).on('click', '.addDeliveryScheduleBtn', (e) => {
     let rowCount = e.target.closest('div').getAttribute('data-row-count');

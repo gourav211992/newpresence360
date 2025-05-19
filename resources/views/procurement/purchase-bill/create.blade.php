@@ -131,16 +131,6 @@
                                                         </select>
                                                     </div>
                                                 </div>
-                                                <div class="row align-items-center mb-1" id="cost_center_div" style="display:none;">
-                                                    <div class="col-md-3">
-                                                        <label class="form-label">Cost Center <span class="text-danger">*</span></label>
-                                                    </div>
-                                                    <div class="col-md-5">
-                                                        <select class="form-select cost_center" id="cost_center_id" name="cost_center_id">
-                                                            <!-- Options will be populated here by the AJAX request -->
-                                                        </select>
-                                                    </div>
-                                                </div>
                                                 <!-- <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Reference No </label>
@@ -200,26 +190,6 @@
                                                             <select class="form-select" name="payment_term_id"></select>
                                                         </div>
                                                     </div>
-                                                    <div class="col-md-2">
-                                                        <div class="mb-1">
-                                                            <label class="form-label">
-                                                            Supplier Invoice No.
-                                                            </label>
-                                                            <input type="text" name="supplier_invoice_no"
-                                                                class="form-control bg-white supplier_invoice_no"
-                                                                placeholder="Enter Supplier Invoice No.">
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-2">
-                                                        <div class="mb-1">
-                                                            <label class="form-label">
-                                                                Supplier Invoice Date
-                                                            </label>
-                                                            <input type="date" name="supplier_invoice_date"
-                                                                class="form-control bg-white gate-entry supplier_invoice_date" id="datepicker3"
-                                                                placeholder="Enter Supplier Invoice Date">
-                                                        </div>
-                                                    </div>
                                                 </div>
                                                 <div class="row">
                                                     <div class="col-md-4">
@@ -263,6 +233,51 @@
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                                <div class="row" id="general_section">
+                                    <div class="col-md-12">
+                                        <div class="card quation-card">
+                                            <div class="card-header newheader">
+                                                <div>
+                                                    <h4 class="card-title">General Information</h4>
+                                                </div>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="row">
+                                                    <div class="col-md-3" id="cost_center_div" style="display:none;">
+                                                        <div class="mb-1">
+                                                        <label class="form-label">Cost Center</label>
+                                                        <select class="form-select cost_center" id="cost_center_id" name="cost_center_id">
+                                                            <!-- Options will be populated here by the AJAX request -->
+                                                        </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">
+                                                            Supplier Invoice No.
+                                                            </label>
+                                                            <input type="text" name="supplier_invoice_no"
+                                                                class="form-control bg-white supplier_invoice_no"
+                                                                placeholder="Enter Supplier Invoice No.">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">
+                                                                Supplier Invoice Date
+                                                            </label>
+                                                            <input type="date" name="supplier_invoice_date"
+                                                                class="form-control bg-white gate-entry supplier_invoice_date" id="datepicker3"
+                                                                placeholder="Enter Supplier Invoice Date">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-12 " id = "dynamic_fields_section">
                                 </div>
                                 <div class="card" id="item_section">
                                     <div class="card-body customernewsection-form">
@@ -592,7 +607,7 @@
     <script type="text/javascript" src="{{asset('assets/js/modules/purchase-bill.js')}}"></script>
     <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
     <script>
-        const selectedCostCenterId = "";
+        let selectedCostCenterId = "";
         $(document).on('change','#book_id',(e) => {
             let bookId = e.target.value;
             if (bookId) {
@@ -627,6 +642,7 @@
                         } else {
                             $("#tax_required").val("");
                         }
+                        implementBookDynamicFields(data.data.dynamic_fields_html, data.data.dynamic_fields);
                     }
                     if(data.status == 404) {
                         $("#book_code").val('');
@@ -646,6 +662,17 @@
             let bookId = $("#book_id").val();
             getDocNumberByBookId(bookId);
         },0);
+
+        function implementBookDynamicFields(html, data)
+        {
+            let dynamicBookSection = document.getElementById('dynamic_fields_section');
+            dynamicBookSection.innerHTML = html;
+            if (data && data.length > 0) {
+                dynamicBookSection.classList.remove('d-none');
+            } else {
+                dynamicBookSection.classList.add('d-none');
+            }
+        }
         /*Set Service Parameter*/
         function setServiceParameters(parameters) {
             /*Date Validation*/
@@ -745,7 +772,6 @@
                     return false;
                 },
                 change: function(event, ui) {
-                    console.log("changess!");
                     if (!ui.item) {
                         $(this).val("");
                         $(this).attr('data-name', '');
@@ -1595,6 +1621,8 @@
                         let finalExpenses = data?.data?.finalExpenses;
                         let supplier_invoice_no = data?.data?.mrnData?.supplier_invoice_no;
                         let supplier_invoice_date = data?.data?.mrnData?.supplier_invoice_date;
+                        selectedCostCenterId = data?.data?.mrnData?.cost_center_id;
+
                         $('.supplier_invoice_no').val(supplier_invoice_no);
                         $('.supplier_invoice_date').val(supplier_invoice_date);
 
@@ -1623,6 +1651,7 @@
 
                         let locationId = $("[name='header_store_id']").val();
                         getLocation(locationId);
+                        getCostCenters(locationId, true);
 
                         if(finalDiscounts.length) {
                             let rows = '';

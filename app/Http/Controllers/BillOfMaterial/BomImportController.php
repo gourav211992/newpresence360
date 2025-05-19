@@ -110,6 +110,7 @@ class BomImportController extends Controller
                     'product_item_code' => $first->product_item_code,
                     'uom_id' => $first->uom_id,
                     'uom_code' => $first->uom_code,
+                    'product_attributes' => $item->product_attributes ?? [],
                     'items' => $group->map(function ($item) {
                         return [
                             'item_id' => $item->item_id,
@@ -121,6 +122,11 @@ class BomImportController extends Controller
                             'item_attributes' => $item->item_attributes ?? [],
                             'station_id' => $item->station_id,
                             'station_name' => $item->station_name,
+                            'section_id' => $item->section_id,
+                            'section_name' => $item->section_name,
+                            'sub_section_name' => $item->sub_section_name,
+                            'sub_section_id' => $item->sub_section_id,
+                            'vendor_id' => $item->vendor_id,
                             'reason' => $item->reason
                         ];
                     })->values()
@@ -209,21 +215,19 @@ class BomImportController extends Controller
                 $bom->save();
 
                 # Save header attribute
-                // foreach($bom->item->itemAttributes as  $key => $itemAttribute) {
-                //     $key = $key + 1;
-                //     $headerAttr = @$request->all()['attributes'][$key];
-                //     if (isset($headerAttr['attr_group_id'][$itemAttribute->attribute_group_id])) {
-                //         $bomAttr = new BomAttribute;
-                //         $bomAttr->bom_id = $bom->id;
-                //         $bomAttr->item_attribute_id = $itemAttribute->id;
-                //         $bomAttr->item_id = $bom->item->id;
-                //         $bomAttr->type = 'H';
-                //         $bomAttr->item_code = $request->item_code;
-                //         $bomAttr->attribute_name = $itemAttribute->attribute_group_id;
-                //         $bomAttr->attribute_value = @$headerAttr['attr_group_id'][$itemAttribute->attribute_group_id]['attr_name'];
-                //         $bomAttr->save();
-                //     }
-                // }
+                if(count($groupedData['product_attributes'])) {
+                    foreach($groupedData['product_attributes'] as $productAttribute) {
+                        $bomAttr = new BomAttribute;
+                        $bomAttr->bom_id = $bom->id;
+                        $bomAttr->item_attribute_id = $productAttribute['item_attribute_id'] ?? null;
+                        $bomAttr->item_id = $bom?->item?->id;
+                        $bomAttr->type = 'H';
+                        $bomAttr->item_code = $bom?->item?->item_code;
+                        $bomAttr->attribute_name = $productAttribute['attribute_name_id'] ?? null;
+                        $bomAttr->attribute_value = $productAttribute['attribute_value_id'] ?? null;
+                        $bomAttr->save();
+                    }
+                }
 
                 if(count($groupedData['items'])) {
                     foreach($groupedData['items'] as $groupedDataItem) {
@@ -236,9 +240,10 @@ class BomImportController extends Controller
                         $bomDetail->item_cost = $groupedDataItem['cost_per_unit'] ?? 0.00;
                         $bomDetail->item_value = floatval($groupedDataItem['consumption_qty']) * floatval($groupedDataItem['cost_per_unit']);
                         $bomDetail->total_amount = floatval($groupedDataItem['consumption_qty']) * floatval($groupedDataItem['cost_per_unit']);
-                        // $bomDetail->sub_section_id = $component['sub_section_id'] ?? null;
-                        // $bomDetail->section_name = $component['section_name'] ?? null;
-                        // $bomDetail->sub_section_name = $component['sub_section_name'] ?? null;
+                        $bomDetail->sub_section_id = $groupedDataItem['sub_section_id'] ?? null;
+                        $bomDetail->sub_section_name = $groupedDataItem['sub_section_name'] ?? null;
+                        $bomDetail->section_id = $groupedDataItem['section_id'] ?? null;
+                        $bomDetail->section_name = $groupedDataItem['section_name'] ?? null;
                         $bomDetail->station_id = $groupedDataItem['station_id'] ?? null;
                         $bomDetail->station_name = $groupedDataItem['station_name'] ?? null;
                         // $bomDetail->remark = $component['remark'] ?? null;

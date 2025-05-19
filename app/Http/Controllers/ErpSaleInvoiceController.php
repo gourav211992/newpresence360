@@ -84,7 +84,7 @@ class ErpSaleInvoiceController extends Controller
         $typeName = SaleModuleHelper::getAndReturnInvoiceTypeName($orderType);
         if ($request -> ajax()) {
             try {
-            $invoices = ErpSaleInvoice::withDefaultGroupCompanyOrg() ->  bookViewAccess($pathUrl) ->  withDraftListingLogic() -> whereIn('document_type', SaleModuleHelper::checkInvoiceDocTypesFromUrlType($orderType)) -> orderByDesc('id') -> get();
+            $invoices = ErpSaleInvoice::withDefaultGroupCompanyOrg() ->  bookViewAccess($pathUrl) ->  withDraftListingLogic() -> whereIn('document_type', SaleModuleHelper::checkInvoiceDocTypesFromUrlType($orderType)) -> orderByDesc('id');
             return DataTables::of($invoices) ->addIndexColumn()
             ->editColumn('document_status', function ($row) use($orderType) {
                 $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->document_status ?? ConstantHelper::DRAFT];    

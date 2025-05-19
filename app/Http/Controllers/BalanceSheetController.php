@@ -66,7 +66,7 @@ $assets_group = Helper::getGroupsQuery($organizations)->where('name', 'Assets')
         $liabilities= Helper::getGroupsQuery($organizations)
         ->where('parent_group_id',$liabilities_group)
         ->select('id','name')->get();
-        
+
         $assets=Helper::getGroupsQuery($organizations)
         ->where('parent_group_id',$assets_group)
         ->select('id','name')->get();
@@ -97,7 +97,7 @@ $assets_group = Helper::getGroupsQuery($organizations)->where('name', 'Assets')
             $liabilitiesTotal = $liabilitiesTotal + $secAmount1;
             $assetsTotal = $assetsTotal + $secAmount2;
 
-            $data[] = [$secName1,'','', Helper::formatIndianNumber($secAmount1),$secName2,'','', Helper::formatIndianNumber($secAmount2)];
+            $data[] = [$secName1,'','', self::formatValue($secAmount1),$secName2,'','', self::formatValue($secAmount2)];
 
             if ($r->level==2) {
                 $liabilitiesGroupId=$liabilitiesData->get($i)->id ?? '';
@@ -121,7 +121,7 @@ $assets_group = Helper::getGroupsQuery($organizations)->where('name', 'Assets')
                 $loopLengthLevel2=Helper::checkCount($liabilitiesLedgerData)>Helper::checkCount($assetsLedgerData) ? Helper::checkCount($liabilitiesLedgerData) : Helper::checkCount($assetsLedgerData);
                 $profitLossInserted = false;
                 for ($j=0; $j <$loopLengthLevel2 ; $j++) {
-                    
+
                         if ($secName1 === "Reserves & Surplus") {
                             if ($profitLossInserted) {
                                 // Keep liabilities side empty for additional rows
@@ -134,19 +134,39 @@ $assets_group = Helper::getGroupsQuery($organizations)->where('name', 'Assets')
                             }
                         } else {
                             $ledgerName1 = $liabilitiesLedgerData->get($j)->name ?? '';
-                            $ledgerClosing1 = $liabilitiesLedgerData->get($j)->closing ?? 0;
+                            $ledgerClosing1 = $liabilitiesLedgerData->get($j)->closing ?? '';
                         }
-                    
+
                     $ledgerName2=$assetsLedgerData[$j]->name ?? '';
-                    $ledgerClosing2=$assetsLedgerData[$j]->closing ?? 0;
-                    $data[] = ['',$ledgerName1, Helper::formatIndianNumber($ledgerClosing1),'','',$ledgerName2, Helper::formatIndianNumber($ledgerClosing2),''];
-                }
+                    $ledgerClosing2=$assetsLedgerData[$j]->closing ?? '';
+                    // dump($ledgerClosing1);
+$data[] = [
+    '',
+    $ledgerName1,
+    $ledgerName1 !== '' ? self::formatValue($ledgerClosing1) : '',
+    '',
+    '',
+    $ledgerName2,
+    $ledgerName2 !== '' ? self::formatValue($ledgerClosing2)  : '',
+    ''
+];                }
 
             }
         }
+        // dd($data);
         $data[] = ['Total','','', Helper::formatIndianNumber($liabilitiesTotal),'Total','','', Helper::formatIndianNumber($assetsTotal)];
 
         return Excel::download(new balanceSheetReportExport($organizationName, $dateRange, $data), 'balanceSheetReport.xlsx');
+    }
+
+    public static function formatValue($value)
+    {
+        $value = (float) $value;
+        if ($value < 0) {
+            return '(' . number_format(abs($value), 2, '.', ',') . ')';
+        } else {
+            return number_format($value, 2, '.', ',');
+        }
     }
 
     public function balanceSheet(Request $request)
@@ -179,10 +199,10 @@ if ($endDate->greaterThan($today)) {
 }
 
 $endDate = $endDate->format('Y-m-d');
-            
-        
+
+
         }
-        
+
         $cost_centers = CostCenterOrgLocations::withDefaultGroupCompanyOrg()
         ->with(['costCenter' => function ($query) {
             $query->where('status', 'active');
@@ -249,7 +269,7 @@ $endDate = $endDate->format('Y-m-d');
             $assets_group = Helper::getGroupsQuery($organizations)->where('name', "Assets")
             ->value('id');
 
-        
+
         $liabilities=Helper::getGroupsQuery($organizations)
         ->where('parent_group_id',$liabilities_group)
         ->select('id','name')->get();

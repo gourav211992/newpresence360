@@ -12,6 +12,7 @@
         "guzzlehttp/guzzle": "^7.2",
         "kwn/number-to-words": "^2.9",
         "laravel/framework": "^10.10",
+        "laravel/passport": "^12.4",
         "laravel/sanctum": "^3.3",
         "laravel/tinker": "^2.8",
         "lcobucci/jwt": "^5.4",

@@ -31,15 +31,20 @@
                       
                             @if($buttons['approve'])
                             <button type="button" class="btn btn-primary btn-sm" id="approved-button" name="action" value="approved"><i data-feather="check-circle"></i> Approve</button>
-                            <button type="button" id="reject-button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg> Reject</button>
+                            <button type="button" id="reject-button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i data-feather="x-circle"></i> Reject</button>
                     @endif
                     @if($buttons['amend'])
                     <button type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i> Amendment</button>
                     @endif
                     @if($buttons['post'])
-                        <button id="postButton" onclick="onPostVoucherOpen();" type="button" class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Post</button>
+                        <button id="postButton" onclick="onPostVoucherOpen();" type="button" class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i data-feather="check-circle"></i> Post</button>
                     @endif
-
+                    @if ($buttons['voucher'])
+                                    <button type="button" onclick="onPostVoucherOpen('posted');"
+                                        class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
+                                        <i data-feather="file-text"></i> Voucher</button>
+                                @endif
+                              
                             <button type="submit" hidden form="fixed-asset-split-form" class="btn btn-primary btn-sm"
                                 id="submit-btn">
                                 <i data-feather="check-circle"></i> Submit
@@ -163,7 +168,7 @@
                                                 </div>
 
                                             </div>
-                                            @include('partials.approval-history', ['document_status' =>$data->document_status, 'revision_number' => $data->revision_number]); 
+                                            @include('partials.approval-history', ['document_status' =>$data->document_status, 'revision_number' => $data->revision_number])
                                         
 
                                             
@@ -294,8 +299,8 @@
                                                                 <th>Asset Name</th>
                                                                 <th width="200">Sub Asset Code</th>
                                                                 <th width="100">Quantity</th>
-                                                                <th>Current Value</th>
-                                                                <th>Salvage Value</th>
+                                                                <th class="text-end">Current Value</th>
+                                                                <th class="text-end">Salvage Value</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody class="mrntableselectexcel">
@@ -308,22 +313,22 @@
                                                                     </div>
                                                                 </td>
                                                                 <td class="poprod-decpt">
-                                                                    <input type="text" required placeholder="Enter" value="{{$subAsset->asset_code}}" class="form-control mw-100 mb-25 asset-code-input" />
+                                                                    <input type="text" required disabled placeholder="Enter" value="{{$subAsset->asset_code}}" class="form-control mw-100 mb-25 asset-code-input" />
                                                                 </td>
                                                                 <td class="poprod-decpt">
-                                                                    <input type="text" required placeholder="Enter" value="{{$subAsset->asset_name}}" class="form-control mw-100 mb-25 asset-name-input" />
+                                                                    <input type="text" required disabled placeholder="Enter" value="{{$subAsset->asset_name}}" class="form-control mw-100 mb-25 asset-name-input" />
                                                                 </td>
                                                                 <td class="poprod-decpt">
-                                                                    <input type="text" required placeholder="Enter" value="{{$subAsset->sub_asset_id}}" disabled class="form-control mw-100 mb-25 sub-asset-code-input" />
+                                                                    <input type="text" required disabled placeholder="Enter" value="{{$subAsset->sub_asset_id}}" class="form-control mw-100 mb-25 sub-asset-code-input" />
                                                                 </td>
                                                                 <td>
-                                                                    <input type="text" required disabled value="1" class="form-control mw-100 quantity-input" />
+                                                                    <input type="text" required disabled  value="1" class="form-control mw-100 quantity-input" />
                                                                 </td>
                                                                 <td>
-                                                                    <input type="text" required class="form-control mw-100 text-end current-value-input" value="{{$subAsset->current_value}}" />
+                                                                    <input type="text" required disabled class="form-control mw-100 text-end current-value-input" value="{{$subAsset->current_value}}" />
                                                                 </td>
                                                                 <td>
-                                                                    <input type="text" required value="{{$subAsset->salvage_value??""}}" class="form-control mw-100 text-end salvage-value-input" min="1" disabled />
+                                                                    <input type="text" required disabled value="{{$subAsset->salvage_value??""}}" class="form-control mw-100 text-end salvage-value-input" min="1"  />
                                                                 </td>
                                                             </tr>
                                                             @endforeach
@@ -816,7 +821,7 @@
                 });
             });
         });
-        $('#book_id').trigger('change');
+       // $('#book_id').trigger('change');
 
         $('#fixed-asset-split-form').on('submit', function(e) {
     e.preventDefault(); // Always prevent default first

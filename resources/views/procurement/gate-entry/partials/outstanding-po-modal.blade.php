@@ -59,10 +59,8 @@
 											</div>
 										</th>
 										<th>SUPPLIER NAME</th>
-                                        <th>PO SERIES</th>
                                         <th>PO NO</th>
                                         <th>PO DATE</th>
-                                        <th>INV SERIES</th>
                                         <th>INV NO</th>
                                         <th>INV DATE</th>
                                         <th>ITEM NAME[ITEM CODE]</th>

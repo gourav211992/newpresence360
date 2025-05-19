@@ -140,18 +140,6 @@
                                                         </select>
                                                     </div>
                                                 </div>
-                                                <div class="row align-items-center mb-1" id="cost_center_div" style="display:none;">
-                                                    <div class="col-md-3">
-                                                        <label class="form-label">Cost Center <span class="text-danger">*</span></label>
-                                                    </div>
-                                                    <div class="col-md-5">
-                                                        <select class="form-select cost_center" id="cost_center_id" name="cost_center_id">
-                                                            <option value="{{$mrn->cost_center_id}}">
-                                                                {{ ucfirst($mrn?->costCenters?->name) }}
-                                                            </option>
-                                                        </select>
-                                                    </div>
-                                                </div>
                                                 <!-- <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Reference No </label>
@@ -211,27 +199,6 @@
                                                             </select>
                                                         </div>
                                                     </div>
-                                                    <div class="col-md-2">
-                                                        <div class="mb-1">
-                                                            <label class="form-label">
-                                                                Supplier Invoice No.
-                                                            </label>
-                                                            <input type="text" name="supplier_invoice_no" value="{{@$mrn->supplier_invoice_no}}"
-                                                                class="form-control"
-                                                                placeholder="Enter Supplier Invoice No.">
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-2">
-                                                        <div class="mb-1">
-                                                            <label class="form-label">
-                                                                Supplier Invoice Date
-                                                                <!-- <span class="text-danger">*</span> -->
-                                                            </label>
-                                                            <input type="date" name="supplier_invoice_date" value="{{$mrn->supplier_invoice_date ? date('Y-m-d', strtotime($mrn->supplier_invoice_date)) : ''}}"
-                                                                class="form-control gate-entry" id="datepicker3"
-                                                                placeholder="Enter Supplier Invoice Date">
-                                                        </div>
-                                                    </div>
                                                 </div>
                                                 <div class="row">
                                                     <div class="col-md-4">
@@ -281,6 +248,56 @@
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                                <div class="row" id="general_section">
+                                    <div class="col-md-12">
+                                        <div class="card quation-card">
+                                            <div class="card-header newheader">
+                                                <div>
+                                                    <h4 class="card-title">General Information</h4>
+                                                </div>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="row">
+                                                    @if($mrn->cost_center_id !== null)
+                                                        <div class="col-md-3" id="cost_center_div" style="display:none;">
+                                                            <div class="mb-1">
+                                                                <label class="form-label">Cost Center <span class="text-danger">*</span></label>
+                                                                <select class="form-select cost_center" id="cost_center_id" name="cost_center_id">
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                    @endif
+                                                    <div class="col-md-2">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">
+                                                                Supplier Invoice No.
+                                                            </label>
+                                                            <input type="text" name="supplier_invoice_no" value="{{@$mrn->supplier_invoice_no}}"
+                                                                class="form-control"
+                                                                placeholder="Enter Supplier Invoice No.">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">
+                                                                Supplier Invoice Date
+                                                                <!-- <span class="text-danger">*</span> -->
+                                                            </label>
+                                                            <input type="date" name="supplier_invoice_date" value="{{$mrn->supplier_invoice_date ? date('Y-m-d', strtotime($mrn->supplier_invoice_date)) : ''}}"
+                                                                class="form-control gate-entry" id="datepicker3"
+                                                                placeholder="Enter Supplier Invoice Date">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-12">
+                                    @if (isset($dynamicFieldsUI))
+                                        {!! $dynamicFieldsUI !!}
+                                    @endif
                                 </div>
                                 <div class="card">
                                     <div class="card-body customernewsection-form">

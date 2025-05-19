@@ -6,8 +6,12 @@ use App\Helpers\Helper;
 use App\Helpers\TransactionReportHelper;
 use App\Models\AttributeGroup;
 use App\Models\AuthUser;
+use App\Models\Book;
+use App\Models\BookDynamicField;
 use App\Models\Category;
+use App\Models\DynamicFieldDetail;
 use App\Models\Item;
+use App\Models\Service;
 
 class TransactionReport
 {
@@ -33,8 +37,7 @@ class TransactionReport
         $this -> indexRoute = isset(TransactionReportHelper::INDEX_ROUTES[$this -> serviceAlias]) ? 
         TransactionReportHelper::INDEX_ROUTES[$this -> serviceAlias] : '';
         //Set the report columns
-        $this -> reportColumns = isset(TransactionReportHelper::TABLE_HEADERS[$this -> serviceAlias]) ?
-        TransactionReportHelper::TABLE_HEADERS[$this -> serviceAlias] : [];
+        $this -> reportColumns = self::getReportColumns();
         //Get the filters
         $this -> filters = isset(TransactionReportHelper::FILTERS_MAPPING[$this -> serviceAlias]) ? 
         TransactionReportHelper::FILTERS_MAPPING[$this -> serviceAlias] : [];  
@@ -83,5 +86,30 @@ class TransactionReport
             'tableHeaders' => $tableHeadersColumn,
             'users' => $users
         ];
+    }
+
+    private function getReportColumns()
+    {
+        $columns = isset(TransactionReportHelper::TABLE_HEADERS[$this -> serviceAlias]) ?
+        TransactionReportHelper::TABLE_HEADERS[$this -> serviceAlias] : [];
+        if (in_array($this -> serviceAlias, [ConstantHelper::SO_SERVICE_ALIAS])) {
+            $serviceId = Service::where('alias', $this -> serviceAlias) -> first() ?-> id;
+            $bookIds = Book::withDefaultGroupCompanyOrg() -> where('service_id', $serviceId) -> get() -> pluck('id') -> toArray();
+            $dynamicFieldIds = BookDynamicField::whereIn('book_id', $bookIds) -> get() -> pluck('dynamic_field_id') -> toArray();
+            $dynamicFields = DynamicFieldDetail::whereIn('header_id', $dynamicFieldIds)  -> get();
+            $dynamicFieldsCols = [];
+            foreach ($dynamicFields as $dynamicFieldIndex => $dynamicField) {
+                array_push($dynamicFieldsCols, [
+                    'name' => $dynamicField -> name,
+                    'field' => $dynamicField -> name,
+                    'header_class' => '',
+                    'column_class' => 'no-wrap',
+                    'header_style' => '',
+                    'column_style' => '',
+                ]);
+            }
+            array_splice($columns, 7, 0, $dynamicFieldsCols);    
+        }
+        return $columns;
     }
 }

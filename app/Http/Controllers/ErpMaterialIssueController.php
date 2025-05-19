@@ -65,7 +65,7 @@ class ErpMaterialIssueController extends Controller
         if ($request -> ajax()) {
             try {
                 $docs = ErpMaterialIssueHeader::withDefaultGroupCompanyOrg() ->  bookViewAccess($pathUrl) ->  
-                withDraftListingLogic() -> orderByDesc('id') -> get();
+                withDraftListingLogic() -> orderByDesc('id');
                 return DataTables::of($docs) ->addIndexColumn()
                 ->editColumn('document_status', function ($row) use($orderType) {
                     $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->document_status ?? ConstantHelper::DRAFT];    

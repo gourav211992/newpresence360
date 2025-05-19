@@ -159,36 +159,35 @@ class Helper
         return $bookTypes;
     }
 
- 
   public static function getFinancialYear(string $date): mixed
     {
          $user = self::getAuthenticatedUser();
-        $startDate = session('fyear_start_date') ?? $date;
-        $endDate = session('fyear_end_date') ?? $date;
-        \Log::info('Session Start Date: ' . session('fyear_start_date').session('fyear_end_date'));
+        $startDate = request()->cookie('fyear_start_date') ?? $date;
+        $endDate = request()->cookie('fyear_end_date') ?? $date;
+
+        \Log::info('FY Start Date: ' . $startDate . ' | FY End Date: ' . $endDate);
         $financialYear = ErpFinancialYear::withDefaultGroupCompanyOrg()
             ->where('start_date', '<=', $startDate)
             ->where('end_date', '>=', $endDate)
             ->first();
 
-            if (isset($financialYear))
-            {
+        if (isset($financialYear)) {
                   $startYear = \Carbon\Carbon::parse($financialYear->start_date)->format('Y');
                  $endYearShort = \Carbon\Carbon::parse($financialYear->end_date)->format('y'); // e
                 $authorized = true;
                 $currentUserId =  $user->auth_user_id;
                 $currentUserType = $user->authenticable_type;
-                if ($financialYear->lock_fy == true &&is_array($financialYear->access_by))
-                {
+            if ($financialYear->fy_close == true && is_array($financialYear->access_by)) {
 
                     $authorized = !collect($financialYear->access_by)->contains(function ($entry) use ($currentUserId, $currentUserType) {
-                        return isset($entry['user_id'], $entry['authorized'], $entry['authenticable_type']) &&
+                    return isset($entry['user_id'], $entry['authorized'], $entry['authenticable_type'], $entry['locked']) &&
                                $entry['user_id'] == $currentUserId &&
                                $entry['authenticable_type'] == $currentUserType &&
-                               $entry['authorized'] == false;
+                        (
+                            $entry['authorized'] == false || $entry['locked'] == true
+                        );
                     });
                 }
-                // dd($authorized);
             return [
                 'alias' => $financialYear->alias,
                 'start_date' => $financialYear->start_date,
@@ -359,12 +358,12 @@ class Helper
                  ConstantHelper::SR_SERVICE_ALIAS]);
                 $shouldCheckTransportDocForSi = false;
 
-                if ($serviceAlias === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS && isset($parameters) && 
+                if ($serviceAlias === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS && isset($parameters) &&
                     isset($parameters -> {ServiceParametersHelper::INVOICE_TO_FOLLOW_PARAM}))
                 {
                     $shouldCheckTransportDocForSi = $parameters -> {ServiceParametersHelper::INVOICE_TO_FOLLOW_PARAM}[0] == "no";
                 }
-                
+
                 if ($shouldCheckTransportDocForPrSr || $shouldCheckTransportDocForSi)
                 {
                     if (strlen($book -> book_code . '-' . $voucher_no) > EInvoiceHelper::TRANPORTER_DOC_NO_MAX_LIMIT)
@@ -549,9 +548,9 @@ class Helper
         $profitLoss = Helper::getReservesSurplus($startDate, $endDate, $organizations, 'trialBalance', $currency, $cost);
 
         $fy = self::getFinancialYear($startDate);
-                    
+
         foreach ($groups as $master) {
-            
+
             $allChildIds = $master->getAllChildIds();
             $allChildIds[] = $master->id;
             $allChildIds = Helper::getGroupsQuery($organizations)
@@ -559,10 +558,10 @@ class Helper
             $non_carry = Helper::getNonCarryGroups();
             if(in_array($master->id,$non_carry))
             $carry=0;
-            else 
+            else
             $carry=1;
-            
-          
+
+
             $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
                 $query->whereIn('ledger_group_id', $allChildIds)
                     ->orWhere(function ($subQuery) use ($allChildIds) {
@@ -571,8 +570,8 @@ class Helper
                         }
                     });
             })->where('status', 1)->pluck('id')->toArray();
-               
-           
+
+
                 $transactions = ItemDetail::whereIn('ledger_parent_id', $allChildIds)
                 ->when($cost, function ($query) use ($cost) {
                     $query->where('cost_center_id', $cost);
@@ -585,23 +584,23 @@ class Helper
                     $query->when(!empty($organizations), function ($query) use ($organizations) {
                         $query->whereIn('organization_id', $organizations);
                     });
-                    
+
                 })
                 ->get(); // Fetch results before summing
 
-              
-            
-            
+
+
+
             $creditField = "credit_amt_{$currency}";
             $debitField = "debit_amt_{$currency}";
             $totalMasterCredit = $transactions->sum(fn($t) => self::removeCommas($t->$creditField));
             $totalMasterDebit = $transactions->sum(fn($t) => self::removeCommas($t->$debitField));
-           
-            
+
+
             // Get last closing of all ledgers for the master group
             // $lastClosingMaster = $transactions->pluck('closing')->last() ?? 0;
-                
-        
+
+
                 $openingData = ItemDetail::whereIn('ledger_parent_id', $allChildIds)
                 ->when($cost, function ($query) use ($cost) {
                     $query->where('cost_center_id', $cost);
@@ -619,8 +618,8 @@ class Helper
                  })
                 ->selectRaw("SUM(debit_amt_{$currency}) as total_debit, SUM(credit_amt_{$currency}) as total_credit")
                 ->first();
-            
-                
+
+
                 $opening = $openingData->total_debit - $openingData->total_credit ?? 0;
                 if($master->name=="Liabilities")
                 {
@@ -628,7 +627,7 @@ class Helper
                     $opening = $opening + $profitLoss['closingFinal'];
                     else if($profitLoss['closing_type']=="Cr")
                     $opening = $opening - $profitLoss['closingFinal'];
-                
+
                 }
                 $opening_type = $opening < 0 ? 'Cr' : 'Dr';
                 $open = $openingData->total_debit - $openingData->total_credit;
@@ -637,8 +636,8 @@ class Helper
                 if ($closing != 0) {
                     $closingText = $closing < 0 ? 'Cr' : 'Dr';
                 }
-            
-            
+
+
 
             // Adding calculated totals to master group
             $master->group_id = $master->id;
@@ -665,7 +664,7 @@ class Helper
             ->whereIn('id',$allChildIds)->pluck('id')->toArray();
             $allChildIds = Helper::getGroupsQuery($organizations)
             ->whereIn('id',$allChildIds)->pluck('id')->toArray();
-            
+
 
             $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
                 $query->whereIn('ledger_group_id', $allChildIds)
@@ -678,7 +677,7 @@ class Helper
 
 
             $transactions = ItemDetail::whereIn('ledger_id', $ledgers)
-           
+
                 ->whereIn('ledger_parent_id',$allChildIds)
                 ->whereHas('voucher', function ($query) use ($organizations,$startDate,$endDate) {
                     $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
@@ -691,9 +690,9 @@ class Helper
                 ->when($cost, function ($query) use ($cost) {
                     $query->where('cost_center_id', $cost);
                 })->get();
-           
+
             // Calculate totals for the master group
-        
+
             $creditField = "credit_amt_{$currency}";
             $debitField = "debit_amt_{$currency}";
 
@@ -715,10 +714,10 @@ class Helper
                 })
                 ->selectRaw("SUM(debit_amt_{$currency}) as total_debit, SUM(credit_amt_{$currency}) as total_credit")
                 ->first();
-            
+
                 $openingt = $openingData->total_debit - $openingData->total_credit ?? 0;
                 $opening =  $openingData->total_credit - $openingData->total_debit ?? 0;
-                
+
 
 
 
@@ -854,8 +853,8 @@ class Helper
 
         $liabilities_group =  Helper::getGroupsQuery($organizations)->where('name', "Liabilities")
                                 ->value('id');
-        
-        
+
+
 
         $assets_group = Helper::getGroupsQuery($organizations)->where('name', "Assets")
     ->value('id');
@@ -873,7 +872,7 @@ class Helper
         $childrens[] = $group->id;
         $childrens = Helper::getGroupsQuery($organizations)
             ->whereIn('id',$childrens)->pluck('id')->toArray();
-            
+
 
         $data = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($childrens) {
             $query->whereIn('ledger_group_id', $childrens)
@@ -895,7 +894,7 @@ class Helper
                         $query->when(!empty($organizations), function ($query) use ($organizations) {
                             $query->whereIn('organization_id', $organizations);
                         });
-                        
+
                         $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
                         $query->whereBetween('document_date', [$startDate, $endDate]);
                         $query->orderBy('document_date', 'asc');
@@ -960,11 +959,11 @@ class Helper
                     })
                     ->selectRaw("SUM(debit_amt_{$currency}) as total_debit, SUM(credit_amt_{$currency}) as total_credit")
                     ->first();
-                
+
                     $openingt = $openingData->total_debit - $openingData->total_credit ?? 0;
                     $opening =  $openingData->total_credit - $openingData->total_debit ?? 0;
 
-                
+
 
                 if ($type == "liabilities") {
                     $ledger->closing = ($opening) + ($details_sum_credit_amt - $details_sum_debit_amt);
@@ -1777,27 +1776,27 @@ class Helper
         $non_carry = Helper::getNonCarryGroups();
         if(in_array($group_id,$non_carry))
         $carry=0;
-        else 
+        else
         $carry=1;
-    
+
         $fy = self::getFinancialYear($startDate);
 
-                    
+
         $groups = Helper::getGroupsQuery($organizations)
         ->where('parent_group_id',$group_id)
         ->pluck('id');
-       
+
 
         $datas = Group::whereIn('id',$groups)->get();
-    
-   
+
+
 
         if (self::checkCount($datas) > 0) {
             $type = 'group';
             $data = self::getGroupsData($datas, $startDate, $endDate, $organizations, $currency,$cost);
         } else {
             $type = 'ledger';
-           
+
             $data = Ledger::withDefaultGroupCompanyOrg()
             ->where(function ($query) use ($group_id) {
                 $query->whereJsonContains('ledger_group_id', (string) $group_id)
@@ -1817,7 +1816,7 @@ class Helper
                               $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
                               $query->orderBy('document_date', 'asc');
                              $query->whereBetween('document_date', [$startDate, $endDate]);
-                          
+
                           });
                 }
             ])->withSum([
@@ -1831,11 +1830,11 @@ class Helper
                         $query->when(!empty($organizations), function ($query) use ($organizations) {
                             $query->whereIn('organization_id', $organizations);
                         });
-                        
+
                         $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
                         $query->orderBy('document_date', 'asc');
                        $query->whereBetween('document_date', [$startDate, $endDate]);
-                    
+
                     });
                 }
             ], "debit_amt_{$currency}")
@@ -1853,13 +1852,13 @@ class Helper
                         $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
                         $query->orderBy('document_date', 'asc');
                        $query->whereBetween('document_date', [$startDate, $endDate]);
-                    
+
                     });
                 }
             ], "credit_amt_{$currency}")
             ->get()
             ->map(function ($ledger) use ($group_id,$organizations,$startDate,$endDate,$currency,$fy,$carry,$cost) {
-                
+
                 $openingData = ItemDetail::where('ledger_parent_id', $group_id)
                 ->when($cost, function ($query) use ($cost) {
                     $query->where('cost_center_id', $cost);
@@ -1877,29 +1876,29 @@ class Helper
                 })
                 ->selectRaw("SUM(debit_amt_{$currency}) as total_debit, SUM(credit_amt_{$currency}) as total_credit")
                 ->first();
-            
+
                 $opening = $openingData->total_debit - $openingData->total_credit ?? 0;
                 $opening_type = ($openingData->total_debit > $openingData->total_credit) ? 'Dr' : 'Cr';
-            
-            
+
+
                 // Set to 0 if the sum is null
                 $ledger->details_sum_debit_amt = $ledger->details_sum_debit_amt ?? 0;
                 $ledger->details_sum_credit_amt = $ledger->details_sum_credit_amt ?? 0;
                 $closing = $opening+($ledger->details_sum_debit_amt - $ledger->details_sum_credit_amt);
-        
+
                 $ledger->opening = abs($opening);
                 $ledger->open = $opening;
                 $ledger->closing = abs($closing);
                 $ledger->closing_type = $closing<0?"Cr":"Dr";
                 $ledger->opening_type = $opening_type;
                 $ledger->group_id = $group_id; // Default type if no details exist
-                
+
                 unset($ledger->details);
-        
+
                 return $ledger;
             });
-            
-            
+
+
       }
 
         return ['type' => $type, 'data' => $data,'date0'=>$startDate,'date1'=>$endDate];
@@ -1933,12 +1932,12 @@ class Helper
 
     public static function getPlGroupsData($startDate, $endDate, $organizations, $currency = "org",$cost=null,$type=null)
     {
-        
+
         $data = PLGroups::select('id', 'name', 'group_ids')->get()->map(function ($plGroup) use ($type,$cost,$startDate, $endDate, $organizations, $currency) {
         $groups =  Helper::getGroupsQuery($organizations)->whereIn('id', $plGroup->group_ids)
         ->select('id', 'name')
-        ->get(); 
-        
+        ->get();
+
             $totalCredit = 0;
             $totalDebit = 0;
             $opening = 0;
@@ -1949,7 +1948,7 @@ class Helper
                 $allChildIds[] = $master->id;
                 $allChildIds = Helper::getGroupsQuery($organizations)
                 ->whereIn('id',$allChildIds)->pluck('id')->toArray();
-                
+
 
                 $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
                 $query->whereIn('ledger_group_id', $allChildIds)
@@ -1961,11 +1960,11 @@ class Helper
             })->where('status', 1)->pluck('id')->toArray();
                 $non_carry = Helper::getNonCarryGroups();
                 $fy = self::getFinancialYear($startDate);
-              
+
 
                 if(in_array($master->id,$non_carry))
                 $carry=0;
-                else 
+                else
                 $carry=1;
 
                 $transactions = ItemDetail::whereIn('ledger_id', $ledgers)
@@ -1987,9 +1986,9 @@ class Helper
                 // Calculate totals
                 $creditField = "credit_amt_{$currency}";
                 $debitField = "debit_amt_{$currency}";
-            
-               
-                
+
+
+
 
                 $transactionsOpen = ItemDetail::whereIn('ledger_id', $ledgers)
                 ->whereIn('ledger_parent_id',$allChildIds)
@@ -2006,7 +2005,7 @@ class Helper
                         $query->whereIn('organization_id', $organizations);
                     });
                 })->get();
-                    
+
                 $totalCreditOpen +=$transactionsOpen->sum(fn($t) => self::removeCommas($t->$creditField));
                 $totalDebitOpen += $transactionsOpen->sum(fn($t) => self::removeCommas($t->$debitField));
 
@@ -2021,7 +2020,7 @@ class Helper
             $plGroup->opening = $opening;
             $plGroup->totalCredit = $totalCredit;
             $plGroup->totalDebit = $totalDebit;
-           
+
 
 
 
@@ -2030,7 +2029,7 @@ class Helper
             $closing = $totalDebit - $totalCredit;
             else
             $closing = $opening + ($totalDebit - $totalCredit);
-                
+
             if ($closing != 0) {
                 $closingText = $closing > 0 ? 'Dr' : 'Cr';
             }
@@ -2147,12 +2146,12 @@ if ($grossProfit > 0) {
 // Subtotal (Gross Profit side)
 $subTotal = max($grossProfit, $grossLoss);
 
-if ($netProfit > 0) 
+if ($netProfit > 0)
 {
     $saleInd = $subTotal + $indirectIncome;
     $purchaseInd = $subTotal + $indirectExpense;
-} 
-elseif ($netLoss > 0) 
+}
+elseif ($netLoss > 0)
 {
     $saleInd = $subTotal + $indirectIncome + $netLoss;
     $purchaseInd = $subTotal + $indirectExpense;
@@ -2190,6 +2189,8 @@ return [
             return Auth::guard('web')->user();
         } elseif (Auth::guard('web2')->check()) {
             return Auth::guard('web2')->user();
+        } elseif (Auth::guard('api')) {
+            return Auth::guard('api')->user()?->authUser();
         }
     }
     public static function getOrgWiseUserAndEmployees($organizationId)
@@ -2962,8 +2963,8 @@ return [
 
             foreach ($names as $name) {
                 // Get all matching groups (org-specific and global)
-                
-                
+
+
                 $matchedGroups = Helper::getGroupsQuery()->where('name', $name)->get();
 
                 $groups = $groups->merge($matchedGroups);
@@ -3047,11 +3048,11 @@ return [
                     $query->whereNull('deleted_at');
                 }
             });
-    
+
             if ($ignoreId) {
                 $rule->ignore($ignoreId, $ignoreColumn);
             }
-    
+
             return $rule;
         }
 
@@ -3088,10 +3089,17 @@ return [
             return null;
         }
 
-
-         public static function getFinancialYears()
+         public static function getFinancialYears($organizationId = null)
         {
-            $financialYears = ErpFinancialYear::withDefaultGroupCompanyOrg()->get();
+            if ($organizationId) {
+
+                $financialYears = ErpFinancialYear::withDefaultGroupCompanyOrg()->where('organization_id', $organizationId)
+                    ->orderBy('id', 'desc')->get();
+            } else {
+                $financialYears = ErpFinancialYear::withDefaultGroupCompanyOrg()
+                    ->orderBy('id', 'desc')->get();
+            }
+
             if ($financialYears->isNotEmpty()) {
                 return $financialYears
                ->map(function ($financialYear) {
@@ -3111,23 +3119,22 @@ return [
             return null;
         }
 
-        public static function getFyAuthorizedUsers(string $date): mixed
-        {
-            $financialYear = ErpFinancialYear::withDefaultGroupCompanyOrg()
-                ->where('start_date', '<=', $date)
-                ->where('end_date', '>=', $date)
-                ->orWhere('fy_status',ConstantHelper::FY_CURRENT_STATUS)
-                // ->where('fy_close', ConstantHelper::FY_NOT_CLOSED_STATUS)
-                ->first();
-            if (isset($financialYear)) {
-                return [
-                    'alias' => $financialYear->alias,
-                    'authorized_users' => $financialYear->authorizedUsers()
-                ];
-            } else {
-                return null;
-            }
-        }
+        // public static function getFyAuthorizedUsers(string $date): mixed
+        // {
+        //     $financialYear = ErpFinancialYear::withDefaultGroupCompanyOrg()
+        //         ->where('start_date', '<=', $date)
+        //         ->where('end_date', '>=', $date)
+        //         ->orWhere('fy_status',ConstantHelper::FY_CURRENT_STATUS)
+        //         ->first();
+        //     if (isset($financialYear)) {
+        //         return [
+        //             'alias' => $financialYear->alias,
+        //             'authorized_users' => $financialYear->authorizedUsers()
+        //         ];
+        //     } else {
+        //         return null;
+        //     }
+        // }
 
         public static function getGroupsQuery($organizations=[])
         {
@@ -3157,5 +3164,3 @@ return [
 
         }
 }
-
-

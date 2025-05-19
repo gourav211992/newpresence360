@@ -29,6 +29,7 @@ use App\Http\Controllers\SubStoreController;
 use App\Http\Controllers\refined_index\IndexController;
 use App\Http\Controllers\UserSignatureController;
 use App\Http\Controllers\FixedAsset\MergerController;
+use App\Http\Controllers\FixedAsset\RevImpController;
 use App\Http\Controllers\CrDrReportController;
 use App\Http\Controllers\FixedAsset\SetupController;
 use App\Http\Controllers\FixedAsset\DepreciationController;
@@ -544,6 +545,7 @@ Route::middleware(['user.auth'])->group(function () {
             Route::post('/', 'store')->name('store');
             Route::get('/edit/{id}', 'edit')->name('edit');
             Route::post('/update/{id}', 'update')->name('update');
+            Route::post('/update-approve/{id}', 'updateApprove')->name('update.approve');
             Route::get('add-item-row', 'addItemRow')->name('item.row');
             Route::get('get-item-attribute', 'getItemAttribute')->name('item.attr');
             Route::get('/get-itemdetail', 'getItemDetail')->name('get.itemdetail');
@@ -1963,7 +1965,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     //PSV
     Route::get('/psv', [ErpPSVController::class, 'index'])->name('psv.index');
     Route::get('/psv/create', [ErpPSVController::class, 'create'])->name('psv.create');
-    Route::get('/psv/report', [ErpPSVController::class, 'report'])->name('psv.report');
+    Route::get('/psv/report', [ErpPSVController::class, 'psvReport'])->name('psv.report');
     Route::get('/psv/filter', [ErpPSVController::class, 'filter'])->name('psv.filter');
     Route::post('/psv/store', [ErpPSVController::class, 'store'])->name('psv.store');
     Route::get('/psv/edit/{id}', [ErpPSVController::class, 'edit'])->name('psv.edit');
@@ -1974,7 +1976,6 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::get('/psv/search/items', [ErpPSVController::class, 'searchItems'])->name('psv.search.items');
     Route::get('/psv/{id}/pdf/{pattern}', [ErpPSVController::class, 'generatePdf'])->name('psv.generate-pdf');
     Route::get('/psv/multi-stores-location', [ErpPSVController::class, 'getLocationsWithMultipleStores'])->name('psv.multi-store-location');
-    Route::get('/psv/report', [ErpPSVController::class, 'materialIssueReport'])->name('psv.report');
     Route::get('/psv/posting/get', [ErpPSVController::class, 'getPostingDetails'])->name('psv.posting.get');
     Route::post('/psv/post', [ErpPSVController::class, 'postPsv'])->name('psv.post');
     Route::post('/psv/import', [ErpPSVController::class, 'import'])->name('psv.import');
@@ -2315,6 +2316,19 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::post('fixed-asset/merger/post', [MergerController::class, 'postInvoice'])->name('finance.fixed-asset.merger.post');
     Route::get('fixed-asset/merger/amendment/{id}', [MergerController::class, 'amendment'])->name('finance.fixed-asset.merger.amendment');
 
+    Route::resource('fixed-asset/revaluation-impairement', RevImpController::class)->names([
+        'index' => 'finance.fixed-asset.revaluation-impairement.index',
+        'create' => 'finance.fixed-asset.revaluation-impairement.create',
+        'store' => 'finance.fixed-asset.revaluation-impairement.store',
+        'show' => 'finance.fixed-asset.revaluation-impairement.show',
+        'edit' => 'finance.fixed-asset.revaluation-impairement.edit',
+        'update' => 'finance.fixed-asset.revaluation-impairement.update',
+    ]);
+    Route::post('fixed-asset/revaluation-impairement/approval', [RevImpController::class, 'documentApproval'])->name('finance.fixed-asset.revaluation-impairement.approval');
+    Route::post('fixed-asset/revaluation-impairement/filter', [RevImpController::class, 'index'])->name('finance.fixed-asset.revaluation-impairement.filter');
+    Route::get('fixed-asset/revaluation-impairement/posting/get', [RevImpController::class, 'getPostingDetails'])->name('finance.fixed-asset.revaluation-impairement.posting.get');
+    Route::post('fixed-asset/revaluation-impairement/post', [RevImpController::class, 'postInvoice'])->name('finance.fixed-asset.revaluation-impairement.post');
+    Route::get('fixed-asset/revaluation-impairement/amendment/{id}', [RevImpController::class, 'amendment'])->name('finance.fixed-asset.revaluation-impairement.amendment');
 
 
     Route::resource('asset-category',AssetCategoryController::class);

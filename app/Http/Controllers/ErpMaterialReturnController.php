@@ -65,7 +65,7 @@ class ErpMaterialReturnController extends Controller
         $typeName = ConstantHelper::MATERIAL_RETURN_SERVICE_NAME;
         if ($request -> ajax()) {
             try {
-            $docs = ErpMaterialReturnHeader::withDefaultGroupCompanyOrg() ->  bookViewAccess($pathUrl) ->  withDraftListingLogic() -> orderByDesc('id') -> get();
+            $docs = ErpMaterialReturnHeader::withDefaultGroupCompanyOrg() ->  bookViewAccess($pathUrl) ->  withDraftListingLogic() -> orderByDesc('id');
             return DataTables::of($docs) ->addIndexColumn()
             ->editColumn('document_status', function ($row) use($orderType) {
                 $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->document_status ?? ConstantHelper::DRAFT];    

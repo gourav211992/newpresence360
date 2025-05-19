@@ -162,11 +162,16 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                                     <div class="mb-1">
                                         <label class="form-label">Production Route <span class="text-danger">*</span></label>
                                         <select class="form-select" id="production_route_id" name="production_route_id">
-                                            {{-- <option value="">Select</option> --}}
                                             @foreach($productionRoutes as $productionRoute)
-                                                <option value="{{$productionRoute->id}}">{{ucfirst($productionRoute->name)}}</option>
+                                                <option value="{{$productionRoute->id}}" data-perc="{{$productionRoute->safety_buffer_perc}}">{{ucfirst($productionRoute->name)}}</option>
                                             @endforeach 
                                          </select>   
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-1">
+                                        <label class="form-label">Safety Buffer (%)</label>
+                                        <input type="text" id="safety_buffer_perc" class="form-control mw-100 ledgerselecct" name="safety_buffer_perc"/>
                                     </div>
                                 </div>
                                 @if($servicesBooks['services'][0]?->alias == \App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
@@ -233,20 +238,20 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                                                         <label class="form-check-label" for="Email"></label>
                                                     </div>
                                                     </th>
-                                                    <th id="section_required" width="100px">Section</th>
-                                                    <th id="sub_section_required" width="100px">Sub Section</th>
-                                                    <th width="120px">Item Code</th>
-                                                    <th width="250px">Item Name</th>
+                                                    <th style="width: 100px;" id="section_required">Section</th>
+                                                    <th style="width: 100px;" id="sub_section_required">Sub Section</th>
+                                                    <th style="min-width: 110px;">Item Code</th>
+                                                    <th style="min-width: 150px;">Item Name</th>
                                                     <th>Attributes</th>
-                                                    <th width="50px">UOM</th>
+                                                    <th style="width: 30px;">UOM</th>
                                                     <th>Consumption</th>
                                                     <th>Cost</th>
                                                     <th>Item Value</th>
                                                     <th id="component_overhead_required">Overheads</th>
                                                     <th>Total Cost</th>
-                                                    <th id="station_required">Station</th>
-                                                    <th>Vendor</th>
-                                                    <th></th>
+                                                    <th style="min-width: 100px;" id="station_required">Station</th>
+                                                    <th style="min-width: 100px;">Vendor</th>
+                                                    <th style="width: 20px;"></th>
                                                 </tr>
                                             </thead>
                                             {{-- <tbody class="mrntableselectexcel" style="display: block; overflow-x: auto; white-space: nowrap;"> --}}
@@ -284,9 +289,11 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                                                             <td colspan="2" class="p-0">
                                                                 <h6 class="text-dark mb-0 bg-light-primary py-1 px-50 d-flex justify-content-between">
                                                                 <strong>BOM Summary</strong>
+                                                                @if($canView)
                                                                 <div class="addmendisexpbtn">
                                                                     <button type="button" class="btn p-25 btn-sm btn-outline-secondary addOverHeadSummaryBtn"><i data-feather="plus"></i> Overhead</button> 
                                                                 </div>
+                                                                @endif
                                                                 </h6>
                                                             </td>
                                                         </tr>
@@ -458,6 +465,9 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
 @include('billOfMaterial.partials.q-bom-modal')
 @endsection
 @section('scripts')
+<script>
+    var canView = {{ $canView ? 'true' : 'false' }};
+</script>
 <script type="text/javascript" src="{{asset('assets/js/modules/bom.js')}}"></script>
 <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
 <script type="text/javascript">
@@ -998,6 +1008,7 @@ $(document).on('click','#addNewItemBtn', (e) => {
                 initializeVendorAutocomplete();
                 initializeProductSectionAutocomplete();
                 $(".prSelect").prop('disabled',true);
+                feather.replace();
             } else if(data.status == 422) {
                Swal.fire({
                     title: 'Error!',
@@ -1717,19 +1728,19 @@ function initializeInstructionStationAutocomplete() {
     $("#itemTable3 [name*='instruction_station']").autocomplete({
         source: function (request, response) {
 
-            let selectedIds = [];
-            let currentTab = document.querySelector(".nav-link.active").getAttribute("data-bs-target").replace("#", "");
-            if(currentTab === 'instruction-items') {
-                if ($("#itemTable3 tbody").find('tr').length) {
-                    $("#itemTable3 tbody tr").each(function() {
-                        let stationInput = $(this).find("[name*='[station_id]']");
-                        let stationId = stationInput.val();
-                        if (stationId) {
-                            selectedIds.push(stationId);
-                        }
-                    });
-                }
-            }
+            // let selectedIds = [];
+            // let currentTab = document.querySelector(".nav-link.active").getAttribute("data-bs-target").replace("#", "");
+            // if(currentTab === 'instruction-items') {
+            //     if ($("#itemTable3 tbody").find('tr').length) {
+            //         $("#itemTable3 tbody tr").each(function() {
+            //             let stationInput = $(this).find("[name*='[station_id]']");
+            //             let stationId = stationInput.val();
+            //             if (stationId) {
+            //                 selectedIds.push(stationId);
+            //             }
+            //         });
+            //     }
+            // }
             $.ajax({
                 url: '/search',
                 method: 'GET',
@@ -1738,7 +1749,7 @@ function initializeInstructionStationAutocomplete() {
                     q: request.term,
                     type: 'station',
                     production_route_id: $("[name='production_route_id']").val() || '',
-                    selectedIds : JSON.stringify(selectedIds)
+                    // selectedIds : JSON.stringify(selectedIds)
                 },
                 success: function (data) {
                     const mappedData = $.map(data, function (item) {
@@ -1796,11 +1807,11 @@ function getBomItemCost(itemId,itemAttributes)
                }
             } else {
                $("tr.trselected .linkAppend").addClass('d-none');
-               $("tr.trselected").find("[name*='[item_cost]']").val(''); 
+               $("tr.trselected").find("[name*='[item_cost]']").val(Number(0).toFixed(2)); 
             }
          } else {
             $("tr.trselected .linkAppend").addClass('d-none');
-            $("tr.trselected").find("[name*='[item_cost]']").val('');  
+            $("tr.trselected").find("[name*='[item_cost]']").val(Number(0).toFixed(2));  
          }
         //  $("#attribute").modal("hide");
          // $("tr.trselected").find("[name*='[qty]']").trigger('focus');

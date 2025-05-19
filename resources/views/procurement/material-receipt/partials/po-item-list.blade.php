@@ -47,11 +47,7 @@
             <input type="hidden" name="module-type" id="module-type" value="{{ $moduleType }}">
         </td>
         <td class="no-wrap">
-
-            {{ $poDetail->po?->book?->book_name ?? 'NA' }}
-        </td>
-        <td class="no-wrap">
-            {{ $poDetail->po?->document_number ?? 'NA' }}
+            {{ $poDetail->po?->book?->book_code ?? 'NA' }} - {{ $poDetail->po?->document_number ?? 'NA' }}
         </td>
         <td class="no-wrap">
             {{ $poDetail->po?->getFormattedDate('document_date') }}
@@ -60,10 +56,7 @@
         {{-- Supplier Invoice Details --}}
         @if($poDetail->po->supp_invoice_required == 'yes' && isset($poDetail->po->supplierInvoice))
             <td class="no-wrap">
-                {{ $poDetail->po->supplierInvoice->book->book_name ?? 'NA' }}
-            </td>
-            <td class="no-wrap">
-                {{ $poDetail->po->supplierInvoice->document_number ?? 'NA' }}
+                {{ $poDetail->po->supplierInvoice->book->book_code ?? 'NA' }} - {{ $poDetail->po->supplierInvoice->document_number ?? 'NA' }}
             </td>
             <td class="no-wrap">
                 {{ $poDetail->po->supplierInvoice?->getFormattedDate('document_date') }}
@@ -71,22 +64,17 @@
         @else
             <td>-</td>
             <td>-</td>
-            <td>-</td>
         @endif
 
         {{-- Gate Entry Details --}}
         @if($poDetail->gateEntryHeader)
             <td class="no-wrap">
-                {{ $poDetail->gateEntryHeader?->book?->book_name ?? 'NA' }}
-            </td>
-            <td class="no-wrap">
-                {{ $poDetail->gateEntryHeader->document_number ?? 'NA' }}
+                {{ $poDetail->gateEntryHeader?->book?->book_code ?? 'NA' }} - {{ $poDetail->gateEntryHeader->document_number ?? 'NA' }}
             </td>
             <td class="no-wrap">
                 {{ $poDetail->gateEntryHeader?->getFormattedDate('document_date') }}
             </td>
         @else
-            <td>-</td>
             <td>-</td>
             <td>-</td>
         @endif

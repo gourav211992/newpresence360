@@ -276,6 +276,9 @@ class ItemImportExportService
     {
         if ($attributes) {
             foreach ($attributes as $attribute) {
+                if (empty($attribute['value'])) {
+                    continue;
+                }
                 $attributeGroup = $this->getAttributeGroupByName($attribute['name'], $errors); 
                 if ($attributeGroup) {
                     $attributeValues = explode(',', $attribute['value']);

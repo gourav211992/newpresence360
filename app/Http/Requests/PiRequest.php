@@ -110,7 +110,6 @@ class PiRequest extends FormRequest
         foreach ($this->input('components', []) as $index => $component) {
             $item_id = $component['item_id'] ?? null;
             $item = Item::find($item_id);
-            $index = $index + 1;
             if ($item && $item->itemAttributes->count() > 0) {
                 $rules["components.$index.attr_group_id.*.attr_name"] = 'required';
             } else {
@@ -130,6 +129,7 @@ class PiRequest extends FormRequest
             'uom_id' => 'The unit of measure must be a string.',
             'components.*.uom_id.required' => 'Required',
             'component_item_name.*.required' => 'Required',
+            'components.*.qty.required' => 'Required',
             'components.*.qty.required' => 'Required',
             'components.*.attr_group_id.*.attr_name.required' => 'Select Attribute',
             'document_date.in' => 'The document date must be today.',
@@ -153,6 +153,18 @@ class PiRequest extends FormRequest
             $components = $this->input('components', []);
             $items = [];
             foreach ($components as $key => $component) {
+
+                $reqQty = floatval($component['qty'] ?? 0);
+                $adjQty = floatval($component['adj_qty'] ?? 0);
+                $avlStock = floatval($component['avl_stock'] ?? 0);
+
+                if ($adjQty > $reqQty) {
+                    $validator->errors()->add("components.$key.item_name", "Adj qty more than req qty.");
+                }
+                if ($adjQty > $avlStock) {
+                    $validator->errors()->add("components.$key.item_name", "Adj qty more than Avl Stock.");
+                }
+
                 $soId = $component['so_id'] ?? null;
                 $itemId = $component['item_id'] ?? null;
                 $uomId = $component['uom_id'] ?? null;
@@ -201,7 +213,6 @@ class PiRequest extends FormRequest
                 foreach ($this->input('components', []) as $key => $component) {
                     $piItemId = $component['pi_item_id'] ?? null;
                     $inputQty = $component['qty'] ?? 0;
-                    
                     if ($piItemId) {
                         $piItem = PiItem::with('po_items')->find($piItemId);
                         if ($piItem && $piItem->po_items->count()) {
@@ -241,6 +252,7 @@ class PiRequest extends FormRequest
                     foreach ($this->input('components', []) as $key => $component) {
                         $itemId = $component['item_id'] ?? null;
                         $inputQty = floatval($component['qty']) ?? 0.00;
+                        $vendorId = floatval($component['vendor_id']) ?? 0.00;
                         $attributes = [];
                         foreach($component['attr_group_id'] ?? [] as $groupId => $attrName) {
                             $itemAttr = ItemAttribute::where('attribute_group_id', $groupId)
@@ -250,19 +262,21 @@ class PiRequest extends FormRequest
                         }
                         $qty = PiSoMapping::where('item_id', $itemId)
                                             ->whereIn('so_item_id',$so_item_ids)
-                                            // ->when(!empty($attributes), function ($query) use ($attributes) {
-                                            //     return $query->whereJsonContains('attributes', $attributes);
-                                            // })
+                                            ->when($vendorId, function ($query) use ($vendorId) {
+                                                return $query->where('vendor_id', $vendorId);
+                                            })
                                             ->whereJsonContains('attributes', $attributes)
                                             ->sum('qty');
+                        
                         $pi_item_qty =  PiSoMapping::where('item_id', $itemId)
                         ->whereIn('so_item_id',$so_item_ids)
-                        // ->when(!empty($attributes), function ($query) use ($attributes) {
-                        //     return $query->whereJsonContains('attributes', $attributes);
-                        // })
+                        ->when($vendorId, function ($query) use ($vendorId) {
+                            return $query->where('vendor_id', $vendorId);
+                        })
                         ->whereJsonContains('attributes', $attributes)
                         ->sum('pi_item_qty');
-                        if (round(($inputQty + $pi_item_qty), 2) > round($qty,2)) {
+
+                        if ($qty > 0 && round(($inputQty + $pi_item_qty), 2) > round($qty,2)) {
                             $validator->errors()->add("components.$key.qty", "Quantity can't be grater than avl Qty.");
                         }
                     }

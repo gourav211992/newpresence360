@@ -69,14 +69,26 @@
       @endif
    </div>
    </td>
-   <td><input type="number" value="{{isset($itemCost) ? $itemCost : '' }}" name="components[{{$rowCount}}][item_cost]" class="form-control mw-100 text-end" step="any" /></td>
+   <td>
+      @if($canView)
+         <input type="number" value="{{isset($itemCost) ? $itemCost : '' }}" name="components[{{$rowCount}}][item_cost]" class="form-control mw-100 text-end" step="any" />
+         @else
+         <input type="hidden" value="{{isset($itemCost) ? $itemCost : '' }}" name="components[{{$rowCount}}][item_cost]" class="form-control mw-100 text-end" step="any" />
+         <input disabled type="number" value="" name="components[{{$rowCount}}][item_cos_dummy]" class="form-control mw-100 text-end" step="any" />
+      @endif
+   </td>
    @if(isset($supercedeCostRequired) && $supercedeCostRequired)
    <td>
       <input type="number" value="{{$bomDetail->superceeded_cost}}" name="components[{{$rowCount}}][superceeded_cost]" class="form-control mw-100 text-end" step="any"/>
    </td>
    @endif
    <td>
-      <input type="number" value="{{$bomDetail->item_value}}" name="components[{{$rowCount}}][item_value]" class="form-control mw-100 text-end" readonly step="any" />
+      @if($canView)
+         <input type="number" value="{{$bomDetail->item_value}}" name="components[{{$rowCount}}][item_value]" class="form-control mw-100 text-end" readonly step="any" />
+         @else
+         <input type="hidden" value="{{$bomDetail->item_value}}" name="components[{{$rowCount}}][item_value]" class="form-control mw-100 text-end" readonly step="any" />
+         <input disabled type="number" value="0.00" name="components[{{$rowCount}}][item_val_dummy]" class="form-control mw-100 text-end" step="any" />
+      @endif
    </td>
    @if(isset($componentWasteRequired) && $componentWasteRequired)
    <td>
@@ -89,26 +101,36 @@
    @if(isset($componentOverheadRequired) && $componentOverheadRequired)
    <td>
       <div class="position-relative d-flex align-items-center">
-         <input type="number" value="{{$bomDetail->overhead_amount ?? ''}}" name="components[{{$rowCount}}][overhead_amount]" readonly class="form-control mw-100 text-end" style="width: 70px" step="any" />
-         @foreach($bomDetail->overheads()->where('type','D')->get() as $over_key => $overhead)
-         <input type="hidden" name="components[{{$rowCount}}][overhead][{{$over_key+1}}][id]" value="{{$overhead->id}}">
-         <input type="hidden" id="item_overhead_id_{{$rowCount}}_{{$over_key+1}}" name="components[{{$rowCount}}][overhead][{{$over_key+1}}][overhead_id]" value="{{$overhead->overhead_id}}">
-         <input type="hidden" id="item_overhead_input_{{$rowCount}}_{{$over_key+1}}" name="components[{{$rowCount}}][overhead][{{$over_key+1}}][description]" value="{{$overhead?->overhead_description}}">
-         <input type="hidden" name="components[{{$rowCount}}][overhead][{{$over_key+1}}][perc]" value="{{isset($overhead->overhead_perc) && $overhead->overhead_perc != 0 ? $overhead->overhead_perc : ''}}">
-         <input type="hidden" name="components[{{$rowCount}}][overhead][{{$over_key+1}}][amnt]" value="{{$overhead->overhead_amount}}" {{isset($overhead->overhead_perc) && $overhead->overhead_perc != 0 ? 'disabled-input' : ''}}>
-         <input type="hidden" name="components[{{$rowCount}}][overhead][{{$over_key+1}}][ledger_name]" value="{{$overhead?->ledger_name}}">
-         <input type="hidden" name="components[{{$rowCount}}][overhead][{{$over_key+1}}][ledger_id]" value="{{$overhead?->ledger_id}}">
-         <input type="hidden" name="components[{{$rowCount}}][overhead][{{$over_key+1}}][ledger_group_name]" value="{{$overhead?->ledger_group_name}}">
-         <input type="hidden" name="components[{{$rowCount}}][overhead][{{$over_key+1}}][ledger_group_id]" value="{{$overhead?->ledger_group_id}}">
-         @endforeach
-         <div class="ms-50">
-            <button type="button" class="btn p-25 btn-sm btn-outline-secondary addOverHeadItemBtn" style="font-size: 10px" data-row-count="{{$rowCount}}">Add</button>
-         </div>
+         @if($canView)
+            <input type="number" value="{{$bomDetail->overhead_amount ?? ''}}" name="components[{{$rowCount}}][overhead_amount]" readonly class="form-control mw-100 text-end" style="width: 70px" step="any" />
+            @foreach($bomDetail->overheads()->where('type','D')->get() as $over_key => $overhead)
+            <input type="hidden" name="components[{{$rowCount}}][overhead][{{$over_key+1}}][id]" value="{{$overhead->id}}">
+            <input type="hidden" id="item_overhead_id_{{$rowCount}}_{{$over_key+1}}" name="components[{{$rowCount}}][overhead][{{$over_key+1}}][overhead_id]" value="{{$overhead->overhead_id}}">
+            <input type="hidden" id="item_overhead_input_{{$rowCount}}_{{$over_key+1}}" name="components[{{$rowCount}}][overhead][{{$over_key+1}}][description]" value="{{$overhead?->overhead_description}}">
+            <input type="hidden" name="components[{{$rowCount}}][overhead][{{$over_key+1}}][perc]" value="{{isset($overhead->overhead_perc) && $overhead->overhead_perc != 0 ? $overhead->overhead_perc : ''}}">
+            <input type="hidden" name="components[{{$rowCount}}][overhead][{{$over_key+1}}][amnt]" value="{{$overhead->overhead_amount}}" {{isset($overhead->overhead_perc) && $overhead->overhead_perc != 0 ? 'disabled-input' : ''}}>
+            <input type="hidden" name="components[{{$rowCount}}][overhead][{{$over_key+1}}][ledger_name]" value="{{$overhead?->ledger_name}}">
+            <input type="hidden" name="components[{{$rowCount}}][overhead][{{$over_key+1}}][ledger_id]" value="{{$overhead?->ledger_id}}">
+            <input type="hidden" name="components[{{$rowCount}}][overhead][{{$over_key+1}}][ledger_group_name]" value="{{$overhead?->ledger_group_name}}">
+            <input type="hidden" name="components[{{$rowCount}}][overhead][{{$over_key+1}}][ledger_group_id]" value="{{$overhead?->ledger_group_id}}">
+            @endforeach
+            <div class="ms-50">
+               <button type="button" class="btn p-10 btn-sm btn-outline-secondary addOverHeadItemBtn" style="font-size: 8px" data-row-count="{{$rowCount}}"><i data-feather="plus"></i></button>
+            </div>
+         @else
+         <input type="hidden" value="{{$bomDetail->overhead_amount ?? ''}}" name="components[{{$rowCount}}][overhead_amount]" readonly class="form-control mw-100 text-end" style="width: 70px" step="any" />
+         <input type="number" disabled value="0.00" name="components[{{$rowCount}}][overhead_amnt_dummy]" class="form-control mw-100 text-end" style="width: 70px" step="any" />
+         @endif
       </div>
    </td>
    @endif
    <td>  
+      @if($canView)
          <input type="text" value="{{$bomDetail->total_amount}}" name="components[{{$rowCount}}][item_total_cost]" readonly class="form-control mw-100 text-end" />
+      @else
+         <input type="hidden" value="{{$bomDetail->total_amount}}" name="components[{{$rowCount}}][item_total_cost]" readonly class="form-control mw-100 text-end" />
+         <input disabled type="text" value="0.00" name="components[{{$rowCount}}][item_total_cos_dummy]" class="form-control mw-100 text-end" />
+      @endif
    </td>
    @if(isset($stationRequired) && $stationRequired)
    <td>
@@ -126,18 +148,12 @@
    <td>
       <input type="hidden" name="components[{{$rowCount}}][remark]" value="{{$bomDetail->remark}}" />
       <div class="d-flex align-items-center justify-content-center">
-         <div class="me-50 mx-1 cursor-pointer addRemarkBtn" data-row-count="{{$rowCount}}">
-            <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary" data-bs-original-title="Remarks" aria-label="Remarks"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-            </span>
+         <div class="cursor-pointer addRemarkBtn" style="margin-right: 0.250rem;" data-row-count="{{$rowCount}}">
+            <i data-feather="file-text"></i>
          </div>
-         <div class="me-50 cursor-pointer linkAppend {{isset($cost['cost']) && isset($cost['route']) ? '' : 'd-none'}}">
+         <div class="cursor-pointer linkAppend {{isset($cost['cost']) && isset($cost['route']) ? '' : 'd-none'}}">
             <a href="{{$cost['route'] ?? ''}}" target="_blank" class="">
-               <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary" data-bs-original-title="Link" aria-label="Link">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link">
-                    <path d="M10 13a5 5 0 0 1 7 7l-1.5 1.5a5 5 0 0 1-7-7"></path>
-                    <path d="M14 11a5 5 0 0 0-7-7l-1.5 1.5a5 5 0 0 0 7 7"></path>
-                 </svg>
-              </span>
+               <i data-feather="link"></i>
            </a>
         </div>
      </div>

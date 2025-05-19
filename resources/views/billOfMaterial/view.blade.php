@@ -208,25 +208,26 @@ if($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS)
                                             <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
                                                 <thead>
                                                     <tr>
-                                                    <th>
+                                                        <th>
                                                         <div class="form-check form-check-primary custom-checkbox">
                                                             <input type="checkbox" class="form-check-input" id="Email">
                                                             <label class="form-check-label" for="Email"></label>
                                                         </div>
-                                                    </th>
-                                                    <th width="100px" id="section_required">Section</th>
-                                                    <th width="100px" id="sub_section_required">Sub Section</th>
-                                                    <th width="120px">Item Code</th>
-                                                    <th>Attributes</th>
-                                                    <th width="50px">UOM</th>
-                                                    <th>Consumption</th>
-                                                    <th>Cost</th>
-                                                    <th>Item Value</th>
-                                                    <th id="component_overhead_required">Overheads</th>
-                                                    <th>Total Cost</th>
-                                                    <th id="station_required">Station</th>
-                                                    <th>Vendor</th>
-                                                    <th></th>
+                                                        </th>
+                                                        <th style="width: 100px;" id="section_required">Section</th>
+                                                        <th style="width: 100px;" id="sub_section_required">Sub Section</th>
+                                                        <th style="min-width: 110px;">Item Code</th>
+                                                        <th style="min-width: 150px;">Item Name</th>
+                                                        <th>Attributes</th>
+                                                        <th style="width: 30px;">UOM</th>
+                                                        <th>Consumption</th>
+                                                        <th>Cost</th>
+                                                        <th>Item Value</th>
+                                                        <th id="component_overhead_required">Overheads</th>
+                                                        <th>Total Cost</th>
+                                                        <th style="min-width: 100px;" id="station_required">Station</th>
+                                                        <th style="min-width: 100px;">Vendor</th>
+                                                        <th style="width: 20px;"></th>
                                                     </tr>
                                                 </thead>
                                                 <tbody class="mrntableselectexcel">
@@ -261,9 +262,11 @@ if($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS)
                                                                 <td colspan="2" class="p-0">
                                                                 <h6 class="text-dark mb-0 bg-light-primary py-1 px-50 d-flex justify-content-between">
                                                                     <strong>BOM Summary</strong>
+                                                                    @if($canView)
                                                                     <div class="addmendisexpbtn">
                                                                         <button type="button" class="btn p-25 btn-sm btn-outline-secondary addOverHeadSummaryBtn"><i data-feather="plus"></i> Overhead</button> 
                                                                     </div>
+                                                                    @endif
                                                                 </h6>
                                                                 </td>
                                                             </tr>
@@ -414,6 +417,9 @@ if($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS)
 
 @endsection
 @section('scripts')
+<script>
+    var canView = {{ $canView ? 'true' : 'false' }};
+</script>
 <script type="text/javascript" src="{{asset('assets/js/modules/bom.js')}}"></script>
 <script type="text/javascript">
 @if($bom->document_status != 'draft')

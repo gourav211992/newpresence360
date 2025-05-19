@@ -130,22 +130,22 @@
                                        <div class="table-responsive pomrnheadtffotsticky">
                                            <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
                                             <thead>
-                                            <tr>
-                                                <th class="customernewsection-form">
-                                                    <div class="form-check form-check-primary custom-checkbox">
-                                                        <input type="checkbox" class="form-check-input" id="Email">
-                                                        <label class="form-check-label" for="Email"></label>
-                                                    </div> 
-                                                </th>
-                                                <th width="150px">Item Code</th>
-                                                <th width="240px">Item Name</th>
-                                                <th>Attributes</th>
-                                                <th>UOM</th>
-                                                <th>Qty</th>
-                                                <th width="150px">Preferred Vendor</th>
-                                                <th width="240px">Vendor Name</th>
-                                                <th width="50px">Action</th>
-                                            </tr>
+                                                <tr>
+                                                    <th class="customernewsection-form">
+                                                        <div class="form-check form-check-primary custom-checkbox">
+                                                            <input type="checkbox" class="form-check-input" id="Email">
+                                                            <label class="form-check-label" for="Email"></label>
+                                                        </div> 
+                                                    </th>
+                                                    <th width="200px">Item Code</th>
+                                                    <th width="300px">Item Name</th>
+                                                    <th max-width="180px">Attributes</th>
+                                                    <th >UOM</th>
+                                                    <th class="text-end">Quantity</th>
+                                                    <th width="240px">Vendor Name</th>
+                                                    <th width="100px" id="so_no">SO No.</th>
+                                                    <th width="350px">Remarks</th>
+                                                </tr>
                                         </thead>
                                         <tbody class="mrntableselectexcel">
                                             @include('procurement.pi.partials.item-row-edit')
@@ -252,49 +252,6 @@
 </div>
 </div>
 
-{{-- Delivery schedule --}}
-<div class="modal fade" id="deliveryScheduleModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
-    <div class="modal-dialog  modal-dialog-centered" >
-        <div class="modal-content">
-            <div class="modal-header p-0 bg-transparent">
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body px-sm-2 mx-50 pb-2">
-                <h1 class="text-center mb-1" id="shareProjectTitle">Delivery Schedule</h1>
-                {{-- <p class="text-center">Enter the details below.</p> --}}
-
-                <div class="text-end"> <a href="javascript:;" class="text-primary add-contactpeontxt mt-50 addTaxItemRow"><i data-feather='plus'></i> Add Schedule</a></div>
-
-                <div class="table-responsive-md customernewsection-form">
-                    <table id="deliveryScheduleTable" class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail">
-                        <thead>
-                           <tr>
-                            <th>S.No</th>
-                            <th width="150px">Quantity</th>
-                            <th>Date</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-
-                        <tr id="deliveryFooter">
-                           <td class="text-dark"><strong>Total</strong></td>
-                           <td class="text-dark"><strong id="total">0.00</strong></td>
-                           <td></td>
-                           <td></td>
-                        </tr>
-                    </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="modal-footer justify-content-center">
-                <button type="button" data-bs-dismiss="modal"  class="btn btn-outline-secondary me-1">Cancel</button>
-                <button type="button" class="btn btn-primary itemDeliveryScheduleSubmit">Submit</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 {{-- Item Remark Modal --}}
 <div class="modal fade" id="itemRemarkModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
     <div class="modal-dialog  modal-dialog-centered" >
@@ -319,45 +276,6 @@
             </div>
         </div>
     </div>
-</div>
-
-{{-- Delete component modal --}}
-<div class="modal fade text-start alertbackdropdisabled" id="deleteComponentModal" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
-   <div class="modal-dialog">
-      <div class="modal-content">
-         <div class="modal-header p-0 bg-transparent">
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-         </div>
-         <div class="modal-body alertmsg text-center warning">
-           <i data-feather='alert-circle'></i>
-           <h2>Are you sure?</h2>
-           <p>Are you sure you want to delete selected <strong>Components</strong>?</p>
-           <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
-           <button type="button" id="deleteConfirm" class="btn btn-primary" >Confirm</button>
-         </div>
-      </div>
-   </div>
-</div>
-
-{{-- Approval Modal --}}
-@include('procurement.pi.partials.approve-modal', ['id' => $pi->id])
-
-{{-- Amendment Modal --}}
-<div class="modal fade text-start alertbackdropdisabled" id="amendmentconfirm" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
-  <div class="modal-dialog">
-      <div class="modal-content">
-          <div class="modal-header p-0 bg-transparent">
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body alertmsg text-center warning">
-              <i data-feather='alert-circle'></i>
-              <h2>Are you sure?</h2>
-              <p>Are you sure you want to <strong>Amendment</strong> this <strong>PO</strong>? After Amendment this action cannot be undone.</p>
-              <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
-              <button type="button" id="amendmentSubmit" class="btn btn-primary">Confirm</button>
-          </div> 
-      </div>
-  </div>
 </div>
 
 @endsection
@@ -391,9 +309,6 @@ $(document).on('show.bs.modal', function (e) {
             $(this).find('td:last').remove();
         });
     }
-});
-$(document).on('shown.bs.modal', function (e) {
-    $(".deleteItemDeliveryRow").closest('td').remove();
 });
 @endif
 
@@ -458,20 +373,12 @@ $(document).on('input change focus', '#itemTable tr input', (e) => {
          }
       });
 
-      let selectedDelivery = [];
-      $(currentTr).find("[name*='[d_qty]']").each(function(index, item) {
-        let dDate = $(item).closest('td').find(`[name*="components[${rowCount}][delivery][${index+1}][d_date]"]`).val();
-        let dQty = $(item).closest('td').find(`[name*="components[${rowCount}][delivery][${index+1}][d_qty]"]`).val();
-           selectedDelivery.push({"dDate": dDate, "dQty": dQty});
-      });
-
       let uomId = $(currentTr).find("[name*='[uom_id]']").val() || '';
       let qty = $(currentTr).find("[name*='[qty]']").val() || '';
-      let actionUrl = '{{route("pi.get.itemdetail")}}'+'?item_id='+itemId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&delivery='+JSON.stringify(selectedDelivery);;
+      let actionUrl = '{{route("pi.get.itemdetail")}}'+'?item_id='+itemId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty;
       fetch(actionUrl).then(response => {
          return response.json().then(data => {
             if(data.status == 200) {
-                selectedDelivery = [];
                $("#itemDetailDisplay").html(data.data.html);
             }
          });

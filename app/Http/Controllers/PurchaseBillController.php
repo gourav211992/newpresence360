@@ -55,6 +55,7 @@ use App\Helpers\BookHelper;
 use App\Helpers\NumberHelper;
 use App\Helpers\ConstantHelper;
 use App\Helpers\CurrencyHelper;
+use App\Helpers\DynamicFieldHelper;
 use App\Helpers\InventoryHelper;
 use App\Helpers\FinancialPostingHelper;
 use App\Helpers\ServiceParametersHelper;
@@ -63,6 +64,7 @@ use App\Models\AuthUser;
 use App\Models\Category;
 use App\Models\Employee;
 use App\Models\ErpItem;
+use App\Models\ErpPbDynamicField;
 use App\Models\ErpVendor;
 use App\Models\PRHeader;
 use App\Services\PbService;
@@ -215,7 +217,6 @@ class PurchaseBillController extends Controller
 
         DB::beginTransaction();
         try {
-            // dd($request->all());
             $parameters = [];
             $response = BookHelper::fetchBookDocNoAndParameters($request->book_id, $request->document_date);
             if ($response['status'] === 200) {
@@ -274,6 +275,7 @@ class PurchaseBillController extends Controller
             $pb->ship_to = $request->shipping_id;
             $pb->billing_address = $request->billing_address;
             $pb->shipping_address = $request->shipping_address;
+            $pb->cost_center_id = $request->cost_center_id;
             $pb->revision_number = 0;
             $document_number = $request->document_number ?? null;
             $numberPatternData = Helper::generateDocumentNumberNew($request->book_id, $request->document_date);
@@ -449,7 +451,6 @@ class PurchaseBillController extends Controller
                         'rate' => floatval($component['rate']) ?? 0.00,
                         'po_rate' => floatval($component['po_val']) ?? 0.00,
                         'discount_amount' => floatval($component['discount_amount']) ?? 0.00,
-                        'cost_center_id' => $component['cost_center_id'] ?? null,
                         'header_discount_amount' => 0.00,
                         'header_exp_amount' => 0.00,
                         'tax_value' => 0.00,
@@ -528,7 +529,6 @@ class PurchaseBillController extends Controller
                     $pbDetail->basic_value = $pbItem['basic_value'];
                     $pbDetail->item_variance = $pbItem['item_variance'];
                     $pbDetail->discount_amount = $pbItem['discount_amount'];
-                    $pbDetail->cost_center_id = $pbItem['cost_center_id'];
                     $pbDetail->header_discount_amount = $pbItem['header_discount_amount'];
                     $pbDetail->header_exp_amount = $itemHeaderExp;
                     $pbDetail->tax_value = $pbItem['tax_value'];
@@ -718,6 +718,14 @@ class PurchaseBillController extends Controller
                 $parentUrl = request() -> segments()[0];
                 $redirectUrl = url($parentUrl. '/' . $pb->id . '/pdf');
             }
+            $status = DynamicFieldHelper::saveDynamicFields(ErpPbDynamicField::class, $pb -> id, $request -> dynamic_field ?? []);
+            if ($status && !$status['status'] ) {
+                DB::rollBack();
+                return response() -> json([
+                    'message' => $status['message'],
+                    'error' => ''
+                ], 422);
+            }
 
             DB::commit();
 
@@ -772,7 +780,6 @@ class PurchaseBillController extends Controller
         $user = Helper::getAuthenticatedUser();
         $pb = PbHeader::with(['vendor', 'currency', 'items', 'book'])
             ->findOrFail($id);
-        // dd($pb->expenses);
         $totalItemValue = $pb->items()->sum('basic_value');
         $vendors = Vendor::where('status', ConstantHelper::ACTIVE)->get();
         $revision_number = $pb->revision_number;
@@ -806,7 +813,7 @@ class PurchaseBillController extends Controller
         $erpStores = ErpStore::where('organization_id', $user->organization_id)
             ->orderBy('id', 'DESC')
             ->get();
-
+        $dynamicFieldsUI = $pb -> dynamicfieldsUi();
         return view($view, [
             'deliveryAddress'=> $deliveryAddress,
             'orgAddress'=> $orgAddress,
@@ -821,7 +828,8 @@ class PurchaseBillController extends Controller
             'revision_number' => $revision_number,
             'approvalHistory' => $approvalHistory,
             'locations'=> $locations,
-            'erpStores' => $erpStores
+            'erpStores' => $erpStores,
+            'dynamicFieldsUI' => $dynamicFieldsUI
         ]);
     }
 
@@ -848,7 +856,6 @@ class PurchaseBillController extends Controller
         }
         DB::beginTransaction();
         try {
-            // dd($request->all());
             $parameters = [];
             $response = BookHelper::fetchBookDocNoAndParameters($request->book_id, $request->document_date);
             if ($response['status'] === 200) {
@@ -1038,7 +1045,6 @@ class PurchaseBillController extends Controller
                         'inventory_uom_qty' => $inventory_uom_qty ?? 0.00,
                         'rate' => floatval($component['rate']) ?? 0.00,
                         'discount_amount' => floatval($component['discount_amount']) ?? 0.00,
-                        'cost_center_id' => $component['cost_center_id'] ?? null,
                         'header_discount_amount' => 0.00,
                         'header_exp_amount' => 0.00,
                         'tax_value' => 0.00,
@@ -1110,7 +1116,6 @@ class PurchaseBillController extends Controller
                     $pbDetail->inventory_uom_id = $pbItem['inventory_uom_id'];
                     $pbDetail->inventory_uom_code = $pbItem['inventory_uom_code'];
                     $pbDetail->inventory_uom_qty = $pbItem['inventory_uom_qty'];
-                    $pbDetail->cost_center_id = $pbItem['cost_center_id'];
                     $pbDetail->rate = $pbItem['rate'];
                     $pbDetail->basic_value = $pbItem['basic_value'];
                     $pbDetail->discount_amount = $pbItem['discount_amount'];
@@ -1323,6 +1328,14 @@ class PurchaseBillController extends Controller
                 $parentUrl = request() -> segments()[0];
                 $redirectUrl = url($parentUrl. '/' . $pb->id . '/pdf');
             }
+            $status = DynamicFieldHelper::saveDynamicFields(ErpPbDynamicField::class, $pb -> id, $request -> dynamic_field ?? []);
+            if ($status && !$status['status'] ) {
+                DB::rollBack();
+                return response() -> json([
+                    'message' => $status['message'],
+                    'error' => ''
+                ], 422);
+            }
             DB::commit();
 
             return response()->json([
@@ -1343,7 +1356,7 @@ class PurchaseBillController extends Controller
     {
         $user = Helper::getAuthenticatedUser();
         $item = json_decode($request->item, true) ?? [];
-        // dd($item);
+
         $componentItem = json_decode($request->component_item, true) ?? [];
         $costCenters = CostCenter::where('organization_id', $user->organization_id)->get();
 
@@ -1361,13 +1374,11 @@ class PurchaseBillController extends Controller
     // PO Item Rows
     public function mrnItemRows(Request $request)
     {
-        //dd('hii');
         $user = Helper::getAuthenticatedUser();
         $organization = Organization::where('id', $user->organization_id)->first();
         $item_ids = explode(',', $request->item_ids);
         $items = MrnDetail::whereIn('id', $item_ids)
             ->get();
-        //dd($items);
         $costCenters = CostCenter::where('organization_id', $user->organization_id)->get();
         $vendor = Vendor::with(['currency:id,name', 'paymentTerms:id,name'])->find($request->vendor_id);
         $currency = $vendor->currency;
@@ -1470,7 +1481,6 @@ class PurchaseBillController extends Controller
     # get tax calcualte
     public function taxCalculation(Request $request)
     {
-        // dd($request->all());
         $user = Helper::getAuthenticatedUser();
         $organization = $user->organization;
         $firstAddress = $organization->addresses->first();
@@ -1505,7 +1515,6 @@ class PurchaseBillController extends Controller
             $taxDetails = TaxHelper::calculateTax($hsnId, $price, $fromCountry, $fromState, $upToCountry, $upToState, $transactionType,$document_date);
             $rowCount = intval($request->rowCount) ?? 1;
             $itemPrice = floatval($request->price) ?? 0;
-            // dd($hsnId,$price,$fromCountry,$fromState,$upToCountry,$upToState,$transactionType);
             $html = view('procurement.purchase-bill.partials.item-tax', compact('taxDetails', 'rowCount', 'itemPrice'))->render();
             return response()->json(['data' => ['html' => $html, 'rowCount' => $rowCount], 'message' => 'fetched', 'status' => 200]);
         } catch (\Exception $e) {
@@ -1728,7 +1737,6 @@ class PurchaseBillController extends Controller
             $vendor = Vendor::with(['currency:id,name', 'paymentTerms:id,name'])
                 // ->where('organization_id', $organization->id)
                 ->find($request->vendor_id);
-            //dd($vendor);
             $items = MrnDetail::with([
                 'header',
                 'item',
@@ -1819,7 +1827,6 @@ class PurchaseBillController extends Controller
                 $totalAfterTax = ($totalTaxableValue + $totalTaxes);
                 $totalExpValue = $pbHeader->expense_amount - $pbItem->header_exp_amount;
                 $totalAmount = ($totalAfterTax + $totalExpValue);
-                // dd($totalItemValue, $totalDiscValue, $totalTaxableValue, $totalTaxes, $totalAfterTax, $totalExpValue, $totalAmount);
 
                 $pbHeader->total_item_amount = $totalItemValue;
                 $pbHeader->total_discount = $totalDiscValue;
@@ -2083,7 +2090,6 @@ class PurchaseBillController extends Controller
         }
 
         /*Update Calculation*/
-        // dd($totalItemValue, $totalDiscValue, ($totalItemValue - $totalDiscValue), $totalTaxValue, (($totalItemValue - $totalDiscValue) + $totalTaxValue), $totalExpValue, (($totalItemValue - $totalDiscValue) + ($totalTaxValue + $totalExpValue)));
         $totalDiscValue = $pb->items()->sum('header_discount_amount') + $pb->items()->sum('discount_amount');
         $totalExpValue = $pb->items()->sum('header_exp_amount');
         $pb->total_item_amount = $totalItemAmnt;
@@ -2166,7 +2172,6 @@ class PurchaseBillController extends Controller
         DB::beginTransaction();
         try {
             // Header History
-            // dd($id);
             $pbHeader = PbHeader::find($id);
             if (!$pbHeader) {
                 return response()->json(['error' => 'Mrn Header not found'], 404);
@@ -2349,7 +2354,7 @@ class PurchaseBillController extends Controller
         if(count($uniqueMrnIds) > 1) {
             return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => "One time purchase bill create from one MRN."]);
         }
-        $mrnData = MrnHeader::whereIn('id', $uniqueMrnIds)->first();
+        $mrnData = MrnHeader::whereIn('id', $uniqueMrnIds)->with('costCenters')->first();
         $mrnHeaders = MrnHeader::whereIn('id', $uniqueMrnIds)->get();
         $discounts = collect();
         $expenses = collect();
@@ -2396,7 +2401,6 @@ class PurchaseBillController extends Controller
             $vendor->currency = $vendor->currency;
             $vendor->paymentTerm = $vendor->paymentTerm;
         }
-        // dd($finalDiscounts, $finalExpenses);
         $html = view('procurement.purchase-bill.partials.mrn-item-row', ['mrnItems' => $mrnItems])->render();
         return response()->json(['data' => ['pos' => $html, 'vendor' => $vendor, 'finalDiscounts' => $finalDiscounts, 'finalExpenses' => $finalExpenses, 'mrnData' => $mrnData], 'status' => 200, 'message' => "fetched!"]);
     }
@@ -2421,7 +2425,6 @@ class PurchaseBillController extends Controller
     public function postPb(Request $request)
     {
         try {
-            // dd($request->all());
             DB::beginTransaction();
             $data = FinancialPostingHelper::financeVoucherPosting($request->book_id ?? 0, $request->document_id ?? 0, "post");
             if ($data['status']) {
@@ -2807,10 +2810,9 @@ class PurchaseBillController extends Controller
         $user = Helper::getAuthenticatedUser();
         $pathUrl = route('purchase-bill.index');
         $orderType = ConstantHelper::PB_SERVICE_ALIAS;
-        $purchaseBills = PbHeader::with(['items'])
+        $purchaseBills = PbHeader::withDefaultGroupCompanyOrg()
             // ->where('document_type', $orderType)
-            ->bookViewAccess($pathUrl)
-            ->withDefaultGroupCompanyOrg()
+            // ->bookViewAccess($pathUrl)
             ->withDraftListingLogic()
             ->orderByDesc('id');
 
@@ -2890,8 +2892,7 @@ class PurchaseBillController extends Controller
             'vendor',
             'items.so',
             'mrn'
-        ])
-        ->where('organization_id', $user->organization_id);
+        ]);
 
 
         $purchaseBills = $purchaseBills->get();

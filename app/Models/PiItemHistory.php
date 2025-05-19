@@ -30,7 +30,9 @@ class PiItemHistory extends Model
         'vendor_id',
         'vendor_code',
         'vendor_name',
-        'remarks'
+        'remarks',
+        'adjusted_qty',
+        'required_qty'
     ];
 
     public $referencingRelationships = [
@@ -76,11 +78,6 @@ class PiItemHistory extends Model
     public function attributes()
     {
         return $this->hasMany(PiItemAttributeHistory::class,'pi_item_id');
-    }
-
-    public function itemDelivery()
-    {
-        return $this->hasMany(PiItemDeliveryHistory::class,'pi_item_id');
     }
 
     public function getBalenceQtyAttribute()

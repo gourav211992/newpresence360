@@ -127,6 +127,7 @@ function getCostCenters(storeLocationId) {
                 $(".cost_center").html(options);
                 $("#cost_center_div").show();
             } else {
+                $(".cost_center").empty();
                 $("#cost_center_div").hide();
             }
         },
@@ -816,9 +817,7 @@ function checkBasicFilledDetail()
     let bookId = $("#book_id").val() || '';
     let documentNumber = $("#document_number").val() || '';
     let documentDate = $("[name='document_date']").val() || '';
-    let referenceNumber = $("[name='reference_number']").val() || '';
-    let costCenterId = $("[name='cost_center_id']").val() || '';
-    if(bookId && documentNumber && documentDate && referenceNumber && costCenterId) {
+    if(bookId && documentNumber && documentDate) {
         filled = true;
     }
     return filled;

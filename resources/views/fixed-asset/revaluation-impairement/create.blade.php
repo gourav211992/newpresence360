@@ -1,0 +1,893 @@
+@extends('layouts.app')
+
+@section('content')
+    <div class="app-content content ">
+        <div class="content-overlay"></div>
+        <div class="header-navbar-shadow"></div>
+        <div class="content-wrapper container-xxl p-0">
+            <div class="content-header pocreate-sticky">
+                <div class="row">
+                    <div class="content-header-left col-md-6 mb-2">
+                        <div class="row breadcrumbs-top">
+                            <div class="col-12">
+                                <h2 class="content-header-title float-start mb-0">Revaluation / Impairement</h2>
+                                <div class="breadcrumb-wrapper">
+                                    <ol class="breadcrumb">
+                                        <li class="breadcrumb-item"><a href="index.html">Home</a>
+                                        </li>
+                                        <li class="breadcrumb-item active">Add New</li>
+
+
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+               
+                    <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
+                        <div class="form-group breadcrumb-right">
+                            <a href="{{ route('finance.fixed-asset.revaluation-impairement.index') }}"> <button
+                                class="btn btn-secondary btn-sm"><i data-feather="arrow-left-circle"></i> Back</button>
+                        </a>
+                            <button class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" type="button" id="save-draft-btn">
+                                <i data-feather="save"></i> Save as Draft
+                            </button>
+                          
+                            <button type="submit" form="fixed-asset-revaluation-impairement-form" class="btn btn-primary btn-sm"
+                            id="submit-btn">
+                            <i data-feather="check-circle"></i> Submit
+                        </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="content-body">
+
+
+
+                <section id="basic-datatable">
+                    <div class="row">
+                        <form id="fixed-asset-revaluation-impairement-form" method="POST"
+                            action="{{ route('finance.fixed-asset.revaluation-impairement.store') }}" enctype="multipart/form-data">
+
+                            @csrf
+                            <input type="hidden" name="sub_assets" id="sub_assets">
+                            <input type="hidden" name="asset_details" id="asset_details">
+                            <input type="hidden" name="doc_number_type" id="doc_number_type">
+                            <input type="hidden" name="doc_reset_pattern" id="doc_reset_pattern">
+                            <input type="hidden" name="doc_prefix" id="doc_prefix">
+                            <input type="hidden" name="doc_suffix" id="doc_suffix">
+                            <input type="hidden" name="doc_no" id="doc_no">
+                            <input type="hidden" name="document_status" id="document_status" value="">
+                            <input type="hidden" name="dep_type" id="depreciation_type" value="{{$dep_type}}">
+                            <div class="col-12">
+
+
+                                <div class="card">
+                                    <div class="card-body customernewsection-form">
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                <div class="newheader border-bottom mb-2 pb-25  ">
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <h4 class="card-title text-theme">Basic Information</h4>
+                                                            <p class="card-text">Fill the details</p>
+                                                        </div>
+
+
+                                                        <div class="col-md-6 text-sm-end" hidden>
+                                                            <span
+                                                                class="badge rounded-pill badge-light-secondary forminnerstatus">
+                                                                Status : <span class="text-success">Approved</span>
+                                                            </span>
+                                                        </div>
+
+                                                    </div>
+                                                </div>
+
+                                            </div>
+
+
+
+
+                                            <div class="col-md-8">
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label" for="book_id">Series <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <select class="form-select" id="book_id" name="book_id" required>
+                                                            @foreach ($series as $book)
+                                                                <option value="{{ $book->id }}">{{ $book->book_code }}
+                                                                </option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label" for="document_number">Doc No <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <input type="text" class="form-control" id="document_number"
+                                                            name="document_number" required>
+                                                    </div>
+                                                </div>
+
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label" for="document_date">Doc Date <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <input type="date" class="form-control" id="document_date"
+                                                            name="document_date" value="{{ date('Y-m-d') }}" required>
+                                                    </div>
+                                                </div>
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Location <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+
+                                                    <div class="col-md-5">
+                                                        <select id="location" class="form-select"
+                                                            name="location_id" required>
+                                                            @foreach ($locations as $location)
+                                                                <option value="{{ $location->id }}">
+                                                                    {{ $location->store_name }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+
+                                                </div>
+                                                <div class="row align-items-center mb-1 cost_center">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Cost Center <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+
+                                                    <div class="col-md-5">
+                                                        <select id="cost_center" class="form-select"
+                                                            name="cost_center_id" required>
+                                                        </select>
+                                                    </div>
+
+                                                </div>
+
+                                            </div>
+
+
+                                            <div class="col-md-4">
+
+                                                {{-- History Code --}}
+
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </div>
+
+
+
+
+                                <div class="card">
+                                    <div class="card-body customernewsection-form">
+
+
+                                        <div class="border-bottom mb-2 pb-25">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="newheader ">
+                                                        <h4 class="card-title text-theme">Select Assets</h4>
+                                                        <p class="card-text">Fill the details</p>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6 text-sm-end">
+                                                    <a href="#" class="btn btn-sm btn-outline-danger me-50" id="delete">
+                                                        <i data-feather="x-circle"></i> Delete</a>
+                                                    <a id="addNewRowBtn" class="btn btn-sm btn-outline-primary">
+                                                        <i data-feather="plus"></i> Add New</a>
+                                                </div>
+                                            </div>
+                                        </div>
+
+
+
+
+
+                                        <div class="row">
+
+                                            <div class="col-md-12">
+
+
+                                                <div class="table-responsive pomrnheadtffotsticky">
+                                                    <table
+                                                        class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
+                                                        <thead>
+                                                            <tr>
+                                                                <th class="customernewsection-form">
+                                                                    <div
+                                                                        class="form-check form-check-primary custom-checkbox">
+                                                                        <input type="checkbox" class="form-check-input"  
+                                                                            id="checkAll">
+                                                                        <label class="form-check-label"
+                                                                            for="Email"></label>
+                                                                    </div>
+                                                                </th>
+                                                                <th width="200px">Asset Name & Code</th>
+                                                                <th width="500px">Sub Assets & Code</th>
+                                                                <th width="100px">Quantity</th>
+                                                                <th class="text-end">Current Value</th>
+                                                                <th width="200px">Last Dep. Date</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody class="mrntableselectexcel">
+                                                            <tr>
+                                                                <td class="customernewsection-form">
+                                                                    <div
+                                                                        class="form-check form-check-primary custom-checkbox">
+                                                                        <input type="checkbox" class="form-check-input row-check"
+                                                                            id="Email">
+                                                                        <label class="form-check-label"
+                                                                            for="Email"></label>
+                                                                    </div>
+                                                                </td>
+                                                                <td class="poprod-decpt">  
+                                                                        <input type="text" required class="form-control asset-search-input mw-100"/>
+                                                                   <input type="hidden" name="asset_id[]" class="asset_id" data-id="1" id="asset_id_1"/> 
+                                                              
+                                                                    </td>
+                                                                      
+                                                                <td class="poprod-decpt">
+                                                                    <input type="text" required class="form-control subasset-search-input mw-100"/>
+                                                                   <input type="hidden" name="sub_asset_id[]" class="sub_asset_id" data-id="1" id="sub_asset_id_1"/> 
+                                                                </td>
+                                                                <td><input type="number" name="quantity[]" id="quantity_1" readonly data-id="1"
+                                                                        class="form-control mw-100 quantity" /></td>
+                                                                <td class="text-end"><input type="text" name="currentvalue[]" id="currentvalue_1" data-id="1"
+                                                                        class="form-control mw-100 text-end currentvalue" readonly/>
+                                                                </td>
+                                                                
+                                                                <td><input type="date" name="last_dep_date[]" id="last_dep_date_1" data-id="1"
+                                                                    class="form-control mw-100 last_dep_date" readonly/>
+                                                            </td>
+                                                            </tr>
+
+
+                                                            
+                                                        </tbody>
+
+
+                                                    </table>
+                                                </div>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </div>
+
+
+
+
+                        </form>
+
+
+                    </div>
+            </div>
+            <!-- Modal to add new record -->
+
+            </section>
+
+
+        </div>
+    </div>
+    </div>
+    <!-- END: Content-->
+
+    <div class="sidenav-overlay"></div>
+    <div class="drag-target"></div>
+
+
+
+    <div class="modal fade text-start alertbackdropdisabled" id="amendmentconfirm" tabindex="-1"
+        aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header p-0 bg-transparent">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body alertmsg text-center warning">
+                    <i data-feather='alert-circle'></i>
+                    <h2>Are you sure?</h2>
+                    <p>Are you sure you want to <strong>Amendment</strong> this <strong>MRN</strong>? After Amendment
+                        this action cannot be undone.</p>
+                    <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection
+
+
+
+
+@section('scripts')
+    <script>
+        $(window).on('load', function() {
+            if (feather) {
+                feather.replace({
+                    width: 14,
+                    height: 14
+                });
+            }
+        })
+
+
+
+        $(".mrntableselectexcel tr").click(function() {
+            $(this).addClass('trselected').siblings().removeClass('trselected');
+            value = $(this).find('td:first').html();
+        });
+
+        $(document).on('keydown', function(e) {
+            if (e.which == 38) {
+                $('.trselected').prev('tr').addClass('trselected').siblings().removeClass('trselected');
+            } else if (e.which == 40) {
+                $('.trselected').next('tr').addClass('trselected').siblings().removeClass('trselected');
+            }
+            $('.mrntableselectexcel').scrollTop($('.trselected').offset().top - 40);
+        });
+
+        $('#add_new_sub_asset').on('click', function() {
+            const subAssetCode = $('#sub_asset_id').val();
+            genereateSubAssetRow(subAssetCode);
+        });
+
+       
+        function resetParametersDependentElements(data) {
+            let backDateAllowed = false;
+            let futureDateAllowed = false;
+
+            if (data != null) {
+                console.log(data.parameters.back_date_allowed);
+                if (Array.isArray(data?.parameters?.back_date_allowed)) {
+                    for (let i = 0; i < data.parameters.back_date_allowed.length; i++) {
+                        if (data.parameters.back_date_allowed[i].trim().toLowerCase() === "yes") {
+                            backDateAllowed = true;
+                            break; // Exit the loop once we find "yes"
+                        }
+                    }
+                }
+                if (Array.isArray(data?.parameters?.future_date_allowed)) {
+                    for (let i = 0; i < data.parameters.future_date_allowed.length; i++) {
+                        if (data.parameters.future_date_allowed[i].trim().toLowerCase() === "yes") {
+                            futureDateAllowed = true;
+                            break; // Exit the loop once we find "yes"
+                        }
+                    }
+                }
+                //console.log(backDateAllowed, futureDateAllowed);
+
+            }
+
+            const dateInput = document.getElementById("document_date");
+
+            // Determine the max and min values for the date input
+            const today = moment().format("YYYY-MM-DD");
+
+            if (backDateAllowed && futureDateAllowed) {
+                dateInput.setAttribute("min","{{$financialStartDate}}");
+                dateInput.setAttribute("max","{{$financialEndDate}}");
+            } else if (backDateAllowed) {
+                dateInput.setAttribute("max", today);
+                dateInput.setAttribute("min","{{$financialStartDate}}");
+            } else if (futureDateAllowed) {
+                dateInput.setAttribute("min", today);
+                dateInput.setAttribute("max","{{$financialEndDate}}");
+            } else {
+                dateInput.setAttribute("min", today);
+                dateInput.setAttribute("max", today);
+            
+            }
+        }
+
+        $('#book_id').on('change', function() {
+            resetParametersDependentElements(null);
+            let currentDate = new Date().toISOString().split('T')[0];
+            let document_date = $('#document_date').val();
+            let bookId = $('#book_id').val();
+            let actionUrl = '{{ route('book.get.doc_no_and_parameters') }}' + '?book_id=' + bookId +
+                "&document_date=" + document_date;
+            fetch(actionUrl).then(response => {
+                return response.json().then(data => {
+                    if (data.status == 200) {
+                        resetParametersDependentElements(data.data);
+                        $("#book_code_input").val(data.data.book_code);
+                        if (!data.data.doc.document_number) {
+                            $("#document_number").val('');
+                            $('#doc_number_type').val('');
+                            $('#doc_reset_pattern').val('');
+                            $('#doc_prefix').val('');
+                            $('#doc_suffix').val('');
+                            $('#doc_no').val('');
+                        } else {
+                            $("#document_number").val(data.data.doc.document_number);
+                            $('#doc_number_type').val(data.data.doc.type);
+                            $('#doc_reset_pattern').val(data.data.doc.reset_pattern);
+                            $('#doc_prefix').val(data.data.doc.prefix);
+                            $('#doc_suffix').val(data.data.doc.suffix);
+                            $('#doc_no').val(data.data.doc.doc_no);
+                        }
+                        if (data.data.doc.type == 'Manually') {
+                            $("#document_number").attr('readonly', false);
+                        } else {
+                            $("#document_number").attr('readonly', true);
+                        }
+
+                    }
+                    if (data.status == 404) {
+                        $("#document_number").val('');
+                        $('#doc_number_type').val('');
+                        $('#doc_reset_pattern').val('');
+                        $('#doc_prefix').val('');
+                        $('#doc_suffix').val('');
+                        $('#doc_no').val('');
+                        showToast('error', data.message);
+                    }
+                });
+            });
+        });
+        $('#book_id').trigger('change');
+        document.getElementById('save-draft-btn').addEventListener('click', function() {
+            document.getElementById('document_status').value = 'draft';
+            const allRows = [];
+
+    $('.mrntableselectexcel tr').each(function () {
+        const row = $(this);
+        const rowId = row.find('.asset_id').attr('data-id');
+        let sub_asset_codes = [];
+        row.find(`#sub_asset_id_${rowId} option:selected`).each(function () {
+            sub_asset_codes.push($(this).text());
+        });
+
+        const rowData = {
+            asset_id: row.find(`#asset_id_${rowId}`).val(),
+            sub_asset_id: row.find(`#sub_asset_id_${rowId}`).val(), // array from select2
+            quantity: row.find(`#quantity_${rowId}`).val(),
+            sub_asset_code :sub_asset_codes,
+            currentvalue: row.find(`#currentvalue_${rowId}`).val(),
+            salvagevalue: row.find(`#salvagevalue_${rowId}`).val(),
+            last_dep_date: row.find(`#last_dep_date_${rowId}`).val(),
+        };
+
+        allRows.push(rowData);
+    });
+
+    $('#asset_details').val(JSON.stringify(allRows));
+
+            document.getElementById('fixed-asset-revaluation-impairement-form').submit();
+        });
+
+
+$('#fixed-asset-revaluation-impairement-form').on('submit', function(e) {
+            e.preventDefault(); // Always prevent default first
+
+            document.getElementById('document_status').value = 'submitted';
+            const allRows = [];
+
+    $('.mrntableselectexcel tr').each(function () {
+        const row = $(this);
+        const rowId = row.find('.asset_id').attr('data-id');
+        let sub_asset_codes = [];
+        row.find(`#sub_asset_id_${rowId} option:selected`).each(function () {
+            sub_asset_codes.push($(this).text());
+        });
+
+        const rowData = {
+            asset_id: row.find(`#asset_id_${rowId}`).val(),
+            sub_asset_id: row.find(`#sub_asset_id_${rowId}`).val(), // array from select2
+            quantity: row.find(`#quantity_${rowId}`).val(),
+            sub_asset_code :sub_asset_codes,
+            currentvalue: row.find(`#currentvalue_${rowId}`).val(),
+            salvagevalue: row.find(`#salvagevalue_${rowId}`).val(),
+            last_dep_date: row.find(`#last_dep_date_${rowId}`).val(),
+        };
+
+        allRows.push(rowData);
+    });
+
+    $('#asset_details').val(JSON.stringify(allRows));
+
+
+            this.submit();
+        });
+
+        function showToast(icon, title) {
+            const Toast = Swal.mixin({
+                toast: true,
+                position: "top-end",
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+                didOpen: (toast) => {
+                    toast.onmouseenter = Swal.stopTimer;
+                    toast.onmouseleave = Swal.resumeTimer;
+                },
+            });
+            Toast.fire({
+                icon,
+                title
+            });
+        }
+
+        @if (session('success'))
+            showToast("success", "{{ session('success') }}");
+        @endif
+
+        @if (session('error'))
+            showToast("error", "{{ session('error') }}");
+        @endif
+
+        @if ($errors->any())
+            showToast('error',
+                "@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach"
+            );
+        @endif
+
+function initializeAssetAutocomplete(selector) {
+    $(selector).autocomplete({
+        source: function (request, response) {
+            $.ajax({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                url: '{{ route("finance.fixed-asset.asset-search") }}',
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    q: request.term,
+                    ids:getAllAssetIds(),
+                },
+                success: function (data) {
+                    response(data.map(function (item) {
+                        return {
+                            label: item.asset_code + ' (' + item.asset_name + ')',
+                            value: item.id,
+                            asset: item
+                        };
+                    }));
+                },
+                error: function () {
+                    response([]);
+                }
+            });
+        },
+        minLength: 0,
+        select: function (event, ui) {
+            const asset = ui.item.asset;
+            const row = $(this).closest('tr');
+            const rowId = row.data('id'); // assuming you set `data-id` on the <tr>
+
+            // Set visible label and hidden ID
+            $(this).val(ui.item.label);
+            row.find('.asset_id').val(ui.item.value);
+
+            let subAssetSelect = row.find('.sub_asset_id');
+            let last_dep = row.find('.last_dep_date');
+            subAssetSelect.html('<option value="">Loading...</option>');
+
+            $.ajax({
+                url: '{{ route("finance.fixed-asset.sub_asset") }}',
+                type: 'GET',
+                data: { id: ui.item.value },
+                success: function (response) {
+                subAssetSelect.empty();
+                    subAssetSelect.html('<option value="">Select</option>');
+                    $.each(response, function (key, subAsset) {
+                        subAssetSelect.append(
+                            '<option value="' + subAsset.id + '">' + subAsset.sub_asset_code + '</option>'
+                        );
+                    });
+
+                    if (response[0].asset) {
+                        if(response[0].asset.last_dep_date!=response[0].asset.capitalize_date){
+                        let lastDepDate = new Date(response[0].asset.last_dep_date);
+                        lastDepDate.setDate(lastDepDate.getDate() - 1);
+                        let formatted = lastDepDate.toISOString().split('T')[0];
+                        last_dep.val(formatted);
+                    }
+                    }
+                row.find('.quantity').val('');
+                row.find('.currentvalue').val('');
+                row.find('.salvagevalue').val('');
+                    refreshAssetSelects();
+                    updateSum();
+                },
+                error: function () {
+                    showToast('error', 'Failed to load sub-assets.');
+                }
+            });
+
+            return false;
+        },
+        change: function (event, ui) {
+            const row = $(this).closest('tr');
+            let subAssetSelect = row.find('.sub_asset_id');
+            if (!ui.item) {
+                $(this).val('');
+                subAssetSelect.empty();
+                row.find('.sub_asset_id').empty();
+                row.find('.asset_id').val('');
+                row.find('.quantity').val('');
+                row.find('.currentvalue').val('');
+                row.find('.salvagevalue').val('');
+                row.find('.last_dep_date').val('');
+                refreshAssetSelects();
+                updateSum();
+            }
+        }
+    }).focus(function () {
+        if (this.value === '') {
+            $(this).autocomplete('search');
+        }
+    });
+}
+
+
+   initializeAssetAutocomplete('.asset-search-input');
+        
+            // On Sub-Asset change, get value and last dep date
+$(document).on('change', '.sub_asset_id', function () {
+    let subAssetIds = $(this).val();
+    let row = $(this).data('id');
+    let assetId = $('#asset_id_'+row).val();
+    let totalCurrentValue = 0; // To accumulate values
+    let responsesReceived = 0; // Counter to check when all requests are done
+    if (subAssetIds && subAssetIds.length > 0) {
+        subAssetIds.forEach(function (subAssetId) {
+            $.ajax({
+                url: '{{ route('finance.fixed-asset.sub_asset_details') }}',
+                type: 'GET',
+                data: {
+                    id: assetId,
+                    sub_asset_id: subAssetId,
+                },
+                success: function (response) {
+                    let currentValue = parseFloat(response.current_value_after_dep) || 0;
+                    totalCurrentValue += currentValue;
+                    responsesReceived++;
+                    if (responsesReceived === subAssetIds.length) {
+                        $('#currentvalue_'+row).val(totalCurrentValue.toFixed(2));
+                        $('#quantity_'+row).val(responsesReceived);
+                        updateSum();
+                   }
+                },
+                error: function () {
+                    showToast('error', 'Failed to load sub-asset details.');
+                    responsesReceived++;
+
+                    // Still check if all requests have completed (including failures)
+                    if (responsesReceived === subAssetIds.length) {
+                        $('#currentvalue_'+row).val(0);
+                        $('#quantity_'+row).val(0);
+                        updateSum();
+                    }
+                }
+            });
+        });
+    } else {
+        $('#currentvalue_'+row).val(0);
+    $('#quantity_'+row).val(0);
+                        updateSum();
+    }
+});
+ $('.select2').select2();
+
+            
+ function updateSum() {
+    let depreciationPercentage = parseFloat(document.getElementById("depreciation_percentage").value) || 0;
+
+    let totalValue = 0;
+    let totalQuantity = 0;
+    let salvageValue = 0;
+
+    $('.currentvalue').each(function () {
+        let value = parseFloat($(this).val()) || 0;
+        let salvageValue = (value * (depreciationPercentage / 100)).toFixed(2);
+        $(this).closest('tr').find('.salvagevalue').val(salvageValue);
+        totalValue += value;
+    });
+    $('.salvagevalue').each(function () {
+        let value = parseFloat($(this).val()) || 0;
+        salvageValue += value;
+    });
+
+    $('.quantity').each(function () {
+        let qty = parseFloat($(this).val()) || 0;
+        totalQuantity += qty;
+    });
+
+    // Example: Update totals in specific HTML elements
+    $('#current_value').val(totalValue.toFixed(2));
+    $('#salvage_value').val(salvageValue.toFixed(2));
+    //$('#quantity').val(totalQuantity);
+    updateDepreciationValues();
+
+
+}
+
+let rowCount = 1;
+
+$('#addNewRowBtn').on('click', function () {
+    rowCount++;
+    let newRow = `
+    <tr>
+        <td class="customernewsection-form">
+            <div class="form-check form-check-primary custom-checkbox">
+                <input type="checkbox" class="form-check-input row-check" id="Email_${rowCount}">
+                <label class="form-check-label" for="Email_${rowCount}"></label>
+            </div>
+        </td>
+        <td class="poprod-decpt">   
+            <input type="text" class="form-control asset-search-input mw-100" required />
+            <input type="hidden" name="asset_id[]" class="asset_id" data-id="${rowCount}" id="asset_id_${rowCount}"/> 
+         </td>
+        <td class="poprod-decpt">
+            <input type="text" required class="form-control subasset-search-input mw-100"/>
+            <input type="hidden" name="sub_asset_id[]" class="sub_asset_id" data-id="${rowCount}" id="sub_asset_id_${rowCount}"/> 
+        </td>
+        <td><input type="number" name="quantity[]" id="quantity_${rowCount}" readonly data-id="${rowCount}"
+            class="form-control mw-100 quantity" /></td>
+        <td><input type="text" name="currentvalue[]" id="currentvalue_${rowCount}" data-id="${rowCount}"
+            class="form-control mw-100 text-end currentvalue" readonly /></td>
+              <td class="text-end"><input type="text" name="salvagevalue[]" id="salvagevalue_${rowCount}" data-id="${rowCount}"
+                                                                    class="form-control mw-100 text-end salvagevalue" readonly/>
+                                                            </td>
+        <td><input type="date" name="last_dep_date[]" id="last_dep_date_${rowCount}" data-id="${rowCount}"
+            class="form-control mw-100 last_dep_date" readonly /></td>
+    </tr>
+    `;
+
+    $('.mrntableselectexcel').append(newRow);
+    $(".select2").select2();
+    refreshAssetSelects();
+    initializeAssetAutocomplete('.asset-search-input');
+});
+function refreshAssetSelects() {
+    let selectedAssets = [];
+
+// Collect all selected asset values
+$('.asset_id').each(function () {
+    let val = $(this).val();
+    if (val) {
+        selectedAssets.push(val);
+    }
+});
+
+// Disable already selected options in other selects
+$('.asset_id').each(function () {
+    let currentSelect = $(this);
+    let currentVal = currentSelect.val();
+
+    currentSelect.find('option').each(function () {
+        let optionVal = $(this).val();
+
+        if (optionVal === "") return; // skip placeholder
+
+        if (selectedAssets.includes(optionVal) && optionVal !== currentVal) {
+            $(this).prop('disabled', true);
+        } else {
+            $(this).prop('disabled', false);
+        }
+    });
+});
+
+}
+
+
+ 
+$('#delete').on('click', function () {
+    let $rows = $('.mrntableselectexcel tr');
+    let $checked = $rows.find('.row-check:checked');
+
+    // Prevent deletion if only one row exists
+    if ($rows.length <= 1) {
+        showToast('error','At least one row is required.');
+        return;
+    }
+
+    // Prevent deletion if checked rows would remove all
+    if ($rows.length - $checked.length < 1) {
+        showToast('error','You must keep at least one row.');
+        return;
+    }
+
+    // Remove only the checked rows
+    $checked.closest('tr').remove();
+    updateSum();
+});
+$('#checkAll').on('change', function () {
+    let isChecked = $(this).is(':checked');
+    $('.mrntableselectexcel .row-check').prop('checked', isChecked);
+});
+
+function getAllRowsAsJson() {
+    const allRows = [];
+
+    $('.mrntableselectexcel tr').each(function () {
+        const row = $(this);
+        const rowId = row.find('.asset_id').attr('data-id');
+
+        const rowData = {
+            asset_id: row.find(`#asset_id_${rowId}`).val(),
+            sub_asset_id: row.find(`#sub_asset_id_${rowId}`).val(),
+            sub_asset_code :row.find(`#sub_asset_id_${rowId} option:selected`).text(),
+            quantity: row.find(`#quantity_${rowId}`).val(),
+            currentvalue: row.find(`#currentvalue_${rowId}`).val(),
+            last_dep_date: row.find(`#last_dep_date_${rowId}`).val(),
+        };
+
+        allRows.push(rowData);
+    });
+
+    return allRows;
+}
+$('#location').on('change', function () {
+    var locationId = $(this).val();
+
+    if (locationId) {
+        // Build the route manually
+        var url = '{{ route("cost-center.get-cost-center", ":id") }}'.replace(':id', locationId);
+
+        $.ajax({
+            url: url,
+            type: 'GET',
+            dataType: 'json',
+            success: function (data) {
+                if(data.length==0){
+                    $('#cost_center').empty(); 
+                $('#cost_center').prop('required', false);
+                $('.cost_center').hide();
+                }
+                else{
+                    $('.cost_center').show();
+                    $('#cost_center').prop('required', true);
+                $('#cost_center').empty(); // Clear previous options
+                $.each(data, function (key, value) {
+                    $('#cost_center').append('<option value="' + value.id + '">' + value.name + '</option>');
+                });
+            }
+            },
+            error: function () {
+                $('#cost_center').empty();
+            }
+        });
+    } else {
+        $('#cost_center').empty();
+    }
+});
+
+$('#location').trigger('change');
+
+function getAllAssetIds() {
+    let assetIds = [];
+
+    $('.asset_id').each(function () {
+        let val = $(this).val();
+        if (val) {
+            assetIds.push(parseFloat(val));
+        }
+    });
+
+    return assetIds;
+}
+
+
+    </script>
+    <!-- END: Content-->
+@endsection

@@ -75,18 +75,15 @@ if($pi_item?->item?->approvedVendors->count()) {
     <input type="hidden" name="components[{{$rowCount}}][uom_code]" value="{{$pi_item->uom_code}}">
     <input type="hidden" name="components[{{$rowCount}}][uom_id]" value="{{$pi_item?->uom?->id}}">
     <input readonly class="form-control" type="text" name="components[{{$rowCount}}][uom_name]" value="{{ucfirst($pi_item?->uom?->name)}}">
-    {{-- <select disabled class="form-select mw-100 " name="components[{{$rowCount}}][uom_id]">
-        <option value="{{$pi_item?->uom?->id}}">{{ucfirst($pi_item?->uom?->name)}}</option>
-    </select> --}}
 </td>
 <td>
     <select class="form-select mw-100 select2" name="components[{{$rowCount}}][vendor_id]">
         @if($pi_item?->item?->approvedVendors->count())
             @foreach($pi_item?->item?->approvedVendors as $approvedVendor)
-                <option value="{{$approvedVendor?->vendor_id}}">{{$approvedVendor?->vendor?->company_name}}</option>
+                <option value="{{$approvedVendor?->vendor_id}}" {{$pi_item->vendor_id == $approvedVendor?->vendor_id ? 'selected' : ''}}>{{$approvedVendor?->vendor?->company_name}}</option>
             @endforeach
         @else
-                <option value=""></option>
+            <option value=""></option>
             @foreach($vendors as $vendor)
                 <option value="{{$vendor?->id}}">{{$vendor?->company_name}}</option>
             @endforeach

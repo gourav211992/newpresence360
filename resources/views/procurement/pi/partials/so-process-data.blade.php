@@ -29,17 +29,18 @@ $soProcessItem->attributes = $soProcessItem->item_attributes_array();
     @if($soTracking == 'yes')
         <td>{{ (strtoupper($soProcessItem?->so?->book_code) .'-'. $soProcessItem?->so?->document_number)}}</td>
     @endif
-    <td>{{ $soProcessItem?->item?->item_code ?? 'NA'}}</td>
-    <td>{{ $soProcessItem?->item?->item_name ?? 'NA'}}</td>
-    <td>{!!  $html ?? 'NA' !!}</td>
-    <td>{{  $soProcessItem?->item?->uom?->name ?? 'NA'}}</td>
+    <td>{{ $soProcessItem?->item?->item_code ?? ''}}</td>
+    <td>{{ $soProcessItem?->item?->item_name ?? ''}}</td>
+    <td>{!!  $html ?? '' !!}</td>
+    <td>{{  $soProcessItem?->item?->uom?->name ?? ''}}</td>
     <td class="text-end">{{number_format($soProcessItem->total_qty,2)}}</td>
     <td class="text-end">{{number_format($inventoryStock['confirmedStocks'], 2)}}</td>
     <td class="text-end">{{number_format($inventoryStock['pendingStocks'], 2)}}</td>
+    <td>{{$soProcessItem?->vendor?->company_name ?? ''}}</td>
     {{-- <td class="text-end">{{number_format(0, 2)}}</td> --}}
 </tr>
 @empty
 <tr>
-    <td colspan="9" class="text-center">No record found!</td>
+    <td colspan="10" class="text-center">No record found!</td>
 </tr>
 @endforelse

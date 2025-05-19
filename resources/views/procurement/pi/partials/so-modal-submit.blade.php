@@ -35,6 +35,7 @@
 										<th>Quantity</th>
 										<th>Confirmed Stock</th>
 										<th>Unconfirmed Stock</th>
+										<th>Vendor</th>
 										{{-- <th>Pending PO</th>  --}}
 									</tr>
 								</thead>

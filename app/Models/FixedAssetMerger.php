@@ -109,20 +109,16 @@ class FixedAssetMerger extends Model
                 'asset_code' => $request->asset_code,
                 'asset_name' => $request->asset_name,
                 'quantity' => $request->quantity,
-                'catrgory_id'=>$request->category_id,
+                'category_id'=>$request->category_id,
+                'reference_doc_id'=>$request->id,
+                'reference_series'=>'fixed-asset-merger',
                 'ledger_id' => $request->ledger_id,
                 'ledger_group_id' => $request->ledger_group_id,
-                'mrn_header_id'=> null,
-                'mrn_detail_id'=> null,
                 'capitalize_date' => $request->capitalize_date,
                 'last_dep_date'=> $request->capitalize_date,
-                'vendor_id'=> null,
                 'currency_id'=> $user->organization->currency_id,
                 'location_id'=>$request->location_id,
                 'cost_center_id'=>$request->cost_center_id,
-                'supplier_invoice_no'=> null,
-                'supplier_invoice_date'=> null,
-                'book_date'=>null,
                 'maintenance_schedule' => $request->maintenance_schedule,
                 'depreciation_method' => $request->depreciation_method,
                 'useful_life' => $request->useful_life,
@@ -148,7 +144,7 @@ class FixedAssetMerger extends Model
                 //delete old assets
                 foreach(json_decode($request->asset_details) as $item){
                     foreach($item->sub_asset_id as $sub){
-                        $old = FixedAssetSplit::find($sub);
+                        $old = FixedAssetSub::find($sub);
                         if($old)
                         FixedAssetSub::find($sub)->delete();
                     }
