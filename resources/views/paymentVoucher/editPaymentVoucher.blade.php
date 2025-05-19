@@ -73,71 +73,73 @@
                             <div class="form-group breadcrumb-right">
                                 <a href="{{ $indexUrl }}" class="btn btn-secondary btn-sm"><i
                                         data-feather="arrow-left-circle"></i> Back</a>
-                                @if ($buttons['draft'])
-                                    <button type="button" onclick = "submitForm('draft');"
-                                        class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" id="draft"
-                                        name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
-                                @endif
-                                @if($buttons['cancel'])
-                                <a id = "cancelButton" type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0"><i data-feather='x-circle'></i> Cancel</a>
-                                @endif                
-              
-                                @if ($buttons['submit'])
-                                    <button type="button" onclick = "submitForm('submitted');"
-                                        class="btn btn-primary btn-sm" id="submitted" name="action"
-                                        value="submitted"><i data-feather="check-circle"></i> Submit</button>
-                                @endif
-                                @if ($buttons['approve'])
-                                    <button type="button" id="reject-button" data-bs-toggle="modal"
-                                        data-bs-target="#approveModal" onclick = "setReject();"
-                                        class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg
-                                            xmlns="http://www.w3.org/2000/svg" width="14" height="14"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round"
-                                            class="feather feather-x-circle">
-                                            <circle cx="12" cy="12" r="10"></circle>
-                                            <line x1="15" y1="9" x2="9" y2="15"></line>
-                                            <line x1="9" y1="9" x2="15" y2="15"></line>
-                                        </svg> Reject</button>
-                                    <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal"
-                                        data-bs-target="#approveModal" onclick = "setApproval();"><i
-                                            data-feather="check-circle"></i> Approve</button>
-                                @endif
-                                @if ($buttons['amend'])
-                                    <button type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm"
-                                        class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i>
-                                        Amendment</button>
-                                @endif
-                                @if ($buttons['voucher'])
-                                    <button type="button" onclick="onPostVoucherOpen('posted');"
-                                        class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg
-                                            xmlns="http://www.w3.org/2000/svg" width="14" height="14"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round"
-                                            class="feather feather-file-text">
-                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                            <polyline points="14 2 14 8 20 8"></polyline>
-                                            <line x1="16" y1="13" x2="8" y2="13"></line>
-                                            <line x1="16" y1="17" x2="8" y2="17"></line>
-                                            <polyline points="10 9 9 9 8 9"></polyline>
-                                        </svg> Voucher</button>
+                                @if(isset($fyear) && $fyear['authorized'])
+                                    @if ($buttons['draft'])
+                                        <button type="button" onclick = "submitForm('draft');"
+                                            class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" id="draft"
+                                            name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
+                                    @endif
+                                    @if($buttons['cancel'])
+                                    <a id = "cancelButton" type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0"><i data-feather='x-circle'></i> Cancel</a>
+                                    @endif
+
+                                    @if ($buttons['submit'])
+                                        <button type="button" onclick = "submitForm('submitted');"
+                                            class="btn btn-primary btn-sm" id="submitted" name="action"
+                                            value="submitted"><i data-feather="check-circle"></i> Submit</button>
+                                    @endif
+                                    @if ($buttons['approve'])
+                                        <button type="button" id="reject-button" data-bs-toggle="modal"
+                                            data-bs-target="#approveModal" onclick = "setReject();"
+                                            class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg
+                                                xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round"
+                                                class="feather feather-x-circle">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <line x1="15" y1="9" x2="9" y2="15"></line>
+                                                <line x1="9" y1="9" x2="15" y2="15"></line>
+                                            </svg> Reject</button>
+                                        <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal"
+                                            data-bs-target="#approveModal" onclick = "setApproval();"><i
+                                                data-feather="check-circle"></i> Approve</button>
+                                    @endif
+                                    @if ($buttons['amend'])
+                                        <button type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm"
+                                            class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i>
+                                            Amendment</button>
+                                    @endif
+                                    @if ($buttons['voucher'])
+                                        <button type="button" onclick="onPostVoucherOpen('posted');"
+                                            class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg
+                                                xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round"
+                                                class="feather feather-file-text">
+                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                                <polyline points="14 2 14 8 20 8"></polyline>
+                                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                                                <polyline points="10 9 9 9 8 9"></polyline>
+                                            </svg> Voucher</button>
+                                    @endif
+
+                                    @if ($buttons['post'])
+                                        <button onclick = "onPostVoucherOpen();" type = "button"
+                                            class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg
+                                                xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round"
+                                                class="feather feather-check-circle">
+                                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                            </svg> Post</button>
+                                    @endif
+                                    @if($buttons['revoke'])
+                                    <a id = "revokeButton" type="button" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i> Revoke</a>
+                                    @endif
                                 @endif
 
-                                @if ($buttons['post'])
-                                    <button onclick = "onPostVoucherOpen();" type = "button"
-                                        class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg
-                                            xmlns="http://www.w3.org/2000/svg" width="14" height="14"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round"
-                                            class="feather feather-check-circle">
-                                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                                        </svg> Post</button>
-                                @endif
-                                @if($buttons['revoke'])
-                                <a id = "revokeButton" type="button" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i> Revoke</a>
-                                @endif 
-                               
 
                                 <input id="submitButton" type="submit" value="Submit" class="hidden" />
                             </div>
@@ -174,7 +176,7 @@
                                                         @endphp
                                                           <span class="badge rounded-pill badge-light-secondary forminnerstatus">
                                                             Status : <span class="{{App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS[$data->document_status] ?? ''}}">{{ucfirst($data->document_status)}}</span>
-                                                                </span>   
+                                                                </span>
                                                                </div>
                                                 </div>
                                             </div>
@@ -228,7 +230,7 @@
                                                     <div class="col-md-5">
                                                         <input type="date" class="form-control" readonly
                                                             name="date" id="date" required
-                                                            value="{{ $data->date }}" min="{{ $fyear['start_date'] }}" 
+                                                            value="{{ $data->date }}" min="{{ $fyear['start_date'] }}"
                                                             max="{{ $fyear['end_date'] }}" />
                                                     </div>
 
@@ -268,7 +270,7 @@
                                                     <div class="col-md-5">
                                                         <input type="date" class="form-control" name="payment_date"
                                                             id="payment_date" required value="{{ $data->payment_date }}"
-                                                            min="{{ $fyear['start_date'] }}" 
+                                                            min="{{ $fyear['start_date'] }}"
                                                         max="{{ $fyear['end_date'] }}"/>
                                                     </div>
                                                 </div>
@@ -329,7 +331,7 @@
                                                                 class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-3">
-                                              
+
                                                         <input type="text" class="form-control bankInput" id="reference_no"
                                                             name="reference_no" value="{{ $data->reference_no }}"
                                                             @if ($data->payment_type == 'Bank') required @endif />
@@ -385,10 +387,10 @@
                                                     <div class="col-md-5">
                                                         <input type="text" class="form-control"
                                                          id="orgExchangeRate" oninput="resetCalculations()" value="{{ round($data->org_currency_exg_rate, 2) }}"  readonly />
-                                               
+
 
                                                     </div>
-                                                    
+
 
                                                     <div class="col-md-7" hidden>
                                                         <div class="d-flex align-items-center">
@@ -400,7 +402,7 @@
                                                                             value="{{ $data->org_currency_code }}"
                                                                             style="text-transform:uppercase;width: 80px; border-right: none; border-radius: 7px 0 0 7px" />
 
-                                                                        
+
                                                                     </div>
                                                                     <label class="form-label">Base</label>
                                                                 </div>
@@ -459,11 +461,11 @@
                                                             <option value="{{ $location->id }}"
                                                                 {{ (isset($data->location) && $data->location == $location->id) ? 'selected' : '' }}>
                                                                 {{ $location->store_name }}
-                                                            </option>       
-                                                            @endforeach                                     
+                                                            </option>
+                                                            @endforeach
                                                         </select>
                                                     </div>
-                                                    
+
                                                 </div>
                                                 {{-- @if(count($cost_centers) > 0)
                                                 <div class="row align-items-center mb-1">
@@ -482,7 +484,7 @@
                                                         </select>
                                                     </div>
                                                 </div>
-                                                
+
                                                 @endif --}}
                                                     @php
                                                     // Find the selected location object
@@ -501,7 +503,7 @@
                                                     <div class="col-md-5 mb-1 mb-sm-0">
                                                         <select class="costCenter form-control select2" name="cost_center_id" id="cost_center_id">
                                                             @foreach ($locationCostCenters as $value)
-                                                            <option value="{{ $value['id'] }}" 
+                                                            <option value="{{ $value['id'] }}"
                                                                 @if($value['id'] == $data->cost_center_id) selected @endif>
                                                                 {{ $value['name'] }}
                                                             </option>
@@ -512,7 +514,7 @@
 
 
                                             </div>
-                                            
+
 
                                         </div>
                                         <div class="row" @if($data->approvalStatus=="cancel") style="display:none;" @endif>
@@ -526,9 +528,12 @@
                                                             </div>
                                                         </div>
                                                         <div class="col-md-6 text-sm-end">
+                                                            @if ($fyear['authorized'])
+
                                                             <a href="#"
                                                                 class="btn btn-sm btn-outline-primary add-row">
                                                                 <i data-feather="plus"></i> Add New</a>
+                                                            @endif
                                                         </div>
                                                     </div>
                                                 </div>
@@ -560,7 +565,7 @@
                                                                     <td>{{ $no }}</td>
                                                                     <td class="poprod-decpt">
                                                                         <input type="text" placeholder="Select"
-                                                                            class="form-control mw-100 ledgerselect mb-25 partyCode{{$no}}" required data-id="{{ $no }}" 
+                                                                            class="form-control mw-100 ledgerselect mb-25 partyCode{{$no}}" required data-id="{{ $no }}"
                                                                             required data-id="{{ $no }}"
                                                                             value="{{ $item?->ledger?->code ?? $item?->party?->ledger?->code }}" />
                                                                         <input type="hidden" name="party_id[]"
@@ -593,7 +598,7 @@
                                                                                 <option @if($item->reference=="On Account") selected @endif>On Account</option>
                                                                             </select>
                                                                             <div class="ms-50 flex-shrink-0">
-                                                                                <button type="button" class="btn p-25 btn-sm btn-outline-secondary invoice{{ $no }}" style="font-size: 10px" onclick="openInvoice({{ $no }},{{$data->id}},{{$item->id}})" @if($item->reference!="Invoice") disabled @endif>Invoice</button>
+                                                                                <button type="button" class="btn p-25 btn-sm btn-outline-secondary invoice{{ $no }}" style="font-size: 10px" onclick="openInvoice({{ $no }},{{$data->id}},{{$item->id}})" @if($item->reference!="Invoice" || !$fyear['authorized']) disabled @endif>Invoice</button>
                                                                             </div>
                                                                         </div>
                                                                     </td>
@@ -608,7 +613,12 @@
                                                                             name="amount_exc[]"
                                                                             value="{{ $item->orgAmount }}" required />
                                                                     </td>
-                                                                    <td><a href="#" class="text-danger deleteRow"><i data-feather="trash-2"></i></a></td>
+
+                                                                    <td>
+                                                                         @if ($fyear['authorized'])
+                                                                         <a href="#" class="text-danger deleteRow"><i data-feather="trash-2"></i></a>
+                                                                        @endif
+                                                                        </td>
                                                                 </tr>
                                                             @endforeach
                                                         </tbody>
@@ -1075,7 +1085,7 @@ $('.settleInput').each(function () {
             $('#invoice').modal('hide');
         }
 
-       
+
 
         $(document).on('input', '.settleInput', function(e) {
             let max = parseInt(e.target.max);
@@ -1107,7 +1117,7 @@ $('.settleInput').each(function () {
                 $('#currentRow').val(id);
                 getLedgers(paymentId,details,ref);
                 $('#invoice').modal('show');
-        
+
             } else {
                 $('.drop' + id).val('');
                 showToast('error','Select ledger to select invoice!!');
@@ -1204,7 +1214,7 @@ $('.settleInput').each(function () {
                                                 </div>
                                             </td>
                                         </tr>`;
-                                     
+
 
                                     }
                                 }
@@ -1242,7 +1252,7 @@ $('.settleInput').each(function () {
                         if(nextSettleInput.val()!=0)
                         checkBox.prop('checked', true);
                         console.log(enteredAmount-deduct);
-                        
+
                         entersettle.val(enteredAmount-deduct);
                     }
                 });
@@ -1259,7 +1269,7 @@ $('.settleInput').each(function () {
                         if(nextSettleInput.val()!=0)
                         checkBox.prop('checked', true);
                         console.log(enteredAmount-deduct);
-                        
+
                         entersettle.val(entersettle.val()-deduct);
                     }else if(excessAmount<deduct && nextBalance > settle){
                         nextSettleInput.val(excessAmount+settle);
@@ -1282,7 +1292,7 @@ $('.settleInput').each(function () {
                         if(nextSettleInput.val()!=0)
                         checkBox.prop('checked', true);
                         console.log(enteredAmount-deduct);
-                        
+
                         entersettle.val(entersettle.val()-deduct);
                     }else if(excessAmount<deduct && nextBalance > settle){
                         nextSettleInput.val(excessAmount+settle);
@@ -1292,7 +1302,7 @@ $('.settleInput').each(function () {
                         excessAmount=0;
                     }
                 });
-                
+
             }
         }
         }
@@ -1351,7 +1361,7 @@ $('.settleInput').each(function () {
 function check_amount() {
             $('#draft').attr('disabled', true);
             $('#submitted').attr('disabled', true);
-        
+
             let rowCount = document.querySelectorAll('.mrntableselectexcel tr').length;
             for (let index = 1; index <= rowCount; index++) {
                 if (parseFloat($('#excAmount' + index).val()) == 0) {
@@ -1373,11 +1383,11 @@ function check_amount() {
                  $('#draft').attr('disabled', false);
             $('#submitted').attr('disabled', false);
                 return false;
-           
-        
+
+
               }
         }
-        
+
         function selectAllVouchers() {
             $('.vouchers').each(function() {
                 if (this.checked) {
@@ -1445,26 +1455,26 @@ function check_amount() {
             document.getElementById('action_type').value = "reject";
         }
         function bind(){
-                                                   
+
                                                    $('.amount').on('click', function () {
                                                        if($(this).val()==="0" || $(this).val()==="0.00"){
                                                            $(this).val('');
                                                        }
                                                    });
-                                                   
+
                                                    $('.amount').on('focusout', function () {
                                                        if($(this).val()===""){
                                                            $(this).val('0.00');
                                                        }
                                                    });
-                                                    
+
                                                            }
 
 
         $(document).ready(function() {
             $('#reference_no').trigger('input');
 
-            @if (!$buttons['draft'])
+            @if (!$buttons['draft'] || !$fyear['authorized'])
 $('#voucherForm').find('input, select, textarea').prop('disabled', true);
 $('#revisionNumber').prop('disabled', false);
 @endif
@@ -1491,13 +1501,13 @@ $('#revisionNumber').prop('disabled', false);
                     $(".cashfield").hide();
                     $('.bankInput').attr('required', true);
                     $('#ledger_id').attr('required', false);
-              
+
                 } else {
                     $(".cashfield").show();
                     $(".bankfield").hide();
                     $('.bankInput').attr('required', false);
                     $('#ledger_id').attr('required', true);
-              
+
                 }
             });
         });
@@ -1569,7 +1579,7 @@ $('#revisionNumber').prop('disabled', false);
                                     );
                                 });
                                 groupDropdown.data('ledger',ui.item.label);
-                           
+
                             },
                             error: function(xhr) {
                                 let errorMessage =
@@ -1581,10 +1591,10 @@ $('#revisionNumber').prop('disabled', false);
                                 }
                                 showToast("error", errorMessage);
 
-                                
+
                             }
                         });
-                        
+
                         return false;
                     },
                     change: function(event, ui) {
@@ -1662,7 +1672,7 @@ $('#revisionNumber').prop('disabled', false);
                     </tr>`;
                 $('.mrntableselectexcel').append(newRow);
                 bind();
-    
+
 
                 initializeAutocomplete();
 
@@ -1675,7 +1685,7 @@ $('#revisionNumber').prop('disabled', false);
                 $('.select2').select2();
                 count++;
             });
- 
+
              $(document).on('keyup keydown', '.amount', function() {
                 if ($('#orgExchangeRate').val() == "") {
                     showToast('error','Select currency first!!');
@@ -1716,12 +1726,12 @@ $('#revisionNumber').prop('disabled', false);
         }
 
         function submitForm(status) {
-           
+
             $('#status').val(status);
             $('#submitButton').click();
-          
+
         }
-      
+
 
 
         function getAccounts() {
@@ -1994,7 +2004,7 @@ $('#revisionNumber').prop('disabled', false);
 
             }
         }
-   
+
     $(document).on('click', '#revokeButton', (e) => {
     let actionUrl = '{{ route("paymentVouchers.revoke.document") }}'+ '?id='+'{{$data->id}}';
     fetch(actionUrl).then(response => {
@@ -2014,7 +2024,7 @@ $('#revisionNumber').prop('disabled', false);
             }
             location.reload();
         });
-    }); 
+    });
 });
 
 function changerate(){
@@ -2036,7 +2046,7 @@ function changerate(){
         if (result.isConfirmed) {
             // Proceed with AJAX request after confirmation
             let actionUrl = '{{ route("paymentVouchers.cancel.document") }}' + '?id=' + '{{$data->id}}';
-            
+
             fetch(actionUrl)
                 .then(response => response.json())
                 .then(data => {
@@ -2073,7 +2083,7 @@ function showToast(icon, title) {
                         text: title,
                         icon: icon
                     });
-} 
+}
        function on_account_required(data){
             let onAccountRequired = false;
             $('.invoiceDrop').each(function() {
@@ -2081,8 +2091,8 @@ function showToast(icon, title) {
                         return $(this).text().trim() === 'On Account';
                     }).hide();
                 });
-            
-         
+
+
                 if (data != null) {
                 console.log(data.parameters.on_account_required);
                 if (Array.isArray(data?.parameters?.on_account_required)) {
@@ -2097,8 +2107,8 @@ function showToast(icon, title) {
                             break; // Exit the loop once we find "yes"
                         }
                     }
-                   
-              
+
+
 
                 }
             }
@@ -2120,7 +2130,7 @@ function showToast(icon, title) {
             });
         }
         getDocNumberByBookId();
-           
+
         @if (session('success'))
             showToast("success", "{{ session('success') }}");
         @endif
@@ -2169,7 +2179,7 @@ function showToast(icon, title) {
         $costCenterRow.hide();
         $dropdown.empty();
     }
-});  
+});
 let timer;
 
         $('#reference_no').on('input', function () {
@@ -2185,7 +2195,7 @@ let timer;
                             _token: '{{ csrf_token() }}',
                             reference_no: refNo,
                             edit_id:"{{$data->id}}",
-                            
+
                         },
                         success: function (response) {
                             if (response.exists) {

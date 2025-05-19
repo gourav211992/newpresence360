@@ -784,7 +784,7 @@
 												${data['data'][i].name}
 											</a>
 										</td>
-                                        <td class="open_amt">${Math.abs(parseFloat(data['data'][i].open)).toLocaleString('en-IN')} ${data['data'][i].opening_type}</td>
+                                        <td class="close_amt">${Math.abs(closing).toLocaleString('en-IN')} ${closingText}</td>
 									</tr>`;
                             }
 
@@ -1009,7 +1009,7 @@
                                                         ${data['data'][i].name}
                                                     </a>
                                                 </td>
-                                                <td>${parseFloat(Math.abs(data['data'][i].open)).toLocaleString('en-IN')} ${data['data'][i].opening_type}</td>
+                                                <td>${parseFloat(closing < 0 ? -closing : closing).toLocaleString('en-IN')} ${closingText}</td>
                                             </tr>`;
                                             }
                                         }
@@ -1032,7 +1032,7 @@
                                                 <td style="padding-left: ${padding}px">
 														<i data-feather='arrow-right'></i>${data['data'][i].name}
                                                 </td>
-                                                <td>${parseFloat(Math.abs(data['data'][i].open)).toLocaleString('en-IN')} ${data['data'][i].opening_type ?? ''}</td>
+                                                <td>${parseFloat(closing < 0 ? -closing : closing).toLocaleString('en-IN')} ${closingText}</td>
                                             </tr>`;
                                             tot_debt += data['data'][i].details_sum_debit_amt;
                                             tot_credit += data['data'][i]
@@ -1209,7 +1209,7 @@
 																</a>
 															</td>
 
-                                                        <td>${parseFloat(Math.abs(data['data'][i].open)).toLocaleString('en-IN')} ${data['data'][i].opening_type}</td>
+                                                        <td>${parseFloat(closing < 0 ? -closing : closing).toLocaleString('en-IN')} ${closingText}</td>
 														</tr>`;
                                                     }
                                                 }
@@ -1239,7 +1239,7 @@
 																<i data-feather='arrow-right'></i>${data['data'][i].name}
 															</td>
 
-                                                        <td>${parseFloat(Math.abs(data['data'][i].open)).toLocaleString('en-IN')} ${data['data'][i].opening_type ?? ''}</td>
+                                                        <td>${parseFloat(closing < 0 ? -closing : closing).toLocaleString('en-IN')} ${closingText}</td>
 														</tr>`;
                                                     tot_debt += data['data'][i]
                                                         .details_sum_debit_amt;

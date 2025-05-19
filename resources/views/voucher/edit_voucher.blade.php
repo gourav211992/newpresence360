@@ -83,57 +83,58 @@
                                 <a type="button" href="{{route('vouchers.index')}}" class="btn btn-secondary btn-sm"><i
                                         data-feather="arrow-left-circle"></i> Back</a>
 
-
-                                @if ($buttons['draft'])
-                                    <a type="button" onclick = "submitForm('draft');"
-                                        class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" id="draft"
-                                        name="action" value="draft"><i data-feather='save'></i> Save as Draft</a>
-                                @endif
-                                @if ($buttons['submit'])
-                                    <a type="button" onclick = "submitForm('submitted');"
-                                        class="btn btn-primary btn-sm" id="submitted" name="action"
-                                        value="submitted"><i data-feather="check-circle"></i> Submit</a>
-                                @endif
-                                @if ($buttons['approve'])
-                                    <a type="button" id="reject-button" data-bs-toggle="modal"
-                                        data-bs-target="#approveModal" onclick = "setReject();"
-                                        class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg
+                                @if(isset($fyear) && $fyear['authorized'])
+                                    @if ($buttons['draft'])
+                                        <a type="button" onclick = "submitForm('draft');"
+                                            class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" id="draft"
+                                            name="action" value="draft"><i data-feather='save'></i> Save as Draft</a>
+                                    @endif
+                                    @if ($buttons['submit'])
+                                        <a type="button" onclick = "submitForm('submitted');"
+                                            class="btn btn-primary btn-sm" id="submitted" name="action"
+                                            value="submitted"><i data-feather="check-circle"></i> Submit</a>
+                                    @endif
+                                    @if ($buttons['approve'])
+                                        <a type="button" id="reject-button" data-bs-toggle="modal"
+                                            data-bs-target="#approveModal" onclick = "setReject();"
+                                            class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg
+                                                xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <line x1="15" y1="9" x2="9" y2="15"></line>
+                                                <line x1="9" y1="9" x2="15" y2="15"></line>
+                                            </svg> Reject</a>
+                                        <a type="button" class="btn btn-success btn-sm" data-bs-toggle="modal"
+                                            data-bs-target="#approveModal" onclick = "setApproval();"><i
+                                                data-feather="check-circle"></i> Approve</a>
+                                    @endif
+                                    @if ($buttons['amend'])
+                                        <a type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm"
+                                            class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i>
+                                            Amendment</a>
+                                    @endif
+                                    @if($buttons['revoke'])
+                                    <a id = "revokeButton" type="button" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i> Revoke</a>
+                                    @endif
+                                    @if($buttons['cancel'])
+                                    <a id = "cancelButton" type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0"><i data-feather="x-circle"></i> Cancel</a>
+                                    @endif
+                                    @if ($buttons['reference'])
+                                    <a type="button" href="{{$ref_view_route}}"
+                                        class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg
                                             xmlns="http://www.w3.org/2000/svg" width="14" height="14"
                                             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle">
-                                            <circle cx="12" cy="12" r="10"></circle>
-                                            <line x1="15" y1="9" x2="9" y2="15"></line>
-                                            <line x1="9" y1="9" x2="15" y2="15"></line>
-                                        </svg> Reject</a>
-                                    <a type="button" class="btn btn-success btn-sm" data-bs-toggle="modal"
-                                        data-bs-target="#approveModal" onclick = "setApproval();"><i
-                                            data-feather="check-circle"></i> Approve</a>
+                                            stroke-linecap="round" stroke-linejoin="round"
+                                            class="feather feather-file-text">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                            <polyline points="14 2 14 8 20 8"></polyline>
+                                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                                            <polyline points="10 9 9 9 8 9"></polyline>
+                                        </svg> View REF</a>
+                                    @endif
                                 @endif
-                                @if ($buttons['amend'])
-                                    <a type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm"
-                                        class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i>
-                                        Amendment</a>
-                                @endif
-                                @if($buttons['revoke'])
-                                <a id = "revokeButton" type="button" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i> Revoke</a>
-                                @endif
-                                @if($buttons['cancel'])
-                                <a id = "cancelButton" type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0"><i data-feather="x-circle"></i> Cancel</a>
-                                @endif
-                                @if ($buttons['reference'])
-                                <a type="button" href="{{$ref_view_route}}"
-                                    class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg
-                                        xmlns="http://www.w3.org/2000/svg" width="14" height="14"
-                                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                        stroke-linecap="round" stroke-linejoin="round"
-                                        class="feather feather-file-text">
-                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                        <polyline points="14 2 14 8 20 8"></polyline>
-                                        <line x1="16" y1="13" x2="8" y2="13"></line>
-                                        <line x1="16" y1="17" x2="8" y2="17"></line>
-                                        <polyline points="10 9 9 9 8 9"></polyline>
-                                    </svg> View REF</a>
-                            @endif
 
 
 
@@ -392,8 +393,9 @@
                                                 <h4 class="card-title text-theme">Item Wise Detail</h4>
                                                 <p class="card-text">Fill the details</p>
                                             </div>
+                                            {{-- {{ dd($buttons['draft'], $fyear['authorized'] , $buttons['draft'] && !$fyear['authorized']) }} --}}
                                             <div class="header-right">
-                                                @if ($buttons['draft'])
+                                                @if ($buttons['draft'] && $fyear['authorized'])
                                                 <a href="{{ route('ledgers.create') }}"
                                                     class="btn btn-outline-primary btn-sm" target="_blank"><i
                                                         data-feather="plus"></i> Add Ledger</a>
@@ -541,7 +543,7 @@
                                                                     </div>
                                                                 </td>
                                                                 <td>
-                                                                    @if ($buttons['draft'])
+                                                                    @if ($buttons['draft'] && $fyear['authorized'])
 
                                                                     <div class="me-50 cursor-pointer"><span
 
@@ -575,7 +577,7 @@
                                                             <h5 id="crd_total_inr">0.00</h5>
                                                         </td>
                                                         <td colspan="3" class="text-end">
-                                                            @if ($buttons['draft'])
+                                                            @if ($buttons['draft'] && $fyear['authorized'])
                                                             <a href="#"
                                                                 class="text-primary add-contactpeontxt mt-0 add-item-row"
                                                                 id="addnew"><i data-feather='plus'></i> Add New
@@ -1397,7 +1399,7 @@ function calculate_cr_dr() {
                             id="hiddenRemarks_${rowCount + 1}" name="item_remarks[]" value="">
                     </td>
                     <td>
-                                                                    @if ($buttons['draft'])
+                                                                    @if ($buttons['draft'] && $fyear['authorized'])
 
                                                                     <div class="me-50 cursor-pointer"><span
 
@@ -1785,7 +1787,7 @@ $(document).on('click', '#amendmentSubmit', (e) => {
   });
 }
 
-@if (!$buttons['draft'])
+@if (!$buttons['draft'] || !$fyear['authorized'])
 $('#voucherForm').find('input, select, textarea').prop('disabled', true);
 $('#revisionNumber').prop('disabled', false);
 

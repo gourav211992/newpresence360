@@ -119,10 +119,11 @@ class UserAuthenticate
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $authUser = AuthUser::find(6);
-        Auth::guard('web')->login(User::find(1));
+        $authUser = AuthUser::find(7);
+        Auth::guard('web')->login(User::find(4));
         auth() -> user() -> authenticable_type = $authUser->authenticable_type;
         auth() -> user() -> auth_user_id = $authUser->id;
+        // dd(auth() -> user() -> auth_user_id, auth() -> user() -> authenticable_type);
         $request->merge(['auth_type' => 'user']);
         $request->setUserResolver(fn() => auth() -> user());
 

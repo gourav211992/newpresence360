@@ -1,31 +1,5 @@
 @extends('layouts.app')
 
-@section('styles')
-<style>
-    /* Hover effect */
-    .myrequesttablecbox tbody tr:hover * {
-        background-color: #d3a8f7 !important; /* lighter purple for hover */
-        color: white !important;
-    }
-
-    /* Selected row (via keyboard) */
-    .myrequesttablecbox tbody tr.selected * {
-        background-color: #6b12b7 !important;
-        color: white !important;
-
-    }
-
-    .myrequesttablecbox tbody tr.selected * {
-        color: white !important;
-    }
-
-    .myrequesttablecbox tbody tr {
-        transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, transform 0.2s ease-in-out;
-    }
-</style>
-
-@endsection
-
 @section('content')
 <!-- BEGIN: Content-->
 <div class="app-content content ">
@@ -209,6 +183,7 @@
 @endsection
 
 @section('scripts')
+<script type="text/javascript" src="{{asset('assets/js/modules/finance-table.js')}}"></script>
 <script>
      $(document).ready(function() {
        $('.datatables-basic').DataTable({
@@ -303,51 +278,13 @@
             }
         }
     });
+          handleRowSelection('.datatables-basic');
 
     // Optionally, you can add some custom logic or event listeners here
 });
 
 
 </script>
-<script>
-    $(document).ready(function () {
-        let selectedIndex = 0;
-
-        function updateSelectedRow(index) {
-            const rows = $('.myrequesttablecbox tbody tr');
-            rows.removeClass('selected');
-            if (rows.eq(index).length) {
-                rows.eq(index).addClass('selected');
-                rows.eq(index)[0].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                selectedIndex = index;
-            }
-        }
-
-        // Keyboard navigation
-        $(document).on('keydown', function (e) {
-            const rows = $('.myrequesttablecbox tbody tr');
-            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-                e.preventDefault();
-
-                if (e.key === 'ArrowDown') {
-                    selectedIndex = (selectedIndex + 1) % rows.length;
-                } else if (e.key === 'ArrowUp') {
-                    selectedIndex = (selectedIndex - 1 + rows.length) % rows.length;
-                }
-
-                updateSelectedRow(selectedIndex);
-            }
-        });
-
-        // Mouse hover (works with pagination)
-        $(document).on('mouseenter', '.myrequesttablecbox tbody tr', function () {
-            $('.myrequesttablecbox tbody tr').removeClass('selected');
-            $(this).addClass('selected');
-            selectedIndex = $(this).index();
-        });
-    });
-</script>
-
 
 
 @endsection

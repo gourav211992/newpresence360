@@ -75,76 +75,77 @@
                             <div class="form-group breadcrumb-right">
                                 <a href="{{ $indexUrl }}" class="btn btn-secondary btn-sm"><i
                                         data-feather="arrow-left-circle"></i> Back</a>
-                                @if ($buttons['draft'])
-                                    <button type="button" onclick = "submitForm('draft');"
-                                        class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" id="submit-button"
-                                        name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
-                                @endif
-                                @if($buttons['cancel'])
-                                <a id = "cancelButton" type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0"><i data-feather='x-circle'></i> Cancel</a>
-                                @endif                
-              
-                                @if ($buttons['submit'])
-                                    <button type="button" onclick = "submitForm('submitted');"
-                                        class="btn btn-primary btn-sm" id="submit-button" name="action"
-                                        value="submitted"><i data-feather="check-circle"></i> Submit</button>
-                                @endif
-                                @if ($buttons['approve'])
-                                    <button type="button" id="reject-button" data-bs-toggle="modal"
-                                        data-bs-target="#approveModal" onclick = "setReject();"
-                                        class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg
-                                            xmlns="http://www.w3.org/2000/svg" width="14" height="14"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round"
-                                            class="feather feather-x-circle">
-                                            <circle cx="12" cy="12" r="10"></circle>
-                                            <line x1="15" y1="9" x2="9" y2="15"></line>
-                                            <line x1="9" y1="9" x2="15" y2="15"></line>
-                                        </svg> Reject</button>
-                                    <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal"
-                                        data-bs-target="#approveModal" onclick = "setApproval();"><i
-                                            data-feather="check-circle"></i> Approve</button>
-                                @endif
-                                @if ($buttons['amend'])
-                                    <button type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm"
-                                        class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i>
-                                        Amendment</button>
-                                @endif
-                               
+                                @if(isset($fyear) && $fyear['authorized'])
+                                    @if ($buttons['draft'])
+                                        <button type="button" onclick = "submitForm('draft');"
+                                            class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" id="submit-button"
+                                            name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
+                                    @endif
+                                    @if($buttons['cancel'])
+                                    <a id = "cancelButton" type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0"><i data-feather='x-circle'></i> Cancel</a>
+                                    @endif
 
-                            @if ($buttons['voucher'])
-                                    <button type="button" onclick="onPostVoucherOpen('posted');"
-                                        class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg
-                                            xmlns="http://www.w3.org/2000/svg" width="14" height="14"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round"
-                                            class="feather feather-file-text">
-                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                            <polyline points="14 2 14 8 20 8"></polyline>
-                                            <line x1="16" y1="13" x2="8" y2="13"></line>
-                                            <line x1="16" y1="17" x2="8" y2="17"></line>
-                                            <polyline points="10 9 9 9 8 9"></polyline>
-                                        </svg> Voucher</button>
-                                @endif
+                                    @if ($buttons['submit'])
+                                        <button type="button" onclick = "submitForm('submitted');"
+                                            class="btn btn-primary btn-sm" id="submit-button" name="action"
+                                            value="submitted"><i data-feather="check-circle"></i> Submit</button>
+                                    @endif
+                                    @if ($buttons['approve'])
+                                        <button type="button" id="reject-button" data-bs-toggle="modal"
+                                            data-bs-target="#approveModal" onclick = "setReject();"
+                                            class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg
+                                                xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round"
+                                                class="feather feather-x-circle">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <line x1="15" y1="9" x2="9" y2="15"></line>
+                                                <line x1="9" y1="9" x2="15" y2="15"></line>
+                                            </svg> Reject</button>
+                                        <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal"
+                                            data-bs-target="#approveModal" onclick = "setApproval();"><i
+                                                data-feather="check-circle"></i> Approve</button>
+                                    @endif
+                                    @if ($buttons['amend'])
+                                        <button type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm"
+                                            class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i>
+                                            Amendment</button>
+                                    @endif
 
-                                @if ($buttons['post'])
-                                    <button onclick = "onPostVoucherOpen();" type = "button"
-                                        class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg
-                                            xmlns="http://www.w3.org/2000/svg" width="14" height="14"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round"
-                                            class="feather feather-check-circle">
-                                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                                        </svg> Post</button>
+
+                                    @if ($buttons['voucher'])
+                                        <button type="button" onclick="onPostVoucherOpen('posted');"
+                                            class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg
+                                                xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round"
+                                                class="feather feather-file-text">
+                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                                <polyline points="14 2 14 8 20 8"></polyline>
+                                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                                                <polyline points="10 9 9 9 8 9"></polyline>
+                                            </svg> Voucher</button>
+                                    @endif
+
+                                    @if ($buttons['post'])
+                                        <button onclick = "onPostVoucherOpen();" type = "button"
+                                            class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg
+                                                xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round"
+                                                class="feather feather-check-circle">
+                                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                            </svg> Post</button>
+                                    @endif
+                                    @if($buttons['revoke'])
+                                    <a id = "revokeButton" type="button" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i> Revoke</a>
+                                    @endif
+                                    @if($data->document_status == "approved" || $data->document_status == "approval_not_required" || $data->document_status == "posted")
+                                    <a data-bs-toggle="modal" data-bs-target="#addcoulmn" class="btn btn-primary btn-sm mb-0 waves-effect"><i data-feather="mail"></i> Send Mail</a>
+                                    @endif
                                 @endif
-                                @if($buttons['revoke'])
-                                <a id = "revokeButton" type="button" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i> Revoke</a>
-                                @endif 
-                                @if($data->document_status == "approved" || $data->document_status == "approval_not_required" || $data->document_status == "posted")
-                                <a data-bs-toggle="modal" data-bs-target="#addcoulmn" class="btn btn-primary btn-sm mb-0 waves-effect"><i data-feather="mail"></i> Send Mail</a>
-                                @endif
-                               
 
                                 <input id="submitButton" type="submit" value="Submit" class="hidden" />
                             </div>
@@ -183,7 +184,7 @@
                                                         <span class="badge rounded-pill {{App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$data->document_status] ?? ''}} forminnerstatus">
                                                             <span class="text-dark">Status</span>
                                                              : <span class="{{App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS[$data->document_status] ?? ''}}">{{ucfirst($data->document_status)}}</span>
-                                                        </span>        
+                                                        </span>
                                                 </div>
                                              </div>
                                                 </div>
@@ -391,10 +392,10 @@
                                                     <div class="col-md-5">
                                                         <input type="text" class="form-control"
                                                          id="orgExchangeRate" oninput="resetCalculations()" value="{{ round($data->org_currency_exg_rate, 2) }}"  readonly />
-                                               
+
 
                                                     </div>
-                                                    
+
 
                                                     <div class="col-md-7" hidden>
                                                         <div class="d-flex align-items-center">
@@ -406,7 +407,7 @@
                                                                             value="{{ $data->org_currency_code }}"
                                                                             style="text-transform:uppercase;width: 80px; border-right: none; border-radius: 7px 0 0 7px" />
 
-                                                                        
+
                                                                     </div>
                                                                     <label class="form-label">Base</label>
                                                                 </div>
@@ -450,7 +451,7 @@
 
                                                         </div>
                                                     </div>
-                                                    
+
 
                                                 </div>
                                                 <div class="row align-items-center mb-1">
@@ -466,11 +467,11 @@
                                                             <option value="{{ $location->id }}"
                                                                 {{ (isset($data->location) && $data->location == $location->id) ? 'selected' : '' }}>
                                                                 {{ $location->store_name }}
-                                                            </option>       
-                                                            @endforeach                                     
+                                                            </option>
+                                                            @endforeach
                                                         </select>
                                                     </div>
-                                                    
+
                                                 </div>
                                                 {{-- @if(count($cost_centers) > 0 && $data->cost_center_id!=null)
                                                 <div class="row align-items-center mb-1">
@@ -478,7 +479,7 @@
                                                         <label class="form-label">Cost Center <span
                                                                 class="text-danger">*</span></label>
                                                     </div>
-    
+
                                                     <div class="col-md-5 mb-1 mb-sm-0">
                                                     <select class="form-control select2" name="cost_center_id"
                                                             id="cost_center_id">
@@ -489,7 +490,7 @@
                                                         </select>
                                                     </div>
                                                 </div>
-                                                    
+
                                                     @endif --}}
                                                     @php
                                                     // Find the selected location object
@@ -508,7 +509,7 @@
                                                     <div class="col-md-5 mb-1 mb-sm-0">
                                                         <select class="costCenter form-control select2" name="cost_center_id" id="cost_center_id">
                                                             @foreach ($locationCostCenters as $value)
-                                                            <option value="{{ $value['id'] }}" 
+                                                            <option value="{{ $value['id'] }}"
                                                                 @if($value['id'] == $data->cost_center_id) selected @endif>
                                                                 {{ $value['name'] }}
                                                             </option>
@@ -532,7 +533,7 @@
                                                                 <p class="card-text">Fill the details</p>
                                                             </div>
                                                         </div>
-                                                     
+
                                                     </div>
                                                 </div>
 
@@ -563,7 +564,7 @@
                                                                     <td>{{ $no }}</td>
                                                                     <td class="poprod-decpt">
                                                                         <input type="text" placeholder="Select"
-                                                                            class="form-control mw-100 ledgerselect mb-25 partyCode{{$no}}" required data-id="{{ $no }}" 
+                                                                            class="form-control mw-100 ledgerselect mb-25 partyCode{{$no}}" required data-id="{{ $no }}"
                                                                             required data-id="{{ $no }}"
                                                                             value="{{ $item?->ledger?->code ?? $item?->party?->ledger?->code }}" />
                                                                         <input type="hidden" name="party_id[]"
@@ -898,7 +899,7 @@
             </div>
         </div>
     </div>
- 
+
   <div class="modal fade text-start filterpopuplabel " id="addcoulmn" tabindex="-1" aria-labelledby="myModalLabel17" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
@@ -908,26 +909,26 @@
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body"> 
+            <div class="modal-body">
                 <div class="row">
                     <div class="col-md-12">
                          <div class=" customernewsection-form mb-1">
 
                             <div class="row mt-1">
-                                <div class="col-md-8 mb-1"> 
+                                <div class="col-md-8 mb-1">
                                     <label class="form-label">To <label class="text-danger">*</label></label>
-                                    <select disabled class="form-select select2" name="to" id="to" required multiple> 
+                                    <select disabled class="form-select select2" name="to" id="to" required multiple>
                                         @foreach($to_users as $to)
                                         <option value="{{$to->id}}" data-type="{{$to->type}}" data-ledger_id="{{$to->ledger}}"  data-ledger_group_id="{{$to->group}}" selected>{{$to->email}}</option>
                                         @endforeach
-                                    </select> 
+                                    </select>
                                 </div>
-                                <div class="col-md-8 mb-1"> 
+                                <div class="col-md-8 mb-1">
                                     <label class="form-label">CC <label class="text-danger">*</label></label>
                                     @php
                                         $selectedCc = [App\Helpers\Helper::getAuthenticatedUser()->auth_user_id];
                                     @endphp
-                                    
+
                                     <select class="form-select select2" name="cc" multiple>
                                         <option disabled>Select</option>
                                         @foreach($cc_users as $cc)
@@ -936,36 +937,36 @@
                                             </option>
                                         @endforeach
                                     </select>
-                                    
+
                                 </div>
                              </div>
                              <input name="payment_voucher_id" type="hidden" value="{{$data->id}}">
-                             <div class="col-md-12"> 
+                             <div class="col-md-12">
                                 <label class="form-label">Remarks  <label class="text-danger">*</label></label>
-                                <textarea 
-                                    class="form-control" 
-                                    placeholder="Enter Remarks" 
-                                    id="mail_remarks" 
-                                    name="mail_remarks" 
+                                <textarea
+                                    class="form-control"
+                                    placeholder="Enter Remarks"
+                                    id="mail_remarks"
+                                    name="mail_remarks"
                                     required
                                 >Please find attached your current {{$data->document_type=='payments'?'payment':'receipt'}} advice.</textarea>
                             </div>
                         </div>
-                     </div> 
-                 </div> 
+                     </div>
+                 </div>
             </div>
-            
-            <div class="modal-footer"> 
+
+            <div class="modal-footer">
                 <button type="reset" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" id="applyBtn" class="btn btn-primary data-submit mr-1">Submit</button>
             </div>
-            
-            
-            
+
+
+
         </div>
     </div>
 </div>
-  
+
 @endsection
 
 @section('scripts')
@@ -1518,7 +1519,7 @@ $('#revisionNumber').prop('disabled', false);
                     </tr>`;
                 $('.mrntableselectexcel').append(newRow);
                 bind();
-    
+
 
                 initializeAutocomplete();
 
@@ -1531,7 +1532,7 @@ $('#revisionNumber').prop('disabled', false);
                 $('.select2').select2();
                 count++;
             });
- 
+
              $(document).on('keyup keydown', '.amount', function() {
                 if ($('#orgExchangeRate').val() == "") {
                     alert('Select currency first!!');
@@ -1847,19 +1848,19 @@ $('#revisionNumber').prop('disabled', false);
             }
         }
         function bind(){
-                                                   
+
                                                    $('.amount').on('click', function () {
                                                        if($(this).val()==="0" || $(this).val()==="0.00"){
                                                            $(this).val('');
                                                        }
                                                    });
-                                                   
+
                                                    $('.amount').on('focusout', function () {
                                                        if($(this).val()===""){
                                                            $(this).val('0.00');
                                                        }
                                                    });
-                                                    
+
                                                            }
 
     $(document).on('click', '#revokeButton', (e) => {
@@ -1881,7 +1882,7 @@ $('#revisionNumber').prop('disabled', false);
             }
             location.reload();
         });
-    }); 
+    });
 });
 
 function changerate(){
@@ -1903,7 +1904,7 @@ function changerate(){
         if (result.isConfirmed) {
             // Proceed with AJAX request after confirmation
             let actionUrl = '{{ route("paymentVouchers.cancel.document") }}' + '?id=' + '{{$data->id}}';
-            
+
             fetch(actionUrl)
                 .then(response => response.json())
                 .then(data => {
@@ -1963,7 +1964,7 @@ document.addEventListener('DOMContentLoaded', function () {
         window.open(url, '_blank');
         bootstrap.Modal.getInstance(document.getElementById('partySelectModal')).hide();
     });
-});  
+});
 function getSelectedData() {
     let selectedData = [];
 
@@ -1979,10 +1980,10 @@ function getSelectedData() {
     return selectedData;
 }
 $('#applyBtn').on('click', function (e) {
-            
+
             // Close the modal
             var filterModal = bootstrap.Modal.getInstance(document.getElementById('addcoulmn'));
-          
+
 
             // Optionally handle the response here
             e.preventDefault();
@@ -2001,14 +2002,14 @@ $('#applyBtn').on('click', function (e) {
             let remarks= $('textarea[name="mail_remarks"]').val();
             let to = $('select[name="to"]').val();
             let cc = $('select[name="cc"]').val();
-                
+
             var requiredFields = {
             "To": to,
             "CC": cc,
             "Remarks": remarks,
         };
             if (formData.to && formData.to.length > 0 || formData.type || formData.date) {
-                
+
 
                 // AJAX request
                 let isValid=true;
@@ -2121,6 +2122,6 @@ $('#applyBtn').on('click', function (e) {
                 }
             }
         });
-           
+
     </script>
 @endsection
