@@ -53,25 +53,18 @@ class ErpProductionSlipController extends Controller
                     ->withDraftListingLogic();
             return DataTables::of($docs) ->addIndexColumn()
             ->editColumn('document_status', function ($row) {
-                $statusClass = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->document_status ?? ConstantHelper::DRAFT];    
-                $displayStatus = $row -> display_status;
-                $editRoute = route('production.slip.edit', ['id' => $row -> id]); 
-                return "
-                    <div style='text-align:right;'>
-                        <span class='badge rounded-pill $statusClass badgeborder-radius'>$displayStatus</span>
-                        <div class='dropdown' style='display:inline;'>
-                            <button type='button' class='btn btn-sm dropdown-toggle hide-arrow py-0 p-0' data-bs-toggle='dropdown'>
-                                <i data-feather='more-vertical'></i>
-                            </button>
-                            <div class='dropdown-menu dropdown-menu-end'>
-                                <a class='dropdown-item' href='" . $editRoute . "'>
-                                    <i data-feather='edit-3' class='me-50'></i>
-                                    <span>View/ Edit Detail</span>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                ";
+                return view('partials.action-dropdown', [
+                    'statusClass' => ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->document_status ?? ConstantHelper::DRAFT],
+                    'displayStatus' => $row->display_status,
+                    'row' => $row,
+                    'actions' => [
+                        [
+                            'url' => fn($r) => route('production.slip.edit', ['id' => $r->id]),
+                            'icon' => 'edit-3',
+                            'label' => 'View/ Edit Detail',
+                        ]
+                    ]
+                ])->render();
             })
             ->addColumn('book_name', function ($row) {
                 return $row->book_code ? $row->book_code : '';

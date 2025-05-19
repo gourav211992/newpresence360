@@ -211,10 +211,10 @@
                                                     id="dep_ledger" required>
                                                     <option value=""
                                                         {{ old('ledger') ? '' : 'selected' }}>Select</option>
-                                                    @foreach ($dep_ledgers as $ledger)
-                                                        <option value="{{ $ledger->id }}"
-                                                            {{ $dep_ledger_id == $ledger->id ? 'selected' : '' }}>
-                                                            {{ $ledger->name }}
+                                                    @foreach ($dep_ledgers as $ledgeri)
+                                                        <option value="{{ $ledgeri->id }}"
+                                                            {{ $dep_ledger_id == $ledgeri->id ? 'selected' : '' }}>
+                                                            {{ $ledgeri->name }}
                                                         </option>
                                                     @endforeach
                                                 </select>

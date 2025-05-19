@@ -60,7 +60,6 @@
 										</th>
                                         <th>SUPPLIER CODE</th>
                                         <th>SUPPLIER NAME</th>
-                                        <th>MRN SEREIS</th>
                                         <th>MRN NO.</th>
                                         <th>MRN Date</th>
                                         <th>LOT NO.</th>

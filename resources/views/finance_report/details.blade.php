@@ -1,5 +1,7 @@
 @extends('layouts.app')
-
+@php
+    use App\Helpers\Helper;
+@endphp
 
 @section('content')
     <!-- BEGIN: Content-->
@@ -65,8 +67,9 @@
 
                                     <div class="col-md-8 text-sm-end pofilterboxcenter mb-0 d-flex flex-wrap align-items-center justify-content-sm-end">
                                         {{-- <a href="javascript: history.go(-1)" class="btn btn-secondary btn-sm"><i
-                                            data-feather="arrow-left-circle"></i> Back </a> &nbsp; --}}
-                                        <a id="printButton" href="{{route('crdr.report.ledger.print',[$type,$ledger,$group])}}" class="btn btn-dark btn-sm mb-50 mb-sm-0 me-25"><i data-feather='printer'></i> Print</a>
+                                            data-feather="arrow-left-circle"></i> Back </a>
+                                            &nbsp; --}}
+                                        <a id="printButton" href="{{route('crdr.report.ledger.print',[$type,$ledger,$group])}}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 me-25"><i data-feather='printer'></i> Print</a>
                                         <button data-bs-toggle="modal" data-bs-target="#addcoulmn" class="btn btn-primary btn-sm mb-0 waves-effect"><i data-feather="filter"></i> Advance Filter</button>
                                     </div>
                                 </div>
@@ -105,10 +108,16 @@
                                                         <span class="badge rounded-pill @if($credit_days<$d->overdue_days) badge-light-danger @else badge-light-secondary @endif  badgeborder-radius">{{$d->overdue_days}}</span>
                                                         @endif
                                                     </td>
-                                                        <td class="text-end">@if($d->invoice_amount!=""){{ number_format($d->invoice_amount,2)}}@endif</td>
-                                                    <td class="outstanding text-end">{{ $d->total_outstanding < 0 ? 0: number_format($d->total_outstanding,2) }}</td>
+                                                        <td class="text-end">@if($d->invoice_amount!=""){{ Helper::formatIndianNumber($d->invoice_amount)}}@endif</td>
+                                                    <td class="outstanding text-end">{{ $d->total_outstanding < 0 ? 0: Helper::formatIndianNumber($d->total_outstanding) }}</td>
 
-                                                    <td class="overdue text-end"> {{$d->overdue > 0 ? number_format($d->overdue) : '' }}</td>
+                                                    <td class="overdue text-end">
+                                                          @if($d->overdue_days!="-")
+                                                           {{Helper::formatIndianNumber($d->overdue)}}
+                                                           @else
+                                                           0
+                                                          @endif
+                                                        </td>
 
                                                         <td>
                                                         @if($d->view_route)
@@ -449,23 +458,6 @@
 @endsection
 
 @section('scripts')
- @if (session('print_error'))
-            <script>
-                const Toast = Swal.mixin({
-                   toast: true,
-                position: "top-end",
-                showConfirmButton: false,
-                timer: 3000,
-                timerProgressBar: true,
-
-                });
-
-                Toast.fire({
-                    icon: 'error',
-                    title: '{{ session("print_error") }}'
-                });
-            </script>
-        @endif
     <!-- BEGIN: Dashboard Custom Code JS-->
     <script src="https://unpkg.com/feather-icons"></script>
 
@@ -501,39 +493,52 @@ if (dt_basic_table.length) {
         displayLength: 10,
         lengthMenu: [10, 25, 50, 75, 100],
 
-      buttons: [
-    {
-        extend: 'excel',
-        text: feather.icons['file'].toSvg({
-            class: 'font-small-4 me-50'
-        }) + 'Excel',
-        className: 'btn btn-outline-secondary',
-        filename: 'Billing Report',
-        exportOptions: {
-            columns: function (idx, data, node) {
-                let isServiceSelected = document.querySelector('input[type="radio"]#service')?.checked;
+        buttons: [{
+            extend: 'collection',
+            className: 'btn btn-outline-secondary dropdown-toggle',
+            text: feather.icons['share'].toSvg({
+                class: 'font-small-3 me-50'
+            }) + 'Export',
+            buttons: [
+                {
+                    extend: 'excel',
+                    text: feather.icons['file'].toSvg({
+                        class: 'font-small-4 me-50'
+                    }) + 'Excel',
+                    className: 'dropdown-item',
+                    filename: 'Billing Report',
+                    exportOptions: {
+        columns: function (idx, data, node) {
+            // Determine which radio is selected
+            let isServiceSelected = document.querySelector('input[type="radio"]#service')?.checked;
 
-                const isLastColumn = node.cellIndex === node.parentNode.cells.length - 1;
+            // Hide last column (assumed action column)
+            const isLastColumn = node.cellIndex === node.parentNode.cells.length - 1;
 
-                if (isLastColumn) {
-                    return false;
-                }
-
-                if (isServiceSelected && node.cellIndex === 6) {
-                    return false;
-                } else if (!isServiceSelected && node.cellIndex === 7) {
-                    return false;
-                }
-
-                return true;
+            if (isLastColumn) {
+                return false;
             }
-        },
-        init: function(api, node, config) {
-            $(node).removeClass('btn-secondary');
+
+            // If 'service' is selected, hide column 7 (index 6)
+            // Else hide column 6 (index 5)
+            if (isServiceSelected && node.cellIndex === 6) {
+                return false;
+            } else if (!isServiceSelected && node.cellIndex === 7) {
+                return false;
+            }
+
+            return true;
         }
-    }
-]
-,
+    },
+                }   ],
+            init: function(api, node, config) {
+                $(node).removeClass('btn-secondary');
+                $(node).parent().removeClass('btn-group');
+                setTimeout(function() {
+                    $(node).closest('.dt-buttons').removeClass('btn-group').addClass('d-inline-flex');
+                }, 50);
+            }
+        }],
         language: {
             search: '',
             searchPlaceholder: "Search...",
@@ -754,22 +759,64 @@ function getSelectedData() {
                 }
             }
         });
-        function filterTable() {
-        let selectedValue = $("input[name='goodsservice']:checked").attr("id");
 
-        $(".table-row").each(function () {
-            let overdueAmount = parseFloat($(this).attr("data-overdue")) || 0;
+function filterTable() {
+    let selectedValue = $("input[name='goodsservice']:checked").attr("id");
+    let anyVisible = false;
 
-            if (selectedValue === "customColorRadio1") {
+    $(".table-row").each(function () {
+    let outstandingText = $(this).find("td.outstanding").text().trim();
+    let overdueText = $(this).find("td.overdue").text().trim();
+
+    let outstandingAmount = parseFloat(removeCommas(outstandingText)) || 0;
+    let overdueAmount = parseFloat(removeCommas(overdueText)) || 0;
+        if (selectedValue === "customColorRadio1") {
+            $('.overdue').hide();
                 $('.outstanding').show();
-                $('.overdue').hide();
-            } else if (selectedValue === "service") {
-                $('.overdue').show();
-                $('.outstanding').hide();
+            if (outstandingAmount > 0) {
+                $(this).show();
+                anyVisible = true;
+            } else {
+                $(this).hide();
             }
-        });
-        $('#addcoulmn').modal('hide');
+        } else if (selectedValue === "service") {
+            $('.overdue').show();
+            $('.outstanding').hide();
+            if (overdueAmount > 0) {
+                $(this).show();
+                anyVisible = true;
+            } else {
+                $(this).hide();
+            }
+        }
+    });
+
+    // Remove previous "no data" row if it exists
+    $("#no-data-row").remove();
+
+    // Show specific message based on filter
+    if (!anyVisible) {
+        let colspan = $(".table thead tr th").length;
+        let message = "";
+
+        if (selectedValue === "customColorRadio1") {
+            message = "No Balance Amt.";
+        } else if (selectedValue === "service") {
+            message = "No Overdue Amt.";
+        }
+
+        $(".table tbody").append(`
+            <tr id="no-data-row">
+                <td colspan="${colspan}" class="text-center fw-bold">
+                    ${message}
+                </td>
+            </tr>
+        `);
     }
+if ($('#addcoulmn').length && $('#addcoulmn').hasClass('show')) {
+    $('#addcoulmn').modal('hide');
+}}
+
 
     document.addEventListener("DOMContentLoaded", function() {
         const printButton = document.getElementById("printButton");
@@ -790,10 +837,27 @@ function getSelectedData() {
             });
         });
     });
-
+    filterTable();
 
 
 
 
     </script>
+    @if (session('print_error'))
+            <script>
+                const Toast = Swal.mixin({
+                   toast: true,
+                position: "top-end",
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+
+                });
+
+                Toast.fire({
+                    icon: 'error',
+                    title: '{{ session("print_error") }}'
+                });
+            </script>
+        @endif
 @endsection

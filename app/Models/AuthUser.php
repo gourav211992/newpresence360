@@ -3,10 +3,15 @@
 namespace App\Models;
 
 use App\Helpers\ConstantHelper;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
-class AuthUser extends Model
+class AuthUser extends Authenticatable
 {
+    use HasApiTokens, HasFactory, Notifiable;
     protected $connection = 'mysql_master';
 
     protected $fillable = [

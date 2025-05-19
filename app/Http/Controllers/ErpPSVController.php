@@ -70,7 +70,7 @@ class ErpPSVController extends Controller
         if ($request -> ajax()) {
             try {
                 $docs = ErpPsvHeader::withDefaultGroupCompanyOrg() ->  bookViewAccess($pathUrl) ->  
-                withDraftListingLogic() -> orderByDesc('id') -> get();
+                withDraftListingLogic() -> orderByDesc('id');
                 return DataTables::of($docs) ->addIndexColumn()
                 ->editColumn('document_status', function ($row) use($orderType) {
                     $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->document_status ?? ConstantHelper::DRAFT];    
@@ -1005,164 +1005,6 @@ class ErpPSVController extends Controller
             throw new ApiGenericException($ex -> getMessage());
         }
     }
-    public function psvReport(Request $request)
-    {
-        $pathUrl = route('psv.index');
-        $orderType = [ConstantHelper::PSV_SERVICE_ALIAS];
-        $psv = ErpPsvHeader::with('items') -> bookViewAccess($pathUrl)
-        -> withDefaultGroupCompanyOrg() -> withDraftListingLogic() -> orderByDesc('id');
-        //Customer Filter
-        $psv = $psv -> when($request -> vendor_id, function ($custQuery) use($request) {
-            $custQuery -> where('vendor_id', $request -> vendor_id);
-        });
-        //Book Filter
-        $psv = $psv -> when($request -> book_id, function ($bookQuery) use($request) {
-            $bookQuery -> where('book_id', $request -> book_id);
-        });
-        //Document Id Filter
-        $psv = $psv -> when($request -> document_number, function ($docQuery) use($request) {
-            $docQuery -> where('document_number', 'LIKE', '%' . $request -> document_number . '%');
-        });
-        //From Location Filter
-        $psv = $psv -> when($request -> type, function ($docQuery) use($request) {
-            $docQuery -> where('issue_type', 'LIKE', "%".$request -> type . "%");
-        });
-        //From Location Filter
-        $psv = $psv -> when($request -> location_id, function ($docQuery) use($request) {
-            $docQuery -> where('from_store_id', $request -> location_id);
-        });
-        //To Location Filter
-        $psv = $psv -> when($request -> to_location_id, function ($docQuery) use($request) {
-            $docQuery -> where('to_store_id', $request -> to_location_id);
-        });
-        //Company Filter
-        $psv = $psv -> when($request -> company_id, function ($docQuery) use($request) {
-            $docQuery -> where('from_store_id', $request -> company_id);
-        });
-        //Organization Filter
-        $psv = $psv -> when($request -> organization_id, function ($docQuery) use($request) {
-            $docQuery -> where('organization_id', $request -> organization_id);
-        });
-        //Document Status Filter
-        $psv = $psv -> when($request -> doc_status, function ($docStatusQuery) use($request) {
-            $searchDocStatus = [];
-            if ($request -> doc_status === ConstantHelper::DRAFT) {
-                $searchDocStatus = [ConstantHelper::DRAFT];
-            } else if ($searchDocStatus === ConstantHelper::SUBMITTED) {
-                $searchDocStatus = [ConstantHelper::SUBMITTED, ConstantHelper::PARTIALLY_APPROVED];
-            } else {
-                $searchDocStatus = [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED];
-            }
-            $docStatusQuery -> whereIn('document_status', $searchDocStatus);
-        });
-        //Date Filters
-        $dateRange = $request -> date_range ??  Carbon::now()->startOfMonth()->format('Y-m-d') . " to " . Carbon::now()->endOfMonth()->format('Y-m-d');
-        $psv = $psv -> when($dateRange, function ($dateRangeQuery) use($request, $dateRange) {
-           $dateRanges = explode('to', $dateRange);
-           if (count($dateRanges) == 2) {
-                $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
-                $toDate = Carbon::parse(trim($dateRanges[1])) -> format('Y-m-d');
-                $dateRangeQuery -> whereDate('document_date', ">=" , $fromDate) -> where('document_date', '<=', $toDate);
-           }
-        });
-        //Item Id Filter
-        $psv = $psv -> when($request -> item_id, function ($itemQuery) use($request) {
-            $itemQuery -> withWhereHas('items', function ($itemSubQuery) use($request) {
-                $itemSubQuery -> where('item_id', $request -> item_id)
-                //Compare Item Category
-                -> when($request -> item_category_id, function ($itemCatQuery) use($request) {
-                    $itemCatQuery -> whereHas('item', function ($itemRelationQuery) use($request) {
-                        $itemRelationQuery -> where('category_id', $request -> category_id)
-                        //Compare Item Sub Category
-                        -> when($request -> item_sub_category_id, function ($itemSubCatQuery) use($request) {
-                            $itemSubCatQuery -> where('subcategory_id', $request -> item_sub_category_id);
-                        });
-                    });
-                });
-            });
-        });
-        $psv = $psv -> get();
-        $processedSalesOrder = collect([]);
-        foreach ($psv as $psv) {
-            foreach ($psv -> items as $psvItem) {
-                $reportRow = new stdClass();
-                //Header Details
-                $header = $psvItem -> header;
-                $reportRow -> id = $header -> id;
-                $reportRow -> book_name = $header -> book_code;
-                $reportRow -> document_number = $header -> document_number;
-                $reportRow -> document_date = $header -> document_date;
-                $reportRow -> issue_type = $header -> issue_type;
-                $reportRow -> store_name = $header -> erpStore ?-> store_name;
-                $reportRow -> vendor_name = $header -> vendor ?-> company_name ?? " ";
-                $reportRow -> customer_currency = $header -> org_currency_code ?? $header ?-> vendor ?-> currency ?-> short_name ?: $header ?-> vendor ?-> currency ?-> name ;
-                $reportRow -> payment_terms_name = $header -> payment_term_code;
-                $reportRow -> from_store_name = $header -> from_store ?-> store_name;
-                $reportRow -> to_store_name = $header -> to_store ?-> store_name;
-                $reportRow -> from_sub_store_name = $psvItem ?-> fromErpSubStore ?-> name;
-                $reportRow -> to_sub_store_name = $psvItem ?-> toErpSubStore ?-> name;
-                $reportRow -> requester = $header -> issue_type == "Consumption" ? $header -> requester_name() : " ";
-                //Item Details
-                $reportRow -> item_name = $psvItem -> item_name;
-                $reportRow -> item_code = $psvItem -> item_code;
-                $reportRow -> hsn_code = $psvItem -> hsn ?-> code;
-                $reportRow -> uom_name = $psvItem -> uom ?-> name;
-                //Amount Details
-                $reportRow -> qty = number_format($psvItem -> issue_qty, 2);
-                $reportRow -> mr_qty = number_format($psvItem -> mr_qty, 2);
-                $reportRow -> rate = number_format($psvItem -> rate, 2);
-                $reportRow -> total_discount_amount = number_format($psvItem -> header_discount_amount + $psvItem -> item_discount_amount, 2);
-                $reportRow -> tax_amount = number_format($psvItem -> tax_amount, 2);
-                $reportRow -> taxable_amount = number_format($psvItem -> total_item_amount - $psvItem -> tax_amount, 2);
-                $reportRow -> total_item_amount = number_format($psvItem -> total_item_amount, 2);
-                //Delivery Schedule UI
-                // $deliveryHtml = '';
-                // if (count($psvItem -> item_deliveries) > 0) {
-                //     foreach ($psvItem -> item_deliveries as $itemDelivery) {
-                //         $deliveryDate = Carbon::parse($itemDelivery -> delivery_date) -> format('d-m-Y');
-                //         $deliveryQty = number_format($itemDelivery -> qty, 2);
-                //         $deliveryHtml .= "<span class='badge rounded-pill badge-light-primary'><strong>$deliveryDate</strong> : $deliveryQty</span>";
-                //     }
-                // } else {
-                //     $parsedDeliveryDate = Carbon::parse($psvItem -> delivery_date) -> format('d-m-Y');
-                //     $deliveryHtml .= "$parsedDeliveryDate";
-                // }
-                // $reportRow -> delivery_schedule = $deliveryHtml;
-                //Attributes UI
-                $attributesUi = '';
-                if (count($psvItem -> item_attributes) > 0) {
-                    foreach ($psvItem -> item_attributes as $soAttribute) {
-                        $attrName = $soAttribute -> attribute_name;
-                        $attrValue = $soAttribute -> attribute_value;
-                        $attributesUi .= "<span class='badge rounded-pill badge-light-primary' > $attrName : $attrValue </span>";
-                    }
-                } else {
-                    $attributesUi = 'N/A';
-                }
-                $reportRow -> item_attributes = $attributesUi;
-                //Main header Status
-                $reportRow -> status = $header -> document_status;
-                $processedSalesOrder -> push($reportRow);
-            }
-        }
-        return DataTables::of($processedSalesOrder) ->addIndexColumn()
-        ->editColumn('status', function ($row) use($orderType) {
-            $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->status ?? ConstantHelper::DRAFT];    
-            $displayStatus = ucfirst($row -> status);   
-            $editRoute = null;
-            $editRoute = route('sale.return.edit', ['id' => $row->id]);
-            return "
-            <div style='text-align:right;'>
-                <span class='badge rounded-pill $statusClasss badgeborder-radius'>$displayStatus</span>
-                    <a href='" . $editRoute . "'>
-                        <i class='cursor-pointer' data-feather='eye'></i>
-                    </a>
-            </div>
-        ";
-        })
-        ->rawColumns(['item_attributes','delivery_schedule','status'])
-        ->make(true);
-    }
     public function getPostingDetails(Request $request)
     {
         try {
@@ -1540,4 +1382,142 @@ class ErpPSVController extends Controller
 
    
 
+    public function PSVReport(Request $request)
+    {
+        $pathUrl = route('psv.index');
+        $orderType = [ConstantHelper::PSV_SERVICE_ALIAS];
+        $PSV = ErpPsvHeader::with('items') -> bookViewAccess($pathUrl) 
+        -> withDefaultGroupCompanyOrg() -> withDraftListingLogic() -> orderByDesc('id');
+        //Book Filter
+        $PSV = $PSV -> when($request -> book_id, function ($bookQuery) use($request) {
+            $bookQuery -> where('book_id', $request -> book_id);
+        });
+        //Document Id Filter
+        $PSV = $PSV -> when($request -> document_number, function ($docQuery) use($request) {
+            $docQuery -> where('document_number', 'LIKE', '%' . $request -> document_number . '%');
+        });
+        //Location Filter
+        $PSV = $PSV -> when($request -> location_id, function ($docQuery) use($request) {
+            $docQuery -> where('store_id', $request -> location_id);
+        });
+        //Company Filter
+        $PSV = $PSV -> when($request -> company_id, function ($docQuery) use($request) {
+            $docQuery -> where('store_id', $request -> company_id);
+        });
+        //Organization Filter
+        $PSV = $PSV -> when($request -> organization_id, function ($docQuery) use($request) {
+            $docQuery -> where('organization_id', $request -> organization_id);
+        });
+        //Document Status Filter
+        $PSV = $PSV -> when($request -> doc_status, function ($docStatusQuery) use($request) {
+            $searchDocStatus = [];
+            if ($request -> doc_status === ConstantHelper::DRAFT) {
+                $searchDocStatus = [ConstantHelper::DRAFT];
+            } else if ($searchDocStatus === ConstantHelper::SUBMITTED) {
+                $searchDocStatus = [ConstantHelper::SUBMITTED, ConstantHelper::PARTIALLY_APPROVED];
+            } else {
+                $searchDocStatus = [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED];
+            }
+            $docStatusQuery -> whereIn('document_status', $searchDocStatus);
+        });
+        //Date Filters
+        $dateRange = $request -> date_range ??  Carbon::now()->startOfMonth()->format('Y-m-d') . " to " . Carbon::now()->endOfMonth()->format('Y-m-d');
+        $PSV = $PSV -> when($dateRange, function ($dateRangeQuery) use($request, $dateRange) {
+        $dateRanges = explode('to', $dateRange);
+        if (count($dateRanges) == 2) {
+                $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
+                $toDate = Carbon::parse(trim($dateRanges[1])) -> format('Y-m-d');
+                $dateRangeQuery -> whereDate('document_date', ">=" , $fromDate) -> where('document_date', '<=', $toDate);
+        }
+        });
+        //Item Id Filter
+        $PSV = $PSV -> when($request -> item_id, function ($itemQuery) use($request) {
+            $itemQuery -> withWhereHas('items', function ($itemSubQuery) use($request) {
+                $itemSubQuery -> where('item_id', $request -> item_id)
+                //Compare Item Category
+                -> when($request -> item_category_id, function ($itemCatQuery) use($request) {
+                    $itemCatQuery -> whereHas('item', function ($itemRelationQuery) use($request) {
+                        $itemRelationQuery -> where('category_id', $request -> category_id)
+                        //Compare Item Sub Category
+                        -> when($request -> item_sub_category_id, function ($itemSubCatQuery) use($request) {
+                            $itemSubCatQuery -> where('subcategory_id', $request -> item_sub_category_id);
+                        });
+                    });
+                });
+            });
+        });
+        $PSV = $PSV -> whereNot('document_status',ConstantHelper::DRAFT) -> get();
+        $processedSalesOrder = collect([]);
+        foreach ($PSV as $p) {
+            foreach ($p -> items as $psvItem) {
+                $reportRow = new stdClass();
+                //Header Details
+                $header = $psvItem -> header;
+                $reportRow -> id = $header -> id;
+                $reportRow -> book_name = $header -> book_code;
+                $reportRow -> document_number = $header -> document_number;
+                $reportRow -> document_date = $header -> document_date;
+                $reportRow -> store_name = $header -> store_code;
+                $reportRow -> sub_store_name = $header -> sub_store_code;
+                //Item Details
+                $reportRow -> item_name = $psvItem -> item_name;
+                $reportRow -> item_code = $psvItem -> item_code;
+                $reportRow -> hsn_code = $psvItem -> item -> hsn ?-> code;
+                $reportRow -> uom_name = $psvItem -> uom ?-> name;
+                $reportRow -> customer_currency = $psvItem -> header ?-> currency_code ?? " ";
+                //Amount Details
+                $reportRow -> physical_qty = number_format($psvItem -> verified_qty, 2);
+                $reportRow -> confirmed_stock = number_format($psvItem -> confirmed_qty ?? 0.00, 2);
+                $reportRow -> unconfirmed_stock = number_format($psvItem -> unconfirmed_qty ?? 0.00, 2);
+                $reportRow -> adjusted_qty = $psvItem ?-> adjusted_qty ?? " ";
+                $reportRow -> rate = number_format($psvItem -> rate, 2);
+            $reportRow -> total_amount = number_format($psvItem -> total_amount, 2);
+                //Delivery Schedule UI
+                // $deliveryHtml = '';
+                // if (count($psvItem -> item_deliveries) > 0) {
+                //     foreach ($psvItem -> item_deliveries as $itemDelivery) {
+                //         $deliveryDate = Carbon::parse($itemDelivery -> delivery_date) -> format('d-m-Y');
+                //         $deliveryQty = number_format($itemDelivery -> qty, 2);
+                //         $deliveryHtml .= "<span class='badge rounded-pill badge-light-primary'><strong>$deliveryDate</strong> : $deliveryQty</span>";
+                //     }
+                // } else {
+                //     $parsedDeliveryDate = Carbon::parse($psvItem -> delivery_date) -> format('d-m-Y');
+                //     $deliveryHtml .= "$parsedDeliveryDate";
+                // }
+                // $reportRow -> delivery_schedule = $deliveryHtml;
+                //Attributes UI
+                $attributesUi = '';
+                if (count($psvItem -> attributes) > 0) {
+                    foreach ($psvItem -> attributes as $psvAttribute) {
+                        $attrName = $psvAttribute -> attribute_name;
+                        $attrValue = $psvAttribute -> attribute_value;
+                        $attributesUi .= "<span class='badge rounded-pill badge-light-primary' > $attrName : $attrValue </span>";
+                    }
+                } else {
+                    $attributesUi = 'N/A';
+                }
+                $reportRow -> item_attributes = $attributesUi;
+                //Main header Status
+                $reportRow -> status = $header -> document_status;
+                $processedSalesOrder -> push($reportRow);
+            }
+        }
+            return DataTables::of($processedSalesOrder) ->addIndexColumn()
+        ->editColumn('status', function ($row) use($orderType) {
+            $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->status ?? ConstantHelper::DRAFT];    
+            $displayStatus = ucfirst($row -> status);   
+            $editRoute = null;
+            $editRoute = route('sale.return.edit', ['id' => $row->id]);
+            return "
+            <div style='text-align:right;'>
+                <span class='badge rounded-pill $statusClasss badgeborder-radius'>$displayStatus</span>
+                    <a href='" . $editRoute . "'>
+                        <i class='cursor-pointer' data-feather='eye'></i>
+                    </a>
+            </div>
+        ";
+        })
+        ->rawColumns(['item_attributes','delivery_schedule','status'])
+        ->make(true);
+    }
 }

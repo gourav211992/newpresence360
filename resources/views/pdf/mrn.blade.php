@@ -32,7 +32,7 @@
 
                 <!-- Organization Name (Right) -->
                 <td style="width: 33%; text-align: right; font-size: 20px; font-weight: 100; padding: 0;">
-                    {{ @$organization->name }}
+                    {{-- {{ @$organization->name }} --}}
                 </td>
             </tr>
         </table>
@@ -93,30 +93,30 @@
                         <tr>
                             <td style="padding-top: 15px;">Address: </td>
                             <td style="padding-top: 15px;">
-                                {{ Str::ucfirst(@$shippingAddress?->address) }},
+                                {{ Str::ucfirst(@$billingAddress?->address) }},
                             </td>
                         </tr>
                         <tr>
                             <td style="padding-top: 3px;">City :</td>
                             <td style="padding-top: 3px;">
-                                {{ @$shippingAddress?->city?->name }}
+                                {{ @$billingAddress?->city?->name }}
                             </td>
                         </tr>
                         <tr>
                             <td style="padding-top: 3px;">State:</td>
                             <td style="padding-top: 3px;">
-                                {{ @$shippingAddress?->state?->name }}
+                                {{ @$billingAddress?->state?->name }}
                             </td>
                         </tr>
                         <tr>
                             <td style="padding-top: 3px;">Country:</td>
                             <td style="padding-top: 3px;">
-                                {{ @$shippingAddress?->country?->name }}
+                                {{ @$billingAddress?->country?->name }}
                             </td>
                         </tr>
                         <tr>
                             <td style="padding-top: 3px;">Pin Code : </td>
-                            <td style="padding-top: 3px;">{{ @$shippingAddress->pincode }}
+                            <td style="padding-top: 3px;">{{ @$billingAddress->pincode }}
                             </td>
                         </tr>
                         <tr>
@@ -127,7 +127,7 @@
                         <tr>
                             <td style="padding-top: 3px;">Phone:</td>
                             <td style="padding-top: 3px;">
-                                {{ @$shippingAddress->phone }}
+                                {{ @$billingAddress->phone }}
                             </td>
                         </tr>
                         <tr>

@@ -31,23 +31,25 @@ class Group extends Model
     // Relationship to get the parent group
     public function parent()
     {
-        return $this->belongsTo(Group::class, 'parent_group_id', 'id')
-        ->where(function ($q) {
-            $q->withDefaultGroupCompanyOrg()
-              ->orWhere('edit', 0);
+        return $this->belongsTo(Group::class, 'id', 'parent_group_id')
+       ->where(function ($query) {
+            $query->where(function ($q) {
+                $q->withDefaultGroupCompanyOrg();
+            })->orWhere('edit', 0);
         });
     }
     
     // Relationship to get child groups
-    public function children()
-    {
-        return $this->hasMany(Group::class, 'parent_group_id', 'id')
-        ->where(function ($q) {
-            $q->withDefaultGroupCompanyOrg()
-              ->orWhere('edit', 0);
+   public function children()
+{
+    return $this->hasMany(Group::class, 'parent_group_id', 'id')
+        ->where(function ($query) {
+            $query->where(function ($q) {
+                $q->withDefaultGroupCompanyOrg();
+            })->orWhere('edit', 0);
         });
-    }
-    
+}
+
 
 
     // Optionally, if you want to get all item details related to this group

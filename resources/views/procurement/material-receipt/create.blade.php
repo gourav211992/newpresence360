@@ -149,16 +149,6 @@
                                                         </select>
                                                     </div>
                                                 </div>
-                                                <div class="row align-items-center mb-1" id="cost_center_div" style="display:none;">
-                                                    <div class="col-md-3">
-                                                        <label class="form-label">Cost Center <span class="text-danger">*</span></label>
-                                                    </div>
-                                                    <div class="col-md-5">
-                                                        <select class="form-select cost_center" id="cost_center_id" name="cost_center_id">
-                                                            <!-- Options will be populated here by the AJAX request -->
-                                                        </select>
-                                                    </div>
-                                                </div>
                                                 <!-- <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Reference No </label>
@@ -275,6 +265,14 @@
                                             </div>
                                             <div class="card-body">
                                                 <div class="row">
+                                                    <div class="col-md-3" id="cost_center_div" style="display:none;">
+                                                        <div class="mb-1">
+                                                        <label class="form-label">Cost Center</label>
+                                                        <select class="form-select cost_center" name="cost_center_id">
+                                                            <!-- Options will be populated here by the AJAX request -->
+                                                        </select>
+                                                        </div>
+                                                    </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">
@@ -368,6 +366,8 @@
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                                <div class="col-md-12 " id = "dynamic_fields_section">
                                 </div>
                                 <div class="card" id="item_section">
                                     <div class="card-body customernewsection-form">
@@ -748,6 +748,7 @@
                         } else {
                             $("#tax_required").val("");
                         }
+                        implementBookDynamicFields(data.data.dynamic_fields_html, data.data.dynamic_fields);
                         setTableCalculation();
                         $("#bill_to_follow").val(parameters?.bill_to_follow[0]);
                     }
@@ -773,6 +774,17 @@
             let bookId = $("#book_id").val();
             getDocNumberByBookId(bookId);
         },0);
+
+        function implementBookDynamicFields(html, data)
+        {
+            let dynamicBookSection = document.getElementById('dynamic_fields_section');
+            dynamicBookSection.innerHTML = html;
+            if (data && data.length > 0) {
+                dynamicBookSection.classList.remove('d-none');
+            } else {
+                dynamicBookSection.classList.add('d-none');
+            }
+        }
         /*Set Service Parameter*/
         function setServiceParameters(parameters) {
             /*Date Validation*/

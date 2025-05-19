@@ -36,7 +36,7 @@
 
                 <!-- Organization Name (Right) -->
                 <td style="width: 33%; text-align: right; font-size: 20px; font-weight: 100; padding: 0;">
-                    {{ @$organization->name }}
+                    {{-- {{ @$organization->name }} --}}
                 </td>
             </tr>
         </table>

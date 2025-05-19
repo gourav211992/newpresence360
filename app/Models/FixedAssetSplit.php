@@ -111,20 +111,16 @@ class FixedAssetSplit extends Model
                     'asset_code' => $assetCode,
                     'asset_name' => $firstItem->asset_name,
                     'quantity' => $items->sum('quantity'),
-                    'catrgory_id'=>$request->category_id,
+                    'reference_doc_id'=>$request->id,
+                    'reference_series'=>'fixed-asset-split',
+                    'category_id'=>$request->category_id,
                     'ledger_id' => $request->ledger_id,
                     'ledger_group_id' => $request->ledger_group_id,
-                    'mrn_header_id'=> $asset->mrn_header_id,
-                    'mrn_detail_id'=> $asset->mrn_detail_id,
                     'capitalize_date' => $request->capitalize_date,
                     'last_dep_date'=> $request->capitalize_date,
-                    'vendor_id'=> $asset->vendor_id,
                     'currency_id'=> $asset->currency_id,
                     'location_id'=>$request->location_id,
                     'cost_center_id'=>$request->cost_center_id,
-                    'supplier_invoice_no'=> $asset->supplier_invoice_no,
-                    'supplier_invoice_date'=> $asset->supplier_invoice_date,
-                    'book_date'=>$asset->book_date,
                     'maintenance_schedule' => $request->maintenance_schedule,
                     'depreciation_method' => $request->depreciation_method,
                     'useful_life' => $request->useful_life,
@@ -160,9 +156,9 @@ class FixedAssetSplit extends Model
         }
             }
             //delete_old
-            $old = FixedAssetSplit::find($request->sub_asset_id);
+            $old = FixedAssetSub::find((int)$request->sub_asset_id);
             if($old)
-            FixedAssetSplit::find($request->sub_asset_id)->delete();
+            FixedAssetSub::find((int)$request->sub_asset_id)->delete();
             return array(
                     'status' => true,
                     'message' => "Registration Added",

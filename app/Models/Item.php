@@ -205,4 +205,17 @@ class Item extends Model
         }
         return collect($processedData);
     }
+
+    public function scopeSearchByKeywords($query, $term)
+    { 
+        $keywords = preg_split('/\s+/', trim($term));
+        return $query->where(function ($q) use ($keywords) {
+            foreach ($keywords as $word) {
+                $q->where(function ($subQ) use ($word) {
+                    $subQ->where('item_name', 'LIKE', "%{$word}%")
+                        ->orWhere('item_code', 'LIKE', "%{$word}%");
+                });
+            }
+        });
+    }
 }

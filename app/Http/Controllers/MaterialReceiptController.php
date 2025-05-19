@@ -87,6 +87,8 @@ use App\Models\Employee;
 use App\Models\ErpVendor;
 use App\Jobs\SendEmailJob;
 use App\Exports\MaterialReceiptExport;
+use App\Helpers\DynamicFieldHelper;
+use App\Models\ErpMrnDynamicField;
 use stdClass;
 
 class MaterialReceiptController extends Controller
@@ -111,7 +113,6 @@ class MaterialReceiptController extends Controller
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
         $orderType = ConstantHelper::MRN_SERVICE_ALIAS;
         request() -> merge(['type' => $orderType]);
-        // dd($parentUrl, $servicesBooks);
         if (request()->ajax()) {
             $user = Helper::getAuthenticatedUser();
             $organization = Organization::where('id', $user->organization_id)->first();
@@ -224,7 +225,6 @@ class MaterialReceiptController extends Controller
         $vendors = Vendor::where('status', ConstantHelper::ACTIVE)->get();
         $purchaseOrders = PurchaseOrder::with('vendor')->get();
         $locations = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
-        // dd($servicesBooks['services']);
         return view('procurement.material-receipt.create', [
             'books'=>$books,
             'vendors' => $vendors,
@@ -237,12 +237,10 @@ class MaterialReceiptController extends Controller
     # MRN store
     public function store(MaterialReceiptRequest $request)
     {
-        // dd($request->all());
         $user = Helper::getAuthenticatedUser();
 
         DB::beginTransaction();
         try {
-            // dd($request->all());
             $parameters = [];
             $response = BookHelper::fetchBookDocNoAndParameters($request->book_id, $request->document_date);
             if ($response['status'] === 200) {
@@ -333,6 +331,7 @@ class MaterialReceiptController extends Controller
             // $mrn->mrn_date = $request->document_date;
             // $mrn->revision_date = $request->revision_date;
             $mrn->final_remarks = $request->remarks ?? null;
+            $mrn->cost_center_id = $request->cost_center_id ?? '';
 
             $mrn->total_item_amount = 0.00;
             $mrn->total_discount = 0.00;
@@ -866,6 +865,15 @@ class MaterialReceiptController extends Controller
 
             TransactionUploadItem::where('created_by', $user->id)->forceDelete();
 
+            $status = DynamicFieldHelper::saveDynamicFields(ErpMrnDynamicField::class, $mrn -> id, $request -> dynamic_field ?? []);
+            if ($status && !$status['status'] ) {
+                DB::rollBack();
+                return response() -> json([
+                    'message' => $status['message'],
+                    'error' => ''
+                ], 422);
+            }
+
             DB::commit();
 
             return response()->json([
@@ -930,7 +938,6 @@ class MaterialReceiptController extends Controller
         $serviceAlias = ConstantHelper::MRN_SERVICE_ALIAS;
         $books = Helper::getBookSeriesNew($serviceAlias, $parentUrl)->get();
         $user = Helper::getAuthenticatedUser();
-        // dd($user->toArray());
         $mrn = MrnHeader::with([
             'vendor',
             'currency',
@@ -945,7 +952,6 @@ class MaterialReceiptController extends Controller
         $revision_number = $mrn->revision_number;
         $userType = Helper::userCheck();
         $buttons = Helper::actionButtonDisplay($mrn->book_id,$mrn->document_status , $mrn->id, $mrn->total_amount, $mrn->approval_level, $mrn->created_by ?? 0, $userType['type'], $revision_number);
-        // dd($buttons);
         $revNo = $mrn->revision_number;
         if($request->has('revisionNumber')) {
             $revNo = intval($request->revisionNumber);
@@ -953,7 +959,6 @@ class MaterialReceiptController extends Controller
             $revNo = $mrn->revision_number;
         }
         $approvalHistory = Helper::getApprovalHistory($mrn->book_id, $mrn->id, $revNo, $mrn->total_amount);
-        // dd($approvalHistory);
         $view = 'procurement.material-receipt.edit';
         if($request->has('revisionNumber') && $request->revisionNumber != $mrn->revision_number) {
             $mrn = $mrn->source;
@@ -976,7 +981,7 @@ class MaterialReceiptController extends Controller
         $erpStores = ErpStore::where('organization_id', $user->organization_id)
             ->orderBy('id', 'DESC')
             ->get();
-
+        $dynamicFieldsUI = $mrn -> dynamicfieldsUi();
         return view($view, [
             'deliveryAddress'=> $deliveryAddress,
             'orgAddress'=> $orgAddress,
@@ -992,7 +997,8 @@ class MaterialReceiptController extends Controller
             'services' => $servicesBooks['services'],
             'servicesBooks' => $servicesBooks,
             'subStoreCount' => $subStoreCount,
-            'erpStores' => $erpStores
+            'erpStores' => $erpStores,
+            'dynamicFieldsUI' => $dynamicFieldsUI
         ]);
     }
 
@@ -1602,6 +1608,15 @@ class MaterialReceiptController extends Controller
             }
             TransactionUploadItem::where('created_by', $user->id)->forceDelete();
 
+            $status = DynamicFieldHelper::saveDynamicFields(ErpMrnDynamicField::class, $mrn -> id, $request -> dynamic_field ?? []);
+            if ($status && !$status['status'] ) {
+                DB::rollBack();
+                return response() -> json([
+                    'message' => $status['message'],
+                    'error' => ''
+                ], 422);
+            }
+
             DB::commit();
 
             return response()->json([
@@ -1624,7 +1639,6 @@ class MaterialReceiptController extends Controller
     {
         $user = Helper::getAuthenticatedUser();
         $item = json_decode($request->item,true) ?? [];
-        // dd($item);
         $componentItem = json_decode($request->component_item,true) ?? [];
         /*Check last tr in table mandatory*/
         if(isset($componentItem['attr_require']) && isset($componentItem['item_id']) && $componentItem['row_length']) {
@@ -1708,7 +1722,6 @@ class MaterialReceiptController extends Controller
     # get tax calcualte
     public function taxCalculation(Request $request)
     {
-        // dd($request->all());
         $user = Helper::getAuthenticatedUser();
         $location = ErpStore::find($request->location_id ?? null);
 
@@ -1748,7 +1761,6 @@ class MaterialReceiptController extends Controller
             $taxDetails = TaxHelper::calculateTax( $hsnId,$price,$fromCountry,$fromState,$upToCountry,$upToState,$transactionType,$document_date);
             $rowCount = intval($request->rowCount) ?? 1;
             $itemPrice = floatval($request->price) ?? 0;
-            // dd($hsnId,$price,$fromCountry,$fromState,$upToCountry,$upToState,$transactionType);
             $html = view('procurement.material-receipt.partials.item-tax',compact('taxDetails','rowCount','itemPrice'))->render();
             return response()->json(['data' => ['html' => $html, 'rowCount' => $rowCount], 'message' => 'fetched', 'status' => 200]);
         } catch (\Exception $e) {
@@ -1831,7 +1843,6 @@ class MaterialReceiptController extends Controller
     public function getStoreRacks(Request $request)
     {
         $user = Helper::getAuthenticatedUser();
-        // dd($user);
         $storeBins = array();
         $storeRacks = array();
         $storeCode = ErpStore::find($request->store_code_id);
@@ -1860,7 +1871,6 @@ class MaterialReceiptController extends Controller
         $rackCode = ErpRack::find($request->rack_code_id);
         if($rackCode){
             // Fetch storeShelfs
-            // dd($rackCode);
             $storeShelfs = ErpShelf::where('erp_rack_id', $rackCode->id)
                 ->where('organization_id', $user->organization_id)
                 ->pluck('shelf_code', 'id');
@@ -2084,14 +2094,10 @@ class MaterialReceiptController extends Controller
         $selectedAttr = json_decode($request->selectedAttr,200) ?? [];
         $itemStoreData = json_decode($request->itemStoreData,200) ?? [];
         $itemId = $request->item_id;
-        //dd([$itemId, $selectedAttr, $itemStoreData]);
         InventoryHelper::isExistInventoryAndStock($itemId, $selectedAttr,  $itemStoreData);
-        // dd($request->item_id);
         $item = Item::find($request->item_id ?? null);
         $uomId = $request->uom_id ?? null;
         $qty = intval($request->qty) ?? 0;
-        // $uomName = '';
-        // dd($item);
         $uomName = $item->uom->name ?? 'NA';
         if($item->uom_id == $uomId) {
         } else {
@@ -2101,7 +2107,6 @@ class MaterialReceiptController extends Controller
         }
         $remark = $request->remark ?? null;
         $purchaseOrder = PurchaseOrder::find($request->purchase_order_id);
-        // dd($purchaseOrder);
         $html = view('procurement.material-receipt.partials.comp-item-detail',compact('item','purchaseOrder', 'selectedAttr','remark','uomName','qty'))->render();
         return response()->json(['data' => ['html' => $html], 'status' => 200, 'message' => 'fetched.']);
     }
@@ -2122,6 +2127,7 @@ class MaterialReceiptController extends Controller
 
 
         $shippingAddress = $mrn->shippingAddress;
+        $billingAddress = $mrn->billingAddress;
 
         $totalItemValue = $mrn->total_item_amount ?? 0.00;
         $totalDiscount = $mrn->total_discount ?? 0.00;
@@ -2149,6 +2155,7 @@ class MaterialReceiptController extends Controller
                 'mrn' => $mrn,
                 'user' => $user,
                 'shippingAddress' => $shippingAddress,
+                'billingAddress' => $billingAddress,
                 'organization' => $organization,
                 'amountInWords' => $amountInWords,
                 'organizationAddress' => $organizationAddress,
@@ -2178,7 +2185,6 @@ class MaterialReceiptController extends Controller
         DB::beginTransaction();
         try {
             // Header History
-            // dd($id);
             $mrnHeader = MrnHeader::find($id);
             if(!$mrnHeader) {
                 return response()->json(['error' => 'Mrn Header not found'], 404);
@@ -2449,10 +2455,8 @@ class MaterialReceiptController extends Controller
         $vendorId = $request->vendor_id ?? null;
         $itemSearch = $request->item_search ?? null;
         $selected_po_ids = json_decode($request->selected_po_ids) ?? [];
-        // dd($request->all());
         // Fetch applicable book IDs
         $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
-        // dd($applicableBookIds);
         // Fetch PO Items along with related details
         $poItems = PoItem::select(
                 'erp_po_items.*',
@@ -2513,6 +2517,9 @@ class MaterialReceiptController extends Controller
                     ->get();
 
                 foreach ($geItems as $geItem) {
+                    if (in_array($geItem->id, $selected_po_ids)) {
+                        continue;
+                    }
                     $poItemIds[] = $geItem->id;
                     $geItem->balance_qty = $geItem->accepted_qty - $geItem->mrn_qty;
                     $geItem->po = $poItem->po; // Keep reference to PO
@@ -2529,14 +2536,15 @@ class MaterialReceiptController extends Controller
                         })
                         ->whereRaw('((order_qty - short_close_qty) > grn_qty)')
                         ->first();
-
-                    if ($siItem) {
-                        $poItemIds[] = $siItem->id;
+                    if ($siItem && !in_array($siItem->id, $selected_po_ids)) {
                         $finalPoItems[] = $siItem;
+                        $poItemIds[] = $siItem->id;
                     }
                 } else {
-                    $poItemIds[] = $poItem->id;
-                    $finalPoItems[] = $poItem;
+                    if (!in_array($poItem->id, $selected_po_ids)) {
+                        $finalPoItems[] = $poItem;
+                        $poItemIds[] = $poItem->id;
+                    }
                 }
             }
         }
@@ -2861,19 +2869,13 @@ class MaterialReceiptController extends Controller
     // Update Po Qty
     private static function updatePoQty($item, $poDetail, $inputQty, $type){
         $user = Helper::getAuthenticatedUser();
-        // dd($poDetail);
         $tolerenceInputQty = ($inputQty ?? 0.00) + ($poDetail->grn_qty ?? 0.00);
         $tolerenceBalanceQty = ($poDetail->order_qty - ($tolerenceInputQty ?? 0.00));
-        // dd($tolerenceInputQty, $tolerenceBalanceQty);
         if(($item->po_positive_tolerance && ($item->po_positive_tolerance > 0)) || ($item->po_negative_tolerance && ($item->po_negative_tolerance > 0))){
-            // dd($item->po_positive_tolerance, $item->po_negative_tolerance);
             $positiveTolerenceAmt = $item->po_positive_tolerance ? (($item->po_positive_tolerance/$poDetail->order_qty)*100) : 0;
             $negativeTolerenceAmt = $item->po_negative_tolerance ? (($item->po_negative_tolerance/$poDetail->order_qty)*100) : 0;
             if($tolerenceInputQty <= ($poDetail->order_qty + $positiveTolerenceAmt)){
                 if(($tolerenceBalanceQty <= $negativeTolerenceAmt) && ($tolerenceBalanceQty >= 0)){
-                    // dd($tolerenceInputQty);
-                    // dd($poDetail->grn_qty);
-
                     $poDetail->grn_qty += floatval($inputQty);
                     $poDetail->short_close_qty += floatval($tolerenceBalanceQty);
                     $poDetail->save();
@@ -2981,7 +2983,6 @@ class MaterialReceiptController extends Controller
 
     public function itemsImport(Request $request)
     {
-        // dd('hi');
         try {
             $user = Helper::getAuthenticatedUser();
             $request->validate([
@@ -3199,7 +3200,7 @@ class MaterialReceiptController extends Controller
             });
         },
         'items.item', 'items.item.category', 'items.item.subCategory', 'vendor', 'items.so', 'po', 'items.erpStore', 'items.subStore'])
-        ->where('organization_id', $user->organization_id);
+        ->withDefaultGroupCompanyOrg();
 
         // if ($mAttribute || $mAttributeValue) {
         //     $query->whereHas('items_attribute', function($subQuery) use ($mAttribute, $mAttributeValue) {
@@ -3494,10 +3495,9 @@ class MaterialReceiptController extends Controller
         $user = Helper::getAuthenticatedUser();
         $pathUrl = route('material-receipt.index');
         $orderType = ConstantHelper::MRN_SERVICE_ALIAS;  // Adjust based on actual constant for MRN service type
-        $materialReceipts = MrnHeader::with(['items'])
+        $materialReceipts = MrnHeader::withDefaultGroupCompanyOrg()
             // ->where('document_type', $orderType)
-            ->bookViewAccess($pathUrl)
-            ->withDefaultGroupCompanyOrg()
+            // ->bookViewAccess($pathUrl)
             ->withDraftListingLogic()
             ->orderByDesc('id');
 
@@ -3594,8 +3594,7 @@ class MaterialReceiptController extends Controller
             'po',
             'items.erpStore',
             'items.subStore'
-        ])
-        ->where('organization_id', $user->organization_id);
+        ]);
 
 
         $materialReceipts = $materialReceipts->get();

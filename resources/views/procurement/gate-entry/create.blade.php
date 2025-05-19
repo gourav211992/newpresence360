@@ -339,6 +339,8 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div class="col-md-12 " id = "dynamic_fields_section">
+                                </div>
                                 <div class="card" id="item_section">
                                     <div class="card-body customernewsection-form">
                                         <div class="border-bottom mb-2 pb-25">
@@ -706,6 +708,7 @@
                         } else {
                             $("#tax_required").val("");
                         }
+                        implementBookDynamicFields(data.data.dynamic_fields_html, data.data.dynamic_fields);
                         setTableCalculation();
                     }
                     if(data.status == 404) {
@@ -730,6 +733,17 @@
             let bookId = $("#book_id").val();
             getDocNumberByBookId(bookId);
         },0);
+
+        function implementBookDynamicFields(html, data)
+        {
+            let dynamicBookSection = document.getElementById('dynamic_fields_section');
+            dynamicBookSection.innerHTML = html;
+            if (data && data.length > 0) {
+                dynamicBookSection.classList.remove('d-none');
+            } else {
+                dynamicBookSection.classList.add('d-none');
+            }
+        }
         /*Set Service Parameter*/
         function setServiceParameters(parameters) {
             /*Date Validation*/

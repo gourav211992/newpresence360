@@ -11,13 +11,14 @@ use App\Helpers\ConstantHelper;
 use App\Traits\DateFormatTrait;
 use App\Traits\FileUploadTrait;
 use App\Traits\DefaultGroupCompanyOrg;
+use App\Traits\DynamicFieldsTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class MrnHeader extends Model
 {
-    use HasFactory, SoftDeletes, DateFormatTrait, FileUploadTrait,DefaultGroupCompanyOrg;
+    use HasFactory, SoftDeletes, DateFormatTrait, FileUploadTrait,DefaultGroupCompanyOrg, DynamicFieldsTrait;
     protected $table = 'erp_mrn_headers';
     protected $fillable = [
         'organization_id',
@@ -327,6 +328,11 @@ class MrnHeader extends Model
     public function latestShippingAddress()
     {
         return $this->addresses()->where('type', 'shipping')->latest()->first();
+    }
+
+    public function dynamic_fields()
+    {
+        return $this -> hasMany(ErpMrnDynamicField::class, 'header_id');
     }
 
 }

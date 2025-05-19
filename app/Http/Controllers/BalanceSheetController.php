@@ -67,6 +67,7 @@ $assets_group = Helper::getGroupsQuery($organizations)->where('name', 'Assets')
         ->where('parent_group_id',$liabilities_group)
         ->select('id','name')->get();
 
+
         $assets=Helper::getGroupsQuery($organizations)
         ->where('parent_group_id',$assets_group)
         ->select('id','name')->get();
@@ -188,15 +189,7 @@ $data[] = [
             if ($endDate->greaterThan($today)) {
                 $endDate = $today;
             }
-
             $endDate = $endDate->format('Y-m-d');
-
-
-
-
-            // if ($endDate > $today) {
-            //     $endDate = $today;
-            // }
         } else {
             $dates = explode(' to ', $request->date);
             $startDate = date('Y-m-d', strtotime($dates[0]));

@@ -88,21 +88,11 @@ $(document).ready(function() {
             $(td).addClass('no-wrap');
         }
         },
-        // { data: 'sales_order', name: 'sales_order', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-        //     $(td).addClass('no-wrap');
-        // }
-        // },
-        // { data: 'revision_number', name: 'revision_number', render: renderData },
-        // { data: 'reference_number', name: 'reference_number', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-        //        $(td).addClass('no-wrap');
-        //     }
-        //  },
         { data: 'components', name: 'components', render: renderData },
         { data: 'document_status', name: 'document_status', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('no-wrap');
             }
         }
-        // { data: 'action', name: 'action', orderable: false, searchable: false }
     ];
     // Define your dynamic filters
     var filters = {

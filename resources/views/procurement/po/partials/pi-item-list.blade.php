@@ -35,21 +35,20 @@ $attrValue = \App\Models\Attribute::where('id', @$attribute->attribute_value)->f
                 @if(count($approvedVendorIds))
                     @php
                     $approvedVendors = \App\Models\Vendor::whereIn('id',$approvedVendorIds)->get();
-                    $firstVendor = $approvedVendors->first();
+
+                    if($piItem->vendor_id) {
+                        $firstVendorId = $piItem->vendor_id;
+                    } else {
+                        $firstVendorId = $approvedVendors?->first()?->id;
+                    }
                     @endphp
                     @foreach($approvedVendors as $vendor)
-                    <option value="{{$vendor?->id}}" {{ $vendor->id == $firstVendor?->id ? 'selected' : '' }}>{{$vendor?->company_name}}</option>
+                        <option value="{{$vendor?->id}}" {{ $vendor->id == $firstVendorId ? 'selected' : '' }}>{{$vendor?->company_name}}</option>
                     @endforeach
                 @else
                     <option value=""></option>
                     @foreach($vendors as $vendor)
-                    <option value="{{$vendor?->id}}">{{$vendor?->company_name}}</option>
-                    {{-- @php
-                    $validVendor = \App\Helpers\ItemHelper::validateVendor($vendor->id, $documentDate)
-                    @endphp
-                        @if($validVendor)
-                            <option value="{{$vendor?->id}}">{{$vendor?->company_name}}</option>
-                        @endif --}}
+                    <option value="{{$vendor?->id}}" {{$piItem?->vendor_id == $vendor?->id ? 'selected' : '' }}>{{$vendor?->company_name}}</option>
                     @endforeach
                 @endif
             </select>

@@ -47,6 +47,16 @@ class SplitController extends Controller
             $data = $data->whereDate('document_date', '>=', $start)
                 ->whereDate('document_date', '<=', $end);
         }
+        else{
+           $fyear = Helper::getFinancialYear(date('Y-m-d'));
+
+            $data = $data->whereDate('document_date', '>=',$fyear['start_date'])
+                ->whereDate('document_date', '<=',$fyear['end_date']);
+                $start = $fyear['start_date'];
+                $end = $fyear['end_date'];
+            
+        
+        }
 
         
         
@@ -90,8 +100,8 @@ class SplitController extends Controller
                     }
                 });
                 })->get(); 
-                $financialEndDate = Helper::getFinancialYear(\Carbon\Carbon::parse(date('Y-m-d'))->subYear()->format('Y-m-d'))['end_date'];
-                $financialStartDate = Helper::getFinancialYear(\Carbon\Carbon::parse(date('Y-m-d'))->subYear()->format('Y-m-d'))['start_date'];
+                $financialEndDate = Helper::getFinancialYear(date('Y-m-d'))['end_date'];
+                $financialStartDate = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
                 $organization = Helper::getAuthenticatedUser()->organization;
                 $dep_percentage = $organization->dep_percentage;
                 $dep_type = $organization->dep_type;
@@ -165,7 +175,9 @@ class SplitController extends Controller
         if ($currNumber) {
             $data= FixedAssetSplitHistory::withDefaultGroupCompanyOrg()->findorFail($id);
         } else {
-            $data= FixedAssetSplit::withDefaultGroupCompanyOrg()->findorFail($id);
+            $data= FixedAssetSplit::withDefaultGroupCompanyOrg()->with(['subAsset' => function ($query) {
+                $query->withTrashed();
+            }])->findorFail($id);
         }
         $revision_number = $data->revision_number;
         $userType = Helper::userCheck();
@@ -213,8 +225,8 @@ class SplitController extends Controller
                     }
                 });
                 })->get(); 
-                $financialEndDate = Helper::getFinancialYear(\Carbon\Carbon::parse(date('Y-m-d'))->subYear()->format('Y-m-d'))['end_date'];
-                $financialStartDate = Helper::getFinancialYear(\Carbon\Carbon::parse(date('Y-m-d'))->subYear()->format('Y-m-d'))['start_date'];
+                $financialEndDate = Helper::getFinancialYear(date('Y-m-d'))['end_date'];
+                $financialStartDate = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
                 $organization = Helper::getAuthenticatedUser()->organization;
                 $dep_percentage = $organization->dep_percentage;
                 $dep_type = $organization->dep_type;

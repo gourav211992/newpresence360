@@ -780,7 +780,7 @@ class VoucherController extends Controller
                     $buttons['reference']=true;
                 }
             }
-            $buttons['amend']=false;
+             $buttons['amend']=false;
         }
         $currencies = Currency::where('status', ConstantHelper::ACTIVE)->select('id', 'name', 'short_name')->get();
         $orgCurrency = Organization::where('id', Helper::getAuthenticatedUser()->organization_id)->value('currency_id');

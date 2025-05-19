@@ -37,9 +37,19 @@ use App\Models\Station;
 
 class BomController extends Controller
 {
+    protected bool $canViewItemCost;
+
+    public function __construct()
+    {
+        // $user = Helper::getAuthenticatedUser();
+        // $this->canViewItemCost = $user && $user->hasPermission('view bom item cost');
+        $this->canViewItemCost = true;
+    }
+
     # Bill of material list
     public function index(Request $request)
     {
+        $canView = $this->canViewItemCost;
         $parentUrl = request()->segments()[0];
         if (request()->ajax()) {
             $type = $request->type == ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
@@ -47,32 +57,27 @@ class BomController extends Controller
                     ->where('type',$type)
                     ->where('bom_type',ConstantHelper::FIXED)
                     ->withDraftListingLogic()
-                    ->latest()
-                    ->get();
+                    ->latest();
             return DataTables::of($boms)
                 ->addIndexColumn()
                 ->editColumn('document_status', function ($row) use ($type) {
-                    $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->document_status];
-                    $displayStatus = $row->display_status;
-                    if($type == ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
-                        $route = url('quotation-bom').'/edit/'.$row->id;    
-                    } else {
-                        $route = route('bill.of.material.edit', $row->id);    
-                    }
-                    return "<div style='text-align:right;'>
-                        <span class='badge rounded-pill $statusClasss badgeborder-radius'>$displayStatus</span>
-                        <div class='dropdown' style='display:inline;'>
-                            <button type='button' class='btn btn-sm dropdown-toggle hide-arrow py-0 p-0' data-bs-toggle='dropdown'>
-                                <i data-feather='more-vertical'></i>
-                            </button>
-                            <div class='dropdown-menu dropdown-menu-end'>
-                                <a class='dropdown-item' href='" . $route . "'>
-                                    <i data-feather='edit-3' class='me-50'></i>
-                                    <span>View/ Edit Detail</span>
-                                </a>
-                            </div>
-                        </div>
-                    </div>";
+                    return view('partials.action-dropdown', [
+                        'statusClass' => ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->document_status] ?? 'badge-light-secondary',
+                        'displayStatus' => $row->display_status,
+                        'row' => $row,
+                        'actions' => [
+                            [
+                                'url' => function ($r) use ($type) {
+                                    if ($type == ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
+                                        return url('quotation-bom/edit/' . $r->id);
+                                    }
+                                    return route('bill.of.material.edit', $r->id);
+                                },
+                                'icon' => 'edit-3',
+                                'label' => 'View/ Edit Detail',
+                            ]
+                        ]
+                    ])->render();
                 })
                 ->addColumn('book_name', function ($row) {
                     return $row->book ? $row->book?->book_code : 'N/A';
@@ -109,14 +114,23 @@ class BomController extends Controller
                 ->addColumn('components', function ($row) {
                     return $row->bomItems->count();
                 })
-                ->editColumn('total_item_value', function ($row) {
-                    return number_format($row->total_item_value,2);
+                ->editColumn('total_item_value', function ($row) use($canView) {
+                    if($canView) {
+                        return number_format($row->total_item_value,2);
+                    }
+                    return "";
                 })
-                ->addColumn('overhead', function ($row) {
-                    return number_format(($row->item_overhead_amount + $row->header_overhead_amount),2);
+                ->addColumn('overhead', function ($row) use($canView) {
+                    if($canView) {
+                        return number_format(($row->item_overhead_amount + $row->header_overhead_amount),2);
+                    }
+                    return "";
                 })
-                ->addColumn('total_cost', function ($row) {
-                    return number_format(($row->total_item_value + $row->item_overhead_amount + $row->header_overhead_amount),2);
+                ->addColumn('total_cost', function ($row) use($canView) {
+                    if($canView) {
+                        return number_format(($row->total_item_value + $row->item_overhead_amount + $row->header_overhead_amount),2);
+                    }
+                    return "";
                 })
                 ->rawColumns(['document_status', 'attributes'])
                 ->make(true);
@@ -129,6 +143,7 @@ class BomController extends Controller
     # Bill of material Create
     public function create(Request $request)
     {
+        $canView = $this->canViewItemCost;
         $parentUrl = request()->segments()[0];
         $servicesAliasParam = request()->segments()[0] == 'quotation-bom' ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl, $servicesAliasParam);
@@ -149,7 +164,8 @@ class BomController extends Controller
             'servicesBooks' => $servicesBooks,
             'serviceAlias' => $servicesAliasParam,
             'productionRoutes' => $productionRoutes,
-            'customizables' => $customizables
+            'customizables' => $customizables,
+            'canView' => $canView
         ]);
     }
 
@@ -157,6 +173,7 @@ class BomController extends Controller
     public function store(BomRequest $request)
     {
         # check validation
+        $canView = $this->canViewItemCost;
         $response = BookHelper::fetchBookDocNoAndParameters($request->book_id, $request->document_date);
         $parameters = json_decode(json_encode($response['data']['parameters']), true) ?? [];
         $stationRequired = isset($parameters['station_required']) && is_array($parameters['station_required']) && in_array('yes', array_map('strtolower', $parameters['station_required']));
@@ -208,6 +225,7 @@ class BomController extends Controller
             $bom->customer_id = $request->customer_id ?? null;
             $bom->production_route_id = $request->production_route_id ?? null;
             $bom->customizable = $request->customizable ?? 'no';
+            $bom->safety_buffer_perc = $request->safety_buffer_perc ?? null;
             // $bom->status = $request->status;
             $bom->remarks = $request->remarks;
             # Extra Column
@@ -554,6 +572,7 @@ class BomController extends Controller
     # Add item row
     public function addItemRow(Request $request)
     {
+        $canView = $this->canViewItemCost;
         $item = json_decode($request->item,true) ?? [];
         $componentItem = json_decode($request->component_item,true) ?? [];
         $moduleType = $request->type ?? null;
@@ -630,7 +649,8 @@ class BomController extends Controller
             'stationRequired' => $stationRequired,
             'supercedeCostRequired' => $supercedeCostRequired,
             'componentWasteRequired' => $componentWasteRequired,
-            'componentOverheadRequired' => $componentOverheadRequired
+            'componentOverheadRequired' => $componentOverheadRequired,
+            'canView' => $canView,
         ])->render();
 
         return response()->json(['data' => ['html' => $html], 'status' => 200, 'message' => 'fetched.']);
@@ -699,6 +719,7 @@ class BomController extends Controller
     # Bom edit
     public function edit(Request $request, $id)
     {
+        $canView = $this->canViewItemCost;
         $parentUrl = request() -> segments()[0];
         $servicesAliasParam = request()->segments()[0] == 'quotation-bom' ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl, $servicesAliasParam);
@@ -776,13 +797,15 @@ class BomController extends Controller
             'componentOverheadRequired' => $componentOverheadRequired,
             'productionRoutes' => $productionRoutes,
             'customizables' => $customizables,
-            'headerOverheads' => $headerOverheads
+            'headerOverheads' => $headerOverheads,
+            'canView' => $canView
         ]); 
     }
 
     # Bom Update
     public function update(BomRequest $request, $id)
     {
+        $canView = $this->canViewItemCost;
         # check validation
         $response = BookHelper::fetchBookDocNoAndParameters($request->book_id, $request->document_date);
         $parameters = json_decode(json_encode($response['data']['parameters']), true) ?? [];
@@ -879,6 +902,7 @@ class BomController extends Controller
             $bom->item_code = $request->item_code;
             $bom->item_name = $request->item_name;
             $bom->production_route_id = $request->production_route_id;
+            $bom->safety_buffer_perc = $request->safety_buffer_perc ?? null;
             $bom->document_status = $request->document_status ?? ConstantHelper::DRAFT;
             $bom->remarks = $request->remarks;
             # Extra Column
@@ -1182,6 +1206,7 @@ class BomController extends Controller
         // genrate pdf
     public function generatePdf(Request $request, $id)
     {
+        $canView = $this->canViewItemCost;
         $user = Helper::getAuthenticatedUser();
         $organization = Organization::where('id', $user->organization_id)->first();
         $organizationAddress = Address::with(['city', 'state', 'country'])
@@ -1220,7 +1245,8 @@ class BomController extends Controller
                 'specifications' => $specifications,
                 'docStatusClass' => $docStatusClass,
                 'sectionRequired' => $sectionRequired,
-                'subSectionRequired' => $subSectionRequired
+                'subSectionRequired' => $subSectionRequired,
+                'canView' => $canView
             ]
         );
 
@@ -1263,6 +1289,7 @@ class BomController extends Controller
     # Get Quotation Bom Item List
     public function getQuoteBom(Request $request)
     {
+        $canView = $this->canViewItemCost;
         $seriesId = $request->series_id ?? null;
         $docNumber = $request->document_number ?? null;
         $itemId = $request->item_id ?? null;
@@ -1297,13 +1324,14 @@ class BomController extends Controller
                         }
                 })
                 ->get();
-        $html = view('billOfMaterial.partials.q-bom-list', ['piItems' => $piItems])->render();
+        $html = view('billOfMaterial.partials.q-bom-list', ['piItems' => $piItems, 'canView' => $canView])->render();
         return response()->json(['data' => ['pis' => $html], 'status' => 200, 'message' => "fetched!"]);
     }
 
     # Submit PI Item list
     public function processBomItem(Request $request)
     {
+        $canView = $this->canViewItemCost;
         $ids = json_decode($request->ids,true) ?? [];
         $bom = Bom::with('uom:id,name')
                 ->whereIn('id', $ids)
@@ -1328,7 +1356,8 @@ class BomController extends Controller
             'supercedeCostRequired' => $supercedeCostRequired,
             'componentWasteRequired' => $componentWasteRequired,
             'componentOverheadRequired' => $componentOverheadRequired,
-            'consumption_method' => $consumption_method
+            'consumption_method' => $consumption_method,
+            'canView' => $canView
             ])->render();
 
         $specifications = collect();

@@ -54,7 +54,7 @@
                             action="{{ route('finance.fixed-asset.split.update',$data->id) }}" enctype="multipart/form-data">
 
                             @csrf
-                            @method('PUT');
+                            @method('PUT')
 
                             <input type="hidden" name="sub_assets" value="{{$data->sub_assets}}" id="sub_assets">
                             <input type="hidden" name="doc_number_type" id="doc_number_type" value="{{$data->doc_number_type}}">
@@ -295,8 +295,8 @@
                                                                 <th>Asset Name</th>
                                                                 <th width="200">Sub Asset Code</th>
                                                                 <th width="100">Quantity</th>
-                                                                <th>Current Value</th>
-                                                                <th>Salvage Value</th>
+                                                                <th class="text-end">Current Value</th>
+                                                                <th class="text-end">Salvage Value</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody class="mrntableselectexcel">
@@ -768,7 +768,8 @@
                             type: 'POST',
                             dataType: 'json',
                             data: {
-                                q: request.term
+                                q: request.term,
+                                split:"{{$data->id}}",
                             },
                             success: function (data) {
                                 response(data.map(function (item) {
@@ -798,6 +799,10 @@
                         if (!ui.item) {
                             $(this).val('');
                             $('#asset_id').val('');
+                            $('#subasset_search_input').val();
+                            $('#sub_asset_id').val('');
+                            $('#last_dep_date').val('');
+                            $('#current_value_asset').val('');
                             add_blank();
 
                         }
@@ -853,6 +858,7 @@
                         $('#category').val(asset.category_id).trigger('change');
                         $('#ledger').val(asset.ledger_id).trigger('change');
                         $('#ledger_group').val(asset.ledger_group_id).trigger('change');
+                        $('#last_dep_date').val("");
 
                         // Handle depreciation date
                         if (asset.last_dep_date !== asset.capitalize_date) {

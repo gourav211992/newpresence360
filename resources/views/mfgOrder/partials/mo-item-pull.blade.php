@@ -36,11 +36,11 @@
             @endif
          @endforeach
       @endforeach
-  </td>
-  <td>
+   </td>
+   <td>
       <input type="text" name="components[{{$rowCount}}][item_name]" value="{{$pwoItem?->item?->item_name}}" class="form-control mw-100 mb-25" readonly/>
-  </td>
-   <td class="poprod-decpt" id="itemAttribute_{{$rowCount}}" data-count="{{$rowCount}}" attribute-array="{{$pwoItem->item_attributes_array()}}"> 
+   </td>
+   <td class="poprod-decpt" id="itemAttribute_{{$rowCount}}" data-count="{{$rowCount}}" attribute-array="{{$pwoItem->item_attributes_array()}}">
    </td>
    <td>
       <select disabled class="form-select mw-100 " name="components[{{$rowCount}}][uom_id]">

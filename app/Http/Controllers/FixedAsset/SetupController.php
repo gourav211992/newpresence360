@@ -68,7 +68,7 @@ class SetupController extends Controller
             ->where('status', 'active')
             ->get();
 
-        $group_names = [ConstantHelper::EXPENSES, ConstantHelper::DIRECT_EXPENSES];
+        $group_names = [ConstantHelper::INDIRECT_EXPENSES, ConstantHelper::DIRECT_EXPENSES];
 
         // Get all matching groups
         $groups = Helper::getGroupsQuery()->whereIn('name', $group_names)->get();
@@ -191,7 +191,7 @@ class SetupController extends Controller
         $data = FixedAssetSetup::findorFail($id);
         $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()
             ->where('status', 'active')->get();
-        $group_names = [ConstantHelper::EXPENSES, ConstantHelper::DIRECT_EXPENSES];
+        $group_names = [ConstantHelper::INDIRECT_EXPENSES, ConstantHelper::DIRECT_EXPENSES];
 
 // Get all matching groups
         $groups = Helper::getGroupsQuery()->whereIn('name', $group_names)->get();

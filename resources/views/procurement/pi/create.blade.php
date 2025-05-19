@@ -192,52 +192,53 @@
                      <div class="table-responsive pomrnheadtffotsticky">
                         <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"> 
                             <thead>
-                            <tr>
-                                <th class="customernewsection-form">
-                                    <div class="form-check form-check-primary custom-checkbox">
-                                        <input type="checkbox" class="form-check-input" id="Email">
-                                        <label class="form-check-label" for="Email"></label>
-                                    </div> 
-                                </th>
-                                <th width="200px">Item Code</th>
-                                <th width="300px">Item Name</th>
-                                <th max-width="180px">Attributes</th>
-                                <th >UOM</th>
-                                <th class="text-end">Quantity</th>
-                                {{-- <th width="150px">Preferred Vendor</th>
-                                <th width="240px">Vendor Name</th> --}}
-                                {{-- <th width="50px">Action</th> --}}
-                                <th width="350px">Remarks</th>
-                            </tr>
+                                <tr>
+                                    <th class="customernewsection-form">
+                                        <div class="form-check form-check-primary custom-checkbox">
+                                            <input type="checkbox" class="form-check-input" id="Email">
+                                            <label class="form-check-label" for="Email"></label>
+                                        </div> 
+                                    </th>
+                                    <th width="200px">Item Code</th>
+                                    <th width="300px">Item Name</th>
+                                    <th max-width="180px">Attributes</th>
+                                    <th >UOM</th>
+                                    <th class="text-end">Req Qty</th>
+                                    <th class="text-end">Avl Stock</th>
+                                    <th class="text-end">Adj Qty</th>
+                                    <th class="text-end">Order Qty</th>
+                                    <th width="240px">Vendor Name</th>
+                                    <th width="100px" id="so_no">SO No.</th>
+                                    <th width="350px">Remarks</th>
+                                </tr>
                             </thead>
-                        <tbody class="mrntableselectexcel">
-
-                        </tbody>
-                        <tfoot>
-                            <tr valign="top">
-                                <td colspan="9" rowspan="10">
-                                    <table class="table border">
-                                        <tbody id="itemDetailDisplay">
-                                            <tr>
-                                                <td class="p-0">
-                                                    <h6 class="text-dark mb-0 bg-light-primary py-1 px-50"><strong>Item Details</strong></h6>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                            </tr>
-                                            <tr> 
-                                            </tr> 
-                                            <tr>
-                                            </tr>
-                                            <tr>
-                                            </tr>
-                                        </tbody>
-                                    </table> 
-                                </td>
-                            </tr> 
-                        </tfoot>
-                    </table>
-                </div>
+                            <tbody class="mrntableselectexcel">
+                            </tbody>
+                            <tfoot>
+                                <tr valign="top">
+                                    <td colspan="12" rowspan="10">
+                                        <table class="table border">
+                                            <tbody id="itemDetailDisplay">
+                                                <tr>
+                                                    <td class="p-0">
+                                                        <h6 class="text-dark mb-0 bg-light-primary py-1 px-50"><strong>Item Details</strong></h6>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                </tr>
+                                                <tr> 
+                                                </tr> 
+                                                <tr>
+                                                </tr>
+                                                <tr>
+                                                </tr>
+                                            </tbody>
+                                        </table> 
+                                    </td>
+                                </tr> 
+                            </tfoot>
+                        </table>
+                    </div>
                 <div class="row mt-2">
                     <div class="col-md-12">
                         <div class="row">
@@ -302,49 +303,6 @@
     <div class="modal-footer justify-content-center">  
         <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button> 
         <button type="button" {{-- data-bs-dismiss="modal" --}} class="btn btn-primary submitAttributeBtn">Select</button>
-    </div>
-</div>
-</div>
-</div>
-
-{{-- Delivery schedule --}}
-<div class="modal fade" id="deliveryScheduleModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
-    <div class="modal-dialog  modal-dialog-centered" >
-        <div class="modal-content">
-            <div class="modal-header p-0 bg-transparent">
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body px-sm-2 mx-50 pb-2">
-                <h1 class="text-center mb-1" id="shareProjectTitle">Delivery Schedule</h1>
-                {{-- <p class="text-center">Enter the details below.</p> --}}
-                
-                <div class="text-end"> <a href="javascript:;" class="text-primary add-contactpeontxt mt-50 addTaxItemRow"><i data-feather='plus'></i> Add Schedule</a></div>
-
-                <div class="table-responsive-md customernewsection-form">
-                    <table id="deliveryScheduleTable" class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail"> 
-                        <thead>
-                         <tr>
-                            <th>S.No</th>
-                            <th width="150px">Quantity</th>
-                            <th>Date</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-
-                        <tr id="deliveryFooter">
-                         <td class="text-dark"><strong>Total</strong></td>
-                         <td class="text-dark"><strong id="total">0.00</strong></td>
-                         <td></td>
-                         <td></td>
-                     </tr>
-                 </tbody>
-             </table>
-         </div>
-     </div>
-     <div class="modal-footer justify-content-center">  
-        <button type="button" data-bs-dismiss="modal"  class="btn btn-outline-secondary me-1">Cancel</button> 
-        <button type="button" class="btn btn-primary itemDeliveryScheduleSubmit">Submit</button>
     </div>
 </div>
 </div>
@@ -522,71 +480,14 @@ function setServiceParameters(parameters) {
     if(soTrackingRequired.includes('yes')) {
         $("#soTrackingText").removeClass('d-none');
         $("#soTrackingNo").removeClass('d-none');
+        $("#so_no").removeClass('d-none');
     } else {
         $("#soTrackingText").addClass('d-none');
         $("#soTrackingNo").addClass('d-none');
+        $("#so_no").addClass('d-none');
     }
     
 }
-
-    /*Vendor drop down*/
-//   function initializeAutocomplete1(selector, type) {
-//     $(selector).autocomplete({
-//         minLength: 0,
-//         source: function(request, response) {
-//             let item_id = $(this.element).closest('tr').find("[name*='[item_id]']").val();
-//             $.ajax({
-//                 url: '/search',
-//                 method: 'GET',
-//                 dataType: 'json',
-//                 data: {
-//                     q: request.term,
-//                     type:'vendor_list',
-//                     item_id:item_id
-//                 },
-//                 success: function(data) {
-//                     response($.map(data, function(item) {
-//                         return {
-//                             id: item.id,
-//                             label: item.company_name,
-//                             code: item.vendor_code,
-//                             addresses: item.addresses
-//                         };
-//                     }));
-//                 },
-//                 error: function(xhr) {
-//                     console.error('Error fetching customer data:', xhr.responseText);
-//                 }
-//             });
-//         },
-//         select: function(event, ui) {
-//             let $input = $(this);
-//             let itemName = ui.item.value;
-//             let itemId = ui.item.id;
-//             let itemCode = ui.item.code;
-//             $input.attr('data-name', itemName);
-//             $input.val(itemCode);
-//             $input.closest('tr').find("[name*='[vendor_name]']").val(itemName);
-//             $input.closest('tr').find("[name*='[vendor_id]']").val(itemId);
-//         },
-//         change: function(event, ui) {
-//             if (!ui.item) {
-//                 $(this).val("");
-//                 $(this).attr('data-name', '');
-//                 $(this).closest('tr').find("[name*='[vendor_name]']").val('');
-//                 $(this).closest('tr').find("[name*='[vendor_id]']").val('');
-//             }
-//         }
-//     }).focus(function() {
-//         if (this.value === "") {
-//             $(this).autocomplete("search", "");
-//             $(this).closest('tr').find("[name*='[vendor_name]']").val('');
-//             $(this).closest('tr').find("[name*='[vendor_id]']").val('');
-//         }
-//     });
-// }
-
-/*Add New Row*/
 
 // for component item code
 function initializeAutocomplete2(selector, type) {
@@ -733,8 +634,8 @@ if($("tr[id*='row_']:last").find("[name*='[attr_group_id]']").length == 0 && ite
     lastTrObj.attr_require = false;
 }
 }
-
-let actionUrl = '{{route("pi.item.row")}}'+'?count='+rowsLength+'&component_item='+JSON.stringify(lastTrObj); 
+let soTracking = $("#so_tracking_required").val() || '';
+let actionUrl = '{{route("pi.item.row")}}'+'?count='+rowsLength+'&component_item='+JSON.stringify(lastTrObj)+`&so_tracking_required=${soTracking}`; 
 fetch(actionUrl).then(response => {
     return response.json().then(data => {
         if (data.status == 200) {
@@ -745,6 +646,7 @@ fetch(actionUrl).then(response => {
             }
             initializeAutocomplete2('.comp_item_code');
             $(".soSelect").prop('disabled',true);
+            initAutocompVendor("[name*='[vendor_code]']");
         } else if(data.status == 422) {
          Swal.fire({
             title: 'Error!',
@@ -831,7 +733,8 @@ function getItemAttribute(itemId, rowCount, selectedAttr, tr){
 
 /*Display item detail*/
 $(document).on('input change focus', '#itemTable tr input', (e) => {
- let currentTr = e.target.closest('tr'); 
+ let currentTr = e.target.closest('tr');
+ let rowCount = $(currentTr).attr('data-index'); 
  let pName = $(currentTr).find("[name*='component_item_name']").val();
  let itemId = $(currentTr).find("[name*='[item_id]']").val();
  let remark = '';
@@ -840,28 +743,23 @@ $(document).on('input change focus', '#itemTable tr input', (e) => {
 }
 if (itemId) {
   let selectedAttr = [];
-  let selectedDelivery = {};
   $(currentTr).find("[name*='attr_name']").each(function(index, item) {
    if($(item).val()) {
     selectedAttr.push($(item).val());
 }
 });
 
-  $(currentTr).find("[name*='delivery']").each(function(index, item) {
-    let dDate = $(item).closest('td').find('[name*="[d_date]"]').val();   
-    let dQty = $(item).closest('td').find('[name*="[d_qty]"]').val();
-    selectedDelivery.delivery = {"dDate" : dDate, dQty : dQty};
-});
-
   let uomId = $(currentTr).find("[name*='[uom_id]']").val() || '';
   let qty = $(currentTr).find("[name*='[qty]']").val() || '';
   let pi_item_id = '';
   let store_id = $("#store_id").val() || '';
-  let actionUrl = '{{route("pi.get.itemdetail")}}'+'?item_id='+itemId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&delivery='+JSON.stringify(selectedDelivery)+'&store_id='+store_id;;
+  let actionUrl = '{{route("pi.get.itemdetail")}}'+'?item_id='+itemId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&store_id='+store_id;;
   fetch(actionUrl).then(response => {
    return response.json().then(data => {
     if(data.status == 200) {
      $("#itemDetailDisplay").html(data.data.html);
+     let avlStock = data.data?.inventoryStock.confirmedStocks;
+     $(`input[name="components[${rowCount}][avl_stock]"]`).val(Number(avlStock).toFixed(2));
  }
 });
 });
@@ -1234,19 +1132,21 @@ $(document).on('click', '.soSubmitProcess', (e) => {
             selectedData.push(dataItem);
         });
         if(selectedData.length) {
-            let actionUrl = '{{ route("pi.process.so-item.submit") }}'+'?selectedData='+JSON.stringify(selectedData);
+            let soTracking = $("#so_tracking_required").val() || '';
+            let storeId = $("#store_id").val() || '';
+            let actionUrl = '{{ route("pi.process.so-item.submit") }}'+'?selectedData='+JSON.stringify(selectedData)+'&so_tracking_required='+soTracking+'&store_id='+storeId;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if(data.status == 200) {
                         $("#itemTable .mrntableselectexcel").empty().append(data.data.pos);
-                        // initializeAutocomplete1("[name*='[vendor_code]']");
+                        initAutocompVendor("[name*='[vendor_code]']");
                         initializeAutocomplete2(".comp_item_code");
                         $(".soSelect").prop('disabled',true);
                         $("#soSubmitModal").modal('hide');
                         setTimeout(() => {
                             $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
                                 let currentIndex = index + 1;
-                                setAttributesUIHelper(currentIndex,"#itemTable");
+                                setAttributesUIHelper(currentIndex, "#itemTable");
                             });
                         },100);
                     }
@@ -1255,7 +1155,6 @@ $(document).on('click', '.soSubmitProcess', (e) => {
             });
         }
     } else {
-        // $("#soSubmitModal").modal('hide');
         Swal.fire({
             title: 'Error!',
             text: 'Please select at least one one so item.',

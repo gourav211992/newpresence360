@@ -964,6 +964,7 @@ function initializeAssetAutocomplete(selector) {
                 type: 'POST',
                 dataType: 'json',
                 data: {
+                    merger:"{{$data->id}}",
                     q: request.term,
                     ids:getAllAssetIds(),
                 },
@@ -992,12 +993,13 @@ function initializeAssetAutocomplete(selector) {
             row.find('.asset_id').val(ui.item.value);
 
             let subAssetSelect = row.find('.sub_asset_id');
+            let last_dep = row.find('.last_dep_date');
             subAssetSelect.html('<option value="">Loading...</option>');
 
             $.ajax({
                 url: '{{ route("finance.fixed-asset.sub_asset") }}',
                 type: 'GET',
-                data: { id: ui.item.value },
+                data: { id: ui.item.value,merger:"{{$data->id}}"},
                 success: function (response) {
                 subAssetSelect.empty();
                     subAssetSelect.html('<option value="">Select</option>');
@@ -1006,17 +1008,19 @@ function initializeAssetAutocomplete(selector) {
                             '<option value="' + subAsset.id + '">' + subAsset.sub_asset_code + '</option>'
                         );
                     });
+                     last_dep.val("");
 
-                    if (response.length && response[0].asset) {
+                    if (response[0].asset) {
+                        if(response[0].asset.last_dep_date!=response[0].asset.capitalize_date){
                         let lastDepDate = new Date(response[0].asset.last_dep_date);
                         lastDepDate.setDate(lastDepDate.getDate() - 1);
                         let formatted = lastDepDate.toISOString().split('T')[0];
-                        $('#last_dep_date_' + rowId).val(formatted);
+                        last_dep.val(formatted);
+                    }
                     }
                 row.find('.quantity').val('');
                 row.find('.currentvalue').val('');
                 row.find('.salvagevalue').val('');
-                row.find('.last_dep_date').val('');
                     refreshAssetSelects();
                     updateSum();
                 },
@@ -1049,6 +1053,7 @@ function initializeAssetAutocomplete(selector) {
         }
     });
 }
+
     initializeAssetAutocomplete('.asset-search-input');
 
             // On Sub-Asset change, get value and last dep date
@@ -1064,6 +1069,7 @@ function initializeAssetAutocomplete(selector) {
                 url: '{{ route('finance.fixed-asset.sub_asset_details') }}',
                 type: 'GET',
                 data: {
+                    merger:"{{$data->id}}",
                     id: assetId,
                     sub_asset_id: subAssetId
                 },

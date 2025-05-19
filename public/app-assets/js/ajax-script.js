@@ -160,6 +160,46 @@ $(document).on('submit', '.ajax-input-form', function (e) {
     //     });
     // }
 
+    // Component Items for BOM
+    const componentBlocks = document.querySelectorAll('tr[id*="row_"]');
+    if(componentBlocks.length) {
+        const components = [];
+        componentBlocks.forEach(block => {
+            const component = {};
+            const inputs = block.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                const key = input.name;
+                const value = input.value;
+                component[key] = value;
+            });
+            components.push(component);
+        });
+        data.append('components_json', JSON.stringify(components));
+        for (let [key, value] of Array.from(data.entries())) {
+            if (key.startsWith('components[')) {
+                data.delete(key);
+            }
+        }  
+    }
+    // Header Overheads For BOM
+    const overheadRows = document.querySelectorAll('.display_overhead_row');
+    if(overheadRows.length) {
+        const headerOverheads = [];
+        overheadRows.forEach(row => {
+            const overhead = {};
+            row.querySelectorAll('input, select, textarea').forEach(input => {
+                overhead[input.name] = input.value;
+            });
+            headerOverheads.push(overhead);
+        });
+        data.append('header_overhead_json', JSON.stringify(headerOverheads));
+        for (let [key] of Array.from(data.entries())) {
+            if (/^header\[\d+\]\[overhead\]\[\d+\]\[.*\]$/.test(key)) {
+                data.delete(key);
+            }
+        }
+    }
+
     $.ajax({
         url,
         type: method,

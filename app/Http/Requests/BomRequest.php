@@ -32,6 +32,33 @@ class BomRequest extends FormRequest
 
     public function rules(): array
     {
+        if ($this->filled('components_json')) {
+            $decoded = json_decode($this->input('components_json'), true);
+            $decoded = array_filter($decoded, fn($item) => is_array($item) && count($item) > 0);
+            $components = [];
+            foreach ($decoded as $index => $component) {
+                $normalized = [];
+                foreach ($component as $key => $value) {
+                    if ($key === "") {
+                        continue;
+                    }
+                    $this->arraySetByPath($normalized, $this->parseKeyToPath($key), $value);
+                }
+                if (isset($normalized['components']) && is_array($normalized['components'])) {
+                    $nestedComp = reset($normalized['components']);
+                    unset($normalized['components']);
+                    unset($normalized['component_item_name'], $normalized['product_station'], $normalized['product_vendor']);
+                    $merged = array_merge($nestedComp, $normalized);
+                    if (isset($merged['remark']) && $merged['remark'] === '') {
+                        $merged['remark'] = null;
+                    }
+                    $components[$index + 1] = $merged;
+                } else {
+                    $components[$index + 1] = $normalized;
+                }
+            }
+            $this->merge(['components' => $components]);
+        }
         $bomId = $this->route('id');
         $parameters = [];
         $response = BookHelper::fetchBookDocNoAndParameters($this->input('book_id'), $this->input('document_date'));
@@ -41,7 +68,7 @@ class BomRequest extends FormRequest
         $rules = [
             'book_id' => 'required',
             'document_date' => 'required|date',
-            'document_number' => 'required', // Default rule for document_number
+            'document_number' => 'required',
             'item_code' => 'required|string|max:255',
             'production_route_id' => 'required',
             'uom_id' => 'required|max:255'
@@ -56,10 +83,6 @@ class BomRequest extends FormRequest
         $sectionRequired = isset($parameters['section_required']) && is_array($parameters['section_required']) && in_array('yes', array_map('strtolower', $parameters['section_required']));
         $subSectionRequired = isset($parameters['sub_section_required']) && is_array($parameters['sub_section_required']) && in_array('yes', array_map('strtolower', $parameters['sub_section_required']));
         $stationRequired = true;
-        $supercedeCostRequired = false;
-        $componentWasteRequired = false;
-        $componentOverheadRequired = isset($parameters['component_overhead_required']) && is_array($parameters['component_overhead_required']) && in_array('yes', array_map('strtolower', $parameters['component_overhead_required']));
-
         if (!$futureAllowed && !$backAllowed) {
             $rules['document_date'] = "required|date|in:$today";
         } else {
@@ -81,16 +104,12 @@ class BomRequest extends FormRequest
         if($isFeature && $isPast) {
             $rules['document_date'] = "required|date";
         }
-
-        // Check the condition only if book_id is present
         if ($this->filled('book_id')) {
             $user = Helper::getAuthenticatedUser();
             $numPattern = NumberPattern::where('organization_id', $user->organization_id)
                         ->where('book_id', $this->book_id)
                         ->orderBy('id', 'DESC')
                         ->first();
-
-            // Update document_number rule based on the condition
             if ($numPattern && $numPattern->series_numbering == 'Manually') {
                 if($bomId) {
                     $rules['document_number'] = 'required|unique:erp_boms,document_number,' . $bomId;
@@ -102,7 +121,7 @@ class BomRequest extends FormRequest
         $rules['components.*.vendor_id'] = 'nullable';
         $rules['component_item_name.*'] = 'required';
         $rules['components.*.qty'] = 'required|numeric|min:0.000001';
-        $rules['components.*.item_cost'] = 'required|numeric';
+        $rules['components.*.item_cost'] = 'numeric';
         $rules['components.*.station_name'] = $stationRequired ? 'required' : 'nullable';
         $rules['components.*.section_name'] = $sectionRequired ? 'required' : 'nullable';
         if($sectionRequired) {
@@ -110,9 +129,7 @@ class BomRequest extends FormRequest
         }
         $rules['attributes.*.attr_group_id.*.attr_name'] = 'required';
         $rules['components.*.attr_group_id.*.attr_name'] = 'required';
-
         $rules['components.*.uom_id'] = 'required';
-
         foreach ($this->input('components', []) as $index => $component) {
             $item_id = $component['item_id'] ?? null;
             $item = Item::find($item_id);
@@ -123,14 +140,6 @@ class BomRequest extends FormRequest
                 $rules["components.$index.attr_group_id.*.attr_name"] = 'nullable';
             }
         }
-        
-        # Added Rule For The Production Tab
-        if(isset($this->all()['productions'])) {
-            $rules['productions.*.station_name'] = 'required';
-            $rules['prod_item_name.*'] = 'required';
-            $rules['productions.*.qty'] = 'required|numeric|min:0.000001';
-        }
-
         if(isset($this->all()['instructions'])) {
             $rules['instructions.*.station_name'] = 'required';
             // $rules['instructions.*.section_id'] = 'required';
@@ -138,6 +147,28 @@ class BomRequest extends FormRequest
             $rules['instructions.*.instructions'] = 'required';
         }
         return $rules;
+    }
+
+    protected function parseKeyToPath(string $key): array
+    {
+        $parts = [];
+        preg_match_all('/([^\[\]]+)/', $key, $matches);
+        if (isset($matches[1])) {
+            $parts = $matches[1];
+        }
+        return $parts;
+    }
+
+    protected function arraySetByPath(array &$arr, array $path, $value)
+    {
+        $temp = &$arr;
+        foreach ($path as $key) {
+            if (!isset($temp[$key]) || !is_array($temp[$key])) {
+                $temp[$key] = [];
+            }
+            $temp = &$temp[$key];
+        }
+        $temp = $value;
     }
 
     public function withValidator(Validator $validator)
@@ -158,30 +189,21 @@ class BomRequest extends FormRequest
                                     ->first();
                     $selectedAttributes[] = ['attribute_id' => $ia->id, 'attribute_value' => intval(@$attr_group[0]['attr_name'])];
                 }
-                
             }
             $bomExists = ItemHelper::checkItemBomExists($itemId, $selectedAttributes, $moduleType, $itemCustomerId);
             if ($bomExists['bom_id']) {
                 $validator->errors()->add("item_code", $bomExists['message']);
             }
         }
-
         # For component item
-
         $type = ['Finished Goods', 'WIP/Semi Finished'];
         foreach ($this->input('components', []) as $index => $component) {
-            $component['superceeded_cost'] = $component['superceeded_cost'] ?? 0;
-            if (empty(floatval($component['item_cost'] ?? 0)) && empty(floatval($component['superceeded_cost'] ?? 0))) {
-                $validator->errors()->add("components.$index.item_cost", 'Provide item cost or superceeded cost.');
-                $validator->errors()->add("components.$index.superceeded_cost", 'Provide item cost or superceeded cost.');
-            }
-
             $item_id = $component['item_id'] ?? null;
             $item = Item::find($item_id);
             $filteredSubTypes = $item?->subTypes->filter(function ($subType) use ($type) {
                 return in_array($subType->name, $type);
             });
-            if(isset($item_id) && count($filteredSubTypes)) {
+            if(isset($item_id) && $filteredSubTypes && $filteredSubTypes->isNotEmpty()) {
                 if(isset($component['attr_group_id']) && count($component['attr_group_id'])) {
                     $selectedAttributes = [];
                     foreach($component['attr_group_id'] as $k => $attr_group) {
@@ -197,9 +219,7 @@ class BomRequest extends FormRequest
                 }
             }
         }
-
     });
-
     }
 
     public function messages(): array

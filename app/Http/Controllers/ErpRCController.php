@@ -45,8 +45,7 @@ class ErpRCController extends Controller
         if ($request->ajax()) {
             $returns = ErpRateContract::withDefaultGroupCompanyOrg()
                 ->withDraftListingLogic()
-                ->orderByDesc('id')
-                ->get();
+                ->orderByDesc('id');
             return DataTables::of($returns)  
                 ->addIndexColumn()
                 ->editColumn('document_status', function ($row) use ($orderType) {

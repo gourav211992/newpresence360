@@ -51,7 +51,8 @@ class CrDrReportController extends Controller
         $drp_group = Helper::getGroupsQuery()->where('name', ConstantHelper::RECEIVABLE)->first();
 
         if ($group) {
-            $ledger_groups = $group->children->pluck('id');
+            $ledger_groups =  Helper::getGroupsQuery()->where('parent_group_id',$group->id)->pluck('id');
+            
             if (count($ledger_groups) > 0) {
 
                 $all_ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($ledger_groups) {
@@ -102,8 +103,8 @@ class CrDrReportController extends Controller
         $drp_group = Helper::getGroupsQuery()->where('name', ConstantHelper::PAYABLE)->first();
 
         if ($group) {
-            $ledger_groups = $group->children->pluck('id');
-            if (count($ledger_groups) > 0) {
+           $ledger_groups =  Helper::getGroupsQuery()->where('parent_group_id',$group->id)->pluck('id');
+             if (count($ledger_groups) > 0) {
                 $ages_all = [$request->age0 ?? 30, $request->age1 ?? 60, $request->age2 ?? 90, $request->age3 ?? 120, $request->age4 ?? 180];
                 $all_ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($ledger_groups) {
                     $query->whereIn('ledger_group_id', $ledger_groups)

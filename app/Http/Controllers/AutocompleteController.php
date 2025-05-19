@@ -187,10 +187,7 @@ class AutocompleteController extends Controller
                             $subTypeQuery -> whereIn('name', $type);
                         });
                     })
-                    ->where(function($query) use ($term) {
-                        $query->where('item_name', 'LIKE', "%{$term}%")
-                        ->orWhere('item_code', 'LIKE', "%{$term}%");
-                    })
+                    ->searchByKeywords($term)
                     ->where('status', ConstantHelper::ACTIVE)
                     ->with(['itemAttributes:id'])
                     ->with(['uom:id,name'])
@@ -204,10 +201,7 @@ class AutocompleteController extends Controller
                     ->whereHas('subTypes', function ($query) use ($subTypeIds) {
                     $query->whereIn('sub_type_id', $subTypeIds);
                     })
-                    ->where(function ($query) use ($term) {
-                    $query->where('item_name', 'LIKE', "%{$term}%")
-                            ->orWhere('item_code', 'LIKE', "%{$term}%");
-                    })
+                    ->searchByKeywords($term)
                     ->where('status', ConstantHelper::ACTIVE)
                     ->with([
                     'itemAttributes:id',
@@ -224,10 +218,7 @@ class AutocompleteController extends Controller
                             $subTypeQuery -> whereIn('name', $type);
                         });
                     })
-                    ->where(function($query) use ($term) {
-                        $query->where('item_name', 'LIKE', "%{$term}%")
-                        ->orWhere('item_code', 'LIKE', "%{$term}%");
-                    })
+                    ->searchByKeywords($term)
                     ->where('status', ConstantHelper::ACTIVE)
                     ->with(['itemAttributes:id'])
                     ->with(['uom:id,name'])
@@ -236,10 +227,7 @@ class AutocompleteController extends Controller
                     ->get(['id', 'item_name', 'item_code','uom_id']);
             } elseif ($type === 'inventory_items') {
                 $results = Item::withDefaultGroupCompanyOrg()
-                    ->where(function ($query) use ($term) {
-                        $query->where('item_name', 'LIKE', "%{$term}%")
-                                ->orWhere('item_code', 'LIKE', "%{$term}%");
-                        })
+                    ->searchByKeywords($term)
                     ->where('status', ConstantHelper::ACTIVE)
                     ->limit(10)
                     ->get(['id', 'item_name', 'item_code', 'uom_id']);
@@ -256,20 +244,16 @@ class AutocompleteController extends Controller
                             $subTypeQuery -> whereIn('name', $type);
                         });
                     })
-                    ->where(function ($query) use ($term) {
-                    $query->where('item_name', 'LIKE', "%{$term}%")
-                          ->orWhere('item_code', 'LIKE', "%{$term}%");
-                    })
-                    -> when($request -> customer_id, function ($custQuery) use($request) {
+                    ->searchByKeywords($term)
+                    ->when($request -> customer_id, function ($custQuery) use($request) {
                         $custQuery-> where(function ($query) use ($request) {
                             $query->whereHas('approvedCustomers', function ($subQuery) use ($request) {
-                                $subQuery->where('customer_id', $request->customer_id); // Match the specific customer
+                                $subQuery->where('customer_id', $request->customer_id);
                             })
-                            ->orWhereDoesntHave('approvedCustomers'); // Include items not linked to any customers
+                            ->orWhereDoesntHave('approvedCustomers');
                         });
                     })
-                    -> with(['alternateUOMs.uom', 'specifications'])
-                    // ->whereNotIn('id', $selectedAllItemIds) // Uncomment if needed
+                    ->with(['alternateUOMs.uom', 'specifications'])
                     ->where('status', ConstantHelper::ACTIVE)
                     ->with(['itemAttributes:id'])
                     ->with(['uom:id,name'])
@@ -284,10 +268,7 @@ class AutocompleteController extends Controller
                     $itemType = $itemType[0];
                 }
                 $results = Item::withDefaultGroupCompanyOrg()
-                    ->where(function ($query) use ($term) {
-                    $query->where('item_name', 'LIKE', "%{$term}%")
-                          ->orWhere('item_code', 'LIKE', "%{$term}%");
-                    })
+                    ->searchByKeywords($term)
                     -> when($request -> customer_id, function ($custQuery) use($request) {
                         $custQuery-> where(function ($query) use ($request) {
                             $query->whereHas('approvedCustomers', function ($subQuery) use ($request) {
@@ -314,10 +295,7 @@ class AutocompleteController extends Controller
 
             } elseif ($type === 'material_issue_items') {
                 $results = Item::withDefaultGroupCompanyOrg()
-                    ->where(function ($query) use ($term) {
-                    $query->where('item_name', 'LIKE', "%{$term}%")
-                          ->orWhere('item_code', 'LIKE', "%{$term}%");
-                    })
+                    ->searchByKeywords($term)
                     -> when($request -> customer_id, function ($custQuery) use($request) {
                         $custQuery-> where(function ($query) use ($request) {
                             $query->whereHas('approvedCustomers', function ($subQuery) use ($request) {
@@ -336,10 +314,7 @@ class AutocompleteController extends Controller
                     ->get(['id', 'item_name', 'item_code', 'uom_id']);
             } elseif ($type === 'material_return_items') {
                 $results = Item::withDefaultGroupCompanyOrg()
-                    ->where(function ($query) use ($term) {
-                    $query->where('item_name', 'LIKE', "%{$term}%")
-                          ->orWhere('item_code', 'LIKE', "%{$term}%");
-                    })
+                    ->searchByKeywords($term)
                     -> when($request -> customer_id, function ($custQuery) use($request) {
                         $custQuery-> where(function ($query) use ($request) {
                             $query->whereHas('approvedCustomers', function ($subQuery) use ($request) {
@@ -358,10 +333,7 @@ class AutocompleteController extends Controller
                     ->get(['id', 'item_name', 'item_code', 'uom_id']);
             } elseif ($type === 'rate_contract_items') {
                 $results = Item::withDefaultGroupCompanyOrg()
-                    ->where(function ($query) use ($term) {
-                    $query->where('item_name', 'LIKE', "%{$term}%")
-                          ->orWhere('item_code', 'LIKE', "%{$term}%");
-                    })
+                    ->searchByKeywords($term)
                     -> when($request -> customer_id, function ($custQuery) use($request) {
                         $custQuery-> where(function ($query) use ($request) {
                             $query->whereHas('approvedCustomers', function ($subQuery) use ($request) {
@@ -382,10 +354,7 @@ class AutocompleteController extends Controller
 
                 // $itemType = ServiceParametersHelper::getBookLevelParameterValue(ServiceParametersHelper::GOODS_SERVICES_PARAM, $request -> header_book_id)['data'];
                 $results = Item::withDefaultGroupCompanyOrg()
-                    ->where(function ($query) use ($term) {
-                    $query->where('item_name', 'LIKE', "%{$term}%")
-                          ->orWhere('item_code', 'LIKE', "%{$term}%");
-                    })
+                    ->searchByKeywords($term)
                     -> when($request -> customer_id, function ($custQuery) use($request) {
                         $custQuery-> where(function ($query) use ($request) {
                             $query->whereHas('approvedCustomers', function ($subQuery) use ($request) {
@@ -483,10 +452,7 @@ class AutocompleteController extends Controller
                 //     array_unique($selectedAllItemIds);
                 // }
                 $results = Item::withDefaultGroupCompanyOrg()
-                    ->where(function($query) use ($term) {
-                            $query->where('item_name', 'LIKE', "%{$term}%")
-                            ->orWhere('item_code', 'LIKE', "%{$term}%");
-                        })
+                    ->searchByKeywords($term)
                     // ->whereNotIn('id', $selectedAllItemIds) // Uncomment if needed
                     ->where('status', ConstantHelper::ACTIVE)
                     ->with(['uom:id,name'])
@@ -501,13 +467,9 @@ class AutocompleteController extends Controller
                 if(count($selectedAllItemIds)) {
                     array_unique($selectedAllItemIds);
                 }
-                $results = Item::selectRaw('*, COALESCE(company_id, ?) as company_id, COALESCE(organization_id, ?) as organization_id', [$companyId, $organizationId])
-                    ->where('group_id',$organization->group_id)
+                $results = Item::withDefaultGroupCompanyOrg()
                     ->where('type', 'Service')
-                    ->where(function($query) use ($term) {
-                            $query->where('item_name', 'LIKE', "%{$term}%")
-                            ->orWhere('item_code', 'LIKE', "%{$term}%");
-                        })
+                    ->searchByKeywords($term)
                     ->where('status', ConstantHelper::ACTIVE)
                     ->with(['uom:id,name'])
                     ->with(['hsn:id,code'])
@@ -521,13 +483,10 @@ class AutocompleteController extends Controller
                 if(count($selectedAllItemIds)) {
                     array_unique($selectedAllItemIds);
                 }
-                $results = Item::selectRaw('*, COALESCE(company_id, ?) as company_id, COALESCE(organization_id, ?) as organization_id', [$companyId, $organizationId])
+                $results = Item::withDefaultGroupCompanyOrg()
                     ->where('group_id',$organization->group_id)
                     ->where('type', 'Goods')
-                    ->where(function($query) use ($term) {
-                            $query->where('item_name', 'LIKE', "%{$term}%")
-                            ->orWhere('item_code', 'LIKE', "%{$term}%");
-                        })
+                    ->searchByKeywords($term)
                     ->where('status', ConstantHelper::ACTIVE)
                     ->with(['uom:id,name'])
                     ->with(['hsn:id,code'])
@@ -1407,13 +1366,10 @@ class AutocompleteController extends Controller
                 });
                 $results = $documentStatus;
             }  else if ($type === 'report_items') {
-                $query = Item::withDefaultGroupCompanyOrg() -> where('status', ConstantHelper::ACTIVE);
-                $results = $query->when($term, function ($q) use ($term) {
-                    return $q->where(function($query) use ($term) {
-                        $query->where('item_name', 'LIKE', "%$term%")
-                              ->orWhere('item_code', 'LIKE', "%$term%");
-                    });
-                }) -> get(['id', 'item_code', 'item_name']);
+                $query = Item::withDefaultGroupCompanyOrg()
+                         ->where('status', ConstantHelper::ACTIVE);
+                $results = $query->searchByKeywords($term)
+                            ->get(['id', 'item_code', 'item_name']);
                 if ($results->isEmpty()) {
                     $results = Item::withDefaultGroupCompanyOrg() -> where('status', ConstantHelper::ACTIVE)
                         ->limit(10)

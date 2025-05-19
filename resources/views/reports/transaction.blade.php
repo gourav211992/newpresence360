@@ -214,7 +214,7 @@
     let customDatePickrElement = null;
     $(document).ready(function() {
     function renderData(data) {
-        return data ? data : 'N/A';
+        return data !== undefined && data !== null ? data : '';
     }
     //Assign dynamic Table headers
     let dataTableCols = @json($tableHeaders);

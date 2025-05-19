@@ -11,13 +11,14 @@ use App\Helpers\ConstantHelper;
 use App\Traits\DateFormatTrait;
 use App\Traits\FileUploadTrait;
 use App\Traits\DefaultGroupCompanyOrg;
+use App\Traits\DynamicFieldsTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class PbHeader extends Model
 {
-    use HasFactory, SoftDeletes, DateFormatTrait, FileUploadTrait,DefaultGroupCompanyOrg;
+    use HasFactory, SoftDeletes, DateFormatTrait, FileUploadTrait,DefaultGroupCompanyOrg, DynamicFieldsTrait;
 
     protected $table = 'erp_pb_headers';
     protected $fillable = [
@@ -328,5 +329,10 @@ class PbHeader extends Model
     public function costCenters()
     {
         return $this->belongsTo(CostCenter::class, 'cost_center_id');
+    }
+
+    public function dynamic_fields()
+    {
+        return $this -> hasMany(ErpPbDynamicField::class, 'header_id');
     }
 }

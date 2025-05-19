@@ -156,16 +156,6 @@
                                                         </select>
                                                     </div>
                                                 </div>
-                                                <div class="row align-items-center mb-1" id="cost_center_div" style="display:none;">
-                                                    <div class="col-md-3">
-                                                        <label class="form-label">Cost Center <span class="text-danger">*</span></label>
-                                                    </div>
-                                                    <div class="col-md-5">
-                                                        <select class="form-select cost_center" id="cost_center_id" name="cost_center_id">
-                                                            <!-- Options will be populated here by the AJAX request -->
-                                                        </select>
-                                                    </div>
-                                                </div>
                                                 <div class="row align-items-center mb-1 d-none" id="reference_from">
                                                     <div class="col-md-3">
                                                         <label class="form-label">
@@ -271,6 +261,14 @@
                                             </div>
                                             <div class="card-body">
                                                 <div class="row">
+                                                    <div class="col-md-4" id="cost_center_div" style="display:none;">
+                                                        <div class="mb-1">
+                                                        <label class="form-label">Cost Center</label>
+                                                        <select class="form-select cost_center" id="cost_center_id" name="cost_center_id">
+                                                            <!-- Options will be populated here by the AJAX request -->
+                                                        </select>
+                                                        </div>
+                                                    </div>
                                                     <div class="col-md-4">
                                                         <div class="mb-1">
                                                             <label class="form-label">
@@ -348,6 +346,8 @@
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                                <div class="col-md-12 " id = "dynamic_fields_section">
                                 </div>
                                 <div class="card" id="item_section">
                                     <div class="card-body customernewsection-form">
@@ -667,7 +667,7 @@
     <script type="text/javascript" src="{{asset('assets/js/modules/purchase-return.js')}}"></script>
     <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
     <script>
-        const selectedCostCenterId = "";
+        let selectedCostCenterId = "";
         $(document).on('change','#book_id',(e) => {
             let bookId = e.target.value;
             if (bookId) {
@@ -704,6 +704,7 @@
                             $("#tax_required").val("");
                         }
                         $("#pr_qty_type").val(parameters?.pr_qty_type[0]);
+                        implementBookDynamicFields(data.data.dynamic_fields_html, data.data.dynamic_fields);
                         setTableCalculation();
                         updateDropdown();
                     }
@@ -729,6 +730,17 @@
             let bookId = $("#book_id").val();
             getDocNumberByBookId(bookId);
         },0);
+
+        function implementBookDynamicFields(html, data)
+        {
+            let dynamicBookSection = document.getElementById('dynamic_fields_section');
+            dynamicBookSection.innerHTML = html;
+            if (data && data.length > 0) {
+                dynamicBookSection.classList.remove('d-none');
+            } else {
+                dynamicBookSection.classList.add('d-none');
+            }
+        }
         /*Set Service Parameter*/
         function setServiceParameters(parameters) {
             /*Date Validation*/
@@ -1712,6 +1724,7 @@
                         let supplier_invoice_date = data?.data?.mrnData?.supplier_invoice_date;
                         let transporter_name = data?.data?.mrnData?.transporter_name;
                         let vehicle_no = data?.data?.mrnData?.vehicle_no;
+                        selectedCostCenterId = data?.data?.mrnData?.cost_center_id;
                         $('.supplier_invoice_number').val(supplier_invoice_no);
                         $('.supplier_invoice_date').val(supplier_invoice_date);
                         $('.transporter_name').val(transporter_name);
@@ -1726,6 +1739,7 @@
                         $(".editAddressBtn").addClass('d-none');
                         let locationId = $("[name='header_store_id']").val();
                         getLocation(locationId);
+                        getCostCenters(locationId, true);
 
                         if(finalDiscounts.length) {
                             let rows = '';

@@ -23,7 +23,8 @@ class PiSoMapping extends Model
         'qty',
         'pi_item_qty',
         'attributes',
-        'child_bom_id'
+        'child_bom_id',
+        'vendor_id'
     ];
 
     protected $table = 'erp_pi_so_mapping';
@@ -61,6 +62,11 @@ class PiSoMapping extends Model
     public function item()
     {
         return $this->belongsTo(Item::class,'item_id');
+    }
+
+    public function vendor()
+    {
+        return $this->belongsTo(Vendor::class,'vendor_id');
     }
 
     public function soItem()

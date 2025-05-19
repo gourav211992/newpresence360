@@ -75,6 +75,12 @@ class ErpSaleOrder extends Model
         'payment_terms' => 'payment_term_id'
     ];
 
+    public function getFullDocumentNumberAttribute()
+    {
+        $fdn = strtoupper($this->book_code) . '-' . $this->document_number;
+        return $fdn;  
+    }
+    
     public function media()
     {
         return $this->morphMany(ErpSoMedia::class, 'model');

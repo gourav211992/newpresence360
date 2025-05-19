@@ -790,8 +790,7 @@ function checkBasicFilledDetail()
     let bookId = $("#book_id").val() || '';
     let documentNumber = $("#document_number").val() || '';
     let documentDate = $("[name='document_date']").val() || '';
-    let referenceNumber = $("[name='reference_number']").val() || '';
-    if(bookId && documentNumber && documentDate && referenceNumber) {
+    if(bookId && documentNumber && documentDate) {
         filled = true;
     }
     return filled;

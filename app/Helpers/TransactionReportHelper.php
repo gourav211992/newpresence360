@@ -22,6 +22,7 @@ class TransactionReportHelper
         ConstantHelper::EXPENSE_ADVISE_SERVICE_ALIAS => 'expense-adv.order.report',
         ConstantHelper::PB_SERVICE_ALIAS => 'purchase-bill.order.report',
         ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS => 'purchase-return.order.report',
+        ConstantHelper::PSV_SERVICE_ALIAS => 'psv.report',
     ];
     const INDEX_ROUTES = [
         ConstantHelper::SO_SERVICE_ALIAS => 'sale.order.index',
@@ -29,6 +30,7 @@ class TransactionReportHelper
         ConstantHelper::SR_SERVICE_ALIAS => 'sale.return.index',
         ConstantHelper::MATERIAL_RETURN_SERVICE_ALIAS_NAME => 'material.return.index',
         ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME => 'material.issue.index',
+        ConstantHelper::PSV_SERVICE_ALIAS => 'psv.index',
     ];
     const SO_TABLE_HEADERS = [
         [
@@ -1700,6 +1702,249 @@ class TransactionReportHelper
         ],
     ];
 
+    const PSV_TABLE_HEADERS = [
+        [
+            'name' => 'S. No',
+            'field' => 'DT_RowIndex',
+            'header_class' => '',
+            'column_class' => '',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Series',
+            'field' => 'book_name',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Doc No',
+            'field' => 'document_number',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Date',
+            'field' => 'document_date',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Location',
+            'field' => 'store_name',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Store',
+            'field' => 'sub_store_name',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Currency',
+            'field' => 'customer_currency',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Item Name',
+            'field' => 'item_name',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Item Code',
+            'field' => 'item_code',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Attributes',
+            'field' => 'item_attributes',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'HSN',
+            'field' => 'hsn_code',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'UOM',
+            'field' => 'uom_name',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Physical Qty',
+            'field' => 'physical_qty',
+            'header_class' => 'numeric-alignment',
+            'column_class' => 'text-end pe-2_5',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Confirmed Stock',
+            'field' => 'confirmed_stock',
+            'header_class' => 'numeric-alignment',
+            'column_class' => 'text-end pe-2_5',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Unconfirmed Stock',
+            'field' => 'unconfirmed_stock',
+            'header_class' => 'numeric-alignment',
+            'column_class' => 'text-end pe-2_5',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Adjusted Qty',
+            'field' => 'adjusted_qty',
+            'header_class' => 'numeric-alignment',
+            'column_class' => 'text-end pe-2_5',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Item Rate',
+            'field' => 'rate',
+            'header_class' => 'numeric-alignment',
+            'column_class' => 'text-end pe-2_5',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Total',
+            'field' => 'total_amount',
+            'header_class' => 'numeric-alignment',
+            'column_class' => 'text-end pe-2_5',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+    ];
+    const PSV_FILTERS = [
+        [
+            'colSpan' => 'auto',
+            'label' => 'Series',
+            'id' => 'book_filter',
+            'requestName' => 'book_id',
+            'term' => 'report_so_book',
+            'value_key' => 'id',
+            'label_key' => 'book_code',
+            'type' => 'auto_complete'
+        ],
+        [
+            'colSpan' => 'auto',
+            'label' => 'Doc No',
+            'id' => 'doc_number_filter',
+            'requestName' => 'document_number',
+            'term' => 'report_so_documents',
+            'value_key' => 'id',
+            'label_key' => 'document_number',
+            'type' => 'input_text'
+        ],
+        [
+            'colSpan' => 'auto',
+            'label' => 'Item Category',
+            'id' => 'item_cat_filter',
+            'requestName' => 'item_category_id',
+            'term' => 'category',
+            'value_key' => 'id',
+            'label_key' => 'name',
+            'type' => 'auto_complete',
+            'dependent' => ['item_sub_cat_filter', 'item_filter']
+        ],
+        [
+            'colSpan' => 'auto',
+            'label' => 'Item Sub Category',
+            'id' => 'item_sub_cat_filter',
+            'requestName' => 'item_sub_category_id',
+            'term' => 'subcategory',
+            'value_key' => 'id',
+            'label_key' => 'name',
+            'type' => 'auto_complete',
+            'dependent' => ['item_filter']
+        ],
+        [
+            'colSpan' => 'auto',
+            'label' => 'Items',
+            'id' => 'item_filter',
+            'requestName' => 'item_id',
+            'term' => 'report_items',
+            'value_key' => 'id',
+            'label_key' => 'item_name',
+            'type' => 'auto_complete'
+        ],
+        [
+            'colSpan' => 'auto',
+            'label' => 'Status',
+            'id' => 'doc_status_filter',
+            'requestName' => 'doc_status',
+            'term' => 'document_statuses',
+            'value_key' => 'id',
+            'label_key' => 'name',
+            'type' => 'auto_complete'
+        ],
+        [
+            'colSpan' => 'auto',
+            'label' => 'Company',
+            'id' => 'company_filter',
+            'requestName' => 'company_id',
+            'term' => 'companies',
+            'value_key' => 'id',
+            'label_key' => 'name',
+            'type' => 'auto_complete',
+            'dependent' => ['organization_filter']
+
+        ],
+        [
+            'colSpan' => 'auto',
+            'label' => 'Organization',
+            'id' => 'organization_filter',
+            'requestName' => 'organization_id',
+            'term' => 'organizations',
+            'value_key' => 'id',
+            'label_key' => 'name',
+            'type' => 'auto_complete',
+            'dependent' => ['location_filter']
+        ],
+        [
+            'colSpan' => 'auto',
+            'label' => 'Location',
+            'id' => 'location_filter',
+            'requestName' => 'location_id',
+            'term' => 'location',
+            'value_key' => 'id',
+            'label_key' => 'store_name',
+            'type' => 'auto_complete'
+        ],
+    ];
     const FILTERS_MAPPING = [
         ConstantHelper::SO_SERVICE_ALIAS => self::SO_FILTERS,
         ConstantHelper::SI_SERVICE_ALIAS => self::SI_FILTERS,
@@ -1710,7 +1955,8 @@ class TransactionReportHelper
         ConstantHelper::GATE_ENTRY_SERVICE_ALIAS => geReportHelper::GE_FILTERS,
         ConstantHelper::EXPENSE_ADVISE_SERVICE_ALIAS => expenseReportHelper::EXPENSE_FILTERS,
         ConstantHelper::PB_SERVICE_ALIAS => pbReportHelper::PB_FILTERS,
-        ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS => prReportHelper::PR_FILTERS
+        ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS => prReportHelper::PR_FILTERS,
+        ConstantHelper::PSV_SERVICE_ALIAS => self::PSV_FILTERS
     ];
     const TABLE_HEADERS = [
         ConstantHelper::SO_SERVICE_ALIAS => self::SO_TABLE_HEADERS,
@@ -1722,6 +1968,8 @@ class TransactionReportHelper
         ConstantHelper::GATE_ENTRY_SERVICE_ALIAS => geReportHelper::GE_TABLE_HEADERS,
         ConstantHelper::EXPENSE_ADVISE_SERVICE_ALIAS => expenseReportHelper::EXPENSE_TABLE_HEADERS,
         ConstantHelper::PB_SERVICE_ALIAS => pbReportHelper::PB_TABLE_HEADERS,
-        ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS => prReportHelper::PR_TABLE_HEADERS
+        ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS => prReportHelper::PR_TABLE_HEADERS,
+        ConstantHelper::PSV_SERVICE_ALIAS => self::PSV_TABLE_HEADERS
+
     ];
 }

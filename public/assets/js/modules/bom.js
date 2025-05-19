@@ -356,9 +356,10 @@ function setTableCalculation() {
       totalItemCost+=itemCost;
       $(item).find("[name*='[item_total_cost]']").val(itemCost.toFixed(2));
    });
-   $("#totalItemValue").attr('amount',totalItemValue).text(totalItemValue.toFixed(2));
-   $("#totalOverheadAmountValue").attr('amount',totalItemOverhead).text(totalItemOverhead.toFixed(2));
-   $("#totalCostValue").attr('amount',totalItemCost).text(totalItemCost.toFixed(2));
+
+   $("#totalItemValue").attr('amount',totalItemValue).text( canView ? totalItemValue.toFixed(2) : '0.00');
+   $("#totalOverheadAmountValue").attr('amount',totalItemOverhead).text( canView ? totalItemOverhead.toFixed(2) : '0.00');
+   $("#totalCostValue").attr('amount',totalItemCost).text(canView ? totalItemCost.toFixed(2) : '0.00');
    /*Header Level Calculation Set*/
    // New Update Overhead
    let tempAmnt = totalItemCost;
@@ -380,13 +381,13 @@ function setTableCalculation() {
       });
       tempAmnt += levelTotal;  
       subtotal+=levelTotal;
-      $(`#sub_total_row_${level}`).find("#total").attr('amount', tempAmnt).text(tempAmnt.toFixed(2));
+      $(`#sub_total_row_${level}`).find("#total").attr('amount', tempAmnt).text(canView ? tempAmnt.toFixed(2) : '0.00');
    }
    totalHeaderOverhead = subtotal;
-   $("#footerTotalCost").attr('amount',(totalItemCost)).text((totalItemCost).toFixed(2));
-   $("#footerOverheadHeader").attr('amount',(totalHeaderOverhead)).text((totalHeaderOverhead).toFixed(2));
+   $("#footerTotalCost").attr('amount',(totalItemCost)).text(canView ? (totalItemCost).toFixed(2) : '0.00');
+   $("#footerOverheadHeader").attr('amount',(totalHeaderOverhead)).text(canView ? (totalHeaderOverhead).toFixed(2) : '0.00');
    grandTotal = totalItemCost + totalHeaderOverhead;
-   $("#footerGrandTotal").attr('amount',grandTotal).text(grandTotal.toFixed(2));
+   $("#footerGrandTotal").attr('amount',grandTotal).text(canView ? grandTotal.toFixed(2) : '0.00');
  }
 
  /*Qty enabled and disabled*/
@@ -543,4 +544,14 @@ $(document).on('autocompletechange', 'tr.display_overhead_row input', function (
    if(!e.target.value) {
       $(e.target).closest('tr').find("input[name*='[overhead_id]']").val('');
    }
+});
+
+setTimeout(() => {
+   $('#production_route_id').trigger('change');
+}, 0);
+$(document).on('change', '#production_route_id', function (e) {
+   let selectedOption = $(e.target).find('option:selected');
+   let safetyBufferPerc = selectedOption.data('perc');
+   console.log(safetyBufferPerc);
+   $("#safety_buffer_perc").attr('placeholder', safetyBufferPerc);
 });

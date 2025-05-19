@@ -58,6 +58,7 @@ use App\Helpers\BookHelper;
 use App\Helpers\NumberHelper;
 use App\Helpers\ConstantHelper;
 use App\Helpers\CurrencyHelper;
+use App\Helpers\DynamicFieldHelper;
 use App\Helpers\InventoryHelper;
 use App\Helpers\FinancialPostingHelper;
 use App\Helpers\ServiceParametersHelper;
@@ -65,6 +66,7 @@ use App\Jobs\SendEmailJob;
 use App\Models\AuthUser;
 use App\Models\Category;
 use App\Models\Employee;
+use App\Models\ErpExpDynamicField;
 use App\Models\ErpItem;
 use App\Models\ErpVendor;
 use App\Services\ExpenseService;
@@ -316,6 +318,8 @@ class ExpenseAdviseController extends Controller
             $expense->total_after_tax_amount = 0.00;
             $expense->expense_amount = 0.00;
             $expense->total_amount = 0.00;
+            $expense->store_id = $request->header_store_id ?? '';
+            $expense->cost_center_id = $request->cost_center_id ?? '';
             $expense->save();
 
             $vendorBillingAddress = $expense->billingAddress ?? null;
@@ -451,7 +455,6 @@ class ExpenseAdviseController extends Controller
                         'inventory_uom_qty' => $inventory_uom_qty ?? 0.00,
                         'rate' => floatval($component['rate']) ?? 0.00,
                         'discount_amount' => floatval($component['discount_amount']) ?? 0.00,
-                        'cost_center_id' => $component['cost_center_id'] ?? null,
                         'header_discount_amount' => 0.00,
                         'header_exp_amount' => 0.00,
                         'tax_value' => 0.00,
@@ -523,7 +526,6 @@ class ExpenseAdviseController extends Controller
                     $expenseDetail->inventory_uom_id = $expenseItem['inventory_uom_id'];
                     $expenseDetail->inventory_uom_code = $expenseItem['inventory_uom_code'];
                     $expenseDetail->inventory_uom_qty = $expenseItem['inventory_uom_qty'];
-                    $expenseDetail->cost_center_id = $expenseItem['cost_center_id'];
                     $expenseDetail->rate = $expenseItem['rate'];
                     $expenseDetail->basic_value = $expenseItem['basic_value'];
                     $expenseDetail->discount_amount = $expenseItem['discount_amount'];
@@ -717,6 +719,14 @@ class ExpenseAdviseController extends Controller
                 $parentUrl = request() -> segments()[0];
                 $redirectUrl = url($parentUrl. '/' . $expense->id . '/pdf');
             }
+            $status = DynamicFieldHelper::saveDynamicFields(ErpExpDynamicField::class, $expense -> id, $request -> dynamic_field ?? []);
+            if ($status && !$status['status'] ) {
+                DB::rollBack();
+                return response() -> json([
+                    'message' => $status['message'],
+                    'error' => ''
+                ], 422);
+            }
 
             DB::commit();
 
@@ -803,6 +813,7 @@ class ExpenseAdviseController extends Controller
         $erpStores = ErpStore::where('organization_id', $user->organization_id)
             ->orderBy('id', 'DESC')
             ->get();
+        $dynamicFieldsUI = $expense -> dynamicfieldsUi();
         return view($view, [
             'mrn' => $expense,
             'user' => $user,
@@ -816,6 +827,7 @@ class ExpenseAdviseController extends Controller
             'approvalHistory' => $approvalHistory,
             'locations'=>$locations,
             'erpStores' => $erpStores,
+            'dynamicFieldsUI' => $dynamicFieldsUI
         ]);
     }
 
@@ -1035,7 +1047,6 @@ class ExpenseAdviseController extends Controller
                         'inventory_uom_qty' => $inventory_uom_qty ?? 0.00,
                         'rate' => floatval($component['rate']) ?? 0.00,
                         'discount_amount' => floatval($component['discount_amount']) ?? 0.00,
-                        'cost_center_id' => $component['cost_center_id'] ?? null,
                         'header_discount_amount' => 0.00,
                         'header_exp_amount' => 0.00,
                         'tax_value' => 0.00,
@@ -1125,7 +1136,6 @@ class ExpenseAdviseController extends Controller
                     $expenseDetail->inventory_uom_id = $expenseItem['inventory_uom_id'];
                     $expenseDetail->inventory_uom_code = $expenseItem['inventory_uom_code'];
                     $expenseDetail->inventory_uom_qty = $expenseItem['inventory_uom_qty'];
-                    $expenseDetail->cost_center_id = $expenseItem['cost_center_id'];
                     $expenseDetail->rate = $expenseItem['rate'];
                     $expenseDetail->basic_value = $expenseItem['basic_value'];
                     $expenseDetail->discount_amount = $expenseItem['discount_amount'];
@@ -1337,6 +1347,15 @@ class ExpenseAdviseController extends Controller
             if(($expense->document_status == ConstantHelper::APPROVED) || ($expense->document_status == ConstantHelper::POSTED)) {
                 $parentUrl = request() -> segments()[0];
                 $redirectUrl = url($parentUrl. '/' . $expense->id . '/pdf');
+            }
+
+            $status = DynamicFieldHelper::saveDynamicFields(ErpExpDynamicField::class, $expense -> id, $request -> dynamic_field ?? []);
+            if ($status && !$status['status'] ) {
+                DB::rollBack();
+                return response() -> json([
+                    'message' => $status['message'],
+                    'error' => ''
+                ], 422);
             }
             DB::commit();
 
@@ -2840,10 +2859,9 @@ class ExpenseAdviseController extends Controller
         $user = Helper::getAuthenticatedUser();
         $pathUrl = route('expense-adv.index');
         $orderType = ConstantHelper::EXPENSE_ADVISE_SERVICE_ALIAS;
-        $expenseAdvises = ExpenseHeader::with(['items'])
+        $expenseAdvises = ExpenseHeader::withDefaultGroupCompanyOrg()
             // ->where('document_type', $orderType)
-            ->bookViewAccess($pathUrl)
-            ->withDefaultGroupCompanyOrg()
+            // ->bookViewAccess($pathUrl)
             ->withDraftListingLogic()
             ->orderByDesc('id');
 
@@ -2923,8 +2941,7 @@ class ExpenseAdviseController extends Controller
             'vendor',
             'items.so',
             'po'
-        ])
-        ->where('organization_id', $user->organization_id);
+        ]);
 
 
         $expenseAdvises = $expenseAdvises->get();
