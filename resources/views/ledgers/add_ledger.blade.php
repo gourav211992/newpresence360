@@ -7,7 +7,7 @@
     <div class="header-navbar-shadow"></div>
     <div class="content-wrapper container-xxl p-0">
 
-        <form action="{{ route('ledgers.store') }}" method="POST">
+        <form id="ledgerForm" action="{{ route('ledgers.store') }}" method="POST">
             @csrf
             <div class="content-header pocreate-sticky">
                 <div class="row">
@@ -30,7 +30,7 @@
                         <div class="form-group breadcrumb-right">
                             <button onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm"><i
                                     data-feather="arrow-left-circle"></i> Back</button>
-                            <button type="submit" class="btn btn-primary btn-sm"><i
+                            <button type="submit" id="submitBtn" class="btn btn-primary btn-sm"><i
                                     data-feather="check-circle"></i>Submit</button>
                         </div>
                     </div>
@@ -263,6 +263,69 @@
 <script type="text/javascript" src="{{asset('assets/js/preventkey.js')}}"></script>
 <script>
     $(document).ready(function() {
+        //
+         const Existingledgers = @json($Existingledgers); // Pass from controller
+        const redirectUrl = "{{ route('ledgers.index') }}"; // Fix: was incorrectly routing to 'cost-center.index'
+
+        $('#ledgerForm').on('submit', function (e) {
+            e.preventDefault(); // Prevent full page reload
+
+            let form = $(this);
+            let submitBtn = $('#submitBtn');
+            let name = $('input[name="name"]').val()?.trim().toLowerCase();
+            let code = $('input[name="code"]').val()?.trim().toLowerCase();
+
+            // Check if code already exists
+            if (Existingledgers.some(l => l.code.toLowerCase() === code)) {
+                showToast('error', 'Ledger code already exists.');
+                return;
+            }
+
+            // Check if name already exists
+            if (Existingledgers.some(l => l.name.toLowerCase() === name)) {
+                showToast('error', 'Ledger name already exists.');
+                return;
+            }
+
+            // Proceed with AJAX submission
+            $.ajax({
+                url: form.attr('action'),
+                method: form.attr('method'),
+                data: form.serialize(),
+                success: function (response) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Created!',
+                        text: 'Ledger created successfully.',
+                        confirmButtonText: 'OK'
+                    }).then(() => {
+                        form.trigger('reset');
+                        location.href = redirectUrl;
+                    });
+                },
+                error: function (xhr) {
+                    submitBtn.prop('disabled', false);
+
+                    if (xhr.status === 422) {
+                        let errors = xhr.responseJSON.errors;
+                        $.each(errors, function (field, messages) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: messages[0],
+                            });
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Something went wrong. Please try again.',
+                        });
+                    }
+                }
+            });
+        });
+    //
         let originalOptions = $('#ledger_group_id option').clone();
         $('#ledger_group_id').select2();
 

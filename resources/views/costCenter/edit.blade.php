@@ -47,7 +47,7 @@
                                         <div class="col-md-9">
                                             <form id="costCenter" action="{{ route('cost-center.update', $data->id) }}" method="POST">
                                                 @csrf
-                                                @method('PUT')  
+                                                @method('PUT')
                                                 <input type="hidden" name="location_org_mappings" id="location_org_mappings">
 
 
@@ -60,14 +60,14 @@
                                                     <div class="col-md-5">
                                                         <select id="organizations" class="form-select select2" onchange="getLocations()" name="organizations[]" multiple>
                                                             @foreach ($companies as $organization)
-                                                            <option value="{{ $organization->organization->id }}" 
+                                                            <option value="{{ $organization->organization->id }}"
                                                                 {{ in_array($organization->organization->id, $data->organizations ?? []) ? 'selected' : '' }}>
                                                                 {{ $organization->organization->name }}
                                                             </option>
-                                                        @endforeach 
+                                                        @endforeach
                                                         </select>
                                                     </div>
-                                                    
+
                                                 </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
@@ -79,9 +79,9 @@
                                                         <select id="locations" class="form-select select2" name="locations[]" multiple required>
                                                         </select>
                                                     </div>
-                                                    
+
                                                 </div>
-                                                
+
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Cost Center Name</label>
@@ -145,6 +145,9 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <script>
+    const existingCostCenters = @json($existingCostCenters);
+    </script>
+    <script>
 getLocations();
 
 
@@ -188,21 +191,33 @@ $('#costCenter').on('submit', function (e) {
     // Perform your custom update submit logic here (like AJAX)
 });
 
-   
+
     </script>
     <script>
         $(document).ready(function () {
             const redirectUrl = "{{ route('cost-center.index') }}";
             $('#costCenter').on('submit', function (e) {
                 e.preventDefault();
-        
+
                 let form = $(this);
                 let submitBtn = $('#submitBtn');
-                submitBtn.prop('disabled', true);
-        
+                // submitBtn.prop('disabled', true
+                let name = $('input[name="name"]').val()?.trim().toLowerCase();
+
+                if (
+                    existingCostCenters.map(n => n.toLowerCase()).includes(name)
+                ) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Duplicate Entry',
+                        text: 'A Cost Center with this name already exists.'
+                    });
+                    return;
+                }
+
                 // Clear previous error messages
                 form.find('.alert.alert-danger').remove();
-        
+
                 $.ajax({
                     url: form.attr('action'),
                     method: 'POST', // Laravel treats PUT as POST with _method='PUT'
@@ -222,7 +237,7 @@ $('#costCenter').on('submit', function (e) {
                     },
                     error: function (xhr) {
                         submitBtn.prop('disabled', false);
-        
+
                         if (xhr.status === 422) {
                             let errors = xhr.responseJSON.errors;
                             $.each(errors, function (field, messages) {
@@ -230,7 +245,7 @@ $('#costCenter').on('submit', function (e) {
                                 icon: 'error',
                                 title: 'Error',
                                 text: messages[0],
-                                }); 
+                                });
                             });
                         } else {
                             Swal.fire({
@@ -244,7 +259,7 @@ $('#costCenter').on('submit', function (e) {
             });
         });
         </script>
-        
+
     <!-- END: Content-->
     <!-- END: Content-->
 @endsection

@@ -109,18 +109,18 @@
                                             data-bs-target="#approveModal" onclick = "setApproval();"><i
                                                 data-feather="check-circle"></i> Approve</a>
                                     @endif
-                                    @if ($buttons['amend'])
+                                    {{-- @if ($buttons['amend'])
                                         <a type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm"
                                             class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i>
                                             Amendment</a>
-                                    @endif
-                                    @if($buttons['revoke'])
+                                    @endif --}}
+                                    {{-- @if($buttons['revoke'])
                                     <a id = "revokeButton" type="button" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i> Revoke</a>
-                                    @endif
-                                    @if($buttons['cancel'])
+                                    @endif --}}
+                                    {{-- @if($buttons['cancel'])
                                     <a id = "cancelButton" type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0"><i data-feather="x-circle"></i> Cancel</a>
-                                    @endif
-                                    @if ($buttons['reference'])
+                                    @endif --}}
+                                    {{-- @if ($buttons['reference'])
                                     <a type="button" href="{{$ref_view_route}}"
                                         class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg
                                             xmlns="http://www.w3.org/2000/svg" width="14" height="14"
@@ -133,7 +133,7 @@
                                             <line x1="16" y1="17" x2="8" y2="17"></line>
                                             <polyline points="10 9 9 9 8 9"></polyline>
                                         </svg> View REF</a>
-                                    @endif
+                                    @endif --}}
 
                                 @if ($buttons['amend'])
                                     <a type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm"

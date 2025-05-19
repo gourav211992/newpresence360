@@ -33,7 +33,7 @@
                                 <a href="{{ route('ledgers.index') }}" class="btn btn-secondary btn-sm">
                                     <i data-feather="arrow-left-circle"></i> Back
                                 </a>
-                                <a data-bs-toggle="modal" data-bs-target="#postvoucher" class="btn btn-primary btn-sm mb-50 mb-sm-0">
+                                <a href="javascript:void(0);" id="checkAndOpenModal"class="btn btn-primary btn-sm mb-50 mb-sm-0">
                                     <i data-feather="check-circle"></i> Update
                                 </a>
                             </div>
@@ -307,7 +307,35 @@
 @section('scripts')
     <script type="text/javascript" src="{{ asset('assets/js/preventkey.js') }}"></script>
     <script>
+        const existingLedgers = @json($existingLedgers);
         $(document).ready(function() {
+            $('#checkAndOpenModal').on('click', function () {
+                const currentCode = $('input[name="code"]').val()?.trim().toLowerCase();
+                const currentName = $('input[name="name"]').val()?.trim().toLowerCase();
+
+                const originalCode = $('input[name="code"]').attr('value')?.trim().toLowerCase();
+                const originalName = $('input[name="name"]').attr('value')?.trim().toLowerCase();
+
+                if (currentCode !== originalCode) {
+                    if (existingLedgers.some(l => l.code.toLowerCase() === currentCode)) {
+                        showToast('error', 'Ledger code already exists.');
+                        return;
+                    }
+                }
+
+                if (currentName !== originalName) {
+                    if (existingLedgers.some(l => l.name.toLowerCase() === currentName)) {
+                        showToast('error', 'Ledger name already exists.');
+                        return;
+                    }
+                }
+
+                // Passed all checks, show modal
+                const modal = new bootstrap.Modal(document.getElementById('postvoucher'));
+                modal.show();
+            });
+
+
             let originalOptions = $('#ledger_group_id option').clone();
             $('#ledger_group_id').select2();
             $('#tds_section').select2();
@@ -536,6 +564,8 @@
                         showToast('error', 'Duplicate updated groups are not allowed!');
                         return;
                     }
+
+
 
                     $('#updated_groups').val(JSON.stringify(groupsData));
                     $('#formUpdate').submit();

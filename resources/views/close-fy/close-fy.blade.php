@@ -82,6 +82,8 @@
                                                             @if (isset($past_fyears) && is_iterable($past_fyears))
                                                             @foreach ($past_fyears as $fyear)
                                                                 <option value="{{ $fyear['id'] }}"
+                                                                data-start="{{ $fyear['start_date'] }}"
+                                                                    data-end="{{ $fyear['end_date'] }}"
                                                                     {{ $fyear['id'] == $fyearId ? 'selected' : '' }}>
                                                                     {{ $fyear['range'] }}
                                                                 </option>
@@ -695,7 +697,13 @@
                     });
                 }
             });
-
+            function formatDate(dateStr) {
+                const date = new Date(dateStr);
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0'); // months are 0-based
+                const year = date.getFullYear();
+                return `${day}-${month}-${year}`;
+            }
 
             function getInitialGroups() {
 
@@ -938,9 +946,16 @@
                     $('#' + id).closest('tr').after(html);
                 } else {
                     if ($('#check' + id).val() == "") {
+
+
+                        const selected = $('#fyear_id').find('option:selected');
+                        const date1 = formatDate(selected.data('start'));
+                        const date2 = formatDate(selected.data('end'));
+                        const fullRange = `${date1} to ${date2}`;
+                        console.log(fullRange)
                         var obj = {
                             id: id,
-                            date: $('#fp-range').val(),
+                            date: fullRange,
                             cost_center_id: $('#cost_center_id').val(),
                             currency: $('#currency').val(),
                             '_token': '{!! csrf_token() !!}'
@@ -952,7 +967,7 @@
                         // if (filteredValues.length > 0) {
                         obj.organization_id = selectedValues
                         // }
-
+console.log(obj)
                         $.ajax({
                             headers: {
                                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -1104,10 +1119,13 @@
                 });
 
                 if (trIds.length > 0) {
-
+                        const selected = $('#fyear_id').find('option:selected');
+                        const date1 = formatDate(selected.data('start'));
+                        const date2 = formatDate(selected.data('end'));
+                        const fullRange = `${date1} to ${date2}`;
                     var obj = {
                         ids: trIds,
-                        date: $('#fp-range').val(),
+                        date: fullRange,
                         cost_center_id: $('#cost_center_id').val(),
                         currency: $('#currency').val(),
                         '_token': '{!! csrf_token() !!}'

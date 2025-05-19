@@ -67,7 +67,7 @@
                                                                 </option>
                                                             @endforeach
                                                         </select>
-                                                    </div>                                                    
+                                                    </div>
                                                 </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
@@ -79,9 +79,9 @@
                                                         <select id="locations" class="form-select select2" name="locations[]" multiple required>
                                                         </select>
                                                     </div>
-                                                    
+
                                                 </div>
-                                                
+
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Cost Center Name</label>
@@ -184,16 +184,26 @@ $('#costCenter').on('submit', function () {
     $('#location_org_mappings').val(JSON.stringify(mappings));
 });
 $(document).ready(function () {
+    const existingCostCenters = @json($existingCostCenters); // Pass from controller
     const redirectUrl = "{{ route('cost-center.index') }}";
         $('#costCenter').on('submit', function (e) {
             e.preventDefault(); // Prevent full page reload
 
             let form = $(this);
             let submitBtn = $('#submitBtn');
-            submitBtn.prop('disabled', true);
+            // submitBtn.prop('disabled', true);
 
             // Clear previous error messages
-            form.find('.alert.alert-danger').remove();
+            // form.find('.alert.alert-danger').remove();
+            let name = $('input[name="name"]').val()?.trim().toLowerCase();
+            if (existingCostCenters.map(n => n.toLowerCase()).includes(name)) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Duplicate Entry',
+                    text: 'A Cost Center with this name already exists.'
+                });
+                return; // Stop further execution
+            }
 
             $.ajax({
                 url: form.attr('action'),
@@ -208,7 +218,7 @@ $(document).ready(function () {
                     }).then(() => {
                         form.trigger('reset');
                         location.href = redirectUrl;
-                        
+
                     });
                 },
                 error: function (xhr) {
@@ -222,7 +232,7 @@ $(document).ready(function () {
                             icon: 'error',
                             title: 'Error',
                             text: messages[0],
-                            });  
+                            });
                         });
                     } else {
                         Swal.fire({
@@ -235,7 +245,7 @@ $(document).ready(function () {
             });
         });
     });
-    </script> 
+    </script>
 
     <!-- END: Content-->
 
