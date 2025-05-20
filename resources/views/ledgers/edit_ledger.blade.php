@@ -33,7 +33,7 @@
                                 <a href="{{ route('ledgers.index') }}" class="btn btn-secondary btn-sm">
                                     <i data-feather="arrow-left-circle"></i> Back
                                 </a>
-                                <a data-bs-toggle="modal" data-bs-target="#postvoucher" class="btn btn-primary btn-sm mb-50 mb-sm-0">
+                                <a href="javascript:void(0);" id="checkAndOpenModal"class="btn btn-primary btn-sm mb-50 mb-sm-0">
                                     <i data-feather="check-circle"></i> Update
                                 </a>
                             </div>
@@ -307,7 +307,38 @@
 @section('scripts')
     <script type="text/javascript" src="{{ asset('assets/js/preventkey.js') }}"></script>
     <script>
+        const existingLedgers = @json($existingLedgers);
         $(document).ready(function() {
+            $('#checkAndOpenModal').on('click', function () {
+                const currentCode = $('input[name="code"]').val()?.trim().toLowerCase();
+                const currentName = $('input[name="name"]').val()?.trim().toLowerCase();
+
+                const originalCode = $('input[name="code"]').attr('value')?.trim().toLowerCase();
+                const originalName = $('input[name="name"]').attr('value')?.trim().toLowerCase();
+                $('.preloader').show();
+                if (currentCode !== originalCode) {
+                    if (existingLedgers.some(l => l.code.toLowerCase() === currentCode)) {
+                        $('.preloader').hide();
+                        showToast('error', 'Ledger code already exists.','Duplicate Entry');
+                        return;
+                    }
+                }
+
+                if (currentName !== originalName) {
+                    if (existingLedgers.some(l => l.name.toLowerCase() === currentName)) {
+                        $('.preloader').hide();
+                        showToast('error', 'Ledger name already exists.','Duplicate Entry');
+                        return;
+                    }
+                }
+
+                // Passed all checks, show modal
+                const modal = new bootstrap.Modal(document.getElementById('postvoucher'));
+                $('.preloader').hide();
+                modal.show();
+            });
+
+
             let originalOptions = $('#ledger_group_id option').clone();
             $('#ledger_group_id').select2();
             $('#tds_section').select2();
@@ -510,6 +541,7 @@
                 confirmButtonText: "Yes, update it!"
             }).then((result) => {
                 if (result.isConfirmed) {
+                    $('.preloader').show();
                     let groupsData = [];
                     let updatedGroupValues = new Set();
                     let hasDuplicate = false;
@@ -533,9 +565,12 @@
                     });
 
                     if (hasDuplicate) {
+                        $('.preloader').hide();
                         showToast('error', 'Duplicate updated groups are not allowed!');
                         return;
                     }
+
+
 
                     $('#updated_groups').val(JSON.stringify(groupsData));
                     $('#formUpdate').submit();
@@ -543,10 +578,14 @@
             });
         }
 
-        function showToast(type, message) {
+        function showToast(type, message, title) {
             Swal.fire({
                 icon: type,
                 text: message,
+                title: title,
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                confirmButtonText: 'OK'
             });
         }
     </script>

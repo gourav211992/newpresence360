@@ -459,6 +459,7 @@ class ConstantHelper
     const GATE_ENTRY_SERVICE_ALIAS = 'ge';
     const EXPENSE_SERVICE_ALIAS = 'expense';
     const PURCHASE_RETURN_SERVICE_ALIAS = 'purchase-return';
+    const INSPECTION_SERVICE_ALIAS = 'insp';
     const MATERIAL_REQUEST_SERVICE_ALIAS = 'material-request';
     const MATERIAL_ISSUE_SERVICE_ALIAS = 'material-issue';
     const MATERIAL_ISSUE_SERVICE_ALIAS_NAME = 'mi';
@@ -634,6 +635,7 @@ class ConstantHelper
         self::SUPPLIER_INVOICE_SERVICE_ALIAS => 'PurchaseOrder',
         self::PI_SERVICE_ALIAS => 'PurchaseIndent',
         self::MRN_SERVICE_ALIAS => 'MrnHeader',
+        self::INSPECTION_SERVICE_ALIAS => 'InspectionHeader',
         self::GATE_ENTRY_SERVICE_ALIAS => 'GateEntryHeader',
         self::EXPENSE_SERVICE_ALIAS => 'ExpenseHeader',
         self::EXPENSE_ADVISE_SERVICE_ALIAS => 'ExpenseHeader',

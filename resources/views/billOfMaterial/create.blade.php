@@ -9,7 +9,7 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
    $routeAlias = 'quotation-bom';
 }
 @endphp
-<form class="ajax-input-form" method="POST" action="{{ route('bill.of.material.store') }}" data-redirect="{{ url($routeAlias) }}" enctype='multipart/form-data'>
+<form class="ajax-input-form bom_form" method="POST" action="{{ route('bill.of.material.store') }}" data-redirect="{{ url($routeAlias) }}" enctype='multipart/form-data'>
     @csrf
     {{-- correct below code level count --}}
 <input type="hidden" name="orverhead_level_count"/>

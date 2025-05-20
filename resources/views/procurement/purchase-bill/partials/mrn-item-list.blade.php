@@ -9,7 +9,7 @@
             </div>
         </td>
         <td class="fw-bolder text-dark no-wrap">
-            {{$mrnItem?->mrnHeader?->vendor_code ?? 'NA'}} {{$mrnItem?->mrnHeader?->type ?? 'NA'}}
+            {{$mrnItem?->mrnHeader?->vendor_code ?? 'NA'}}
         </td>
         <td class="fw-bolder text-dark no-wrap">
             {{$mrnItem?->mrnHeader?->vendor->company_name ?? 'NA'}}

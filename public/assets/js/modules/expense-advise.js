@@ -69,8 +69,8 @@ function getTaxSummary()
         </tr>`;
         rowCount++;
     }
-    $('#pb_tax_details').html(taxSummaryHtml);
-    $("#pbTaxDetailModal").modal('show');
+    $('#expense_tax_details').html(taxSummaryHtml);
+    $("#expenseTaxDetailModal").modal('show');
 }
 
 /*Tbl row highlight*/

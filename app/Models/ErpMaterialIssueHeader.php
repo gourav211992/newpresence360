@@ -6,6 +6,7 @@ use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
 use App\Traits\DateFormatTrait;
 use App\Traits\DefaultGroupCompanyOrg;
+use App\Traits\DynamicFieldsTrait;
 use App\Traits\UserStampTrait;
 use App\Traits\FileUploadTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,7 +15,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ErpMaterialIssueHeader extends Model
 {
-    use HasFactory, SoftDeletes, DefaultGroupCompanyOrg, FileUploadTrait, DateFormatTrait, UserStampTrait;
+    use HasFactory, SoftDeletes, DefaultGroupCompanyOrg, FileUploadTrait, DynamicFieldsTrait, DateFormatTrait, UserStampTrait;
 
     protected $table = "erp_material_issue_header";
 
@@ -209,5 +210,9 @@ class ErpMaterialIssueHeader extends Model
     public function vendor_shipping_address()
     {
         return $this->morphOne(ErpAddress::class, 'addressable', 'addressable_type', 'addressable_id') -> where('type', 'shipping');
+    }
+    public function dynamic_fields()
+    {
+        return $this -> hasMany(ErpMiDynamicField::class, 'header_id');
     }
 }

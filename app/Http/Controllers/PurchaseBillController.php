@@ -194,11 +194,11 @@ class PurchaseBillController extends Controller
         $serviceAlias = ConstantHelper::PB_SERVICE_ALIAS;
         $books = Helper::getBookSeriesNew($serviceAlias, $parentUrl)->get();
         $vendors = Vendor::where('status', ConstantHelper::ACTIVE)
-            ->where('organization_id', $user->organization_id)
+            ->withDefaultGroupCompanyOrg()
             ->get();
         $materialReceipts = MrnHeader::with('vendor')
             ->where('status', ConstantHelper::ACTIVE)
-            ->where('organization_id', $user->organization_id)
+            ->withDefaultGroupCompanyOrg()
             ->get();
         $locations = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
         return view('procurement.purchase-bill.create', [
@@ -809,8 +809,8 @@ class PurchaseBillController extends Controller
             ->where('addressable_type', Organization::class)
             ->first();
         $orgAddress = $organizationAddress?->display_address;
-        $costCenters = CostCenter::where('organization_id', $user->organization_id)->get();
-        $erpStores = ErpStore::where('organization_id', $user->organization_id)
+        $costCenters = CostCenter::withDefaultGroupCompanyOrg()->get();
+        $erpStores = ErpStore::withDefaultGroupCompanyOrg()
             ->orderBy('id', 'DESC')
             ->get();
         $dynamicFieldsUI = $pb -> dynamicfieldsUi();
@@ -1358,7 +1358,7 @@ class PurchaseBillController extends Controller
         $item = json_decode($request->item, true) ?? [];
 
         $componentItem = json_decode($request->component_item, true) ?? [];
-        $costCenters = CostCenter::where('organization_id', $user->organization_id)->get();
+        $costCenters = CostCenter::withDefaultGroupCompanyOrg()->get();
 
         /*Check last tr in table mandatory*/
         if (isset($componentItem['attr_require']) && isset($componentItem['item_id']) && $componentItem['row_length']) {
@@ -1379,7 +1379,7 @@ class PurchaseBillController extends Controller
         $item_ids = explode(',', $request->item_ids);
         $items = MrnDetail::whereIn('id', $item_ids)
             ->get();
-        $costCenters = CostCenter::where('organization_id', $user->organization_id)->get();
+        $costCenters = CostCenter::withDefaultGroupCompanyOrg()->get();
         $vendor = Vendor::with(['currency:id,name', 'paymentTerms:id,name'])->find($request->vendor_id);
         $currency = $vendor->currency;
         $paymentTerm = $vendor->paymentTerms;

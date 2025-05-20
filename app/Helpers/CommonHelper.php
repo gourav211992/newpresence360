@@ -56,6 +56,8 @@ class CommonHelper
 	const SELF = 'self';
 	const REFER = 'refer';
 	const SEND_BACK = 'send-back';
+    const PAYMENTS = 'payments';
+    const RECEIPTS = 'receipts';
 
     const JOB_REQUEST_STATUS = [
         self::APPROVED_FORWARD,

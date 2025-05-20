@@ -133,13 +133,12 @@ class CashflowReportController extends Controller
                 $endDate = date('Y-m-d', strtotime($dates[1]));
             }
         $createdBy= Helper::getAuthenticatedUser()->auth_user_id;
-        $fileName = 'Cashflow Statment' . date('Y-m-d') . '.pdf';
-        return self::print($startDate,$endDate,$organization_id,$createdBy)->stream($fileName);        
+        return self::print($startDate,$endDate,$organization_id,$createdBy);
         }
 
         else{
             $mappings = Helper::getAuthenticatedUser()->access_rights_org;
-        
+
             $startDate = date('d-m-Y', strtotime($startDate));
         $endDate = date('d-m-Y', strtotime($endDate));
         $range = $startDate . ' to ' . $endDate;
@@ -148,6 +147,7 @@ class CashflowReportController extends Controller
     }
     public static function print($startDate,$endDate,$organization_id,$createdBy)
     {
+    try {
         $payment_made = Voucher::where('reference_service', ConstantHelper::PAYMENTS_SERVICE_ALIAS)
             ->where('organization_id', $organization_id)
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
@@ -169,7 +169,7 @@ class CashflowReportController extends Controller
                     ];
                 });
             })->values()->all();
-    
+
         $payment_made_t = Voucher::where('reference_service', ConstantHelper::PAYMENTS_SERVICE_ALIAS)
             ->where('organization_id', $organization_id)
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
@@ -192,8 +192,6 @@ class CashflowReportController extends Controller
                 return $voucher->items->where('debit_amt_org', '>', 0);
             })
             ->sum('debit_amt_org');
-
-
 
         $payment_received = Voucher::where('reference_service', ConstantHelper::RECEIPTS_SERVICE_ALIAS)
             ->where('organization_id', $organization_id)
@@ -237,28 +235,43 @@ class CashflowReportController extends Controller
                 return $voucher->items->where('credit_amt_org', '>', 0);
             })
             ->sum('credit_amt_org');
+
         $opening = $opening_payment_received - $opening_payment_made;
         $closing = ($opening + $payment_received_t) - $payment_made_t;
         if($startDate==$endDate)
         $fy = self::formatWithOrdinal($startDate);
         else
         $fy = self::formatWithOrdinal($startDate) . ' to ' . self::formatWithOrdinal($endDate);
-       
+
         $companies = Helper::getAuthenticatedUser()->access_rights_org;
         $startDate = date('d-m-Y', strtotime($startDate));
         $endDate = date('d-m-Y', strtotime($endDate));
         $orgLogo = Helper::getOrganizationLogo($organization_id);
+
         $organization = Organization::find($organization_id);
-        //  $organization = Organization::where('id', $user->organization_id)->first();
+        if (!$organization) {
+            throw new \Exception("Organization not found.");
+        }
+
         $organizationAddress = Address::with(['city', 'state', 'country'])
             ->where('addressable_id', $organization_id)
             ->where('addressable_type', Organization::class)
             ->first();
-        $created_by = AuthUser::find($createdBy)->name;
-        $currency = Currency::find($organization?->currency_id)?->name;
-        $in_words = Helper::numberToWords(abs($closing)); 
-        // dd($fy);
-            $pdf = PDF::loadView('pdf.cashflow', [
+
+        if (!$organizationAddress) {
+            throw new \Exception("Organization address not found.");
+        }
+
+        $authUser = AuthUser::find($createdBy);
+        if (!$authUser) {
+            throw new \Exception("User who created this record not found.");
+        }
+
+        $created_by = $authUser->name;
+        $currency = Currency::find($organization->currency_id)?->name;
+        $in_words = Helper::numberToWords(abs($closing));
+
+        $pdf = PDF::loadView('pdf.cashflow', [
             'created_by' => $created_by,
             'opening' => $opening,
             'in_words' => $in_words,
@@ -276,11 +289,27 @@ class CashflowReportController extends Controller
             'organization' => $organization,
             'organizationAddress' => $organizationAddress
         ]);
-        
+
         $pdf->setPaper('A4', 'portrait');
-        
-        return $pdf; 
+        $fileName = 'Cashflow Statment' . date('Y-m-d') . '.pdf';
+
+// $pdf = PDF::loadView('pdf.cashflow', [ /* ... */ ]);
+// $pdf->setPaper('A4', 'portrait');
+
+        return $pdf->stream($fileName);
+        // return $pdf;
+    } catch (\Throwable $e) {
+        \Log::error("Cash Flow Print Error", [
+            'message' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+        if (request()->ajax()) {
+                return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return redirect()->back()->with('print_error', $e->getMessage());
     }
+}
     static function formatWithOrdinal($date)
     {
         $date = Carbon::parse($date);
@@ -345,5 +374,5 @@ class CashflowReportController extends Controller
             'cashflow-statement.xlsx'
         );
     }
-    
+
 }

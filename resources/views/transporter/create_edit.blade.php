@@ -36,6 +36,7 @@
 					</div>
 				</div>
 			</div>
+            
             <div class="content-body">
 				<section id="basic-datatable">
                     <div class="row">
@@ -688,20 +689,25 @@
                                         @endif 
                                     </div>
                             </div>
-                        <div class="col-md-12" id = "manual_entry_details">
-                            <div class="mt-2">
-                                <div class="step-custhomapp bg-light">
-                                    <ul class="nav nav-tabs my-25 custapploannav" role="tablist">
-                                        <li class="nav-item">
-                                            <a class="nav-link active" data-bs-toggle="tab"
+                            <div class="col-md-12" id = "manual_entry_details">
+                                <div class="col-md-12 {{(isset($order) && count($order -> dynamic_fields)) > 0 ? '' : 'd-none'}}" id = "dynamic_fields_section">
+                    @if (isset($dynamicFieldsUi))
+                        {!! $dynamicFieldsUi !!}
+                    @endif
+                </div>
+                                <div class="mt-2">
+                                    <div class="step-custhomapp bg-light">
+                                        <ul class="nav nav-tabs my-25 custapploannav" role="tablist">
+                                            <li class="nav-item">
+                                                <a class="nav-link active" data-bs-toggle="tab"
                                                 href="#PickUp">Pick Up Locations</a>
-                                        </li>
-                                        <li class="nav-item">
-                                            <a class="nav-link" data-bs-toggle="tab"
+                                            </li>
+                                            <li class="nav-item">
+                                                <a class="nav-link" data-bs-toggle="tab"
                                                 href="#DropOff">Drop Off Locations</a>
-                                        </li>
-                                    </ul>
-                                </div>
+                                            </li>
+                                        </ul>
+                                    </div>
                                 <div class="tab-content ">
                                     <div class="tab-pane active" id="PickUp">
                                         <div class="table-responsive-md">
@@ -2783,6 +2789,9 @@
                   {
                     implementBookParameters(data.data.parameters);
                   }
+                   if (reset) {
+                      implementBookDynamicFields(data.data.dynamic_fields_html, data.data.dynamic_fields);
+                  }
                 }
                 if(data.status == 404) {
                     if (reset) {
@@ -2795,6 +2804,16 @@
         }); 
     }
 
+    function implementBookDynamicFields(html, data)
+    {
+        let dynamicBookSection = document.getElementById('dynamic_fields_section');
+        dynamicBookSection.innerHTML = html;
+        if (data && data.length > 0) {
+            dynamicBookSection.classList.remove('d-none');
+        } else {
+            dynamicBookSection.classList.add('d-none');
+        }
+    }
     function onDocDateChange()
     {
         let bookId = $("#series_id_input").val();

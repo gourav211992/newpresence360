@@ -98,6 +98,14 @@
                                                     <input type="checkbox" {{$subStore -> station_wise_consumption === 'yes' ? 'checked' : ''}} name="station_wise_consumption" id="station_wise_consumption_input" />
                                                 </div>
                                             </div>
+                                            <div class="row align-items-center mb-1 d-none" id = "is_warehouse_required_header">
+                                                <div class="col-md-3">
+                                                    <label class="form-label"> Is Warehouse <span class="text-danger">*</span></label>
+                                                </div>
+                                                <div class="col-md-5">
+                                                    <input type="checkbox" {{$subStore -> is_warehouse_required ? 'checked' : ''}} name="is_warehouse_required" id="is_warehouse_required_input" />
+                                                </div>
+                                            </div>
                                             <div class="row align-items-center mb-1">
                                                 <div class="col-md-3">
                                                     <label class="form-label">Parent Location(s)<span class="text-danger">*</span></label>
@@ -170,11 +178,19 @@
     {
         let stationWiseFieldElement = document.getElementById('station_wise_consumption_header');
         let stationWiseFieldInput = document.getElementById('station_wise_consumption_input');
+        let warehouseFieldElement = document.getElementById('is_warehouse_required_header');
+        let warehouseFieldInput = document.getElementById('is_warehouse_required_input');
         if (element.value === "{{App\Helpers\ConstantHelper::SHOP_FLOOR}}") {
             stationWiseFieldElement.classList.remove('d-none');
         } else {
             stationWiseFieldInput.checked = false;
             stationWiseFieldElement.classList.add('d-none');
+        }
+        if (element.value === "{{App\Helpers\ConstantHelper::STOCKK}}") {
+            warehouseFieldElement.classList.remove('d-none');
+        } else {
+            warehouseFieldInput.checked = false;
+            warehouseFieldElement.classList.add('d-none');
         }
     }
 

@@ -240,7 +240,11 @@
                                     </div> 
                                 </div>
                             </div>
-
+                            <div class="col-md-12 {{(isset($order) && count($order -> dynamic_fields)) > 0 ? '' : 'd-none'}}" id = "dynamic_fields_section">
+                                @if (isset($dynamicFieldsUi))
+                                    {!! $dynamicFieldsUi !!}
+                                @endif
+                            </div>
                             <div class="card Item_Search_section">
                                 <div class="card-body customernewsection-form"> 
                                     <div class="bo_Sear-bottom mb-1 pb-10">
@@ -2157,24 +2161,27 @@ initializeAutocompleteSearch('filter_item_name_code','filter_item_name_code_id',
             return response.json().then(data => {
                 if (data.status == 200) {
                   $("#book_code_input").val(data.data.book_code);
-                  if(!data.data.doc.document_number) {
+                if(!data.data.doc.document_number) {
                     if (reset) {
                         $("#order_no_input").val('');
                     }
-                  }
-                  if (reset) {
-                    $("#order_no_input").val(data.data.doc.document_number);
-                  }
-                  if(data.data.doc.type == 'Manually') {
-                     $("#order_no_input").attr('readonly', false);
-                  } else {
-                     $("#order_no_input").attr('readonly', true);
-                  }
-                  enableDisableQtButton();
-                  if (data.data.parameters)
-                  {
-                    implementBookParameters(data.data.parameters);
-                  }
+                }
+                if (reset) {
+                $("#order_no_input").val(data.data.doc.document_number);
+                }
+                if(data.data.doc.type == 'Manually') {
+                    $("#order_no_input").attr('readonly', false);
+                } else {
+                    $("#order_no_input").attr('readonly', true);
+                }
+                enableDisableQtButton();
+                if (data.data.parameters)
+                {
+                implementBookParameters(data.data.parameters);
+                }
+                if (reset) {
+                    implementBookDynamicFields(data.data.dynamic_fields_html, data.data.dynamic_fields);
+                }
                 }
                 if(data.status == 404) {
                     if (reset) {
@@ -2201,7 +2208,16 @@ initializeAutocompleteSearch('filter_item_name_code','filter_item_name_code_id',
             });
         }); 
     }
-
+    function implementBookDynamicFields(html, data)
+    {
+        let dynamicBookSection = document.getElementById('dynamic_fields_section');
+        dynamicBookSection.innerHTML = html;
+        if (data && data.length > 0) {
+            dynamicBookSection.classList.remove('d-none');
+        } else {
+            dynamicBookSection.classList.add('d-none');
+        }
+    }
     function onDocDateChange()
     {
         let bookId = $("#series_id_input").val();

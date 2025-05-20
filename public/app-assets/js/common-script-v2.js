@@ -309,7 +309,6 @@ $(document).ready(function () {
                     },
                 });
             }
-            $this.prop('disabled', false);
         });
     });
 
@@ -346,6 +345,11 @@ function show_validation_error(msg) {
 
         if (index === 'resume') {
             $('form [name="' + name + '"]').after('<span class="help-block text-danger fw-bolder">' + value + "</span>");
+            return; // Skip default logic
+        }
+
+        if (index === 'bank_date') {
+            $('#bank-date-error').html('<span class="help-block text-danger fw-bolder">' + value + '</span>');
             return; // Skip default logic
         }
 

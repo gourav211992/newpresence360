@@ -161,7 +161,7 @@ $(document).on('submit', '.ajax-input-form', function (e) {
     // }
 
     // Component Items for BOM
-    const componentBlocks = document.querySelectorAll('tr[id*="row_"]');
+    const componentBlocks = document.querySelectorAll('.bom_form #itemTable tr[id*="row_"]');
     if(componentBlocks.length) {
         const components = [];
         componentBlocks.forEach(block => {

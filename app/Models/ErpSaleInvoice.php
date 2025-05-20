@@ -6,6 +6,7 @@ use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
 use App\Traits\DateFormatTrait;
 use App\Traits\DefaultGroupCompanyOrg;
+use App\Traits\DynamicFieldsTrait;
 use App\Traits\UserStampTrait;
 use App\Traits\FileUploadTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,7 +15,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ErpSaleInvoice extends Model
 {
-    use HasFactory, SoftDeletes, DefaultGroupCompanyOrg, FileUploadTrait, DateFormatTrait, UserStampTrait;
+    use HasFactory, SoftDeletes, DefaultGroupCompanyOrg, FileUploadTrait, DateFormatTrait, UserStampTrait, DynamicFieldsTrait;
 
     protected $fillable = [
         'organization_id',
@@ -230,5 +231,9 @@ class ErpSaleInvoice extends Model
     public function voucher()
     {
         return $this -> belongsTo(Voucher::class, 'id', 'reference_doc_id') -> where('reference_service', $this -> document_type);
+    }
+    public function dynamic_fields()
+    {
+        return $this -> hasMany(ErpSiDynamicField::class, 'header_id');
     }
 }

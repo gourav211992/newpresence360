@@ -39,8 +39,9 @@ class CostCenterController extends Controller
     {
         $user = Helper::getAuthenticatedUser();
         $companies = $user -> access_rights_org;
+        $existingCostCenters = CostCenter::pluck('name')->toArray();
         $groups = CostGroup::where('organization_id',Helper::getAuthenticatedUser()->organization_id)->where('status','active')->get();
-        return view('costCenter.create', compact('groups','companies'));
+        return view('costCenter.create', compact('groups','companies','existingCostCenters'));
     }
 
     /**
@@ -58,11 +59,11 @@ class CostCenterController extends Controller
                 'required',
                 'string',
                 'max:255',
-                Helper::uniqueRuleWithConditions('erp_cost_centers', [
-                    'organization_id' => $organizationId,
-                    'company_id' => $companyId,
-                    'group_id' => $groupId
-                ], null, 'id', false),
+                // Helper::uniqueRuleWithConditions('erp_cost_centers', [
+                //     'organization_id' => $organizationId,
+                //     'company_id' => $companyId,
+                //     'group_id' => $groupId
+                // ], null, 'id', false),
             ],
             // 'name' => 'required|string|max:255|unique:erp_cost_centers,name',
         ]);
@@ -110,9 +111,12 @@ class CostCenterController extends Controller
         $data = CostCenter::find($id);
         $user = Helper::getAuthenticatedUser();
         $companies = $user -> access_rights_org;
+         $existingCostCenters = CostCenter::where('id', '!=', $id)
+        ->pluck('name')
+        ->toArray();
 
         $groups = CostGroup::where('organization_id',Helper::getAuthenticatedUser()->organization_id)->where('status','active')->orWhere('id',$data->cost_group_id)->get();
-        return view('costCenter.edit', compact('groups', 'data', 'companies'));
+        return view('costCenter.edit', compact('groups', 'data', 'companies','existingCostCenters'));
     }
 
     /**
@@ -129,11 +133,11 @@ class CostCenterController extends Controller
                 'required',
                 'string',
                 'max:255',
-                Helper::uniqueRuleWithConditions('erp_cost_centers', [
-                    'organization_id' => $organizationId,
-                    'company_id' => $companyId,
-                    'group_id' => $groupId
-                ], $id, 'id', false),
+                // Helper::uniqueRuleWithConditions('erp_cost_centers', [
+                //     'organization_id' => $organizationId,
+                //     'company_id' => $companyId,
+                //     'group_id' => $groupId
+                // ], $id, 'id', false),
             ],
             // 'name' => ['required', 'string', 'max:255', Rule::unique('erp_cost_groups')->ignore($id)],
         ]);

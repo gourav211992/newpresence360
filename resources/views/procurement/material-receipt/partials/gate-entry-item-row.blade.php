@@ -21,6 +21,7 @@
             <input type="hidden" name="components[{{$rowCount}}][item_name]" value="{{@$item->item->item_name}}" />
             <input type="hidden" name="components[{{$rowCount}}][hsn_id]" value="{{@$item->hsn_id}}" />
             <input type="hidden" name="components[{{$rowCount}}][hsn_code]" value="{{$item?->item?->hsn?->code}}" />
+            <input type="hidden" name="components[{{$rowCount}}][is_inspection]" value="{{$item?->item?->is_inspection}}" />
             @php
                 $selectedAttr = @$item->attributes ? @$item->attributes()->whereNotNull('attr_value')->pluck('attr_value')->all() : [];
             @endphp
@@ -65,10 +66,11 @@
         </td>
         <td>
             <input type="number" class="form-control mw-100 accepted_qty text-end checkNegativeVal" name="components[{{$rowCount}}][accepted_qty]"
-            value="{{$balanceQty}}" step="any" />
+            value="{{($item?->item?->is_inspection == 0) ? $balanceQty : 0.00}}" step="any"  {{ ($item?->item?->is_inspection == 1) ? 'readonly' : '' }} />
         </td>
         <td>
-            <input type="number" class="form-control mw-100 text-end rejected_qty" name="components[{{$rowCount}}][rejected_qty]" readonly step="any"/>
+            <input type="number" class="form-control mw-100 text-end rejected_qty" name="components[{{$rowCount}}][rejected_qty]" step="any" 
+            {{ ($item?->item?->is_inspection == 1) ? 'readonly' : '' }} />
         </td>
         <td><input type="number" name="components[{{$rowCount}}][rate]" value="{{$item->rate}}" readonly class="form-control mw-100 text-end rate" /></td>
         <td>
@@ -80,11 +82,11 @@
                     <input type="hidden" value="{{$itemDiscount->id}}" name="components[{{$rowCount}}][discounts][{{$itemDis_key+1}}][id]">
                     <input type="hidden" value="{{$itemDiscount->ted_id}}" name="components[{{$rowCount}}][discounts][{{$itemDis_key+1}}][ted_id]">
                     <input type="hidden" value="{{$itemDiscount->ted_name}}" name="components[{{$rowCount}}][discounts][{{$itemDis_key+1}}][dis_name]">
-                    <input type="hidden" value="{{$itemDiscount->ted_perc}}" name="components[{{$rowCount}}][discounts][{{$itemDis_key+1}}][dis_perc]">
+                    <input type="hidden" value="{{$itemDiscount->ted_percentage}}" name="components[{{$rowCount}}][discounts][{{$itemDis_key+1}}][dis_perc]">
                     @php
-                        $tedPerc = $itemDiscount->ted_perc;
+                        $tedPerc = $itemDiscount->ted_percentage;
                     @endphp
-                    @if (!intval($itemDiscount->ted_perc))
+                    @if (!intval($itemDiscount->ted_percentage))
                         @php
                             $tedPerc = (floatval($itemDiscount->ted_amount) / floatval($itemDiscount->assesment_amount)) * 100;
                         @endphp
@@ -114,6 +116,16 @@
         </td>
         <td>
             <div class="d-flex">
+                <input type="hidden" id="components_storage_points_{{ $rowCount }}" name="components[{{$rowCount}}][storage_points]" value=""/>
+                <input type="hidden" id="components_storage_points_{{ $rowCount }}" name="components[{{$rowCount}}][storage_points_data]" value=""/>
+                <div class="me-50 cursor-pointer addStoragePointBtn" data-bs-toggle="modal" data-row-count="{{$rowCount}}" data-bs-target="#storage-point-modal">
+                    <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary"
+                        data-bs-original-title="Storage Point" aria-label="Storage Point">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="feather feather-map-pin">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></span>
+                </div>
                 <!-- <input type="hidden" id="components_stores_data_{{ $rowCount }}" name="components[{{$rowCount}}][store_data]" value=""/>
                 <div class="me-50 cursor-pointer addDeliveryScheduleBtn" data-bs-toggle="modal" data-row-count="{{$rowCount}}" data-bs-target="#store-modal">
                     <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary"

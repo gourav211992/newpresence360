@@ -16,6 +16,7 @@ class ErpSubStore extends Model
         'name',
         'type',
         'station_wise_consumption',
+        'is_warehouse_required',
         'status'
     ];
 

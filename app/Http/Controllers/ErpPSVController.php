@@ -18,6 +18,8 @@ use App\Models\Address;
 use App\Models\Attribute;
 use App\Models\AttributeGroup;
 use App\Models\AuthUser;
+use App\Helpers\DynamicFieldHelper;
+use App\Models\ErpPsvDynamicField;
 use App\Models\Country;
 use App\Models\Department;
 use App\Models\ErpAddress;
@@ -227,6 +229,8 @@ class ErpPSVController extends Controller
             $users = AuthUser::select('id', 'name') -> where('organization_id', $user -> organization_id) 
             -> where('status', ConstantHelper::ACTIVE) -> get();   
             $SubStores = InventoryHelper::getAccesibleSubLocations($doc -> store_id, 0, ConstantHelper::ERP_SUB_STORE_LOCATION_TYPES);
+            $dynamicFieldsUI = $doc -> dynamicfieldsUi();
+
             $data = [
                 'user' => $user,
                 'series' => $books,
@@ -239,6 +243,7 @@ class ErpPSVController extends Controller
                 'docStatusClass' => $docStatusClass,
                 'typeName' => $typeName,
                 'stores' => $stores,
+                'dynamicFieldsUi' => $dynamicFieldsUI,
                 'stations' => $stations,
                 'maxFileCount' => isset($order -> mediaFiles) ? (10 - count($doc -> media_files)) : 10,
                 'services' => $servicesBooks['services'],
@@ -531,6 +536,15 @@ class ErpPSVController extends Controller
                         $item->delete();
                     }
                 }
+            }
+            //Dynamic Fields
+            $status = DynamicFieldHelper::saveDynamicFields(ErpPsvDynamicField::class, $psv -> id, $request -> dynamic_field ?? []);
+            if ($status && !$status['status'] ) {
+                DB::rollBack();
+                return response() -> json([
+                    'message' => $status['message'],
+                    'error' => ''
+                ], 422);
             }
             DB::commit();
             return response()->json([

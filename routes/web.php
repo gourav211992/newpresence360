@@ -154,6 +154,8 @@ use App\Http\Controllers\Finance\GstrController;
 use App\Http\Controllers\WarehouseStructureController;
 use App\Http\Controllers\WarehouseMappingController;
 use App\Http\Controllers\WarehouseItemMappingController;
+use App\Http\Controllers\InspectionController;
+
 use App\Http\Controllers\CloseFy\CloseFyController;
 //Reports
 use App\Http\Controllers\Report\TransactionReportController;
@@ -1565,6 +1567,57 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         ->controller(DocumentApprovalController::class)
         ->group(function () {
             Route::post('purchase-return', 'purchaseReturn')->name('purchase-return');
+    });
+
+    // Inspection routes
+    Route::prefix('inspection')
+        ->name('inspection.')
+        ->controller(InspectionController::class)
+        ->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/create', 'create')->name('create');
+            Route::post('/', 'store')->name('store');
+            Route::get('/edit/{id}', 'edit')->name('edit');
+            Route::post('/update/{id}', 'update')->name('update');
+            Route::get('/{id}/view', 'show')->name('show');
+            Route::get('add-item-row', 'addItemRow')->name('item.row');
+            Route::get('mrn-item-row', 'mrnItemRows')->name('mrn-item.row');
+            Route::get('get-item-attribute', 'getItemAttribute')->name('item.attr');
+            Route::get('add-discount-row', 'addDiscountRow')->name('item.discount.row');
+            Route::get('/tax-calculation', 'taxCalculation')->name('tax.calculation');
+            Route::get('/get-address', 'getAddress')->name('get.address');
+            Route::get('/edit-address', 'editAddress')->name('edit.address');
+            Route::post('/address-save', 'addressSave')->name('address.save');
+            Route::get('/get-itemdetail', 'getItemDetail')->name('get.itemdetail');
+            Route::get('/validate-quantity', 'validateQuantity')->name('get.validate-quantity');
+            Route::get('/{id}/logs', 'logs')->name('logs');
+            Route::get('/{id}/pdf', 'generatePdf')->name('generate-pdf');
+            Route::delete('component-delete', 'componentDelete')->name('comp.delete');
+            Route::get('amendment-submit/{id}', 'amendmentSubmit')->name('amendment.submit');
+            Route::get('get-mrn', 'getMrn')->name('get.mrn');
+            Route::get('process-mrn-item', 'processMrnItem')->name('process.mrn-item');
+            Route::get('/posting/get', 'getPostingDetails')->name('posting.get');
+            Route::post('/post', 'postPR')->name('post');
+            Route::get('revoke-document','revokeDocument')->name('revoke.document');
+            Route::get('/report', 'Report')->name('report');
+            Route::get('/report/filter', 'getReportFilter')->name('report.filter');
+            Route::post('/add-scheduler', 'addScheduler')->name('add.scheduler');
+            Route::get('/order/report', 'purchaseReturnReport')->name('order.report');
+
+            /*Remove data*/
+            Route::delete('remove-dis-item-level', 'removeDisItemLevel')->name('remove.item.dis');
+            Route::delete('remove-dis-header-level', 'removeDisHeaderLevel')->name('remove.header.dis');
+            Route::delete('remove-exp-header-level', 'removeExpHeaderLevel')->name('remove.header.exp');
+
+            Route::post('send-mail', 'prMail')->name('prMail');
+
+        });
+
+    Route::prefix('document-approval')
+        ->name('document.approval.')
+        ->controller(DocumentApprovalController::class)
+        ->group(function () {
+            Route::post('inspection', 'inspection')->name('inspection');
     });
 
     // Material Request routes

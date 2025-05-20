@@ -30,10 +30,10 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
     ];
 
-    protected $appends = [
-        'authenticable_type',
-        'auth_user_id'
-    ];
+    // protected $appends = [
+    //     'authenticable_type',
+    //     'auth_user_id'
+    // ];
 
     public function organization()
     {
@@ -128,15 +128,15 @@ class User extends Authenticatable
     {
         return $this -> belongsTo(AuthUser::class, 'id', 'authenticable_id');
     }
-    public function getAuthenticableTypeAttribute()
-    {
-        return $this -> auth_user -> authenticable_type;
-    }
+    // public function getAuthenticableTypeAttribute()
+    // {
+    //     return $this -> auth_user -> authenticable_type;
+    // }
 
-    public function getAuthUserIdAttribute()
-    {
-        return $this -> auth_user -> id;
-    }
+    // public function getAuthUserIdAttribute()
+    // {
+    //     return $this -> auth_user -> id;
+    // }
     public function stakeholderInteractions()
     {
         return $this->morphMany(StakeholderInteraction::class, 'userable');

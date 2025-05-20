@@ -50,6 +50,11 @@ class RouteServiceProvider extends ServiceProvider
                 ->prefix('recruitment')
                 ->namespace('App\Http\Controllers\Recruitment')
                 ->group(base_path('routes/recruitment.php'));
+
+            Route::middleware(['web'])
+                ->prefix('bank')
+                ->namespace('App\Http\Controllers\Bank')
+                ->group(base_path('routes/bank.php'));
         });
     }
 }

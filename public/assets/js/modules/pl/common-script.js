@@ -151,6 +151,9 @@ function getDocNumberByBookId(element, reset = true)
                 {
                 implementBookParameters(data.data.parameters);
                 }
+                if (reset) {
+                    implementBookDynamicFields(data.data.dynamic_fields_html, data.data.dynamic_fields);
+                }
             }
             if(data.status == 404) {
                 if (reset) {
@@ -176,6 +179,17 @@ function getDocNumberByBookId(element, reset = true)
             }
         });
     }); 
+}
+
+function implementBookDynamicFields(html, data)
+{
+    let dynamicBookSection = document.getElementById('dynamic_fields_section');
+    dynamicBookSection.innerHTML = html;
+    if (data && data.length > 0) {
+        dynamicBookSection.classList.remove('d-none');
+    } else {
+        dynamicBookSection.classList.add('d-none');
+    }
 }
 
 function onDocDateChange()

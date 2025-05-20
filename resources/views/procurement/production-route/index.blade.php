@@ -43,6 +43,7 @@
                                                 <th>S.No</th>
                                                 <th>Name</th>
                                                 <th>Description</th>
+                                                <th>Safety Buffer(%)</th>
                                                 <th>Levels</th>
                                                 <th>Status</th>
                                                 <th>Action</th>
@@ -81,6 +82,7 @@ $(document).ready(function() {
                 { data: 'DT_RowIndex', orderable: false, searchable: false },
                 { data: 'name', render: renderData },
                 { data: 'description', render: renderData },
+                { data: 'safety_buffer_perc', render: renderData },
                 { data: 'levels', render: renderData },
                 { data: 'status', orderable: false },
                 { data: 'action', orderable: false, searchable: false }

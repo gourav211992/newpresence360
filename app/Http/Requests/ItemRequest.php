@@ -72,6 +72,7 @@ class ItemRequest extends FormRequest
             'storage_uom_id' => 'nullable|exists:erp_units,id',
             'storage_uom_conversion' => 'nullable',
             'storage_uom_count' => 'nullable',
+            'is_inspection' => 'required|in:0,1',
             'item_remark' => 'nullable', 
             'cost_price' =>'nullable|regex:/^[0-9,]*(\.[0-9]{1,2})?$/|min:0',
             'sell_price' =>'nullable|regex:/^[0-9,]*(\.[0-9]{1,2})?$/|min:0',

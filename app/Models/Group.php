@@ -31,14 +31,14 @@ class Group extends Model
     // Relationship to get the parent group
     public function parent()
     {
-        return $this->belongsTo(Group::class, 'id', 'parent_group_id')
+        return $this->belongsTo(Group::class, 'parent_group_id', 'id')
        ->where(function ($query) {
             $query->where(function ($q) {
                 $q->withDefaultGroupCompanyOrg();
             })->orWhere('edit', 0);
         });
     }
-    
+
     // Relationship to get child groups
    public function children()
 {
@@ -63,7 +63,7 @@ class Group extends Model
             foreach ($this->children as $child) {
                 $ids[] = $child->id;
                 $child->getAllChildIds($ids);
-            
+
             }
             return $ids;
         }

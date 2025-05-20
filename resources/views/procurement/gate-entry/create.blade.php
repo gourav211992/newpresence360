@@ -404,33 +404,14 @@
                                                                             </td>
                                                                         </tr>
                                                                         <tr>
-                                                                            <td class="poprod-decpt">
-                                                                                <span class="poitemtxt mw-100"><strong>Name</strong>:</span>
-                                                                            </td>
                                                                         </tr>
                                                                         <tr>
-                                                                            <td class="poprod-decpt">
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>HSN</strong>:</span>
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Color</strong>:</span>
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Size</strong>:</span>
-                                                                            </td>
                                                                         </tr>
                                                                         <tr>
-                                                                            <td class="poprod-decpt">
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Inv. UOM</strong>: </span>
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Qty.</strong>:</span>
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Exp. Date</strong>: </span>
-                                                                            </td>
                                                                         </tr>
                                                                         <tr>
-                                                                            <td class="poprod-decpt">
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Ava. Stock</strong>: </span>
-                                                                            </td>
                                                                         </tr>
                                                                         <tr>
-                                                                            <td class="poprod-decpt">
-                                                                                <span class="badge rounded-pill badge-light-secondary"><strong>Remarks</strong>: </span>
-                                                                            </td>
                                                                         </tr>
                                                                     </table>
                                                                 </td>
@@ -690,7 +671,6 @@
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if (data.status == 200) {
-                        // console.log('data', data.data);
                         $("#book_code").val(data.data.book_code);
                         if(!data.data.doc.document_number) {
                             $("#document_number").val('');
@@ -843,7 +823,6 @@
                     return false;
                 },
                 change: function(event, ui) {
-                    console.log("changess!");
                     if (!ui.item) {
                         $(this).val("");
                         $(this).attr('data-name', '');
@@ -1319,7 +1298,6 @@
                     return response.json().then(data => {
                         if(data.status == 200) {
                             // let itemStoreData = JSON.parse($(currentTr).find("[id*='components_stores_data']").val() || "[]");
-                            // console.log('itemStoreData....', itemStoreData);
                             // ledgerStock(currentTr, itemId, selectedAttr, itemStoreData);
                             $("#itemDetailDisplay").html(data.data.html);
                         }
@@ -1443,7 +1421,6 @@
         //         $("#deliveryScheduleModal").find('#deliveryFooter').before(rowHtml);
         //         $('[name="components[1][erp_store][1][erp_store_id]"').trigger('change');
         //     } else {
-        //         console.log('afsfsfs gdgdgdgd');
         //         if($("#itemTable #row_"+rowCount).find("[name*=store_qty]").length) {
         //             $(".display_delivery_row").remove(); // Remove all rows if present
         //         } else {
@@ -1459,7 +1436,6 @@
         //             let shelfVal = $(item).closest('td').find(`[name="components[${rowCount}][erp_store][${index+1}][erp_shelf_id]"]`).val();
         //             let binVal = $(item).closest('td').find(`[name="components[${rowCount}][erp_store][${index+1}][erp_bin_id]"]`).val();
         //             let storeQty = $(item).closest('td').find(`[name="components[${rowCount}][erp_store][${index+1}][store_qty]"]`).val();
-        //             // console.log('store rack shelf', storeVal, rackVal, shelfVal, binVal);
         //             // Trigger the change event after setting values to ensure racks, shelves, etc. are updated
         //             $(`#erp_store_id_${index+1}`).val(storeVal).trigger('change');
         //             $(`#erp_rack_id_${index+1}`).val(rackVal);
@@ -1574,7 +1550,6 @@
                 loadStoreDropdowns(store_id, rowCount);
                 // $('[name="components[1][erp_store][1][erp_store_id]"').trigger('change');
             } else {
-                // console.log('afsfsfs gdgdgdgd');
                 if ($("#itemTable #row_" + rowCount).find("[name*=store_qty]").length) {
 
                     $(".display_delivery_row").remove(); // Remove all rows if present
@@ -1596,7 +1571,6 @@
                         `[name="components[${rowCount}][erp_store][${index+1}][erp_bin_id]"]`).val();
                     let storeQty = $(item).closest('td').find(
                         `[name="components[${rowCount}][erp_store][${index+1}][store_qty]"]`).val();
-                    // console.log('bvalues---->>', index, rackVal, shelfVal, binVal, storeQty);
 
                     $(`#erp_rack_id_${index+1}`).val(rackVal);
                     $(`#erp_shelf_id_${index+1}`).val(shelfVal);
@@ -1663,7 +1637,6 @@
             .val();
                 let erp_bin_id = binVal || $(`#erp_bin_id_${rowCount}`)
             .val();
-                // console.log('erp_rack_id---->>', erp_rack_id, erp_shelf_id, erp_bin_id);
 
                 var data = {
                     store_code_id: store_id
@@ -1833,7 +1806,6 @@
                 qty = qty + Number($(item).val());
             });
             let itemQty = Number($('#deliveryScheduleModal #deliveryFooter #total').attr('qty'));
-            // console.log('itemQty------>>',rowCount, qty, itemQty);
             if (qty < itemQty) {
                 Swal.fire({
                     title: 'Error!',
@@ -2042,7 +2014,6 @@
         function getPurchaseOrders()
         {
             let selectedPoIds = localStorage.getItem('selectedPoIds') ?? '[]';
-            console.log('selectedPoIds', selectedPoIds);
 
             selectedPoIds = JSON.parse(selectedPoIds);
             selectedPoIds = encodeURIComponent(JSON.stringify(selectedPoIds));

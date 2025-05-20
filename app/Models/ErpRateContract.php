@@ -6,6 +6,7 @@ use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
 use App\Traits\DateFormatTrait;
 use App\Traits\DefaultGroupCompanyOrg;
+use App\Traits\DynamicFieldsTrait;
 use App\Traits\FileUploadTrait;
 use App\Traits\UserStampTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,7 +15,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ErpRateContract extends Model
 {
-    use HasFactory,SoftDeletes, DefaultGroupCompanyOrg, FileUploadTrait, DateFormatTrait, UserStampTrait;
+    use HasFactory,SoftDeletes, DynamicFieldsTrait ,DefaultGroupCompanyOrg, FileUploadTrait, DateFormatTrait, UserStampTrait;
 
     protected $fillable = [
         'organization_id',
@@ -111,5 +112,9 @@ class ErpRateContract extends Model
             return ConstantHelper::APPROVED;
         }
         return $this->attributes['document_status'];
+    }
+    public function dynamic_fields()
+    {
+        return $this->hasMany(ErpRcDynamicField::class,'header_id');
     }
 }

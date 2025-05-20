@@ -145,12 +145,12 @@
                                                             Reference From
                                                         </label>
                                                     </div>
-                                                    <div class="col-md-2 action-button">
+                                                    <div class="col-md-3 action-button">
                                                         <button type="button" class="btn btn-outline-primary btn-sm mb-0 poSelect">
                                                             <i data-feather="plus-square"></i> Outstanding PO
                                                         </button>
                                                     </div>
-                                                    <!-- <div class="col-md-2 action-button">
+                                                    <!-- <div class="col-md-3 action-button">
                                                         <button type="button" class="btn btn-outline-primary btn-sm mb-0 soSelect">
                                                             <i data-feather="plus-square"></i> Outstanding SO
                                                         </button>
@@ -206,17 +206,17 @@
                                                 <div class="row">
                                                     <div class="col-md-6">
                                                         <div class="customer-billing-section">
-                                                            <p>Shipping Details</p>
+                                                            <p>Vendor Details</p>
                                                             <div class="bilnbody">
                                                                 <div class="genertedvariables genertedvariablesnone">
                                                                     <label class="form-label w-100">
-                                                                        Select Shipping Address <span class="text-danger">*</span>
+                                                                        Select Vendor Address <span class="text-danger">*</span>
                                                                         <a href="javascript:;" class="float-end font-small-2 editAddressBtn" id="editShippingAddressBtn" data-type="shipping">
                                                                             <i data-feather='edit-3'></i> Edit
                                                                         </a>
                                                                     </label>
-                                                                    <div class="mrnaddedd-prim shipping_detail">-</div>
-                                                                    <input type="hidden" name="shipping_address" id="shipping_address">
+                                                                    <div class="mrnaddedd-prim billing_detail">-</div>
+                                                                    <input type="hidden" name="billing_address" id="billing_address">
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -232,8 +232,8 @@
                                                                             <i data-feather='edit-3'></i> Edit
                                                                         </a>
                                                                     </label>
-                                                                    <div class="mrnaddedd-prim billing_detail">-</div>
-                                                                    <input type="hidden" name="billing_address" id="billing_address">
+                                                                    <div class="mrnaddedd-prim shipping_detail">-</div>
+                                                                    <input type="hidden" name="shipping_address" id="shipping_address">
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -349,23 +349,10 @@
                                                                             </td>
                                                                         </tr>
                                                                         <tr>
-                                                                            <td class="poprod-decpt">
-                                                                                <span class="poitemtxt mw-100"><strong>Name</strong>:</span>
-                                                                            </td>
                                                                         </tr>
                                                                         <tr>
-                                                                            <td class="poprod-decpt">
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>HSN</strong>:</span>
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Color</strong>:</span>
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Size</strong>:</span>
-                                                                            </td>
                                                                         </tr>
                                                                         <tr>
-                                                                            <td class="poprod-decpt">
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Inv. UOM</strong>: </span>
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Qty.</strong>:</span>
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Exp. Date</strong>: </span>
-                                                                            </td>
                                                                         </tr>
                                                                     </table>
                                                                 </td>
@@ -808,9 +795,9 @@
                                 $('[name="payment_term_id"]').empty().append(termOption);
                                 $("#shipping_id").val(data.data.shipping.id);
                                 $("#billing_id").val(data.data.billing.id);
-                                $(".shipping_detail").text(data.data.shipping.display_address);
+                                $(".shipping_detail").text(data.data.org_address);
                                 $(".billing_detail").text(data.data.billing.display_address);
-                                $("#shipping_address").val(data.data.shipping.display_address);
+                                $("#shipping_address").val(data.data.org_address);
                                 $("#billing_address").val(data.data.billing.display_address);
 
                                 $("#hidden_state_id").val(data.data.shipping.state.id);
@@ -1143,10 +1130,14 @@
                     if (data.status == 200) {
                         $("#attribute tbody").empty();
                         $("#attribute table tbody").append(data.data.html)
-                        $("#attribute").modal('show');
                         $(tr).find('td:nth-child(2)').find("[name*=attr_name]").remove();
                         $(tr).find('td:nth-child(2)').append(data.data.hiddenHtml);
                         $(tr).find("td[id*='itemAttribute_']").attr('attribute-array', JSON.stringify(data.data.itemAttributeArray));
+                        if (data.data.attr) {
+                            $("#attribute").modal('show');
+                            $(".select2").select2();
+                        }
+                        qtyEnabledDisabled();
                     }
                 });
             });

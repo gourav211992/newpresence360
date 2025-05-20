@@ -9,6 +9,7 @@ use View;
 use Session;
 use DataTables;
 use Carbon\Carbon;
+use Validator;
 
 use Illuminate\Http\Request;
 
@@ -743,6 +744,30 @@ class InventoryReportController extends Controller
     public function addScheduler(Request $request)
     {
         try{
+            $validator = Validator::make($request->all(), [
+                'email_to' => ['required', 'array', 'min:1'],
+                'email_to.*' => ['required', 'email'],
+                'email_cc' => ['nullable', 'array'],
+                'email_cc.*' => ['required_with:email_cc', 'email'],
+            ],
+            [
+                'email_to.required' => 'At least one recipient email is required.',
+                'email_to.array' => 'The recipient emails must be provided as an array.',
+                'email_to.min' => 'At least one email address must be specified in email_to.',
+                'email_to.*.required' => 'Each email address in email_to is required.',
+                'email_to.*.email' => 'Each email in email_to must be a valid email address.',
+
+                'email_cc.array' => 'The CC emails must be provided as an array.',
+                'email_cc.*.required_with' => 'Each email in email_cc is required if CC is present.',
+                'email_cc.*.email' => 'Each email in email_cc must be a valid email address.',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => $validator -> messages() -> first()
+                ], 422);
+            }
             $headers = $request->input('displayedHeaders');
             $originalData = $request->input('displayedData');
             $data = $this->rearrangeInventoryReportData($originalData);

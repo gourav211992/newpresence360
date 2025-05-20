@@ -55,6 +55,7 @@ class MrnDetail extends Model
         'sub_total',
         'item_exp_amount',
         'header_exp_amount',
+        'is_inspection',
         'company_currency',
         'exchange_rate_to_company_currency',
         'group_currency',
@@ -94,6 +95,11 @@ class MrnDetail extends Model
     public function attributes()
     {
         return $this->hasMany(MrnAttribute::class);
+    }
+
+    public function storage_points()
+    {
+        return $this->hasMany(MrnItemLocation::class, 'mrn_detail_id');
     }
 
     public function attributeHistories()

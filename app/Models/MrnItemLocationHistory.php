@@ -18,11 +18,18 @@ class MrnItemLocationHistory extends Model
         'mrn_detail_id', 
         'mrn_item_location_id', 
         'item_id', 
+        'packet_name', 
+        'packet_number', 
+        'storage_number', 
         'store_id', 
+        'sub_store_id', 
+        'wh_detail_id', 
         'rack_id', 
         'shelf_id', 
         'bin_id', 
-        'quantity'
+        'quantity', 
+        'inventory_uom_qty', 
+        'status'
     ];
 
     public function mrnHeader()
@@ -38,6 +45,11 @@ class MrnItemLocationHistory extends Model
     public function erpStore()
     {
         return $this->belongsTo(ErpStore::class, 'store_id');
+    }
+
+    public function erpSubStore()
+    {
+        return $this->belongsTo(ErpSubStore::class, 'sub_store_id');
     }
 
     public function erpRack()

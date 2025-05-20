@@ -40,12 +40,26 @@
 
 <body class="vertical-layout vertical-menu-modern  navbar-floating footer-static  menu-collapsed" data-open="click"
     data-menu="vertical-menu-modern" data-col="">
-
+    <div class="preloader" style="display: none;">
+        <div class="loadingBox">
+            <p>Loading...</p>
+            <div class="loadingbar">
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </div>
     @include('layouts.partials.header')
     <!-- if ($organization_id != 8) -->
         <!-- ('layouts.partials.side-menu-permission-wise')   -->
         @include('layouts.partials.v2.left-sidebar')
- 
+
     <!-- else  -->
         <!-- include('layouts.partials.side-menu') -->
     <!-- endif -->

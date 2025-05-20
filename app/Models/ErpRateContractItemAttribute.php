@@ -9,7 +9,7 @@ class ErpRateContractItemAttribute extends Model
 {
     use HasFactory;
 
-    protected $table = 'erp_rate_contract_item_attrbiutes_history';
+    protected $table = 'erp_rate_contract_item_attributes';
     protected $fillable = [
         'rate_contract_id',
         'rate_contract_item_id',
