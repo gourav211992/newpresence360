@@ -825,6 +825,10 @@
                         if (!ui.item) {
                             $(this).val('');
                             $('#asset_id').val('');
+                             $('#subasset_search_input').val();
+                            $('#sub_asset_id').val('');
+                            $('#last_dep_date').val('');
+                            $('#current_value_asset').val('');
                             add_blank();
 
                         }
@@ -879,6 +883,7 @@
                         $('#category').val(asset.category_id).trigger('change');
                         $('#ledger').val(asset.ledger_id).trigger('change');
                         $('#ledger_group').val(asset.ledger_group_id).trigger('change');
+                          $('#last_dep_date').val("");
 
                         // Handle depreciation date
                         if (asset.last_dep_date !== asset.capitalize_date) {

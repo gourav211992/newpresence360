@@ -2,7 +2,7 @@
 @php
     use App\Helpers\Helper;
 @endphp
-
+ 
 @section('content')
     <!-- BEGIN: Content-->
     <div class="app-content content">
@@ -530,70 +530,7 @@ if (dt_basic_table.length) {
             return true;
         }
     },
-                },
-                {
-                    extend: 'pdf',
-                    text: feather.icons['clipboard'].toSvg({
-                        class: 'font-small-4 me-50'
-                    }) + 'PDF',
-                    className: 'dropdown-item',
-                    filename: 'Billing Report',
-                    exportOptions: {
-        columns: function (idx, data, node) {
-            // Determine which radio is selected
-            let isServiceSelected = document.querySelector('input[type="radio"]#service')?.checked;
-
-            // Hide last column (assumed action column)
-            const isLastColumn = node.cellIndex === node.parentNode.cells.length - 1;
-
-            if (isLastColumn) {
-                return false;
-            }
-
-            // If 'service' is selected, hide column 7 (index 6)
-            // Else hide column 6 (index 5)
-            if (isServiceSelected && node.cellIndex === 6) {
-                return false;
-            } else if (!isServiceSelected && node.cellIndex === 7) {
-                return false;
-            }
-
-            return true;
-        }
-    },
-                },
-                {
-                    extend: 'copy',
-                    text: feather.icons['copy'].toSvg({
-                        class: 'font-small-4 me-50'
-                    }) + 'Copy',
-                    className: 'dropdown-item',
-                    filename: 'Billing Report',
-                    exportOptions: {
-        columns: function (idx, data, node) {
-            // Determine which radio is selected
-            let isServiceSelected = document.querySelector('input[type="radio"]#service')?.checked;
-
-            // Hide last column (assumed action column)
-            const isLastColumn = node.cellIndex === node.parentNode.cells.length - 1;
-
-            if (isLastColumn) {
-                return false;
-            }
-
-            // If 'service' is selected, hide column 7 (index 6)
-            // Else hide column 6 (index 5)
-            if (isServiceSelected && node.cellIndex === 6) {
-                return false;
-            } else if (!isServiceSelected && node.cellIndex === 7) {
-                return false;
-            }
-
-            return true;
-        }
-    },
-                }
-            ],
+                }   ],
             init: function(api, node, config) {
                 $(node).removeClass('btn-secondary');
                 $(node).parent().removeClass('btn-group');
@@ -827,7 +764,6 @@ function filterTable() {
     let selectedValue = $("input[name='goodsservice']:checked").attr("id");
     let anyVisible = false;
 
-<<<<<<< HEAD
     $(".table-row").each(function () {
     let outstandingText = $(this).find("td.outstanding").text().trim();
     let overdueText = $(this).find("td.overdue").text().trim();
@@ -842,14 +778,6 @@ function filterTable() {
                 anyVisible = true;
             } else {
                 $(this).hide();
-=======
-            if (selectedValue === "customColorRadio1") {
-                $('.outstanding').show();
-                $('.overdue').hide(); 
-            } else if (selectedValue === "service") {
-                $('.overdue').show();
-                $('.outstanding').hide();
->>>>>>> 5c3351680a3e6aaef60877bfce4518e11c2539ca
             }
         } else if (selectedValue === "service") {
             $('.overdue').show();
@@ -909,13 +837,27 @@ if ($('#addcoulmn').length && $('#addcoulmn').hasClass('show')) {
             });
         });
     });
-<<<<<<< HEAD
     filterTable();
-=======
     
->>>>>>> 5c3351680a3e6aaef60877bfce4518e11c2539ca
 
 
 
     </script>
+    @if (session('print_error'))
+            <script>
+                const Toast = Swal.mixin({
+                   toast: true,
+                position: "top-end",
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+
+                });
+
+                Toast.fire({
+                    icon: 'error',
+                    title: '{{ session("print_error") }}'
+                });
+            </script>
+        @endif
 @endsection

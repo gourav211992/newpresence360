@@ -29,6 +29,7 @@ use App\Http\Controllers\SubStoreController;
 use App\Http\Controllers\refined_index\IndexController;
 use App\Http\Controllers\UserSignatureController;
 use App\Http\Controllers\FixedAsset\MergerController;
+use App\Http\Controllers\FixedAsset\RevImpController;
 use App\Http\Controllers\CrDrReportController;
 use App\Http\Controllers\FixedAsset\SetupController;
 use App\Http\Controllers\FixedAsset\DepreciationController;
@@ -311,11 +312,8 @@ Route::middleware(['user.auth'])->group(function () {
     Route::resource('cost-center', CostCenterController::class)->except(['show']);
     Route::post('getLocations', [CostCenterController::class, 'getLocation'])->name('cost-center.getLocations');
     Route::get('get-cost-center/{id}', [CostCenterController::class, 'getCostCenter'])->name('cost-center.get-cost-center');
-<<<<<<< HEAD
-=======
 
     Route::get('get-cost-centers', [CostCenterController::class, 'getCostCenterLocationBasis'])->name('locations.getCostCenter');
->>>>>>> 5c3351680a3e6aaef60877bfce4518e11c2539ca
 
     Route::get('/city', [CityController::class, 'index']);
 
@@ -547,6 +545,7 @@ Route::middleware(['user.auth'])->group(function () {
             Route::post('/', 'store')->name('store');
             Route::get('/edit/{id}', 'edit')->name('edit');
             Route::post('/update/{id}', 'update')->name('update');
+            Route::post('/update-approve/{id}', 'updateApprove')->name('update.approve');
             Route::get('add-item-row', 'addItemRow')->name('item.row');
             Route::get('get-item-attribute', 'getItemAttribute')->name('item.attr');
             Route::get('/get-itemdetail', 'getItemDetail')->name('get.itemdetail');
@@ -2318,6 +2317,19 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::post('fixed-asset/merger/post', [MergerController::class, 'postInvoice'])->name('finance.fixed-asset.merger.post');
     Route::get('fixed-asset/merger/amendment/{id}', [MergerController::class, 'amendment'])->name('finance.fixed-asset.merger.amendment');
 
+    Route::resource('fixed-asset/revaluation-impairement', RevImpController::class)->names([
+        'index' => 'finance.fixed-asset.revaluation-impairement.index',
+        'create' => 'finance.fixed-asset.revaluation-impairement.create',
+        'store' => 'finance.fixed-asset.revaluation-impairement.store',
+        'show' => 'finance.fixed-asset.revaluation-impairement.show',
+        'edit' => 'finance.fixed-asset.revaluation-impairement.edit',
+        'update' => 'finance.fixed-asset.revaluation-impairement.update',
+    ]);
+    Route::post('fixed-asset/revaluation-impairement/approval', [RevImpController::class, 'documentApproval'])->name('finance.fixed-asset.revaluation-impairement.approval');
+    Route::post('fixed-asset/revaluation-impairement/filter', [RevImpController::class, 'index'])->name('finance.fixed-asset.revaluation-impairement.filter');
+    Route::get('fixed-asset/revaluation-impairement/posting/get', [RevImpController::class, 'getPostingDetails'])->name('finance.fixed-asset.revaluation-impairement.posting.get');
+    Route::post('fixed-asset/revaluation-impairement/post', [RevImpController::class, 'postInvoice'])->name('finance.fixed-asset.revaluation-impairement.post');
+    Route::get('fixed-asset/revaluation-impairement/amendment/{id}', [RevImpController::class, 'amendment'])->name('finance.fixed-asset.revaluation-impairement.amendment');
 
 
     Route::resource('asset-category',AssetCategoryController::class);

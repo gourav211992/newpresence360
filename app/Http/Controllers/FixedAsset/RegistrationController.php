@@ -253,8 +253,21 @@ class RegistrationController extends Controller
 
         $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
 
+        $ref_view_route="#";
+        $buttons['reference']=false;
 
-        return view('fixed-asset.registration.show', compact('locations', 'sub_assets', 'series', 'data', 'ledgers', 'categories', 'grns', 'vendors', 'currencies', 'grn_details', 'buttons', 'docStatusClass', 'revision_number', 'currNumber', 'approvalHistory'));
+        if ($data->reference_doc_id && $data->reference_series) {
+            $model = Helper::getModelFromServiceAlias($data->reference_series);
+            if ($model != null) {
+                $referenceDoc = $model::find($data->reference_doc_id);
+                if ($referenceDoc != null) {
+                    $history = Helper::getApprovalHistory($referenceDoc->book_id, $referenceDoc->id, $referenceDoc->revision_number);
+                    $ref_view_route = Helper::getRouteNameFromServiceAlias($data->reference_series,$data->reference_doc_id);
+                    $buttons['reference']=true;
+                }
+            }
+        }
+        return view('fixed-asset.registration.show', compact('ref_view_route','locations', 'sub_assets', 'series', 'data', 'ledgers', 'categories', 'grns', 'vendors', 'currencies', 'grn_details', 'buttons', 'docStatusClass', 'revision_number', 'currNumber', 'approvalHistory'));
     }
 
     /**

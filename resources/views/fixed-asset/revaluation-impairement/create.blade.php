@@ -10,7 +10,7 @@
                     <div class="content-header-left col-md-6 mb-2">
                         <div class="row breadcrumbs-top">
                             <div class="col-12">
-                                <h2 class="content-header-title float-start mb-0">Merger</h2>
+                                <h2 class="content-header-title float-start mb-0">Revaluation / Impairement</h2>
                                 <div class="breadcrumb-wrapper">
                                     <ol class="breadcrumb">
                                         <li class="breadcrumb-item"><a href="index.html">Home</a>
@@ -26,14 +26,14 @@
                
                     <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
                         <div class="form-group breadcrumb-right">
-                            <a href="{{ route('finance.fixed-asset.merger.index') }}"> <button
+                            <a href="{{ route('finance.fixed-asset.revaluation-impairement.index') }}"> <button
                                 class="btn btn-secondary btn-sm"><i data-feather="arrow-left-circle"></i> Back</button>
                         </a>
                             <button class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" type="button" id="save-draft-btn">
                                 <i data-feather="save"></i> Save as Draft
                             </button>
                           
-                            <button type="submit" form="fixed-asset-merger-form" class="btn btn-primary btn-sm"
+                            <button type="submit" form="fixed-asset-revaluation-impairement-form" class="btn btn-primary btn-sm"
                             id="submit-btn">
                             <i data-feather="check-circle"></i> Submit
                         </button>
@@ -47,8 +47,8 @@
 
                 <section id="basic-datatable">
                     <div class="row">
-                        <form id="fixed-asset-merger-form" method="POST"
-                            action="{{ route('finance.fixed-asset.merger.store') }}" enctype="multipart/form-data">
+                        <form id="fixed-asset-revaluation-impairement-form" method="POST"
+                            action="{{ route('finance.fixed-asset.revaluation-impairement.store') }}" enctype="multipart/form-data">
 
                             @csrf
                             <input type="hidden" name="sub_assets" id="sub_assets">
@@ -222,7 +222,6 @@
                                                                 <th width="500px">Sub Assets & Code</th>
                                                                 <th width="100px">Quantity</th>
                                                                 <th class="text-end">Current Value</th>
-                                                                <th class="text-end">Salvage Value</th>
                                                                 <th width="200px">Last Dep. Date</th>
                                                             </tr>
                                                         </thead>
@@ -244,20 +243,15 @@
                                                                     </td>
                                                                       
                                                                 <td class="poprod-decpt">
-                                                                    <select id="sub_asset_id_1" name="sub_asset_id[]" data-id="1"
-                                                                        class="form-select mw-100 select2 sub_asset_id" multiple required>
-                                                                <option value="">Select</option>
-                                                                <!-- Will be filled via AJAX -->
-                                                            </select>
+                                                                    <input type="text" required class="form-control subasset-search-input mw-100"/>
+                                                                   <input type="hidden" name="sub_asset_id[]" class="sub_asset_id" data-id="1" id="sub_asset_id_1"/> 
                                                                 </td>
                                                                 <td><input type="number" name="quantity[]" id="quantity_1" readonly data-id="1"
                                                                         class="form-control mw-100 quantity" /></td>
                                                                 <td class="text-end"><input type="text" name="currentvalue[]" id="currentvalue_1" data-id="1"
                                                                         class="form-control mw-100 text-end currentvalue" readonly/>
                                                                 </td>
-                                                                <td class="text-end"><input type="text" name="salvagevalue[]" id="salvagevalue_1" data-id="1"
-                                                                    class="form-control mw-100 text-end salvagevalue" readonly/>
-                                                            </td>
+                                                                
                                                                 <td><input type="date" name="last_dep_date[]" id="last_dep_date_1" data-id="1"
                                                                     class="form-control mw-100 last_dep_date" readonly/>
                                                             </td>
@@ -278,178 +272,6 @@
 
 
 
-                                <div class="row customernewsection-form">
-                                    <div class="col-md-12">
-                                        <div class="card quation-card">
-                                            <div class="card-header newheader">
-                                                <div>
-                                                    <h4 class="card-title">Asset Details</h4>
-                                                </div>
-                                            </div>
-                                            <div class="card-body">
-                                                <div class="row">
-                                                    <div class="col-md-3">
-                                                        <div class="mb-1">
-                                                            <label class="form-label">Category <span
-                                                                    class="text-danger">*</span></label>
-                                                                    <select class="form-select select2" name="category_id" id="category" required>
-                                                                        <option value="" {{ old('category') ? '' : 'selected' }}>Select</option>
-                                                                        @foreach($categories as $category)
-                                                                            <option value="{{ $category->id }}" {{ old('category') == $category->id ? 'selected' : '' }}>
-                                                                                {{ $category->name }}
-                                                                            </option>
-                                                                        @endforeach
-                                                                    </select>
-                                                                    </div>
-                                                    </div>
-
-                                                    <div class="col-md-3">
-                                                        <div class="mb-1">
-                                                            <label class="form-label">Asset Name <span
-                                                                    class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" name="asset_name"
-                                                                id="asset_name"
-                                                                value="{{ old('asset_name') }}" required />
-                                                        </div>
-                                                    </div>
-
-                                                    <div class="col-md-3">
-                                                        <div class="mb-1">
-                                                            <label class="form-label">Asset Code <span
-                                                                    class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" name="asset_code"
-                                                                id="asset_code" value="{{ old('asset_code') }}"
-                                                                required />
-                                                        </div>
-                                                    </div>
-
-
-                                                    <div class="col-md-3">
-                                                        <div class="mb-1">
-                                                            <label class="form-label">Quantity <span
-                                                                    class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" name="quantity"
-                                                                id="quantity" value="1"
-                                                                readonly />
-                                                        </div>
-                                                    </div>
-
-                                                    <div class="col-md-3">
-                                                        <div class="mb-1">
-                                                            <label class="form-label">Ledger <span
-                                                                    class="text-danger">*</span></label>
-                                                            <select class="form-select select2" name="ledger_id"
-                                                                id="ledger" required>
-                                                                <option value=""
-                                                                    {{ old('ledger') ? '' : 'selected' }}>Select</option>
-                                                                @foreach ($ledgers as $ledger)
-                                                                    <option value="{{ $ledger->id }}"
-                                                                        {{ old('ledger') == $ledger->id ? 'selected' : '' }}>
-                                                                        {{ $ledger->name }}
-                                                                    </option>
-                                                                @endforeach
-                                                            </select>
-
-                                                        </div>
-                                                    </div>
-
-                                                    <div class="col-md-3">
-                                                        <div class="mb-1">
-                                                            <label class="form-label">Ledger Group <span
-                                                                    class="text-danger">*</span></label>
-                                                            <select class="form-select select2" name="ledger_group_id"
-                                                                id="ledger_group" required>
-                                                                </select>
-                                                        </div>
-                                                    </div>
-
-                                                    <div class="col-md-3">
-                                                        <div class="mb-1">
-                                                            <label class="form-label">Capitalize Date <span
-                                                                    class="text-danger">*</span></label>
-                                                            <input type="date" class="form-control"
-                                                                name="capitalize_date" id="capitalize_date"
-                                                                value="{{ old('capitalize_date') }}" min="{{$financialStartDate}}" max="{{$financialEndDate}}" required />
-                                                        </div>
-                                                    </div>
-
-                                                    <div class="col-md-3">
-                                                        <div class="mb-1">
-                                                            <label class="form-label">Maint. Schedule <span
-                                                                    class="text-danger">*</span></label>
-                                                            <select class="form-select" name="maintenance_schedule"
-                                                                id="maintenance_schedule" required>
-                                                                <option value="" {{ old('maintenance_schedule') == '' ? 'selected' : '' }}>Select</option>
-                                                                <option value="weekly" {{ old('maintenance_schedule') == 'Weekly' ? 'selected' : '' }}>Weekly</option>
-                                                                <option value="monthly" {{ old('maintenance_schedule') == 'Monthly' ? 'selected' : '' }}>Monthly</option>
-                                                                <option value="quarterly" {{ old('maintenance_schedule') == 'Quarterly' ? 'selected' : '' }}>Quarterly</option>
-                                                                <option value="semi-annually" {{ old('maintenance_schedule') == 'Semi-Annually' ? 'selected' : '' }}>Semi-Annually</option>
-                                                                <option value="annually" {{ old('maintenance_schedule') == 'Annually' ? 'selected' : '' }}>Annually</option>
-                                                            </select>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <div class="mb-1">
-                                                            <label class="form-label">Dep. Method <span class="text-danger">*</span></label>
-                                                            <input type="text" name="depreciation_method" id="depreciation_method" class="form-control" value="{{$dep_method}}" readonly /> 
-                                                        </div>
-                                                    </div>
-                                                    
-
-                                                    <div class="col-md-3">
-                                                        <div class="mb-1">
-                                                            <label class="form-label">Est. Useful Life (yrs) <span
-                                                                    class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" name="useful_life"
-                                                                id="useful_life" value="{{ old('useful_life') }}" oninput="updateDepreciationValues()"
-                                                                required />
-                                                        </div>
-                                                    </div>
-
-                                                    <div class="col-md-3">
-                                                        <div class="mb-1">
-                                                            <label class="form-label">Salvage Value <span
-                                                                    class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control"
-                                                                name="salvage_value" id="salvage_value" readonly
-                                                                value="{{ old('salvage_value') }}" required />
-                                                        </div>
-                                                    </div>
-
-                                                    <div class="col-md-3">
-                                                        <div class="mb-1">
-                                                            <label class="form-label">Dep % <span class="text-danger">*</span></label>
-                                                            <input type="number" class="form-control" id="depreciation_rate" name="depreciation_percentage" readonly /> 
-                                                            <input type="hidden" value="{{$dep_percentage}}" id="depreciation_percentage" /> 
-                                                            <input type="hidden" id="depreciation_rate_year" name="depreciation_percentage_year" /> 
-                                                     
-                                                        </div>
-                                                    </div>  
-                                                    <div class="col-md-3">
-                                                        <div class="mb-1">
-                                                            <label class="form-label">Total Dep. <span class="text-danger">*</span></label>
-                                                            <input type="number" id="total_depreciation" name="total_depreciation" class="form-control" value="0" readonly /> 
-                                                        </div>
-                                                    </div>
-                                                    
-                                                   
-
-
-                                                    <div class="col-md-3">
-                                                        <div class="mb-1">
-                                                            <label class="form-label">Current Value <span
-                                                                    class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" required
-                                                                name="current_value" id="current_value"
-                                                                value="{{ old('current_value') }}" readonly />
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                    </div>
-                                </div>
 
                         </form>
 
@@ -648,11 +470,11 @@
 
     $('#asset_details').val(JSON.stringify(allRows));
 
-            document.getElementById('fixed-asset-merger-form').submit();
+            document.getElementById('fixed-asset-revaluation-impairement-form').submit();
         });
 
 
-$('#fixed-asset-merger-form').on('submit', function(e) {
+$('#fixed-asset-revaluation-impairement-form').on('submit', function(e) {
             e.preventDefault(); // Always prevent default first
 
             document.getElementById('document_status').value = 'submitted';
@@ -716,108 +538,6 @@ $('#fixed-asset-merger-form').on('submit', function(e) {
                 "@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach"
             );
         @endif
-        $('#category').on('change',function(){
-           
-           var category_id = $(this).val();
-           if(category_id){
-               $.ajax({
-                   type:"GET",
-                   url:"{{route('finance.fixed-asset.setup.category')}}?category_id="+category_id,
-                   success:function(res){
-                       if(res){
-                           $('#ledger').val(res.ledger_id).select2();
-                           $('#ledger').trigger('change');
-                           $('#ledger_group').val(res.ledger_group_id).select2();
-                           $('#maintenance_schedule').val(res.maintenance_schedule);
-                           $('#useful_life').val(res.expected_life_years);
-                           updateDepreciationValues();
-                          
-                       }
-                   }
-               });
-           }
-       });
-       $('#ledger').change(function() {
-            let groupDropdown = $('#ledger_group');
-            $.ajax({
-                url: '{{ route('finance.fixed-asset.getLedgerGroups') }}',
-                method: 'GET',
-                data: {
-                    ledger_id: $(this).val(),
-                    _token: $('meta[name="csrf-token"]').attr(
-                        'content') // CSRF token
-                },
-                success: function(response) {
-                    groupDropdown.empty(); // Clear previous options
-
-                    response.forEach(item => {
-                        groupDropdown.append(
-                            `<option value="${item.id}">${item.name}</option>`
-                        );
-                    });
-
-                },
-                error: function() {
-                    showToast('error','Error fetching group items.');
-                }
-            });
-
-        });
-        function updateDepreciationValues() {
-    let depreciationType = document.getElementById("depreciation_type").value;
-    let currentValue = parseFloat(document.getElementById("current_value").value) || 0;
-    let depreciationPercentage = parseFloat(document.getElementById("depreciation_percentage").value) || 0;
-    let usefulLife = parseFloat(document.getElementById("useful_life").value) || 0;
-    let method = document.getElementById("depreciation_method").value;
-
-    // Ensure all required values are provided
-    if (!depreciationType || !currentValue || !depreciationPercentage || !usefulLife || !method) {
-        return;
-    }
-    
-
-    // Determine financial date based on depreciation type
-    let financialDate;
-    let financialEnd = new Date("{{$financialEndDate}}");
-    
-    
-    // Extract the financial year-end month and day
-    let financialEndMonth = financialEnd.getMonth(); 
-    let financialEndDay = financialEnd.getDate();
-    let devidend = 1; 
-
-    switch (depreciationType) {
-       case 'half_yearly':
-            devidend = 2; // Adjust dividend for half-yearly
-            break;
-
-        case 'quarterly':
-            devidend = 4; // Adjust dividend for quarterly
-            break;
-
-        case 'monthly':
-            devidend = 12; // Adjust dividend for monthly
-            break;
-
-    }
-    
-
-    let salvageValue = (parseFloat($('#salvage_value').val())).toFixed(2);
-
-    let depreciationRate = 0;
-    if (method === "SLM") {
-        depreciationRate = ((((currentValue - salvageValue) / usefulLife) / currentValue)*100).toFixed(2);
-    } else if (method === "WDV") {
-        depreciationRate = ((1 - Math.pow(salvageValue / currentValue, 1 / usefulLife))*100).toFixed(2);
-    }
-
-    let totalDepreciation = 0;
-    document.getElementById("salvage_value").value = salvageValue;
-    console.log("dep_rate"+depreciationRate+"devidend"+devidend);
-    document.getElementById("depreciation_rate").value = depreciationRate;
-    document.getElementById("depreciation_rate_year").value = depreciationRate;
-    document.getElementById("total_depreciation").value = totalDepreciation;
-}
 
 function initializeAssetAutocomplete(selector) {
     $(selector).autocomplete({
@@ -875,7 +595,6 @@ function initializeAssetAutocomplete(selector) {
                     });
 
                     if (response[0].asset) {
-                        last_dep.val("");
                         if(response[0].asset.last_dep_date!=response[0].asset.capitalize_date){
                         let lastDepDate = new Date(response[0].asset.last_dep_date);
                         lastDepDate.setDate(lastDepDate.getDate() - 1);
@@ -1019,11 +738,8 @@ $('#addNewRowBtn').on('click', function () {
             <input type="hidden" name="asset_id[]" class="asset_id" data-id="${rowCount}" id="asset_id_${rowCount}"/> 
          </td>
         <td class="poprod-decpt">
-            <select id="sub_asset_id_${rowCount}" name="sub_asset_id[]" data-id="${rowCount}"
-                class="form-select mw-100 select2 sub_asset_id" multiple required>
-                <option value="">Select</option>
-                <!-- Will be filled via AJAX -->
-            </select>
+            <input type="text" required class="form-control subasset-search-input mw-100"/>
+            <input type="hidden" name="sub_asset_id[]" class="sub_asset_id" data-id="${rowCount}" id="sub_asset_id_${rowCount}"/> 
         </td>
         <td><input type="number" name="quantity[]" id="quantity_${rowCount}" readonly data-id="${rowCount}"
             class="form-control mw-100 quantity" /></td>

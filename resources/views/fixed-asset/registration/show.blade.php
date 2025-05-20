@@ -67,6 +67,11 @@
                     @if($buttons['amend'] && $data->mrn_detail_id!=null)
                     <button type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i> Amendment</button>
                     @endif
+                     @if ($buttons['reference'])
+                                <a type="button" href="{{$ref_view_route}}"
+                                    class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i data-feather="file-text">
+                                    </i> View REF</a>
+                            @endif
                     </div>
                     </div>
                 </div>
@@ -400,12 +405,7 @@
                                                             <input type="number" readonly class="form-control" value="{{$data->depreciation_percentage}}" id="depreciation_percentage" name="depreciation_percentage" value="{{$data->depreciation_percentage}}" disabled /> 
                                                         </div>
                                                     </div>  
-                                                    <div class="col-md-3">
-                                                        <div class="mb-1">
-                                                            <label class="form-label">Total Dep. <span class="text-danger">*</span></label>
-                                                            <input type="number" readonly id="total_depreciation" name="total_depreciation" class="form-control" value="{{ $data?->subAsset?->sum('total_depreciation')}}" disabled /> 
-                                                        </div>
-                                                    </div>
+                                                   
                                                     
 
 
@@ -416,6 +416,12 @@
                                                             <input type="text" class="form-control"
                                                                 name="current_value" id="current_value"
                                                                 value="{{ $data?->subAsset?->sum('current_value')}}" readonly />
+                                                        </div>
+                                                    </div>
+                                                     <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">Total Dep. <span class="text-danger">*</span></label>
+                                                            <input type="number" readonly id="total_depreciation" name="total_depreciation" class="form-control" value="{{ $data?->subAsset?->sum('total_depreciation')}}" disabled /> 
                                                         </div>
                                                     </div>
                                                     @php
@@ -1603,7 +1609,7 @@ function showToast(icon, title) {
         $('#ap_file').prop('disabled', false).prop('readonly', false);
         $('#revisionNumber').prop('disabled', false).prop('readonly', false);
         $('#organization').prop('disabled', false).prop('readonly', false);
-        $('#fyear').prop('disabled', false).prop('readonly', false);
+        $('#financial_year').prop('disabled', false).prop('readonly', false);
         
 $(document).on('click', '#amendmentSubmit', (e) => {
 let actionUrl = "{{ route('finance.fixed-asset.registration.amendment', $data->id) }}";

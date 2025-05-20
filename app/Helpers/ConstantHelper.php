@@ -559,7 +559,7 @@ class ConstantHelper
     const FIXED_ASSET_DEPRECIATION = 'depreciation';
     const FIXED_ASSET_SPLIT = 'fixed-asset-split';
     const FIXED_ASSET_MERGER = 'fixed-asset-merger';
-
+    const FIXED_ASSET_REV_IMP = 'fixed-asset-revaluation-impairement';
     const STAKEHOLDER_INTERACTION = 'stakeholder-interaction';
     const COMPLAINT_MANAGEMENT = 'complaint';
     const FEEDBACK_PROCESS = 'feedback-process';
@@ -619,6 +619,7 @@ class ConstantHelper
         self::FIXED_ASSET_DEPRECIATION=>self::FIXED_ASSET_DEPRECIATION,
         self::FIXED_ASSET_SPLIT=>self::FIXED_ASSET_SPLIT,
         self::FIXED_ASSET_MERGER=>self::FIXED_ASSET_MERGER,
+        self::FIXED_ASSET_REV_IMP=>self::FIXED_ASSET_REV_IMP,
         self::SR_SERVICE_ALIAS=>self::CREDIT_Note,
         self::PSV_SERVICE_ALIAS => self::JOURNAL_VOUCHER,
     ];
@@ -690,6 +691,7 @@ class ConstantHelper
         self::FIXED_ASSET_DEPRECIATION => 'FixedAssetDepreciation',
         self::FIXED_ASSET_SPLIT => 'FixedAssetSplit',
         self::FIXED_ASSET_MERGER => 'FixedAssetMerger',
+        self::FIXED_ASSET_REV_IMP => 'FixedAssetRevImp',
 
 
         self::ITEM_SERVICE_ALIAS => 'Item',
@@ -777,6 +779,7 @@ class ConstantHelper
         self::PL_SERVICE_ALIAS => 'PL.layout',
         self::FIXED_ASSET_SPLIT=>'finance.fixed-asset.split.show',
         self::FIXED_ASSET_MERGER=>'finance.fixed-asset.merger.show',
+        self::FIXED_ASSET_REV_IMP=>'finance.fixed-asset.revaluation-impairement.show',
         
     ];
     const PWO_DOC_TYPES = [self::PWO_SERVICE_ALIAS];

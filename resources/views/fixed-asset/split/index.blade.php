@@ -42,12 +42,12 @@
                                             <thead>
                                              <tr>
 												<th>#</th>
+                        <th>Date</th> 
 												<th>Series</th>
 												<th>Doc No.</th>
 												<th>Asset Name</th>
 												<th>Asset Code</th>
 												<th>Ledger Name</th>
-												<th>Split Date</th> 
 												<th>Qty</th>
 												<th>Cap. Date</th>
 												<th>Status</th>
@@ -58,13 +58,13 @@
                                                 @foreach($data as $key => $d)
                                                 <tr>
 													<td>{{$key+1}}</td>
-													<td class="fw-bolder text-dark">{{$d?->book?->book_code}}</td>
+													<td>{{ $d?->document_date ? \Carbon\Carbon::parse($d->document_date)->format('d-m-Y') : '' }}</td>
+                          <td class="fw-bolder text-dark">{{$d?->book?->book_code}}</td>
 													<td>{{$d?->document_number}}</td>
 													<td>{{$d?->asset?->asset_name}}</td>
 													<td>{{$d?->asset?->asset_code}}</td>
 													<td>{{$d?->ledger?->name}}</td>
-													<td>{{ $d?->document_date ? \Carbon\Carbon::parse($d->document_date)->format('d-m-Y') : '' }}</td>
-                          <td>{{ $d?->quantity }}</td>
+													<td>{{ $d?->quantity }}</td>
                           <td>{{ $d?->capitalize_date ? \Carbon\Carbon::parse($d->capitalize_date)->format('d-m-Y') : '' }}</td>
 
 													<td>

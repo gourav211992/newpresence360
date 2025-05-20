@@ -1008,6 +1008,7 @@ function initializeAssetAutocomplete(selector) {
                             '<option value="' + subAsset.id + '">' + subAsset.sub_asset_code + '</option>'
                         );
                     });
+                     last_dep.val("");
 
                     if (response[0].asset) {
                         if(response[0].asset.last_dep_date!=response[0].asset.capitalize_date){

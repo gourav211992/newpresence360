@@ -10,7 +10,7 @@
                 <div class="content-header-left col-md-5 mb-2">
                     <div class="row breadcrumbs-top">
                         <div class="col-12">
-                            <h2 class="content-header-title float-start mb-0">Merger Asset</h2>
+                            <h2 class="content-header-title float-start mb-0">Revaluation / Impairement Asset</h2>
                             <div class="breadcrumb-wrapper">
                                 <ol class="breadcrumb">
                                     <li class="breadcrumb-item"><a href="index.html">Home</a></li>  
@@ -23,7 +23,7 @@
                 <div class="content-header-right text-sm-end col-md-7 mb-50 mb-sm-0">
                     <div class="form-group breadcrumb-right">
                         <button class="btn btn-warning btn-sm mb-50 mb-sm-0" data-bs-target="#filter" data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button> 
-						<a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{ route('finance.fixed-asset.merger.create') }}"><i data-feather="plus-circle"></i> Add New</a> 
+						<a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{ route('finance.fixed-asset.revaluation-impairement.create') }}"><i data-feather="plus-circle"></i> Add New</a> 
                     </div>
                 </div>
             </div>
@@ -42,14 +42,14 @@
                                             <thead>
                                              <tr>
 												<th>#</th>
-												<th>Date</th> 
+                        <th>Date</th>
+                        <th>Type</th>
 												<th>Series</th>
 												<th>Doc No.</th>
-												<th>Asset Name</th>
-												<th>Asset Code</th>
-												<th>Ledger Name</th>
-												<th>Qty</th>
-												<th>Cap. Date</th>
+												<th>Category</th>
+												<th>Location</th>
+												<th>Cost Center</th>
+												<th>No. of Assets</th> 
 												<th>Status</th>
 												<th>Action</th>
 											  </tr>
@@ -58,16 +58,15 @@
                                                 @foreach($data as $key => $d)
                                                 <tr>
 													<td>{{$key+1}}</td>
-													<td>{{ $d?->document_date ? \Carbon\Carbon::parse($d->document_date)->format('d-m-Y') : '' }}</td>
-                          <td class="fw-bolder text-dark">{{$d?->book?->book_code}}</td>
+													 <td>{{ $d?->document_date ? \Carbon\Carbon::parse($d->document_date)->format('d-m-Y') : '' }}</td>
+                         	<td>{{ucfirst($d?->document_type)}}</td>
+												  <td class="fw-bolder text-dark">{{$d?->book?->book_code}}</td>
 													<td>{{$d?->document_number}}</td>
-													<td>{{$d?->asset_name}}</td>
-													<td>{{$d?->asset_code}}</td>
-													<td>{{$d?->ledger?->name}}</td>
-                          <td>{{ $d?->quantity }}</td>
-                          <td>{{ $d?->capitalize_date ? \Carbon\Carbon::parse($d->capitalize_date)->format('d-m-Y') : '' }}</td>
-                          
-													<td>
+													<td>{{$d?->category?->name}}</td>
+													<td>{{$d?->location?->name}}</td>
+													<td>{{$d?->cost_center?->name}}</td>
+                          <td>{{count($d?->asset_dtails)}}</td>
+                          <td>
                             @php $statusClasss = App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$d->document_status??"draft"];  @endphp
                             <span
                                 class='badge rounded-pill {{ $statusClasss }} badgeborder-radius'>
@@ -85,13 +84,13 @@
 															</button>
 															<div class="dropdown-menu dropdown-menu-end">
                                 @if($d->document_status=="draft")
-                                <a class="dropdown-item" href="{{ route('finance.fixed-asset.merger.edit', $d->id) }}">
+                                <a class="dropdown-item" href="{{ route('finance.fixed-asset.revaluation-impairement.edit', $d->id) }}">
 																	<i data-feather="edit" class="me-50"></i>
 																		<span>View</span>
 																</a>
                                 @else
                                
-                                <a class="dropdown-item" href="{{ route('finance.fixed-asset.merger.show', $d->id) }}">
+                                <a class="dropdown-item" href="{{ route('finance.fixed-asset.revaluation-impairement.show', $d->id) }}">
 																	<i data-feather="edit" class="me-50"></i>
 																	<span>View</span>
 																</a>
@@ -134,7 +133,7 @@
     <div class="modal modal-slide-in fade filterpopuplabel" id="filter">
 		<div class="modal-dialog sidebar-sm">
 			<form class="add-new-record modal-content pt-0" method="POST"
-      action="{{ route('finance.fixed-asset.merger.filter') }}" enctype="multipart/form-data">
+      action="{{ route('finance.fixed-asset.revaluation-impairement.filter') }}" enctype="multipart/form-data">
      @csrf
 				<div class="modal-header mb-1">
 					<h5 class="modal-title" id="exampleModalLabel">Apply Filter</h5>
@@ -158,18 +157,7 @@
               </select>
           </div>
       
-          <div class="mb-1">
-              <label class="form-label">Ledger Name</label>
-              <select class="form-select" name="filter_ledger">
-                  <option value="">Select</option>
-                  @foreach($ledgers as $ledger)
-                      <option value="{{ $ledger->id }}" {{ request('filter_ledger') == $ledger->id ? 'selected' : '' }}>
-                          {{ $ledger->name }}
-                      </option>
-                  @endforeach
-              </select>
-          </div>
-      
+         
           <div class="mb-1">
               <label class="form-label">Status</label>
               <select class="form-select" name="filter_status">
@@ -224,7 +212,7 @@
       order: [[0, 'asc']],
       dom: 
         '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-3 withoutheadbuttin dt-action-buttons text-end"B><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
-      displayLength: 7,
+      displayLength: 11,
       lengthMenu: [7, 10, 25, 50, 75, 100],
       buttons: [
         {
@@ -233,34 +221,10 @@
           text: feather.icons['share'].toSvg({ class: 'font-small-4 mr-50' }) + 'Export',
           buttons: [
             {
-              extend: 'print',
-              text: feather.icons['printer'].toSvg({ class: 'font-small-4 mr-50' }) + 'Print',
-              className: 'dropdown-item',
-              exportOptions: { columns: [3, 4, 5, 6, 7] }
-            },
-            {
-              extend: 'csv',
-              text: feather.icons['file-text'].toSvg({ class: 'font-small-4 mr-50' }) + 'Csv',
-              className: 'dropdown-item',
-              exportOptions: { columns: [3, 4, 5, 6, 7] }
-            },
-            {
               extend: 'excel',
               text: feather.icons['file'].toSvg({ class: 'font-small-4 mr-50' }) + 'Excel',
               className: 'dropdown-item',
-              exportOptions: { columns: [3, 4, 5, 6, 7] }
-            },
-            {
-              extend: 'pdf',
-              text: feather.icons['clipboard'].toSvg({ class: 'font-small-4 mr-50' }) + 'Pdf',
-              className: 'dropdown-item',
-              exportOptions: { columns: [3, 4, 5, 6, 7] }
-            },
-            {
-              extend: 'copy',
-              text: feather.icons['copy'].toSvg({ class: 'font-small-4 mr-50' }) + 'Copy',
-              className: 'dropdown-item',
-              exportOptions: { columns: [3, 4, 5, 6, 7] }
+              exportOptions: { columns: [1,2,3,4,5,6,7,8,9] }
             }
           ],
           init: function (api, node, config) {

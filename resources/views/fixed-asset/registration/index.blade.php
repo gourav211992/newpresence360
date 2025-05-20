@@ -71,6 +71,7 @@
                                             <tr>
                                                 <th>#</th>
                                                 <th>Date</th>
+                                                <th width="100px">Doc. No</th>
                                                 <th>Asset Name</th>
                                                 <th>Asset Code</th>
                                                 <th>Ledger Name</th>
@@ -89,6 +90,7 @@
                                                 <tr>
                                                     <td>{{ $loop->iteration }}</td>
                                                     <td>{{ \Carbon\Carbon::parse($asset->document_date)->format('d-m-Y') ??"-"}}</td>
+                                                    <td>{{ $asset->document_number ??"-" }}</td>
                                                     <td class="fw-bolder text-dark">{{ $asset->asset_name??"-" }}</td>
                                                     <td>{{ $asset->asset_code??"-" }}</td>
                                                     <td>{{ $asset->ledger->name??"-" }}</td>
@@ -230,84 +232,19 @@
                     class: 'font-small-4 mr-50'
                 }) + 'Export',
                 buttons: [{
-                        extend: 'csv',
-                        text: feather.icons['file-text'].toSvg({
-                            class: 'font-small-4 mr-50'
-                        }) + 'Csv',
-                        className: 'dropdown-item',
-                        filename: 'Asset_RegistrationReport', // Set filename as needed
-                        exportOptions: {
-                            columns: function(idx, data, node) {
-                                // Exclude the first and last columns from CSV export
-                                return idx !== 0 && idx !== 9; // Assuming 9 is the Action column
-                            },
-                            format: {
-                                header: function(data, columnIdx) {
-                                    // Customize headers for CSV export
-                                    switch (columnIdx) {
-                                        case 1:
-                                            return 'Asset Name';
-                                        case 2:
-                                            return 'Asset Code';
-                                        case 3:
-                                            return 'Ledger Name';
-                                        case 4:
-                                            return 'Book Date';
-                                        case 5:
-                                            return 'Location';
-                                        case 6:
-                                            return 'Quantity';
-                                        case 7:
-                                            return 'Capitalization Date';
-                                        case 8:
-                                            return 'Status';
-                                        default:
-                                            return data;
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    {
                         extend: 'excel',
-                        text: feather.icons['file'].toSvg({
+                        text: feather.icons['file-text'].toSvg({
                             class: 'font-small-4 mr-50'
                         }) + 'Excel',
                         className: 'dropdown-item',
                         filename: 'Asset_RegistrationReport', // Set filename as needed
                         exportOptions: {
                             columns: function(idx, data, node) {
-                                // Exclude the first and last columns from Excel export
-                                return idx !== 0 && idx !== 9; // Assuming 9 is the Action column
-                            },
-                            format: {
-                                header: function(data, columnIdx) {
-                                    // Customize headers for Excel export
-                                    switch (columnIdx) {
-                                        case 1:
-                                            return 'Asset Name';
-                                        case 2:
-                                            return 'Asset Code';
-                                        case 3:
-                                            return 'Ledger Name';
-                                        case 4:
-                                            return 'Book Date';
-                                        case 5:
-                                            return 'Location';
-                                        case 6:
-                                            return 'Quantity';
-                                        case 7:
-                                            return 'Capitalization Date';
-                                        case 8:
-                                            return 'Status';
-                                        default:
-                                            return data;
-                                    }
-                                }
+                                // Exclude the first and last columns from CSV export
+                                return idx !== 0 && idx !== 12; // Assuming 9 is the Action column
                             }
                         }
-                    }
-                ],
+                    }],
                 init: function(api, node, config) {
                     $(node).removeClass('btn-secondary');
                     $(node).parent().removeClass('btn-group');
