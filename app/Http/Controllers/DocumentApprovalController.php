@@ -124,7 +124,7 @@ class DocumentApprovalController extends Controller
             $attachments = $request->file('attachment');
             $currentLevel = $pi->approval_level;
             $revisionNumber = $pi->revision_number ?? 0;
-            $actionType = $request->action_type; // Approve or reject
+            $actionType = $request->action_type;
             $modelName = get_class($pi);
             $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, 0, $modelName);
             $pi->approval_level = $approveDocument['nextLevel'];

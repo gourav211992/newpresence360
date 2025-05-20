@@ -60,254 +60,6 @@ if($("#itemTable .mrntableselectexcel tr").length) {
    },100);
 }
 
-// addDeliveryScheduleBtn
-$(document).on('click', '.addDeliveryScheduleBtn', (e) => {
-    let rowCount = e.target.closest('div').getAttribute('data-row-count');
-    let qty = Number($("#itemTable #row_"+rowCount).find("[name*='[qty]']").val());
-    if(!qty) {
-        Swal.fire({
-            title: 'Error!',
-            text: 'Please enter quanity then you can add delivery schedule.',
-            icon: 'error',
-        });
-        return false;
-    }
-    $("#deliveryScheduleModal").find("#row_count").val(rowCount);
-    let rowHtml = '';
-    let curDate = new Date().toISOString().split('T')[0];
-    if(!$("#itemTable #row_"+rowCount).find("[name*='[d_qty]']").length) {        
-    let rowHtml = `<tr class="display_delivery_row">
-                        <td>1</td>
-                        <td>
-                            <input type="hidden" name="row_count" value="${rowCount}" id="row_count">
-                            <input type="number" name="components[${rowCount}][delivery][1][d_qty]" class="form-control mw-100" />
-                        </td>
-                        <td>
-                            <input type="date" name="components[${rowCount}][delivery][1][d_date]" value="${curDate}" class="form-control mw-100" /></td>
-                        <td>
-                        <a data-row-count="${rowCount}" data-index="1" href="javascript:;" class="text-danger deleteItemDeliveryRow"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></a>
-                       </td>
-                    </tr>`;
-    $("#deliveryScheduleModal").find('.display_delivery_row').remove();
-    $("#deliveryScheduleModal").find('#deliveryFooter').before(rowHtml);
-    } else {
-        if($("#itemTable #row_"+rowCount).find("[name*=d_qty]").length) {
-            $(".display_delivery_row").remove();
-        } else {
-            $('.display_delivery_row').not(':first').remove();
-            $(".display_delivery_row").find("[name*=d_qty]").val('');
-        }
-        $("#itemTable #row_"+rowCount).find("[name*=d_qty]").each(function(index,item){
-            let dQty =  $(item).closest('td').find(`[name='components[${rowCount}][delivery][${index+1}][d_qty]']`).val();
-            let dDate =  $(item).closest('td').find(`[name='components[${rowCount}][delivery][${index+1}][d_date]']`).val();
-            let id =  $(item).closest('td').find(`[name='components[${rowCount}][delivery][${index+1}][id]']`).val();
-
-            rowHtml+= `<tr class="display_delivery_row">
-                        <td>${index+1}</td>
-                        <td>
-                            <input type="hidden" name="row_count" value="${rowCount}" id="row_count">
-                            <input type="number" value="${dQty}" name="components[${rowCount}][delivery][${index+1}][d_qty]" class="form-control mw-100" />
-                        </td>
-                        <td>
-                            <input type="date" name="components[${rowCount}][delivery][${index+1}][d_date]" value="${dDate}" class="form-control mw-100" /></td>
-                        <td>
-                        <a data-row-count="${rowCount}" data-id="${id}" data-index="${index+1}" href="javascript:;" class="text-danger deleteItemDeliveryRow"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></a>
-                       </td>
-                    </tr>`;
-
-        });
-    }
-    $("#deliveryScheduleTable").find('#deliveryFooter').before(rowHtml);
-    $("#deliveryScheduleTable").find('#deliveryFooter #total').attr('qty',qty);
-    $("#deliveryScheduleModal").modal('show');
-    totalScheduleQty();
-});
-
-/*Total delivery schedule qty*/
-function totalScheduleQty()
-{
-    let total = 0.00;
-    $("#deliveryScheduleTable [name*='[d_qty]']").each(function(index, item) {
-        total = total + Number($(item).val());
-    });
-    $("#deliveryFooter #total").text(total.toFixed(2));
-}
-
-// addTaxItemRow add row
-$(document).on('click', '.addTaxItemRow', (e) => {
-    let rowCount = $('#deliveryScheduleModal .display_delivery_row').find('#row_count').val();
-    let qty = 0.00;
-    $("#deliveryScheduleTable [name*='[d_qty]']").each(function(index, item) {
-        qty = qty + Number($(item).val());
-    });
-    if(!qty && $("#deliveryScheduleTable [name*='[d_qty]']").length) {
-        Swal.fire({
-            title: 'Error!',
-            text: 'Please enter quanity then you can add new row.',
-            icon: 'error',
-        });
-        return false;
-    }
-
-    if(!$("#deliveryScheduleTable [name*='[d_qty]']:last").val() && $("#deliveryScheduleTable [name*='[d_qty]']").length) {
-        Swal.fire({
-            title: 'Error!',
-            text: 'Please enter quanity then you can add new row.',
-            icon: 'error',
-        });
-        return false;
-    }
-
-    let itemQty = Number($('#deliveryScheduleModal #deliveryFooter #total').attr('qty'));
-    if (qty > itemQty) {
-        Swal.fire({
-            title: 'Error!',
-            text: 'You cannot add more than the available item quantity.',
-            icon: 'error',
-        });
-        return false;
-    }
-    if(qty != itemQty) {   
-        let curDate = new Date().toISOString().split('T')[0];
-        let tblRowCount = $('#deliveryScheduleModal .display_delivery_row').length + 1;
-        let rowHtml = `<tr class="display_delivery_row">
-                            <td>${tblRowCount}</td>
-                            <td>
-                                <input type="hidden" name="row_count" value="${rowCount}" id="row_count">
-                                <input type="number" name="components[${rowCount}][delivery][${tblRowCount}][d_qty]" class="form-control mw-100" />
-                            </td>
-                            <td>
-                                <input type="date" name="components[${rowCount}][delivery][${tblRowCount}][d_date]" value="${curDate}" class="form-control mw-100" /></td>
-                            <td>
-                            <a data-row-count="${rowCount}" data-index="${tblRowCount}" href="javascript:;" class="text-danger deleteItemDeliveryRow"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></a>
-                           </td>
-                        </tr>`;
-        if($("#deliveryScheduleModal").find('.display_delivery_row:last').length) {
-            $("#deliveryScheduleModal").find('.display_delivery_row:last').after(rowHtml);
-        } else {
-            $("#deliveryScheduleModal").find('#deliveryFooter').before(rowHtml);
-        }
-    } else {
-        Swal.fire({
-            title: 'Error!',
-            text: 'Qunatity not available.',
-            icon: 'error',
-        });
-        return false;
-    }
-    totalScheduleQty();
-});
-
-/*itemDeliveryScheduleSubmit */
-$(document).on('click', '.itemDeliveryScheduleSubmit', (e) => {
-    let isValid = true;
-    document.querySelectorAll('input[name*="[d_qty]"], input[name*="[d_date]"]').forEach(input => {
-        if (!input.value) {
-            isValid = false;
-            input.classList.add('is-invalid');
-            input.focus();
-        } else {
-            input.classList.remove('is-invalid');
-        }
-    });
-
-    if (!isValid) {
-        event.preventDefault();
-        Swal.fire({
-            title: 'Error!',
-            text: 'Please fill out all required fields.',
-            icon: 'error',
-        });
-        return false;
-    }
-
-    let rowCount = $('#deliveryScheduleModal .display_delivery_row').find('#row_count').val();
-    let hiddenHtml = '';
-    $("#deliveryScheduleTable .display_delivery_row").each(function(index,item){
-        let dQty =  $(item).find("[name*='d_qty']").val();
-        let dDate = $(item).find("[name*='d_date']").val();
-        hiddenHtml+=`<input type="hidden" value="${dQty}" name="components[${rowCount}][delivery][${index+1}][d_qty]"/>
-                     <input type="hidden" value="${dDate}" name="components[${rowCount}][delivery][${index+1}][d_date]" />`;
-
-    });
-    $("#itemTable #row_"+rowCount).find("[name*='d_qty']").remove();
-    $("#itemTable #row_"+rowCount).find("[name*='d_date']").remove();
-    // $("#itemTable #row_"+rowCount).find("[name*='t_value']").remove();
-   $("#itemTable #row_"+rowCount).find(".addDeliveryScheduleBtn").before(hiddenHtml);
-   $("#deliveryScheduleModal").modal('hide');
-});
-
-/*Remove delivery row*/
-$(document).on('click', '.deleteItemDeliveryRow', (e) => {
-    let dataId = $(e.target).closest('a').attr('data-id');
-    if(dataId) {
-        let rowIndex = $(e.target).closest('a').attr('data-index');
-        let rowCount = $(e.target).closest('a').attr('data-row-count');
-        $("#deleteDeliveryModal").find("#deleteDeliveryConfirm").attr('data-id', dataId);
-        $("#deleteDeliveryModal").find("#deleteDeliveryConfirm").attr('data-row-index', rowIndex);
-        $("#deleteDeliveryModal").find("#deleteDeliveryConfirm").attr('data-row-count', rowCount);
-        $("#deleteDeliveryModal").modal('show');
-    } else {
-        $(e.target).closest('tr').remove();
-        setTimeout(() => {
-            let rowCount = $(".display_delivery_row").find('#row_count').val();
-            $('.display_delivery_row').each(function(index, item) {
-                let a = `components[${rowCount}][delivery][${index+1}][d_qty]`;
-                let b = `components[${rowCount}][delivery][${index+1}][d_date]`;
-                let c = `components[${rowCount}][delivery][${index+1}][id]`;
-                $(item).find("[name*='[d_qty]']").prop('name', a);
-                $(item).find("[name*='[d_date]']").prop('name', b);
-                $(item).find("[name*='[id]']").prop('name', c);
-                $(item).find("td:first").text(index+1);
-            });
-            totalScheduleQty();
-        },0);
-    }
-});
-
-$(document).on('click','#deleteDeliveryConfirm', (e) => {
-   let id = e.target.getAttribute('data-id');
-   let rowIndex = e.target.getAttribute('data-row-index');
-   let rowCount = e.target.getAttribute('data-row-count');
-   $("#deleteDeliveryModal").modal('hide');
-   $(`.display_delivery_row:nth-child(${rowIndex})`).remove();
-   let ids = JSON.parse(localStorage.getItem('deletedDelivery')) || [];
-    if (!ids.includes(id)) {
-        ids.push(id);
-    }
-    localStorage.setItem('deletedDelivery', JSON.stringify(ids));
-    $('.display_delivery_row').each(function(index, item) {
-        let a = `components[${rowCount}][delivery][${index+1}][d_qty]`;
-        let b = `components[${rowCount}][delivery][${index+1}][d_date]`;
-        $(item).find("[name*='[d_qty]']").prop('name', a);
-        $(item).find("td:first").text(index+1);
-    });
-    $(`[name*='components[${rowCount}][delivery][${rowIndex}]']`).remove();
-    totalScheduleQty();
-});
-
-/*Delivery qty on input*/
-$(document).on('change input', '.display_delivery_row [name*="d_qty"]', (e) => {
-    let itemQty = Number($('#deliveryScheduleModal #deliveryFooter #total').attr('qty'));
-    let inputQty = 0;
-    $('.display_delivery_row [name*="d_qty"]').each(function(index, item) {
-        inputQty = inputQty + Number($(item).val());
-
-        let remainingQty = itemQty - (inputQty - Number($(e.target).val()));
-
-        if (Number($(e.target).val()) > remainingQty) {
-            Swal.fire({
-                title: 'Error!',
-                text: 'You cannot add more than the available item quantity.',
-                icon: 'error',
-            });
-            $(e.target).val(remainingQty);
-        }
-
-    });
-    totalScheduleQty();
-});
-
 /*Open item remark modal*/
 $(document).on('click', '.addRemarkBtn', (e) => {
     let rowCount = e.target.closest('div').getAttribute('data-row-count');
@@ -454,3 +206,94 @@ function hasDuplicateObjects(arr) {
         return false;
     });
 }
+
+function initAutocompVendor(selector, type) {
+    $(selector).autocomplete({
+        minLength: 0,
+        source: function(request, response) {
+            let item_id = $(this.element).closest('tr').find("[name*='[item_id]']").val();
+            $.ajax({
+                url: '/search',
+                method: 'GET',
+                dataType: 'json',
+                data: {
+                    q: request.term,
+                    type:'vendor_list',
+                    item_id:item_id
+                },
+                success: function(data) {
+                    response($.map(data, function(item) {
+                        return {
+                            id: item.id,
+                            label: item.company_name,
+                            code: item.vendor_code,
+                            addresses: item.addresses
+                        };
+                    }));
+                },
+                error: function(xhr) {
+                    console.error('Error fetching customer data:', xhr.responseText);
+                }
+            });
+        },
+        select: function(event, ui) {
+            let $input = $(this);
+            let itemName = ui.item.value;
+            let itemId = ui.item.id;
+            let itemCode = ui.item.code;
+            $input.attr('data-name', itemName);
+            $input.val(itemCode);
+            $input.closest('tr').find("[name*='[vendor_name]']").val(itemName);
+            $input.closest('tr').find("[name*='[vendor_id]']").val(itemId);
+        },
+        change: function(event, ui) {
+            if (!ui.item) {
+                $(this).val("");
+                $(this).attr('data-name', '');
+                $(this).closest('tr').find("[name*='[vendor_name]']").val('');
+                $(this).closest('tr').find("[name*='[vendor_id]']").val('');
+            }
+        }
+    }).focus(function() {
+        if (this.value === "") {
+            $(this).autocomplete("search", "");
+            $(this).closest('tr').find("[name*='[vendor_name]']").val('');
+            $(this).closest('tr').find("[name*='[vendor_id]']").val('');
+        }
+    }).on("input", function () {
+        if ($(this).val().trim() === "") {
+            $(this).removeData("selected");
+            $(this).closest('tr').find("[name*='[vendor_name]']").val('');
+            $(this).closest('tr').find("[name*='[vendor_id]']").val('');
+        }
+    });
+}
+if($("[name*='[vendor_code]']").length) {
+    initAutocompVendor("[name*='[vendor_code]']");
+}
+
+function updateIndentQty($row) {
+    var reqQty = parseFloat($row.find('input[name$="[qty]"]').val()) || 0;
+    var avlStock = parseFloat($row.find('input[name$="[avl_stock]"]').val()) || 0;
+    var adjQtyInput = $row.find('input[name$="[adj_qty]"]');
+    var adjQty = parseFloat(adjQtyInput.val()) || 0;
+    if (adjQty >  Math.min(reqQty, avlStock)) {
+        adjQty = Math.min(reqQty, avlStock);
+        adjQtyInput.val(adjQty);
+    }
+
+    var indentQty = reqQty - adjQty;
+    $row.find('input[name$="[indent_qty]"]').val(indentQty.toFixed(2));
+}
+
+// When adj_qty changes
+$(document).on('keyup change', 'input[name^="components"][name$="[adj_qty]"]', function () {
+    var $row = $(this).closest('tr');
+    updateIndentQty($row);
+});
+
+// When req_qty changes
+$(document).on('keyup change', 'input[name^="components"][name$="[qty]"]', function () {
+    var $row = $(this).closest('tr');
+    updateIndentQty($row);
+});

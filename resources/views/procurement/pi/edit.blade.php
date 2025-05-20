@@ -31,7 +31,11 @@
 </style>
 @endsection
 @section('content')
-<form id="piEditForm" class="ajax-input-form" action="{{ route('pi.update', $pi->id) }}" method="POST" data-redirect="/purchase-indent" enctype="multipart/form-data">
+@if($buttons['approve'])
+    <form id="piEditForm" class="ajax-input-form" action="{{ route('pi.update.approve', $pi->id) }}" method="POST" data-redirect="/purchase-indent" enctype="multipart/form-data">
+@else
+    <form id="piEditForm" class="ajax-input-form" action="{{ route('pi.update', $pi->id) }}" method="POST" data-redirect="/purchase-indent" enctype="multipart/form-data">
+@endif
 @csrf
 <input type="hidden" name="so_item_ids" id="so_item_ids">
 <input type="hidden" name="item_ids" id="item_ids">
@@ -39,288 +43,291 @@
 <input type="hidden" name="show_attribute" value="0" id="show_attribute">
 <input type="hidden" name="so_tracking_required" value="{{$pi->so_tracking_required}}" id="so_tracking_required">
 <div class="app-content content ">
-        <div class="content-overlay"></div>
-        <div class="header-navbar-shadow"></div>
-        <div class="content-wrapper container-xxl p-0">
-            <div class="content-header pocreate-sticky">
-				<div class="row">
-					<div class="content-header-left col-md-6 mb-2">
-						<div class="row breadcrumbs-top">
-							<div class="col-12">
-								<h2 class="content-header-title float-start mb-0">Purchase Indent</h2>
-								<div class="breadcrumb-wrapper">
-									<ol class="breadcrumb">
-										<li class="breadcrumb-item"><a href="index.html">Home</a>
-										</li>
-										<li class="breadcrumb-item active">Edit</li>
-									</ol>
-								</div>
-							</div>
-						</div>
-					</div>
-					<div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
-						<div class="form-group breadcrumb-right">
-                        <input type="hidden" name="document_status" value="{{$pi->document_status}}" id="document_status">
-							<button type="button" onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>
-                            @if($buttons['draft'])
-                             <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
-                            @endif
-                            @if(!intval(request('amendment') ?? 0) && $pi->document_status != \App\Helpers\ConstantHelper::DRAFT && $pi->document_status != \App\Helpers\ConstantHelper::SUBMITTED)
-                            <a href="{{ route('pi.generate-pdf', $pi->id) }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                stroke-linecap="round" stroke-linejoin="round" class="feather feather-printer"><polyline points="6 9 6 2 18 2 18 9"></polyline>
-                                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                                <rect x="6" y="14" width="12" height="8"></rect></svg> Print
-                            </a>
-                            @endif
-
-                            @if($buttons['submit'])
-                             <button type="submit" class="btn btn-primary btn-sm submit-button" name="action" value="submitted"><i data-feather="check-circle"></i> Submit</button>
-                            @endif
-                            @if($buttons['approve'])
-                             <button type="button" id="reject-button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg> Reject</button>
-                             <button type="button" class="btn btn-primary btn-sm" id="approved-button" name="action" value="approved"><i data-feather="check-circle"></i> Approve</button>
-                            @endif
-                            @if($buttons['amend'] && intval(request('amendment') ?? 0))
-                                <button type="button" class="btn btn-primary btn-sm" id="amendmentBtn"><i data-feather="check-circle"></i> Submit</button>
-                            @else
-                                @if($buttons['amend'])
-                                 <button type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i> Amendment</button>
-                                @endif
-                            @endif
-
-                            @if($buttons['revoke'])
-                                <button id = "revokeButton" type="button" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i> Revoke</button>
-                            @endif
-						</div>
-					</div>
-				</div>
-			</div>
-            <div class="content-body">
-				<section id="basic-datatable">
-                    <div class="row">
+    <div class="content-overlay"></div>
+    <div class="header-navbar-shadow"></div>
+    <div class="content-wrapper container-xxl p-0">
+        <div class="content-header pocreate-sticky">
+            <div class="row">
+                <div class="content-header-left col-md-6 mb-2">
+                    <div class="row breadcrumbs-top">
                         <div class="col-12">
-                            <div class="card" id="basic_section">
-                                <div class="card-body customernewsection-form">
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between">
-                                                <div>
-                                                    <h4 class="card-title text-theme">Basic Information</h4>
-                                                    <p class="card-text">Fill the details</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6 text-sm-end">
-                                            <span class="badge rounded-pill badge-light-secondary forminnerstatus">
-                                                Status : <span class="{{$docStatusClass}}">{{$pi->display_status}}</span>
-                                            </span>
-                                        </div>
-                                        <div class="col-md-8 basic-information">
-                                            <div class="row align-items-center mb-1">
-                                                <div class="col-md-3">
-                                                    <label class="form-label">Series <span class="text-danger">*</span></label>
-                                                </div>
-                                                <div class="col-md-5">
-                                                    <input type="hidden" name="book_id" id="book_id" value="{{$pi->book_id}}" />
-                                                    <select disabled class="form-select" id="book_id" name="book_id">
-                                                    @foreach($books as $book)
-                                                      <option value="{{$book->id}}" {{$book->id == $pi->book_id ? 'selected' : ''}}>{{ucfirst($book->book_code)}}</option>
-                                                    @endforeach
-                                                    </select>
-                                                    <input type="hidden" name="book_code" id="{{$pi->book->book_code}}" id="book_code">
-                                                </div>
-                                            </div>
-                                            <div class="row align-items-center mb-1">
-                                                <div class="col-md-3">
-                                                    <label class="form-label">Indent No <span class="text-danger">*</span></label>
-                                                </div>
-                                                <div class="col-md-5">
-                                                    <input readonly type="text" name="document_number" id="document_number" value="{{$pi->document_number}}" class="form-control">
-                                                </div>
-                                            </div>
-                                            <div class="row align-items-center mb-1">
-                                                <div class="col-md-3">
-                                                    <label class="form-label">Indent Date <span class="text-danger">*</span></label>
-                                                </div>
-                                                <div class="col-md-5">
-                                                    <input type="date" class="form-control" value="{{ $pi->document_date }}" name="document_date">
-                                                </div>
-                                            </div>
-
-                                            <div class="row align-items-center mb-1">
-                                                <div class="col-md-3"> 
-                                                    <label class="form-label">Location <span class="text-danger">*</span></label>  
-                                                </div>  
-                                                <div class="col-md-5"> 
-                                                    <select class="form-select" disabled id="store_id" name="store_id">
-                                                    @foreach($locations as $location)
-                                                    <option value="{{$location->id}}" {{$location->id == $pi?->store_id ? 'selected' : ''}}>{{ $location?->store_name }}</option>
-                                                    @endforeach 
-                                                </select> 
-                                                </div> 
-                                            </div>
-                                            <div class="row align-items-center mb-1 d-none" id = "department_id_header">
-                                                <div class="col-md-3"> 
-                                                    <label class="form-label">Requester</label>  
-                                                </div>  
-                                                <div class="col-md-5">  
-                                                    <select class="form-select" disabled id="sub_store_id" name="sub_store_id">
-                                                        <option value="{{$pi?->sub_store_id}}">{{$pi?->sub_store?->name ?? $pi?->requester?->name}}</option>
-                                                  </select>  
-                                              </div>
-                                          </div>
-                                            @if ($pi->requester_type === "User")
-                                            <div class="row align-items-center mb-1" id = "user_id_header">
-                                                <div class="col-md-3"> 
-                                                    <label class="form-label">Requester <span class="text-danger">*</span></label>  
-                                                </div>  
-                                                <div class="col-md-5">  
-                                                    <select disabled class="form-select" id="user_id" name="user_id">
-                                                        <option value="">Select</option>
-                                                        @foreach($users as $user)
-                                                        <option value="{{$user->id}}" {{$selecteduserId == $user->id ? 'selected' : ''}}>{{ucfirst($user->name)}}</option>
-                                                        @endforeach 
-                                                    </select>  
-                                                </div>
-                                            </div>
-                                            @endif
-                                            {{-- <div class="row align-items-center mb-1" id="department_id_header">
-                                                <div class="col-md-3"> 
-                                                    <label class="form-label">Department <span class="text-danger">*</span></label>  
-                                                </div>  
-                                                <div class="col-md-5">  
-                                                    <select class="form-select" id="department_id" name="department_id">
-                                                        <option value="">Select</option>
-                                                      @foreach($departments as $department)
-                                                      <option value="{{$department->id}}" {{$pi->department_id == $department->id ? 'selected' : ''}}>{{ucfirst($department->name)}}</option>
-                                                      @endforeach 
-                                                  </select>  
-                                              </div>
-                                            </div> --}}
-                                            <div class="row align-items-center mb-1 d-none" id="reference_from"> 
-                                                <div class="col-md-3"> 
-                                                    <label class="form-label">Reference from</label>  
-                                                </div> 
-                                                <div class="col-md-5 action-button"> 
-                                                    <button type="button" @if(!$isEdit) disabled @endif class="btn btn-outline-primary btn-sm mb-0 soSelect"><i data-feather="plus-square"></i> Sale Order</button>
-                                                </div>
-                                            </div>
-                                            @if($saleOrders?->count())
-                                            <div class="row align-items-center mb-1">
-                                                <div class="col-md-3"> 
-                                                    <label class="form-label">Sales Order</label>  
-                                                </div>  
-                                                <div class="col-md-5">  
-                                                    <input type="text" readonly class="form-control" value="{{ $saleOrders->map(fn($saleOrder) => strtoupper($saleOrder->book_code) . ' - ' . $saleOrder->document_number)->join(', ') }}">
-                                                </div>
-                                            </div>
-                                            @endif
-                                        </div>
-                                        {{-- Approval History Section --}}
-                                        @include('partials.approval-history', ['document_status' => $pi->document_status, 'revision_number' => $revision_number]) 
-                                    </div>
-                                </div>
-                            </div>
-                           <div class="card" id="item_section">
-                           <div class="card-body customernewsection-form"> 
-                            <div class="border-bottom mb-2 pb-25">
-                               <div class="row">
-                                <div class="col-md-6">
-                                    <div class="newheader ">
-                                        <h4 class="card-title text-theme">Indent Item Wise Detail</h4>
-                                        <p class="card-text">Fill the details</p>
-                                    </div>
-                                </div>
-                                <div class="col-md-6 text-sm-end">
-                                    <a href="javascript:;" id="deleteBtn" class="btn btn-sm btn-outline-danger me-50">
-                                        <i data-feather="x-circle"></i> Delete</a>
-                                        <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary">
-                                            <i data-feather="plus"></i> Add Item</a>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                   <div class="col-md-12">
-                                       <div class="table-responsive pomrnheadtffotsticky">
-                                           <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
-                                            <thead>
-                                            <tr>
-                                                <th class="customernewsection-form">
-                                                    <div class="form-check form-check-primary custom-checkbox">
-                                                        <input type="checkbox" class="form-check-input" id="Email">
-                                                        <label class="form-check-label" for="Email"></label>
-                                                    </div> 
-                                                </th>
-                                                <th width="200px">Item Code</th>
-                                                <th width="300px">Item Name</th>
-                                                <th max-width="180px">Attributes</th>
-                                                <th >UOM</th>
-                                                <th class="text-end">Quantity</th>
-                                                {{-- <th width="150px">Preferred Vendor</th>
-                                                <th width="240px">Vendor Name</th> --}}
-                                                {{-- <th width="50px">Action</th> --}}
-                                                <th width="350px">Remarks</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="mrntableselectexcel">
-                                            @include('procurement.pi.partials.item-row-edit')
-                                        </tbody>
-                                        <tfoot>
-                                        <tr valign="top">
-                                            <td colspan="9" rowspan="10">
-                                                <table class="table border">
-                                                    <tbody id="itemDetailDisplay">
-                                                    <tr>
-                                                        <td class="p-0">
-                                                            <h6 class="text-dark mb-0 bg-light-primary py-1 px-50"><strong>Item Details</strong></h6>
-                                                        </td>
-                                                    </tr>
-                                                    <tr>
-                                                    </tr>
-                                                    <tr> 
-                                                    </tr> 
-                                                    <tr>
-                                                    </tr>
-                                                    <tr>
-                                                    </tr>
-                                                </table>
-                                            </td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </div>
-                            <div class="row mt-2">
-                                <div class="col-md-12">
-                                   <div class="row">
-                                       <div class="col-md-4">
-                                        <div class="mb-1">
-                                            <label class="form-label">Upload Document</label>
-                                            <input type="file" name="attachment[]" class="form-control" onchange = "addFiles(this,'main_pi_preview')" multiple>
-                                            <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
-                                        </div>
-                                    </div>
-                                    @include('partials.document-preview',['documents' => $pi->getDocuments(), 'document_status' => $pi->document_status,'elementKey' => 'main_pi_preview'])
-                                   </div>
-                            </div>
-                            <div class="col-md-12">
-                                <div class="mb-1">
-                                    <label class="form-label">Final Remarks</label>
-                                    <textarea maxlength="250" type="text" rows="4" name="remarks" class="form-control" placeholder="Enter Remarks here...">{!! $pi->remarks !!}</textarea>
-                                </div>
-                            </div>
-                                    </div>
-                                </div>
-                            </div>
-                            </div>
+                            <h2 class="content-header-title float-start mb-0">Purchase Indent</h2>
+                            <div class="breadcrumb-wrapper">
+                                <ol class="breadcrumb">
+                                    <li class="breadcrumb-item"><a href="index.html">Home</a>
+                                    </li>
+                                    <li class="breadcrumb-item active">Edit</li>
+                                </ol>
                             </div>
                         </div>
                     </div>
-                </section>
+                </div>
+                <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
+                    <div class="form-group breadcrumb-right">
+                    <input type="hidden" name="document_status" value="{{$pi->document_status}}" id="document_status">
+                        <button type="button" onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>
+                        @if($buttons['draft'])
+                            <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
+                        @endif
+                        @if(!intval(request('amendment') ?? 0) && $pi->document_status != \App\Helpers\ConstantHelper::DRAFT && $pi->document_status != \App\Helpers\ConstantHelper::SUBMITTED)
+                        <a href="{{ route('pi.generate-pdf', $pi->id) }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" class="feather feather-printer"><polyline points="6 9 6 2 18 2 18 9"></polyline>
+                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                            <rect x="6" y="14" width="12" height="8"></rect></svg> Print
+                        </a>
+                        @endif
+
+                        @if($buttons['submit'])
+                            <button type="submit" class="btn btn-primary btn-sm submit-button" name="action" value="submitted"><i data-feather="check-circle"></i> Submit</button>
+                        @endif
+                        @if($buttons['approve'])
+                            <button type="button" id="reject-button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg> Reject</button>
+                            <button type="button" class="btn btn-primary btn-sm" id="approved-button" name="action" value="approved"><i data-feather="check-circle"></i> Approve</button>
+                        @endif
+                        @if($buttons['amend'] && intval(request('amendment') ?? 0))
+                            <button type="button" class="btn btn-primary btn-sm" id="amendmentBtn"><i data-feather="check-circle"></i> Submit</button>
+                        @else
+                            @if($buttons['amend'])
+                                <button type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i> Amendment</button>
+                            @endif
+                        @endif
+
+                        @if($buttons['revoke'])
+                            <button id = "revokeButton" type="button" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i> Revoke</button>
+                        @endif
+                    </div>
+                </div>
             </div>
         </div>
+        <div class="content-body">
+            <section id="basic-datatable">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card" id="basic_section">
+                            <div class="card-body customernewsection-form">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between">
+                                            <div>
+                                                <h4 class="card-title text-theme">Basic Information</h4>
+                                                <p class="card-text">Fill the details</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 text-sm-end">
+                                        <span class="badge rounded-pill badge-light-secondary forminnerstatus">
+                                            Status : <span class="{{$docStatusClass}}">{{$pi->display_status}}</span>
+                                        </span>
+                                    </div>
+                                    <div class="col-md-8 basic-information">
+                                        <div class="row align-items-center mb-1">
+                                            <div class="col-md-3">
+                                                <label class="form-label">Series <span class="text-danger">*</span></label>
+                                            </div>
+                                            <div class="col-md-5">
+                                                <input type="hidden" name="book_id" id="book_id" value="{{$pi->book_id}}" />
+                                                <select disabled class="form-select" id="book_id" name="book_id">
+                                                @foreach($books as $book)
+                                                    <option value="{{$book->id}}" {{$book->id == $pi->book_id ? 'selected' : ''}}>{{ucfirst($book->book_code)}}</option>
+                                                @endforeach
+                                                </select>
+                                                <input type="hidden" name="book_code" id="{{$pi->book->book_code}}" id="book_code">
+                                            </div>
+                                        </div>
+                                        <div class="row align-items-center mb-1">
+                                            <div class="col-md-3">
+                                                <label class="form-label">Indent No <span class="text-danger">*</span></label>
+                                            </div>
+                                            <div class="col-md-5">
+                                                <input readonly type="text" name="document_number" id="document_number" value="{{$pi->document_number}}" class="form-control">
+                                            </div>
+                                        </div>
+                                        <div class="row align-items-center mb-1">
+                                            <div class="col-md-3">
+                                                <label class="form-label">Indent Date <span class="text-danger">*</span></label>
+                                            </div>
+                                            <div class="col-md-5">
+                                                <input type="date" class="form-control" value="{{ $pi->document_date }}" name="document_date">
+                                            </div>
+                                        </div>
+
+                                        <div class="row align-items-center mb-1">
+                                            <div class="col-md-3"> 
+                                                <label class="form-label">Location <span class="text-danger">*</span></label>  
+                                            </div>  
+                                            <div class="col-md-5"> 
+                                                <select class="form-select" disabled id="store_id" name="store_id">
+                                                @foreach($locations as $location)
+                                                <option value="{{$location->id}}" {{$location->id == $pi?->store_id ? 'selected' : ''}}>{{ $location?->store_name }}</option>
+                                                @endforeach 
+                                            </select> 
+                                            </div> 
+                                        </div>
+                                        <div class="row align-items-center mb-1 d-none" id = "department_id_header">
+                                            <div class="col-md-3"> 
+                                                <label class="form-label">Requester</label>  
+                                            </div>  
+                                            <div class="col-md-5">  
+                                                <select class="form-select" disabled id="sub_store_id" name="sub_store_id">
+                                                    <option value="{{$pi?->sub_store_id}}">{{$pi?->sub_store?->name ?? $pi?->requester?->name}}</option>
+                                                </select>  
+                                            </div>
+                                        </div>
+                                        @if ($pi->requester_type === "User")
+                                        <div class="row align-items-center mb-1" id = "user_id_header">
+                                            <div class="col-md-3"> 
+                                                <label class="form-label">Requester <span class="text-danger">*</span></label>  
+                                            </div>  
+                                            <div class="col-md-5">  
+                                                <select disabled class="form-select" id="user_id" name="user_id">
+                                                    <option value="">Select</option>
+                                                    @foreach($users as $user)
+                                                    <option value="{{$user->id}}" {{$selecteduserId == $user->id ? 'selected' : ''}}>{{ucfirst($user->name)}}</option>
+                                                    @endforeach 
+                                                </select>  
+                                            </div>
+                                        </div>
+                                        @endif
+                                        {{-- <div class="row align-items-center mb-1" id="department_id_header">
+                                            <div class="col-md-3"> 
+                                                <label class="form-label">Department <span class="text-danger">*</span></label>  
+                                            </div>  
+                                            <div class="col-md-5">  
+                                                <select class="form-select" id="department_id" name="department_id">
+                                                    <option value="">Select</option>
+                                                    @foreach($departments as $department)
+                                                    <option value="{{$department->id}}" {{$pi->department_id == $department->id ? 'selected' : ''}}>{{ucfirst($department->name)}}</option>
+                                                    @endforeach 
+                                                </select>  
+                                            </div>
+                                        </div> --}}
+                                        <div class="row align-items-center mb-1 d-none" id="reference_from"> 
+                                            <div class="col-md-3"> 
+                                                <label class="form-label">Reference from</label>  
+                                            </div> 
+                                            <div class="col-md-5 action-button"> 
+                                                <button type="button" @if(!$isEdit) disabled @endif class="btn btn-outline-primary btn-sm mb-0 soSelect"><i data-feather="plus-square"></i> Sale Order</button>
+                                            </div>
+                                        </div>
+                                        @if($saleOrders?->count())
+                                        <div class="row align-items-center mb-1">
+                                            <div class="col-md-3"> 
+                                                <label class="form-label">Sales Order</label>  
+                                            </div>  
+                                            <div class="col-md-5">  
+                                                <input type="text" readonly class="form-control" value="{{ $saleOrders->map(fn($saleOrder) => strtoupper($saleOrder->book_code) . ' - ' . $saleOrder->document_number)->join(', ') }}">
+                                            </div>
+                                        </div>
+                                        @endif
+                                    </div>
+                                    {{-- Approval History Section --}}
+                                    @include('partials.approval-history', ['document_status' => $pi->document_status, 'revision_number' => $revision_number]) 
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card" id="item_section">
+                        <div class="card-body customernewsection-form"> 
+                        <div class="border-bottom mb-2 pb-25">
+                            <div class="row">
+                            <div class="col-md-6">
+                                <div class="newheader ">
+                                    <h4 class="card-title text-theme">Indent Item Wise Detail</h4>
+                                    <p class="card-text">Fill the details</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6 text-sm-end">
+                                <a href="javascript:;" id="deleteBtn" class="btn btn-sm btn-outline-danger me-50">
+                                    <i data-feather="x-circle"></i> Delete</a>
+                                    <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary">
+                                        <i data-feather="plus"></i> Add Item</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="table-responsive pomrnheadtffotsticky">
+                                        <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
+                                        <thead>
+                                        <tr>
+                                            <th class="customernewsection-form">
+                                                <div class="form-check form-check-primary custom-checkbox">
+                                                    <input type="checkbox" class="form-check-input" id="Email">
+                                                    <label class="form-check-label" for="Email"></label>
+                                                </div> 
+                                            </th>
+                                            <th width="200px">Item Code</th>
+                                            <th width="300px">Item Name</th>
+                                            <th max-width="180px">Attributes</th>
+                                            <th >UOM</th>
+                                            <th class="text-end">Req Qty</th>
+                                            <th class="text-end">Avl Stock</th>
+                                            <th class="text-end">Adj Qty</th>
+                                            <th class="text-end">Order Qty</th>
+                                            <th width="240px">Vendor Name</th>
+                                            <th width="100px" id="so_no">SO No.</th>
+                                            <th width="350px">Remarks</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="mrntableselectexcel">
+                                        @include('procurement.pi.partials.item-row-edit')
+                                    </tbody>
+                                    <tfoot>
+                                    <tr valign="top">
+                                        <td colspan="12" rowspan="10">
+                                            <table class="table border">
+                                                <tbody id="itemDetailDisplay">
+                                                <tr>
+                                                    <td class="p-0">
+                                                        <h6 class="text-dark mb-0 bg-light-primary py-1 px-50"><strong>Item Details</strong></h6>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                </tr>
+                                                <tr> 
+                                                </tr> 
+                                                <tr>
+                                                </tr>
+                                                <tr>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-md-12">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                    <div class="mb-1">
+                                        <label class="form-label">Upload Document</label>
+                                        <input type="file" name="attachment[]" class="form-control" onchange = "addFiles(this,'main_pi_preview')" multiple>
+                                        <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
+                                    </div>
+                                </div>
+                                @include('partials.document-preview',['documents' => $pi->getDocuments(), 'document_status' => $pi->document_status,'elementKey' => 'main_pi_preview'])
+                                </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="mb-1">
+                                <label class="form-label">Final Remarks</label>
+                                <textarea maxlength="250" type="text" rows="4" name="remarks" class="form-control" placeholder="Enter Remarks here...">{!! $pi->remarks !!}</textarea>
+                            </div>
+                        </div>
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
     </div>
-    @include('procurement.pi.partials.amendment-modal', ['id' => $pi->id])
+</div>
+@include('procurement.pi.partials.amendment-modal', ['id' => $pi->id])
+@include('procurement.pi.partials.approve-modal', ['id' => $pi->id])
 </form>
 
 {{-- Attribute popup --}}
@@ -353,47 +360,6 @@
 </div>
 </div>
 </div>
-</div>
-
-{{-- Delivery schedule --}}
-<div class="modal fade" id="deliveryScheduleModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
-    <div class="modal-dialog  modal-dialog-centered" >
-        <div class="modal-content">
-            <div class="modal-header p-0 bg-transparent">
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body px-sm-2 mx-50 pb-2">
-                <h1 class="text-center mb-1" id="shareProjectTitle">Delivery Schedule</h1>
-                {{-- <p class="text-center">Enter the details below.</p> --}}
-
-                <div class="text-end"> <a href="javascript:;" class="text-primary add-contactpeontxt mt-50 addTaxItemRow"><i data-feather='plus'></i> Add Schedule</a></div>
-                <div class="table-responsive-md customernewsection-form">
-                    <table id="deliveryScheduleTable" class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail">
-                        <thead>
-                           <tr>
-                            <th>S.No</th>
-                            <th width="150px">Quantity</th>
-                            <th>Date</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr id="deliveryFooter">
-                           <td class="text-dark"><strong>Total</strong></td>
-                           <td class="text-dark"><strong id="total">0.00</strong></td>
-                           <td></td>
-                           <td></td>
-                        </tr>
-                    </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="modal-footer justify-content-center">
-                <button type="button" data-bs-dismiss="modal"  class="btn btn-outline-secondary me-1">Cancel</button>
-                <button type="button" class="btn btn-primary itemDeliveryScheduleSubmit">Submit</button>
-            </div>
-        </div>
-    </div>
 </div>
 
 {{-- Item Remark Modal --}}
@@ -440,9 +406,6 @@
    </div>
 </div>
 
-{{-- Approval Modal --}}
-@include('procurement.pi.partials.approve-modal', ['id' => $pi->id])
-
 {{-- Amendment Modal --}}
 <div class="modal fade text-start alertbackdropdisabled" id="amendmentconfirm" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
   <div class="modal-dialog">
@@ -461,23 +424,6 @@
   </div>
 </div>
 
-{{-- Delete item delivery modal --}}
-<div class="modal fade text-start alertbackdropdisabled" id="deleteDeliveryModal" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
-   <div class="modal-dialog">
-      <div class="modal-content">
-         <div class="modal-header p-0 bg-transparent">
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-         </div>
-         <div class="modal-body alertmsg text-center warning">
-           <i data-feather='alert-circle'></i>
-           <h2>Are you sure?</h2>
-           <p>Are you sure you want to delete selected <strong>Components</strong>?</p>
-           <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
-           <button type="button" id="deleteDeliveryConfirm" class="btn btn-primary" >Confirm</button>
-         </div>
-      </div>
-   </div>
-</div>
 
 @include('procurement.pi.partials.so-modal')
 @include('procurement.pi.partials.so-modal-submit')
@@ -488,7 +434,6 @@
 <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
 <script>
 setTimeout(() => {
-    localStorage.removeItem('deletedDelivery');
     localStorage.removeItem('deletedPiItemIds');
 },0);
 @if($buttons['amend'] && intval(request('amendment') ?? 0))
@@ -496,11 +441,18 @@ setTimeout(() => {
 @else
     @if($pi->document_status != 'draft' && $pi->document_status != 'rejected')
     $(':input').prop('readonly', true);
+    $('[name="attachment[]"]').not('#approveModal [name="attachment[]"]').prop('disabled', true);
+    $('input[autocomplete], .ui-autocomplete-input').prop('disabled', true);
     $('select').not('.amendmentselect select').prop('disabled', true);
+    @if($buttons['approve'])
+        $("#itemTable").find('[name*="adj_qty"]').prop('readonly', false);
+        $("#itemTable").find('[name*="adj_qty"]').prop('disabled', false);
+        $('input[autocomplete], .ui-autocomplete-input').prop('disabled', false);
+        $('input[autocomplete], .ui-autocomplete-input').prop('readonly', false);
+    @endif
     $("#deleteBtn").remove();
     $("#addNewItemBtn").remove();
     $(document).on('show.bs.modal', function (e) {
-        
         if(e.target.id != 'approveModal') {
             $(e.target).find('.modal-footer').remove();
             $('select').not('.amendmentselect select').prop('disabled', true);
@@ -519,9 +471,6 @@ setTimeout(() => {
                 $(this).find('td:last').remove();
             });
         }
-    });
-    $(document).on('shown.bs.modal', function (e) {
-        $(".deleteItemDeliveryRow").closest('td').remove();
     });
     @endif
 @endif
@@ -647,9 +596,11 @@ function setServiceParameters(parameters) {
     if(soTrackingRequired.includes('yes')) {
         $("#soTrackingText").removeClass('d-none');
         $("#soTrackingNo").removeClass('d-none');
+        $("#so_no").removeClass('d-none');
     } else {
         $("#soTrackingText").addClass('d-none');
         $("#soTrackingNo").addClass('d-none');
+        $("#so_no").addClass('d-none');
     }
 }
 let selectedBookId = $("#book_id").val() || '';
@@ -763,7 +714,6 @@ function initializeAutocomplete2(selector, type) {
 
 initializeAutocomplete2(".comp_item_code");
 
-// initializeAutocomplete1("[name*='[vendor_code]']");
 $(document).on('click','#addNewItemBtn', (e) => {
 let rowsLength = $("#itemTable > tbody > tr").length;
 /*Check last tr data shoud be required*/
@@ -800,8 +750,8 @@ if(lastRow.length > 0) {
     lastTrObj.attr_require = false;
   }
 }
-
-let actionUrl = '{{route("pi.item.row")}}'+'?count='+rowsLength+'&component_item='+JSON.stringify(lastTrObj);
+let soTracking = $("#so_tracking_required").val() || '';
+let actionUrl = '{{route("pi.item.row")}}'+'?count='+rowsLength+'&component_item='+JSON.stringify(lastTrObj)+`&so_tracking_required=${soTracking}`;
 fetch(actionUrl).then(response => {
     return response.json().then(data => {
         if (data.status == 200) {
@@ -810,7 +760,7 @@ fetch(actionUrl).then(response => {
             } else {
                 $("#itemTable > tbody").html(data.data.html);
             }
-            // initializeAutocomplete1("[name*='[vendor_code]']");
+            initAutocompVendor("[name*='[vendor_code]']");
             initializeAutocomplete2('.comp_item_code');
         } else if(data.status == 422) {
            Swal.fire({
@@ -943,24 +893,18 @@ $(document).on('input change focus', '#itemTable tr input', (e) => {
          }
       });
 
-      let selectedDelivery = [];
-      $(currentTr).find("[name*='[d_qty]']").each(function(index, item) {
-        let dDate = $(item).closest('td').find(`[name*="components[${rowCount}][delivery][${index+1}][d_date]"]`).val();
-        let dQty = $(item).closest('td').find(`[name*="components[${rowCount}][delivery][${index+1}][d_qty]"]`).val();
-           selectedDelivery.push({"dDate": dDate, "dQty": dQty});
-      });
-
       let uomId = $(currentTr).find("[name*='[uom_id]']").val() || '';
       let qty = $(currentTr).find("[name*='[qty]']").val() || '';
       let pi_item_id = $(currentTr).find("[name*='[pi_item_id]']").val() || '';
       let so_id = $(currentTr).find("[name*='[so_id]']").val() || '';
       let store_id = $("#store_id").val() || '';
-      let actionUrl = '{{route("pi.get.itemdetail")}}'+'?item_id='+itemId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&delivery='+JSON.stringify(selectedDelivery)+'&pi_item_id='+pi_item_id+'&so_id='+so_id+'&store_id='+store_id;
+      let actionUrl = '{{route("pi.get.itemdetail")}}'+'?item_id='+itemId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&pi_item_id='+pi_item_id+'&so_id='+so_id+'&store_id='+store_id;
       fetch(actionUrl).then(response => {
          return response.json().then(data => {
             if(data.status == 200) {
-                selectedDelivery = [];
                $("#itemDetailDisplay").html(data.data.html);
+               let avlStock = data.data?.inventoryStock.confirmedStocks;
+              $(`input[name="components[${rowCount}][avl_stock]"]`).val(Number(avlStock).toFixed(2));
             }
          });
       });
@@ -1353,7 +1297,8 @@ $(document).on('click', '.soProcess', (e) => {
     let selectedItemsParam = encodeURIComponent(JSON.stringify(selectedItems));
 
     ids = JSON.stringify(ids);
-    let actionUrl = `{{ route("pi.process.so-item") }}?ids=${ids}&is_attribute=${isAttribute}&selected_items=${selectedItemsParam}`;
+    let soTracking = $("#so_tracking_required").val() || '';
+    let actionUrl = `{{ route("pi.process.so-item") }}?ids=${ids}&is_attribute=${isAttribute}&selected_items=${selectedItemsParam}&so_tracking_required=${soTracking}`;
     fetch(actionUrl).then(response => {
         return response.json().then(data => {
             if(data.status == 200) {
@@ -1385,15 +1330,22 @@ $(document).on('click', '.soSubmitProcess', (e) => {
             selectedData.push(dataItem);
         });
         if(selectedData.length) {
-            let actionUrl = '{{ route("pi.process.so-item.submit") }}'+'?selectedData='+JSON.stringify(selectedData);
+            let soTracking = $("#so_tracking_required").val() || '';
+            let actionUrl = '{{ route("pi.process.so-item.submit") }}'+'?selectedData='+JSON.stringify(selectedData)+`&so_tracking_required=${soTracking}`;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if(data.status == 200) {
                         $("#itemTable .mrntableselectexcel").empty().append(data.data.pos);
-                        // initializeAutocomplete1("[name*='[vendor_code]']");
+                        initAutocompVendor("[name*='[vendor_code]']");
                         initializeAutocomplete2(".comp_item_code");
                         $(".soSelect").prop('disabled',true);
                         $("#soSubmitModal").modal('hide');
+                        setTimeout(() => {
+                            $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+                                let currentIndex = index + 1;
+                                setAttributesUIHelper(currentIndex, "#itemTable");
+                            });
+                        },100);
                     }
 
                 });

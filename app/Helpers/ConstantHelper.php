@@ -484,6 +484,7 @@ class ConstantHelper
     const EXPENSE_ADVISE_SERVICE_ALIAS = 'expense-advice';
     const PURCHASE_VOUCHER = 'pv';
     const SALES_VOUCHER = 'sv';
+    const VOUCHERS = 'voucher';
     const RECEIPT_VOUCHER = 'receipt-voucher';
     const PAYMENT_VOUCHER = 'payment-voucher';
     const DEBIT_Note = 'dn';
@@ -779,8 +780,16 @@ class ConstantHelper
         self::PL_SERVICE_ALIAS => 'PL.layout',
         self::FIXED_ASSET_SPLIT=>'finance.fixed-asset.split.show',
         self::FIXED_ASSET_MERGER=>'finance.fixed-asset.merger.show',
+
         self::FIXED_ASSET_REV_IMP=>'finance.fixed-asset.revaluation-impairement.show',
-        
+        self::RECEIPT_VOUCHER => 'receipts.edit',
+        self::PAYMENT_VOUCHER => 'payments.edit',
+        self::FIXEDASSET => 'finance.fixed-asset.registration.edit',
+        self::SALES_VOUCHER => 'vouchers.edit',
+        self::CONTRA_VOUCHER => 'vouchers.edit',
+        self::JOURNAL_VOUCHER => 'vouchers.edit',
+        self::PURCHASE_VOUCHER => 'vouchers.edit',
+        self::VOUCHERS => 'vouchers.edit',
     ];
     const PWO_DOC_TYPES = [self::PWO_SERVICE_ALIAS];
     const SALE_INVOICE_DOC_TYPES = [self::SI_SERVICE_ALIAS, self::LEASE_INVOICE_SERVICE_ALIAS, self::DELIVERY_CHALLAN_SERVICE_ALIAS, self::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS];

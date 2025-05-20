@@ -451,7 +451,6 @@
     <form id="customExcelExportForm1"  action="{{ route('credit.debit.report.export') }}" method="POST">
         @csrf
         <input type="hidden" name="customers" value="{{ json_encode($customers) }}">
-
         <!-- Serialize complex arrays to JSON -->
         <input type="hidden" name="date2" value="{{ $date2 }}">
         <input type="hidden" name="date" value="{{ $date }}">
@@ -522,58 +521,76 @@
         },
         displayLength: 8,
         lengthMenu: [8, 10, 25, 50, 75, 100],
-        buttons: [{
-            extend: 'collection',
-            className: 'btn btn-outline-secondary dropdown-toggle',
-            text: feather.icons['share'].toSvg({
-                class: 'font-small-3 me-50'
-            }) + 'Export',
-            buttons: [
-                {
-                    extend: 'excel',
-                    text: feather.icons['file'].toSvg({
-                        class: 'font-small-4 me-50'
-                    }) + 'Excel',
-                    className: 'dropdown-item',
+        buttons:
+        [{
+            extend: 'excel',
+                    text: feather.icons['file'].toSvg({ class: 'font-small-4 me-50' }) + 'Excel',
+                    className: 'btn btn-outline-secondary',
                     filename: 'Debtors Report',
-                    // exportOptions: {
-                    //     columns: ':not(:last-child)' // Excludes the last column (Action)
-                    // }
                     action: function (e, dt, node, config) {
-                                        document.getElementById('customExcelExportForm1').submit();
+                    document.getElementById('customExcelExportForm1').submit();
                     }
-                },
-                {
-                    extend: 'pdf',
-                    text: feather.icons['clipboard'].toSvg({
-                        class: 'font-small-4 me-50'
-                    }) + 'Pdf',
-                    className: 'dropdown-item',
-                    filename: 'Debtors Report',
-                    exportOptions: {
-                        columns: ':not(:last-child)' // Excludes the last column (Action)
-                    }
-                },
-                {
-                    extend: 'copy',
-                    text: feather.icons['mail'].toSvg({
-                        class: 'font-small-4 me-50'
-                    }) + 'Mail',
-                    className: 'dropdown-item',
-                    filename: 'Debtors Report',
-                    exportOptions: {
-                        columns: ':not(:last-child)' // Excludes the last column (Action)
-                    }
-                }
-            ],
-            init: function(api, node, config) {
+            ,
+            init: function (api, node, config) {
                 $(node).removeClass('btn-secondary');
                 $(node).parent().removeClass('btn-group');
-                setTimeout(function() {
+                setTimeout(function () {
                     $(node).closest('.dt-buttons').removeClass('btn-group').addClass('d-inline-flex');
                 }, 50);
             }
-        }],
+            }],
+        // buttons: [{
+        //     extend: 'collection',
+        //     className: 'btn btn-outline-secondary dropdown-toggle',
+        //     text: feather.icons['share'].toSvg({
+        //         class: 'font-small-3 me-50'
+        //     }) + 'Export',
+        //     buttons: [
+        //         {
+        //             extend: 'excel',
+        //             text: feather.icons['file'].toSvg({
+        //                 class: 'font-small-4 me-50'
+        //             }) + 'Excel',
+        //             className: 'dropdown-item',
+        //             filename: 'Debtors Report',
+        //             // exportOptions: {
+        //             //     columns: ':not(:last-child)' // Excludes the last column (Action)
+        //             // }
+        //             action: function (e, dt, node, config) {
+        //                                 document.getElementById('customExcelExportForm1').submit();
+        //             }
+        //         },
+        //         {
+        //             extend: 'pdf',
+        //             text: feather.icons['clipboard'].toSvg({
+        //                 class: 'font-small-4 me-50'
+        //             }) + 'Pdf',
+        //             className: 'dropdown-item',
+        //             filename: 'Debtors Report',
+        //             exportOptions: {
+        //                 columns: ':not(:last-child)' // Excludes the last column (Action)
+        //             }
+        //         },
+        //         {
+        //             extend: 'copy',
+        //             text: feather.icons['mail'].toSvg({
+        //                 class: 'font-small-4 me-50'
+        //             }) + 'Mail',
+        //             className: 'dropdown-item',
+        //             filename: 'Debtors Report',
+        //             exportOptions: {
+        //                 columns: ':not(:last-child)' // Excludes the last column (Action)
+        //             }
+        //         }
+        //     ],
+        //     init: function(api, node, config) {
+        //         $(node).removeClass('btn-secondary');
+        //         $(node).parent().removeClass('btn-group');
+        //         setTimeout(function() {
+        //             $(node).closest('.dt-buttons').removeClass('btn-group').addClass('d-inline-flex');
+        //         }, 50);
+        //     }
+        // }],
         language: {
             search: '',
             searchPlaceholder: "Search...",

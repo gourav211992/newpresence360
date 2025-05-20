@@ -30,7 +30,9 @@ class PiItem extends Model
         'vendor_id',
         'vendor_code',
         'vendor_name',
-        'remarks'
+        'remarks',
+        'adjusted_qty',
+        'required_qty'
     ];
 
     protected $appends = [
@@ -140,12 +142,7 @@ class PiItem extends Model
     {
         return $this->hasMany(PoItem::class,'pi_item_id');
     }
-
-    public function itemDelivery()
-    {
-        return $this->hasMany(PiItemDelivery::class,'pi_item_id');
-    }
-
+    
     public function getBalenceQtyAttribute()
     {
         return $this->indent_qty - ($this->order_qty ?? 0);
@@ -155,11 +152,13 @@ class PiItem extends Model
     {
         return $this->hasMany(PiSoMappingItem::class,'pi_item_id');
     }
+    
     public function getMiBalanceQtyAttribute()
     {
         return max(($this -> indent_qty) - $this -> mi_qty, 0);
     }
 
+    # Use For MI
     public function getAvlStock($storeId, $subStoreId = null, $stationId = null)
     {
         $selectedAttributeIds = [];
@@ -178,8 +177,30 @@ class PiItem extends Model
         }
         return min($stockBalanceQty, $this -> indent_qty);
     }
+
+    public function getAvlStockForPi($storeId = null)
+    {
+        $selectedAttributeIds = [];
+        $itemAttributes = $this -> item_attributes_array();
+        foreach ($itemAttributes as $itemAttr) {
+            foreach ($itemAttr['values_data'] as $valueData) {
+                if ($valueData['selected']) {
+                    array_push($selectedAttributeIds, $valueData['id']);
+                }
+            }
+        }
+        $storeId = $storeId ? $storeId : $this->pi->store_id;
+        $stocks = InventoryHelper::totalInventoryAndStock($this->item_id, $selectedAttributeIds, $this->uom_id, $storeId);
+        $stockBalanceQty = 0;
+        if (isset($stocks) && isset($stocks['confirmedStocks'])) {
+            $stockBalanceQty = $stocks['confirmedStocks'];
+        }
+        return $stockBalanceQty;
+    }
+
     public function getQtyAttribute()
     {
         return $this -> indent_qty;
     }
+
 }

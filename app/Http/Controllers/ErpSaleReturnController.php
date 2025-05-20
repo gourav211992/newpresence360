@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exceptions\ApiGenericException;
 use App\Helpers\ConstantHelper;
+use App\Helpers\DynamicFieldHelper;
 use App\Helpers\CurrencyHelper;
 use App\Helpers\EInvoiceHelper;
 use App\Helpers\FinancialPostingHelper;
@@ -28,6 +29,7 @@ use App\Models\ErpInvoiceItemLocation;
 use App\Models\ErpItemAttribute;
 use App\Models\ErpRack;
 use App\Models\ErpSaleReturn;
+use App\Models\ErpSrDynamicField;
 use App\Models\ErpSaleReturnItem;
 use App\Models\ErpSaleReturnItemLocation;
 use App\Models\ErpSaleReturnItemAttribute;
@@ -55,8 +57,8 @@ use Illuminate\Validation\ValidationException;
 use PDF;
 use Exception;
 use Illuminate\Http\Request;
-use App\Validations\ErpSaleInvoice as Validator;
 use Storage;
+use Validator;
 use Yajra\DataTables\DataTables;
 
 use stdClass;
@@ -76,8 +78,7 @@ class ErpSaleReturnController extends Controller
         if ($request->ajax()) {
             $returns = ErpSaleReturn::withDefaultGroupCompanyOrg()
                 ->withDraftListingLogic()
-                ->orderByDesc('id')
-                ->get();
+                ->orderByDesc('id');
 
             return DataTables::of($returns)
                 ->addIndexColumn()
@@ -302,6 +303,8 @@ class ErpSaleReturnController extends Controller
             if (!isset($einvoice -> ewb_no) && $order -> total_amount > EInvoiceHelper::EWAY_BILL_MIN_AMOUNT_LIMIT) {
                 $editTransporterFields = true;
             }
+                $dynamicFieldsUI = $order -> dynamicfieldsUi();
+
             $data = [
                 'user' => $user,
                 'users' => $users,
@@ -323,6 +326,7 @@ class ErpSaleReturnController extends Controller
                 'einvoice' => $einvoice,
                 'transportationModes' => $transportationModes,
                 'enableEinvoice' => $enableEinvoice,
+                'dynamicFieldsUi' => $dynamicFieldsUI,
                 'editTransporterFields' => $editTransporterFields
             ];
             return view('salesReturn.create_edit', $data);
@@ -681,6 +685,15 @@ class ErpSaleReturnController extends Controller
                 ]);
             }
             $saleInvoice -> gst_invoice_type = EInvoiceHelper::getGstInvoiceType($request -> customer_id, $saleInvoice -> shipping_address_details -> country_id, $saleInvoice ?->  location_address_details ?-> country_id);
+            //Dynamic Fields
+            $status = DynamicFieldHelper::saveDynamicFields(ErpSrDynamicField::class, $saleInvoice -> id, $request -> dynamic_field ?? []);
+            if ($status && !$status['status'] ) {
+                DB::rollBack();
+                return response() -> json([
+                    'message' => $status['message'],
+                    'error' => ''
+                ], 422);
+            }
             //Get Header Discount
             $totalHeaderDiscount = 0;
             if (isset($request->order_discount_value) && count($request->order_discount_value) > 0)

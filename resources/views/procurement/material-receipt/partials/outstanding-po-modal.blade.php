@@ -59,15 +59,12 @@
 											</div>
 										</th>
 										<th>SUPPLIER NAME</th>
-                                        <th>PO SERIES</th>
                                         <th>PO NO</th>
                                         <th>PO DATE</th>
-                                        <th>INV SERIES</th>
                                         <th>INV NO</th>
                                         <th>INV DATE</th>
-										<th>GATE ENTRY SERIES</th>
-                                        <th>GATE ENTRY NO</th>
-										<th>GATE ENTRY DATE</th>
+										<th>GE NO</th>
+										<th>GE DATE</th>
                                         <th>ITEM NAME[ITEM CODE]</th>
                                         <th>ATTRIBUTES</th>
                                         <th class="text-end">PO QTY</th>

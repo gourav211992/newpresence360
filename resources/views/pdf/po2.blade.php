@@ -187,12 +187,6 @@
                             <td style="font-weight: 900;">{{ $referenceText }}</td>
                         </tr>
                         @endif
-                        {{-- @if($saleOrders?->count())
-                        <tr>
-                            <td style="font-weight: bold; white-space: nowrap;">SO:</td>
-                            <td style="font-weight: 900;">{{ $saleOrders->map(fn($saleOrder) => strtoupper($saleOrder->book_code) . ' - ' . $saleOrder->document_number)->join(', ') }}</td>
-                        </tr>
-                        @endif --}}
                     </table>
                 </td>                
             </tr>
@@ -322,7 +316,6 @@
             @endphp
             @foreach($po->po_items as $key => $val)
                 <tr>
-
                     <td
                         style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: center;">
                         {{ $key + 1 }}</td>
@@ -350,14 +343,12 @@
                         @endif
                         <br/>
                         @if(@$val?->item?->specifications->count())
-                            {{-- @foreach(@$val?->item?->specifications as $specification)
-                            @endforeach --}}
                             {{ $val->item->specifications->pluck('value')->implode(', ') }}
-
                             <br/>
                         @endif
-                        Code : {{ @$val->item_code }}<br/>
-                        @if(@$val->remarks)Remarks : {{@$val->remarks}} <br />@endif
+                        Code : {{ @$val->item_code }}
+                        @if($soTracking) <br /> So No.: {{@$val->so->full_document_number}} @endif
+                        @if(@$val->remarks) <br /> Remarks : {{@$val->remarks}}@endif
                     </td>
                     <td
                         style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;word-break: break-word;">

@@ -58,6 +58,7 @@ use App\Helpers\BookHelper;
 use App\Helpers\NumberHelper;
 use App\Helpers\ConstantHelper;
 use App\Helpers\CurrencyHelper;
+use App\Helpers\DynamicFieldHelper;
 use App\Helpers\EInvoiceHelper;
 use App\Helpers\InventoryHelper;
 use App\Helpers\GstInvoiceHelper;
@@ -70,6 +71,7 @@ use App\Models\AuthUser;
 use App\Models\Category;
 use App\Models\Employee;
 use App\Models\ErpItem;
+use App\Models\ErpPrDynamicField;
 use App\Models\ErpVendor;
 use App\Services\PRService;
 use Carbon\Carbon;
@@ -94,7 +96,6 @@ class PurchaseReturnController extends Controller
     public function index()
     {
         $parentUrl = request() -> segments()[0];
-        // dd($parentUrl);
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
         $orderType = ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS;
         request() -> merge(['type' => $orderType]);
@@ -338,11 +339,11 @@ class PurchaseReturnController extends Controller
             $pb->total_after_tax_amount = 0.00;
             $pb->expense_amount = 0.00;
             $pb->total_amount = 0.00;
+            $pb->cost_center_id = $request->cost_center_id ?? '';
             $pb->save();
 
             $vendorBillingAddress = $pb->billingAddress ?? null;
             $vendorShippingAddress = $pb->shippingAddress ?? null;
-            // dd($vendorBillingAddress, $vendorShippingAddress);
             if ($vendorBillingAddress) {
                 $billingAddress = $pb->bill_address_details()->firstOrNew([
                     'type' => 'billing',
@@ -768,7 +769,14 @@ class PurchaseReturnController extends Controller
                 $parentUrl = request() -> segments()[0];
                 $redirectUrl = url($parentUrl. '/' . $pb->id . '/pdf');
             }
-
+            $status = DynamicFieldHelper::saveDynamicFields(ErpPrDynamicField::class, $pb -> id, $request -> dynamic_field ?? []);
+            if ($status && !$status['status'] ) {
+                DB::rollBack();
+                return response() -> json([
+                    'message' => $status['message'],
+                    'error' => ''
+                ], 422);
+            }
             DB::commit();
 
             return response()->json([
@@ -825,7 +833,6 @@ class PurchaseReturnController extends Controller
             ->get();
         $pb = PRHeader::with(['vendor', 'currency', 'items', 'book'])
             ->findOrFail($id);
-        //dd($pb->toArray());
         $totalItemValue = $pb->items()->sum('basic_value');
         $vendors = Vendor::where('status', ConstantHelper::ACTIVE)->get();
         $revision_number = $pb->revision_number;
@@ -865,7 +872,7 @@ class PurchaseReturnController extends Controller
         $erpStores = ErpStore::where('organization_id', $user->organization_id)
             ->orderBy('id', 'DESC')
             ->get();
-
+        $dynamicFieldsUI = $pb -> dynamicfieldsUi();
         return view($view, [
             'mrn' => $pb,
             'user' => $user,
@@ -883,7 +890,8 @@ class PurchaseReturnController extends Controller
             'transportationModes' => $transportationModes,
             'users' => $users,
             'subStoreCount' => $subStoreCount,
-            'erpStores' => $erpStores
+            'erpStores' => $erpStores,
+            'dynamicFieldsUI' => $dynamicFieldsUI
         ]);
     }
 
@@ -910,7 +918,6 @@ class PurchaseReturnController extends Controller
         }
         DB::beginTransaction();
         try {
-            // dd($request->all());
             $parameters = [];
             $response = BookHelper::fetchBookDocNoAndParameters($request->book_id, $request->document_date);
             if ($response['status'] === 200) {
@@ -1412,6 +1419,15 @@ class PurchaseReturnController extends Controller
                 $redirectUrl = url($parentUrl. '/' . $pb->id . '/pdf');
             }
 
+            $status = DynamicFieldHelper::saveDynamicFields(ErpPrDynamicField::class, $pb -> id, $request -> dynamic_field ?? []);
+            if ($status && !$status['status'] ) {
+                DB::rollBack();
+                return response() -> json([
+                    'message' => $status['message'],
+                    'error' => ''
+                ], 422);
+            }
+
             DB::commit();
 
             return response()->json([
@@ -1432,7 +1448,6 @@ class PurchaseReturnController extends Controller
     {
         $user = Helper::getAuthenticatedUser();
         $item = json_decode($request->item, true) ?? [];
-        // dd($item);
         $componentItem = json_decode($request->component_item, true) ?? [];
         // $erpStores = ErpStore::where('organization_id', $user->organization_id)
         //     ->orderBy('id', 'ASC')
@@ -1452,13 +1467,11 @@ class PurchaseReturnController extends Controller
     // PO Item Rows
     public function mrnItemRows(Request $request)
     {
-        //dd('hii');
         $user = Helper::getAuthenticatedUser();
         $organization = Organization::where('id', $user->organization_id)->first();
         $item_ids = explode(',', $request->item_ids);
         $items = MrnDetail::whereIn('id', $item_ids)
             ->get();
-        //dd($items);
         $costCenters = CostCenter::where('organization_id', $user->organization_id)->get();
         $vendor = Vendor::with(['currency:id,name', 'paymentTerms:id,name'])->find($request->vendor_id);
         $currency = $vendor->currency;
@@ -1561,7 +1574,6 @@ class PurchaseReturnController extends Controller
     # get tax calcualte
     public function taxCalculation(Request $request)
     {
-        // dd($request->all());
         $user = Helper::getAuthenticatedUser();
         $location = ErpStore::find($request->location_id ?? null);
         $organization = $user->organization;
@@ -1600,7 +1612,6 @@ class PurchaseReturnController extends Controller
             $taxDetails = TaxHelper::calculateTax($hsnId, $price, $fromCountry, $fromState, $upToCountry, $upToState, $transactionType,$document_date);
             $rowCount = intval($request->rowCount) ?? 1;
             $itemPrice = floatval($request->price) ?? 0;
-            // dd($hsnId,$price,$fromCountry,$fromState,$upToCountry,$upToState,$transactionType);
             $html = view('procurement.purchase-return.partials.item-tax', compact('taxDetails', 'rowCount', 'itemPrice'))->render();
             return response()->json(['data' => ['html' => $html, 'rowCount' => $rowCount], 'message' => 'fetched', 'status' => 200]);
         } catch (\Exception $e) {
@@ -1829,7 +1840,6 @@ class PurchaseReturnController extends Controller
             $vendor = Vendor::with(['currency:id,name', 'paymentTerms:id,name'])
                 // ->where('organization_id', $organization->id)
                 ->find($request->vendor_id);
-            //dd($vendor);
             $items = MrnDetail::with([
                 'header',
                 'item',
@@ -1920,8 +1930,6 @@ class PurchaseReturnController extends Controller
                 $totalAfterTax = ($totalTaxableValue + $totalTaxes);
                 $totalExpValue = $pbHeader->expense_amount - $pbItem->header_exp_amount;
                 $totalAmount = ($totalAfterTax + $totalExpValue);
-                // dd($totalItemValue, $totalDiscValue, $totalTaxableValue, $totalTaxes, $totalAfterTax, $totalExpValue, $totalAmount);
-
                 $pbHeader->total_item_amount = $totalItemValue;
                 $pbHeader->total_discount = $totalDiscValue;
                 $pbHeader->taxable_amount = $totalTaxableValue;
@@ -2205,7 +2213,6 @@ class PurchaseReturnController extends Controller
         }
 
         /*Update Calculation*/
-        // dd($totalItemValue, $totalDiscValue, ($totalItemValue - $totalDiscValue), $totalTaxValue, (($totalItemValue - $totalDiscValue) + $totalTaxValue), $totalExpValue, (($totalItemValue - $totalDiscValue) + ($totalTaxValue + $totalExpValue)));
         $totalDiscValue = $pb->items()->sum('header_discount_amount') + $pb->items()->sum('discount_amount');
         $totalExpValue = $pb->items()->sum('header_exp_amount');
         $pb->total_item_amount = $totalItemAmnt;
@@ -2288,7 +2295,6 @@ class PurchaseReturnController extends Controller
         DB::beginTransaction();
         try {
             // Header History
-            // dd($id);
             $pbHeader = PRHeader::find($id);
             if (!$pbHeader) {
                 return response()->json(['error' => 'Mrn Header not found'], 404);
@@ -2666,7 +2672,6 @@ class PurchaseReturnController extends Controller
             ]);
         }
         try {
-            // dd($request->all());
             DB::beginTransaction();
             $data = FinancialPostingHelper::financeVoucherPosting($request->book_id ?? 0, $request->document_id ?? 0, 'post');
             if ($data['status']) {
@@ -2757,7 +2762,6 @@ class PurchaseReturnController extends Controller
             $storeAddress = $documentHeader->store_address;
 
             $gstInvoiceType = EInvoiceHelper::getGstInvoiceType($documentHeader -> vendor_id, $shippingAddress -> country_id, $storeAddress -> country_id, 'vendor');
-            // dd($gstInvoiceType);
             if ($gstInvoiceType === EInvoiceHelper::B2B_INVOICE_TYPE) {
                 $data = EInvoiceHelper::saveGstIn($documentHeader);
                 if (isset($data) && (isset($data['status']) && ($data['status'] == 'error'))) {
@@ -2794,7 +2798,6 @@ class PurchaseReturnController extends Controller
 
         try{
             $documentHeader = PRHeader::find($request->id);
-            // dd($documentHeader);
             $data = EInvoiceHelper::generateEwayBill($documentHeader);
             if (isset($data) && (isset($data['status']) && ($data['status'] == 'error'))) {
                 return response()->json([
@@ -3197,10 +3200,9 @@ class PurchaseReturnController extends Controller
         $user = Helper::getAuthenticatedUser();
         $pathUrl = route('purchase-return.index');
         $orderType = ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS;
-        $purchaseReturns = PRHeader::with(['items'])
+        $purchaseReturns = PRHeader::withDefaultGroupCompanyOrg()
             // ->where('document_type', $orderType)
-            ->bookViewAccess($pathUrl)
-            ->withDefaultGroupCompanyOrg()
+            // ->bookViewAccess($pathUrl)
             ->withDraftListingLogic()
             ->orderByDesc('id');
 
@@ -3280,8 +3282,7 @@ class PurchaseReturnController extends Controller
             'vendor',
             'items.so',
             'mrn'
-        ])
-        ->where('organization_id', $user->organization_id);
+        ]);
 
         $purchaseReturns = $purchaseReturns->get();
         $processedPurchaseReturns = collect([]);

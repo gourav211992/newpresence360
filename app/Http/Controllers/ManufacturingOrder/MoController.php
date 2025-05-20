@@ -56,23 +56,18 @@ class MoController extends Controller
             return DataTables::of($boms)
                 ->addIndexColumn()
                 ->editColumn('document_status', function ($row) {
-                    $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->document_status];
-                    $displayStatus = $row->display_status;
-                    $route = route('mo.edit', $row->id);    
-                    return "<div style='text-align:right;'>
-                        <span class='badge rounded-pill $statusClasss badgeborder-radius'>$displayStatus</span>
-                        <div class='dropdown' style='display:inline;'>
-                            <button type='button' class='btn btn-sm dropdown-toggle hide-arrow py-0 p-0' data-bs-toggle='dropdown'>
-                                <i data-feather='more-vertical'></i>
-                            </button>
-                            <div class='dropdown-menu dropdown-menu-end'>
-                                <a class='dropdown-item' href='" . $route . "'>
-                                    <i data-feather='edit-3' class='me-50'></i>
-                                    <span>View/ Edit Detail</span>
-                                </a>
-                            </div>
-                        </div>
-                    </div>";
+                    return view('partials.action-dropdown', [
+                        'statusClass' => ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->document_status] ?? 'badge-light-secondary',
+                        'displayStatus' => $row->display_status,
+                        'row' => $row,
+                        'actions' => [
+                            [
+                                'url' => fn($r) => route('mo.edit', $r->id),
+                                'icon' => 'edit-3',
+                                'label' => 'View/ Edit Detail',
+                            ]
+                        ]
+                    ])->render();
                 })
                 ->addColumn('book_name', function ($row) {
                     return $row->book ? $row->book?->book_code : ' ';

@@ -12,8 +12,7 @@
  <td class="poprod-decpt"> 
     <input type="text" @if($pi_item->po_item) readonly @endif name="component_item_name[{{$rowCount}}]" placeholder="Select" class="form-control mw-100 mb-25 ledgerselecct comp_item_code " value="{{$pi_item?->item_code}}" />
     <input type="hidden" name="components[{{$rowCount}}][item_id]" value="{{$pi_item?->item_id}}" />
-    <input type="hidden" name="components[{{$rowCount}}][item_code]" value="{{$pi_item?->item_code}}" /> 
-    <input type="hidden" name="components[{{$rowCount}}][item_name]" value="{{$pi_item?->item?->name}}" />
+    <input type="hidden" name="components[{{$rowCount}}][item_code]" value="{{$pi_item?->item_code}}" />
     <input type="hidden" name="components[{{$rowCount}}][hsn_id]" value="{{$pi_item?->hsn_id}}" /> 
     <input type="hidden" name="components[{{$rowCount}}][hsn_code]" value="{{$pi_item?->hsn_code}}" />
     @php
@@ -49,13 +48,27 @@
       </select>
 </td>
 <td>
-    <input @readonly(true) type="number" class="form-control mw-100 text-end" value="{{$pi_item?->indent_qty}}" name="components[{{$rowCount}}][qty]" step="any">
+    <input type="number" class="form-control mw-100 text-end" value="{{$pi_item?->required_qty}}" name="components[{{$rowCount}}][qty]" step="any">
 </td>
-{{-- <td>
-    <input type="hidden" name="components[{{$rowCount}}][vendor_id]" value="{{$pi_item?->vendor_id}}" />
-    <input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct" name="components[{{$rowCount}}][vendor_code]" value="{{$pi_item?->vendor_code}}" />
+<td>
+    <input type="number" step="any" class="form-control mw-100 text-end disabled-input"  name="components[{{$rowCount}}][avl_stock]" value="{{$pi_item->getAvlStockForPi()}}">
 </td>
-<td><input type="text" class="form-control mw-100" value="{{$pi_item?->vendor_name}}" name="components[{{$rowCount}}][vendor_name]" readonly/></td> --}}
+<td>
+    <input type="number" step="any" class="form-control mw-100 text-end"  name="components[{{$rowCount}}][adj_qty]" value="{{$pi_item?->adjusted_qty}}">
+</td>
+<td>
+    <input @readonly(true) type="number" step="any" class="form-control mw-100 text-end"  name="components[{{$rowCount}}][indent_qty]" value="{{$pi_item?->indent_qty}}">
+</td>
+
+<td>
+    <input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct" name="components[{{$rowCount}}][vendor_code]" value="{{$pi_item?->vendor?->company_name}}" />
+    <input type="hidden" name="components[{{$rowCount}}][vendor_id]" value="{{$pi_item?->vendor_id}}">
+</td>
+@if(isset($soTrackingRequired) && $soTrackingRequired)
+<td>
+    <input readonly type="text" name="components[{{$rowCount}}][so_no]" class="form-control mw-100 mb-25" value="{{$pi_item?->so ? $pi_item?->so->full_document_number : ''}}" />
+</td>
+@endif
 <td>
     <input type="text" name="components[{{$rowCount}}][remark]" value="{{$pi_item?->remarks}}" class="form-control mw-100 mb-25"/>
 </td>

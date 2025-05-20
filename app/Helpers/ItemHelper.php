@@ -499,4 +499,17 @@ class ItemHelper
         );
     }
 
+    public static function getBomSafetyBufferPerc(int $bomId) : float
+    {
+        $bom = Bom::where('id', $bomId)->first();
+        $safetyBuffer = 0;
+        if(!$bom) return $safetyBuffer;
+        if(isset($bom->safety_buffer_perc) && $bom->safety_buffer_perc) {
+            $safetyBuffer = $bom->safety_buffer_perc;
+        } else {
+            $safetyBuffer = $bom?->productionRoute?->safety_buffer_perc ?? 0;
+        }
+        return $safetyBuffer;
+    }
+
 }

@@ -43,14 +43,22 @@
          </div>
       </div>
    </td>
-   <td><input type="number" name="components[{{$rowCount}}][item_cost]" class="form-control mw-100 text-end" step="any" /></td>
-   @if(isset($supercedeCostRequired) && $supercedeCostRequired)
    <td>
-      <input type="number" name="components[{{$rowCount}}][superceeded_cost]" class="form-control mw-100 text-end" step="any"/>
+      @if($canView)
+      <input type="number" name="components[{{$rowCount}}][item_cost]" class="form-control mw-100 text-end" step="any" />
+      @else
+      <input type="hidden" name="components[{{$rowCount}}][item_cost]" class="form-control mw-100 text-end" step="any" />
+      <input type="number" value="" name="components[{{$rowCount}}][item_cos_dummy]" value="" class="form-control mw-100 text-end" disabled step="any" />
+      @endif
    </td>
-   @endif
    <td>
+      @if($canView)
       <input type="number" name="components[{{$rowCount}}][item_value]" class="form-control mw-100 text-end" readonly step="any" />
+      @else
+      <input type="hidden" name="components[{{$rowCount}}][item_value]" class="form-control mw-100 text-end" readonly step="any" />
+      <input type="number" value="0.00" name="components[{{$rowCount}}][item_val_dummy]" class="form-control mw-100 text-end" disabled step="any" />
+      @endif
+
    </td>
    @if(isset($componentWasteRequired) && $componentWasteRequired)
    <td>
@@ -69,15 +77,25 @@
    @if(isset($componentOverheadRequired) && $componentOverheadRequired)
    <td>
       <div class="position-relative d-flex align-items-center">
-         <input type="number" name="components[{{$rowCount}}][overhead_amount]" readonly class="form-control mw-100 text-end" style="width: 70px" step="any" />
-         <div class="ms-50">
-            <button type="button" class="btn p-25 btn-sm btn-outline-secondary addOverHeadItemBtn" style="font-size: 10px" data-row-count="{{$rowCount}}">Add</button>
-         </div>
+         @if($canView)
+            <input type="number" name="components[{{$rowCount}}][overhead_amount]" readonly class="form-control mw-100 text-end" style="width: 70px" step="any" />
+            <div class="ms-50">
+               <button type="button" class="btn p-10 btn-sm btn-outline-secondary addOverHeadItemBtn" style="font-size: 8px" data-row-count="{{$rowCount}}"><i data-feather="plus"></i></button>
+            </div>
+         @else
+         <input type="text"  name="components[{{$rowCount}}][overhead_amnt_dummy]" value="0.00" disabled class="form-control mw-100 text-end" style="width: 70px" step="any" />
+         <input type="hidden" name="components[{{$rowCount}}][overhead_amount]" readonly class="form-control mw-100 text-end" style="width: 70px" step="any" />
+         @endif
       </div>
    </td>
    @endif
    <td>
-      <input type="text" name="components[{{$rowCount}}][item_total_cost]" readonly class="form-control mw-100 text-end" />
+      @if($canView)
+         <input type="text" name="components[{{$rowCount}}][item_total_cost]" readonly class="form-control mw-100 text-end" />
+      @else
+         <input type="hidden" name="components[{{$rowCount}}][item_total_cost]" readonly class="form-control mw-100 text-end" />
+         <input type="text" name="components[{{$rowCount}}][total_cos_dummy]" value="0.00" disabled class="form-control mw-100 text-end" step="any" />
+      @endif
    </td>
    @if(isset($stationRequired) && $stationRequired)
    <td>
@@ -93,15 +111,12 @@
    <td>
       <div class="d-flex align-items-center justify-content-center">
       <input type="hidden" name="components[{{$rowCount}}][remark]" />
-         <div class="me-50 mx-1 cursor-pointer addRemarkBtn" data-row-count="{{$rowCount}}" {{-- data-bs-toggle="modal" data-bs-target="#Remarks" --}}>        <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary" data-bs-original-title="Remarks" aria-label="Remarks"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg></span></div>
-         <div class="me-50 cursor-pointer linkAppend d-none">
+         <div class="cursor-pointer addRemarkBtn" style="margin-right: 0.250rem;" data-row-count="{{$rowCount}}" {{-- data-bs-toggle="modal" data-bs-target="#Remarks" --}}>       
+            <i data-feather="file-text"></i>
+            </div>
+         <div class="cursor-pointer linkAppend d-none">
             <a href="" target="_blank" class="">
-            <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary" data-bs-original-title="Link" aria-label="Link">
-               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link">
-                     <path d="M10 13a5 5 0 0 1 7 7l-1.5 1.5a5 5 0 0 1-7-7"></path>
-                     <path d="M14 11a5 5 0 0 0-7-7l-1.5 1.5a5 5 0 0 0 7 7"></path>
-               </svg>
-            </span>
+               <i data-feather="link"></i>
             </a>
          </div>
       </div>

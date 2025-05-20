@@ -1685,12 +1685,17 @@ $(document).on('input change focus', '#itemTable tr input', (e) => {
          }
       });
 
-      let selectedDelivery = [];
-      $(currentTr).find("[name*='[d_qty]']").each(function(index, item) {
-        let dDate = $(item).closest('td').find(`[name*="components[${rowCount}][delivery][${index+1}][d_date]"]`).val();
-        let dQty = $(item).closest('td').find(`[name*="components[${rowCount}][delivery][${index+1}][d_qty]"]`).val();
-           selectedDelivery.push({"dDate": dDate, "dQty": dQty});
-      });
+      let selectedDelivery = { delivery: [] };
+    $(currentTr).find("[name*='delivery'][name*='[d_qty]']").each(function(index, item) {
+        let $td = $(item).closest('td');
+        let dQty = $(item).val();
+        let dDate = $td.find('[name*="[d_date]"]').val();
+
+        selectedDelivery.delivery.push({
+            dDate: dDate,
+            dQty: dQty
+        });
+    });
 
       let uomId = $(currentTr).find("[name*='[uom_id]']").val() || '';
       let qty = $(currentTr).find("[name*='[qty]']").val() || '';

@@ -790,8 +790,7 @@ function checkBasicFilledDetail()
     let documentDate = $("[name='document_date']").val() || '';
     let storeId = $("[name='header_store_id']").val() || '';
     let subStoreId = $("[name='sub_store_id']").val() || '';
-    let costCenterId = $("[name='cost_center_id']").val() || '';
-    if(bookId && documentNumber && documentDate && storeId && subStoreId && costCenterId) {
+    if(bookId && documentNumber && documentDate && storeId && subStoreId) {
         filled = true;
     }
     return filled;
@@ -1396,6 +1395,7 @@ function getCostCenters(storeLocationId) {
                 $(".cost_center").html(options);
                 $("#cost_center_div").show();
             } else {
+                $(".cost_center").empty();
                 $("#cost_center_div").hide();
             }
         },

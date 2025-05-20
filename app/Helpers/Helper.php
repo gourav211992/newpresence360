@@ -2189,6 +2189,8 @@ return [
             return Auth::guard('web')->user();
         } elseif (Auth::guard('web2')->check()) {
             return Auth::guard('web2')->user();
+        } elseif (Auth::guard('api')) {
+            return Auth::guard('api')->user()?->authUser();
         }
     }
     public static function getOrgWiseUserAndEmployees($organizationId)

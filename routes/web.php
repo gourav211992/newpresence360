@@ -1965,7 +1965,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     //PSV
     Route::get('/psv', [ErpPSVController::class, 'index'])->name('psv.index');
     Route::get('/psv/create', [ErpPSVController::class, 'create'])->name('psv.create');
-    Route::get('/psv/report', [ErpPSVController::class, 'report'])->name('psv.report');
+    Route::get('/psv/report', [ErpPSVController::class, 'psvReport'])->name('psv.report');
     Route::get('/psv/filter', [ErpPSVController::class, 'filter'])->name('psv.filter');
     Route::post('/psv/store', [ErpPSVController::class, 'store'])->name('psv.store');
     Route::get('/psv/edit/{id}', [ErpPSVController::class, 'edit'])->name('psv.edit');
@@ -1976,7 +1976,6 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::get('/psv/search/items', [ErpPSVController::class, 'searchItems'])->name('psv.search.items');
     Route::get('/psv/{id}/pdf/{pattern}', [ErpPSVController::class, 'generatePdf'])->name('psv.generate-pdf');
     Route::get('/psv/multi-stores-location', [ErpPSVController::class, 'getLocationsWithMultipleStores'])->name('psv.multi-store-location');
-    Route::get('/psv/report', [ErpPSVController::class, 'materialIssueReport'])->name('psv.report');
     Route::get('/psv/posting/get', [ErpPSVController::class, 'getPostingDetails'])->name('psv.posting.get');
     Route::post('/psv/post', [ErpPSVController::class, 'postPsv'])->name('psv.post');
     Route::post('/psv/import', [ErpPSVController::class, 'import'])->name('psv.import');

@@ -252,6 +252,18 @@
             </tr>
         </table>
 
+        @if (count($dynamicFields))
+            <table style = "border-left: 1px solid #000; border-right:1px solid #000; width:100%;">
+                <tr>
+                    @foreach ($dynamicFields as $dynamicField)
+                        @if ($dynamicField -> value)
+                            <td style="padding: 5px"><b>{{$dynamicField -> name}}</b>: {{$dynamicField -> value}} </td>
+                        @endif
+                    @endforeach
+                </tr>
+            </table>
+        @endif
+
         <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
             <tr>
                 <td 

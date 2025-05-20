@@ -49,7 +49,7 @@
                         <img src="{{ $imagePath }}" alt="Default Logo" style="height: 50px;">
                     @endif
                 </td>
-                <td style="width: 50%; text-align: center; vertical-align: middle; font-weight: bold; font-size: 18px;">
+                <td style="width: 50%; text-align: right; vertical-align: middle; font-weight: bold; font-size: 18px;">
                     {{ $title }}
                 </td>
                 <td style="width: 25%; text-align: right; vertical-align: middle; font-weight: bold; font-size: 18px;">
@@ -207,7 +207,6 @@
                         {{ $key + 1 }}</td>
                     <td style="vertical-align: top; padding:10px 3px; text-align:left; border: 1px solid #000; border-top: none; border-left: none; word-break: break-word;">
                         {{ @$bomItem->station_name }} <br />
-                        @if($bomItem->remark)Remark: {{ $bomItem->remark }} <br />@endif
                         {{ @$bomItem?->section_name }}<br/>
                         {{@$bomItem?->sub_section_name}}
                     </td>
@@ -228,6 +227,8 @@
                                 @endif
                             @endforeach
                         @endif
+                        @if($bomItem->vendor_id) <br /> Vendor: {{ $bomItem?->vendor?->company_name }}@endif
+                        @if($bomItem->remark) <br /> Remarks: {{ $bomItem->remark }}@endif
                     </td>
                     <td style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;word-break: break-word;">
                         {{@$bomItem?->item?->uom?->name}}
@@ -236,20 +237,20 @@
                         {{number_format(@$bomItem->qty,4)}}
                     </td>
                     <td style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;word-break: break-word;">
-                        {{ number_format(floatval($bomItem->item_cost), 4, '.', '') }}
+                        {{ $canView ? number_format(floatval($bomItem->item_cost), 4, '.', '') : '' }}
                     </td>
                     @php
                         $total = floatval($bomItem->qty) * floatval($bomItem->item_cost);
                         $total = number_format($total, 4, '.', '');
                     @endphp
                     <td style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;word-break: break-word;">
-                        {{ number_format($total,2) }}
+                        {{ $canView ? number_format($total,2) : '0.00' }}
                     </td>
                     <td style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: right;word-break: break-word;">
-                        {{ number_format($bomItem->overhead_amount, 2) }}   
+                        {{ $canView ? number_format($bomItem->overhead_amount, 2) : '0.00' }}   
                     </td>
                     <td style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: right;word-break: break-word;">
-                        {{ number_format($total + $bomItem->overhead_amount , 2) }}   
+                        {{ $canView ? number_format($total + $bomItem->overhead_amount , 2) : '0.00' }}   
                     </td>
                 </tr>
                 @php
@@ -260,13 +261,13 @@
             <tr>
                 <td colspan="6" style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: 1px solid #000; text-align: center;"></td>
                 <td style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;word-break: break-word;">
-                    {{number_format($item_total,2)}}
+                    {{ $canView ? number_format($item_total,2) : '0.00'}}
                 </td>
                 <td style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;word-break: break-word;">
-                    {{number_format($over_total,2)}}
+                    {{ $canView ? number_format($over_total,2) : '0.00'}}
                 </td>
                 <td style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;word-break: break-word;">
-                    {{ number_format($item_total +  $over_total, 2) }}
+                    {{ $canView ? number_format($item_total +  $over_total, 2) : '0.00' }}
                 </td>
             </tr>
         </table>
@@ -276,7 +277,7 @@
                     <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
                         <tr>
                             <td> <b>Total Value (In Words)</b> <br>
-                                {{ @$amountInWords }}
+                                {{ $canView ? @$amountInWords : '0.00' }}
                             </td>
                         </tr>
                     </table>
@@ -289,10 +290,11 @@
                                 <b>Total Item Cost:</b>
                             </td>
                             <td style="text-align: right;">
-                                {{ number_format($item_total + $over_total,2) }}
+                                {{ $canView ? number_format($item_total + $over_total,2) : '0.00' }}
                             </td>
                         </tr>
-                        @if($bom->bomOverheadItems->count())
+
+                    @if($bom->bomOverheadItems->count() && $canView)
                         @php
                             $previousLevel = null;
                             $levelTotal = 0;
@@ -335,38 +337,13 @@
                         @endforeach
                     @endif
 
-                        {{-- @if($bom->bomOverheadItems->count())
-                        @php
-                            $previousLevel = null;
-                        @endphp
-                        @foreach($bom->bomOverheadItems as $_key => $bomOverheadItem)
-                        @php
-                            $currentLevel = $bomOverheadItem->level;
-                            $isNewLevel = $previousLevel !== $currentLevel;
-                            $previousLevel = $currentLevel;
-                        @endphp
-                        <tr>
-                            <td style="text-align: right; padding-top: 3px;">
-                                <b>{{$bomOverheadItem->overhead_description ?? 'Overhead'}} {{++$_key}} @if(floatval($bomOverheadItem->overhead_perc))({{$bomOverheadItem->overhead_perc}}%)@endif :</b>
-                            </td>
-                            <td style="text-align: right; padding-top: 3px;">
-                                {{ number_format($bomOverheadItem->overhead_amount,2) }}
-                            </td>
-                        </tr>
-                            @if($isNewLevel)
-                                <tr>
-                                    <td colspan="2" style="border-bottom: 1px solid #000;">Sub Total</td>
-                                </tr>
-                            @endif
-                        @endforeach
-                        @endif --}}
                         @if(!$bom->bomOverheadItems->count())
                         <tr>
                             <td style="text-align: right; padding-top: 3px;">
                                 <b>Grand Total:</b>
                             </td>
                             <td style="text-align: right; padding-top: 3px;">
-                                {{ number_format($totalAmount,2) }}
+                                {{ $canView ? number_format($totalAmount,2) : '0.00' }}
                             </td>
                         </tr>
                         @endif

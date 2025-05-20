@@ -24,7 +24,7 @@
             $selectedAttr = $item->attributes ? $item->attributes()->whereNotNull('attr_value')->pluck('attr_value')->all() : [];
          @endphp
          @foreach($item->attributes as $attributeHidden)
-            <input type="hidden" name="components[{{$rowCount}}][attr_group_id][{{$attributeHidden->attribute_name}}][attr_id]" value="{{$attributeHidden->id}}">
+            <input type="hidden" name="components[{{$rowCount}}][attr_group_id][{{$attributeHidden->attr_name}}][attr_id]" value="{{$attributeHidden->id}}">
          @endforeach
          @if(isset($item->item->itemAttributes) && ($item->item->itemAttributes))
          @foreach($item->item->itemAttributes as $itemAttribute)

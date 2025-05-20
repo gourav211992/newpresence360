@@ -78,7 +78,7 @@ class ErpSaleOrderController extends Controller
         
         if ($request -> ajax()) {
 
-            $salesOrder = ErpSaleOrder::where('document_type', $orderType) -> bookViewAccess($pathUrl) -> withDefaultGroupCompanyOrg() -> withDraftListingLogic() -> orderByDesc('id') ->  get();
+            $salesOrder = ErpSaleOrder::where('document_type', $orderType) -> bookViewAccess($pathUrl) -> withDefaultGroupCompanyOrg() -> withDraftListingLogic() -> orderByDesc('id');
             return DataTables::of($salesOrder) ->addIndexColumn()
             ->editColumn('document_status', function ($row) use($orderType) {
                 $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->document_status ?? ConstantHelper::DRAFT];    
@@ -1620,6 +1620,7 @@ class ErpSaleOrderController extends Controller
         // Path to your image (ensure the file exists and is accessible)
         $imagePath = public_path('assets/css/midc-logo.jpg'); // Store the image in the public directory
         $approvedBy = Helper::getDocStatusUser(get_class($order), $order -> id, $order -> document_status);
+        $dynamicFields = $order -> dynamic_fields;
         // dd($imagePath);
         $dataArray = [
             'type' => $type,
@@ -1642,7 +1643,8 @@ class ErpSaleOrderController extends Controller
             'totalAfterTax' => $totalAfterTax,
             'totalExpense' => $totalExpense,
             'totalAmount' => $totalAmount,
-            'imagePath' => $imagePath
+            'imagePath' => $imagePath,
+            'dynamicFields' => $dynamicFields
         ];
         $pdf = PDF::loadView(
             $pdfFile,
@@ -1841,144 +1843,83 @@ class ErpSaleOrderController extends Controller
     {
         $pathUrl = route('sale.order.index');
         $orderType = ConstantHelper::SO_SERVICE_ALIAS;
-        $salesOrders = ErpSaleOrder::with('items')->where('document_type', $orderType) -> bookViewAccess($pathUrl) 
-        -> withDefaultGroupCompanyOrg() -> withDraftListingLogic() -> orderByDesc('id');
-        //Customer Filter
-        $salesOrders = $salesOrders -> when($request -> customer_id, function ($custQuery) use($request) {
-            $custQuery -> where('customer_id', $request -> customer_id);
-        });
-        //Book Filter
-        $salesOrders = $salesOrders -> when($request -> book_id, function ($bookQuery) use($request) {
-            $bookQuery -> where('book_id', $request -> book_id);
-        });
-        //Document Id Filter
-        $salesOrders = $salesOrders -> when($request -> document_number, function ($docQuery) use($request) {
-            $docQuery -> where('document_number', 'LIKE', '%' . $request -> document_number . '%');
-        });
-        //Location Filter
-        $salesOrders = $salesOrders -> when($request -> location_id, function ($docQuery) use($request) {
-            $docQuery -> where('store_id', $request -> location_id);
-        });
-        //Company Filter
-        $salesOrders = $salesOrders -> when($request -> company_id, function ($docQuery) use($request) {
-            $docQuery -> where('store_id', $request -> company_id);
-        });
-        //Organization Filter
-        $salesOrders = $salesOrders -> when($request -> organization_id, function ($docQuery) use($request) {
-            $docQuery -> where('organization_id', $request -> organization_id);
-        });
-        //Document Status Filter
-        $salesOrders = $salesOrders -> when($request -> doc_status, function ($docStatusQuery) use($request) {
-            $searchDocStatus = [];
-            if ($request -> doc_status === ConstantHelper::DRAFT) {
-                $searchDocStatus = [ConstantHelper::DRAFT];
-            } else if ($searchDocStatus === ConstantHelper::SUBMITTED) {
-                $searchDocStatus = [ConstantHelper::SUBMITTED, ConstantHelper::PARTIALLY_APPROVED];
-            } else {
-                $searchDocStatus = [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED];
+        $soItems = ErpSoItem::whereHas('header', function ($headerQuery) use($orderType, $pathUrl, $request) {
+            $headerQuery -> where('document_type', $orderType) -> bookViewAccess($pathUrl) 
+            -> withDefaultGroupCompanyOrg() -> withDraftListingLogic();
+            //Customer Filter
+            $headerQuery = $headerQuery -> when($request -> customer_id, function ($custQuery) use($request) {
+                $custQuery -> where('customer_id', $request -> customer_id);
+            });
+            //Book Filter
+            $headerQuery = $headerQuery -> when($request -> book_id, function ($bookQuery) use($request) {
+                $bookQuery -> where('book_id', $request -> book_id);
+            });
+            //Document Id Filter
+            $headerQuery = $headerQuery -> when($request -> document_number, function ($docQuery) use($request) {
+                $docQuery -> where('document_number', 'LIKE', '%' . $request -> document_number . '%');
+            });
+            //Location Filter
+            $headerQuery = $headerQuery -> when($request -> location_id, function ($docQuery) use($request) {
+                $docQuery -> where('store_id', $request -> location_id);
+            });
+            //Company Filter
+            $headerQuery = $headerQuery -> when($request -> company_id, function ($docQuery) use($request) {
+                $docQuery -> where('store_id', $request -> company_id);
+            });
+            //Organization Filter
+            $headerQuery = $headerQuery -> when($request -> organization_id, function ($docQuery) use($request) {
+                $docQuery -> where('organization_id', $request -> organization_id);
+            });
+            //Document Status Filter
+            $headerQuery = $headerQuery -> when($request -> doc_status, function ($docStatusQuery) use($request) {
+                $searchDocStatus = [];
+                if ($request -> doc_status === ConstantHelper::DRAFT) {
+                    $searchDocStatus = [ConstantHelper::DRAFT];
+                } else if ($searchDocStatus === ConstantHelper::SUBMITTED) {
+                    $searchDocStatus = [ConstantHelper::SUBMITTED, ConstantHelper::PARTIALLY_APPROVED];
+                } else {
+                    $searchDocStatus = [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED];
+                }
+                $docStatusQuery -> whereIn('document_status', $searchDocStatus);
+            });
+            //Date Filters
+            $dateRange = $request -> date_range ??  Carbon::now()->startOfMonth()->format('Y-m-d') . " to " . Carbon::now()->endOfMonth()->format('Y-m-d');
+            $headerQuery = $headerQuery -> when($dateRange, function ($dateRangeQuery) use($request, $dateRange) {
+            $dateRanges = explode('to', $dateRange);
+            if (count($dateRanges) == 2) {
+                    $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
+                    $toDate = Carbon::parse(trim($dateRanges[1])) -> format('Y-m-d');
+                    $dateRangeQuery -> whereDate('document_date', ">=" , $fromDate) -> where('document_date', '<=', $toDate);
             }
-            $docStatusQuery -> whereIn('document_status', $searchDocStatus);
-        });
-        //Date Filters
-        $dateRange = $request -> date_range ??  Carbon::now()->startOfMonth()->format('Y-m-d') . " to " . Carbon::now()->endOfMonth()->format('Y-m-d');
-        $salesOrders = $salesOrders -> when($dateRange, function ($dateRangeQuery) use($request, $dateRange) {
-           $dateRanges = explode('to', $dateRange);
-           if (count($dateRanges) == 2) {
-                $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
-                $toDate = Carbon::parse(trim($dateRanges[1])) -> format('Y-m-d');
-                $dateRangeQuery -> whereDate('document_date', ">=" , $fromDate) -> where('document_date', '<=', $toDate);
-           }
-        });
-        //Item Id Filter
-        $salesOrders = $salesOrders -> when($request -> item_id, function ($itemQuery) use($request) {
-            $itemQuery -> withWhereHas('items', function ($itemSubQuery) use($request) {
-                $itemSubQuery -> where('item_id', $request -> item_id)
-                //Compare Item Category
-                -> when($request -> item_category_id, function ($itemCatQuery) use($request) {
-                    $itemCatQuery -> whereHas('item', function ($itemRelationQuery) use($request) {
-                        $itemRelationQuery -> where('category_id', $request -> category_id)
-                        //Compare Item Sub Category
-                        -> when($request -> item_sub_category_id, function ($itemSubCatQuery) use($request) {
-                            $itemSubCatQuery -> where('subcategory_id', $request -> item_sub_category_id);
+            });
+            //Item Id Filter
+            $headerQuery = $headerQuery -> when($request -> item_id, function ($itemQuery) use($request) {
+                $itemQuery -> withWhereHas('items', function ($itemSubQuery) use($request) {
+                    $itemSubQuery -> where('item_id', $request -> item_id)
+                    //Compare Item Category
+                    -> when($request -> item_category_id, function ($itemCatQuery) use($request) {
+                        $itemCatQuery -> whereHas('item', function ($itemRelationQuery) use($request) {
+                            $itemRelationQuery -> where('category_id', $request -> category_id)
+                            //Compare Item Sub Category
+                            -> when($request -> item_sub_category_id, function ($itemSubCatQuery) use($request) {
+                                $itemSubCatQuery -> where('subcategory_id', $request -> item_sub_category_id);
+                            });
                         });
                     });
                 });
             });
-        });
-        $salesOrders = $salesOrders -> get();
-        $processedSalesOrder = collect([]);
-        foreach ($salesOrders as $saleOrder) {
-            foreach ($saleOrder -> items as $soItem) {
-                $reportRow = new stdClass();
-                //Header Details
-                $header = $soItem -> header;
-                $reportRow -> id = $header -> id;
-                $reportRow -> book_name = $header -> book_code;
-                $reportRow -> document_number = $header -> document_number;
-                $reportRow -> document_date = $header -> document_date;
-                $reportRow -> store_name = $header -> store ?-> store_name;
-                $reportRow -> customer_name = $header -> customer ?-> company_name;
-                $reportRow -> customer_currency = $header -> currency_code;
-                $reportRow -> payment_terms_name = $header -> payment_term_code;
-                //Item Details
-                $reportRow -> item_name = $soItem -> item_name;
-                $reportRow -> item_code = $soItem -> item_code;
-                $reportRow -> hsn_code = $soItem -> hsn ?-> code;
-                $reportRow -> uom_name = $soItem -> uom ?-> name;
-                //Amount Details
-                $reportRow -> so_qty = number_format($soItem -> order_qty, 2);
-                $reportRow -> mi_qty = number_format($soItem -> mi_qty, 2);
-                $reportRow -> pwo_qty = number_format($soItem -> pwo_qty, 2);
-                $reportRow -> pslip_qty = number_format($soItem -> pslip_qty, 2);
-                $reportRow -> invoice_qty = number_format($soItem -> invoice_qty, 2);
-                $reportRow -> srn_qty = number_format($soItem -> srn_qty, 2);
-                $reportRow -> rate = number_format($soItem -> rate, 2);
-                $reportRow -> total_discount_amount = number_format($soItem -> header_discount_amount + $soItem -> item_discount_amount, 2);
-                $reportRow -> tax_amount = number_format($soItem -> tax_amount, 2);
-                $reportRow -> taxable_amount = number_format($soItem -> total_item_amount - $soItem -> tax_amount, 2);
-                $reportRow -> total_item_amount = number_format($soItem -> total_item_amount, 2);
-                $reportRow -> short_close_qty = number_format($soItem -> short_close_qty, 2);
-                $reportRow -> pending_qty = number_format($soItem -> pending_qty, 2);
-                //Delivery Schedule UI
-                $deliveryHtml = '';
-                if (count($soItem -> item_deliveries) > 0) {
-                    foreach ($soItem -> item_deliveries as $itemDelivery) {
-                        $deliveryDate = Carbon::parse($itemDelivery -> delivery_date) -> format('d-m-Y');
-                        $deliveryQty = number_format($itemDelivery -> qty, 2);
-                        $deliveryHtml .= "<span class='badge rounded-pill badge-light-primary'><strong>$deliveryDate</strong> : $deliveryQty</span>";
-                    }
-                } else {
-                    $parsedDeliveryDate = Carbon::parse($soItem -> delivery_date) -> format('d-m-Y');
-                    $deliveryHtml .= "$parsedDeliveryDate";
-                }
-                $reportRow -> delivery_schedule = $deliveryHtml;
-                //Attributes UI
-                $attributesUi = '';
-                if (count($soItem -> item_attributes) > 0) {
-                    foreach ($soItem -> item_attributes as $soAttribute) {
-                        $attrName = $soAttribute -> attribute_name;
-                        $attrValue = $soAttribute -> attribute_value;
-                        $attributesUi .= "<span class='badge rounded-pill badge-light-primary' > $attrName : $attrValue </span>";
-                    }
-                } else {
-                    $attributesUi = 'N/A';
-                }
-                $reportRow -> item_attributes = $attributesUi;
-                //Main header Status
-                $reportRow -> status = $header -> document_status;
-                $processedSalesOrder -> push($reportRow);
-            }
-        }
-            return DataTables::of($processedSalesOrder) ->addIndexColumn()
+        }) -> orderByDesc('id');
+            $dynamicFields = DynamicFieldHelper::getServiceDynamicFields(ConstantHelper::SO_SERVICE_ALIAS);
+            $datatables = DataTables::of($soItems) ->addIndexColumn()
             ->editColumn('status', function ($row) use($orderType) {
-                $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->status ?? ConstantHelper::DRAFT];    
-                $displayStatus = ucfirst($row -> status);   
+                $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->header->document_status ?? ConstantHelper::DRAFT];    
+                $displayStatus = ucfirst($row -> header -> document_status);   
                 $editRoute = null;
                 if ($orderType == ConstantHelper::SO_SERVICE_ALIAS) {
-                    $editRoute = route('sale.order.edit', ['id' => $row->id]);
+                    $editRoute = route('sale.order.edit', ['id' => $row->header->id]);
                 }
                 if ($orderType == ConstantHelper::SQ_SERVICE_ALIAS) {
-                    $editRoute = route('sale.quotation.edit', ['id' => $row->id]);
+                    $editRoute = route('sale.quotation.edit', ['id' => $row->header->id]);
                 }     
                 return "
                 <div style='text-align:right;'>
@@ -1989,8 +1930,118 @@ class ErpSaleOrderController extends Controller
                 </div>
             ";
             })
+            ->addColumn('book_name', function ($row) {
+                return $row -> header -> book_code;
+            })
+            ->addColumn('document_number', function ($row) {
+                return $row -> header -> document_number;
+            })
+            ->addColumn('document_date', function ($row) {
+                return $row -> header -> document_date;
+            })
+            ->addColumn('store_name', function ($row) {
+                return $row -> header ?-> store ?-> store_name;
+            })
+            ->addColumn('store_name', function ($row) {
+                return $row -> header ?-> store ?-> store_name;
+            })
+            ->addColumn('customer_name', function ($row) {
+                return $row -> header ?-> customer ?-> company_name;
+            })
+            ->addColumn('customer_currency', function ($row) {
+                return $row -> header -> currency_code;
+            })
+            ->addColumn('payment_terms_name', function ($row) {
+                return $row -> header -> payment_term_code;
+            })
+            ->addColumn('hsn_code', function ($row) {
+                return $row -> hsn ?-> code;
+            })
+            ->addColumn('uom_name', function ($row) {
+                return $row -> uom ?-> name;
+            })
+            ->addColumn('so_qty', function ($row) {
+                return number_format($row -> order_qty, 2);
+            })
+            ->editColumn('mi_qty', function ($row) {
+                return number_format($row -> mi_qty, 2);
+            })
+            ->editColumn('pwo_qty', function ($row) {
+                return number_format($row -> pwo_qty, 2);
+            })
+            ->editColumn('pslip_qty', function ($row) {
+                return number_format($row -> pslip_qty, 2);
+            })
+            ->editColumn('invoice_qty', function ($row) {
+                return number_format($row -> invoice_qty, 2);
+            })
+            ->editColumn('srn_qty', function ($row) {
+                return number_format($row -> srn_qty, 2);
+            })
+            ->editColumn('rate', function ($row) {
+                return number_format($row -> srn_qty, 2);
+            })
+            ->addColumn('total_discount_amount', function ($row) {
+                return number_format($row -> header_discount_amount + $row -> item_discount_amount, 2);
+            })
+            ->editColumn('tax_amount', function ($row) {
+                return number_format($row -> tax_amount, 2);
+            })
+            ->addColumn('taxable_amount', function ($row) {
+                return number_format($row -> total_item_amount - $row -> tax_amount, 2);
+            })
+            ->editColumn('total_item_amount', function ($row) {
+                return number_format($row -> total_item_amount, 2);
+            })
+            ->editColumn('short_close_qty', function ($row) {
+                return number_format($row -> short_close_qty, 2);
+            })
+            ->editColumn('pending_qty', function ($row) {
+                return number_format($row -> pending_qty, 2);
+            })
+            ->addColumn('delivery_schedule', function ($row) {
+                $deliveryHtml = '';
+                if (count($row -> item_deliveries) > 0) {
+                    foreach ($row -> item_deliveries as $itemDelivery) {
+                        $deliveryDate = Carbon::parse($itemDelivery -> delivery_date) -> format('d-m-Y');
+                        $deliveryQty = number_format($itemDelivery -> qty, 2);
+                        $deliveryHtml .= "<span class='badge rounded-pill badge-light-primary'><strong>$deliveryDate</strong> : $deliveryQty</span>";
+                    }
+                } else {
+                    $parsedDeliveryDate = Carbon::parse($row -> delivery_date) -> format('d-m-Y');
+                    $deliveryHtml .= "$parsedDeliveryDate";
+                }
+                return $deliveryHtml;
+            })
+            ->addColumn('item_attributes', function ($row) {
+                $attributesUi = '';
+                if (count($row -> item_attributes) > 0) {
+                    foreach ($row -> item_attributes as $soAttribute) {
+                        $attrName = $soAttribute -> attribute_name;
+                        $attrValue = $soAttribute -> attribute_value;
+                        $attributesUi .= "<span class='badge rounded-pill badge-light-primary' > $attrName : $attrValue </span>";
+                    }
+                } else {
+                    $attributesUi = 'N/A';
+                }
+                return $attributesUi;
+            });
+            foreach ($dynamicFields as $field) {
+                $datatables = $datatables->addColumn($field -> name, function ($row) use ($field) {
+                    $value = "";
+                    $actualDynamicFields = $row -> header ?-> dynamic_fields;
+                    foreach ($actualDynamicFields as $actualDynamicField) {
+                        if ($field -> name == $actualDynamicField -> name) {
+                            $value = $actualDynamicField -> value;
+                        }
+                    }
+                    return $value;
+                });
+            }
+            $datatables = $datatables
             ->rawColumns(['item_attributes','delivery_schedule','status'])
             ->make(true);
+            return $datatables;
     }
     
 }

@@ -52,7 +52,6 @@
                                                 <th>Expense Date</th>
                                                 <th>Location</th>
                                                 <th>Cost Center</th>
-                                                <th>Rev. No.</th>
                                                 <th>Vendor</th>
                                                 <th>Currency</th>
                                                 <th>Item</th>
@@ -142,7 +141,7 @@
         });
         $(document).ready(function() {
             function renderData(data) {
-                return data ? data : 'N/A';
+                return data ? data : '';
             }
             var columns = [
                 { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
@@ -163,10 +162,6 @@
                     }
                 },
                 { data: 'cost_center', name: 'cost_center', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-                    $(td).addClass('no-wrap');
-                    }
-                },
-                { data: 'revision_number', name: 'revision_number', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                     $(td).addClass('no-wrap');
                     }
                 },

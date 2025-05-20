@@ -50,17 +50,16 @@
 					</div>
 					<div class="col-md-12">
 						<div class="table-responsive" style="overflow-y: auto;max-height: 200px;">
-							<table class="mt-1 table myrequesttablecbox table-striped po-order-detail"> 
+							<table class="mt-1 table myrequesttablecbox table-striped po-order-detail">
 								<thead>
 									<tr>
 										<th>
 											<div class="form-check form-check-inline me-0">
 												<input class="form-check-input" type="checkbox" name="podetail" id="inlineCheckbox1">
-											</div> 
+											</div>
 										</th>
                                         <th>SUPPLIER CODE</th>
                                         <th>SUPPLIER NAME</th>
-                                        <th>MRN SEREIS</th>
                                         <th>MRN NO.</th>
                                         <th>MRN Date</th>
                                         <th>ITEM CODE</th>

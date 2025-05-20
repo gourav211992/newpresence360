@@ -54,7 +54,6 @@
                                                 <th>Document No.</th>
                                                 <th>Document Date</th>
                                                 <th>Location</th>
-                                                <th>Rev. No</th>
                                                 <th>Vendor</th>
                                                 <th>Currency</th>
                                                 <th>Item</th>
@@ -146,7 +145,7 @@
 
         $(document).ready(function() {
             function renderData(data) {
-                    return data ? data : 'N/A';
+                    return data ? data : '';
                 }
                 var columns = [
                     { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
@@ -163,10 +162,6 @@
                         }
                     },
                     { data: 'location', name: 'location', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-                        $(td).addClass('no-wrap');
-                        }
-                    },
-                    { data: 'revision_number', name: 'revision_number', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('no-wrap');
                         }
                     },

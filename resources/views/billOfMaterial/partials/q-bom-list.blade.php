@@ -20,7 +20,11 @@ $attrValue = \App\Models\Attribute::where('id', @$attribute->attribute_value)->f
     <td>{{$piItem?->item?->item_name}}</td>
     <td>{!! $html !!}</td>
     <td>{{$piItem?->uom?->name}}</td>
-    <td>{{number_format($piItem?->total_value ?? 0 , 2)}}</td>
+    @if($canView)
+        <td>{{number_format($piItem?->total_value ?? 0 , 2)}}</td>
+    @else
+        <td>{{number_format(0 , 2)}}</td>
+    @endif
     <td>{{$piItem?->customer?->company_name}}</td>
     <td>{{$piItem?->book?->book_code ?? 'NA'}}</td>
     <td>{{$piItem?->document_number ?? 'NA'}}</td>

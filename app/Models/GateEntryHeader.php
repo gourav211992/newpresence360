@@ -6,6 +6,7 @@ use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
 use App\Traits\DateFormatTrait;
 use App\Traits\DefaultGroupCompanyOrg;
+use App\Traits\DynamicFieldsTrait;
 use App\Traits\FileUploadTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class GateEntryHeader extends Model
 {
-    use HasFactory, DateFormatTrait, SoftDeletes, FileUploadTrait,DefaultGroupCompanyOrg;
+    use HasFactory, DateFormatTrait, SoftDeletes, FileUploadTrait,DefaultGroupCompanyOrg, DynamicFieldsTrait;
 
     protected $table = 'erp_gate_entry_headers';
 
@@ -338,6 +339,11 @@ class GateEntryHeader extends Model
     public function latestShippingAddress()
     {
         return $this->addresses()->where('type', 'shipping')->latest()->first();
+    }
+
+    public function dynamic_fields()
+    {
+        return $this -> hasMany(ErpGeDynamicField::class, 'header_id');
     }
 }
 

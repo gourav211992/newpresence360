@@ -238,7 +238,6 @@ class TrialBalanceController extends Controller
 
         foreach ($ledgerData as $voucher) {
             $dateFormatted = \Carbon\Carbon::parse($voucher->date)->format('d-m-y');
-            // $voucherData[] = $dateFormatted;
             $seriesName = $voucher->series->service->name ?? '';
             $bookCode = $voucher->series->book_code ?? '';
             $voucherNo = $voucher->voucher_no ?? '';
@@ -246,13 +245,22 @@ class TrialBalanceController extends Controller
 
             $currentDebit = 0;
             $currentCredit = 0;
+
+            // 1. Get current debit/credit once
             foreach ($voucher->items as $item) {
                 if ($item->ledger_id == $r->ledger_id) {
                     $currentDebit = $item->debit_amt;
                     $currentCredit = $item->credit_amt;
                     $totalDebit += $currentDebit;
                     $totalCredit += $currentCredit;
-                    continue;
+                    break;
+                }
+            }
+
+            // 2. Build rows for export
+            foreach ($voucher->items as $item) {
+                if ($item->ledger_id == $r->ledger_id) {
+                    continue; // skip ledger line itself
                 }
 
                 $row = [];
@@ -267,8 +275,8 @@ class TrialBalanceController extends Controller
                     $row[] = $seriesName;
                     $row[] = $bookCode;
                     $row[] = $voucherNo;
-                    $row[] = Helper::formatIndianNumber($currentDebit);
-                    $row[] = Helper::formatIndianNumber($currentCredit);
+                    $row[] = Helper::formatIndianNumber($currentDebit);   // <- Add debit once
+                    $row[] = Helper::formatIndianNumber($currentCredit);  // <- Add credit once
                     $firstRow = false;
                 } else {
                     $row[] = ''; // Date
@@ -276,12 +284,12 @@ class TrialBalanceController extends Controller
                     $row[] = $formattedBalance;
                     $row[] = ''; // Series
                     $row[] = ''; // Book Code
-                    $row[] = $voucherNo; // Voucher No
-                    $row[] = ''; // Debit
-                    $row[] = ''; // Credit
+                    $row[] = $voucherNo;
+                    $row[] = ''; // Debit (only in first row)
+                    $row[] = ''; // Credit (only in first row)
                 }
 
-                $data[] = $row;
+                $data[] = $row; // append to final Excel export array
             }
         }
 

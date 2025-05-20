@@ -121,6 +121,7 @@ $(document).on('change', '[name*="comp_attribute"]', (e) => {
     // closestTr = $(`[name="components[${rowCount}][attr_group_id][${attrGroupId}][attr_name]"]`).closest('tr');
     // getItemDetail(closestTr);
     qtyEnabledDisabled();
+    setSelectedAttribute(rowCount);
 });
 
 // Check Negative Values
@@ -191,7 +192,6 @@ $(document).on('change',"[name*='rate']",(e) => {
     if (Number(acceptedQuantity.val())) {
         let itemRate = parseFloat(rate.value);
         // if(itemRate < 1) {
-        //     console.log('oldValue', oldValue);
         //     itemRate = oldValue;
         //     orderRate.val(oldValue);
         //     Swal.fire({
@@ -742,8 +742,7 @@ function checkBasicFilledDetail()
     let documentDate = $("[name='document_date']").val() || '';
     let storeId = $("[name='header_store_id']").val() || '';
     let subStoreId = $("[name='sub_store_id']").val() || '';
-    let costCenterId = $("[name='cost_center_id']").val() || '';
-    if(bookId && documentNumber && documentDate && storeId && subStoreId && costCenterId) {
+    if(bookId && documentNumber && documentDate && storeId && subStoreId) {
         filled = true;
     }
     return filled;
@@ -1319,7 +1318,6 @@ function getSubStores(storeLocationId, item='')
             store_id : storeId,
         },
         success: function(data) {
-            console.log('store wise sub stores', data);
             if((data.status == 200)  && data.data.length) {
                 let options = '';
                 data.data.forEach(function(location) {
@@ -1364,6 +1362,7 @@ function getCostCenters(storeLocationId) {
                 $(".cost_center").html(options);
                 $("#cost_center_div").show();
             } else {
+                $(".cost_center").empty();
                 $("#cost_center_div").hide();
             }
         },

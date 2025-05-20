@@ -1,7 +1,5 @@
 @extends('layouts.app')
 
-@section('styles')
-@endsection
 
 @section('content')
     <!-- BEGIN: Content-->
@@ -9,9 +7,9 @@
         <div class="content-overlay"></div>
         <div class="header-navbar-shadow"></div>
         <div class="content-wrapper container-xxl p-0">
-           
+
             <div class="content-body">
-                
+
                 <section id="basic-datatable">
                     <div class="card border  overflow-hidden">
 
@@ -86,7 +84,7 @@
                                                                                                                             $documents[] = $item->document;
                                                                                                                         }
 
-                                                                                                                @endphp          
+                                                                                                                @endphp
                                                         @if ($documents)
                                                             <span style="display: flex;margin:0;padding:0">
                                                                 @foreach ($documents as $doc)
@@ -101,7 +99,7 @@
                                                             </span>
                                                         @endif
 
-                                                 
+
 
 
                                                     <td class="text-nowrap">
@@ -295,77 +293,95 @@
                 order: [[0, 'asc']], // Default ordering by the first column (Date)
                 dom: '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-3 withoutheadbuttin dt-action-buttons text-end"B><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
                 lengthMenu: [7, 10, 25, 50, 75, 100], // Options for number of rows to show
-                buttons: [{
-                    extend: 'collection',
-                    className: 'btn btn-outline-secondary dropdown-toggle',
-                    text: feather.icons['share'].toSvg({
-                        class: 'font-small-4 mr-50'
-                    }) + 'Export',
-                    buttons: [{
-                            extend: 'print',
-                            text: feather.icons['printer'].toSvg({
-                                class: 'font-small-4 mr-50'
-                            }) + 'Print',
-                            className: 'dropdown-item',
+                 buttons:
+                [{
+                    extend: 'excel',
+                            text: feather.icons['file'].toSvg({ class: 'font-small-4 me-50' }) + 'Excel',
+                            className: 'btn btn-outline-secondary',
                             exportOptions: {
                                 columns: [0, 1, 2, 3, 4, 5, 6, 7]
                             },
                             filename: 'Vouchers Report'
-                        },
-                        {
-                            extend: 'csv',
-                            text: feather.icons['file-text'].toSvg({
-                                class: 'font-small-4 mr-50'
-                            }) + 'Csv',
-                            className: 'dropdown-item',
-                            exportOptions: {
-                                columns: [0, 1, 2, 3, 4, 5, 6, 7]
-                            },
-                            filename: 'Vouchers Report'
-                        },
-                        {
-                            extend: 'excel',
-                            text: feather.icons['file'].toSvg({
-                                class: 'font-small-4 mr-50'
-                            }) + 'Excel',
-                            className: 'dropdown-item',
-                            exportOptions: {
-                                columns: [0, 1, 2, 3, 4, 5, 6, 7]
-                            },
-                            filename: 'Vouchers Report'
-                        },
-                        {
-                            extend: 'pdf',
-                            text: feather.icons['clipboard'].toSvg({
-                                class: 'font-small-4 mr-50'
-                            }) + 'Pdf',
-                            className: 'dropdown-item',
-                            exportOptions: {
-                                columns: [0, 1, 2, 3, 4, 5, 6, 7]
-                            },
-                            filename: 'Vouchers Report'
-                        },
-                        {
-                            extend: 'copy',
-                            text: feather.icons['copy'].toSvg({
-                                class: 'font-small-4 mr-50'
-                            }) + 'Copy',
-                            className: 'dropdown-item',
-                            exportOptions: {
-                                columns: [0, 1, 2, 3, 4, 5, 6, 7]
-                            },
-                            filename: 'Vouchers Report'
-                        }
-                    ],
-                    init: function(api, node, config) {
+                    ,
+                    init: function (api, node, config) {
                         $(node).removeClass('btn-secondary');
                         $(node).parent().removeClass('btn-group');
-                        setTimeout(function() {
-                            $(node).closest('.dt-buttons').removeClass('btn-group')
-                                .addClass('d-inline-flex');
+                        setTimeout(function () {
+                            $(node).closest('.dt-buttons').removeClass('btn-group').addClass('d-inline-flex');
                         }, 50);
                     }
-                }],
+                    }],
+                // buttons: [{
+                //     extend: 'collection',
+                //     className: 'btn btn-outline-secondary dropdown-toggle',
+                //     text: feather.icons['share'].toSvg({
+                //         class: 'font-small-4 mr-50'
+                //     }) + 'Export',
+                //     buttons: [{
+                //             extend: 'print',
+                //             text: feather.icons['printer'].toSvg({
+                //                 class: 'font-small-4 mr-50'
+                //             }) + 'Print',
+                //             className: 'dropdown-item',
+                //             exportOptions: {
+                //                 columns: [0, 1, 2, 3, 4, 5, 6, 7]
+                //             },
+                //             filename: 'Vouchers Report'
+                //         },
+                //         {
+                //             extend: 'csv',
+                //             text: feather.icons['file-text'].toSvg({
+                //                 class: 'font-small-4 mr-50'
+                //             }) + 'Csv',
+                //             className: 'dropdown-item',
+                //             exportOptions: {
+                //                 columns: [0, 1, 2, 3, 4, 5, 6, 7]
+                //             },
+                //             filename: 'Vouchers Report'
+                //         },
+                //         {
+                //             extend: 'excel',
+                //             text: feather.icons['file'].toSvg({
+                //                 class: 'font-small-4 mr-50'
+                //             }) + 'Excel',
+                //             className: 'dropdown-item',
+                //             exportOptions: {
+                //                 columns: [0, 1, 2, 3, 4, 5, 6, 7]
+                //             },
+                //             filename: 'Vouchers Report'
+                //         },
+                //         {
+                //             extend: 'pdf',
+                //             text: feather.icons['clipboard'].toSvg({
+                //                 class: 'font-small-4 mr-50'
+                //             }) + 'Pdf',
+                //             className: 'dropdown-item',
+                //             exportOptions: {
+                //                 columns: [0, 1, 2, 3, 4, 5, 6, 7]
+                //             },
+                //             filename: 'Vouchers Report'
+                //         },
+                //         {
+                //             extend: 'copy',
+                //             text: feather.icons['copy'].toSvg({
+                //                 class: 'font-small-4 mr-50'
+                //             }) + 'Copy',
+                //             className: 'dropdown-item',
+                //             exportOptions: {
+                //                 columns: [0, 1, 2, 3, 4, 5, 6, 7]
+                //             },
+                //             filename: 'Vouchers Report'
+                //         }
+                //     ],
+                //     init: function(api, node, config) {
+                //         $(node).removeClass('btn-secondary');
+                //         $(node).parent().removeClass('btn-group');
+                //         setTimeout(function() {
+                //             $(node).closest('.dt-buttons').removeClass('btn-group')
+                //                 .addClass('d-inline-flex');
+                //         }, 50);
+                //     }
+                // }],
                 columnDefs: [{
                         "orderable": false,
                         "targets": [8]
@@ -384,4 +400,6 @@
             // Optionally, you can add some custom logic or event listeners here
         });
     </script>
+
+
 @endsection

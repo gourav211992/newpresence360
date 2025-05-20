@@ -354,6 +354,11 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div class="col-md-12">
+                                    @if (isset($dynamicFieldsUI))
+                                        {!! $dynamicFieldsUI !!}
+                                    @endif
+                                </div>
                                 <div class="card" id="item_section">
                                     <div class="card-body customernewsection-form">
                                         <div class="border-bottom mb-2 pb-25">

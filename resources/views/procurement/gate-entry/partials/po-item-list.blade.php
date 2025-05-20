@@ -17,19 +17,13 @@
         </td>
         @if(isset($poItem->po->type) && ($poItem->po->type == 'supplier-invoice'))
             <td class="no-wrap">
-                {{$poItem->po_item?->po?->book?->book_code ?? 'NA'}}
-            </td>
-            <td class="no-wrap">
-                {{$poItem->po_item?->po?->document_number ?? 'NA'}}
+                {{$poItem->po_item?->po?->book?->book_code ?? 'NA'}} - {{$poItem->po_item?->po?->document_number ?? 'NA'}}
             </td>
             <td class="no-wrap">
                 {{ $poItem->po_item->po?->getFormattedDate('document_date') }}
             </td>
             <td class="no-wrap">
-                {{$poItem->po?->book?->book_code ?? 'NA'}}
-            </td>
-            <td class="no-wrap">
-                {{$poItem->po?->document_number ?? 'NA'}}
+                {{$poItem->po?->book?->book_code ?? 'NA'}} - {{$poItem->po?->document_number ?? 'NA'}}
             </td>
             <td class="no-wrap">
                 {{ $poItem->po?->getFormattedDate('document_date') }}
@@ -67,15 +61,11 @@
             </td>
         @else
             <td class="no-wrap">
-                {{$poItem->po?->book?->book_code ?? 'NA'}}
-            </td>
-            <td class="no-wrap">
-                {{$poItem->po?->document_number ?? 'NA'}}
+                {{$poItem->po?->book?->book_code ?? 'NA'}} - {{$poItem->po?->document_number ?? 'NA'}}
             </td>
             <td class="no-wrap">
                 {{ $poItem->po?->getFormattedDate('document_date') }}
             </td>
-            <td></td>
             <td></td>
             <td></td>
             <td class="no-wrap">

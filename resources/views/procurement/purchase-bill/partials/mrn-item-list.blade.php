@@ -15,10 +15,7 @@
             {{$mrnItem?->mrnHeader?->vendor->company_name ?? 'NA'}}
         </td>
         <td class="no-wrap">
-            {{$mrnItem->mrnHeader?->book?->book_name ?? 'NA'}}
-        </td>
-        <td class="no-wrap">
-            {{$mrnItem->mrnHeader?->document_number ?? 'NA'}}
+            {{$mrnItem->mrnHeader?->book?->book_code ?? 'NA'}} - {{$mrnItem->mrnHeader?->document_number ?? 'NA'}}
         </td>
         <td class="no-wrap">
             {{-- {{$mrnItem->mrnHeader?->document_date ?? 'NA'}} --}}

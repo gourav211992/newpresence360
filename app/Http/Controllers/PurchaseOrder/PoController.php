@@ -67,30 +67,24 @@ class PoController extends Controller
         if (request()->ajax()) {
             $pos = PurchaseOrder::ofType($type)->withDefaultGroupCompanyOrg()
                     ->withDraftListingLogic()
-                    ->latest()
                     ->with('vendor')
-                    ->get();
+                    ->latest();
 
             return DataTables::of($pos)
             ->addIndexColumn()
             ->editColumn('document_status', function ($row) {
-                $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->document_status];
-                $route = route('po.edit', ['type' => request()->route('type'), 'id' => $row->id]);
-                $displayStatus = $row->display_status;
-                return "<div style='text-align:right;'>
-                    <span class='badge rounded-pill $statusClasss badgeborder-radius'>$displayStatus</span>
-                    <div class='dropdown' style='display:inline;'>
-                        <button type='button' class='btn btn-sm dropdown-toggle hide-arrow py-0 p-0' data-bs-toggle='dropdown'>
-                            <i data-feather='more-vertical'></i>
-                        </button>
-                        <div class='dropdown-menu dropdown-menu-end'>
-                            <a class='dropdown-item' href='" . $route . "'>
-                                <i data-feather='edit-3' class='me-50'></i>
-                                <span>View/ Edit Detail</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>";
+                return view('partials.action-dropdown', [
+                    'statusClass' => ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->document_status] ?? 'badge-light-secondary',
+                    'displayStatus' => $row->display_status,
+                    'row' => $row,
+                    'actions' => [
+                        [
+                            'url' => fn($r) => route('po.edit', ['type' => request()->route('type'), 'id' => $r->id]),
+                            'icon' => 'edit-3',
+                            'label' => 'View/ Edit Detail',
+                        ]
+                    ]
+                ])->render();
             })
             ->addColumn('book_name', function ($row) {
                 return $row->book ? $row->book?->book_code : 'N/A';
@@ -2034,8 +2028,14 @@ class PoController extends Controller
         if($references?->count()) {
             $referenceText = $references?->map(fn($ref) => "{$ref->book_code} - {$ref->document_number}")->implode(', ');
         }
-        $saleOrders = ErpSaleOrder::whereIn('id', $po->so_id)
-        ->get();
+        $findSo = $po->po_items()
+                    ->whereNotNull('so_id')
+                    ->count();
+        if($findSo) {
+            $soTracking = true; 
+        } else {
+            $soTracking = false; 
+        }
         $pdf = PDF::loadView(
             // return view(
             $path,
@@ -2059,7 +2059,7 @@ class PoController extends Controller
                 'sellerShippingAddress' => $sellerShippingAddress,
                 'sellerBillingAddress' => $sellerBillingAddress,
                 'buyerAddress' => $buyerAddress,
-                'saleOrders' => $saleOrders
+                'soTracking' => $soTracking
             ]
         );
         return $pdf->stream($fileName);
