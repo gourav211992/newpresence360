@@ -112,7 +112,7 @@
                                                     <i data-feather="arrow-left-circle"></i> Back
                                                 </a>
                                                 @if($update)
-                                                <button type="submit" class="btn btn-primary btn-sm ms-1">
+                                                <button type="submit" id="submitBtn" class="btn btn-primary btn-sm ms-1">
                                                     <i data-feather="check-circle"></i> Submit
                                                 </button>
                                                 @endif
@@ -144,13 +144,21 @@
             const name = $('input[name="name"]').val()?.trim().toLowerCase();
             const form = $(this);
             const formData = form.serialize();
+            $('.preloader').show();
+            let submitBtn = $('#submitBtn');
+            submitBtn.prop('disabled', true);
 
             // Client-side duplicate name check
             if (existingGroupNames.includes(name)) {
-                Swal.fire({
+                $('.preloader').hide();
+                submitBtn.prop('disabled', false);
+               Swal.fire({
                     icon: 'error',
                     title: 'Duplicate Entry',
-                    text: 'Group name already exists. Please choose a different name.'
+                    text: 'Group name already exists. Please choose a different name.',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    confirmButtonText: 'OK'
                 });
                 return;
             }
@@ -163,6 +171,7 @@
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 },
                 success: function (response) {
+                    $('.preloader').hide();
                     Swal.fire({
                         icon: 'success',
                         title: 'Updated!',
@@ -173,6 +182,8 @@
                     });
                 },
                 error: function (xhr) {
+                    $('.preloader').hide();
+                    submitBtn.prop('disabled', false);
                     if (xhr.status === 422) {
                         const errors = xhr.responseJSON.errors;
                         let message = Object.values(errors)[0][0];

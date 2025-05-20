@@ -69,7 +69,7 @@
                                         {{-- <a href="javascript: history.go(-1)" class="btn btn-secondary btn-sm"><i
                                             data-feather="arrow-left-circle"></i> Back </a>
                                             &nbsp; --}}
-                                        <a id="printButton" href="{{route('crdr.report.ledger.print',[$type,$ledger,$group])}}" class="btn btn-dark btn-sm mb-50 mb-sm-0 me-25"><i data-feather='printer'></i> Print</a>
+                                        <a id="printButton" data-url="{{route('crdr.report.ledger.print',[$type,$ledger,$group])}}" class="btn btn-dark btn-sm mb-50 mb-sm-0 me-25"><i data-feather='printer'></i> Print</a>
                                         <button data-bs-toggle="modal" data-bs-target="#addcoulmn" class="btn btn-primary btn-sm mb-0 waves-effect"><i data-feather="filter"></i> Advance Filter</button>
                                     </div>
                                 </div>
@@ -464,7 +464,7 @@
 
     <script>
         let baseUrl = "{{ route('crdr.report.ledger.print', [$type, $ledger, $group,'outstanding']) }}";
-        printButton.setAttribute("href", baseUrl);
+        printButton.setAttribute("data-url", baseUrl);
         $(".overdue").hide();
 
 function filter() {
@@ -819,39 +819,63 @@ if ($('#addcoulmn').length && $('#addcoulmn').hasClass('show')) {
 }}
 
 
-    document.addEventListener("DOMContentLoaded", function() {
-        const printButton = document.getElementById("printButton");
-        const radios = document.querySelectorAll("input[name='goodsservice']");
+    document.addEventListener("DOMContentLoaded", function () {
+    const printButton = document.getElementById("printButton");
+    const radios = document.querySelectorAll("input[name='goodsservice']");
 
-        radios.forEach(radio => {
-            radio.addEventListener("change", function() {
-                let billType = document.querySelector("input[name='goodsservice']:checked")?.value;
+    // Set initial href based on default bill type
+    let defaultBillType = document.querySelector("input[name='goodsservice']:checked")?.value || 'outstanding';
+    let baseUrl = `{{ route('crdr.report.ledger.print', [$type, $ledger, $group]) }}/${defaultBillType}`;
+    printButton.setAttribute("data-url", baseUrl);
 
-                // Base URL without billType
-                let baseUrl = "{{ route('crdr.report.ledger.print', [$type, $ledger, $group]) }}";
-
-                if (billType) {
-                    baseUrl += `/${billType}`; // Append bill type dynamically
-                }
-
-                printButton.setAttribute("href", baseUrl);
-            });
+    // Handle radio button changes
+    radios.forEach(radio => {
+        radio.addEventListener("change", function () {
+            let billType = document.querySelector("input[name='goodsservice']:checked")?.value;
+            if (billType) {
+                baseUrl = `{{ route('crdr.report.ledger.print', [$type, $ledger, $group]) }}/${billType}`;
+                printButton.setAttribute("data-url", baseUrl);
+            }
         });
     });
+
+    // Intercept the click to call the route via AJAX
+    document.getElementById("printButton").addEventListener("click", function (e) {
+    e.preventDefault();
+
+    const baseUrl = this.getAttribute("data-url");
+
+    $.ajax({
+        url: baseUrl,
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        success: function () {
+            window.open(baseUrl, '_blank');
+        },
+        error: function (xhr) {
+            let errorMessage = 'An unexpected error occurred.';
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMessage = xhr.responseJSON.message;
+            }
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Print Error',
+                html: errorMessage,
+                confirmButtonColor: '#d33'
+            });
+        }
+    });
+});
+
+});
+
     filterTable();
 
 
 
 
     </script>
-    @if (session('print_error'))
-            <script>
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: '{{ session("print_error") }}',
-                    confirmButtonText: 'OK'
-                });
-            </script>
-        @endif
 @endsection

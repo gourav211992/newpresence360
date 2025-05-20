@@ -198,19 +198,24 @@ $('#costCenter').on('submit', function (e) {
             const redirectUrl = "{{ route('cost-center.index') }}";
             $('#costCenter').on('submit', function (e) {
                 e.preventDefault();
-
+                $('.preloader').show();
                 let form = $(this);
                 let submitBtn = $('#submitBtn');
-                // submitBtn.prop('disabled', true
+                submitBtn.prop('disabled', true);
                 let name = $('input[name="name"]').val()?.trim().toLowerCase();
 
                 if (
                     existingCostCenters.map(n => n.toLowerCase()).includes(name)
                 ) {
+                    $('.preloader').hide();
+                    submitBtn.prop('disabled', false);
                     Swal.fire({
                         icon: 'error',
                         title: 'Duplicate Entry',
-                        text: 'A Cost Center with this name already exists.'
+                        text: 'A Cost Center with this name already exists.',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        confirmButtonText: 'OK'
                     });
                     return;
                 }
@@ -226,6 +231,7 @@ $('#costCenter').on('submit', function (e) {
                         'X-CSRF-TOKEN': $('input[name="_token"]').val()
                     },
                     success: function (response) {
+                        $('.preloader').hide();
                         Swal.fire({
                             icon: 'success',
                             title: 'Updated!',
@@ -236,6 +242,7 @@ $('#costCenter').on('submit', function (e) {
                         });
                     },
                     error: function (xhr) {
+                        $('.preloader').hide();
                         submitBtn.prop('disabled', false);
 
                         if (xhr.status === 422) {

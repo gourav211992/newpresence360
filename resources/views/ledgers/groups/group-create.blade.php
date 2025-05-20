@@ -120,7 +120,7 @@
                                                     class="btn btn-secondary btn-sm">
                                                     <i data-feather="arrow-left-circle"></i> Back
                                                 </button>
-                                                <button type="submit" class="btn btn-primary btn-sm ms-1">
+                                                <button type="submit" id="submitBtn" class="btn btn-primary btn-sm ms-1">
                                                     <i data-feather="check-circle"></i> Submit
                                                 </button>
                                             </div>
@@ -146,14 +146,21 @@
     $(document).ready(function () {
         $('#groupForm').on('submit', function (e) {
             e.preventDefault(); // Prevent default form submission
-
+            $('.preloader').show();
+            let submitBtn = $('#submitBtn');
+            submitBtn.prop('disabled', true);
             const name = $('input[name="name"]').val()?.trim().toLowerCase();
 
             if (existingGroupNames.includes(name)) {
+                $('.preloader').hide();
+                submitBtn.prop('disabled', false);
                 Swal.fire({
                     icon: 'error',
                     title: 'Duplicate Entry',
-                    text: 'Group name already exists. Please choose a different name.'
+                    text: 'Group name already exists. Please choose a different name.',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    confirmButtonText: 'OK'
                 });
                 return false;
             }
@@ -169,6 +176,7 @@
                     'X-CSRF-TOKEN': csrfToken
                 },
                 success: function (response) {
+                    $('.preloader').hide();
                     Swal.fire({
                         icon: 'success',
                         title: 'Created!',
@@ -179,6 +187,8 @@
                     });
                 },
                 error: function (xhr) {
+                    $('.preloader').hide();
+                    submitBtn.prop('disabled', false);
                     if (xhr.status === 422) {
                         const errors = xhr.responseJSON.errors;
                         let message = Object.values(errors)[0][0];

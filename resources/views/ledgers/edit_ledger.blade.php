@@ -315,9 +315,10 @@
 
                 const originalCode = $('input[name="code"]').attr('value')?.trim().toLowerCase();
                 const originalName = $('input[name="name"]').attr('value')?.trim().toLowerCase();
-
+                $('.preloader').show();
                 if (currentCode !== originalCode) {
                     if (existingLedgers.some(l => l.code.toLowerCase() === currentCode)) {
+                        $('.preloader').hide();
                         showToast('error', 'Ledger code already exists.');
                         return;
                     }
@@ -325,6 +326,7 @@
 
                 if (currentName !== originalName) {
                     if (existingLedgers.some(l => l.name.toLowerCase() === currentName)) {
+                        $('.preloader').hide();
                         showToast('error', 'Ledger name already exists.');
                         return;
                     }
@@ -332,6 +334,7 @@
 
                 // Passed all checks, show modal
                 const modal = new bootstrap.Modal(document.getElementById('postvoucher'));
+                $('.preloader').hide();
                 modal.show();
             });
 
@@ -538,6 +541,7 @@
                 confirmButtonText: "Yes, update it!"
             }).then((result) => {
                 if (result.isConfirmed) {
+                    $('.preloader').show();
                     let groupsData = [];
                     let updatedGroupValues = new Set();
                     let hasDuplicate = false;
@@ -561,6 +565,7 @@
                     });
 
                     if (hasDuplicate) {
+                        $('.preloader').hide();
                         showToast('error', 'Duplicate updated groups are not allowed!');
                         return;
                     }
@@ -577,6 +582,9 @@
             Swal.fire({
                 icon: type,
                 text: message,
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                confirmButtonText: 'OK'
             });
         }
     </script>

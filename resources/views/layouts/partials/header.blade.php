@@ -449,21 +449,45 @@
 
 document.addEventListener('DOMContentLoaded', function () {
     const select = document.getElementById('financial_year');
+    let previousIndex = select.selectedIndex;
 
-    select.addEventListener('change', function () {
-        const selected = this.options[this.selectedIndex];
+    select.addEventListener('change', function (event) {
+        const newIndex = this.selectedIndex;
+        const selected = this.options[newIndex];
+        const previousFY = this.options[previousIndex].textContent.trim().replace(/^FY\s*/, '');
+        const newFY = selected?.textContent.trim().replace(/^FY\s*/, '');
 
-        if (selected && selected.value.trim() !== "") {
-            const id = selected.value;
-            const start = selected.getAttribute('data-start');
-            const end = selected.getAttribute('data-end');
+        const id = selected.value;
+        const start = selected.getAttribute('data-start');
+        const end = selected.getAttribute('data-end');
 
-            if (start && end && id !== "") {
-                sendFySession(start, end, id);
-            }
+        // Immediately revert selection before async dialog
+        this.selectedIndex = previousIndex;
+
+        if (id.trim() !== "") {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: `Do you want to switch F.Y. from "${previousFY}" to "${newFY}"?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, switch it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // If confirmed, update index and trigger form submission or action
+                    previousIndex = newIndex;
+                    select.selectedIndex = newIndex;
+
+                    if (start && end && id !== "") {
+                        sendFySession(start, end, id);
+                    }
+                }
+            });
         }
     });
 });
+
 
 </script>
 

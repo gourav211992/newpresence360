@@ -61,7 +61,7 @@
                                     </div>
                                     <div
                                         class="col-md-8 text-sm-end pofilterboxcenter mb-0 d-flex flex-wrap align-items-center justify-content-sm-end">
-                                        <a id="printButton"    href="{{ route('finance.cashflow', 'print') }}?range={{ $range }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 me-25"><i data-feather='printer'></i> Print</a>
+                                        <a id="printButton"    data-url="{{ route('finance.cashflow', 'print') }}?range={{ $range }}" class="btn btn-dark btn-sm mb-50 mb-sm-0 me-25"><i data-feather='printer'></i> Print</a>
 
                                         <button data-bs-toggle="modal" data-bs-target="#filter"
                                             class="btn btn-warning btn-sm mb-50 mb-sm-0 me-25"><i data-feather="filter"></i>
@@ -476,9 +476,48 @@
 </div>
     @endsection
 @section('scripts')
+
     <!-- BEGIN: Dashboard Custom Code JS-->
     <script src="https://unpkg.com/feather-icons"></script>
     <script>
+        document.addEventListener("DOMContentLoaded", function () {
+    const printButton = document.getElementById("printButton");
+
+    if (printButton) {
+        printButton.addEventListener("click", function (e) {
+            e.preventDefault();
+
+            const url = printButton.getAttribute("data-url");
+
+            $.ajax({
+                url: url,
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                success: function () {
+                    // ✅ Open new tab if response is OK
+                    window.open(url, '_blank');
+                },
+                error: function (xhr) {
+                    let errorMessage = 'An unexpected error occurred.';
+
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    }
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Print Error',
+                        html: errorMessage,
+                        confirmButtonColor: '#d33'
+                    });
+                }
+            });
+        });
+    }
+});
+
         $(window).on('load', function() {
             if (feather) {
                 feather.replace({

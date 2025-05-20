@@ -269,7 +269,7 @@
 
         $('#ledgerForm').on('submit', function (e) {
             e.preventDefault(); // Prevent full page reload
-
+            $('.preloader').show();
             let form = $(this);
             let submitBtn = $('#submitBtn');
             let name = $('input[name="name"]').val()?.trim().toLowerCase();
@@ -277,22 +277,27 @@
 
             // Check if code already exists
             if (Existingledgers.some(l => l.code.toLowerCase() === code)) {
+                $('.preloader').hide();
                 showToast('error', 'Ledger code already exists.');
                 return;
             }
 
             // Check if name already exists
             if (Existingledgers.some(l => l.name.toLowerCase() === name)) {
+                $('.preloader').hide();
                 showToast('error', 'Ledger name already exists.');
                 return;
             }
 
+            // $('.preloader').show();
+            submitBtn.prop('disabled', true);
             // Proceed with AJAX submission
             $.ajax({
                 url: form.attr('action'),
                 method: form.attr('method'),
                 data: form.serialize(),
                 success: function (response) {
+                    $('.preloader').hide();
                     Swal.fire({
                         icon: 'success',
                         title: 'Created!',
@@ -304,6 +309,7 @@
                     });
                 },
                 error: function (xhr) {
+                    $('.preloader').hide();
                     submitBtn.prop('disabled', false);
 
                     if (xhr.status === 422) {
@@ -452,6 +458,15 @@
         // Initialize the view on page load
         toggleGstSection();
     });
+    function showToast(type, message) {
+        Swal.fire({
+            icon: type,
+            text: message,
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            confirmButtonText: 'OK'
+        });
+    }
 </script>
 @endsection
 

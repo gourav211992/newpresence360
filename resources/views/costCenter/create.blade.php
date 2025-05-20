@@ -188,19 +188,24 @@ $(document).ready(function () {
     const redirectUrl = "{{ route('cost-center.index') }}";
         $('#costCenter').on('submit', function (e) {
             e.preventDefault(); // Prevent full page reload
-
-            let form = $(this);
+            $('.preloader').show();
             let submitBtn = $('#submitBtn');
-            // submitBtn.prop('disabled', true);
+            let form = $(this);
+            submitBtn.prop('disabled', true);
 
             // Clear previous error messages
             // form.find('.alert.alert-danger').remove();
             let name = $('input[name="name"]').val()?.trim().toLowerCase();
             if (existingCostCenters.map(n => n.toLowerCase()).includes(name)) {
+                $('.preloader').hide();
+                submitBtn.prop('disabled', false);
                 Swal.fire({
                     icon: 'error',
                     title: 'Duplicate Entry',
-                    text: 'A Cost Center with this name already exists.'
+                    text: 'A Cost Center with this name already exists.',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    confirmButtonText: 'OK'
                 });
                 return; // Stop further execution
             }
@@ -210,6 +215,7 @@ $(document).ready(function () {
                 method: form.attr('method'),
                 data: form.serialize(),
                 success: function (response) {
+                    $('.preloader').hide();
                     Swal.fire({
                         icon: 'success',
                         title: 'Created!',
@@ -222,6 +228,7 @@ $(document).ready(function () {
                     });
                 },
                 error: function (xhr) {
+                    $('.preloader').hide();
                     submitBtn.prop('disabled', false);
 
                     if (xhr.status === 422) {
