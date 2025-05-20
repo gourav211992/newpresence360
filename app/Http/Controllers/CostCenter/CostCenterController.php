@@ -59,11 +59,11 @@ class CostCenterController extends Controller
                 'required',
                 'string',
                 'max:255',
-                Helper::uniqueRuleWithConditions('erp_cost_centers', [
-                    'organization_id' => $organizationId,
-                    'company_id' => $companyId,
-                    'group_id' => $groupId
-                ], null, 'id', false),
+                // Helper::uniqueRuleWithConditions('erp_cost_centers', [
+                //     'organization_id' => $organizationId,
+                //     'company_id' => $companyId,
+                //     'group_id' => $groupId
+                // ], null, 'id', false),
             ],
             // 'name' => 'required|string|max:255|unique:erp_cost_centers,name',
         ]);
@@ -133,11 +133,11 @@ class CostCenterController extends Controller
                 'required',
                 'string',
                 'max:255',
-                Helper::uniqueRuleWithConditions('erp_cost_centers', [
-                    'organization_id' => $organizationId,
-                    'company_id' => $companyId,
-                    'group_id' => $groupId
-                ], $id, 'id', false),
+                // Helper::uniqueRuleWithConditions('erp_cost_centers', [
+                //     'organization_id' => $organizationId,
+                //     'company_id' => $companyId,
+                //     'group_id' => $groupId
+                // ], $id, 'id', false),
             ],
             // 'name' => ['required', 'string', 'max:255', Rule::unique('erp_cost_groups')->ignore($id)],
         ]);

@@ -319,7 +319,7 @@
                 if (currentCode !== originalCode) {
                     if (existingLedgers.some(l => l.code.toLowerCase() === currentCode)) {
                         $('.preloader').hide();
-                        showToast('error', 'Ledger code already exists.');
+                        showToast('error', 'Ledger code already exists.','Duplicate Entry');
                         return;
                     }
                 }
@@ -327,7 +327,7 @@
                 if (currentName !== originalName) {
                     if (existingLedgers.some(l => l.name.toLowerCase() === currentName)) {
                         $('.preloader').hide();
-                        showToast('error', 'Ledger name already exists.');
+                        showToast('error', 'Ledger name already exists.','Duplicate Entry');
                         return;
                     }
                 }
@@ -578,10 +578,11 @@
             });
         }
 
-        function showToast(type, message) {
+        function showToast(type, message, title) {
             Swal.fire({
                 icon: type,
                 text: message,
+                title: title,
                 allowOutsideClick: false,
                 allowEscapeKey: false,
                 confirmButtonText: 'OK'

@@ -278,14 +278,14 @@
             // Check if code already exists
             if (Existingledgers.some(l => l.code.toLowerCase() === code)) {
                 $('.preloader').hide();
-                showToast('error', 'Ledger code already exists.');
+                showToast('error', 'Ledger code already exists.','Duplicate Entry');
                 return;
             }
 
             // Check if name already exists
             if (Existingledgers.some(l => l.name.toLowerCase() === name)) {
                 $('.preloader').hide();
-                showToast('error', 'Ledger name already exists.');
+                showToast('error', 'Ledger name already exists.','Duplicate Entry');
                 return;
             }
 
@@ -458,10 +458,11 @@
         // Initialize the view on page load
         toggleGstSection();
     });
-    function showToast(type, message) {
+    function showToast(type, message, title) {
         Swal.fire({
             icon: type,
             text: message,
+            title: title,
             allowOutsideClick: false,
             allowEscapeKey: false,
             confirmButtonText: 'OK'
