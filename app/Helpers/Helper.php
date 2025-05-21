@@ -3089,7 +3089,7 @@ return [
             return null;
         }
 
-      public static function getFinancialYears($organizationId = null)
+   public static function getFinancialYears($organizationId = null)
         {
             $currentUserId = Helper::getAuthenticatedUser()->auth_user_id;
             $currentUserType = Helper::getAuthenticatedUser()->authenticable_type;
@@ -3106,38 +3106,36 @@ return [
             }
 
             if ($financialYears->isNotEmpty()) {
-                return $financialYears
-                    ->filter(function ($financialYear) use ($currentUserId, $currentUserType) {
-                        if ($financialYear->fy_close == true && is_array($financialYear->access_by)) {
-                            return !collect($financialYear->access_by)->contains(function ($entry) use ($currentUserId, $currentUserType) {
-                                return isset($entry['user_id'], $entry['authorized'], $entry['authenticable_type'], $entry['locked']) &&
-                                    $entry['user_id'] == $currentUserId &&
-                                    $entry['authenticable_type'] == $currentUserType &&
-                                    (
-                                        $entry['authorized'] === false || $entry['locked'] === true
-                                    );
-                            });
-                        }
-                        return true; // If not closed or access_by is not array, include it
-                    })
-                    ->map(function ($financialYear) {
-                        $startYear = \Carbon\Carbon::parse($financialYear->start_date)->format('Y');
-                        $endYearShort = \Carbon\Carbon::parse($financialYear->end_date)->format('y');
-                        return [
-                            'id' => $financialYear->id,
-                            'alias' => $financialYear->alias,
-                            'start_date' => $financialYear->start_date,
-                            'end_date' => $financialYear->end_date,
-                            'range' => $startYear . '-' . $endYearShort,
-                            'authorized_users' => $financialYear->authorizedUsers()
-                        ];
-                    })
-                    ->values();
-            }
+        return $financialYears
+            ->filter(function ($financialYear) use ($currentUserId, $currentUserType) {
+                if ($financialYear->fy_close === true && is_array($financialYear->access_by)) {
+                    return !collect($financialYear->access_by)->contains(function ($entry) use ($currentUserId, $currentUserType) {
+                        return isset($entry['user_id'], $entry['authorized'], $entry['authenticable_type'], $entry['locked']) &&
+                                $entry['user_id'] == $currentUserId &&
+                                $entry['authenticable_type'] == $currentUserType &&
+                                $entry['authorized'] === false &&
+                                $entry['locked'] !== true; // only filter if NOT locked
+                    });
+                }
+                return true;
+            })
+            ->map(function ($financialYear) {
+                $startYear = \Carbon\Carbon::parse($financialYear->start_date)->format('Y');
+                $endYearShort = \Carbon\Carbon::parse($financialYear->end_date)->format('y');
+                return [
+                    'id' => $financialYear->id,
+                    'alias' => $financialYear->alias,
+                    'start_date' => $financialYear->start_date,
+                    'end_date' => $financialYear->end_date,
+                    'range' => $startYear . '-' . $endYearShort,
+                    'authorized_users' => $financialYear->authorizedUsers()
+                ];
+            })
+            ->values();
+    }
 
             return null;
         }
-
         // public static function getFyAuthorizedUsers(string $date): mixed
         // {
         //     $financialYear = ErpFinancialYear::withDefaultGroupCompanyOrg()
