@@ -3089,8 +3089,7 @@ return [
             return null;
         }
 
-   
-      public static function getFinancialYears($organizationId = null)
+   public static function getFinancialYears($organizationId = null)
         {
             $currentUserId = Helper::getAuthenticatedUser()->auth_user_id;
             $currentUserType = Helper::getAuthenticatedUser()->authenticable_type;
@@ -3136,34 +3135,6 @@ return [
     }
 
             return null;
-        }
-
-        // public static function getFyAuthorizedUsers(string $date): mixed
-        // {
-        //     $financialYear = ErpFinancialYear::withDefaultGroupCompanyOrg()
-        //         ->where('start_date', '<=', $date)
-        //         ->where('end_date', '>=', $date)
-        //         ->orWhere('fy_status',ConstantHelper::FY_CURRENT_STATUS)
-        //         ->first();
-        //     if (isset($financialYear)) {
-        //         return [
-        //             'alias' => $financialYear->alias,
-        //             'authorized_users' => $financialYear->authorizedUsers()
-        //         ];
-        //     } else {
-        //         return null;
-        //     }
-        // }
-
-        public static function getGroupsQuery($organizations=[])
-        {
-            $groups = Group::where('status', 'active')
-        ->where(function ($q) {
-        $q->withDefaultGroupCompanyOrg()
-          ->orWhere('edit', 0);
-    });
-
-    return $groups;
         }
         // public static function getFyAuthorizedUsers(string $date): mixed
         // {
