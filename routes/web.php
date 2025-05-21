@@ -2286,8 +2286,9 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::get('fixed-asset/sub_asset_details', [RegistrationController::class, 'subAssetDetails'])->name('finance.fixed-asset.sub_asset_details');
     Route::get('fixed-asset/getLedgerGroups', [RegistrationController::class, 'getLedgerGroups'])->name('finance.fixed-asset.getLedgerGroups');
     Route::get('fixed-asset/fetch-grn-data', [RegistrationController::class, 'fetchGrnData'])->name('finance.fixed-asset.fetch.grn.data');
-    Route::post('/asset-search', [RegistrationController::class, 'assetSearch'])->name('finance.fixed-asset.asset-search');
-    Route::post('/sub-asset-search', [RegistrationController::class, 'subAssetSearch'])->name('finance.fixed-asset.sub_asset_search');
+    Route::post('fixed-asset/asset-search', [RegistrationController::class, 'assetSearch'])->name('finance.fixed-asset.asset-search');
+    Route::post('fixed-asset/sub-asset-search', [RegistrationController::class, 'subAssetSearch'])->name('finance.fixed-asset.sub_asset_search');
+    Route::get('fixed-asset/get-categories', [RegistrationController::class, 'getCategories'])->name('finance.fixed-asset.get-categories');
 
     Route::resource('fixed-asset/issue-transfer', IssueTransferController::class)->names([
         'index' => 'finance.fixed-asset.issue-transfer.index',

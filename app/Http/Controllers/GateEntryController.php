@@ -838,7 +838,7 @@ class GateEntryController extends Controller
                 ->first();
             $view = 'procurement.gate-entry.view';
         }
-        $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$mrn->document_status] ?? '';
+        $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[@$mrn->document_status] ?? '';
         $locations = InventoryHelper::getAccessibleLocations('stock');
         $store = $mrn->erpStore;
         $deliveryAddress = $store?->address?->display_address;

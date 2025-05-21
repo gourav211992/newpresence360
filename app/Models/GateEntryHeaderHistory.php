@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Helpers\ConstantHelper;
 use App\Traits\DateFormatTrait;
 use App\Traits\DefaultGroupCompanyOrg;
+use App\Traits\DynamicFieldsTrait;
 use App\Traits\FileUploadTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class GateEntryHeaderHistory extends Model
 {
-    use HasFactory, DateFormatTrait, SoftDeletes, FileUploadTrait, DefaultGroupCompanyOrg;
+    use HasFactory, DateFormatTrait, SoftDeletes, FileUploadTrait, DefaultGroupCompanyOrg, DynamicFieldsTrait;
 
     protected $table = 'erp_gate_entry_headers_history';
 
@@ -228,6 +229,11 @@ class GateEntryHeaderHistory extends Model
     public function paymentTerm()
     {
         return $this->belongsTo(PaymentTerm::class,'payment_term_id');
+    }
+
+    public function dynamic_fields()
+    {
+        return $this -> hasMany(ErpGeDynamicField::class, 'header_id');
     }
 }
 
