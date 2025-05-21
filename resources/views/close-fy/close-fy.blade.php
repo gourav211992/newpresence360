@@ -211,12 +211,7 @@
                                                                 </select>
                                                                 <input type="hidden" class="authenticable-type" name="authenticable_type[]">
                                                             </td>
-                                                            <td>
-                                                                <select class="form-select mw-100 select2 permissions-box" id="permissions_{{ $rowNumber }}" multiple disabled>
-
-                                                                </select>
-                                                                {{-- <span class="badge rounded-pill badge-light-primary badgeborder-radius me-25">Posted</span> --}}
-                                                            </td>
+                                                            <td class="permission-badges"></td>
                                                             <td>
                                                             @if(($financialYear['fy_close'] ?? false) || !($locked === true))
                                                                 <a href="#" id="saveCloseFyBtn" class="text-primary"><i data-feather="plus-square"></i></a>
@@ -250,9 +245,9 @@
                                                                     </select>
                                                                     <input type="hidden" class="authenticable-type" name="authenticable_type[]">
                                                                 </td>
-                                                                <td>
-                                                                    <select class="form-select mw-100 select2 permissions-box" id="permissions_{{ $rowNumber }}" multiple disabled></select>
-                                                                </td>
+                                                                <td class="permission-badges"></td>
+
+
                                                                  @if($financialYear['fy_close'] == true && !$locked)
                                                                 <td>
                                                                     @if ($authorizedUsers->count() === 1 || $loop->first)
@@ -314,10 +309,7 @@
                         </select>
                         <input type="hidden" class="authenticable-type" name="authenticable_type[]">
                     </td>
-                    <td>
-                        <select class="form-select mw-100 select2 permissions-box" id="permissions_${rowNum}" name="permissions[${rowNum}][]" multiple disabled>
-                        </select>
-                    </td>
+                    <td class="permission-badges"></td>
                     <td>
                         <a href="#" class="text-danger deleteAuthorize"><i data-feather="trash-2"></i></a>
                     </td>
@@ -376,7 +368,6 @@
         }
 
         $(document).ready(function() {
-            console.log('{{ App\Helpers\Helper::getAuthenticatedUser()->auth_user_id }}','auth id');
             // Initialize the first row's permissions if a user is already selected
             // const initialSelected = $('#authorize_1').find('option:selected');
             // console.log(initialSelected)
@@ -448,19 +439,23 @@
                 const authType = selected.data('authenticable-type') || '';
 
                 const $row = $(this).closest('tr');
-                const $permissionsBox = $row.find('.permissions-box');
+                const $badgeTd = $row.find('.permission-badges');
                 const $authTypeInput = $row.find('.authenticable-type'); // hidden input
 
                 // Set auth type in hidden input
                 $authTypeInput.val(authType);
 
-                $permissionsBox.empty().prop('disabled', true);
                 const uniquePermissions = [...new Set(permissions)];
-                uniquePermissions.forEach(p => {
-                    $permissionsBox.append(`<option selected value="${p}">${p}</option>`);
-                });
 
-                $permissionsBox.trigger('change');
+                if (uniquePermissions.length) {
+                    const badgesHtml = uniquePermissions.map(p =>
+                        `<span class="badge rounded-pill badge-light-primary badgeborder-radius me-25">${p}</span>`
+                    ).join('');
+                    $badgeTd.html(badgesHtml);
+                } else {
+                    $badgeTd.html(`<span class="text-muted">No Permissions</span>`);
+                }
+
                 updateDisabledUsers();
             });
 
@@ -559,36 +554,29 @@
         $(document).ready(function() {
 
             function updatePermissionsBox(selectElement) {
-                let selectedOptions = selectElement.find(':selected');
-                console.log(selectedOptions);
-                let permissionSelect = selectElement.closest('tr').find('.permissions-box');
+                const selected = selectElement.find('option:selected');
+                const permissions = selected.data('permissions') || [];
+                const authType = selected.data('authenticable-type') || '';
 
-                let permissions = [];
+                const $row = selectElement.closest('tr');
+                const $badgeTd = $row.find('.permission-badges');
+                const $authTypeInput = $row.find('.authenticable-type'); // hidden input
 
-                selectedOptions.each(function() {
-                    let perms = $(this).data('permissions');
-                    if (Array.isArray(perms)) {
-                        permissions = permissions.concat(perms);
-                    }
-                });
-
-                // Remove duplicates
-                permissions = [...new Set(permissions)];
-
-                // Clear and populate permission box
-                permissionSelect.empty();
-
-                if (permissions.length > 0) {
-                    permissionSelect.prop('disabled', true);
-                    permissions.forEach(function(permission) {
-                        permissionSelect.append(`<option selected>${permission}</option>`);
-                    });
-                } else {
-                    permissionSelect.prop('disabled', true);
-                    permissionSelect.append(`<option>No Permissions</option>`);
+                // Set auth type in hidden input
+                if ($authTypeInput.length) {
+                    $authTypeInput.val(authType);
                 }
 
-                permissionSelect.trigger('change');
+                const uniquePermissions = [...new Set(permissions)];
+
+                if (uniquePermissions.length) {
+                    const badgesHtml = uniquePermissions.map(p =>
+                        `<span class="badge rounded-pill badge-light-primary badgeborder-radius me-25">${p}</span>`
+                    ).join('');
+                    $badgeTd.html(badgesHtml);
+                } else {
+                    $badgeTd.html(`<span class="text-muted">No Permissions</span>`);
+                }
             }
 
             // Trigger once on page load for all authorize-user dropdowns

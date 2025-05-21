@@ -553,7 +553,7 @@ class Helper
 
             $allChildIds = $master->getAllChildIds();
             $allChildIds[] = $master->id;
-            $allChildIds = self::getGroupsQuery($organizations)
+            $allChildIds = Helper::getGroupsQuery($organizations)
             ->whereIn('id',$allChildIds)->pluck('id')->toArray();
             $non_carry = Helper::getNonCarryGroups();
             if(in_array($master->id,$non_carry))
@@ -660,9 +660,9 @@ class Helper
         foreach ($groups as $master) {
             $allChildIds = $master->getAllChildIds();
             $allChildIds[] = $master->id;
-            $allChildIds = self::getGroupsQuery($organizations)
+            $allChildIds = Helper::getGroupsQuery($organizations)
             ->whereIn('id',$allChildIds)->pluck('id')->toArray();
-            $allChildIds = self::getGroupsQuery($organizations)
+            $allChildIds = Helper::getGroupsQuery($organizations)
             ->whereIn('id',$allChildIds)->pluck('id')->toArray();
 
 
@@ -848,15 +848,15 @@ class Helper
     public static function getBalanceSheetLedgers($group_id, $startDate, $endDate, $organizations, $currency = "org",$cost=null)
     {
 
-        $liabilities_group =  self::getGroupsQuery($organizations)->where('name', "Liabilities")
+        $liabilities_group =  Helper::getGroupsQuery($organizations)->where('name', "Liabilities")
                                 ->value('id');
 
 
 
-        $assets_group = self::getGroupsQuery($organizations)->where('name', "Assets")
+        $assets_group = Helper::getGroupsQuery($organizations)->where('name', "Assets")
     ->value('id');
 
-        $liabilities = self::getGroupsQuery($organizations)
+        $liabilities = Helper::getGroupsQuery($organizations)
         ->where('parent_group_id', $liabilities_group)
         ->pluck('id')->toArray();
 
@@ -867,7 +867,7 @@ class Helper
         $group = Group::find($group_id);
         $childrens = $group->getAllChildIds();
         $childrens[] = $group->id;
-        $childrens = self::getGroupsQuery($organizations)
+        $childrens = Helper::getGroupsQuery($organizations)
             ->whereIn('id',$childrens)->pluck('id')->toArray();
 
 
@@ -1781,7 +1781,7 @@ class Helper
         $fy = self::getFinancialYear($startDate);
 
 
-        $groups = self::getGroupsQuery($organizations)
+        $groups = Helper::getGroupsQuery($organizations)
         ->where('parent_group_id',$group_id)
         ->pluck('id');
 
@@ -1933,7 +1933,7 @@ class Helper
     {
 
         $data = PLGroups::select('id', 'name', 'group_ids')->get()->map(function ($plGroup) use ($type,$cost,$startDate, $endDate, $organizations, $currency) {
-        $groups =  self::getGroupsQuery($organizations)->whereIn('id', $plGroup->group_ids)
+        $groups =  Helper::getGroupsQuery($organizations)->whereIn('id', $plGroup->group_ids)
         ->select('id', 'name')
         ->get();
 
@@ -1945,7 +1945,7 @@ class Helper
             foreach ($groups as $master) {
                 $allChildIds = $master->getAllChildIds();
                 $allChildIds[] = $master->id;
-                $allChildIds = self::getGroupsQuery($organizations)
+                $allChildIds = Helper::getGroupsQuery($organizations)
                 ->whereIn('id',$allChildIds)->pluck('id')->toArray();
 
 
@@ -2965,7 +2965,7 @@ return [
                 // Get all matching groups (org-specific and global)
 
 
-                $matchedGroups = self::getGroupsQuery()->where('name', $name)->get();
+                $matchedGroups = Helper::getGroupsQuery()->where('name', $name)->get();
 
                 $groups = $groups->merge($matchedGroups);
             }
@@ -2976,11 +2976,11 @@ return [
                 $childIds = $group->getAllChildIds(); // Assume this returns array
                 $childIds[] = $group->id; // Add parent group ID
                 $allChildIds = array_merge($allChildIds, $childIds);
-                $allChildIds = self::getGroupsQuery()
+                $allChildIds = Helper::getGroupsQuery()
                 ->whereIn('id',$allChildIds)->pluck('id')->toArray();
             }
             if($ledger_name=="names")
-               return self::getGroupsQuery()->whereIn('id',$allChildIds)->pluck('name')->toArray();
+               return Helper::getGroupsQuery()->whereIn('id',$allChildIds)->pluck('name')->toArray();
 
             // Remove duplicate IDs
             else
@@ -3089,8 +3089,7 @@ return [
             return null;
         }
 
-   
-      public static function getFinancialYears($organizationId = null)
+   public static function getFinancialYears($organizationId = null)
         {
             $currentUserId = Helper::getAuthenticatedUser()->auth_user_id;
             $currentUserType = Helper::getAuthenticatedUser()->authenticable_type;
@@ -3136,34 +3135,6 @@ return [
     }
 
             return null;
-        }
-
-        // public static function getFyAuthorizedUsers(string $date): mixed
-        // {
-        //     $financialYear = ErpFinancialYear::withDefaultGroupCompanyOrg()
-        //         ->where('start_date', '<=', $date)
-        //         ->where('end_date', '>=', $date)
-        //         ->orWhere('fy_status',ConstantHelper::FY_CURRENT_STATUS)
-        //         ->first();
-        //     if (isset($financialYear)) {
-        //         return [
-        //             'alias' => $financialYear->alias,
-        //             'authorized_users' => $financialYear->authorizedUsers()
-        //         ];
-        //     } else {
-        //         return null;
-        //     }
-        // }
-
-        public static function getGroupsQuery($organizations=[])
-        {
-            $groups = Group::where('status', 'active')
-        ->where(function ($q) {
-        $q->withDefaultGroupCompanyOrg()
-          ->orWhere('edit', 0);
-    });
-
-    return $groups;
         }
         // public static function getFyAuthorizedUsers(string $date): mixed
         // {
