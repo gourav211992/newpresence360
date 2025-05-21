@@ -227,4 +227,24 @@
             // Return the formatted date
             return day + '-' + month + '-' + year;
         }
+           $(document).ready(function () {
+        $('.indian-number').each(function () {
+            let $el = $(this);
+            let value = $el.is('input') ? $el.val() : $el.text();
+
+            if ($.isNumeric(value)) {
+                let formatted = formatIndianNumber(value);
+                $el.is('input') ? $el.val(formatted) : $el.text(formatted);
+            }
+        });
+
+        // Optional: Format input fields on blur (live formatting)
+        $('.indian-number').on('blur', function () {
+            let $el = $(this);
+            let value = $el.val();
+            if ($.isNumeric(value)) {
+                $el.val(formatIndianNumber(value));
+            }
+        });
+    });
     </script>

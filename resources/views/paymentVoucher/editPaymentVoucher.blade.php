@@ -75,18 +75,18 @@
                                         data-feather="arrow-left-circle"></i> Back</a>
                                 @if(isset($fyear) && $fyear['authorized'])
                                     @if ($buttons['draft'])
-                                        <button type="button" onclick = "submitForm('draft');"
+                                        <a type="button" onclick = "submitForm('draft');"
                                             class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" id="draft"
-                                            name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
+                                            name="action" value="draft"><i data-feather='save'></i> Save as Draft</a>
                                     @endif
                                     @if($buttons['cancel'])
                                     <a id = "cancelButton" type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0"><i data-feather='x-circle'></i> Cancel</a>
                                     @endif
 
                                     @if ($buttons['submit'])
-                                        <button type="button" onclick = "submitForm('submitted');"
+                                        <a type="button" onclick = "submitForm('submitted');"
                                             class="btn btn-primary btn-sm" id="submitted" name="action"
-                                            value="submitted"><i data-feather="check-circle"></i> Submit</button>
+                                            value="submitted"><i data-feather="check-circle"></i> Submit</a>
                                     @endif
                                     @if ($buttons['approve'])
                                         <button type="button" id="reject-button" data-bs-toggle="modal"
@@ -1698,6 +1698,11 @@ $('#revisionNumber').prop('disabled', false);
         function submitForm(status) {
 
             $('#status').val(status);
+            if ($('#reference_no').hasClass('is-invalid') && $("#Bank").is(":checked")){
+                showToast('error', 'Reference no. Already exist');
+                return false;
+            }
+            else
             $('#submitButton').click();
 
         }

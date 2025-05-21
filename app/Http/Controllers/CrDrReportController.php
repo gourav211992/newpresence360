@@ -36,7 +36,7 @@ class CrDrReportController extends Controller
 {
     public function debit(Request $request)
     {
-        $start = null;
+    $start = null;
         $end = null;
         if ($request->date) {
             $dates = explode(' to ', $request->date);

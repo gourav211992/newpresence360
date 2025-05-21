@@ -758,36 +758,33 @@ class Helper
     }
 
     public static function formatIndianNumber($number)
-    {
-        // Remove any existing commas from the number
-        $number = str_replace(',', '', $number);
+{
+    // Remove any existing commas
+    $number = str_replace(',', '', $number);
 
-        // Ensure the number is a float
-        $number = floatval($number);
+    // Ensure it's a float and keep two decimal places
+    $number = number_format(floatval($number), 2, '.', '');
 
-        // Convert to a string and round to two decimal places
-        $number = number_format($number, 2, '.', ''); // Ensures two decimals, even if '00'
+    // Split into whole and decimal parts
+    $parts = explode('.', $number);
+    $wholePart = $parts[0];
+    $decimalPart = isset($parts[1]) ? $parts[1] : '00';
 
-        // Split the whole part and decimal part
-        $parts = explode('.', $number);
-        $wholePart = $parts[0];
-        $decimalPart = isset($parts[1]) ? $parts[1] : '00'; // Default to '00' if no decimal part
-
-        // Regular expression to match the Indian format
-        $lastThreeDigits = substr($wholePart, -3);
-        $restOfTheNumber = substr($wholePart, 0, strlen($wholePart) - 3);
-
-        if ($restOfTheNumber !== '') {
-            // Apply Indian numbering system format: commas after every 2 digits
-            $wholePart = preg_replace('/(\d)(?=(\d{2})+(?!\d))/', '$1,', $restOfTheNumber) . ',' . $lastThreeDigits;
-        } else {
-            // If there's no part left after the last 3 digits, keep the last 3 digits as is
-            $wholePart = $lastThreeDigits;
-        }
-
-        // Return whole part with decimal part (ensures two decimal places)
-        return $wholePart . '.' . $decimalPart; // Always show two decimal places
+    // If length of whole part is less than or equal to 3, no formatting needed
+    if (strlen($wholePart) <= 3) {
+        return $wholePart . '.' . $decimalPart;
     }
+
+    // Break into last 3 digits and the rest
+    $lastThreeDigits = substr($wholePart, -3);
+    $restOfTheNumber = substr($wholePart, 0, -3);
+
+    // Format the rest with commas after every 2 digits
+    $restOfTheNumber = preg_replace('/\B(?=(\d{2})+(?!\d))/', ',', $restOfTheNumber);
+
+    // Combine and return formatted number
+    return $restOfTheNumber . ',' . $lastThreeDigits . '.' . $decimalPart;
+}
 
 
      public static function removeCommas($input)
