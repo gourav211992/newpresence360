@@ -11,6 +11,8 @@ use App\Helpers\InventoryHelper;
 use App\Helpers\SaleModuleHelper;
 use App\Http\Requests\ErpRateContractRequest;
 use App\Models\AuthUser;
+use App\Helpers\DynamicFieldHelper;
+use App\Models\ErpRcDynamicField;
 use App\Models\Country;
 use App\Models\Currency;
 use App\Models\ErpInvoiceItem;
@@ -238,6 +240,7 @@ class ErpRCController extends Controller
             //     ->where('status', ConstantHelper::ACTIVE)
             //     ->get();
             $payment_term = PaymentTerm::find($order->payment_term_id);
+            $dynamicFieldsUI = $order -> dynamicfieldsUi();
             $data = [
                 'user' => $user,
                 'users' => $users,
@@ -250,7 +253,8 @@ class ErpRCController extends Controller
                 'series' => $books,
                 'order' => $order,
                 'countries' => $countries,
-                'buttons' => $buttons,
+                'buttons' => $buttons,                
+                'dynamicFieldsUi' => $dynamicFieldsUI,
                 'approvalHistory' => $approvalHistory,
                 'type' => $type,
                 'revision_number' => $revision_number,
@@ -627,6 +631,15 @@ class ErpRCController extends Controller
                 //         'message' => 'Stock not available'
                 //     ], 422);
                 // }
+                //Dynamic Fields
+                $status = DynamicFieldHelper::saveDynamicFields(ErpRcDynamicField::class, $rateContract -> id, $request -> dynamic_field ?? []);
+                if ($status && !$status['status'] ) {
+                    DB::rollBack();
+                    return response() -> json([
+                        'message' => $status['message'],
+                        'error' => ''
+                    ], 422);
+                }
                 DB::commit();
                 $module = ConstantHelper::RC_SERVICE_ALIAS;
                 return response() -> json([

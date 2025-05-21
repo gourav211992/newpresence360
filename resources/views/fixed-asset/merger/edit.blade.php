@@ -847,7 +847,7 @@ $('#addNewRowBtn').on('click', function () {
         <td class="poprod-decpt">
             <select id="sub_asset_id_${rowCount}" name="sub_asset_id[]" data-id="${rowCount}"
                 class="form-select mw-100 select2 sub_asset_id" multiple required>
-                <option value="">Select</option>
+                <option disabled value="">Select</option>
                 <!-- Will be filled via AJAX -->
             </select>
         </td>
@@ -1002,7 +1002,7 @@ function initializeAssetAutocomplete(selector) {
                 data: { id: ui.item.value,merger:"{{$data->id}}"},
                 success: function (response) {
                 subAssetSelect.empty();
-                    subAssetSelect.html('<option value="">Select</option>');
+                    subAssetSelect.html('<option disabled value="">Select</option>');
                     $.each(response, function (key, subAsset) {
                         subAssetSelect.append(
                             '<option value="' + subAsset.id + '">' + subAsset.sub_asset_code + '</option>'
@@ -1141,6 +1141,18 @@ $('#location').on('change', function () {
 });
 
 $('#location').trigger('change');
+function getAllAssetIds() {
+    let assetIds = [];
+
+    $('.asset_id').each(function () {
+        let val = $(this).val();
+        if (val) {
+            assetIds.push(parseFloat(val));
+        }
+    });
+
+    return assetIds;
+}
 
     </script>
     <!-- END: Content-->

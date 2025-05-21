@@ -85,7 +85,8 @@ class MrnHeaderHistory extends Model
         'lot_number',
         'payment_term_id',
         'addressable_id',
-        'billing_address'
+        'billing_address',
+        'is_warehouse_required'
     ];
 
     protected $casts = [

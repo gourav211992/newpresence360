@@ -70,6 +70,16 @@
                                                     <input type="text" name="description" class="form-control" id="description">
                                                 </div>
                                             </div>
+                                            <div class="row align-items-center mb-1">
+                                                <div class="col-md-3">
+                                                    <label class="form-label">
+                                                        Safety Buffer(%) <span class="text-danger"></span>
+                                                    </label>
+                                                </div>
+                                                <div class="col-md-5">
+                                                    <input type="text" name="safety_buffer_perc" class="form-control" id="safety_buffer_perc">
+                                                </div>
+                                            </div>
                                             <div class="border p-2 rounded bg-light">
                                                 <ol class="mb-0 small text-danger fw-number">
                                                     <li>All stations, except the last level, must have a parent.</li>

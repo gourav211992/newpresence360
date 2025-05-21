@@ -48,6 +48,9 @@ class ProductionRouteController extends Controller
                 ->editColumn('description', function ($pr) {
                     return $pr->description ?? '';
                 })
+                ->editColumn('safety_buffer_perc', function ($pr) {
+                    return $pr->safety_buffer_perc ?? '';
+                })
                 ->addColumn('levels', function ($pr) {
                     return $pr->levels ? count($pr->levels) : 0;
                 })
@@ -184,6 +187,7 @@ class ProductionRouteController extends Controller
             $pRoute->organization_id = $organizationId;
             $pRoute->group_id = $groupId;
             $pRoute->company_id = $companyId;
+            $pRoute->safety_buffer_perc = $request->safety_buffer_perc ?? '0';
             $pRoute->save();
 
             // Level Save
@@ -366,6 +370,7 @@ class ProductionRouteController extends Controller
             }
             $prRouteData->name = $request->all()['name'];
             $prRouteData->description = $request->all()['description'];
+            $prRouteData->safety_buffer_perc = $request->all()['safety_buffer_perc'] ?? '0';
             $prRouteData->status = $request->all()['status'];
             $prRouteData->save();
             if (isset($request->all()['levels'])) {

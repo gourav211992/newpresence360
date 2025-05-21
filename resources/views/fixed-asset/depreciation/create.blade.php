@@ -380,7 +380,7 @@
             let parts = selectedRange.split(" to ");
             let startDate = new Date(parts[0].split('-').reverse().join('-')); // Convert to "YYYY-MM-DD"
             let endDate = new Date(parts[1].split('-').reverse().join('-'));   // Same format
-            console.log(endDate);
+            //console.log(endDate);
 
             let today = new Date();
 
@@ -481,12 +481,16 @@ document.getElementById("process_btn").addEventListener("click", function () {
 
             data.forEach((asset, index) => {
                 asset.sub_asset.forEach((sub_asset, index) => {
-                    let to_date = $('#to_date_param').val(); // e.g., "30-04-2025"
+                let to_date = $('#to_date_param').val(); // e.g., "30-04-2025"
                 let inputDate = asset.last_dep_date;   // e.g., "2025-04-25"
 
                 // Convert inputDate (Y-m-d) to d-m-Y
                 let parts = inputDate.split("-"); // ["2025", "04", "25"]
-                let from_date = `${parts[2]}-${parts[1]}-${parts[0]}`; // "25-04-2025"
+                let from_date = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                
+                
+                let partsc = asset.capitalize_date.split("-"); // ["2025", "04", "25"]
+                let from_date_cap = `${partsc[2]}-${partsc[1]}-${partsc[0]}`;
 
                 // Convert both dates to Date objects
                 function parseDMY(dateStr) {
@@ -496,13 +500,30 @@ document.getElementById("process_btn").addEventListener("click", function () {
 
                 let fromDateObj = parseDMY(from_date);
                 let toDateObj = parseDMY(to_date);
+                let fromDateObjCap = parseDMY(from_date_cap);
 
+                    // Calculate expiry date: fromDate + useful_life in days
+                let daysToAdd = asset.useful_life * 365; // You can adjust for leap years if needed
+                let expiryDate = new Date(fromDateObjCap.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
+                
+
+               
+                // If expiry date > toDate, then toDate = expiry date
+                if (expiryDate < toDateObj) {
+                        toDateObj = expiryDate;
+
+                        // Format the updated `to_date`
+                        let d = toDateObj.getDate().toString().padStart(2, '0');
+                        let m = (toDateObj.getMonth() + 1).toString().padStart(2, '0');
+                        let y = toDateObj.getFullYear();
+                        to_date = `${d}-${m}-${y}`;
+                            //console.log("Expiry Date:"+expiryDate);
+                            
+                        
+                    }
+                
                 // Calculate difference in milliseconds
                 let diffTime = toDateObj - fromDateObj;
-                console.log("Index:"+index);
-                console.log("From Date:"+from_date);
-                console.log("To Date:"+to_date);
-
                 
 
                 // Convert to days
@@ -510,22 +531,22 @@ document.getElementById("process_btn").addEventListener("click", function () {
               
                 if(diffDays>0){
                     let depType = asset.depreciation_method;
-                    console.log("dep_method"+depType);
+                    //console.log("dep_method"+depType);
                     let fy = @json($fy);
 
                         // Determine which asset value to use based on $dep_type
                         let value;
-                        console.log()
+                        //console.log()
                         if (depType === "SLM") {
                             value = sub_asset.current_value;
-                            console.log("selected_method SLM");
+                            //console.log("selected_method SLM");
                         } else {
                             value = sub_asset.current_value_after_dep;
-                            console.log("selected_method WDV");
+                            //console.log("selected_method WDV");
                        
                         } 
-                    console.log("DepRate:"+asset.depreciation_percentage_year);
-                    console.log("DiffDays:"+diffDays);
+                    //console.log("DepRate:"+asset.depreciation_percentage_year);
+                    //console.log("DiffDays:"+diffDays);
                     let totalDepreciation = ((parseFloat(asset.depreciation_percentage_year/100)*parseFloat(value)) * diffDays / 365).toFixed(4);
                     let after_dep_value = sub_asset.current_value_after_dep - totalDepreciation;
                     let posted_days = 0;
@@ -654,7 +675,7 @@ document.getElementById("process_btn").addEventListener("click", function () {
             let futureDateAllowed = false;
 
             if (data != null) {
-                console.log(data.parameters.back_date_allowed);
+                //console.log(data.parameters.back_date_allowed);
                 if (Array.isArray(data?.parameters?.back_date_allowed)) {
                     for (let i = 0; i < data.parameters.back_date_allowed.length; i++) {
                         if (data.parameters.back_date_allowed[i].trim().toLowerCase() === "yes") {
@@ -671,7 +692,7 @@ document.getElementById("process_btn").addEventListener("click", function () {
                         }
                     }
                 }
-                //console.log(backDateAllowed, futureDateAllowed);
+                ////console.log(backDateAllowed, futureDateAllowed);
 
             }
 

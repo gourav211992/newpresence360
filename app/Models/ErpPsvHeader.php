@@ -5,6 +5,7 @@ use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
 use App\Traits\DateFormatTrait;
 use App\Traits\DefaultGroupCompanyOrg;
+use App\Traits\DynamicFieldsTrait;
 use App\Traits\UserStampTrait;
 use App\Traits\FileUploadTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ErpPsvHeader extends Model
 {
-    use HasFactory, SoftDeletes, DefaultGroupCompanyOrg, FileUploadTrait, DateFormatTrait, UserStampTrait;
+    use HasFactory, SoftDeletes, DefaultGroupCompanyOrg, FileUploadTrait, DynamicFieldsTrait, DateFormatTrait, UserStampTrait;
 
     protected $table = "erp_psv_headers";
     protected $fillable = [
@@ -120,6 +121,9 @@ class ErpPsvHeader extends Model
     {
         return $this -> belongsTo(Book::class, 'book_id');
     }
-
+    public function dynamic_fields()
+    {
+        return $this -> hasMany(ErpPsvDynamicField::class, 'header_id');
+    }
     
 }

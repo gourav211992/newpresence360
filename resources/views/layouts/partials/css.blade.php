@@ -36,7 +36,3 @@
 
     <!--summernote-->
     <link href="{{ asset('app-assets/summernote/summernote-lite.min.css') }}" rel="stylesheet">
-    
-    <style type="text/css">
-        .myrequesttablecbox.dataTable tr th { white-space: nowrap; font-size: 11px !important }
-    </style>

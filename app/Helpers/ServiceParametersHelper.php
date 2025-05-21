@@ -1764,6 +1764,77 @@ class ServiceParametersHelper
             'service_level_visibility' => true
         ]
     ];
+
+    const INSPECTION_SERVICE_PARAMETERS = [
+        [
+            "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
+            "applicable_values" => [ConstantHelper::MRN_SERVICE_ALIAS], //All possible values
+            "default_value" => [ConstantHelper::MRN_SERVICE_ALIAS], //Default selected value(s)
+            'is_multiple' => true, // Whether or not to allow multiple selection
+            'service_level_visibility' => true
+        ],
+        [
+            "name" => self::REFERENCE_FROM_SERIES_PARAM,
+            "applicable_values" => [],
+            "default_value" => [],
+            'is_multiple' => true,
+            'service_level_visibility' => false
+        ],
+        [
+            "name" => self::BACK_DATE_ALLOW_PARAM,
+            "applicable_values" => self::BACK_DATE_ALLOW_PARAM_VALUES,
+            "default_value" => ['yes'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+        [
+            "name" => self::FUTURE_DATE_ALLOW_PARAM,
+            "applicable_values" => self::FUTURE_DATE_ALLOW_PARAM_VALUES,
+            "default_value" => ['yes'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+        [
+            "name" => self::GL_POSTING_REQUIRED_PARAM,
+            "applicable_values" => self::GL_POSTING_REQUIRED_PARAM_VALUES,
+            "default_value" => ['no'],
+            'is_multiple' => false,
+            'service_level_visibility' => true,
+            'type' => self::GL_PARAMETERS
+        ],
+        [
+            "name" => self::GL_POSTING_SERIES_PARAM,
+            "applicable_values" => [],
+            "default_value" => [],
+            'is_multiple' => true,
+            'service_level_visibility' => false,
+            'type' => self::GL_PARAMETERS
+        ],
+        [
+            "name" => self::POST_ON_ARROVE_PARAM,
+            "applicable_values" => self::POST_ON_ARROVE_PARAM_VALUES,
+            "default_value" => ['no'],
+            'is_multiple' => false,
+            'service_level_visibility' => true,
+            'type' => self::GL_PARAMETERS
+        ],
+        [
+            "name" => self::GL_SEPERATE_DISCOUNT_PARAM,
+            "applicable_values" => self::GL_SEPERATE_DISCOUNT_PARAM_VALUE,
+            "default_value" => ['no'],
+            'is_multiple' => false,
+            'service_level_visibility' => true,
+            'type' => self::GL_PARAMETERS
+        ],
+        [
+            "name" => self::TAX_REQUIRED_PARAM,
+            "applicable_values" => self::TAX_REQUIRED_PARAM_VALUES,
+            "default_value" => ['yes'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ]
+    ];
+
     const MATERIAL_ISSUE_SERVICE_PARAMETERS = [
         [
             "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
@@ -2214,6 +2285,7 @@ class ServiceParametersHelper
         ConstantHelper::SUPPLIER_INVOICE_SERVICE_ALIAS => self::SUPPLIER_INVOICE_SERVICE_PARAMETERS,
         ConstantHelper::MRN_SERVICE_ALIAS => self::MRN_SERVICE_PARAMETERS,
         ConstantHelper::PB_SERVICE_ALIAS => self::PB_SERVICE_PARAMETERS,
+        ConstantHelper::INSPECTION_SERVICE_ALIAS => self::INSPECTION_SERVICE_PARAMETERS,
         ConstantHelper::EXPENSE_ADVISE_SERVICE_ALIAS => self::EXPENSE_ADVISE_SERVICE_PARAMETERS,
         ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS => self::PURCHASE_RETURN_SERVICE_PARAMETERS,
         ConstantHelper::MATERIAL_REQUEST_SERVICE_ALIAS => self::MATERIAL_REQUEST_SERVICE_PARAMETERS,

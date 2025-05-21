@@ -1,12 +1,16 @@
 <?php
-
 namespace App\Http\Requests;
 
-use App\Helpers\ConstantHelper;
-use App\Helpers\Helper;
-use App\Models\NumberPattern;
 use Auth;
+use App\Helpers\Helper;
+use App\Helpers\ConstantHelper;
 use Illuminate\Foundation\Http\FormRequest;
+
+use App\Models\Item;
+use App\Models\PoItem;
+use App\Models\MrnDetail;
+use App\Models\NumberPattern;
+use App\Models\ItemAttribute;
 
 class EditMaterialReceiptRequest extends FormRequest
 {
@@ -63,11 +67,26 @@ class EditMaterialReceiptRequest extends FormRequest
             }
         }
 
+        $rules['components.*.attr_group_id.*.attr_name'] = 'required';
         $rules['component_item_name.*'] = 'required';
-        $rules['components.*.order_qty'] = 'required|numeric';
-        $rules['components.*.accepted_qty'] = 'required|numeric';
-        $rules['components.*.rate'] = 'required|numeric';
+        $rules['components.*.order_qty'] = 'required|numeric|min:0.01';
+        $rules['components.*.accepted_qty'] = 'required|numeric|min:0.01';
+        if ($this->input('components.*.is_inspection') === 0) {
+            $rules['components.*.accepted_qty'] = 'required|numeric|min:0.01';
+        }
+        $rules['components.*.rate'] = 'required|numeric|min:0.01';
         $rules['components.*.remark'] = 'nullable|max:250';
+
+        foreach ($this->input('components', []) as $index => $component) {
+            $item_id = $component['item_id'] ?? null;
+            $item = Item::find($item_id);
+            $index = $index + 1;
+            if ($item && $item->itemAttributes->count() > 0) {
+                $rules["components.$index.attr_group_id.*.attr_name"] = 'required';
+            } else {
+                $rules["components.$index.attr_group_id.*.attr_name"] = 'nullable';
+            }
+        }
 
         return $rules;
     }
@@ -101,5 +120,61 @@ class EditMaterialReceiptRequest extends FormRequest
             'components.*.rate.numeric' => 'Rate must be integer',
         ];
  
+    }
+
+    /**
+     * Configure the validator instance.
+     *
+     * @param \Illuminate\Validation\Validator $validator
+     * @return void
+     */
+    protected function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            $components = $this->input('components', []);
+            $items = [];
+            foreach ($components as $key => $component) {
+                $itemValue = floatval($component['item_total_cost']);
+                if($itemValue < 0) {
+                    $validator->errors()->add("components.$key.item_name", "Item total can't be negative.");
+                }
+                $itemId = $component['item_id'] ?? null;
+                $uomId = $component['uom_id'] ?? null;
+                $soId = $component['so_id'] ?? null;
+                $attributes = [];
+                foreach ($component['attr_group_id'] ?? [] as $groupId => $attrName) {
+                    $attr_id = $groupId;
+                    $attr_value = $attrName['attr_name'] ?? null;
+                    if ($attr_id && $attr_value) {
+                        $attributes[] = [
+                            'attr_id' => $attr_id,
+                            'attr_value' => $attr_value,
+                        ];
+                    }
+                }
+                $currentItem = [
+                    'item_id' => $itemId,
+                    'uom_id' => $uomId,
+                    'attributes' => $attributes,
+                    'so_id' => $soId,
+                ];
+                foreach ($items as $existingItem) {
+                    if (
+                        $existingItem['item_id'] === $currentItem['item_id'] &&
+                        $existingItem['uom_id'] === $currentItem['uom_id'] &&
+                        $existingItem['attributes'] === $currentItem['attributes'] &&
+                        $existingItem['so_id'] === $currentItem['so_id']
+                    ) {
+                        $validator->errors()->add(
+                            "components.$key.item_id",
+                            "Duplicate item!"
+                            // "Duplicate entry found for item_id: {$itemId}, uom_id: {$uomId}."
+                        );
+                        return;
+                    }
+                }
+                $items[] = $currentItem;
+            }
+        });
     }
 }

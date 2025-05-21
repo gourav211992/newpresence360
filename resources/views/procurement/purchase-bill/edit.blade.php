@@ -294,7 +294,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-12">
+                                <div class="col-md-12 {{(isset($mrn) && count($mrn -> dynamic_fields)) > 0 ? '' : 'd-none'}}">
                                     @if (isset($dynamicFieldsUI))
                                         {!! $dynamicFieldsUI !!}
                                     @endif

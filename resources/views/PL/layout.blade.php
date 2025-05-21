@@ -182,13 +182,19 @@
                                                 </select>
                                             </div>
                                         </div>
-                                </div>
-                                        @if(isset($order))
-                                            @include('partials.approval-history', ['document_status' => $order->document_status, 'revision_number' => $order->revision_number]) 
-                                        @endif
-                                    </div> 
-                                </div>
+                                    </div>
+                                    @if(isset($order))
+                                    @include('partials.approval-history', ['document_status' => $order->document_status, 'revision_number' => $order->revision_number]) 
+                                    @endif
+                                </div> 
                             </div>
+                        </div>
+                        <div class="col-md-12 {{(isset($order) && count($order -> dynamic_fields)) > 0 ? '' : 'd-none'}}" id = "dynamic_fields_section">
+                            @if (isset($dynamicFieldsUi))
+                                {!! $dynamicFieldsUi !!}
+                            @endif
+                        </div>    
+
                             @if(isset($order) && $order->document_status != App\Helpers\ConstantHelper::DRAFT)
                                 @include('pl.edit')
                             @else

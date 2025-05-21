@@ -1,7 +1,7 @@
 <div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
    <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <form class="ajax-input-form" method="POST" action="{{ route('document.approval.bom') }}" data-redirect="{{ route('bill.of.material.index') }}" enctype='multipart/form-data'>
+        <form class="ajax-input-form" method="POST" action="{{ route('document.approval.bom') }}" data-redirect="{{ url(request()->segments()[0]) }}" enctype='multipart/form-data'>
           @csrf
           <input type="hidden" name="action_type" id="action_type">
           <input type="hidden" name="id" value="{{$id ?? ''}}">

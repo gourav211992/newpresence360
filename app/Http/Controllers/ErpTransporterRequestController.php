@@ -18,6 +18,8 @@ use Illuminate\Http\Request;
 use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
 use App\Helpers\InventoryHelper;
+use App\Helpers\DynamicFieldHelper;
+use App\Models\ErpTrDynamicField;
 use App\Helpers\NumberHelper;
 use App\Helpers\ItemHelper;
 use App\Helpers\ServiceParametersHelper;
@@ -308,6 +310,8 @@ class ErpTransporterRequestController extends Controller
             else{
                 $displayStatus = ucfirst($order->document_status);
             }
+            $dynamicFieldsUI = $order -> dynamicfieldsUi();
+
             $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$order->document_status] ?? '';
             $typeName = "Transporter Requests";
             $pick_loc = $order->pickup;
@@ -334,6 +338,7 @@ class ErpTransporterRequestController extends Controller
                 'revision_number' => $revision_number,
                 'docStatusClass' => $docStatusClass,
                 'typeName' => $typeName,
+                'dynamicFieldsUi' => $dynamicFieldsUI,
                 'display_status' => $displayStatus,
                 'redirect_url' => $redirectUrl,
             ];
@@ -841,6 +846,15 @@ class ErpTransporterRequestController extends Controller
                 foreach ($request->file('attachments') as $singleFile) {
                     $mediaFiles = $tr->uploadDocuments($singleFile, 'work_order', false);
                 }
+            }
+            //Dynamic Fields
+            $status = DynamicFieldHelper::saveDynamicFields(ErpTrDynamicField::class, $tr -> id, $request -> dynamic_field ?? []);
+            if ($status && !$status['status'] ) {
+                DB::rollBack();
+                return response() -> json([
+                    'message' => $status['message'],
+                    'error' => ''
+                ], 422);
             }
             $tr->save();
             DB::commit();

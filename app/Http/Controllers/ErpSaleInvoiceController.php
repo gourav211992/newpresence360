@@ -7,6 +7,8 @@ use App\Models\AuthUser;
 use App\Models\Customer;
 use App\Models\EwayBillMaster;
 use Dompdf\Dompdf;
+use App\Helpers\DynamicFieldHelper;
+use App\Models\ErpSiDynamicField;
 
 
 use App\Exceptions\ApiGenericException;
@@ -364,6 +366,8 @@ class ErpSaleInvoiceController extends Controller
                 if (!isset($einvoice -> ewb_no) && $order -> total_amount > EInvoiceHelper::EWAY_BILL_MIN_AMOUNT_LIMIT) {
                     $editTransporterFields = true;
                 }
+                $dynamicFieldsUI = $order -> dynamicfieldsUi();
+
                 $data = [
                     'user' => $user,
                     'users' => $users,
@@ -385,6 +389,7 @@ class ErpSaleInvoiceController extends Controller
                     'einvoice' => $einvoice,
                     'enableEinvoice' => $enableEinvoice,
                     'subStores' => $subStores,
+                    'dynamicFieldsUi' => $dynamicFieldsUI,
                     'transportationModes' => $transportationModes,
                     'editTransporterFields' => $editTransporterFields
                 ];
@@ -788,6 +793,15 @@ class ErpSaleInvoiceController extends Controller
                     'fax_number' => $orgLocationAddress -> address -> fax_number
                 ]);
                 $saleInvoice -> gst_invoice_type = EInvoiceHelper::getGstInvoiceType($request -> customer_id, $saleInvoice -> shipping_address_details -> country_id, $saleInvoice ?->  location_address_details ?-> country_id);
+            }
+            //Dynamic Fields
+            $status = DynamicFieldHelper::saveDynamicFields(ErpSiDynamicField::class, $saleInvoice -> id, $request -> dynamic_field ?? []);
+            if ($status && !$status['status'] ) {
+                DB::rollBack();
+                return response() -> json([
+                    'message' => $status['message'],
+                    'error' => ''
+                ], 422);
             }
                 //Get Header Discount
                 $totalHeaderDiscount = 0;

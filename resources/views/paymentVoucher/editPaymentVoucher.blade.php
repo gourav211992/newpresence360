@@ -91,15 +91,7 @@
                                     @if ($buttons['approve'])
                                         <button type="button" id="reject-button" data-bs-toggle="modal"
                                             data-bs-target="#approveModal" onclick = "setReject();"
-                                            class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg
-                                                xmlns="http://www.w3.org/2000/svg" width="14" height="14"
-                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                                stroke-linecap="round" stroke-linejoin="round"
-                                                class="feather feather-x-circle">
-                                                <circle cx="12" cy="12" r="10"></circle>
-                                                <line x1="15" y1="9" x2="9" y2="15"></line>
-                                                <line x1="9" y1="9" x2="15" y2="15"></line>
-                                            </svg> Reject</button>
+                                            class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i data-feather="x-circle"></i>  Reject</button>
                                         <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal"
                                             data-bs-target="#approveModal" onclick = "setApproval();"><i
                                                 data-feather="check-circle"></i> Approve</button>
@@ -114,12 +106,14 @@
                                     @endif
                                      @if ($buttons['post'])
                                         <button onclick = "onPostVoucherOpen();" type = "button"
-                                            class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i data-feather="check-circle"></i> Post</button>
+                                            class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i data-feather="check-circle"></i>
+                                             Post</button>
                                     @endif
                                 @endif
                                 @if ($buttons['voucher'])
                                         <button type="button" onclick="onPostVoucherOpen('posted');"
-                                            class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i data-feather="file-text"></i> Voucher</button>
+                                            class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i data-feather="file-text"></i>
+                                             Voucher</button>
                                     @endif
 
 
@@ -764,7 +758,7 @@
                             </div>
                             <div class="modal-footer justify-content-center">
                                 <button type="reset" class="btn btn-outline-secondary me-1">Cancel</button>
-                                <button type="submit" class="btn btn-primary" id="submit-button">Submit</button>
+                                <button type="submit" class="btn btn-primary" id="submit-button"> Submit</button>
                             </div>
                         </form>
                     </div>

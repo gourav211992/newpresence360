@@ -5,13 +5,14 @@ namespace App\Models;
 use App\Helpers\Helper;
 use App\Traits\DateFormatTrait;
 use App\Traits\DefaultGroupCompanyOrg;
+use App\Traits\DynamicFieldsTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class ErpTransporterRequest extends Model
 {
 
-    use HasFactory,DefaultGroupCompanyOrg,DateFormatTrait;
+    use HasFactory,DefaultGroupCompanyOrg, DynamicFieldsTrait,DateFormatTrait;
 
     protected $fillable =[
         'organization_id',
@@ -107,5 +108,9 @@ class ErpTransporterRequest extends Model
     public function location_address_details()
     {
         return $this->morphOne(ErpAddress::class, 'addressable', 'addressable_type', 'addressable_id') -> where('type', '');
+    }
+    public function dynamic_fields()
+    {
+        return $this -> hasMany(ErpTrDynamicField::class, 'header_id');
     }
 }

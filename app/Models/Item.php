@@ -27,6 +27,7 @@ class Item extends Model
         'storage_uom_id',
         'storage_uom_conversion',
         'storage_uom_count',
+        'is_inspection',
         'cost_price',
         'sell_price',
         'book_id',

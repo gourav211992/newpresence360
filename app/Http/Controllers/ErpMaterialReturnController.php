@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Exceptions\ApiGenericException;
 use App\Helpers\ConstantHelper;
 use App\Helpers\CurrencyHelper;
+use App\Helpers\DynamicFieldHelper;
 use App\Helpers\Helper;
 use App\Helpers\InventoryHelper;
 use App\Helpers\ItemHelper;
@@ -12,6 +13,7 @@ use App\Helpers\NumberHelper;
 use App\Helpers\SaleModuleHelper;
 use App\Helpers\ServiceParametersHelper;
 use App\Helpers\UserHelper;
+use App\Models\ErpMrDynamicField;
 use App\Http\Requests\ErpMaterialReturnRequest;
 use App\Models\Address;
 use App\Models\AuthUser;
@@ -228,6 +230,8 @@ class ErpMaterialReturnController extends Controller
             }
             // $toSubStores = InventoryHelper::getAccesibleSubLocations($doc -> to_store_id, 0, ConstantHelper::ERP_SUB_STORE_LOCATION_TYPES);
             // $fromSubStores = InventoryHelper::getAccesibleSubLocations($doc -> from_store_id, 0, [ConstantHelper::STOCKK, ConstantHelper::SHOP_FLOOR]);
+            $dynamicFieldsUI = $doc -> dynamicfieldsUi();
+
             $data = [
                 'user' => $user,
                 'users' => $users,
@@ -243,6 +247,7 @@ class ErpMaterialReturnController extends Controller
                 'stores' => $stores,
                 'vendors' => $vendors,
                 'maxFileCount' => isset($order -> mediaFiles) ? (10 - count($doc -> media_files)) : 10,
+                'dynamicFieldsUi' => $dynamicFieldsUI,
                 'services' => $servicesBooks['services'],
                 // 'toSubStores' => $toSubStores,
                 // 'fromSubStores' => $fromSubStores,
@@ -462,6 +467,15 @@ class ErpMaterialReturnController extends Controller
                         'fax_number' => $vendorShippingAddress -> fax_number
                     ]);
                 }
+            }
+                //Dynamic Fields
+            $status = DynamicFieldHelper::saveDynamicFields(ErpMrDynamicField::class, $materialReturn -> id, $request -> dynamic_field ?? []);
+            if ($status && !$status['status'] ) {
+                DB::rollBack();
+                return response() -> json([
+                    'message' => $status['message'],
+                    'error' => ''
+                ], 422);
             }
                 //Get Header Discount
                 $totalHeaderDiscount = 0;

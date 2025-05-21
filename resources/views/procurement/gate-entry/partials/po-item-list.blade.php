@@ -74,10 +74,10 @@
             <td class="no-wrap">
                 @foreach($poItem?->attributes as $index => $attribute)
                     <span class="badge rounded-pill badge-light-primary">
-                        <strong data-group-id="{{$attribute->headerAttribute->id}}">
-                            {{$attribute->headerAttribute->name}}
+                        <strong data-group-id="{{$attribute?->headerAttribute?->id}}">
+                            {{$attribute?->headerAttribute?->name}}
                         </strong>:
-                        {{ $attribute->headerAttributeValue->value }}
+                        {{ $attribute?->headerAttributeValue?->value }}
                     </span>
                 @endforeach
             </td>

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class ErpSrDynamicField extends Model
 {
     use HasFactory;
-        protected $fillable = [
+    protected $fillable = [
         'header_id',
         'dynamic_field_id',
         'dynamic_field_detail_id',

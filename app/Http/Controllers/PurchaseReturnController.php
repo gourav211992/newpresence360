@@ -208,11 +208,11 @@ class PurchaseReturnController extends Controller
         $serviceAlias = $servicesBooks['services'][0]->alias ?? ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS;
         $books = Helper::getBookSeriesNew($serviceAlias,$parentUrl)->get();
         $vendors = Vendor::where('status', ConstantHelper::ACTIVE)
-            ->where('organization_id', $user->organization_id)
+            ->withDefaultGroupCompanyOrg()
             ->get();
         $materialReceipts = MrnHeader::with('vendor')
             ->where('status', ConstantHelper::ACTIVE)
-            ->where('organization_id', $user->organization_id)
+            ->withDefaultGroupCompanyOrg()
             ->get();
         $transportationModes = EwayBillMaster::where('status', 'active')
             ->where('type', '=', 'transportation-mode')
@@ -869,7 +869,7 @@ class PurchaseReturnController extends Controller
             ->orderBy('id', 'ASC')
             ->get();
         $subStoreCount = $pb->items()->where('sub_store_id', '!=', null)->count() ?? 0;
-        $erpStores = ErpStore::where('organization_id', $user->organization_id)
+        $erpStores = ErpStore::withDefaultGroupCompanyOrg()
             ->orderBy('id', 'DESC')
             ->get();
         $dynamicFieldsUI = $pb -> dynamicfieldsUi();
@@ -1449,7 +1449,7 @@ class PurchaseReturnController extends Controller
         $user = Helper::getAuthenticatedUser();
         $item = json_decode($request->item, true) ?? [];
         $componentItem = json_decode($request->component_item, true) ?? [];
-        // $erpStores = ErpStore::where('organization_id', $user->organization_id)
+        // $erpStores = ErpStore::withDefaultGroupCompanyOrg()
         //     ->orderBy('id', 'ASC')
         //     ->get();
         $locations = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
@@ -1472,7 +1472,7 @@ class PurchaseReturnController extends Controller
         $item_ids = explode(',', $request->item_ids);
         $items = MrnDetail::whereIn('id', $item_ids)
             ->get();
-        $costCenters = CostCenter::where('organization_id', $user->organization_id)->get();
+        $costCenters = CostCenter::withDefaultGroupCompanyOrg()->get();
         $vendor = Vendor::with(['currency:id,name', 'paymentTerms:id,name'])->find($request->vendor_id);
         $currency = $vendor->currency;
         $paymentTerm = $vendor->paymentTerms;
@@ -2597,7 +2597,7 @@ class PurchaseReturnController extends Controller
         $mrnIds = $mrnItems->pluck('mrn_header_id')->all();
         $vendorId = MrnHeader::whereIn('id', $mrnIds)->pluck('vendor_id')->toArray();
         $vendorId = array_unique($vendorId);
-        // $erpStores = ErpStore::where('organization_id', $user->organization_id)
+        // $erpStores = ErpStore::withDefaultGroupCompanyOrg()
         //     ->orderBy('id', 'ASC')
         //     ->get();
         $locations = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
@@ -2954,8 +2954,7 @@ class PurchaseReturnController extends Controller
             });
         },
         'items.item', 'items.item.category', 'items.item.subCategory', 'vendor',
-        'items.so', 'mrn'])
-        ->where('organization_id', $user->organization_id);
+        'items.so', 'mrn']);
 
         // Date Filtering
         if (($startDate && $endDate) || $period) {

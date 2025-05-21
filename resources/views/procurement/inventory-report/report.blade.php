@@ -773,7 +773,6 @@
             function checkAttribute(itemValue){
                 let attributes_check = 0;
                 if ($('#attributes').is(':checked')) {
-                    // console.log('attribute checked', $('#attributes').is(':checked'));
                     // Send the parameter when the checkbox is checked
                     attributes_check = 1;
                     filterData.attributes_check = attributes_check;
@@ -781,7 +780,6 @@
                     $('.attributeBtn').show();
                     updateFilterAndFetch();
                 } else {
-                    // console.log('attribute unchecked', $('#attributes').is(':checked'));
                     // Handle the case where the checkbox is unchecked if needed
                     attributes_check = 0;
                     $('.attributeBtn').hide();
@@ -880,7 +878,7 @@
                 // Call updateFilterAndFetch once
                 updateFilterAndFetch();
 
-                if (formData.email_to && formData.email_to.length > 0) {
+                // if (formData.email_to && formData.email_to.length > 0) {
                     // if (dateValue < today) {
                     //     var inputField = $('[name="date"]');
 
@@ -935,38 +933,32 @@
                         method: 'POST',
                         data: formData,
                         success: function(response) {
-                            // Show success message
-                            const Toast = Swal.mixin({
-                                toast: true,
-                                position: "top-end",
-                                showConfirmButton: false,
-                                timer: 3000,
-                                timerProgressBar: true,
-                                didOpen: (toast) => {
-                                    toast.onmouseenter = Swal.stopTimer;
-                                    toast.onmouseleave = Swal.resumeTimer;
-                                }
-                            });
-                            Toast.fire({
-                                icon: "success",
-                                title: response.success
-                            });
-
-                            // Optionally reset the form
-                            $('select[name="to"]').val([]).trigger('change');
-                            $('select[name="type"]').val(null).trigger('change');
-                            $('input[name="date"]').val('');
-                            $('textarea[name="remarks"]').val('');
-                            if (filterModal) {
-                                filterModal.hide();
-                            }
-                        }
-                    });
-                } else {
-                    if (filterModal) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: response.success || 'Email sent successfully!',
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 3000
+                        });
+                        $('select[name="email_to[]"]').val([]).trigger('change');
+                        $('select[name="email_cc[]"]').val(null).trigger('change');
+                        $('textarea[name="remarks"]').val('');
                         filterModal.hide();
+                    },
+                    error: function(xhr) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error sending email',
+                            text: xhr.responseJSON?.message || 'Something went wrong.'
+                        });
                     }
-                }
+                    });
+                // } else {
+                //     if (filterModal) {
+                //         filterModal.hide();
+                //     }
+                // }
             });
 
             function initializeAutocomplete(selector, type) {

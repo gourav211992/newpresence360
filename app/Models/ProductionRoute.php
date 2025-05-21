@@ -23,6 +23,7 @@ class ProductionRoute extends Model
         'company_id',
         'name',
         'description',
+        'safety_buffer_perc',
         'status',
         'created_by',
         'updated_by',

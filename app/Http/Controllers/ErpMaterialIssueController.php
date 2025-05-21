@@ -13,6 +13,8 @@ use App\Helpers\ServiceParametersHelper;
 use App\Helpers\UserHelper;
 use App\Http\Requests\ErpMaterialIssueRequest;
 use App\Models\Address;
+use App\Helpers\DynamicFieldHelper;
+use App\Models\ErpMiDynamicField;
 use App\Models\AuthUser;
 use App\Models\Country;
 use App\Models\Department;
@@ -266,6 +268,8 @@ class ErpMaterialIssueController extends Controller
             $toSubStores = InventoryHelper::getAccesibleSubLocations($doc -> to_store_id ?? 0, 0, ConstantHelper::ERP_SUB_STORE_LOCATION_TYPES);
             $fromSubStores = InventoryHelper::getAccesibleSubLocations($doc -> from_store_id ?? 0, 0, [ConstantHelper::STOCKK, ConstantHelper::SHOP_FLOOR]);
             $stockTypes = InventoryHelper::getStockType();
+            $dynamicFieldsUI = $doc -> dynamicfieldsUi();
+
             $data = [
                 'user' => $user,
                 'series' => $books,
@@ -287,6 +291,7 @@ class ErpMaterialIssueController extends Controller
                 'selectedUserId' => $doc ?-> user_id,
                 'toSubStores' => $toSubStores,
                 'fromSubStores' => $fromSubStores,
+                'dynamicFieldsUi' => $dynamicFieldsUI,
                 'redirect_url' => $redirect_url,
                 'stockTypes' => $stockTypes
             ];
@@ -486,6 +491,15 @@ class ErpMaterialIssueController extends Controller
                         'fax_number' => $vendorShippingAddress -> fax_number
                     ]);
                 }
+            }
+            //Dynamic Fields
+            $status = DynamicFieldHelper::saveDynamicFields(ErpMiDynamicField::class, $materialIssue -> id, $request -> dynamic_field ?? []);
+            if ($status && !$status['status'] ) {
+                DB::rollBack();
+                return response() -> json([
+                    'message' => $status['message'],
+                    'error' => ''
+                ], 422);
             }
                 //Get Header Discount
                 $totalHeaderDiscount = 0;

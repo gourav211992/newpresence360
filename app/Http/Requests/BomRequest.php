@@ -34,7 +34,14 @@ class BomRequest extends FormRequest
     {
         if ($this->filled('components_json')) {
             $decoded = json_decode($this->input('components_json'), true);
-            $decoded = array_filter($decoded, fn($item) => is_array($item) && count($item) > 0);
+            // $decoded = array_filter($decoded, fn($item) => is_array($item) && count($item) > 0);
+            $decoded = array_filter($decoded, function ($item) {
+                if (!is_array($item)) return false;
+                return collect($item)
+                    ->filter(fn($v, $k) => $k !== '' && $v !== null && $v !== '')
+                    ->isNotEmpty();
+            });
+
             $components = [];
             foreach ($decoded as $index => $component) {
                 $normalized = [];
