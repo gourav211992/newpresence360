@@ -3111,10 +3111,10 @@ return [
                 if ($financialYear->fy_close === true && is_array($financialYear->access_by)) {
                     return !collect($financialYear->access_by)->contains(function ($entry) use ($currentUserId, $currentUserType) {
                         return isset($entry['user_id'], $entry['authorized'], $entry['authenticable_type'], $entry['locked']) &&
-                               $entry['user_id'] == $currentUserId &&
-                               $entry['authenticable_type'] == $currentUserType &&
-                               $entry['authorized'] === false &&
-                               $entry['locked'] !== true; // only filter if NOT locked
+                                $entry['user_id'] == $currentUserId &&
+                                $entry['authenticable_type'] == $currentUserType &&
+                                $entry['authorized'] === false &&
+                                $entry['locked'] !== true; // only filter if NOT locked
                     });
                 }
                 return true;
