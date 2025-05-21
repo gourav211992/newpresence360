@@ -152,7 +152,7 @@
                                                     <div class="col-md-5">
                                                         <input type="date" class="form-control" name="date"
                                                             id="date" required value="{{ old('document_date') ?? date('Y-m-d') }}"
-                                                            min="{{ $fyear['start_date'] }}" 
+                                                            min="{{ $fyear['start_date'] }}"
                                                         max="{{ $fyear['end_date'] }}" />
                                                     </div>
 
@@ -191,7 +191,7 @@
                                                     <div class="col-md-5">
                                                         <input type="date" class="form-control" name="payment_date"
                                                             id="payment_date" required value="{{ old('payment_date') ??date('Y-m-d') }}"
-                                                            min="{{ $fyear['start_date'] }}" 
+                                                            min="{{ $fyear['start_date'] }}"
                                                         max="{{ $fyear['end_date'] }}" />
                                                     </div>
                                                 </div>
@@ -368,7 +368,7 @@
 
                                                 </div>
                                                 {{-- @if (count($cost_centers) > 0) --}}
-                                               
+
                                                 <div class="row align-items-center mb-1" id="costCenterRow" style="display: none;">
                                                     <div class="col-md-2">
                                                         <label class="form-label">Cost Center <span class="text-danger">*</span></label>
@@ -624,6 +624,9 @@
         var count = 2;
         var orgCurrencyName = '';
 
+        // $('#voucherForm').on('submit', function () {
+        //     $('.preloader').show();
+        // });
         function setAmount() {
             let isValid = true;
 
@@ -886,10 +889,12 @@
         function check_amount() {
             $('#draft').attr('disabled', true);
             $('#submitted').attr('disabled', true);
-        
+            $('.preloader').show();
+
             let rowCount = document.querySelectorAll('.mrntableselectexcel tr').length;
             for (let index = 1; index <= rowCount; index++) {
                 if (parseFloat($('#excAmount' + index).val()) == 0) {
+                         $('.preloader').hide();
                     showToast('error', 'Can not save ledger with amount 0');
                             $('#draft').attr('disabled', false);
             $('#submitted').attr('disabled', false);
@@ -898,18 +903,20 @@
             }
 
             if (parseFloat(removeCommas($('.currentCurrencySum').text())) == 0) {
+                     $('.preloader').hide();
                 showToast('error', 'Total amount should be greater than 0');
                         $('#draft').attr('disabled', false);
             $('#submitted').attr('disabled', false);
                 return false;
             }
               if ($('#reference_no').hasClass('is-invalid') && $("#Bank").is(":checked")){
+                     $('.preloader').hide();
                 showToast('error', 'Reference no. Already exist');
                  $('#draft').attr('disabled', false);
             $('#submitted').attr('disabled', false);
                 return false;
-           
-        
+
+
               }
         }
 
@@ -1211,7 +1218,7 @@
             $('#submitButton').click();
 
         }
-        
+
        function getAccounts() {
     var accounts = [];
     var oldSelected = "{{ old('account_id') }}"; // Inject the old value from Laravel
@@ -1558,7 +1565,7 @@
             );
         @endif
 
-        // 
+        //
         $('#locations').on('change', function () {
     let selectedLocationIds = $(this).val();
 

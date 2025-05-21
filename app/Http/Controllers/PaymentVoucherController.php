@@ -690,11 +690,11 @@ if ($ref) {
     public function update(Request $request, string $id)
     {
 if($request->reference_no!="" && $request->payment_type === "Bank"){
-$ref = PaymentVoucher::where('reference_no', $request->reference_no)->exists();
+$ref = PaymentVoucher::where('reference_no', $request->reference_no)->where('id','!=',$id)->exists();
 
 if ($ref) {
     return redirect()
-        ->route($request->document_type . '.create')
+        ->route($request->document_type . '.edit', [$id])
         ->withErrors(['Reference No. Already Exist!'])->withInput();
 }
 }

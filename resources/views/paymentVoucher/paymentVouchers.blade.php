@@ -39,6 +39,7 @@
                                             {{-- <th>Document Type</th> --}}
                                             <th>Document No.</th>
                                             <th>Bank/Ledger Name</th>
+                                            <th>Location</th>
                                             <th>Cost Center</th>
                                             <th>Currency</th>
                                             <th class="text-end">Amount (INR)</th>
@@ -68,6 +69,7 @@
                                                 {{-- <td>{{ ucfirst($item->document_type) }}</td> --}}
                                                 <td class="text-nowrap">{{ $item->voucher_no }}</td>
                                                 <td class="text-nowrap">{{ $item->payment_type=="Bank" ? $item->bank->name : $item->ledger->name }}</td>
+                                                <td class="text-nowrap">{{ $item?->ErpLocation?->store_name ?? ''}}</td>
                                                 <td class="text-nowrap">{{ $item?->costCenter?->name}}</td>
                                                 <td class="text-nowrap">{{ $item->currency->name.' ('.$item->currency->short_name.')' }}</td>
                                                 <td class="text-nowrap" style="text-align: end;">{{ Helper::formatIndianNumber($item->amount) }}</td>
