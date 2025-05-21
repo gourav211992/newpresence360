@@ -465,6 +465,7 @@
             // 7. Save button: get all users and permissions
             document.getElementById('saveAccessBy').addEventListener('click', function(event) {
                 event.preventDefault();
+                $('.preloader').show();
 
                 let users = [];
                 const fyValue = $('#fyear_id').val();
@@ -487,6 +488,7 @@
                 console.log(hasEmptyUser, users)
                 // Show alert if any user row is unselected
                 if (!hasEmptyUser || users.length === 0) {
+                    $('.preloader').hide();
                     Swal.fire({
                         icon: 'warning',
                         title: 'Missing Selection',
@@ -503,7 +505,6 @@
                 console.log("Data to be saved:", users);
 
                 const url = "{{ route('close-fy.update-authuser') }}";
-
                 fetch(url, {
                         method: 'POST',
                         headers: {
@@ -518,6 +519,7 @@
                     })
                     .then(res => res.json())
                     .then(data => {
+                        $('.preloader').hide();
                         if (data.success) {
                             Swal.fire({
                                 icon: 'success',
@@ -537,6 +539,7 @@
                         }
                     })
                     .catch(err => {
+                        $('.preloader').hide();
                         Swal.fire({
                             icon: 'error',
                             title: 'Oops...',
@@ -645,6 +648,7 @@
             // Filter record
             $(".apply-filter").on("click", function() {
                 // Hide modal and reset
+                $('.preloader').show();
                 $(".modal").modal("hide");
                 $('.collapse').click();
                 $('#tableData').html('');
@@ -690,6 +694,7 @@
                     // $('#fy_range').text(`F.Y ${selectedText} Closing Balance`);
                     window.location.href = currentUrl; // ✅ Perform redirect
                 } else {
+                    $('.preloader').hide();
                     Swal.fire({
                         title: 'Not Valid Filters!',
                         text: "Please select both Financial Year and Organization to proceed.",
@@ -721,7 +726,7 @@
                 // if (filteredValues.length > 0) {
                 obj.organization_id = selectedValues
                 // }
-
+                $('.preloader').show();
                 $.ajax({
                     headers: {
                         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -731,6 +736,7 @@
                     dataType: "JSON",
                     data: obj,
                     success: function(data) {
+                        $('.preloader').hide();
                          if (data.message) {
                             Swal.fire({
                                 icon: 'info',
@@ -967,7 +973,8 @@
                         // if (filteredValues.length > 0) {
                         obj.organization_id = selectedValues
                         // }
-console.log(obj)
+// console.log(obj)
+                        $('.preloader').show();
                         $.ajax({
                             headers: {
                                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -977,6 +984,7 @@ console.log(obj)
                             dataType: "JSON",
                             data: obj,
                             success: function(data) {
+                                $('.preloader').hide();
                                 $('#check' + id).val(id);
                                 if (data['data'].length > 0) {
                                     let html = '';
@@ -1137,7 +1145,7 @@ console.log(obj)
                     // if (filteredValues.length > 0) {
                     obj.organization_id = selectedValues
                     // }
-
+                    $('.preloader').show();
                     $.ajax({
                         headers: {
                             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -1147,6 +1155,7 @@ console.log(obj)
                         dataType: "JSON",
                         data: obj,
                         success: function(res) {
+                            $('.preloader').hide();
                             if (res['data'].length > 0) {
 
 
@@ -1440,6 +1449,7 @@ console.log(obj)
 
                 Swal.fire(swalOptions).then((result) => {
                     if (result.isConfirmed) {
+                    $('.preloader').show();
                         fetch(url, {
                                 method: 'POST',
                                 headers: {
@@ -1451,6 +1461,7 @@ console.log(obj)
                             })
                             .then(response => response.json())
                             .then(data => {
+                                $('.preloader').hide();
                                 Swal.fire({
                                     icon: 'success',
                                     title: 'Success!',
@@ -1462,6 +1473,7 @@ console.log(obj)
                                 });
                             })
                             .catch(error => {
+                                $('.preloader').hide();
                                 Swal.fire({
                                     icon: 'error',
                                     title: 'Error',
