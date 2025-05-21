@@ -63,9 +63,9 @@
 												  <td class="fw-bolder text-dark">{{$d?->book?->book_code}}</td>
 													<td>{{$d?->document_number}}</td>
 													<td>{{$d?->category?->name}}</td>
-													<td>{{$d?->location?->name}}</td>
+													<td>{{$d?->location?->store_name}}</td>
 													<td>{{$d?->cost_center?->name}}</td>
-                          <td>{{count($d?->asset_dtails)}}</td>
+                          <td>{{count(json_decode($d?->asset_details))??0}}</td>
                           <td>
                             @php $statusClasss = App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$d->document_status??"draft"];  @endphp
                             <span

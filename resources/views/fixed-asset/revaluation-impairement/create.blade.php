@@ -91,6 +91,25 @@
 
 
                                             <div class="col-md-8">
+                                                	<div class="row align-items-center mb-1"> 
+															<div class="col-md-3"> 
+																<label class="form-label">Type <span class="text-danger">*</span></label>  
+															</div> 
+
+															<div class="col-md-8"> 
+														              <div class="demo-inline-spacing">
+                                                                            <div class="form-check form-check-primary mt-25">
+                                                                                <input type="radio" id="Revaluation" name="document_type" value="revaluation" class="form-check-input" checked>
+                                                                                <label class="form-check-label fw-bolder" for="Revaluation">Revaluation</label>
+                                                                            </div> 
+                                                                            <div class="form-check form-check-primary mt-25">
+                                                                                <input type="radio" id="Impairement" name="document_type" value="impairement" class="form-check-input">
+                                                                                <label class="form-check-label fw-bolder" for="Impairement">Impairement</label>
+                                                                            </div>  
+                                                                        </div>
+                                                                
+															</div>
+														</div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label" for="book_id">Series <span
@@ -157,6 +176,18 @@
                                                     </div>
 
                                                 </div>
+                                                <div class="row align-items-center mb-1">
+                                                     <div class="col-md-3">
+                                                      
+                                                            <label class="form-label">Category <span
+                                                                    class="text-danger">*</span></label>
+                                                        </div>
+                                                        <div class="col-md-5">
+                                                            <select class="form-select select2" required name="category_id"
+                                                                id="category" required>
+                                                               </select>
+                                                        </div>
+                                                    </div>
 
                                             </div>
 
@@ -223,6 +254,8 @@
                                                                 <th width="100px">Quantity</th>
                                                                 <th class="text-end">Current Value</th>
                                                                 <th width="200px">Last Dep. Date</th>
+                                                                <th class="text-end"><span id="selectedRadioText">Revaluation</span> Amount</th>
+                                                                
                                                             </tr>
                                                         </thead>
                                                         <tbody class="mrntableselectexcel">
@@ -255,6 +288,8 @@
                                                                 <td><input type="date" name="last_dep_date[]" id="last_dep_date_1" data-id="1"
                                                                     class="form-control mw-100 last_dep_date" readonly/>
                                                             </td>
+                                                                <td><input type="number" step="2" required name="revaluate_amount[]" id="revaluate_amount_1" data-id="1"
+            class="form-control mw-100 text-end revaluate_amount" /></td>
                                                             </tr>
 
 
@@ -267,6 +302,24 @@
                                             </div>
 
                                         </div>
+                                      <div class="row mt-2"> 
+                                                         
+													<div class="col-md-4 mb-1"> 
+														<label class="form-label">Document</label>  
+
+														<input type="file" name="document" class="form-control"   />
+													</div>
+
+
+												<div class="col-md-12">
+													<div class="mb-1">  
+														<label class="form-label">Final Remarks</label> 
+														<textarea type="text" rows="4" name="remarks" class="form-control" placeholder="Enter Remarks here..."></textarea> 
+
+													</div>
+												</div>
+
+										   </div>
                                     </div>
                                 </div>
 
@@ -445,66 +498,18 @@
         $('#book_id').trigger('change');
         document.getElementById('save-draft-btn').addEventListener('click', function() {
             document.getElementById('document_status').value = 'draft';
-            const allRows = [];
-
-    $('.mrntableselectexcel tr').each(function () {
-        const row = $(this);
-        const rowId = row.find('.asset_id').attr('data-id');
-        let sub_asset_codes = [];
-        row.find(`#sub_asset_id_${rowId} option:selected`).each(function () {
-            sub_asset_codes.push($(this).text());
-        });
-
-        const rowData = {
-            asset_id: row.find(`#asset_id_${rowId}`).val(),
-            sub_asset_id: row.find(`#sub_asset_id_${rowId}`).val(), // array from select2
-            quantity: row.find(`#quantity_${rowId}`).val(),
-            sub_asset_code :sub_asset_codes,
-            currentvalue: row.find(`#currentvalue_${rowId}`).val(),
-            salvagevalue: row.find(`#salvagevalue_${rowId}`).val(),
-            last_dep_date: row.find(`#last_dep_date_${rowId}`).val(),
-        };
-
-        allRows.push(rowData);
-    });
-
-    $('#asset_details').val(JSON.stringify(allRows));
-
+            updateJsonData();
+            if(validateRevaluationAmounts())
             document.getElementById('fixed-asset-revaluation-impairement-form').submit();
         });
 
 
 $('#fixed-asset-revaluation-impairement-form').on('submit', function(e) {
+     document.getElementById('document_status').value = 'submitted';
             e.preventDefault(); // Always prevent default first
-
-            document.getElementById('document_status').value = 'submitted';
-            const allRows = [];
-
-    $('.mrntableselectexcel tr').each(function () {
-        const row = $(this);
-        const rowId = row.find('.asset_id').attr('data-id');
-        let sub_asset_codes = [];
-        row.find(`#sub_asset_id_${rowId} option:selected`).each(function () {
-            sub_asset_codes.push($(this).text());
-        });
-
-        const rowData = {
-            asset_id: row.find(`#asset_id_${rowId}`).val(),
-            sub_asset_id: row.find(`#sub_asset_id_${rowId}`).val(), // array from select2
-            quantity: row.find(`#quantity_${rowId}`).val(),
-            sub_asset_code :sub_asset_codes,
-            currentvalue: row.find(`#currentvalue_${rowId}`).val(),
-            salvagevalue: row.find(`#salvagevalue_${rowId}`).val(),
-            last_dep_date: row.find(`#last_dep_date_${rowId}`).val(),
-        };
-
-        allRows.push(rowData);
-    });
-
-    $('#asset_details').val(JSON.stringify(allRows));
-
-
-            this.submit();
+             updateJsonData();
+                if(validateRevaluationAmounts())
+                this.submit();
         });
 
         function showToast(icon, title) {
@@ -542,6 +547,13 @@ $('#fixed-asset-revaluation-impairement-form').on('submit', function(e) {
 function initializeAssetAutocomplete(selector) {
     $(selector).autocomplete({
         source: function (request, response) {
+            const category = $('#category').val();
+
+            if (!category) {
+                response([]); // Return an empty list to autocomplete
+                return;
+            }
+
             $.ajax({
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -552,6 +564,7 @@ function initializeAssetAutocomplete(selector) {
                 data: {
                     q: request.term,
                     ids:getAllAssetIds(),
+                    category:category,
                 },
                 success: function (data) {
                     response(data.map(function (item) {
@@ -569,67 +582,114 @@ function initializeAssetAutocomplete(selector) {
         },
         minLength: 0,
         select: function (event, ui) {
+                const row = $(this).closest('tr');
+        
+             row.find('.sub_asset_id').val();
+            row.find('.subasset-search-input').val('');
+        row.find('.quantity').val('');
+                row.find('.currentvalue').val('');
+                row.find('.last_dep_date').val('');
+               
             const asset = ui.item.asset;
-            const row = $(this).closest('tr');
             const rowId = row.data('id'); // assuming you set `data-id` on the <tr>
 
             // Set visible label and hidden ID
             $(this).val(ui.item.label);
             row.find('.asset_id').val(ui.item.value);
 
-            let subAssetSelect = row.find('.sub_asset_id');
-            let last_dep = row.find('.last_dep_date');
-            subAssetSelect.html('<option value="">Loading...</option>');
-
-            $.ajax({
-                url: '{{ route("finance.fixed-asset.sub_asset") }}',
-                type: 'GET',
-                data: { id: ui.item.value },
-                success: function (response) {
-                subAssetSelect.empty();
-                    subAssetSelect.html('<option value="">Select</option>');
-                    $.each(response, function (key, subAsset) {
-                        subAssetSelect.append(
-                            '<option value="' + subAsset.id + '">' + subAsset.sub_asset_code + '</option>'
-                        );
-                    });
-
-                    if (response[0].asset) {
-                        if(response[0].asset.last_dep_date!=response[0].asset.capitalize_date){
-                        let lastDepDate = new Date(response[0].asset.last_dep_date);
-                        lastDepDate.setDate(lastDepDate.getDate() - 1);
-                        let formatted = lastDepDate.toISOString().split('T')[0];
-                        last_dep.val(formatted);
-                    }
-                    }
-                row.find('.quantity').val('');
-                row.find('.currentvalue').val('');
-                row.find('.salvagevalue').val('');
-                    refreshAssetSelects();
-                    updateSum();
-                },
-                error: function () {
-                    showToast('error', 'Failed to load sub-assets.');
-                }
-            });
-
             return false;
         },
         change: function (event, ui) {
             const row = $(this).closest('tr');
-            let subAssetSelect = row.find('.sub_asset_id');
             if (!ui.item) {
+
                 $(this).val('');
-                subAssetSelect.empty();
-                row.find('.sub_asset_id').empty();
                 row.find('.asset_id').val('');
+               
+                row.find('.sub_asset_id').val();
+                row.find('.subasset-search-input').val('');
                 row.find('.quantity').val('');
                 row.find('.currentvalue').val('');
-                row.find('.salvagevalue').val('');
                 row.find('.last_dep_date').val('');
                 refreshAssetSelects();
-                updateSum();
             }
+        }
+    }).focus(function () {
+        if (this.value === '') {
+            $(this).autocomplete('search');
+        }
+    });
+}
+function initializeSubAssetAutocomplete(selector) {
+    $(selector).autocomplete({
+        source: function (request, response) {
+            let row = $(this.element).closest('tr'); 
+            let assetId = row.find('.asset_id').val(); 
+            $.ajax({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                url: '{{ route("finance.fixed-asset.sub_asset_search") }}',
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    id: assetId,
+                    q: request.term
+                },
+                success: function (data) {
+                    response(data.map(function (item) {
+                        return {
+                            label: item.sub_asset_code,
+                            value: item.id,
+                            asset: item.asset,
+                            sub_asset: item
+                        };
+                    }));
+                },
+                error: function () {
+                    response([]);
+                }
+            });
+        },
+        minLength: 0,
+        select: function (event, ui) {
+            let row = $(this).closest('tr');
+            let subAssetId = row.find('.sub_asset_id');
+            let lastdep = row.find('.last_dep_date');
+
+            const asset = ui.item.asset;
+            const sub_asset = ui.item.sub_asset;
+
+            $(this).val(ui.item.label);
+            subAssetId.val(ui.item.value);
+            lastdep.val("");
+
+            if (asset.last_dep_date !== asset.capitalize_date) {
+                let lastDepDate = new Date(asset.last_dep_date);
+                lastDepDate.setDate(lastDepDate.getDate() - 1);
+                let formattedDate = lastDepDate.toISOString().split('T')[0];
+                lastdep.val(formattedDate);
+            }
+            row.find('.quantity').val(1);
+            row.find('.currentvalue').val(sub_asset.current_value_after_dep);
+
+            return false;
+        },
+        change: function (event, ui) {
+            let row = $(this).closest('tr');
+            let subAssetId = row.find('.sub_asset_id');
+            let lastdep = row.find('.last_dep_date');
+
+            if (!ui.item) {
+                $(this).val('');
+                subAssetId.val("");
+                lastdep.val("");
+                row.find('.quantity').val('');
+                row.find('.currentvalue').val('');
+            }
+        },
+        focus: function () {
+            return false;
         }
     }).focus(function () {
         if (this.value === '') {
@@ -639,88 +699,14 @@ function initializeAssetAutocomplete(selector) {
 }
 
 
-   initializeAssetAutocomplete('.asset-search-input');
-        
-            // On Sub-Asset change, get value and last dep date
-$(document).on('change', '.sub_asset_id', function () {
-    let subAssetIds = $(this).val();
-    let row = $(this).data('id');
-    let assetId = $('#asset_id_'+row).val();
-    let totalCurrentValue = 0; // To accumulate values
-    let responsesReceived = 0; // Counter to check when all requests are done
-    if (subAssetIds && subAssetIds.length > 0) {
-        subAssetIds.forEach(function (subAssetId) {
-            $.ajax({
-                url: '{{ route('finance.fixed-asset.sub_asset_details') }}',
-                type: 'GET',
-                data: {
-                    id: assetId,
-                    sub_asset_id: subAssetId,
-                },
-                success: function (response) {
-                    let currentValue = parseFloat(response.current_value_after_dep) || 0;
-                    totalCurrentValue += currentValue;
-                    responsesReceived++;
-                    if (responsesReceived === subAssetIds.length) {
-                        $('#currentvalue_'+row).val(totalCurrentValue.toFixed(2));
-                        $('#quantity_'+row).val(responsesReceived);
-                        updateSum();
-                   }
-                },
-                error: function () {
-                    showToast('error', 'Failed to load sub-asset details.');
-                    responsesReceived++;
 
-                    // Still check if all requests have completed (including failures)
-                    if (responsesReceived === subAssetIds.length) {
-                        $('#currentvalue_'+row).val(0);
-                        $('#quantity_'+row).val(0);
-                        updateSum();
-                    }
-                }
-            });
-        });
-    } else {
-        $('#currentvalue_'+row).val(0);
-    $('#quantity_'+row).val(0);
-                        updateSum();
-    }
-});
+   initializeAssetAutocomplete('.asset-search-input');
+   initializeSubAssetAutocomplete('.subasset-search-input');
+        
  $('.select2').select2();
 
             
- function updateSum() {
-    let depreciationPercentage = parseFloat(document.getElementById("depreciation_percentage").value) || 0;
-
-    let totalValue = 0;
-    let totalQuantity = 0;
-    let salvageValue = 0;
-
-    $('.currentvalue').each(function () {
-        let value = parseFloat($(this).val()) || 0;
-        let salvageValue = (value * (depreciationPercentage / 100)).toFixed(2);
-        $(this).closest('tr').find('.salvagevalue').val(salvageValue);
-        totalValue += value;
-    });
-    $('.salvagevalue').each(function () {
-        let value = parseFloat($(this).val()) || 0;
-        salvageValue += value;
-    });
-
-    $('.quantity').each(function () {
-        let qty = parseFloat($(this).val()) || 0;
-        totalQuantity += qty;
-    });
-
-    // Example: Update totals in specific HTML elements
-    $('#current_value').val(totalValue.toFixed(2));
-    $('#salvage_value').val(salvageValue.toFixed(2));
-    //$('#quantity').val(totalQuantity);
-    updateDepreciationValues();
-
-
-}
-
+ 
 let rowCount = 1;
 
 $('#addNewRowBtn').on('click', function () {
@@ -745,11 +731,11 @@ $('#addNewRowBtn').on('click', function () {
             class="form-control mw-100 quantity" /></td>
         <td><input type="text" name="currentvalue[]" id="currentvalue_${rowCount}" data-id="${rowCount}"
             class="form-control mw-100 text-end currentvalue" readonly /></td>
-              <td class="text-end"><input type="text" name="salvagevalue[]" id="salvagevalue_${rowCount}" data-id="${rowCount}"
-                                                                    class="form-control mw-100 text-end salvagevalue" readonly/>
-                                                            </td>
+          
         <td><input type="date" name="last_dep_date[]" id="last_dep_date_${rowCount}" data-id="${rowCount}"
             class="form-control mw-100 last_dep_date" readonly /></td>
+             <td><input type="number" step="2" required name="revaluate_amount[]" id="revaluate_amount_${rowCount}" data-id="${rowCount}"
+            class="form-control mw-100 text-end revaluate_amount"/></td>
     </tr>
     `;
 
@@ -757,6 +743,7 @@ $('#addNewRowBtn').on('click', function () {
     $(".select2").select2();
     refreshAssetSelects();
     initializeAssetAutocomplete('.asset-search-input');
+    initializeSubAssetAutocomplete('.subasset-search-input');
 });
 function refreshAssetSelects() {
     let selectedAssets = [];
@@ -773,12 +760,9 @@ $('.asset_id').each(function () {
 $('.asset_id').each(function () {
     let currentSelect = $(this);
     let currentVal = currentSelect.val();
-
-    currentSelect.find('option').each(function () {
+   currentSelect.find('option').each(function () {
         let optionVal = $(this).val();
-
         if (optionVal === "") return; // skip placeholder
-
         if (selectedAssets.includes(optionVal) && optionVal !== currentVal) {
             $(this).prop('disabled', true);
         } else {
@@ -789,8 +773,6 @@ $('.asset_id').each(function () {
 
 }
 
-
- 
 $('#delete').on('click', function () {
     let $rows = $('.mrntableselectexcel tr');
     let $checked = $rows.find('.row-check:checked');
@@ -809,35 +791,15 @@ $('#delete').on('click', function () {
 
     // Remove only the checked rows
     $checked.closest('tr').remove();
-    updateSum();
+
 });
 $('#checkAll').on('change', function () {
     let isChecked = $(this).is(':checked');
     $('.mrntableselectexcel .row-check').prop('checked', isChecked);
 });
 
-function getAllRowsAsJson() {
-    const allRows = [];
-
-    $('.mrntableselectexcel tr').each(function () {
-        const row = $(this);
-        const rowId = row.find('.asset_id').attr('data-id');
-
-        const rowData = {
-            asset_id: row.find(`#asset_id_${rowId}`).val(),
-            sub_asset_id: row.find(`#sub_asset_id_${rowId}`).val(),
-            sub_asset_code :row.find(`#sub_asset_id_${rowId} option:selected`).text(),
-            quantity: row.find(`#quantity_${rowId}`).val(),
-            currentvalue: row.find(`#currentvalue_${rowId}`).val(),
-            last_dep_date: row.find(`#last_dep_date_${rowId}`).val(),
-        };
-
-        allRows.push(rowData);
-    });
-
-    return allRows;
-}
 $('#location').on('change', function () {
+    add_blank();
     var locationId = $(this).val();
 
     if (locationId) {
@@ -861,6 +823,10 @@ $('#location').on('change', function () {
                 $.each(data, function (key, value) {
                     $('#cost_center').append('<option value="' + value.id + '">' + value.name + '</option>');
                 });
+                $('#cost_center').trigger('change'); // Trigger change to load categories
+                
+                
+                
             }
             },
             error: function () {
@@ -869,6 +835,38 @@ $('#location').on('change', function () {
         });
     } else {
         $('#cost_center').empty();
+    }
+});
+$('#cost_center').on('change', function () {
+    add_blank(); // Custom function, assuming you're resetting rows
+
+    var costCenterId = $(this).val();
+    var locationId = $('#location').val();
+
+    if (locationId && costCenterId) {
+        // Use Blade to render the correct route with parameters
+        var url = '{{ route("finance.fixed-asset.get-categories") }}';
+
+        $.ajax({
+            url: url,
+            type: 'GET',
+            data: {
+                cost_center_id: costCenterId,
+                location_id: locationId
+            },
+            dataType: 'json',
+            success: function (data) {
+                $('#category').empty().append('<option value="">Select Category</option>');
+                $.each(data, function (key, value) {
+                    $('#category').append('<option value="' + value.id + '">' + value.name + '</option>');
+                });
+            },
+            error: function () {
+                $('#category').empty();
+            }
+        });
+    } else {
+        $('#category').empty();
     }
 });
 
@@ -886,7 +884,131 @@ function getAllAssetIds() {
 
     return assetIds;
 }
+   function updateSelectedRadioLabel() {
+        const selected = document.querySelector('input[name="document_type"]:checked');
+        if (selected) {
+            const label = document.querySelector(`label[for="${selected.id}"]`);
+            if (label) {
+                document.getElementById("selectedRadioText").textContent = label.textContent.trim();
+            }
+        }
+    }
 
+    // On radio change
+    document.querySelectorAll('input[name="document_type"]').forEach(radio => {
+        radio.addEventListener('change', updateSelectedRadioLabel);
+    });
+
+    // Initial update on page load
+    document.addEventListener("DOMContentLoaded", updateSelectedRadioLabel);
+     function getSelectedDocumentType() {
+        const selected = document.querySelector('input[name="document_type"]:checked');
+        return selected ? selected.value : null;
+    }
+function validateRevaluationAmounts(showErrors = true) {
+    const documentType = getSelectedDocumentType();
+    let isValid = true;
+
+    document.querySelectorAll('.revaluate_amount').forEach(input => {
+        const row = input.closest('tr');
+        const currentValueInput = row.querySelector('.currentvalue');
+
+        if (currentValueInput.value.trim() === "" && input.value.trim() === "") return;
+
+        const currentVal = parseFloat(currentValueInput.value) || 0;
+        const revalVal = parseFloat(input.value) || 0;
+
+        //input.classList.remove('is-invalid');
+
+        if (documentType === 'revaluation' && revalVal <= currentVal) {
+            isValid = false;
+            //input.classList.add('is-invalid');
+            if (showErrors) {
+                showToast('error', 'Revaluation amount must be greater than current value.');
+            }
+        } else if (documentType === 'impairement' && revalVal >= currentVal) {
+            isValid = false;
+           // input.classList.add('is-invalid');
+            if (showErrors) {
+                showToast('error', 'Impairement amount must be less than current value.');
+            }
+        }
+    });
+
+    return isValid;
+}
+
+  
+    function updateJsonData(){
+          const allRows = [];
+
+    $('.mrntableselectexcel tr').each(function () {
+        const row = $(this);
+        const rowId = row.find('.asset_id').attr('data-id');
+        let sub_asset_codes = [];
+        row.find(`#sub_asset_id_${rowId} option:selected`).each(function () {
+            sub_asset_codes.push($(this).text());
+        });
+
+        const rowData = {
+            asset_id: row.find(`#asset_id_${rowId}`).val(),
+            sub_asset_id: row.find(`#sub_asset_id_${rowId}`).val(), // array from select2
+            quantity: row.find(`#quantity_${rowId}`).val(),
+            sub_asset_code :sub_asset_codes,
+            currentvalue: row.find(`#currentvalue_${rowId}`).val(),
+            revaluate: row.find(`#revaluate_amount${rowId}`).val(),
+            last_dep_date: row.find(`#last_dep_date_${rowId}`).val(),
+        };
+
+        allRows.push(rowData);
+    });
+
+    $('#asset_details').val(JSON.stringify(allRows));
+    }
+    $('#category').on('change', function() {
+        add_blank();
+        });
+        function add_blank(){
+    $('.mrntableselectexcel').empty();
+                let blank_row = `<tr class="trselected" data-id="${rowCount}">
+        <td class="customernewsection-form">
+            <div class="form-check form-check-primary custom-checkbox">
+                <input type="checkbox" class="form-check-input row-check" id="Email_${rowCount}">
+                <label class="form-check-label" for="Email_${rowCount}"></label>
+            </div>
+        </td>
+        <td class="poprod-decpt">   
+            <input type="text" class="form-control asset-search-input mw-100" required />
+            <input type="hidden" name="asset_id[]" class="asset_id" data-id="${rowCount}" id="asset_id_${rowCount}"/> 
+         </td>
+        <td class="poprod-decpt">
+            <input type="text" required class="form-control subasset-search-input mw-100"/>
+            <input type="hidden" name="sub_asset_id[]" class="sub_asset_id" data-id="${rowCount}" id="sub_asset_id_${rowCount}"/> 
+        </td>
+        <td><input type="number" name="quantity[]" id="quantity_${rowCount}" readonly data-id="${rowCount}"
+            class="form-control mw-100 quantity" /></td>
+        <td><input type="text" name="currentvalue[]" id="currentvalue_${rowCount}" data-id="${rowCount}"
+            class="form-control mw-100 text-end currentvalue" readonly /></td>
+  
+        <td><input type="date" name="last_dep_date[]" id="last_dep_date_${rowCount}" data-id="${rowCount}"
+            class="form-control mw-100 last_dep_date" readonly /></td>
+             <td><input type="number" step="2" required name="revaluate_amount[]" id="revaluate_amount_${rowCount}" data-id="${rowCount}"
+            class="form-control mw-100 text-end revaluate_amount"/></td>
+    </tr>`;
+    $('.mrntableselectexcel').append(blank_row);
+     initializeAssetAutocomplete('.asset-search-input');
+   initializeSubAssetAutocomplete('.subasset-search-input');
+
+}
+$(document).on('input change', '.revaluate_amount', function() {
+    validateRevaluationAmounts();
+});
+$(document).on('input change', '[name="document_type"]', function() {
+    validateRevaluationAmounts();
+});
+    $(document).on('input change', '.currentvalue', function() {
+        validateRevaluationAmounts();
+    });
 
     </script>
     <!-- END: Content-->

@@ -145,7 +145,7 @@
                                                         <label class="form-label">Ledger Group <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <select class="form-select select2" name="ledger_group_id" id="ledger_group" required>
+                                                        <select class="form-select" name="ledger_group_id" id="ledger_group" required>
                                                             <option value="" {{ old('ledger_group_id', $data->ledger_group_id) ? '' : 'selected' }}>Select</option>
                                                             @foreach ($ledgerGroups as $group)
                                                                 <option value="{{ $group->id }}" 
@@ -226,7 +226,7 @@
                                                     <label class="form-label">Dep. Ledger Group <span class="text-danger">*</span></label>
                                                 </div>
                                                 <div class="col-md-5">
-                                                    <select class="form-select select2" name="dep_ledger_group_id" id="dep_ledger_group" required>
+                                                    <select class="form-select" name="dep_ledger_group_id" id="dep_ledger_group" required>
                                                         <option value="" {{ old('dep_ledger_group_id', $data->dep_ledger_group_id) ? '' : 'selected' }}>Select</option>
                                                         @foreach ($ledgerGroupsDep as $group)
                                                             <option value="{{ $group->id }}" 

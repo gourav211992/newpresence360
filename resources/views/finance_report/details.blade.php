@@ -2,7 +2,7 @@
 @php
     use App\Helpers\Helper;
 @endphp
- 
+
 @section('content')
     <!-- BEGIN: Content-->
     <div class="app-content content">
@@ -67,9 +67,9 @@
 
                                     <div class="col-md-8 text-sm-end pofilterboxcenter mb-0 d-flex flex-wrap align-items-center justify-content-sm-end">
                                         {{-- <a href="javascript: history.go(-1)" class="btn btn-secondary btn-sm"><i
-                                            data-feather="arrow-left-circle"></i> Back </a> 
+                                            data-feather="arrow-left-circle"></i> Back </a>
                                             &nbsp; --}}
-                                        <a id="printButton" href="{{route('crdr.report.ledger.print',[$type,$ledger,$group])}}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 me-25"><i data-feather='printer'></i> Print</a>
+                                        <a id="printButton" href="{{route('crdr.report.ledger.print',[$type,$ledger,$group])}}" class="btn btn-dark btn-sm mb-50 mb-sm-0 me-25"><i data-feather='printer'></i> Print</a>
                                         <button data-bs-toggle="modal" data-bs-target="#addcoulmn" class="btn btn-primary btn-sm mb-0 waves-effect"><i data-feather="filter"></i> Advance Filter</button>
                                     </div>
                                 </div>
@@ -458,6 +458,7 @@
 @endsection
 
 @section('scripts')
+    <script src="{{ url('/app-assets/js/jquery-ui.js') }}"></script>
     <!-- BEGIN: Dashboard Custom Code JS-->
     <script src="https://unpkg.com/feather-icons"></script>
 
@@ -492,7 +493,7 @@ if (dt_basic_table.length) {
         },
         displayLength: 10,
         lengthMenu: [10, 25, 50, 75, 100],
-        
+
         buttons: [{
             extend: 'collection',
             className: 'btn btn-outline-secondary dropdown-toggle',
@@ -838,25 +839,18 @@ if ($('#addcoulmn').length && $('#addcoulmn').hasClass('show')) {
         });
     });
     filterTable();
-    
+
 
 
 
     </script>
     @if (session('print_error'))
             <script>
-                const Toast = Swal.mixin({
-                   toast: true,
-                position: "top-end",
-                showConfirmButton: false,
-                timer: 3000,
-                timerProgressBar: true,
-
-                });
-
-                Toast.fire({
+                Swal.fire({
                     icon: 'error',
-                    title: '{{ session("print_error") }}'
+                    title: 'Error',
+                    html: {!! json_encode(session('print_error')) !!},
+                    confirmButtonText: 'OK'
                 });
             </script>
         @endif

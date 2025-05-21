@@ -246,7 +246,7 @@
                                                                 <td class="poprod-decpt">
                                                                     <select id="sub_asset_id_1" name="sub_asset_id[]" data-id="1"
                                                                         class="form-select mw-100 select2 sub_asset_id" multiple required>
-                                                                <option value="">Select</option>
+                                                                <option disabled value="">Select</option>
                                                                 <!-- Will be filled via AJAX -->
                                                             </select>
                                                                 </td>
@@ -867,7 +867,7 @@ function initializeAssetAutocomplete(selector) {
                 data: { id: ui.item.value },
                 success: function (response) {
                 subAssetSelect.empty();
-                    subAssetSelect.html('<option value="">Select</option>');
+                    subAssetSelect.html('<option disabled value="">Select</option>');
                     $.each(response, function (key, subAsset) {
                         subAssetSelect.append(
                             '<option value="' + subAsset.id + '">' + subAsset.sub_asset_code + '</option>'
@@ -1021,7 +1021,7 @@ $('#addNewRowBtn').on('click', function () {
         <td class="poprod-decpt">
             <select id="sub_asset_id_${rowCount}" name="sub_asset_id[]" data-id="${rowCount}"
                 class="form-select mw-100 select2 sub_asset_id" multiple required>
-                <option value="">Select</option>
+                <option value="" disabled>Select</option>
                 <!-- Will be filled via AJAX -->
             </select>
         </td>

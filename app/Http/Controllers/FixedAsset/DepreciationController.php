@@ -305,14 +305,15 @@ public function store(DepreciationRequest $request)
             ->withWhereHas('category')
             ->get()
             ->where('last_dep_date', '<', $endDate)
-            ->filter(function ($asset) use ($endDate) {
-                // Calculate the capitalized date + useful life in years
-                $usefulLifeInYears = $asset->useful_life; // Assuming `useful_life_years` is the field
-                $capitalizedDate = Carbon::parse($asset->capitalize_date); // Assuming `capitalized_date` is the field
-                $capitalizedDateWithLife = $capitalizedDate->addYears($usefulLifeInYears); // Add useful life years to capitalized date
-                
-                // Compare if the new date is greater than today's date
-                return $capitalizedDateWithLife->greaterThanOrEqualTo($endDate);
+           ->filter(function ($asset) {
+                $usefulLifeInYears = $asset->useful_life;
+                $postedDays = (int) $asset->posted_days; // Assuming this field exists and is in days
+
+                // Convert useful life in years to days
+                $usefulLifeInDays = $usefulLifeInYears * 365;
+
+                // Keep asset if posted days are less than useful life in days
+                return $postedDays < $usefulLifeInDays;
             })->values();
         
             
@@ -386,9 +387,9 @@ public function store(DepreciationRequest $request)
         $periods = array_filter($periods, function ($period) use ($depreciationPeriods) {
             return !in_array($period->value, $depreciationPeriods);
         });
-        
         // Reset keys if needed
         return array_values($periods);
+        
     }
     public function documentApproval(Request $request)
     {

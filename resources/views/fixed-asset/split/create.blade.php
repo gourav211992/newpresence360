@@ -817,6 +817,10 @@
                         // Set the input box and hidden ID field
                         $(this).val(ui.item.label);
                         $('#asset_id').val(ui.item.value);
+                         $('#subasset_search_input').val('');
+                            $('#sub_asset_id').val('');
+                            $('#last_dep_date').val('');
+                            $('#current_value_asset').val('');
                         add_blank();
 
                         return false; // Prevent default behavior
@@ -825,7 +829,7 @@
                         if (!ui.item) {
                             $(this).val('');
                             $('#asset_id').val('');
-                             $('#subasset_search_input').val();
+                            $('#subasset_search_input').val('');
                             $('#sub_asset_id').val('');
                             $('#last_dep_date').val('');
                             $('#current_value_asset').val('');
@@ -907,10 +911,12 @@
                     change: function (event, ui) {
                         if (!ui.item) {
                             $(this).val('');
+                                 $('#current_value_asset').val("");
+                            $('#last_dep_date').val("");
                             $('#sub_asset_id').val('');
-                            $('#category').val("").trigger('change');
-                            $('#ledger').val("").trigger('change');
-                            $('#ledger_group').val("").trigger('change');
+                            $('#category').val("");
+                            $('#ledger').val("");
+                            $('#ledger_group').val("");
                             $('#capitalize_date').val("");
                             $('#depreciation_rate').val("");
                             $('#depreciation_rate_year').val("");
@@ -918,8 +924,7 @@
                             $('#maintenance_schedule').val("");
                             $('#current_value_asset').val("");
                             $('#total_depreciation').val("");
-                            $('#last_dep_date').val("")
-                       
+                  
                             add_blank();
 
                         }

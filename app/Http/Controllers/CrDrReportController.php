@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\PaymentVoucher;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Models\PaymentVoucherDetails;
 use App\Console\Commands\GenerateCrDrReport;
 use App\Helpers\Helper;
@@ -52,9 +53,8 @@ class CrDrReportController extends Controller
 
         if ($group) {
             $ledger_groups =  Helper::getGroupsQuery()->where('parent_group_id',$group->id)->pluck('id');
-            
-            if (count($ledger_groups) > 0) {
 
+            if (count($ledger_groups) > 0) {
                 $all_ledgers = Ledger::withDefaultGroupCompanyOrg()
             ->where('status', 1)
             ->where(function ($query) use ($ledger_groups) {
@@ -88,8 +88,11 @@ class CrDrReportController extends Controller
         $all_groups = Group::whereIn('id', $drp_group->getAllChildIds())->get();
         $date = $request->date;
         $date2 = $end? \Carbon\Carbon::parse($end)->format('jS-F-Y'):\Carbon\Carbon::parse(date('Y-m-d'))->format('jS-F-Y'); ;
-
+            $customers = collect($customers)->reject(function ($item) {
+                return (float) $item->total_outstanding === 0.0;
+            });
         return view('finance_report.debitors', compact('customers', 'all_groups', 'all_ledgers','date','date2'));
+    
     }
     public function credit(Request $request)
     {
@@ -110,7 +113,7 @@ class CrDrReportController extends Controller
            $ledger_groups =  Helper::getGroupsQuery()->where('parent_group_id',$group->id)->pluck('id');
              if (count($ledger_groups) > 0) {
                 $ages_all = [$request->age0 ?? 30, $request->age1 ?? 60, $request->age2 ?? 90, $request->age3 ?? 120, $request->age4 ?? 180];
-                $all_ledgers = Ledger::withDefaultGroupCompanyOrg()
+              $all_ledgers = Ledger::withDefaultGroupCompanyOrg()
             ->where('status', 1)
             ->where(function ($query) use ($ledger_groups) {
                 $query->whereIn('ledger_group_id', $ledger_groups);
@@ -125,7 +128,7 @@ class CrDrReportController extends Controller
             } else if (isset($group->id)) {
                 $ledger_groups = [$group->id];
                 $ages_all = [$request->age0 ?? 30, $request->age1 ?? 60, $request->age2 ?? 90, $request->age3 ?? 120, $request->age4 ?? 180];
-                $all_ledgers = Ledger::withDefaultGroupCompanyOrg()
+               $all_ledgers = Ledger::withDefaultGroupCompanyOrg()
             ->where('status', 1)
             ->where(function ($query) use ($ledger_groups) {
                 $query->whereIn('ledger_group_id', $ledger_groups);
@@ -135,15 +138,16 @@ class CrDrReportController extends Controller
                 }
             })
             ->get();
-            
+
                 if (!is_null($ledger_groups)) $vendors = self::get_ledgers_data($ledger_groups, $ages_all, 'credit', $request->ledger, $start, $end);
             }
         }
         $all_groups = Group::whereIn('id', $drp_group->getAllChildIds())->get();
         $date = $request->date;
         $date2 = $end? \Carbon\Carbon::parse($end)->format('jS-F-Y'):\Carbon\Carbon::parse(date('Y-m-d'))->format('jS-F-Y'); ;
-
-
+            $vendors = collect($vendors)->reject(function ($item) {
+                return (float) $item->total_outstanding === 0.0;
+            });
         return view('finance_report.creditors', compact('vendors', 'all_groups', 'all_ledgers','date','date2'));
     }
 
@@ -179,8 +183,14 @@ class CrDrReportController extends Controller
         $ledger_groups_all = [];
 
         foreach ($ledger_groups as $group) {
-            $ledgers = Ledger::withDefaultGroupCompanyOrg()->where('ledger_group_id', $group)
-                ->orWhereJsonContains('ledger_group_id', (string)$group)->where('status', 1)->pluck('id')->toArray();
+            $ledgers =Ledger::withDefaultGroupCompanyOrg()
+                        ->where('status', 1)
+                        ->where(function ($query) use ($group) {
+                            $query->where('ledger_group_id', $group)
+                                ->orWhereJsonContains('ledger_group_id', (string)$group);
+                        })
+                        ->pluck('id')
+                        ->toArray();
             if ($ledgers) {
                 $vouchers = Voucher::withDefaultGroupCompanyOrg()->withWhereHas('items', function ($query) use ($ledgers, $group, $type, $filter) {
                     $query->whereIn('ledger_id', $ledgers);
@@ -294,14 +304,14 @@ class CrDrReportController extends Controller
             } else {
                 if ($filter == "") {
                     $childs = Group::find($group)->getAllChildIds();
-                    $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($childs) {
-                        $query->whereIn('ledger_group_id', $childs)
-                            ->orWhere(function ($subQuery) use ($childs) {
-                                foreach ($childs as $child) {
-                                    $subQuery->orWhereJsonContains('ledger_group_id', (string)$child);
-                                }
-                            });
-                    })->where('status', 1)->pluck('id')->toArray();
+                    $ledgers = Ledger::withDefaultGroupCompanyOrg()
+                                ->where('status', 1)
+                                ->where(function ($query) use ($childs) {
+                                    $query->whereIn('ledger_group_id', $childs);
+                                    foreach ($childs as $child) {
+                                        $query->orWhereJsonContains('ledger_group_id', (string)$child);
+                                    }
+                                })->pluck('id')->toArray();
 
 
                     $vouchers = Voucher::withDefaultGroupCompanyOrg()->withWhereHas('items', function ($query) use ($childs, $type, $ledgers) {
@@ -503,7 +513,7 @@ class CrDrReportController extends Controller
         $grps[] = $drp_group->id;
         $search_ledger = Group::whereIn('id', $grps)->get()->pluck('id');
 
-        $all_ledgers = Ledger::withDefaultGroupCompanyOrg()
+       $all_ledgers = Ledger::withDefaultGroupCompanyOrg()
             ->where('status', 1)
             ->where(function ($query) use ($search_ledger) {
                 $query->whereIn('ledger_group_id', $search_ledger);
@@ -1140,12 +1150,12 @@ class CrDrReportController extends Controller
 
             $ages_all = [$request->age0 ?? 30, $request->age1 ?? 60, $request->age2 ?? 90, $request->age3 ?? 120, $request->age4 ?? 180];
 
-            $ledger_name = Ledger::find($ledger)?->name;
-            $group_name = Group::find($group)?->name;
-            $model = $type == 'debit' ? Customer::class : Vendor::class;
-            $credit_days = $model::where('ledger_group_id', $group)
-                ->where('ledger_id', $ledger)
-                ->value('credit_days') ?? 0;
+        $ledger_name = Ledger::find($ledger)?->name ?? throw new \Exception('Ledger not found.');
+        $group_name = Group::find($group)?->name ?? throw new \Exception('Group not found.');
+        $model = $type == 'debit' ? Customer::class : Vendor::class;
+        $credit_days = $model::where('ledger_group_id', $group)
+            ->where('ledger_id', $ledger)
+            ->value('credit_days') ?? 0;
 
             $doc_types = $type === 'debit' ? [ConstantHelper::RECEIPTS_SERVICE_ALIAS, 'Receipt'] : [ConstantHelper::PAYMENTS_SERVICE_ALIAS, 'Payment'];
             $cus_type = $type === 'debit' ? 'customer' : 'vendor';
@@ -1175,31 +1185,35 @@ class CrDrReportController extends Controller
                 ->where('ledger_id', $ledger)
                 ->first();
 
-            $organization = Organization::find($organization_id);
-            $organizationAddress = Address::with(['city', 'state', 'country'])
-                ->where('addressable_id', $organization_id)
-                ->where('addressable_type', Organization::class)
-                ->first();
-
-            if (!$party || !$organization || !$organizationAddress) {
-                return redirect()->route('crdr.report.ledger.details', [
-                    'type' => $type,
-                    'ledger' => $ledger,
-                    'group' => $group
-                ])->with('print_error', 'Data is missing.');
+            if (!$party) {
+                throw new \Exception("Party (" . ($type == 'debit' ? 'customer' : 'vendor') . ") not found for the selected group and ledger.");
             }
 
-            $party_address = ErpAddress::with(['city', 'state', 'country'])
-                ->where('addressable_id', $party->id)
-                ->where('addressable_type', $model)
-                ->first();
+            $organization = Organization::find($organization_id);
+            if (!$organization) {
+                throw new \Exception("Organization not found.");
+            }
+
+        $organizationAddress = Address::with(['city', 'state', 'country'])
+            ->where('addressable_id', $organization_id)
+            ->where('addressable_type', Organization::class)
+            ->first();
+
+        if (!$organizationAddress) {
+            throw new \Exception("Organization address not found.");
+        }
+
+        $party_address = ErpAddress::with(['city', 'state', 'country'])
+            ->where('addressable_id', $party->id)
+            ->where('addressable_type', $model)
+            ->first();
 
             $total_value = $bill_type == "outstanding"
                 ? array_sum(array_column(array_filter($data, fn($item) => $item->total_outstanding > 0), 'total_outstanding'))
                 : array_sum(array_column(array_filter($data, fn($item) => $item->overdue > 0), 'overdue'));
 
             if ($total_value == 0)
-                return redirect()->back()->with('error', 'No Outstanding Due for this Ledger');
+                throw new \Exception('No outstanding due for this ledger.');
 
             $in_words = Helper::numberToWords($total_value) . " only.";
             $total_value = Helper::formatIndianNumber($total_value);
@@ -1236,14 +1250,19 @@ class CrDrReportController extends Controller
             $pdf->setPaper('A4', 'portrait');
             return $pdf->stream($fileName);
 
-        } catch (\Throwable $e) {
-            return redirect()->route('crdr.report.ledger.details', [
-                'type' => $type,
-                'ledger' => $ledger,
-                'group' => $group
-            ])->with('print_error', 'Data is missing.');
-        }
+    } catch (\Throwable $e) {
+        Log::error("Ledger Print Error", [
+            'message' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+
+        return redirect()->route('crdr.report.ledger.details', [
+            'type' => $type,
+            'ledger' => $ledger,
+            'group' => $group
+        ])->with('print_error', $e->getMessage());
     }
+}
 
     public function exportDebitorCreditor(Request $request)
     {

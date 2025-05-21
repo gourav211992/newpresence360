@@ -368,22 +368,12 @@ class LedgerController extends Controller
                 'required',
                 'string',
                 'max:255',
-                Helper::uniqueRuleWithConditions('erp_ledgers', [
-                    'organization_id' => $organizationId,
-                    'company_id' => $companyId,
-                    'group_id' => $groupId
-                ], $id, 'id', false),
             ],
             'name' => [
                 'required',
                 'string',
                 'max:255',
-                Helper::uniqueRuleWithConditions('erp_ledgers', [
-                    'organization_id' => $organizationId,
-                    'company_id' => $companyId,
-                    'group_id' => $groupId
-                ],$id),
-            ],
+                      ],
             'tax_type' => [
                 'nullable',
                 'string',

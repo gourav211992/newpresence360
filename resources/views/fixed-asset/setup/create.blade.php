@@ -144,7 +144,7 @@
                                                         <label class="form-label">Ledger Group <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <select class="form-select select2" name="ledger_group_id"
+                                                        <select class="form-select" name="ledger_group_id"
                                                         id="ledger_group" required>
                                                         </select>
                                                 
@@ -226,7 +226,7 @@
                                                     <label class="form-label">Dep. Ledger Group <span class="text-danger">*</span></label>
                                                 </div>
                                                 <div class="col-md-5">
-                                                    <select class="form-select select2" name="dep_ledger_group_id"
+                                                    <select class="form-select" name="dep_ledger_group_id"
                                                     id="dep_ledger_group" required>
                                                     </select>
                                             
