@@ -99,7 +99,7 @@
                                                         <label class="mb-1">&nbsp;</label>
                                                         <button
                                                             class="btn mt-25 btn-warning btn-sm waves-effect waves-float waves-light apply-filter">
-                                                            <i data-feather="filter"></i> Run Report</button>
+                                                            <i data-feather="search"></i> Find</button>
                                                     </div>
                                                 </div>
 
@@ -114,15 +114,14 @@
                             </div>
 
 
-                            <div class="px-2 mt-1">
+                            <div class="px-2 mb-1 mt-1">
                                 <div class="step-custhomapp bg-light">
                                     <ul class="nav nav-tabs my-25 custapploannav" role="tablist">
                                         <li class="nav-item">
-                                            <a class="nav-link active" data-bs-toggle="tab" href="#Transfer">Transfer
-                                                Ledgers</a>
+                                            <a class="nav-link active" data-bs-toggle="tab" href="#Transfer">Closing Balance</a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link" data-bs-toggle="tab" href="#Access">Access</a>
+                                            <a class="nav-link" data-bs-toggle="tab" href="#Access">Access Management</a>
                                         </li>
                                     </ul>
                                 </div>
@@ -175,11 +174,11 @@
                                                 <thead>
                                                     <tr>
                                                         <th width="50px">#</th>
-                                                            <th width="480">Authorized By<span
+                                                            <th width="280">User<span
                                                                     class="text-danger">*</span>
                                                         </th>
-                                                        <th width="400">Permissions</th>
-                                                        <th>Action</th>
+                                                        <th width="600">Roles</th>
+                                                        <th width="100px">Action</th>
                                                     </tr>
                                                 </thead>
 
@@ -213,7 +212,10 @@
                                                                 <input type="hidden" class="authenticable-type" name="authenticable_type[]">
                                                             </td>
                                                             <td>
-                                                                <select class="form-select mw-100 select2 permissions-box" id="permissions_{{ $rowNumber }}" multiple disabled></select>
+                                                                <select class="form-select mw-100 select2 permissions-box" id="permissions_{{ $rowNumber }}" multiple disabled>
+
+                                                                </select>
+                                                                {{-- <span class="badge rounded-pill badge-light-primary badgeborder-radius me-25">Posted</span> --}}
                                                             </td>
                                                             <td>
                                                             @if(($financialYear['fy_close'] ?? false) || !($locked === true))

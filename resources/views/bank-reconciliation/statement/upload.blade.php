@@ -17,10 +17,10 @@
                 </div>
                 <div class="content-header-right text-sm-end col-md-7 mb-50 mb-sm-0">
                     <div class="form-group breadcrumb-right">
-                        <button onClick="javascript:history.back()" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i
-                                data-feather="arrow-left-circle"></i> Back</button>
+                        <a href="{{ route('bank.ledgers.index') }}" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i
+                                data-feather="arrow-left-circle"></i> Back</a>
                         <a class="btn btn-primary btn-sm mb-50 mb-sm-0"
-                            href="{{ route('bank.statements.match-entries', ['id' => $id]) }}"><i
+                            href="{{ route('bank.statements.match-entries', ['id' => $id]) }}{{ request()->has('date') ? '?date=' . request()->get('date') : '' }}"><i
                                 data-feather="check-circle"></i> Match
                             Statement</a>
                     </div>
@@ -188,7 +188,7 @@
                                 </span>
                                 ${failureCount > 0 ? 
                                     `<span class="badge rounded-pill badge-light-danger fw-bold mb-1">Failed Rows: ${failureCount}</span>
-                                    <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#errorDetailsModal">View Details</button>` 
+                                                                    <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#errorDetailsModal">View Details</button>` 
                                 : ''}
                                 <button type="button" class="editbtnNew mt-2" id="upload-again-btn">
                                     <i data-feather='upload'></i> Upload Again

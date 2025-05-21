@@ -79,13 +79,14 @@
                                                         <tr>
                                                             <td>{{ \Carbon\Carbon::parse($voucher->document_date)->format('d-m-Y') }}
                                                             </td>
-                                                            <td>{{ $voucher->voucher_name }}</td>
+                                                            <td>{{ $voucher->party_name }}</td>
                                                             <td><span
                                                                     class="badge badge-light-secondary">{{ ucfirst(strtolower($voucher->reference_service)) }}</span>
                                                             </td>
                                                             <td>{{ $voucher->payment_mode }}</td>
                                                             <td>{{ $voucher->reference_no }}</td>
-                                                            <td></td>
+                                                            <td>{{ \Carbon\Carbon::parse($voucher->payment_date)->format('d-m-Y') }}
+                                                            </td>
                                                             <td>
                                                                 <input type="date" class="form-control font-small-2"
                                                                     name="bank_date[{{ $voucher->id }}]" />

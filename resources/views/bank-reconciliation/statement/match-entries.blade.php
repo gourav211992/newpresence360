@@ -58,12 +58,12 @@
                                         <ul class="nav nav-tabs my-25 custapploannav" role="tablist">
                                             <li class="nav-item">
                                                 <a class="nav-link {{ \Request::route()->getName() == 'bank.statements.match-entries' ? 'active' : '' }}"
-                                                    href="{{ route('bank.statements.match-entries', ['id' => $bank->id]) }}">Match
+                                                    href="{{ route('bank.statements.match-entries', ['id' => $bank->id]) }}{{ request()->has('date') ? '?date=' . request()->get('date') : '' }}">Match
                                                     Enteries</a>
                                             </li>
                                             <li class="nav-item">
                                                 <a class="nav-link {{ \Request::route()->getName() == 'bank.statements.not-match-entries' ? 'active' : '' }}"
-                                                    href="{{ route('bank.statements.not-match-entries', ['id' => $bank->id]) }}">Not
+                                                    href="{{ route('bank.statements.not-match-entries', ['id' => $bank->id]) }}{{ request()->has('date') ? '?date=' . request()->get('date') : '' }}">Not
                                                     Match
                                                     Enteries</a>
                                             </li>
@@ -104,9 +104,9 @@
                                                                     </td>
                                                                     <td>{{ $voucher->book_code }}</td>
                                                                     <td>{{ $voucher->voucher_no }}</td>
-                                                                    <td>{{ App\Helpers\Helper::formatIndianNumber($voucher->debit_amt_org) }}
+                                                                    <td>{{ number_format($voucher->debit_amt_org, 2) }}
                                                                     </td>
-                                                                    <td>{{ App\Helpers\Helper::formatIndianNumber($voucher->credit_amt_org) }}
+                                                                    <td>{{ number_format($voucher->credit_amt_org, 2) }}
                                                                     </td>
                                                                 </tr>
                                                             @empty

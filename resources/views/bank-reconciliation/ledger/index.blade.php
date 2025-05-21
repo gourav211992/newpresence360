@@ -70,18 +70,18 @@
                                                     <td class="fw-bolder text-dark">{{ $ledger->bank_name }}</td>
                                                     <td>{{ $ledger->account_number }}</td>
                                                     <td>
-                                                        {{ App\Helpers\Helper::formatIndianNumber(abs($ledger->opening)) }}
+                                                        {{ number_format(abs($ledger->opening), 2) }}
                                                         {{ $ledger->opening >= 0 ? 'Dr' : 'Cr' }}
                                                     </td>
-                                                    <td>{{ App\Helpers\Helper::formatIndianNumber($ledger->debit_amount) }}
+                                                    <td>{{ number_format($ledger->debit_amount, 2) }}
                                                     </td>
-                                                    <td>{{ App\Helpers\Helper::formatIndianNumber($ledger->credit_amount) }}
+                                                    <td>{{ number_format($ledger->credit_amount, 2) }}
                                                     </td>
                                                     <td>
-                                                        {{ App\Helpers\Helper::formatIndianNumber(abs($ledger->closing)) }}
+                                                        {{ number_format(abs($ledger->closing), 2) }}
                                                         {{ $ledger->closing >= 0 ? 'Dr' : 'Cr' }}
                                                     </td>
-                                                    <td><a href="{{ route('bank.statements.upload', ['id' => $ledger->account_id]) }}"
+                                                    <td><a href="{{ route('bank.statements.upload', ['id' => $ledger->account_id]) }}{{ request()->has('date') ? '?date=' . request()->get('date') : '' }}"
                                                             class="btn btn-outline-primary btn-sm font-small-2"><i
                                                                 data-feather="upload"></i> Upload Excel</a></td>
                                                 </tr>
