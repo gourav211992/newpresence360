@@ -1131,27 +1131,36 @@ $(document).on('click', '.soSubmitProcess', (e) => {
             let dataItem = JSON.parse($(item).attr('data-item'));
             selectedData.push(dataItem);
         });
-        if(selectedData.length) {
+        if (selectedData.length) {
             let soTracking = $("#so_tracking_required").val() || '';
             let storeId = $("#store_id").val() || '';
-            let actionUrl = '{{ route("pi.process.so-item.submit") }}'+'?selectedData='+JSON.stringify(selectedData)+'&so_tracking_required='+soTracking+'&store_id='+storeId;
-            fetch(actionUrl).then(response => {
-                return response.json().then(data => {
-                    if(data.status == 200) {
-                        $("#itemTable .mrntableselectexcel").empty().append(data.data.pos);
-                        initAutocompVendor("[name*='[vendor_code]']");
-                        initializeAutocomplete2(".comp_item_code");
-                        $(".soSelect").prop('disabled',true);
-                        $("#soSubmitModal").modal('hide');
-                        setTimeout(() => {
-                            $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
-                                let currentIndex = index + 1;
-                                setAttributesUIHelper(currentIndex, "#itemTable");
-                            });
-                        },100);
-                    }
-
-                });
+            fetch('{{ route("pi.process.so-item.submit") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    selectedData: selectedData,
+                    so_tracking_required: soTracking,
+                    store_id: storeId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status == 200) {
+                    $("#itemTable .mrntableselectexcel").empty().append(data.data.pos);
+                    initAutocompVendor("[name*='[vendor_code]']");
+                    initializeAutocomplete2(".comp_item_code");
+                    $(".soSelect").prop('disabled', true);
+                    $("#soSubmitModal").modal('hide');
+                    setTimeout(() => {
+                        $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+                            let currentIndex = index + 1;
+                            setAttributesUIHelper(currentIndex, "#itemTable");
+                        });
+                    }, 100);
+                }
             });
         }
     } else {

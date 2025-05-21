@@ -878,7 +878,7 @@
                 // Call updateFilterAndFetch once
                 updateFilterAndFetch();
 
-                // if (formData.email_to && formData.email_to.length > 0) {
+                if (formData.email_to && formData.email_to.length > 0) {
                     // if (dateValue < today) {
                     //     var inputField = $('[name="date"]');
 
@@ -954,11 +954,11 @@
                         });
                     }
                     });
-                // } else {
-                //     if (filterModal) {
-                //         filterModal.hide();
-                //     }
-                // }
+                } else {
+                    if (filterModal) {
+                        filterModal.hide();
+                    }
+                }
             });
 
             function initializeAutocomplete(selector, type) {

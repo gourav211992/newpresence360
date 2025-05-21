@@ -75,18 +75,18 @@
                                         data-feather="arrow-left-circle"></i> Back</a>
                                 @if(isset($fyear) && $fyear['authorized'])
                                     @if ($buttons['draft'])
-                                        <button type="button" onclick = "submitForm('draft');"
+                                        <a type="button" onclick = "submitForm('draft');"
                                             class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" id="draft"
-                                            name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
+                                            name="action" value="draft"><i data-feather='save'></i> Save as Draft</a>
                                     @endif
                                     @if($buttons['cancel'])
                                     <a id = "cancelButton" type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0"><i data-feather='x-circle'></i> Cancel</a>
                                     @endif
 
                                     @if ($buttons['submit'])
-                                        <button type="button" onclick = "submitForm('submitted');"
+                                        <a type="button" onclick = "submitForm('submitted');"
                                             class="btn btn-primary btn-sm" id="submitted" name="action"
-                                            value="submitted"><i data-feather="check-circle"></i> Submit</button>
+                                            value="submitted"><i data-feather="check-circle"></i> Submit</a>
                                     @endif
                                     @if ($buttons['approve'])
                                         <button type="button" id="reject-button" data-bs-toggle="modal"
@@ -879,7 +879,9 @@
 
 @section('scripts')
     <script>
-
+        // $('#voucherForm').on('submit', function () {
+        //     $('.preloader').show();
+        // });
         function onPostVoucherOpen(type = "not_posted") {
             resetPostVoucher();
 
@@ -1331,10 +1333,11 @@ $('.settleInput').each(function () {
 function check_amount() {
             $('#draft').attr('disabled', true);
             $('#submitted').attr('disabled', true);
-
+            $('.preloader').show();
             let rowCount = document.querySelectorAll('.mrntableselectexcel tr').length;
             for (let index = 1; index <= rowCount; index++) {
                 if (parseFloat($('#excAmount' + index).val()) == 0) {
+                    $('.preloader').hide();
                     showToast('error', 'Can not save ledger with amount 0');
                             $('#draft').attr('disabled', false);
             $('#submitted').attr('disabled', false);
@@ -1343,12 +1346,14 @@ function check_amount() {
             }
 
             if (parseFloat(removeCommas($('.currentCurrencySum').text())) == 0) {
+                $('.preloader').hide();
                 showToast('error', 'Total amount should be greater than 0');
                         $('#draft').attr('disabled', false);
-            $('#submitted').attr('disabled', false);
+                $('#submitted').attr('disabled', false);
                 return false;
             }
               if ($('#reference_no').hasClass('is-invalid') && $("#Bank").is(":checked")){
+                $('.preloader').hide();
                 showToast('error', 'Reference no. Already exist');
                  $('#draft').attr('disabled', false);
             $('#submitted').attr('disabled', false);
@@ -1698,6 +1703,11 @@ $('#revisionNumber').prop('disabled', false);
         function submitForm(status) {
 
             $('#status').val(status);
+            if ($('#reference_no').hasClass('is-invalid') && $("#Bank").is(":checked")){
+                showToast('error', 'Reference no. Already exist');
+                return false;
+            }
+            else
             $('#submitButton').click();
 
         }
@@ -1977,8 +1987,10 @@ $('#revisionNumber').prop('disabled', false);
 
     $(document).on('click', '#revokeButton', (e) => {
     let actionUrl = '{{ route("paymentVouchers.revoke.document") }}'+ '?id='+'{{$data->id}}';
+    $('.preloader').show();
     fetch(actionUrl).then(response => {
         return response.json().then(data => {
+            $('.preloader').hide();
             if(data.status == 'error') {
                 Swal.fire({
                     title: 'Error!',
@@ -2014,12 +2026,14 @@ function changerate(){
         cancelButtonText: 'No, keep it',
     }).then((result) => {
         if (result.isConfirmed) {
+            $('.preloader').show();
             // Proceed with AJAX request after confirmation
             let actionUrl = '{{ route("paymentVouchers.cancel.document") }}' + '?id=' + '{{$data->id}}';
 
             fetch(actionUrl)
                 .then(response => response.json())
                 .then(data => {
+                    $('.preloader').hide();
                     if (data.status === 'error') {
                         Swal.fire({
                             title: 'Error!',
@@ -2037,6 +2051,7 @@ function changerate(){
                     }
                 })
                 .catch(error => {
+                    $('.preloader').hide();
                     console.error('Error:', error);
                     Swal.fire({
                         title: 'Error!',
@@ -2168,6 +2183,7 @@ let timer;
 
                         },
                         success: function (response) {
+                            $('.preloader').hide();
                             if (response.exists) {
                                 $('#reference_error').text('This reference number already exists.');
                                 $('#reference_no').addClass('is-invalid');

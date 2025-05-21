@@ -404,9 +404,6 @@ if ($ref) {
             $voucher = new PaymentVoucher();
 
             $status = $request->status;
-            if ($status == ConstantHelper::SUBMITTED) {
-                $status = Helper::checkApprovalRequired($request->book_id, $request->totalAmount);
-            }
             $book = Book::find($request->book_id);
             $voucher->book_id = $request->book_id;
             $voucher->bookCode = $book->book_code;
@@ -485,8 +482,8 @@ if ($ref) {
             // Save voucher
             $voucher->user_id = $user->auth_user_id;
             $voucher->user_type = $user->authenticable_type;
+            $voucher->created_by = Helper::getAuthenticatedUser()->auth_user_id;
             $voucher->save();
-
             // Process voucher details
             foreach ($request->party_id as $index => $party) {
                 $details = new PaymentVoucherDetails();
@@ -521,22 +518,11 @@ if ($ref) {
                 // Handle approval process
                 $voucher = PaymentVoucher::find($voucher->id);
                 if ($voucher->document_status == ConstantHelper::SUBMITTED) {
-                    if (self::check_approved($voucher->book_id)) {
-                        $approveDocument = Helper::approveDocument($voucher->book_id, $voucher->id, $voucher->revision_number, $voucher->remarks, $request->file('attachment'), $voucher->approval_level, 'approve');
-                        $voucher->approvalLevel = $approveDocument['nextLevel'];
-                        $voucher->document_status = $approveDocument['approvalStatus'];
+                        $approveDocument = Helper::approveDocument($voucher->book_id, $voucher->id, $voucher->revision_number, $voucher->remarks, $request->file('attachment'), 0, 'submit',$voucher->amount,get_class($voucher));
+                        $voucher->approvalLevel = $approveDocument['nextLevel']?? 1;
+                        $voucher->document_status = $approveDocument['approvalStatus']?? ConstantHelper::SUBMITTED;
                         $voucher->save();
-                    } else {
-                        $approveDocument = Helper::approveDocument($voucher->book_id, $voucher->id, $voucher->revision_number, $voucher->remarks, $request->file('attachment'), $voucher->approval_level, 'submit');
-                        $voucher->approvalLevel = $approveDocument['nextLevel'];
-                        $voucher->document_status = $approveDocument['approvalStatus'];
-                        $voucher->save();
-                    }
-                } else if ($voucher->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED) {
-                    $approveDocument = Helper::approveDocument($voucher->book_id, $voucher->id, $voucher->revision_number, $voucher->remarks, $request->file('attachment'), $voucher->approval_level, 'approve');
-                    $voucher->approvalLevel = $approveDocument['nextLevel'];
-                    $voucher->document_status = $approveDocument['approvalStatus'];
-                    $voucher->save();
+                    
                 }
             }
 
@@ -690,11 +676,11 @@ if ($ref) {
     public function update(Request $request, string $id)
     {
 if($request->reference_no!="" && $request->payment_type === "Bank"){
-$ref = PaymentVoucher::where('reference_no', $request->reference_no)->exists();
+$ref = PaymentVoucher::where('reference_no', $request->reference_no)->where('id','!=',$id)->exists();
 
 if ($ref) {
     return redirect()
-        ->route($request->document_type . '.create')
+        ->route($request->document_type . '.edit', [$id])
         ->withErrors(['Reference No. Already Exist!'])->withInput();
 }
 }
@@ -758,10 +744,7 @@ if ($ref) {
             $voucher->location = $request->location;
             $status = $request->status;
 
-            if ($status == ConstantHelper::SUBMITTED) {
-                $status = Helper::checkApprovalRequired($voucher->book_id, $request->totalAmount);
-            }
-
+           
             if ($voucher->payment_type == "Bank") {
                 $voucher->bank_id = $request->bank_id;
                 $bank = Bank::find($request->bank_id);
@@ -824,20 +807,12 @@ if ($ref) {
             // Reload voucher for approval flow
             $voucher = PaymentVoucher::find($id);
             if ($voucher->document_status == ConstantHelper::SUBMITTED) {
-                if (self::check_approved($voucher->book_id)) {
-                    $approveDocument = Helper::approveDocument($voucher->book_id, $voucher->id, $voucher->revision_number, $voucher->remarks, $request->file('attachment'), $voucher->approval_level, 'approve');
-                } else {
-                    $approveDocument = Helper::approveDocument($voucher->book_id, $voucher->id, $voucher->revision_number, $voucher->remarks, $request->file('attachment'), $voucher->approval_level, 'submit');
-                }
-            } else if ($voucher->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED) {
-                $approveDocument = Helper::approveDocument($voucher->book_id, $voucher->id, $voucher->revision_number, $voucher->remarks, $request->file('attachment'), $voucher->approval_level, 'approve');
-            }
-
-            if (isset($approveDocument)) {
-                $voucher->approvalLevel = $approveDocument['nextLevel'];
-                $voucher->document_status = $approveDocument['approvalStatus'];
+                $approveDocument = Helper::approveDocument($voucher->book_id, $voucher->id, $voucher->revision_number, $voucher->remarks, $request->file('attachment'), 0, 'submit',$voucher->amount,get_class($voucher));
+                $voucher->approvalLevel = $approveDocument['nextLevel']??1;
+                $voucher->document_status = $approveDocument['approvalStatus']?? ConstantHelper::SUBMITTED;
                 $voucher->save();
-            }
+            
+        }
 
             DB::commit();
 
@@ -1259,7 +1234,7 @@ if ($ref) {
         return $pdf->stream($fileName);
 
         } catch (\Throwable $e) {
-            \Log::error('Payment Print Error', [
+            Log::error('Payment Print Error', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);

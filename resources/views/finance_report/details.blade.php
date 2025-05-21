@@ -864,7 +864,9 @@ if ($('#addcoulmn').length && $('#addcoulmn').hasClass('show')) {
                 icon: 'error',
                 title: 'Print Error',
                 html: errorMessage,
-                confirmButtonColor: '#d33'
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                confirmButtonText: 'OK'
             });
         }
     });

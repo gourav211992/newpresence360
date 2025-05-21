@@ -242,13 +242,22 @@ public function store(DepreciationRequest $request)
         } else {
             $revNo = $data->revision_number;
         }
-        $allPosted = FixedAssetDepreciation::where('created_at', '<', $data->created_at)
-        ->get()
-        ->every(fn($item) => $item->document_status === 'posted');
+        // Split the period range string into from/to dates
+            [$fromDateRaw, $toDateRaw] = explode(' to ', $data->period);
 
-        if(!$allPosted) {
-           $buttons['post'] = false;
-        }
+            // Convert the 'from' date to Y-m-d for comparison
+            $formattedStartDate = \Carbon\Carbon::createFromFormat('d-m-Y', $fromDateRaw)->format('Y-m-d');
+
+            // Fetch all depreciation records where the period is before the start date
+            $olderRecords = FixedAssetDepreciation::withDefaultGroupCompanyOrg()
+                ->whereRaw("STR_TO_DATE(period, '%d-%m-%Y') < ?", [$formattedStartDate])
+                ->get();
+
+            // Disable the post button if any older record is not posted
+            if ($olderRecords->isNotEmpty() && !$olderRecords->every(fn($item) => $item->document_status === 'posted')) {
+                $buttons['post'] = false;
+            }
+
 
         $approvalHistory = Helper::getApprovalHistory($data->book_id, $id, $revNo, $data->grand_total_current_value, $data -> created_by);
         $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();

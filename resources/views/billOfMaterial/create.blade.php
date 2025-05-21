@@ -194,8 +194,8 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                 <div class="col-md-12">                                
                     {{-- Append Attribute here  --}}
                     <div class="card">
-                        <div class="card-body customernewsection-form">
-                            <div class="border-bottom mb-2 pb-25" id="componentSection">
+                        <div class="card-body customernewsection-form px-0">
+                            <div class="border-bottom mb-2 pb-25 pocreate-sticky" id="componentSection">
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="newheader ">
@@ -809,99 +809,99 @@ $(function(){
    
 });
 
+// for component item code
+function initializeAutocomplete2(selector, type) {
+    $(selector).autocomplete({
+        source: function(request, response) {
+            let headItemId = $("#head_item_id").val();
+            let selectedAllItemIds = [];
+            if(Number(headItemId)) {
+                selectedAllItemIds.push(headItemId);
+            }
+            $("#itemTable tbody [id*='row_']").each(function(index,item) {
+                if(Number($(item).find('[name*="item_id"]').val())) {
+                selectedAllItemIds.push(Number($(item).find('[name*="item_id"]').val()));
+                }
+            });
+            $.ajax({
+                url: '/search',
+                method: 'GET',
+                dataType: 'json',
+                data: {
+                    q: request.term,
+                    type:'comp_item',
+                    selectedAllItemIds : JSON.stringify(selectedAllItemIds)
+                },
+                success: function(data) {
+                    response($.map(data, function(item) {
+                        return {
+                            id: item.id,
+                            label: `${item.item_name} (${item.item_code})`,
+                            code: item.item_code || '', 
+                            item_id: item.id,
+                            uom_name:item.uom?.name,
+                            uom_id:item.uom_id,
+                            is_attr:item.item_attributes_count,
+                            item_name:item.item_name,
+                        };
+                    }));
+                },
+                error: function(xhr) {
+                    console.error('Error fetching customer data:', xhr.responseText);
+                }
+            });
+        },
+        minLength: 0,
+        select: function(event, ui) {
+            let $input = $(this);
+            let itemCode = ui.item.code;
+            let itemName = ui.item.value;
+            let itemN = ui.item.item_name;
+            let itemId = ui.item.item_id;
+            let uomId = ui.item.uom_id;
+            let uomName = ui.item.uom_name;
+            $input.attr('data-name', itemName);
+            $input.attr('data-code', itemCode);
+            $input.attr('data-id', itemId);
+            $input.val(itemCode);
+            $input.closest('tr').find('[name*=item_id]').val(itemId);
+            $input.closest('tr').find('[name*=item_code]').val(itemCode);
+            $input.closest('tr').find('[name*="[item_name]"]').val(itemN);
+            let uomOption = `<option value=${uomId}>${uomName}</option>`;
+            $input.closest('tr').find('[name*=uom_id]').empty().append(uomOption);
+            $input.closest('tr').find('[name*=attr_group_id]').remove();
+            setTimeout(() => {
+                    if(ui.item.is_attr) {
+                        $input.closest('tr').find('.attributeBtn').trigger('click');
+                    } else {
+                        $input.closest('tr').find('.attributeBtn').trigger('click');
+                        if(!$("#consumption_method").val().includes('manual')) {
+                        $input.closest('tr').find('.consumption_btn button').trigger('click');
+                        } else {
+                        $input.closest('tr').find('[name*="[qty]"]').val('').focus();
+                        }
+                    }
+                }, 50);
+
+            getBomItemCost(itemId, itemAttributes = []);
+
+            return false;
+        },
+        change: function(event, ui) {
+            if (!ui.item) {
+                $(this).val("");
+                $(this).attr('data-name', '');
+                $(this).attr('data-code', '');
+            }
+        }
+    }).focus(function() {
+        if (this.value === "") {
+            $(this).autocomplete("search", "");
+        }
+    });
+}
 /*Add New Row*/
 $(document).on('click','#addNewItemBtn', (e) => {
-         // for component item code
-    function initializeAutocomplete2(selector, type) {
-        $(selector).autocomplete({
-            source: function(request, response) {
-                let headItemId = $("#head_item_id").val();
-                let selectedAllItemIds = [];
-                if(Number(headItemId)) {
-                    selectedAllItemIds.push(headItemId);
-                }
-                $("#itemTable tbody [id*='row_']").each(function(index,item) {
-                    if(Number($(item).find('[name*="item_id"]').val())) {
-                    selectedAllItemIds.push(Number($(item).find('[name*="item_id"]').val()));
-                    }
-                });
-                $.ajax({
-                    url: '/search',
-                    method: 'GET',
-                    dataType: 'json',
-                    data: {
-                        q: request.term,
-                        type:'comp_item',
-                        selectedAllItemIds : JSON.stringify(selectedAllItemIds)
-                    },
-                    success: function(data) {
-                        response($.map(data, function(item) {
-                            return {
-                                id: item.id,
-                                label: `${item.item_name} (${item.item_code})`,
-                                code: item.item_code || '', 
-                                item_id: item.id,
-                                uom_name:item.uom?.name,
-                                uom_id:item.uom_id,
-                                is_attr:item.item_attributes_count,
-                                item_name:item.item_name,
-                            };
-                        }));
-                    },
-                    error: function(xhr) {
-                        console.error('Error fetching customer data:', xhr.responseText);
-                    }
-                });
-            },
-            minLength: 0,
-            select: function(event, ui) {
-                let $input = $(this);
-                let itemCode = ui.item.code;
-                let itemName = ui.item.value;
-                let itemN = ui.item.item_name;
-                let itemId = ui.item.item_id;
-                let uomId = ui.item.uom_id;
-                let uomName = ui.item.uom_name;
-                $input.attr('data-name', itemName);
-                $input.attr('data-code', itemCode);
-                $input.attr('data-id', itemId);
-                $input.val(itemCode);
-                $input.closest('tr').find('[name*=item_id]').val(itemId);
-                $input.closest('tr').find('[name*=item_code]').val(itemCode);
-                $input.closest('tr').find('[name*="[item_name]"]').val(itemN);
-                let uomOption = `<option value=${uomId}>${uomName}</option>`;
-                $input.closest('tr').find('[name*=uom_id]').empty().append(uomOption);
-                $input.closest('tr').find('[name*=attr_group_id]').remove();
-                setTimeout(() => {
-                        if(ui.item.is_attr) {
-                            $input.closest('tr').find('.attributeBtn').trigger('click');
-                        } else {
-                            $input.closest('tr').find('.attributeBtn').trigger('click');
-                            if(!$("#consumption_method").val().includes('manual')) {
-                            $input.closest('tr').find('.consumption_btn button').trigger('click');
-                            } else {
-                            $input.closest('tr').find('[name*="[qty]"]').val('').focus();
-                            }
-                        }
-                    }, 50);
-
-                getBomItemCost(itemId, itemAttributes = []);
-
-                return false;
-            },
-            change: function(event, ui) {
-                if (!ui.item) {
-                    $(this).val("");
-                    $(this).attr('data-name', '');
-                    $(this).attr('data-code', '');
-                }
-            }
-        }).focus(function() {
-            if (this.value === "") {
-                $(this).autocomplete("search", "");
-            }
-        });
-    }
     let rowsLength = $("#itemTable > tbody > tr").length;
     /*Check header attribute required*/
     let itemCode = $("#item_code").val();
@@ -1009,6 +1009,7 @@ $(document).on('click','#addNewItemBtn', (e) => {
                 initializeProductSectionAutocomplete();
                 $(".prSelect").prop('disabled',true);
                 feather.replace();
+                focusAndScrollToLastRowInput();
             } else if(data.status == 422) {
                Swal.fire({
                     title: 'Error!',
@@ -1026,80 +1027,6 @@ $(document).on('click','#addNewItemBtn', (e) => {
         });
     });
 });
-
-// THis is for this production item
-function initializeAutocomplete3(selector, type) {
-$(selector).autocomplete({
-    source: function(request, response) {
-        $.ajax({
-            url: '/search',
-            method: 'GET',
-            dataType: 'json',
-            data: {
-                q: request.term,
-                type:'header_item'
-            },
-            success: function(data) {
-                response($.map(data, function(item) {
-                    return {
-                        id: item.id,
-                        label: `${item.item_name} (${item.item_code})`,
-                        code: item.item_code || '', 
-                        item_id: item.id,
-                        item_name: item.item_name,
-                        uom_name:item.uom?.name,
-                        uom_id:item.uom_id,
-                        is_attr:item.item_attributes_count,
-                    };
-                }));
-            },
-            error: function(xhr) {
-                console.error('Error fetching customer data:', xhr.responseText);
-            }
-        });
-    },
-    minLength: 0,
-    select: function(event, ui) {
-        let $input = $(this);
-        let itemCode = ui.item.code;
-        let itemName = ui.item.value;
-        let itemName2 = ui.item.item_name || '';
-        let itemId = ui.item.item_id;
-        let uomId = ui.item.uom_id;
-        let uomName = ui.item.uom_name;
-        $input.attr('data-name', itemName);
-        $input.attr('data-code', itemCode);
-        $input.attr('data-id', itemId);
-        $input.val(itemCode);
-        $input.closest('tr').find('[name*=item_id]').val(itemId);
-        $input.closest('tr').find('[name*=item_code]').val(itemCode);
-        $input.closest('tr').find('[name*=product_name]').val(itemName2);
-        let uomOption = `<option value=${uomId}>${uomName}</option>`;
-        $input.closest('tr').find('[name*=uom_id]').empty().append(uomOption);
-        $input.closest('tr').find('[name*=attr_group_id]').remove();
-        setTimeout(() => {
-                if(ui.item.is_attr) {
-                    $input.closest('tr').find('.attributeBtn').trigger('click');
-                } else {
-                    $input.closest('tr').find('[name*="[qty]"]').val('').focus();
-                }
-                $("#itemTable2 > tbody").find("[name*='[qty]']").attr('readonly', false);
-            }, 50);
-        return false;
-    },
-    change: function(event, ui) {
-        if (!ui.item) {
-            $(this).val("");
-            $(this).attr('data-name', '');
-            $(this).attr('data-code', '');
-        }
-    }
-}).focus(function() {
-    if (this.value === "") {
-        $(this).autocomplete("search", "");
-    }
-});
-}
 
 $(document).on('click', '#addNewInstructionBtn', (e) => {
     let rowsLength = $("#itemTable3 > tbody > tr").length;
@@ -1203,6 +1130,7 @@ function getItemAttribute(itemId, rowCount, selectedAttr, tr){
                     $(tr).find("[name*='vendor_id']").val(data.data.vendor_id);
                   }
                   qtyEnabledDisabled();
+                  initAttributeAutocomplete();
             }
         });
     });
@@ -2006,9 +1934,11 @@ $(document).on('click', '.prProcess', (e) => {
                     $("#production_route_id").val(data?.data?.bom?.production_route_id).trigger('change');
                 }
                 setTableCalculation();
+                initializeAutocomplete2(".comp_item_code");
                 initializeProductSectionAutocomplete();
                 overheadeIntializeAutocomplete();
                 feather.replace();
+                focusAndScrollToLastRowInput();
             }
             if(data.status == 422) {
                 Swal.fire({

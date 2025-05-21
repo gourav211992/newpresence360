@@ -608,6 +608,9 @@
 @section('scripts')
     <script src="{{ url('/app-assets/js/jquery-ui.js') }}"></script>
     <script>
+        // $('#voucherForm').on('submit', function () {
+        //     $('.preloader').show();
+        // });
         $('.voucher_details').hide();
 
         var currencies = {!! json_encode($currencies) !!};
@@ -1067,6 +1070,7 @@
 
             $('#draft').attr('disabled', true);
             $('#submitted').attr('disabled', true);
+            $('.preloader').show();
 
             let seen = new Set(); // Create a Set to track unique combinations
             let duplicateFound = false; // Flag to track duplicates
@@ -1086,6 +1090,7 @@
             });
 
             if (duplicateFound) {
+                $('.preloader').hide();
                 showToast("error", "Duplicate ledger groups found. Please correct and try again.");
                 return false;
             }
@@ -1099,6 +1104,7 @@
 
                 // Check if both the credit and debit amounts are 0
                 if (debAmount == 0 && crdAmount == 0) {
+                    $('.preloader').hide();
                     $('#draft').attr('disabled', false);
                     $('#submitted').attr('disabled', false);
                     showToast('error', 'Can not save ledgers with Credit and Debit amount both being 0');
@@ -1114,6 +1120,7 @@
 
             if (parseFloat(removeCommas($('#crd_total').text())) == 0 || parseFloat(removeCommas($('#dbt_total').text())) ==
                 0) {
+                    $('.preloader').hide();
                 $('#draft').attr('disabled', false);
                 $('#submitted').attr('disabled', false);
                 showToast("error", 'Debit and credit amount should be greater than 0');
@@ -1123,6 +1130,7 @@
             if (parseFloat(removeCommas($('#crd_total').text())) == parseFloat(removeCommas($('#dbt_total').text()))) {
                 return true;
             } else {
+                $('.preloader').hide();
                 $('#draft').attr('disabled', false);
                 $('#submitted').attr('disabled', false);
                 showToast("error", 'Debit and credit amount total should be same!!');
@@ -1399,7 +1407,7 @@
                     </td>
                     <td>
                         <select class="costCenter form-select mw-100" name="cost_center_id[]" id="cost_center_id${rowCount + 1}">
-                            
+
                         </select>
                     </td>
                     <td>

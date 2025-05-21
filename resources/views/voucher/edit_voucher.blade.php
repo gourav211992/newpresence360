@@ -854,6 +854,9 @@
 @section('scripts')
     <script src="{{ url('/app-assets/js/jquery-ui.js') }}"></script>
     <script>
+        // $('#voucherForm').on('submit', function () {
+        //     $('.preloader').show();
+        // });
         $('.voucher_details').hide();
 
         var currencies = {!! json_encode($currencies) !!};
@@ -1058,6 +1061,7 @@
         function check_amount() {
                 $('#draft').attr('disabled', true);
                 $('#submitted').attr('disabled', true);
+                $('.preloader').show();
 
             let seen = new Set(); // Create a Set to track unique combinations
             let duplicateFound = false; // Flag to track duplicates
@@ -1077,6 +1081,7 @@
             });
 
             if (duplicateFound) {
+                $('.preloader').hide();
                 showToast("error", "Duplicate ledger groups found. Please correct and try again.");
                 return false;
             }
@@ -1084,33 +1089,36 @@
 
 
             $('#item-details-body tr').each(function() {
-    let debAmount = parseFloat(removeCommas($(this).find('.dbt_amt').val()))||0;
-    let crdAmount = parseFloat(removeCommas($(this).find('.crd_amt').val()))||0;
+            let debAmount = parseFloat(removeCommas($(this).find('.dbt_amt').val()))||0;
+            let crdAmount = parseFloat(removeCommas($(this).find('.crd_amt').val()))||0;
 
-    // Check if both the credit and debit amounts are 0
-    if (debAmount == 0 && crdAmount == 0) {
-        showToast('error','Can not save ledgers with Credit and Debit amount both being 0');
-        $('#draft').attr('disabled', false);
-        $('#submitted').attr('disabled', false);
-        stop=true;
-        return false;  // Stop the loop and return false
-    }
-});
-if(stop)
-return false;
+            // Check if both the credit and debit amounts are 0
+            if (debAmount == 0 && crdAmount == 0) {
+                $('.preloader').hide();
+                showToast('error','Can not save ledgers with Credit and Debit amount both being 0');
+                $('#draft').attr('disabled', false);
+                $('#submitted').attr('disabled', false);
+                stop=true;
+                return false;  // Stop the loop and return false
+            }
+                });
+            if(stop)
+            return false;
 
             if (parseFloat(removeCommas($('#crd_total').text())) == 0 || parseFloat(removeCommas($('#dbt_total').text())) == 0) {
+                $('.preloader').hide();
                 showToast("error",'Debit and credit amount should be greater than 0');
                 $('#draft').attr('disabled', false);
-        $('#submitted').attr('disabled', false);
+                $('#submitted').attr('disabled', false);
                 return false;
             }
             if (parseFloat(removeCommas($('#crd_total').text())) == parseFloat(removeCommas($('#dbt_total').text()))) {
                 return true;
             } else {
+                $('.preloader').hide();
                 showToast("error",'Debit and credit amount total should be same!!');
                 $('#draft').attr('disabled', false);
-        $('#submitted').attr('disabled', false);
+                $('#submitted').attr('disabled', false);
                 return false;
             }
         }
@@ -1818,9 +1826,11 @@ function focusInput(inputElement) {
         }
 
         $(document).on('click', '#revokeButton', (e) => {
+            $('.preloader').show();
     let actionUrl = '{{ route("voucher.revoke.document") }}'+ '?id='+'{{$data->id}}';
     fetch(actionUrl).then(response => {
         return response.json().then(data => {
+            $('.preloader').hide();
             if(data.status == 'error') {
                 Swal.fire({
                     title: 'Error!',
@@ -1840,7 +1850,6 @@ function focusInput(inputElement) {
 });
 $(document).on('click', '#cancelButton', (e) => {
     e.preventDefault(); // Prevent default behavior
-
     // Show confirmation dialog
     Swal.fire({
         title: 'Are you sure to cancel?',
@@ -1850,13 +1859,16 @@ $(document).on('click', '#cancelButton', (e) => {
         confirmButtonText: 'Yes, cancel it!',
         cancelButtonText: 'No, keep it',
     }).then((result) => {
+
         if (result.isConfirmed) {
+            $('.preloader').show();
             // Proceed with AJAX request after confirmation
             let actionUrl = '{{ route("voucher.cancel.document") }}' + '?id=' + '{{$data->id}}';
 
             fetch(actionUrl)
                 .then(response => response.json())
                 .then(data => {
+                     $('.preloader').hide();
                     if (data.status === 'error') {
                         Swal.fire({
                             title: 'Error!',
@@ -1874,6 +1886,7 @@ $(document).on('click', '#cancelButton', (e) => {
                     }
                 })
                 .catch(error => {
+                     $('.preloader').hide();
                     console.error('Error:', error);
                     Swal.fire({
                         title: 'Error!',

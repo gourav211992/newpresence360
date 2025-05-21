@@ -145,15 +145,19 @@ class StatementController extends Controller
         //     self::statementFilter($query,$search);
         // })
         // ->paginate($length);
+        $partyItemSubquery = $this->partyItemSubquery();
 
         $vouchers = Voucher::join('erp_item_details','erp_item_details.voucher_id','=','erp_vouchers.id')
                     ->join('erp_books','erp_books.id','=','erp_vouchers.book_id')
                     ->leftJoin('erp_bank_statements','erp_bank_statements.uid','=','erp_item_details.statement_uid')
+                    ->leftJoinSub($partyItemSubquery, 'party_details', function($join) {
+                        $join->on('erp_vouchers.id', '=', 'party_details.voucher_id');
+                    })
                     ->where(function($query){
                         $query->whereNotNull('erp_item_details.statement_uid')
                         ->orWhereNotNull('erp_item_details.bank_date');
                     })
-                    ->where('erp_item_details.organization_id', $organizationId)
+                    ->where('erp_vouchers.organization_id', $organizationId)
                     ->whereBetween('erp_vouchers.document_date', [$startDate, $endDate])
                     ->whereIn('erp_vouchers.approvalStatus',['approved','approval_not_required'])
                     ->whereIn('erp_vouchers.reference_service',['receipts','payments'])
@@ -173,6 +177,7 @@ class StatementController extends Controller
                         'erp_bank_statements.date',
                         'erp_bank_statements.account_number',
                         'erp_bank_statements.ref_no',
+                        'party_details.name as party_name',
                     )
                     ->paginate($length);
         $dateRange = \Carbon\Carbon::parse($startDate)->format('d-m-Y') . " to " . \Carbon\Carbon::parse($endDate)->format('d-m-Y');
@@ -214,11 +219,16 @@ class StatementController extends Controller
             }
         ])->find($id);
 
+        $partyItemSubquery = $this->partyItemSubquery();
+
         $vouchers = Voucher::join('erp_item_details','erp_item_details.voucher_id','=','erp_vouchers.id')
                     ->join('erp_books','erp_books.id','=','erp_vouchers.book_id')
+                    ->leftJoinSub($partyItemSubquery, 'party_details', function($join) {
+                        $join->on('erp_vouchers.id', '=', 'party_details.voucher_id');
+                    })
                     ->whereNull('erp_item_details.statement_uid')
                     ->whereNull('erp_item_details.bank_date')
-                    ->where('erp_item_details.organization_id', $organizationId)
+                    ->where('erp_vouchers.organization_id', $organizationId)
                     ->whereBetween('erp_vouchers.document_date', [$startDate, $endDate])
                     ->whereIn('erp_vouchers.approvalStatus',['approved','approval_not_required'])
                     ->whereIn('erp_vouchers.reference_service',['receipts','payments'])
@@ -234,7 +244,8 @@ class StatementController extends Controller
                         'erp_vouchers.document_date',
                         'erp_item_details.credit_amt_org',
                         'erp_item_details.debit_amt_org',
-                        'erp_books.book_code'
+                        'erp_books.book_code',
+                        'party_details.name as party_name',
                     )
                     ->paginate($length);
                     // dd($vouchers->toArray(),$startDate, $endDate);
@@ -262,6 +273,19 @@ class StatementController extends Controller
                 ->orWhere('voucher_name', 'like', '%' . $search . '%');
         });
         return $query;
+    }
+
+    private function partyItemSubquery(){
+        $partyItemSubquery = ItemDetail::select(
+                'erp_item_details.ledger_id',
+                'erp_item_details.voucher_id',
+                'erp_ledgers.name',
+            )
+            ->join('erp_ledgers','erp_ledgers.id','=','erp_item_details.ledger_id')
+            ->where('erp_item_details.entry_type', 'party')
+            ->groupBy('voucher_id');
+
+            return $partyItemSubquery;
     }
 
 }

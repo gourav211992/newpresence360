@@ -130,7 +130,7 @@
                                                                 class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="date" class="form-control" id="document_date"
+                                                        <input type="date" class="form-control indian-number" id="document_date"
                                                             name="document_date" value="{{ $data->document_date }}" readonly required>
                                                     </div>
                                                 </div>
@@ -223,8 +223,8 @@
                                                         <tbody class="mrntableselectexcel">
                                                             @foreach(json_decode($data->asset_details) as $key => $assetRow)
                                                             <tr>
-                                                                <td class="poprod-decpt">
-                                                                    <select name="asset_id[]" class="form-control select2 asset_id" required disabled data-id="{{ $key }}">
+                                                                <td class="indian-number poprod-decpt">
+                                                                    <select name="asset_id[]" class="form-control indian-number select2 asset_id" required disabled data-id="{{ $key }}">
                                                                         <option value="">Select</option>
                                                                         @foreach ($assets as $asset)
                                                                             <option value="{{ $asset->id }}" 
@@ -234,7 +234,7 @@
                                                                         @endforeach
                                                                     </select>
                                                                 </td>
-                                                                <td class="poprod-decpt">
+                                                                <td class="indian-number poprod-decpt">
                                                                     <select name="sub_asset_id[{{ $key }}][]" class="form-select select2 sub_asset_id" multiple disabled required data-id="{{ $key }}">
                                                                         @php
                                                                             $selectedSubAssets = $assetRow->sub_asset_code ?? [];
@@ -247,8 +247,8 @@
                                                                     </select>
                                                                 </td>
                                                                 <td>{{ $assetRow->quantity }}</td>
-                                                                <td class="text-end">{{ $assetRow->currentvalue }}</td>
-                                                                <td class="text-end">{{ $assetRow->salvagevalue ??"" }}</td>
+                                                                <td class="indian-number text-end">{{ $assetRow->currentvalue }}</td>
+                                                                <td class="indian-number text-end">{{ $assetRow->salvagevalue ??"" }}</td>
                                                                 
                                                                 <td>{{ $assetRow->last_dep_date }}</td>
                                                             </tr>
@@ -293,7 +293,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Asset Name <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" name="asset_name" readonly
+                                                            <input type="text" class="form-control indian-number" name="asset_name" readonly
                                                                 id="asset_name"
                                                                 value="{{ $data->asset_name }}" required />
                                                         </div>
@@ -303,7 +303,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Asset Code <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" name="asset_code"
+                                                            <input type="text" class="form-control indian-number" name="asset_code"
                                                                 id="asset_code" value="{{$data->asset_code}}" readonly
                                                                 required />
                                                         </div>
@@ -314,7 +314,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Quantity <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" name="quantity"
+                                                            <input type="text" class="form-control indian-number" name="quantity"
                                                                 id="quantity" value="{{$data->quantity}}" readonly />
                                                         </div>
                                                     </div>
@@ -350,7 +350,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Capitalize Date <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="date" class="form-control"
+                                                            <input type="date" class="form-control indian-number"
                                                                 name="capitalize_date" id="capitalize_date"
                                                                 value="{{$data->capitalize_date}}"  readonly required />
                                                         </div>
@@ -388,7 +388,7 @@
                                                             <label class="form-label">Dep. Method <span
                                                                     class="text-danger">*</span></label>
                                                             <input type="text" name="depreciation_method"
-                                                                id="depreciation_method" class="form-control"
+                                                                id="depreciation_method" class="form-control indian-number"
                                                                 value="{{$data->depreciation_method}}" readonly />
                                                         </div>
                                                     </div>
@@ -398,7 +398,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Est. Useful Life (yrs) <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" name="useful_life"
+                                                            <input type="text" class="form-control indian-number" name="useful_life"
                                                                 id="useful_life" value="{{$data->useful_life}}" disabled required />
                                                         </div>
                                                     </div>
@@ -407,7 +407,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Salvage Value <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control"
+                                                            <input type="text" class="form-control indian-number"
                                                                 name="salvage_value" id="salvage_value" readonly
                                                                 value="{{$data->salvage_value}}" required />
                                                         </div>
@@ -417,7 +417,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Dep % <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="number" class="form-control"
+                                                            <input type="number" class="form-control indian-number"
                                                                 id="depreciation_rate" value="{{$data->depreciation_percentage}}" name="depreciation_percentage"
                                                                 readonly />
                                                             
@@ -429,7 +429,7 @@
                                                             <label class="form-label">Total Dep. <span
                                                                     class="text-danger">*</span></label>
                                                             <input type="number" id="total_depreciation"
-                                                                name="total_depreciation" class="form-control"
+                                                                name="total_depreciation" class="form-control indian-number"
                                                                 value="{{$data->total_depreciation}}" readonly />
                                                         </div>
                                                     </div>
@@ -441,7 +441,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Current Value <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" required
+                                                            <input type="text" class="form-control indian-number" required
                                                                 name="current_value" id="current_value"
                                                                 value="{{$data->current_value}}" readonly />
                                                         </div>
@@ -485,25 +485,25 @@
                         <div class="col-md-3">
                             <div class="mb-1">
                                 <label class="form-label">Series <span class="text-danger">*</span></label>
-                                <input id = "voucher_book_code" class="form-control" disabled="" >
+                                <input id = "voucher_book_code" class="form-control indian-number" disabled="" >
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="mb-1">
                                 <label class="form-label">Voucher No <span class="text-danger">*</span></label>
-                                <input id = "voucher_doc_no" class="form-control" disabled="" value="">
+                                <input id = "voucher_doc_no" class="form-control indian-number" disabled="" value="">
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="mb-1">
                                 <label class="form-label">Voucher Date <span class="text-danger">*</span></label>
-                                <input id = "voucher_date" class="form-control" disabled="" value="">
+                                <input id = "voucher_date" class="form-control indian-number" disabled="" value="">
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="mb-1">
                                 <label class="form-label">Currency <span class="text-danger">*</span></label>
-                                <input id = "voucher_currency" class="form-control" disabled="" value="">
+                                <input id = "voucher_currency" class="form-control indian-number" disabled="" value="">
                             </div>
                         </div>
 						<div class="col-md-12">
@@ -552,11 +552,11 @@
                        <div class="col-md-12">
                           <div class="mb-1">
                              <label class="form-label">Remarks {{-- <span class="text-danger">*</span> --}}</label>
-                             <textarea name="remarks" class="form-control"></textarea>
+                             <textarea name="remarks" class="form-control indian-number"></textarea>
                           </div>
                           <div class="mb-1">
                              <label class="form-label">Upload Document</label>
-                             <input type="file" id="ap_file" name="attachment[]" multiple class="form-control" />
+                             <input type="file" id="ap_file" name="attachment[]" multiple class="form-control indian-number" />
                           </div>
                        </div>
                     </div>
@@ -686,11 +686,11 @@
                             voucherEntriesHTML += `
                             <tr>
                             <td>${voucher}</td>
-                            <td class="fw-bolder text-dark">${voucherDetail.ledger_group_code ? voucherDetail.ledger_group_code : ''}</td>
+                            <td class="indian-number fw-bolder text-dark">${voucherDetail.ledger_group_code ? voucherDetail.ledger_group_code : ''}</td>
                             <td>${voucherDetail.ledger_code ? voucherDetail.ledger_code : ''}</td>
                             <td>${voucherDetail.ledger_name ? voucherDetail.ledger_name : ''}</td>
-                            <td class="text-end">${voucherDetail.debit_amount > 0 ? parseFloat(voucherDetail.debit_amount).toFixed(2) : ''}</td>
-                            <td class="text-end">${voucherDetail.credit_amount > 0 ? parseFloat(voucherDetail.credit_amount).toFixed(2) : ''}</td>
+                            <td class="indian-number text-end">${voucherDetail.debit_amount > 0 ? parseFloat(voucherDetail.debit_amount).toFixed(2) : ''}</td>
+                            <td class="indian-number text-end">${voucherDetail.credit_amount > 0 ? parseFloat(voucherDetail.credit_amount).toFixed(2) : ''}</td>
                             </tr>
                             `
                         });
@@ -698,8 +698,8 @@
                     voucherEntriesHTML+= `
                     <tr>
                         <td colspan="4" class="fw-bolder text-dark text-end">Total</td>
-                        <td class="fw-bolder text-dark text-end">${voucherEntries.total_debit.toFixed(2)}</td>
-                        <td class="fw-bolder text-dark text-end">${voucherEntries.total_credit.toFixed(2)}</td>
+                        <td class="indian-number fw-bolder text-dark text-end">${voucherEntries.total_debit.toFixed(2)}</td>
+                        <td class="indian-number fw-bolder text-dark text-end">${voucherEntries.total_credit.toFixed(2)}</td>
                     </tr>
                     `;
                     document.getElementById('posting-table').innerHTML = voucherEntriesHTML;

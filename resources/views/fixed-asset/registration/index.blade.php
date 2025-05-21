@@ -71,6 +71,7 @@
                                             <tr>
                                                 <th>#</th>
                                                 <th>Date</th>
+                                                <th width="100px">Series</th>
                                                 <th width="100px">Doc. No</th>
                                                 <th>Asset Name</th>
                                                 <th>Asset Code</th>
@@ -90,6 +91,7 @@
                                                 <tr>
                                                     <td>{{ $loop->iteration }}</td>
                                                     <td>{{ \Carbon\Carbon::parse($asset->document_date)->format('d-m-Y') ??"-"}}</td>
+                                                    <td>{{ $asset?->book?->book_code ??"-" }}</td>
                                                     <td>{{ $asset->document_number ??"-" }}</td>
                                                     <td class="fw-bolder text-dark">{{ $asset->asset_name??"-" }}</td>
                                                     <td>{{ $asset->asset_code??"-" }}</td>
