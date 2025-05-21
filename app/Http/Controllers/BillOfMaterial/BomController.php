@@ -44,10 +44,10 @@ class BomController extends Controller
         $parentUrl = request()->segments()[0];
         $servicesAliasParam = $parentUrl == 'quotation-bom' ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
         if($servicesAliasParam === ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
-            $canView = request()->user()->hasPermission('quotation_bom.item_cost_view');
+            $canView = request()->user()?->hasPermission('quotation_bom.item_cost_view');
         } 
         if($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
-            $canView = request()->user()->hasPermission('production_bom.item_cost_view');
+            $canView = request()->user()?->hasPermission('production_bom.item_cost_view');
         }
         if (request()->ajax()) {
             $type = $request->type == ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
@@ -145,10 +145,10 @@ class BomController extends Controller
         $parentUrl = request()->segments()[0];
         $servicesAliasParam = $parentUrl == 'quotation-bom' ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
         if($servicesAliasParam == ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
-            $canView = request()->user()->hasPermission('quotation_bom.item_cost_view');
+            $canView = request()->user()?->hasPermission('quotation_bom.item_cost_view');
         } 
         if($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
-            $canView = request()->user()->hasPermission('production_bom.item_cost_view');
+            $canView = request()->user()?->hasPermission('production_bom.item_cost_view');
         }
 
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl, $servicesAliasParam);
@@ -182,10 +182,10 @@ class BomController extends Controller
         $parentUrl = request()->segments()[0];
         $servicesAliasParam = $parentUrl == 'quotation-bom' ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
         if($servicesAliasParam == ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
-            $canView = request()->user()->hasPermission('quotation_bom.item_cost_view');
+            $canView = request()->user()?->hasPermission('quotation_bom.item_cost_view');
         } 
         if($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
-            $canView = request()->user()->hasPermission('production_bom.item_cost_view');
+            $canView = request()->user()?->hasPermission('production_bom.item_cost_view');
         }
         
         $response = BookHelper::fetchBookDocNoAndParameters($request->book_id, $request->document_date);
@@ -590,10 +590,10 @@ class BomController extends Controller
         $parentUrl = request()->segments()[0];
         $servicesAliasParam = $parentUrl == 'quotation-bom' ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
         if($servicesAliasParam == ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
-            $canView = request()->user()->hasPermission('quotation_bom.item_cost_view');
+            $canView = request()->user()?->hasPermission('quotation_bom.item_cost_view');
         } 
         if($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
-            $canView = request()->user()->hasPermission('production_bom.item_cost_view');
+            $canView = request()->user()?->hasPermission('production_bom.item_cost_view');
         }
 
         $item = json_decode($request->item,true) ?? [];
@@ -746,10 +746,10 @@ class BomController extends Controller
         $canView = true;
         $servicesAliasParam = $parentUrl == 'quotation-bom' ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
         if($servicesAliasParam == ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
-            $canView = request()->user()->hasPermission('quotation_bom.item_cost_view');
+            $canView = request()->user()?->hasPermission('quotation_bom.item_cost_view');
         } 
         if($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
-            $canView = request()->user()->hasPermission('production_bom.item_cost_view');
+            $canView = request()->user()?->hasPermission('production_bom.item_cost_view');
         }
 
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl, $servicesAliasParam);
@@ -839,10 +839,10 @@ class BomController extends Controller
         $parentUrl = request()->segments()[0];
         $servicesAliasParam = $parentUrl == 'quotation-bom' ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
         if($servicesAliasParam == ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
-            $canView = request()->user()->hasPermission('quotation_bom.item_cost_view');
+            $canView = request()->user()?->hasPermission('quotation_bom.item_cost_view');
         } 
         if($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
-            $canView = request()->user()->hasPermission('production_bom.item_cost_view');
+            $canView = request()->user()?->hasPermission('production_bom.item_cost_view');
         }
         # check validation
         $response = BookHelper::fetchBookDocNoAndParameters($request->book_id, $request->document_date);
@@ -1255,10 +1255,10 @@ class BomController extends Controller
         $canView = true;
 
         if($bom?->type === ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
-            $canView = request()->user()->hasPermission('quotation_bom.edit');
+            $canView = request()->user()?->hasPermission('quotation_bom.edit');
         } 
         if($bom?->type === ConstantHelper::BOM_SERVICE_ALIAS) {
-            $canView = request()->user()->hasPermission('production_bom.edit');
+            $canView = request()->user()?->hasPermission('production_bom.edit');
         }
 
         $title = 'Production Bom';
@@ -1340,10 +1340,10 @@ class BomController extends Controller
         $parentUrl = request()->segments()[0];
         $servicesAliasParam = $parentUrl == 'quotation-bom' ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
         if($servicesAliasParam == ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
-            $canView = request()->user()->hasPermission('quotation_bom.item_cost_view');
+            $canView = request()->user()?->hasPermission('quotation_bom.item_cost_view');
         } 
         if($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
-            $canView = request()->user()->hasPermission('production_bom.item_cost_view');
+            $canView = request()->user()?->hasPermission('production_bom.item_cost_view');
         }
 
         $seriesId = $request->series_id ?? null;
@@ -1391,10 +1391,10 @@ class BomController extends Controller
         $parentUrl = request()->segments()[0];
         $servicesAliasParam = $parentUrl == 'quotation-bom' ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
         if($servicesAliasParam == ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
-            $canView = request()->user()->hasPermission('quotation_bom.item_cost_view');
+            $canView = request()->user()?->hasPermission('quotation_bom.item_cost_view');
         } 
         if($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
-            $canView = request()->user()->hasPermission('production_bom.item_cost_view');
+            $canView = request()->user()?->hasPermission('production_bom.item_cost_view');
         }
 
         $ids = json_decode($request->ids,true) ?? [];

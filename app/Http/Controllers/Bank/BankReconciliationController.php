@@ -105,7 +105,7 @@ class BankReconciliationController extends Controller
                     ->join('erp_books','erp_books.id','=','erp_vouchers.book_id')
                     ->whereNull('erp_item_details.statement_uid')
                     ->whereNull('erp_item_details.bank_date')
-                    ->where('erp_item_details.organization_id', $organizationId)
+                    ->where('erp_vouchers.organization_id', $organizationId)
                     ->whereBetween('erp_vouchers.document_date', [$startDate, $endDate])
                     ->whereIn('erp_vouchers.approvalStatus',['approved','approval_not_required'])
                     ->whereIn('erp_vouchers.reference_service',['receipts','payments'])

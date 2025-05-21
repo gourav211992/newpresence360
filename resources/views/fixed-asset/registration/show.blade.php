@@ -166,7 +166,7 @@
                                                                 class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="date" class="form-control" name="document_date"
+                                                        <input type="date" class="form-control indian-number" name="document_date"
                                                             id="document_date" disabled
                                                             value="{{ $data->document_date ?? date('Y-m-d') }}" required>
                                                     </div>
@@ -208,7 +208,7 @@
                                                         <label class="form-label" for="reference_no">Reference No.</label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="text" class="form-control" name="reference_no"
+                                                        <input type="text" class="form-control indian-number" name="reference_no"
                                                             id="reference_no" value="{{ $data->reference_no }}">
                                                     </div>
                                                 </div>
@@ -289,7 +289,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Asset Name <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" name="asset_name"
+                                                            <input type="text" class="form-control indian-number" name="asset_name"
                                                                 id="asset_name"
                                                                 value="{{ $data->asset_name }}" required />
                                                         </div>
@@ -299,7 +299,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Asset Code <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" name="asset_code"
+                                                            <input type="text" class="form-control indian-number" name="asset_code"
                                                                 id="asset_code" value="{{ $data->asset_code }}"
                                                                 required />
                                                         </div>
@@ -310,7 +310,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Quantity <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" name="quantity"
+                                                            <input type="text" class="form-control indian-number" name="quantity"
                                                                 id="quantity" value="{{ $data->quantity }}"
                                                                 readonly />
                                                         </div>
@@ -349,7 +349,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Capitalize Date <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="date" class="form-control"
+                                                            <input type="date" class="form-control indian-number"
                                                                 name="capitalize_date" id="capitalize_date"
                                                                 value="{{ $data->capitalize_date }}" required />
                                                         </div>
@@ -373,7 +373,7 @@
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Dep. Method <span class="text-danger">*</span></label>
-                                                            <input type="text" readonly name="depreciation_method" id="depreciation_method" class="form-control" value="{{$data->depreciation_method}}" disabled /> 
+                                                            <input type="text" readonly name="depreciation_method" id="depreciation_method" class="form-control indian-number" value="{{$data->depreciation_method}}" disabled /> 
                                                         </div>
                                                     </div>
                                                     
@@ -383,7 +383,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Est. Useful Life (yrs) <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" name="useful_life"
+                                                            <input type="text" class="form-control indian-number" name="useful_life"
                                                                 id="useful_life" value="{{ $data->useful_life }}"
                                                                 required />
                                                         </div>
@@ -394,7 +394,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Salvage Value <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control"
+                                                            <input type="text" class="form-control indian-number"
                                                                 name="salvage_value" id="salvage_value"
                                                                 value="{{ $data->salvage_value }}" required />
                                                         </div>
@@ -402,7 +402,7 @@
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Dep % <span class="text-danger">*</span></label>
-                                                            <input type="number" readonly class="form-control" value="{{$data->depreciation_percentage}}" id="depreciation_percentage" name="depreciation_percentage" value="{{$data->depreciation_percentage}}" disabled /> 
+                                                            <input type="number" readonly class="form-control indian-number" value="{{$data->depreciation_percentage}}" id="depreciation_percentage" name="depreciation_percentage" value="{{$data->depreciation_percentage}}" disabled /> 
                                                         </div>
                                                     </div>  
                                                    
@@ -413,7 +413,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Current Value <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control"
+                                                            <input type="text" class="form-control indian-number indian-number"
                                                                 name="current_value" id="current_value"
                                                                 value="{{ $data?->subAsset?->sum('current_value')}}" readonly />
                                                         </div>
@@ -421,7 +421,7 @@
                                                      <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Total Dep. <span class="text-danger">*</span></label>
-                                                            <input type="number" readonly id="total_depreciation" name="total_depreciation" class="form-control" value="{{ $data?->subAsset?->sum('total_depreciation')}}" disabled /> 
+                                                            <input type="number" readonly id="total_depreciation" name="total_depreciation" class="form-control indian-number" value="{{ $data?->subAsset?->sum('total_depreciation')}}" disabled /> 
                                                         </div>
                                                     </div>
                                                     @php
@@ -434,7 +434,7 @@
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Return Down Value</label>
-                                                            <input type="text" class="form-control"
+                                                            <input type="text" class="form-control indian-number"
                                                                 name="current_value" id="current_value"
                                                                 value="{{ $data?->subAsset?->sum('current_value_after_dep')}}" readonly />
                                                         </div>
@@ -442,7 +442,7 @@
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Last Dep. Date</label>
-                                                            <input type="date" class="form-control"
+                                                            <input type="date" class="form-control indian-number"
                                                                 name="last_dep_minus_one" id="last_dep_minus_one"
                                                                 value="{{ $lastDepMinusOne }}" readonly />
                                                         </div>
@@ -498,7 +498,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Supplier Invoice No. <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control"
+                                                            <input type="text" class="form-control indian-number"
                                                                 name="supplier_invoice_no" id="supplier_invoice_no"
                                                                 value="{{$data->supplier_invoice_no}}" required readonly />
                                                         </div>
@@ -507,7 +507,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Supplier Invoice Date <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="date" class="form-control"
+                                                            <input type="date" class="form-control indian-number"
                                                                 name="supplier_invoice_date"  id="supplier_invoice_date" value="{{$data->supplier_invoice_date}}" required readonly />
 
                                                         </div>
@@ -516,7 +516,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Sub Total <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" name="sub_total"
+                                                            <input type="text" class="form-control indian-number format-indian" name="sub_total"
                                                                 id="sub_total" value="{{$data->sub_total}}" required readonly />
                                                         </div>
                                                     </div>
@@ -529,7 +529,7 @@
                                                                     <i data-feather="info"></i>
                                                                 </a>
                                                             </label>
-                                                            <input type="text" class="form-control" name="tax"
+                                                            <input type="text" class="form-control indian-number" name="tax"
                                                                 id="tax" value="{{$data->tax}}" required readonly />
                                                         </div>
                                                     </div>
@@ -537,7 +537,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Purchase Amt <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control"
+                                                            <input type="text" class="form-control indian-number"
                                                                 name="purchase_amount" id="purchase_amount"
                                                                 value="{{$data->purchase_amount}}" required readonly />
                                                         </div>
@@ -546,7 +546,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Book Date <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="date" class="form-control" name="book_date"
+                                                            <input type="date" class="form-control indian-number" name="book_date"
                                                                 id="book_date" value="{{$data->book_date}}" required readonly />
                                                         </div>
                                                     </div>
@@ -739,14 +739,14 @@
                         <div class="col-md-3">
                             <div class="mb-1">
                                 <label class="form-label">Series <span class="text-danger">*</span></label>
-                                <input class="form-control" readonly value="VOUCH/2024" />
+                                <input class="form-control indian-number" readonly value="VOUCH/2024" />
                             </div>
                         </div>
 
                         <div class="col-md-3">
                             <div class="mb-1">
                                 <label class="form-label">Voucher No <span class="text-danger">*</span></label>
-                                <input class="form-control" readonly value="098" />
+                                <input class="form-control indian-number" readonly value="098" />
                             </div>
                         </div>
 
@@ -862,8 +862,8 @@
                                             <option>Percentage</option>
                                         </select>
                                     </td>
-                                    <td><input type="text" class="form-control mw-100" /></td>
-                                    <td><input type="text" class="form-control mw-100" /></td>
+                                    <td><input type="text" class="form-control indian-number mw-100" /></td>
+                                    <td><input type="text" class="form-control indian-number mw-100" /></td>
                                     <td>
                                         <a href="#" class="text-danger"><i data-feather="trash-2"></i></a>
                                     </td>
@@ -942,12 +942,12 @@
 
                         <div class="col-md-6 mb-1">
                             <label class="form-label w-100">Pincode <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" value="201301" placeholder="Enter Pincode" />
+                            <input type="text" class="form-control indian-number" value="201301" placeholder="Enter Pincode" />
                         </div>
 
                         <div class="col-md-12 mb-1">
                             <label class="form-label">Address <span class="text-danger">*</span></label>
-                            <textarea class="form-control" placeholder="Enter Address">56, Sector 44 Rd, Kanhai Colony, Sector 52</textarea>
+                            <textarea class="form-control indian-number" placeholder="Enter Address">56, Sector 44 Rd, Kanhai Colony, Sector 52</textarea>
                         </div>
 
                     </div>
@@ -980,7 +980,7 @@
 
                         <div class="col-md-12 mb-1">
                             <label class="form-label">Remarks <span class="text-danger">*</span></label>
-                            <textarea class="form-control" placeholder="Enter Remarks"></textarea>
+                            <textarea class="form-control indian-number" placeholder="Enter Remarks"></textarea>
                         </div>
 
                     </div>
@@ -1040,8 +1040,8 @@
                                             <option>Percentage</option>
                                         </select>
                                     </td>
-                                    <td><input type="text" class="form-control mw-100" /></td>
-                                    <td><input type="text" class="form-control mw-100" /></td>
+                                    <td><input type="text" class="form-control indian-number mw-100" /></td>
+                                    <td><input type="text" class="form-control indian-number mw-100" /></td>
                                     <td>
                                         <a href="#" class="text-danger"><i data-feather="trash-2"></i></a>
                                     </td>
@@ -1122,7 +1122,7 @@
                                             <option>Select</option>
                                         </select>
                                     </td>
-                                    <td><input type="text" class="form-control mw-100" /></td>
+                                    <td><input type="text" class="form-control indian-number mw-100" /></td>
                                     <td>
                                         <a href="#" class="text-danger"><i data-feather="trash-2"></i></a>
                                     </td>
@@ -1324,11 +1324,11 @@
                        <div class="col-md-12">
                           <div class="mb-1">
                              <label class="form-label">Remarks {{-- <span class="text-danger">*</span> --}}</label>
-                             <textarea name="remarks" class="form-control"></textarea>
+                             <textarea name="remarks" class="form-control indian-number"></textarea>
                           </div>
                           <div class="mb-1">
                              <label class="form-label">Upload Document</label>
-                             <input type="file" id="ap_file" name="attachment[]" multiple class="form-control" />
+                             <input type="file" id="ap_file" name="attachment[]" multiple class="form-control indian-number" />
                           </div>
                        </div>
                     </div>

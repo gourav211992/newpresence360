@@ -57,6 +57,8 @@ use App\Models\HsnMaster;
 use App\Models\Overhead;
 use App\Models\PiItem;
 use App\Models\ErpSubStoreParent;
+use App\Models\ItemAttribute;
+use App\Models\Attribute;
 use Auth;
 use Illuminate\Http\Request;
 
@@ -1456,7 +1458,18 @@ class AutocompleteController extends Controller
                 })  -> where(function ($custQuery) {
                     $custQuery -> whereNotNull('gstin') -> whereRaw("TRIM(gstin) != ''");
                 }) -> orderByDesc('id') -> limit(10) -> get();
-            }else {
+            }  elseif ($type === 'item_attr_value') {
+                $itemId = $request->item_id;
+                $groupId = $request->attr_group_id;
+                $itemAttribute = ItemAttribute::where('item_id', $itemId)
+                    ->where('attribute_group_id', $groupId)
+                    ->first();
+                $attributeIds = $itemAttribute->attribute_id ?? [];
+                $results = Attribute::whereIn('id', $attributeIds)
+                    ->where('status', ConstantHelper::ACTIVE)
+                    ->where('value', 'like', '%' . $term . '%')
+                    ->get(['id', 'value']);
+            } else {
                 return response()->json(['error' => 'Invalid type specified'], 400);
             }
 

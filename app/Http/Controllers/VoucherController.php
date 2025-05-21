@@ -919,15 +919,8 @@ class VoucherController extends Controller
         $voucher->doc_prefix = $numberPatternData['prefix'];
         $voucher->doc_suffix = $numberPatternData['suffix'];
         $voucher->approvalStatus = $request->status;
+        $voucher->created_by = Helper::getAuthenticatedUser()->auth_user_id;
 
-
-        if ($request->status == ConstantHelper::SUBMITTED) {
-            $voucher->approvalStatus = Helper::checkApprovalRequired($request->book_id);
-            if (Helper::checkApprovalRequired($request->book_id) == ConstantHelper::SUBMITTED) {
-                if (self::check_approved($request->book_id))
-                    $voucher->approvalStatus = 'approved';
-            }
-        }
 
         if ($request->hasFile('document')) {
             $files = $request->file('document'); // 'document' should be an array of files
@@ -946,18 +939,19 @@ class VoucherController extends Controller
             $voucher->document = json_encode($fileNames); // Save file names as a JSON string
         }
         $userData = Helper::userCheck();
-        $voucher->voucherable_id = $userData['user_id'];
+        $voucher->voucherable_id = Helper::getAuthenticatedUser()->auth_user_id;
         $voucher->voucherable_type = $userData['user_type'];
 
         $voucher->save();
+        $voucher = Voucher::find($voucher->id);
 
         if ($voucher->approvalStatus == ConstantHelper::SUBMITTED) {
-            Helper::approveDocument($request->book_id, $voucher->id, $voucher->revision_number, $voucher->remarks, $request->file('attachment'), 1, 'submit', 0, get_class($voucher));
+            $approveDocument = Helper::approveDocument($request->book_id, $voucher->id, $voucher->revision_number, $voucher->remarks, $request->file('attachment'), 1, 'submit', 0, get_class($voucher));
+                        $voucher->approvalLevel = $approveDocument['nextLevel']?? 1;
+                        $voucher->approvalStatus= $approveDocument['approvalStatus']?? ConstantHelper::SUBMITTED;
+                        $voucher->save();
         }
-        if ($voucher->approvalStatus == ConstantHelper::APPROVAL_NOT_REQUIRED || $voucher->approvalStatus == ConstantHelper::APPROVED) {
-            Helper::approveDocument($request->book_id, $voucher->id, $voucher->revision_number, $voucher->remarks, $request->file('attachment'), 1, 'approve', 0, get_class($voucher));
-        }
-
+       
 
         //NumberPattern::where('organization_id', $organization->id)->where('book_id', $request->book_id)->orderBy('id', 'DESC')->first()->increment('current_no');
 
@@ -1101,12 +1095,10 @@ class VoucherController extends Controller
 
         $voucher->approvalStatus = $request->status;
 
-        if ($request->status == ConstantHelper::SUBMITTED) {
-            $voucher->approvalStatus = Helper::checkApprovalRequired($voucher->book_id);
-            if (Helper::checkApprovalRequired($voucher->book_id) == ConstantHelper::SUBMITTED) {
-                if (self::check_approved($voucher->book_id))
-                    $voucher->approvalStatus = 'approved';
-            }
+        if ($voucher->approvalStatus == ConstantHelper::SUBMITTED) {
+            $approveDocument = Helper::approveDocument($voucher->book_id, $voucher->id, $voucher->revision_number, $voucher->remarks, $request->file('attachment'), 1, 'submit', 0, get_class($voucher));
+                        $voucher->approvalLevel = $approveDocument['nextLevel']?? 1;
+                        $voucher->approvalStatus= $approveDocument['approvalStatus']?? ConstantHelper::SUBMITTED;
         }
 
         if ($request->hasFile('document')) {

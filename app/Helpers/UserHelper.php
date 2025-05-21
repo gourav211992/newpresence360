@@ -32,7 +32,7 @@ class UserHelper
             );
         }
         $data -> push($authUser);
-        if ($authUser -> authenticable_type === self::AUTH_TYPE_EMPLOYEE) {
+        if ($authUser?->authenticable_type === self::AUTH_TYPE_EMPLOYEE) {
             $employeeIds = Employee::where('manager_id', $authUser -> authenticable_id)
                 -> where('status', ConstantHelper::ACTIVE) -> get() -> pluck('id') -> toArray();
             $authEmployees = AuthUser::select('id', 'name') -> whereIn('authenticable_id', $employeeIds) -> get();
@@ -53,7 +53,7 @@ class UserHelper
         $selectedDepartmentId = null;
         $departments = Department::where('organization_id', $authUser?->organization_id)
                         ->where('status', ConstantHelper::ACTIVE)->get();
-        if ($authUser -> authenticable_type == self::AUTH_TYPE_EMPLOYEE) {
+        if ($authUser?->authenticable_type == self::AUTH_TYPE_EMPLOYEE) {
             $employee = Employee::find($authUser -> authenticable_id);
             $selectedDepartmentId = $employee ?-> department_id;
         }
