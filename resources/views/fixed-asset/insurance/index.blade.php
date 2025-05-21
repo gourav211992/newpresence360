@@ -230,26 +230,16 @@
                     }) + 'Export',
                     buttons: [
                         {
-                            extend: 'csv',
-                            text: feather.icons['file-text'].toSvg({
-                                class: 'font-small-4 mr-50',
-                            }) + 'CSV',
-                            className: 'dropdown-item',
-                            filename: 'Asset_Tracking_Report',
-                            exportOptions: {
-                                columns: ':not(:first-child):not(:last-child)', // Exclude the first (#) and last (Action) columns
-                            },
-                        },
-                        {
                             extend: 'excel',
                             text: feather.icons['file'].toSvg({
                                 class: 'font-small-4 mr-50',
                             }) + 'Excel',
                             className: 'dropdown-item',
                             filename: 'Asset_Tracking_Report',
-                            exportOptions: {
-                                columns: ':not(:first-child):not(:last-child)', // Exclude the first (#) and last (Action) columns
-                            },
+                                  exportOptions: {
+      columns: ':not(:last-child)' // exclude the last column
+    },
+         
                         },
                     ],
                     init: function (api, node, config) {

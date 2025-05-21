@@ -393,12 +393,7 @@
                                                             <input type="hidden" id="depreciation_rate_year" value="{{$data->depreciation_percentage_year}}" name="depreciation_percentage_year" /> 
                                                        </div>
                                                     </div>  
-                                                    <div class="col-md-3">
-                                                        <div class="mb-1">
-                                                            <label class="form-label">Total Dep. <span class="text-danger">*</span></label>
-                                                            <input type="number" id="total_depreciation" name="total_depreciation" class="form-control" value="{{$data->total_depreciation}}" readonly /> 
-                                                        </div>
-                                                    </div>
+                                                   
                                                     
 
 
@@ -409,6 +404,12 @@
                                                             <input type="text" class="form-control"
                                                                 name="current_value" id="current_value"
                                                                 value="{{ $data->current_value}}" readonly />
+                                                        </div>
+                                                    </div>
+                                                     <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">Total Dep. <span class="text-danger">*</span></label>
+                                                            <input type="number" id="total_depreciation" name="total_depreciation" class="form-control" value="{{$data->total_depreciation}}" readonly /> 
                                                         </div>
                                                     </div>
                                                 </div>
