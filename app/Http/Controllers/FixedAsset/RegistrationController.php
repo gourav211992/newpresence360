@@ -583,38 +583,41 @@ class RegistrationController extends Controller
     }
 
 
-    public function assetSearch(Request $request)
-    {
-        $q = $request->input('q');
-        $ids = $request->input('ids');
-         $oldAssets = FixedAssetSub::oldSubAssets();
-        if ($request->merger)
-            $oldAssets = FixedAssetSub::oldSubAssets($request->merger, null);
-        if ($request->split)
-            $oldAssets = FixedAssetSub::oldSubAssets(null, $request->split);
-       
-        
-        if($ids){
-            $ids = array_map('intval', $ids); 
-        return FixedAssetRegistration::withDefaultGroupCompanyOrg()
-                ->whereNotIn('id', $ids)
-                ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
-                ->where('asset_code', 'like', "%$q%")
-                ->whereHas('subAsset', function ($query) use ($oldAssets) {
-                    $query->whereNotIn('id', $oldAssets);
-                })->limit(20)
-                ->get();
-}
-        
-            else
-            return FixedAssetRegistration::withDefaultGroupCompanyOrg()
-            ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
-            ->where('asset_code', 'like', "%$q%")
-            ->whereHas('subAsset', function ($query) use ($oldAssets) {
-                    $query->whereNotIn('id', $oldAssets);
-                })->limit(20)
-            ->get();
+   public function assetSearch(Request $request)
+{
+    $q = $request->input('q');
+    $ids = $request->input('ids');
+    $category = $request->input('category');
+
+    $oldAssets = FixedAssetSub::oldSubAssets();
+
+    if ($request->merger) {
+        $oldAssets = FixedAssetSub::oldSubAssets($request->merger, null);
     }
+
+    if ($request->split) {
+        $oldAssets = FixedAssetSub::oldSubAssets(null, $request->split);
+    }
+
+    $query = FixedAssetRegistration::withDefaultGroupCompanyOrg()
+        ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
+        ->where('asset_code', 'like', "%$q%")
+        ->whereHas('subAsset', function ($query) use ($oldAssets) {
+            $query->whereNotIn('id', $oldAssets);
+        });
+
+    if (!empty($ids)) {
+        $ids = array_map('intval', $ids);
+        $query->whereNotIn('id', $ids);
+    }
+
+    if (!empty($category)) {
+        $query->where('category_id', $category);
+    }
+
+    return $query->limit(20)->get();
+}
+
     public function subAssetSearch(Request $request)
     {
         $Id = $request->id;
@@ -634,5 +637,26 @@ class RegistrationController extends Controller
             ->limit(20)
             ->get();
     }
+public function getCategories(Request $request)
+{
+    $query = FixedAssetRegistration::withDefaultGroupCompanyOrg()
+        ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED);
+
+    if ($request->location_id) {
+        $query->where('location_id', $request->location_id);
+    }
+
+    if ($request->cost_center_id) {
+        $query->where('cost_center_id', $request->cost_center_id);
+    }
+
+    $categoryIds = $query->pluck('category_id')->unique()->toArray();
+
+    $categories = ErpAssetCategory::whereIn('id', $categoryIds)
+                    ->get(['id', 'name']);
+
+    return response()->json($categories);
+}
+
     
 }

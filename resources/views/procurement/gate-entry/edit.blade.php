@@ -32,7 +32,7 @@
                         </div>
                         <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
                             <div class="form-group breadcrumb-right">
-                                <input type="hidden" name="document_status" value="{{$mrn->document_status}}" id="document_status">
+                                <input type="hidden" name="document_status" value="{{@$mrn->document_status}}" id="document_status">
                                 <button type="button" onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0">
                                     <i data-feather="arrow-left-circle"></i> Back
                                 </button>

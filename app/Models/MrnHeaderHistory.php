@@ -9,6 +9,7 @@ use App\Models\InvoiceBook;
 use App\Models\Organization;
 use App\Traits\DateFormatTrait;
 use App\Traits\DefaultGroupCompanyOrg;
+use App\Traits\DynamicFieldsTrait;
 use App\Traits\FileUploadTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -16,7 +17,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class MrnHeaderHistory extends Model
 {
-    use HasFactory, SoftDeletes, DateFormatTrait, FileUploadTrait,DefaultGroupCompanyOrg;
+    use HasFactory, SoftDeletes, DateFormatTrait, FileUploadTrait, DefaultGroupCompanyOrg, DynamicFieldsTrait;
     protected $table = 'erp_mrn_header_histories';
     protected $fillable = [
         'mrn_header_id',
@@ -272,5 +273,10 @@ class MrnHeaderHistory extends Model
     public function media()
     {
         return $this->morphMany(GateEntryMedia::class, 'model');
+    }
+
+    public function dynamic_fields()
+    {
+        return $this -> hasMany(ErpMrnDynamicField::class, 'header_id');
     }
 }

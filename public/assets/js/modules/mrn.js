@@ -210,7 +210,7 @@ $(document).on('blur',"[name*='accepted_qty']",(e) => {
     }
     let aq = parseFloat(acceptedQuantity.val());
     let rq = 0;
-    if($isInspection == 1){
+    if(isInspection == 1){
         rq = 0;
     }else{
         rq = parseFloat(receiptQuantity.val()) - parseFloat(acceptedQuantity.val());
@@ -1521,7 +1521,7 @@ function generateStorageRow(index, selectedId = '', qty = '', usedIds = []) {
             <td class="volume-display">${availableVolume} / ${selectedPoint?.max_volume || 0}</td>
             <td class="parents-display">${parents}</td>
             <td>
-                <input type="number" step="any" class="form-control form-control-sm quantity-input" 
+                <input type="number" step="any" class="form-control form-control-sm quantity-input"
                        data-index="${index}" value="${qty}" />
             </td>
         </tr>`;
