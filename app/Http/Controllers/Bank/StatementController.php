@@ -145,7 +145,7 @@ class StatementController extends Controller
         //     self::statementFilter($query,$search);
         // })
         // ->paginate($length);
-        $partyItemSubquery = $this->partyItemSubquery();
+        $partyItemSubquery = $this->partyItemSubquery($startDate, $endDate, $organizationId);
 
         $vouchers = Voucher::join('erp_item_details','erp_item_details.voucher_id','=','erp_vouchers.id')
                     ->join('erp_books','erp_books.id','=','erp_vouchers.book_id')
@@ -153,10 +153,11 @@ class StatementController extends Controller
                     ->leftJoinSub($partyItemSubquery, 'party_details', function($join) {
                         $join->on('erp_vouchers.id', '=', 'party_details.voucher_id');
                     })
-                    ->where(function($query){
-                        $query->whereNotNull('erp_item_details.statement_uid')
-                        ->orWhereNotNull('erp_item_details.bank_date');
-                    })
+                    ->whereNotNull('erp_item_details.statement_uid')
+                    // ->where(function($query){
+                    //     $query->whereNotNull('erp_item_details.statement_uid')
+                    //     ->orWhereNotNull('erp_item_details.bank_date');
+                    // })
                     ->where('erp_vouchers.organization_id', $organizationId)
                     ->whereBetween('erp_vouchers.document_date', [$startDate, $endDate])
                     ->whereIn('erp_vouchers.approvalStatus',['approved','approval_not_required'])
@@ -219,7 +220,7 @@ class StatementController extends Controller
             }
         ])->find($id);
 
-        $partyItemSubquery = $this->partyItemSubquery();
+        $partyItemSubquery = $this->partyItemSubquery($startDate, $endDate, $organizationId);
 
         $vouchers = Voucher::join('erp_item_details','erp_item_details.voucher_id','=','erp_vouchers.id')
                     ->join('erp_books','erp_books.id','=','erp_vouchers.book_id')
@@ -227,7 +228,7 @@ class StatementController extends Controller
                         $join->on('erp_vouchers.id', '=', 'party_details.voucher_id');
                     })
                     ->whereNull('erp_item_details.statement_uid')
-                    ->whereNull('erp_item_details.bank_date')
+                    // ->whereNull('erp_item_details.bank_date')
                     ->where('erp_vouchers.organization_id', $organizationId)
                     ->whereBetween('erp_vouchers.document_date', [$startDate, $endDate])
                     ->whereIn('erp_vouchers.approvalStatus',['approved','approval_not_required'])
@@ -275,14 +276,18 @@ class StatementController extends Controller
         return $query;
     }
 
-    private function partyItemSubquery(){
+    private function partyItemSubquery($startDate, $endDate, $organizationId){
+        // dd($startDate, $endDate, $organizationId);
         $partyItemSubquery = ItemDetail::select(
                 'erp_item_details.ledger_id',
                 'erp_item_details.voucher_id',
                 'erp_ledgers.name',
             )
             ->join('erp_ledgers','erp_ledgers.id','=','erp_item_details.ledger_id')
+            ->join('erp_vouchers','erp_vouchers.id','=','erp_item_details.voucher_id')
             ->where('erp_item_details.entry_type', 'party')
+            ->whereBetween('erp_vouchers.document_date', [$startDate, $endDate])
+            ->where('erp_vouchers.organization_id', $organizationId)
             ->groupBy('voucher_id');
 
             return $partyItemSubquery;

@@ -6,6 +6,7 @@ use App\Helpers\CommonHelper;
 use App\Helpers\Helper;
 use App\Http\Controllers\Controller;
 use App\Models\BankDetail;
+use App\Models\BankReconciliation\BankStatement;
 use App\Models\ItemDetail;
 use App\Models\Ledger;
 use App\Models\Organization;
@@ -100,11 +101,16 @@ class BankReconciliationController extends Controller
 
         // // Compute bank balance
         // $bankBalance = $companyBookBalance - $unreflectedDr + $unreflectedCr;
+
+        $partyItemSubquery = $this->partyItemSubquery($startDate, $endDate, $organizationId);
         $vouchers = Voucher::join('erp_item_details','erp_item_details.voucher_id','=','erp_vouchers.id')
                     ->join('erp_payment_vouchers','erp_payment_vouchers.id','=','erp_vouchers.reference_doc_id')
                     ->join('erp_books','erp_books.id','=','erp_vouchers.book_id')
+                    ->leftJoinSub($partyItemSubquery, 'party_details', function($join) {
+                        $join->on('erp_vouchers.id', '=', 'party_details.voucher_id');
+                    })
                     ->whereNull('erp_item_details.statement_uid')
-                    ->whereNull('erp_item_details.bank_date')
+                    // ->whereNull('erp_item_details.bank_date')
                     ->where('erp_vouchers.organization_id', $organizationId)
                     ->whereBetween('erp_vouchers.document_date', [$startDate, $endDate])
                     ->whereIn('erp_vouchers.approvalStatus',['approved','approval_not_required'])
@@ -124,8 +130,10 @@ class BankReconciliationController extends Controller
                         'erp_item_details.debit_amt_org',
                         'erp_books.book_code',
                         'erp_payment_vouchers.payment_mode',
+                        'erp_payment_vouchers.payment_date',
                         'erp_payment_vouchers.reference_no',
                         'erp_item_details.id',
+                        'party_details.name as party_name',
                     )
                     ->get();
                 // dd($vouchers->toArray());
@@ -164,6 +172,29 @@ class BankReconciliationController extends Controller
             if ($hasAtLeastOneDate) {
                 $validator->errors()->add('bank_date', 'Please enter at least one Bank Date.');
             }
+
+            foreach ($request->bank_date as $voucherId => $bankDate) {
+                if(!$bankDate){
+                    continue;
+                }
+
+                $itemDetail = ItemDetail::find($voucherId);
+                if (!$itemDetail) {
+                    $validator->errors()->add('bank_date', "Invalid voucher ID: $voucherId");
+                    continue;
+                }
+
+
+                $bankStatement = BankStatement::select('id','date','credit_amt','debit_amt')
+                            ->where('date',$bankDate)
+                            ->where('debit_amt',$itemDetail->credit_amt_org)
+                            ->where('credit_amt',$itemDetail->debit_amt_org)
+                            ->first();
+                if (!$bankStatement) {
+                    $validator->errors()->add('bank_date', 'No bank statement found matching the given date.');
+                }
+                
+            }
         });
 
         if ($validator->fails()) {
@@ -171,9 +202,24 @@ class BankReconciliationController extends Controller
         }
 
         foreach ($request->bank_date as $voucherId => $bankDate) {
-            if ($bankDate) {
-                ItemDetail::where('id', $voucherId)->update(['bank_date' => $bankDate]);
+            if (!$bankDate) {
+                continue;
             }
+
+            $itemDetail = ItemDetail::find($voucherId);
+            if (!$itemDetail) {
+                continue;
+            }
+
+            $bankStatement = BankStatement::select('id','date','credit_amt','debit_amt','uid')
+                            ->where('date',$bankDate)
+                            ->where('debit_amt',$itemDetail->credit_amt_org)
+                            ->where('credit_amt',$itemDetail->debit_amt_org)
+                            ->first();
+
+            $itemDetail->statement_uid = $bankStatement->uid;
+            $itemDetail->bank_date = $bankDate;
+            $itemDetail->save();
         }
 
         return [
@@ -181,5 +227,21 @@ class BankReconciliationController extends Controller
             "message" => "Reconciliation saved successfully!"
         ];
 
+    }
+
+    private function partyItemSubquery($startDate, $endDate, $organizationId){
+        $partyItemSubquery = ItemDetail::select(
+                'erp_item_details.ledger_id',
+                'erp_item_details.voucher_id',
+                'erp_ledgers.name',
+            )
+            ->join('erp_ledgers','erp_ledgers.id','=','erp_item_details.ledger_id')
+            ->join('erp_vouchers','erp_vouchers.id','=','erp_item_details.voucher_id')
+            ->whereBetween('erp_vouchers.document_date', [$startDate, $endDate])
+            ->where('erp_vouchers.organization_id', $organizationId)
+            ->where('erp_item_details.entry_type', 'party')
+            ->groupBy('voucher_id');
+
+            return $partyItemSubquery;
     }
 }
