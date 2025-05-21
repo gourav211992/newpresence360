@@ -66,36 +66,6 @@ $(document).on('click','#deleteBtn', (e) => {
     totalCostEachRow(indexData);
 });
 
-$(document).on('click','#deleteProductionBtn', (e) => {
-   let itemIds = [];
-   let editItemIds = [];
-   $('#itemTable2 > tbody .form-check-input').each(function() {
-       if ($(this).is(":checked")) {
-           if($(this).attr('data-id')) {
-              editItemIds.push($(this).attr('data-id'));
-           } else {
-              itemIds.push($(this).val());
-           }
-       }
-   });
-   if (itemIds.length) {
-       itemIds.forEach(function(item,index) {
-           $(`#itemTable2 #row_${item}`).remove();
-       });
-   }
-   if(editItemIds.length == 0 && itemIds.length == 0) {
-     alert("Please first add & select row item.");
-   }
-   if (editItemIds.length) {
-     $("#deleteProdComponentModal").find("#deleteProdConfirm").attr('data-ids',JSON.stringify(editItemIds));
-     $("#deleteProdComponentModal").modal('show');
-   }
-
-   if(!$("#itemTable2 tr[id*='row_']").length) {
-       $("#itemTable2 > thead .form-check-input").prop('checked',false);
-   }
-});
-
 $(document).on('click','#deleteInstructionBtn', (e) => {
    let itemIds = [];
    let editItemIds = [];
@@ -127,39 +97,9 @@ $(document).on('click','#deleteInstructionBtn', (e) => {
    }
 });
 
-/*Attribute on change*/
-$(document).on('change', '[name*="comp_attribute"]', (e) => {
-    let rowCount = e.target.closest('tr').querySelector('[name*="row_count"]').value;
-    let attrGroupId = e.target.getAttribute('data-attr-group-id');
-    let currentTab = document.querySelector(".nav-link.active").getAttribute("data-bs-target").replace("#", "");
-    if(currentTab === 'raw-materials') {
-       $(`[name="components[${rowCount}][attr_group_id][${attrGroupId}][attr_name]"]`).val(e.target.value);
-       qtyEnabledDisabled();
-      } else {
-         $(`[name="productions[${rowCount}][attr_group_id][${attrGroupId}][attr_name]"]`).val(e.target.value);
-    }
-
-    let itemId = $("#attribute tbody tr").find('[name*="[item_id]"]').val();
-   let itemAttributes = [];
-   $("#attribute tbody tr").each(function(index, item) {
-      let attr_id = $(item).find('[name*="[attribute_id]"]').val();
-      let attr_value = $(item).find('[name*="[attribute_value]"]').val();
-      itemAttributes.push({
-            'attr_id': attr_id,
-            'attr_value': attr_value
-        });
-   });
-   if(currentTab === 'raw-materials') {
-      getBomItemCost(itemId,itemAttributes);
-   }
-});
-
 /*Over Head item btn*/
 $(document).on('click', '.overheadItemBtn', (e) => {
-    let rowCount = $("#itemOverheadSummaryFooter [name='row_count']").val();
     $("#overheadItemPopup").modal('hide');
-   /*Bind overall total*/
-   // totalCostEachRow(rowCount);
 });
 
 /*Overhead Summary Popup*/
@@ -413,12 +353,6 @@ qtyEnabledDisabled();
 
 $('#attribute').on('hidden.bs.modal', function () {
    let rowCount = $("[id*=row_].trselected").attr('data-index');
-   // $(`[id*=row_${rowCount}]`).find('.addSectionItemBtn').trigger('click');
-   //  if ($(`[name="components[${rowCount}][qty]"]`).is('[readonly]')) {
-   //      $(`[name="components[${rowCount}][superceeded_cost]"]`).trigger('focus');
-   //  } else {
-   //      $(`[name="components[${rowCount}][qty]"]`).trigger('focus');
-   //  }
    let tabName = document.querySelector(".nav-link.active").getAttribute("data-bs-target").replace("#", "");
    if(tabName === 'raw-materials') {
       if(!$("#consumption_method").val().includes('manual')) {
@@ -555,3 +489,91 @@ $(document).on('change', '#production_route_id', function (e) {
    console.log(safetyBufferPerc);
    $("#safety_buffer_perc").attr('placeholder', safetyBufferPerc);
 });
+
+function initAttributeAutocomplete(context = document) {
+   $(context).find('.attr-autocomplete').each(function () {
+       let $input = $(this);
+       $input.autocomplete({
+           minLength: 0,
+           source: function (request, response) {
+               let itemId = $input.closest('tr').find("input[name*='item_id']").val() || '';
+               let attrGroupId = $input.data('attr-group-id');
+               $.ajax({
+                   url: '/search',
+                   method: 'GET',
+                   dataType: 'json',
+                   data: {
+                       q: request.term,
+                       type: "item_attr_value",
+                       item_id: itemId,
+                       attr_group_id: attrGroupId,
+                   },
+                   success: function (data) {
+                       response($.map(data, function (item) {
+                           return {
+                               id: item.id,
+                               label: item.value,
+                               value: item.value
+                           };
+                       }));
+                   },
+                   error: function (xhr) {
+                       console.error('Error fetching attribute values:', xhr.responseText);
+                   }
+               });
+           },
+           select: function (event, ui) {
+               const row = $input.closest('tr');
+               const rowCount = row.find('[name*="row_count"]').val();
+               const attrGroupId = $input.data('attr-group-id');
+               $input.val(ui.item.label);
+               $(`[name="components[${rowCount}][attr_group_id][${attrGroupId}][attr_name]"]`).val(ui.item.id);
+               qtyEnabledDisabled();
+               const itemId = $("#attribute tbody tr").find('[name*="[item_id]"]').val();
+               const itemAttributes = [];
+               $("#attribute tbody tr").each(function () {
+                   const attr_id = $(this).find('[name*="[attribute_id]"]').val();
+                   const attr_value = $(this).find('[name*="[attribute_value]"]').val();
+                   itemAttributes.push({
+                       attr_id: attr_id,
+                       attr_value: attr_value
+                   });
+               });
+               getBomItemCost(itemId, itemAttributes);
+               return false;
+           },
+           focus: function (event, ui) {
+               event.preventDefault();
+           }
+       });
+       $input.on('focus', function () {
+           if (!$(this).val()) {
+               $(this).autocomplete("search", "");
+           }
+       });
+       $input.on('input', function () {
+           if (!$(this).val()) {
+               const row = $input.closest('tr');
+               const rowCount = row.find('[name*="row_count"]').val();
+               const attrGroupId = $input.data('attr-group-id');
+               $(`[name="components[${rowCount}][attr_group_id][${attrGroupId}][attr_name]"]`).val('');
+               qtyEnabledDisabled();
+           }
+       });
+   });
+}
+
+// Auto scroll when row added
+function focusAndScrollToLastRowInput(inputSelector = '.comp_item_code', tableSelector = '#itemTable') {
+   let $lastRow = $(`${tableSelector} > tbody > tr`).last();
+   let $input = $lastRow.find(inputSelector);
+
+   if ($input.length) {
+       $input.focus().autocomplete('search', '');
+       $input[0].scrollIntoView({
+           behavior: 'smooth',
+           block: 'center',
+           inline: 'nearest'
+       });
+   }
+}

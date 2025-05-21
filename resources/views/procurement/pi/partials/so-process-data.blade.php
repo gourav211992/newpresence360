@@ -18,6 +18,14 @@ $attrValue = \App\Models\Attribute::where('id', @$attribute['attribute_value'])-
 }
 $inventoryStock = InventoryHelper::totalInventoryAndStock($soProcessItem->item_id, $selectedAttr, $soProcessItem->uom_id, null);
 $soProcessItem->attributes = $soProcessItem->item_attributes_array();
+if ($soProcessItem->attributes->isNotEmpty()) {
+    $soProcessItem->attributes = $soProcessItem->attributes->map(function ($attrGroup) {
+        $attrGroup['values_data'] = collect($attrGroup['values_data'])
+            ->filter(fn($attr) => $attr->selected)
+            ->values();
+        return $attrGroup;
+    });
+}
 @endphp
 <tr>
     <td>

@@ -49,8 +49,22 @@ class IndexController extends Controller
                 ->editColumn('document_status', function ($row) {
                     $statusClass = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->document_status] ?? 'badge-secondary';
                     $displayStatus = ucfirst($row->document_status ?? 'Unknown');
-                    $editRoute = route(ConstantHelper::SERVICE_ALIAS_VIEW_ROUTE[$row->book->service->service->alias], ['id' => $row->document_id,'type'=>($row->document_type == "po") ? "purchase-order" : $row->document_type,'payment' => ($row->document_id)]);
-                    
+                    $alias = $row->book->service->service->alias;
+                    $routeName = ConstantHelper::SERVICE_ALIAS_VIEW_ROUTE[$alias];
+
+                    $documentType = $row->document_type === 'po' ? 'purchase-order' : $row->document_type;
+                    $documentId = $row->document_id;
+
+                    $routeParams = [
+                        'id' => $documentId,
+                        'type' => $documentType,
+                        'payment' => $documentId,
+                        'voucher' => $documentId,
+                        'receipt' => $documentId,
+                    ];
+
+                    $editRoute = route($routeName, $routeParams);
+
                     return "
                     <div style='text-align:right;'>
                         <span class='badge rounded-pill $statusClass badgeborder-radius'>$displayStatus</span>
@@ -104,7 +118,21 @@ class IndexController extends Controller
                 ->editColumn('document_status', function ($row) {
                     $statusClass = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->document_status] ?? 'badge-secondary';
                     $displayStatus = ucfirst($row->document_status ?? 'Unknown');
-                    $editRoute = route(ConstantHelper::SERVICE_ALIAS_VIEW_ROUTE[$row->book->service->service->alias], ['id' => $row->document_id,'type'=>($row->document_type == "po") ? "purchase-order" : $row->document_type,'payment' => ($row->document_id)]);
+                    $alias = $row->book->service->service->alias;
+                    $routeName = ConstantHelper::SERVICE_ALIAS_VIEW_ROUTE[$alias];
+
+                    $documentType = $row->document_type === 'po' ? 'purchase-order' : $row->document_type;
+                    $documentId = $row->document_id;
+
+                    $routeParams = [
+                        'id' => $documentId,
+                        'type' => $documentType,
+                        'payment' => $documentId,
+                        'voucher' => $documentId,
+                        'receipt' => $documentId,
+                    ];
+
+                    $editRoute = route($routeName, $routeParams);
                     return "
                     <div style='text-align:right;'>
                         <span class='badge rounded-pill $statusClass badgeborder-radius'>$displayStatus</span>

@@ -947,6 +947,7 @@
 document.addEventListener("click", function (e) {
     if (e.target.closest(".print-btn")) {
         e.preventDefault();
+        $('.preloader').show();
         const btn = e.target.closest(".print-btn");
         const printUrl = btn.getAttribute("data-url");
 // console.log(printUrl);
@@ -957,9 +958,11 @@ document.addEventListener("click", function (e) {
                 'X-Requested-With': 'XMLHttpRequest'
             },
             success: function () {
+                $('.preloader').hide();
                 window.open(printUrl, '_blank');
             },
             error: function (xhr) {
+                $('.preloader').hide();
                 console.log(xhr.responseJSON)
                 let errorMessage = 'An unexpected error occurred.';
                 if (xhr.responseJSON && xhr.responseJSON.message) {
@@ -970,7 +973,9 @@ document.addEventListener("click", function (e) {
                     icon: 'error',
                     title: 'Print Error',
                     html: errorMessage,
-                    confirmButtonColor: '#d33'
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    confirmButtonText: 'OK'
                 });
             }
         });
@@ -1993,6 +1998,7 @@ $('#applyBtn').on('click', function (e) {
             // Optionally handle the response here
             e.preventDefault();
 
+
             // Get the date value
             const dateValue = $('input[name="date"]').val();
             const today = new Date().toISOString().split('T')[0];
@@ -2049,6 +2055,7 @@ $('#applyBtn').on('click', function (e) {
                     }
                 });
                 if(isValid){
+                     $('.preloader').show();
                     $('#applyBtn').prop('disabled', true);
                     $.ajax({
                     url: "{{ route('paymentVouchers.email') }}",
@@ -2056,6 +2063,7 @@ $('#applyBtn').on('click', function (e) {
                     data: formData,
                     success: function (response) {
                         // Show success message
+                         $('.preloader').hide();
                         const Toast = Swal.mixin({
                             toast: true,
                             position: "top-end",
@@ -2077,6 +2085,7 @@ $('#applyBtn').on('click', function (e) {
                         }
                     },
                     error: function (xhr) {
+                        $('.preloader').hide();
                         if (xhr.status === 422) {
                             var errors = xhr.responseJSON.errors;
 

@@ -555,7 +555,7 @@ Route::middleware(['user.auth'])->group(function () {
 
             Route::get('get-so', 'getSo')->name('get.so');
             Route::get('process-so-item', 'processSoItem')->name('process.so-item');
-            Route::get('process-so-item-submit', 'processSoItemSubmit')->name('process.so-item.submit');
+            Route::post('process-so-item-submit', 'processSoItemSubmit')->name('process.so-item.submit');
             Route::get('get-selected-department', 'getSelectedDepartment')->name('get.selected.department');
         });
     // Route::prefix('pos')->controller(PurchaseOrderReportController::class)->group(function () {

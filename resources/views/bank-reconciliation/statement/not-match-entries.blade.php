@@ -25,8 +25,8 @@
                     <div class="form-group breadcrumb-right">
                         <button class="btn btn-warning btn-sm mb-50 mb-sm-0" data-bs-target="#filter"
                             data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button>
-                        <button onClick="javascript: history.back()" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i
-                                data-feather="arrow-left-circle"></i> Back</button>
+                        <a href="{{ route('bank.statements.upload', ['id' => $bank->id]) }}"
+                            class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</a>
                         <a href="{{ route('bank.reconcile.index', ['id' => $bank->id]) }}"
                             class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather="check-circle"></i> Reconcile
                             Now</a>
@@ -96,7 +96,7 @@
                                                                     <td>
                                                                         {{ $voucher->document_date ? App\Helpers\CommonHelper::dateFormat($voucher->document_date) : '' }}
                                                                     </td>
-                                                                    <td>{{ $voucher->voucher_name ? $voucher->voucher_name : '-' }}
+                                                                    <td>{{ $voucher->party_name ? $voucher->party_name : '-' }}
                                                                     </td>
                                                                     <td>{{ $voucher->book_code }}</td>
                                                                     <td>{{ $voucher->voucher_no }}</td>

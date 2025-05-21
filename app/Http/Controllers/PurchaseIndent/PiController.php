@@ -101,7 +101,7 @@ class PiController extends Controller
         $user = Helper::getAuthenticatedUser();
         $serviceAlias = ConstantHelper::PI_SERVICE_ALIAS;
         $books = Helper::getBookSeriesNew($serviceAlias,$parentUrl)->get();
-        $users = UserHelper::getUserSubOrdinates($user->auth_user_id);
+        $users = UserHelper::getUserSubOrdinates($user->auth_user_id ?? 0);
         $selecteduserId = $user -> auth_user_id;
         $locations = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
 
@@ -878,8 +878,8 @@ class PiController extends Controller
 
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$pi->document_status] ?? '';
         $organization = Organization::where('id', $user->organization_id)->first();
-        $departmentsData = UserHelper::getDepartments($user->auth_user_id);
-        $users = UserHelper::getUserSubOrdinates($user->auth_user_id);
+        $departmentsData = UserHelper::getDepartments($user->auth_user_id ?? 0);
+        $users = UserHelper::getUserSubOrdinates($user->auth_user_id ?? 0);
         $selecteduserId = $pi ?-> user_id;
         $isEdit = $buttons['submit'];
         if(!$isEdit) {
@@ -1336,7 +1336,15 @@ class PiController extends Controller
    public function processSoItemSubmit(Request $request) 
    {
        $storeId = $request->store_id ?? null;
-       $soItems = $request->selectedData ? json_decode($request->selectedData, TRUE) : [];
+       $selectedData = $request->selectedData;
+        if (is_array($selectedData)) {
+            $soItems = $selectedData;
+        } elseif (is_string($selectedData)) {
+            $decoded = json_decode($selectedData, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $soItems = $decoded;
+            }
+        }
        $soTrackingRequired = strtolower($request->so_tracking_required) == 'yes' ? true : false;
        $html = view('procurement.pi.partials.item-row-so', ['soItems' => $soItems, 'soTrackingRequired' => $soTrackingRequired, 'storeId' => $storeId])->render();
        return response()->json(['data' => ['pos' => $html], 'status' => 200, 'message' => "fetched!"]);
@@ -1376,7 +1384,7 @@ class PiController extends Controller
 
    public function getSelectedDepartment(Request $request)
    {
-        $departments = UserHelper::getDepartments($request -> user_id);
+        $departments = UserHelper::getDepartments($request -> user_id ?? 0);
         return array(
             'selectedDeaprtmentId' => $departments['selectedDepartmentId'] 
         );

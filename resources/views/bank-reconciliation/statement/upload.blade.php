@@ -188,8 +188,11 @@
                                 </span>
                                 ${failureCount > 0 ? 
                                     `<span class="badge rounded-pill badge-light-danger fw-bold mb-1">Failed Rows: ${failureCount}</span>
-                                                    <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#errorDetailsModal">View Details</button>` 
+                                    <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#errorDetailsModal">View Details</button>` 
                                 : ''}
+                                <button type="button" class="editbtnNew mt-2" id="upload-again-btn">
+                                    <i data-feather='upload'></i> Upload Again
+                                </button>
                             </div>`;
 
                         $('#success-container').html(successHtml).show();
