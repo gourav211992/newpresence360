@@ -92,7 +92,6 @@ class CrDrReportController extends Controller
                 return (float) $item->total_outstanding === 0.0;
             });
         return view('finance_report.debitors', compact('customers', 'all_groups', 'all_ledgers','date','date2'));
-    
     }
     public function credit(Request $request)
     {
@@ -1256,6 +1255,9 @@ class CrDrReportController extends Controller
             'trace' => $e->getTraceAsString(),
         ]);
 
+        if (request()->ajax()) {
+                return response()->json(['message' => $e->getMessage()], 422);
+        }
         return redirect()->route('crdr.report.ledger.details', [
             'type' => $type,
             'ledger' => $ledger,

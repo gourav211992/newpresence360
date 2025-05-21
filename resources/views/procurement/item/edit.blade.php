@@ -649,6 +649,24 @@
                                                                 </div>
                                                             </div>
 
+                                                            <div class="row mt-1">
+                                                                <div class="col-md-12">
+                                                                    <div class="newheader border-bottom pb-50 mb-1">
+                                                                        <h4 class="card-title text-theme">Inspection</h4>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="row align-items-center mb-1">
+                                                                <div class="col-md-3 mb-1">
+                                                                    <label class="form-label">Inspection Required</label>
+                                                                    <select name="is_inspection" class="form-select select2">
+                                                                        <option value="1" {{$item -> is_inspection ? 'selected' : ''}}>Yes</option>
+                                                                        <option value="0" {{$item -> is_inspection ? '' : 'selected'}}>No</option>
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+
 
                                                             {{-- Uncomment if you need storage type --}}
                                                             {{-- 
@@ -2293,7 +2311,8 @@
             var isMeter = (uomName === 'MTR');
             var storageIsMeter = (storageUomName === 'MTR')
             if (storageUomName) {
-                if (isMeter && storageIsMeter) {
+                // if (isMeter && storageIsMeter) {
+                if (storageUomName && uomName) {
                     $('input[name="storage_uom_conversion"]')
                         .val(1)
                         .prop('readonly', true);

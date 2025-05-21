@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class ErpRateContractItemAttributeHistory extends Model
 {
     use HasFactory;
-    protected $table = 'erp_rate_contract_item_attrbiutes_history';
+    protected $table = 'erp_rate_contract_item_attributes_history';
     protected $fillable = [
         'source_id',
         'rate_contract_id',

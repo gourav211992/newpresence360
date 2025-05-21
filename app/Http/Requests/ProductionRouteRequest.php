@@ -32,6 +32,7 @@ class ProductionRouteRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:100', Rule::unique('erp_production_routes', 'name')->where('group_id',  $this->group_id)->where('organization_id',  $this->organization_id)->whereNull('deleted_at')->ignore($this->route('id'))],
             'description' => ['nullable', 'string', 'max:500'],
+            'safety_buffer_perc' => 'nullable|numeric|min:0|max:100',
             'status' => 'nullable|string',
             'levels' => 'nullable|array',
             'levels.*.level' => 'required|integer',
@@ -58,6 +59,7 @@ class ProductionRouteRequest extends FormRequest
             'name.required' => 'Name is required.',
             'name.max' => 'Name may not be greater than 100 characters.',
             'description.max' => 'Description may not be greater than 500 characters.',
+            'safety_buffer_perc.max' => 'Safety Buffer Percentage may not be greater than 100.',
             'levels.*.details.required' => 'Station for each level is required.',
             // 'levels.required' => 'Levels for this production route required.',
             // 'levels.*.details.*.consumption.required' => 'Consumption is required.',

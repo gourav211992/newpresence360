@@ -32,7 +32,7 @@
                         </div>
                         <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
                             <div class="form-group breadcrumb-right">
-                                <input type="hidden" name="document_status" value="{{$mrn->document_status}}" id="document_status">
+                                <input type="hidden" name="document_status" value="{{@$mrn->document_status}}" id="document_status">
                                 <button type="button" onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0">
                                     <i data-feather="arrow-left-circle"></i> Back
                                 </button>
@@ -354,7 +354,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-12">
+                                <div class="col-md-12 {{(isset($mrn) && count($mrn -> dynamic_fields)) > 0 ? '' : 'd-none'}}">
                                     @if (isset($dynamicFieldsUI))
                                         {!! $dynamicFieldsUI !!}
                                     @endif
@@ -921,11 +921,9 @@
             let actionUrl = '{{route("book.get.doc_no_and_parameters")}}'+'?book_id='+bookId+'&document_date='+document_date;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
-                    // console.log(data.data);
                     if (data.status == 200) {
 
                         const parameters = data.data.parameters;
-                        // console.log('parameters', parameters);
                         setServiceParameters(parameters);
 
                         if(parameters?.tax_required.some(val => val.toLowerCase() === 'yes')) {
@@ -1716,7 +1714,6 @@
                     let shelfVal = $(item).closest('td').find(`[name="components[${rowCount}][erp_store][${index+1}][erp_shelf_id]"]`).val();
                     let binVal = $(item).closest('td').find(`[name="components[${rowCount}][erp_store][${index+1}][erp_bin_id]"]`).val();
                     let storeQty = $(item).closest('td').find(`[name="components[${rowCount}][erp_store][${index+1}][store_qty]"]`).val();
-                    // console.log('store rack shelf', storeVal, rackVal, shelfVal, binVal);
                     // Trigger the change event after setting values to ensure racks, shelves, etc. are updated
                     // $(`#erp_store_id_${index+1}`).val(storeVal).trigger('change');
                     // $(`#erp_rack_id_${index+1}`).val(rackVal);
@@ -1785,7 +1782,6 @@
             .val();
                 let erp_bin_id = binVal || $(`#erp_bin_id_${rowCount}`)
             .val();
-                // console.log('erp_rack_id---->>', erp_rack_id, erp_shelf_id, erp_bin_id);
 
                 var data = {
                     store_code_id: store_id
@@ -1951,13 +1947,11 @@
         /*itemDeliveryScheduleSubmit */
         $(document).on('click', '.itemDeliveryScheduleSubmit', (e) => {
             let rowCount = $('#deliveryScheduleModal .display_delivery_row').find('#row_count').val();
-            // console.log(rowCount);
             let qty = 0.00;
             $("#deliveryScheduleTable [name*='[store_qty]']").each(function(index, item) {
                 qty = qty + Number($(item).val());
             });
             let itemQty = Number($('#deliveryScheduleModal #deliveryFooter #total').attr('qty'));
-            // console.log('itemQty------>>',rowCount, qty, itemQty);
             if (qty < itemQty) {
                 Swal.fire({
                     title: 'Error!',
@@ -1993,7 +1987,6 @@
         $(document).on('click', '.deleteItemDeliveryRow', (e) => {
             let id = e.target.getAttribute('data-index');
             // let id = $(`.display_discount_row`).find(`.deleteItemDeliveryRow`).getAttribute('data-index');
-            console.log('id----->>', id);
 
             let dataRowId = Number(e.target.getAttribute('data-row-count'));
             if($(e.target).closest('tbody').find('.display_delivery_row').length ==1) {
@@ -2006,7 +1999,6 @@
             }
             $(e.target).closest('tr').remove();
             let ids = JSON.parse(localStorage.getItem('deletedItemLocationIds')) || [];
-            console.log('ids----->>', ids);
 
             if (!ids.includes(id)) {
                 ids.push(id);
@@ -2039,7 +2031,6 @@
         $(document).on('change', '.item_store_code', function() {
             var rowKey = $(this).data('id');
             var store_code_id = $(this).val();
-            // console.log('rowKey', rowKey);
             $('#erp_store_id_'+rowKey).val(store_code_id).select2();
 
             var data = {

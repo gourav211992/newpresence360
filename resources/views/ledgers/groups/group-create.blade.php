@@ -53,7 +53,7 @@
                                     </div>
 
                                     <div class="col-md-9">
-                                        <form action="{{ route('ledger-groups.store') }}" method="POST">
+                                        <form id="groupForm">
                                             @csrf
 
                                             <div class="row align-items-center mb-1">
@@ -68,7 +68,7 @@
                                                         @foreach ($parents as $parent)
                                                             <option value="{{ $parent->id }}" {{ old('parent_group_id') == $parent->id ? 'selected' : '' }}>
                                                                 {{ $parent->name }}
-                                                            </option>   
+                                                            </option>
                                                         @endforeach
                                                     </select>
                                                 </div>
@@ -120,7 +120,7 @@
                                                     class="btn btn-secondary btn-sm">
                                                     <i data-feather="arrow-left-circle"></i> Back
                                                 </button>
-                                                <button type="submit" class="btn btn-primary btn-sm ms-1">
+                                                <button type="submit" id="submitBtn" class="btn btn-primary btn-sm ms-1">
                                                     <i data-feather="check-circle"></i> Submit
                                                 </button>
                                             </div>
@@ -136,10 +136,79 @@
     </div>
 </div>
 <!-- END: Content-->
+@endsection
 
 @section('scripts')
+@section('scripts')
 <script>
-    
+    const existingGroupNames = @json($existingGroupname);
+
+    $(document).ready(function () {
+        $('#groupForm').on('submit', function (e) {
+            e.preventDefault(); // Prevent default form submission
+            $('.preloader').show();
+            let submitBtn = $('#submitBtn');
+            submitBtn.prop('disabled', true);
+            const name = $('input[name="name"]').val()?.trim().toLowerCase();
+
+            if (existingGroupNames.includes(name)) {
+                $('.preloader').hide();
+                submitBtn.prop('disabled', false);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Duplicate Entry',
+                    text: 'Group name already exists. Please choose a different name.',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    confirmButtonText: 'OK'
+                });
+                return false;
+            }
+
+            const formData = $(this).serialize(); // Serialize form data
+            const csrfToken = $('meta[name="csrf-token"]').attr('content');
+
+            $.ajax({
+                url: "{{ route('ledger-groups.store') }}",
+                type: "POST",
+                data: formData,
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                success: function (response) {
+                    $('.preloader').hide();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Created!',
+                        text: 'Group created successfully.',
+                        confirmButtonText: 'OK'
+                    }).then(() => {
+                        location.href = "{{ route('ledger-groups.index') }}";
+                    });
+                },
+                error: function (xhr) {
+                    $('.preloader').hide();
+                    submitBtn.prop('disabled', false);
+                    if (xhr.status === 422) {
+                        const errors = xhr.responseJSON.errors;
+                        let message = Object.values(errors)[0][0];
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Validation Error',
+                            text: message
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Something went wrong. Please try again.'
+                        });
+                    }
+                }
+            });
+        });
+    });
 </script>
 @endsection
+
 @endsection

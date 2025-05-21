@@ -383,6 +383,23 @@
                                                                     <input type="number" name="storage_uom_count" class="form-control" placeholder="Enter No of Pack">
                                                                 </div>
                                                             </div>
+                                                            <div class="row mt-1">
+                                                                <div class="col-md-12">
+                                                                    <div class="newheader border-bottom pb-50 mb-1">
+                                                                        <h4 class="card-title text-theme">Inspection</h4>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="row align-items-center mb-1">
+                                                                <div class="col-md-3 mb-1">
+                                                                    <label class="form-label">Inspection Required</label>
+                                                                    <select name="is_inspection" class="form-select select2">
+                                                                        <option value="1">Yes</option>
+                                                                        <option value="0" selected>No</option>
+                                                                    </select>
+                                                                </div>
+                                                            </div>
                                                             <!-- <div class="row">
                                                                 <div class="col-md-6">
                                                                     <div class="row align-items-center mb-1">
@@ -1749,7 +1766,9 @@ $(document).ready(function() {
             var isMeter = (uomName === 'MTR');
             var storageIsMeter = (storageUomName === 'MTR')
             if (storageUomName) {
-                if (isMeter && storageIsMeter) {
+                // if (isMeter && storageIsMeter) {
+                if (storageUomName == uomName) {
+
                     $('input[name="storage_uom_conversion"]')
                         .val(1)
                         .prop('readonly', true);

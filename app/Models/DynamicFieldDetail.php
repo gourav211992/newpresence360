@@ -26,4 +26,8 @@ class DynamicFieldDetail extends Model
     {
         return $this -> belongsTo(DynamicField::class, 'header_id');
     }
+    public function getNameAttribute($value)
+    {
+        return preg_replace('/[^\w\s]/', ' ', $value);
+    }
 }

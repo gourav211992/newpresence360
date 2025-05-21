@@ -48,7 +48,7 @@
                                         </thead>
                                         <tbody>
                                             @foreach($records as $index=>$row)
-                                            @php 
+                                            @php
                                                $vs =  App\Models\Voucher::where('reference_doc_id',$row->id)->where('reference_service','expense_advice')->first();
                                             @endphp
                                             <tr class="trail-bal-tabl-none">
@@ -216,16 +216,16 @@
                             columns: [3, 4, 5, 6, 7]
                         }
                     },
-                    {
-                        extend: 'pdf',
-                        text: feather.icons['clipboard'].toSvg({
-                            class: 'font-small-4 me-50'
-                        }) + 'PDF',
-                        className: 'dropdown-item',
-                        exportOptions: {
-                            columns: [3, 4, 5, 6, 7]
-                        }
-                    }
+                    // {
+                    //     extend: 'pdf',
+                    //     text: feather.icons['clipboard'].toSvg({
+                    //         class: 'font-small-4 me-50'
+                    //     }) + 'PDF',
+                    //     className: 'dropdown-item',
+                    //     exportOptions: {
+                    //         columns: [3, 4, 5, 6, 7]
+                    //     }
+                    // }
                 ],
                 init: function(api, node, config) {
                     $(node).removeClass('btn-secondary');

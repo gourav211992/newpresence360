@@ -12,6 +12,7 @@
         <input type="hidden" name="components[{{$rowCount}}][item_name]"/>
         <input type="hidden" name="components[{{$rowCount}}][hsn_id]"/>
         <input type="hidden" name="components[{{$rowCount}}][hsn_code]"/>
+        <input type="hidden" name="components[{{$rowCount}}][is_inspection]"/>
     </td>
     <td>
         <input type="text" name="components[{{$rowCount}}][item_name]" class="form-control mw-100 mb-25" readonly/>
@@ -57,6 +58,7 @@
     <td>
         <div class="d-flex">
             <input type="hidden" id="components_storage_points_{{ $rowCount }}" name="components[{{$rowCount}}][storage_points]" value=""/>
+            <input type="hidden" id="components_storage_points_{{ $rowCount }}" name="components[{{$rowCount}}][storage_points_data]" value=""/>
             <div class="me-50 cursor-pointer addStoragePointBtn" data-bs-toggle="modal" data-row-count="{{$rowCount}}" data-bs-target="#storage-point-modal">
                 <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary"
                 data-bs-original-title="Store Location" aria-label="Store Location">

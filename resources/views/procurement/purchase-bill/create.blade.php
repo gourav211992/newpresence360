@@ -341,33 +341,14 @@
                                                                             </td>
                                                                         </tr>
                                                                         <tr>
-                                                                            <td class="poprod-decpt">
-                                                                                <span class="poitemtxt mw-100"><strong>Name</strong>:</span>
-                                                                            </td>
                                                                         </tr>
                                                                         <tr>
-                                                                            <td class="poprod-decpt">
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>HSN</strong>:</span>
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Color</strong>:</span>
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Size</strong>:</span>
-                                                                            </td>
                                                                         </tr>
                                                                         <tr>
-                                                                            <td class="poprod-decpt">
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Inv. UOM</strong>: </span>
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Qty.</strong>:</span>
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Exp. Date</strong>: </span>
-                                                                            </td>
                                                                         </tr>
                                                                         <tr>
-                                                                            <td class="poprod-decpt">
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Ava. Stock</strong>: </span>
-                                                                            </td>
                                                                         </tr>
                                                                         <tr>
-                                                                            <td class="poprod-decpt">
-                                                                                <span class="badge rounded-pill badge-light-secondary"><strong>Remarks</strong>: </span>
-                                                                            </td>
                                                                         </tr>
                                                                     </table>
                                                                 </td>

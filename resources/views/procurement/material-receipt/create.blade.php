@@ -440,33 +440,14 @@
                                                                             </td>
                                                                         </tr>
                                                                         <tr>
-                                                                            <td class="poprod-decpt">
-                                                                                <span class="poitemtxt mw-100"><strong>Name</strong>:</span>
-                                                                            </td>
                                                                         </tr>
                                                                         <tr>
-                                                                            <td class="poprod-decpt">
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>HSN</strong>:</span>
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Color</strong>:</span>
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Size</strong>:</span>
-                                                                            </td>
                                                                         </tr>
                                                                         <tr>
-                                                                            <td class="poprod-decpt">
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Inv. UOM</strong>: </span>
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Qty.</strong>:</span>
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Exp. Date</strong>: </span>
-                                                                            </td>
                                                                         </tr>
                                                                         <tr>
-                                                                            <td class="poprod-decpt">
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Ava. Stock</strong>: </span>
-                                                                            </td>
                                                                         </tr>
                                                                         <tr>
-                                                                            <td class="poprod-decpt">
-                                                                                <span class="badge rounded-pill badge-light-secondary"><strong>Remarks</strong>: </span>
-                                                                            </td>
                                                                         </tr>
                                                                     </table>
                                                                 </td>
@@ -1004,6 +985,7 @@
                                         code: item.item_code || '',
                                         item_id: item.id,
                                         item_name:item.item_name,
+                                        is_inspection:item.is_inspection,
                                         uom_name:item.uom?.name,
                                         uom_id:item.uom_id,
                                         hsn_id:item.hsn?.id,
@@ -1028,6 +1010,7 @@
                         let uomName = ui.item.uom_name;
                         let hsnId = ui.item.hsn_id;
                         let hsnCode = ui.item.hsn_code;
+                        let isInspection = ui.item.is_inspection;
                         $input.attr('data-name', itemName);
                         $input.attr('data-code', itemCode);
                         $input.attr('data-id', itemId);
@@ -1038,6 +1021,7 @@
                         closestTr.find('[name*=item_name]').val(itemN);
                         closestTr.find('[name*=hsn_id]').val(hsnId);
                         closestTr.find('[name*=hsn_code]').val(hsnCode);
+                        closestTr.find('[name*=is_inspection]').val(isInspection);
                         closestTr.find("td[id*='itemAttribute_']").html(defautAttrBtn);
                         $input.val(itemCode);
                         let uomOption = `<option value=${uomId}>${uomName}</option>`;
@@ -1344,10 +1328,12 @@
 
         function getItemDetail(currentTr) {
             const $row = $(currentTr);
-            let pName = $row.find("[name*='component_item_name']").val();
-            let itemId = $row.find("[name*='item_id']").val();
-            let poHeaderId = $row.find("[name*='purchase_order_id']").val();
-            let poDetailId = $row.find("[name*='po_detail_id']").val();
+            let pName = $row.find("[name*='component_item_name']").val() || '';
+            let itemId = $row.find("[name*='item_id']").val() || '';
+            let poHeaderId = $row.find("[name*='purchase_order_id']").val() || '';
+            let poDetailId = $row.find("[name*='po_detail_id']").val() || '';
+            let storeId = $row.find("[name*='header_store_id']").val() || '';
+            let subStoreId = $row.find("[name*='sub_store_id']").val() || '';
             let remark = '';
             if($row.find("[name*='remark']")) {
                 remark = $row.find("[name*='remark']").val() || '';
@@ -1364,7 +1350,18 @@
                 let qty = $row.find("[name*='[accepted_qty]']").val() || '';
                 let headerId = $row.find("[name*='mrn_header_id']").val() ?? '';
                 let detailId = $row.find("[name*='mrn_detail_id']").val() ?? '';
-                let actionUrl = '{{route("material-receipt.get.itemdetail")}}'+'?item_id='+itemId+'&purchase_order_id='+poHeaderId+'&po_detail_id='+poDetailId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&headerId='+headerId+'&detailId='+detailId;
+                let actionUrl = '{{route("material-receipt.get.itemdetail")}}'+'?item_id='+itemId+
+                    '&purchase_order_id='+poHeaderId+
+                    '&po_detail_id='+poDetailId+
+                    '&selectedAttr='+JSON.stringify(selectedAttr)+
+                    '&remark='+remark+
+                    '&uom_id='+uomId+
+                    '&qty='+qty+
+                    '&headerId='+headerId+
+                    '&detailId='+detailId+
+                    '&store_id='+storeId+
+                    '&sub_store_id='+subStoreId;
+
                 fetch(actionUrl).then(response => {
                     return response.json().then(data => {
                         if(data.status == 200) {
@@ -1373,14 +1370,32 @@
                             // Store in global map (if needed for other logic)
                             itemStorageMap[itemId] = storagePoints;
 
-                             // Update the modal or display section
+                            if(storagePoints.length) {
+                                // ✅ Show storage point button
+                                $('.addStoragePointBtn').css('display', 'block');
+                            } else{
+                                // ✅ Hide storage point button
+                                $('.addStoragePointBtn').css('display', 'none');
+                            }
+
+                            // ✅ Store globally for dropdown population
+                            allStoragePointsList = storagePoints;
+
+                            // Update the modal or display section
                             $("#itemDetailDisplay").html(data.data.html);
 
-                            // Store directly in the current row's hidden input
+                            // ✅ Fill storage_points hidden input
                             const hiddenInput = $row.find("input[name*='[storage_points]']");
                             if (hiddenInput.length) {
                                 hiddenInput.val(JSON.stringify(storagePoints));
                             }
+
+                            // ✅ Fill modal after qty check
+                            // const acceptedQty = parseFloat($row.find("[name*='[accepted_qty]']").val()) || 0;
+                            // populateStoragePointsTable([{ id: storagePoints[0]?.id, quantity: acceptedQty }]);
+
+                            // $("#storagePointsRowIndex").val(rowIndex);
+                            // $("#storagePointsModal").modal("show");
                         }
                     });
                 });
@@ -1502,7 +1517,6 @@
         //         $("#deliveryScheduleModal").find('#deliveryFooter').before(rowHtml);
         //         $('[name="components[1][erp_store][1][erp_store_id]"').trigger('change');
         //     } else {
-        //         console.log('afsfsfs gdgdgdgd');
         //         if($("#itemTable #row_"+rowCount).find("[name*=store_qty]").length) {
         //             $(".display_delivery_row").remove(); // Remove all rows if present
         //         } else {
@@ -1518,7 +1532,6 @@
         //             let shelfVal = $(item).closest('td').find(`[name="components[${rowCount}][erp_store][${index+1}][erp_shelf_id]"]`).val();
         //             let binVal = $(item).closest('td').find(`[name="components[${rowCount}][erp_store][${index+1}][erp_bin_id]"]`).val();
         //             let storeQty = $(item).closest('td').find(`[name="components[${rowCount}][erp_store][${index+1}][store_qty]"]`).val();
-        //             // console.log('store rack shelf', storeVal, rackVal, shelfVal, binVal);
         //             // Trigger the change event after setting values to ensure racks, shelves, etc. are updated
         //             $(`#erp_store_id_${index+1}`).val(storeVal).trigger('change');
         //             $(`#erp_rack_id_${index+1}`).val(rackVal);
@@ -1633,7 +1646,6 @@
                 loadStoreDropdowns(store_id, rowCount);
                 // $('[name="components[1][erp_store][1][erp_store_id]"').trigger('change');
             } else {
-                // console.log('afsfsfs gdgdgdgd');
                 if ($("#itemTable #row_" + rowCount).find("[name*=store_qty]").length) {
 
                     $(".display_delivery_row").remove(); // Remove all rows if present

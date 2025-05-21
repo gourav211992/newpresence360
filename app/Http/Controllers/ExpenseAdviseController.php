@@ -112,7 +112,7 @@ class ExpenseAdviseController extends Controller
                     'currency'
                 ]
             )
-            ->where('organization_id', $user->organization_id)
+            ->withDefaultGroupCompanyOrg()
             ->where('company_id', $organization->company_id)
             ->latest();
             return DataTables::of($records)
@@ -756,7 +756,7 @@ class ExpenseAdviseController extends Controller
         $approvalHistory = Helper::getApprovalHistory($expense->series_id, $expense->id, $expense->revision_number);
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$expense->document_status];
         $revisionNumbers = $approvalHistory->pluck('revision_number')->unique()->values()->all();
-        $erpStores = ErpStore::where('organization_id', $user->organization_id)
+        $erpStores = ErpStore::withDefaultGroupCompanyOrg()
             ->orderBy('id', 'DESC')
             ->get();
         return view('procurement.expense-advise.view', [
@@ -808,9 +808,9 @@ class ExpenseAdviseController extends Controller
         }
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$expense->document_status] ?? '';
         $revisionNumbers = $approvalHistory->pluck('revision_number')->unique()->values()->all();
-        $costCenters = CostCenter::where('organization_id', $user->organization_id)->get();
+        $costCenters = CostCenter::withDefaultGroupCompanyOrg()->get();
         $locations = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
-        $erpStores = ErpStore::where('organization_id', $user->organization_id)
+        $erpStores = ErpStore::withDefaultGroupCompanyOrg()
             ->orderBy('id', 'DESC')
             ->get();
         $dynamicFieldsUI = $expense -> dynamicfieldsUi();
@@ -1379,7 +1379,7 @@ class ExpenseAdviseController extends Controller
         $user = Helper::getAuthenticatedUser();
         $item = json_decode($request->item,true) ?? [];
         $componentItem = json_decode($request->component_item,true) ?? [];
-        $costCenters = CostCenter::where('organization_id', $user->organization_id)->get();
+        $costCenters = CostCenter::withDefaultGroupCompanyOrg()->get();
         /*Check last tr in table mandatory*/
         if(isset($componentItem['attr_require']) && isset($componentItem['item_id']) && $componentItem['row_length']) {
             if (($componentItem['attr_require'] == true || !$componentItem['item_id']) && $componentItem['row_length'] != 0) {
@@ -1399,7 +1399,7 @@ class ExpenseAdviseController extends Controller
         $item_ids = explode(',', $request->item_ids);
         $items = PoItem::whereIn('id', $item_ids)
             ->get();
-        $costCenters = CostCenter::where('organization_id', $user->organization_id)->get();
+        $costCenters = CostCenter::withDefaultGroupCompanyOrg()->get();
         $vendor = Vendor::with(['currency:id,name', 'paymentTerms:id,name'])->find($request->vendor_id);
         $currency = $vendor->currency;
         $paymentTerm = $vendor->paymentTerms;
@@ -1441,7 +1441,7 @@ class ExpenseAdviseController extends Controller
         $item_ids = explode(',', $request->item_ids);
         $items = ErpSoItem::whereIn('id', $item_ids)
             ->get();
-        $costCenters = CostCenter::where('organization_id', $user->organization_id)->get();
+        $costCenters = CostCenter::withDefaultGroupCompanyOrg()->get();
         $html = view(
             'procurement.expense-advise.partials.so-item-row',
             compact(
@@ -2289,7 +2289,7 @@ class ExpenseAdviseController extends Controller
         $poIds = $poItems->pluck('purchase_order_id')->all();
         $vendorId = PurchaseOrder::whereIn('id',$poIds)->pluck('vendor_id')->toArray();
         $vendorId = array_unique($vendorId);
-        $costCenters = CostCenter::where('organization_id', $user->organization_id)->get();
+        $costCenters = CostCenter::withDefaultGroupCompanyOrg()->get();
         if(count($vendorId) && count($vendorId) > 1) {
             return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => "You can not selected multiple vendor of PO item at time."]);
         } else {
@@ -2430,7 +2430,7 @@ class ExpenseAdviseController extends Controller
         $soIds = $soItems->pluck('sale_order_id')->all();
         $customerId = PurchaseOrder::whereIn('id',$soIds)->pluck('customer_id')->toArray();
         $customerId = array_unique($customerId);
-        $costCenters = CostCenter::where('organization_id', $user->organization_id)->get();
+        $costCenters = CostCenter::withDefaultGroupCompanyOrg()->get();
         if(count($customerId) && count($customerId) > 1) {
             return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => "You can not selected multiple customer of SO item at time."]);
         }
@@ -2587,8 +2587,7 @@ class ExpenseAdviseController extends Controller
             });
         },
         'items.item', 'items.item.category', 'items.item.subCategory', 'vendor',
-        'items.so', 'po'])
-        ->where('organization_id', $user->organization_id);
+        'items.so', 'po']);
 
         // Date Filtering
         if (($startDate && $endDate) || $period) {

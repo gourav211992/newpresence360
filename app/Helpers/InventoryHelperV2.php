@@ -16,6 +16,7 @@ use App\Models\ItemAttribute;
 
 use App\Models\StockLedger;
 use App\Models\StockLedgerReservation;
+use App\Models\StockLedgerStoragePoint;
 
 use App\Models\WhLevel;
 use App\Models\WhDetail;
@@ -37,120 +38,83 @@ class InventoryHelperV2
     }
 
     // Get Storage POints
-    public static function getStoragePoints($itemId, $qty=NULL)
+    public static function updateReceiptStock($documentHeader)
     {
         $user = Helper::getAuthenticatedUser();
-        $data = array();
-        try{
-            // Step 1: Try to find mapping by item_id
-            $records = \DB::table('erp_wh_item_mappings')
-                ->whereRaw("JSON_CONTAINS(item_id, JSON_QUOTE(?))", [$itemId])
-                ->get();
-            // Step 2: If no records found → try sub_category_id, then category_id
-            if ($records->isEmpty()) {
-                // Get item's category and sub-category
-                $item = \DB::table('erp_items')->where('id', $itemId)->first();
-                if ($item) {
-                    // Try sub_category_id
-                    if ($item->subcategory_id) {
-                        $records = \DB::table('erp_wh_item_mappings')
-                            ->whereRaw("JSON_CONTAINS(sub_category_id, JSON_QUOTE(?))", [(string)$item->subcategory_id])
-                            ->get();
-                    }
-                    
-                    // If still empty, try category_id
-                    if ($records->isEmpty() && $item->category_id) {
-                        $records = \DB::table('erp_wh_item_mappings')
-                        ->whereRaw("JSON_CONTAINS(category_id, JSON_QUOTE(?))", [(string)$item->category_id])
-                        ->get();
-                    }
+        DB::beginTransaction();
+        try {
+            $documentDetails = $documentHeader->items->where('is_inspection', 1);
+            foreach($documentDetails as $detail) {
+                $approvedStockLedger = StockLedger::withDefaultGroupCompanyOrg()
+                    ->whereIn('document_status', ['hold'])
+                    ->where('document_header_id', $detail->mrn_header_id)
+                    ->where('document_detail_id', $detail->id)
+                    ->where('item_id', $detail->item_id)
+                    ->where('store_id', $detail->store_id)
+                    ->where('sub_store_id', $detail->sub_store_id)
+                    ->where('transaction_type', 'receipt')
+                    ->whereNull('utilized_id')
+                    ->whereRaw('hold_qty > 0')
+                    ->orderBy('document_date', 'ASC')
+                    ->first();
+                
+                if($approvedStockLedger && ($approvedStockLedger->hold_qty > $detail->inventory_uom_qty)) {
+                    $approvedStockLedger->hold_qty = ($approvedStockLedger->hold_qty - $detail->inventory_uom_qty);
+                    $approvedStockLedger->receipt_qty += $detail->inventory_uom_qty;
+                    $approvedStockLedger->save();
+
+                    $totalItemCost = $detail->basic_value - ($detail->discount_amount + $detail->header_discount_amount);
+                    $costPerUnit = $totalItemCost/$approvedStockLedger->receipt_qty;
+                    $approvedStockLedger->cost_per_unit = round(@$costPerUnit,6);
+                    $approvedStockLedger->total_cost = round(@$totalItemCost, 2);
+                    $approvedStockLedger->save();
+
+                    self::updateStockCost($approvedStockLedger);
                 }
-            }
 
-            // Step 3: Parse structure_details
-            $storagePointIds = [];
-
-            foreach ($records as $record) {
-                $structureDetails = json_decode($record->structure_details, true);
-
-                foreach ($structureDetails as $level) {
-                    if (!empty($level['level-values']) && is_array($level['level-values'])) {
-                        $storagePointIds = array_merge($storagePointIds, $level['level-values']);
-                    }
+                if($approvedStockLedger && ($approvedStockLedger->hold_qty == 0)) {
+                    $approvedStockLedger->document_status = $documentHeader->document_status;
+                    $approvedStockLedger->save();
                 }
-            }
-
-            $storagePointIds = array_unique($storagePointIds);
-
-            // Step 4: Fetch matching storage points
-            $results = self::getFinalStoragePoints($storagePointIds);
-            // $results = \DB::table('erp_wh_details')
-            //     ->where('is_storage_point', 1)
-            //     ->whereIn('id', $storagePointIds)
-            //     ->get();
+            } 
             
-            if(!empty($results)){
-                $message = "Records successfuly fetched.";
-                $data = self::successResponse($message, $results);
-            } else{
-                dd('no');
-            }   
+            \DB::commit();
+
+            $message = "MRN details updated successfully.";
+            $data = self::successResponse($message, array());
             return $data;
-        } catch(\Exception $e){
-            $data = self::errorResponse($e->getMessage());
-            return $data;
-
+        } catch (\Exception $e) {
+            dd($e);
+            \DB::rollback();
+            $errorMsg = "Error in InspectionHelper@updateMrnDetail: " . $e->getMessage();
+            return self::errorResponse($errorMsg);
         }
+        
     }
 
-    // Get Final Storage Points
-    private static function getFinalStoragePoints(array $initialIds)
+    // Update document status while update mrn
+    private static function updateStockCost($stockLedger)
     {
-        $finalIds = [];
+        $user = Helper::getAuthenticatedUser();
+        //costing exchange rate currency
+        $orgnizationCurrencyCostPerUnit = $stockLedger->cost_per_unit*$stockLedger->org_currency_exg_rate;
+        $orgnizationCurrencyCost = $stockLedger->total_cost*$stockLedger->org_currency_exg_rate;
+        $companyCurrencyCostPerUnit = $orgnizationCurrencyCostPerUnit*$stockLedger->comp_currency_exg_rate;
+        $companyCurrencyCost = $orgnizationCurrencyCost*$stockLedger->comp_currency_exg_rate;
+        $groupCurrencyCostPerUnit = $companyCurrencyCostPerUnit*$stockLedger->group_currency_exg_rate;
+        $groupCurrencyCost = $companyCurrencyCost*$stockLedger->group_currency_exg_rate;
+        $stockLedger->org_currency_cost_per_unit = round($orgnizationCurrencyCostPerUnit,6);
+        $stockLedger->org_currency_cost = round(@$orgnizationCurrencyCost,2);
+        $stockLedger->comp_currency_cost_per_unit = round($companyCurrencyCostPerUnit,6);
+        $stockLedger->comp_currency_cost = round($companyCurrencyCost,2);
+        $stockLedger->group_currency_cost_per_unit = round($groupCurrencyCostPerUnit,6);
+        $stockLedger->group_currency_cost = round($groupCurrencyCost,2);
 
-        foreach ($initialIds as $id) {
-            $detail = \DB::table('erp_wh_details')->where('id', $id)->first();
+        $stockLedger->save();
 
-            if (!$detail) continue;
-
-            if ($detail->is_storage_point == 1) {
-                $finalIds[] = $detail->id;
-            } else {
-                // Recursively find child storage points
-                $childStoragePoints = self::findChildStoragePoints($detail->id);
-                $finalIds = array_merge($finalIds, $childStoragePoints);
-            }
-        }
-
-        $finalIds = array_unique($finalIds);
-
-        return \DB::table('erp_wh_details')
-            ->whereIn('id', $finalIds)
-            ->get();
+        return $stockLedger;
     }
 
-    // Find Child Storage Points
-    private static function findChildStoragePoints($parentId)
-    {
-        $results = [];
-        $children = \DB::table('erp_wh_details')
-            ->where('parent_id', $parentId)
-            ->get();
-
-        foreach ($children as $child) {
-            if ($child->is_storage_point == 1) {
-                $results[] = $child->id;
-            } else {
-                // Recursive call
-                $results = array_merge($results, self::findChildStoragePoints($child->id));
-            }
-        }
-
-        return $results;
-    }
-
-
-    // Error Response
     private static function errorResponse($message)
     {
         return [
@@ -162,7 +126,6 @@ class InventoryHelperV2
 
     }
 
-    // Success Response
     private static function successResponse($response,$data)
     {
         return [

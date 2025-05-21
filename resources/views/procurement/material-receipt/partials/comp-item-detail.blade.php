@@ -132,7 +132,7 @@
         </td>
     </tr>
 @endif
-@if(isset($storagePoints['data']) && !empty($storagePoints['data']))
+<!-- @if(isset($storagePoints['data']) && !empty($storagePoints['data']))
     <tr>
         <td class="poprod-decpt">
             <span class="mw-100" style="padding: 0%;">
@@ -161,7 +161,7 @@
             </td>
         </tr>
     @endforeach
-@endif
+@endif -->
 @if(isset($remark) && $remark)
     <tr>
         <td class="poprod-decpt">

@@ -164,9 +164,11 @@ class LedgerController extends Controller
         $tdsSections = ConstantHelper::getTdsSections();
         $tcsSections = ConstantHelper::getTcsSections();
 //        $label = ConstantHelper::getTaxTypeLabel(ConstantHelper::TAX_TYPE_IGST);
+          $Existingledgers = Ledger::withDefaultGroupCompanyOrg()
+          ->select('name', 'code')->get();
 
 
-        return view('ledgers.add_ledger', compact('costCenters', 'groups', 'gst_group_id', 'tds_group_id','tcs_group_id','taxTypes','tdsSections','tcsSections'));
+        return view('ledgers.add_ledger', compact('costCenters', 'groups', 'gst_group_id', 'tds_group_id','tcs_group_id','taxTypes','tdsSections','tcsSections','Existingledgers'));
     }
 
     /**
@@ -245,7 +247,7 @@ class LedgerController extends Controller
             if ($existingName) {
                 return back()->withErrors(['name' => 'The name has already been taken.'])->withInput();
             }
-            
+
             if ($existingCode) {
                 return back()->withErrors(['code' => 'The code has already been taken.'])->withInput();
             }
@@ -259,7 +261,7 @@ class LedgerController extends Controller
             return strtolower(trim($name));
         })
         ->toArray();
-    
+
 
         // Clean out unnecessary fields
         if (!in_array('tds', $groupNames)) {
@@ -280,7 +282,7 @@ class LedgerController extends Controller
         $parentUrl = ConstantHelper::LEDGERS_SERVICE_ALIAS;
         $validatedData = Helper::prepareValidatedDataWithPolicy($parentUrl);
 
-        
+
         // Create a new ledger record with organization details
         Ledger::create(array_merge($request->all(),$validatedData));
 
@@ -318,7 +320,7 @@ class LedgerController extends Controller
                     return $parentGroupIds->contains($g->id) &&
                         ($g->organization_id === $orgId || $g->organization_id === null);
                 });
-            
+
         $groupsModal = $data->group();
 
         // Get special groups
@@ -341,7 +343,9 @@ class LedgerController extends Controller
         } else {
             $data->ledger_group_id = json_encode($decoded);
         }
-
+        $existingLedgers = Ledger::withDefaultGroupCompanyOrg()->where('id', '!=', $data->id)
+        ->select('name', 'code')
+        ->get();
         return view('ledgers.edit_ledger', compact(
             'groups',
             'data',
@@ -349,7 +353,8 @@ class LedgerController extends Controller
             'groupsModal',
             'gst_group_id',
             'tds_group_id',
-            'tcs_group_id'
+            'tcs_group_id',
+            'existingLedgers',
         ));
     }
 
@@ -409,21 +414,21 @@ class LedgerController extends Controller
         ->where('name', $request->name)
         ->where('id', '!=', $id)
         ->first();
-    
+
 
         $existingCode = Ledger::withDefaultGroupCompanyOrg()
         ->where('code', $request->code)
         ->where('id', '!=', $id)
         ->first();
-            
+
             if ($existingName) {
                 return back()->withErrors(['name' => 'The name has already been taken.'])->withInput();
             }
-            
+
             if ($existingCode) {
                 return back()->withErrors(['code' => 'The code has already been taken.'])->withInput();
             }
-        
+
 
         $request->merge([
             'ledger_group_id' => isset($request->ledger_group_id) ? json_encode($request->ledger_group_id) : null,
@@ -435,7 +440,7 @@ class LedgerController extends Controller
             return strtolower(trim($name));
         })
         ->toArray();
-    
+
 
         // Clean out unnecessary fields
         if (!in_array('tds', $groupNames)) {
@@ -452,7 +457,7 @@ class LedgerController extends Controller
             $request->request->remove('tax_type');
             $request->request->remove('tax_percentage');
         }
-        
+
         $update = Ledger::find($id);
         $update->name = $request->name;
         $update->code = $request->code;
@@ -465,7 +470,7 @@ class LedgerController extends Controller
         $update->tds_percentage = $request->tds_percentage ?? null;
         $update->tcs_section = $request->tcs_section ?? null;
         $update->tcs_percentage = $request->tcs_percentage ?? null;
-       
+
         $update->save();
 
 

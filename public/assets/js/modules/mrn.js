@@ -139,9 +139,14 @@ $(document).on('change',"[name*='order_qty']",(e) => {
     let orderQuantity = $(e.target).closest('tr').find("[name*='order_qty']");
     let acceptedQuantity = $(e.target).closest('tr').find("[name*='accepted_qty']");
     let rejectedQuantity = $(e.target).closest('tr').find("[name*='rejected_qty']");
+    let isInspection = $(e.target).closest('tr').find("[name*='is_inspection']").val() || '';
     let orderQty = parseFloat(qty.value);
     orderQuantity.val(orderQty.toFixed(2));
-    acceptedQuantity.val(orderQty.toFixed(2));
+    if(isInspection == 1){
+        acceptedQuantity.val('0.00');
+    } else{
+        acceptedQuantity.val(orderQty.toFixed(2));
+    }
     rejectedQuantity.val('0.00');
 });
 
@@ -160,6 +165,7 @@ $(document).on('blur',"[name*='accepted_qty']",(e) => {
     let geDetailId = $(e.target).closest('tr').find("[name*='gate_entry_detail_id']").val() || '';
     let siDetailId = $(e.target).closest('tr').find("[name*='supplier_inv_detail_id']").val() || '';
     let itemValue = $(e.target).closest('tr').find("[name*='basic_value']");
+    let isInspection = $(e.target).closest('tr').find("[name*='is_inspection']").val() || '';
 
     if(mrnDetailId || poDetailId){
         let actionUrl = '/material-receipts/validate-quantity?item_id='+itemId+
@@ -180,6 +186,9 @@ $(document).on('blur',"[name*='accepted_qty']",(e) => {
                         text: data.data.error_message,
                         icon: 'error',
                     });
+                    if(isInspection == 1){
+                        rq = 0;
+                    }
                     if(rq < 0){
                         rq = 0;
                     }
@@ -190,6 +199,9 @@ $(document).on('blur',"[name*='accepted_qty']",(e) => {
                     if(rq < 0){
                         rq = 0;
                     }
+                    if(isInspection == 1){
+                        rq = 0;
+                    }
                     acceptedQuantity.val(aq.toFixed(2));
                     rejectedQuantity.val(rq.toFixed(2));
                 }
@@ -197,7 +209,12 @@ $(document).on('blur',"[name*='accepted_qty']",(e) => {
         });
     }
     let aq = parseFloat(acceptedQuantity.val());
-    let rq = parseFloat(receiptQuantity.val()) - parseFloat(acceptedQuantity.val());
+    let rq = 0;
+    if(isInspection == 1){
+        rq = 0;
+    }else{
+        rq = parseFloat(receiptQuantity.val()) - parseFloat(acceptedQuantity.val());
+    }
 
     acceptedQuantity.val(aq.toFixed(2));
     rejectedQuantity.val(rq.toFixed(2));
@@ -1410,25 +1427,41 @@ function getCostCenters(storeLocationId) {
 }
 
 let itemStorageMap = {};  // Key = item ID or code, Value = array of storage points
+let allStoragePointsList = [];
 let activeRowIndex = null;
 
 // Open modal on icon/button click
-$(document).on('click', '.addDeliveryScheduleBtn', function () {
+$(document).on('click', '.addStoragePointBtn', function () {
     activeRowIndex = $(this).data('row-count');
+    let qty = Number($("#itemTable #row_" + activeRowIndex).find("[name*='[accepted_qty]']").val());
+    if(!qty) {
+        Swal.fire({
+            title: 'Error!',
+            text: 'Please enter quantity then you can add store location.',
+            icon: 'error',
+        });
+        return false;
+    }
+
     const $row = $(`#row_${activeRowIndex}`);
     const storagePointsInput = $row.find(`input[name="components[${activeRowIndex}][storage_points]"]`);
     const storageData = JSON.parse(storagePointsInput.val() || '[]');
+
+    if (storageData.length === 0) {
+        storageData.push({ id: '', quantity: qty });
+    }
 
     populateStoragePointsTable(storageData);
     $('#storagePointsRowIndex').val(activeRowIndex);
     $('#storagePointsModal').modal('show');
 });
 
-// Populate the modal table
+// Populate the table initially
 function populateStoragePointsTable(data) {
     const tbody = $('#storagePointsTable tbody');
-    let html = '';
+    const acceptedQty = Number($("#itemTable #row_" + activeRowIndex).find("[name*='[accepted_qty]']").val()) || 0;
 
+    const html = generateStorageRow(0, data[0]?.id || '', data[0]?.quantity || acceptedQty, []);
     if (data.length === 0) {
         html = `<tr><td colspan="3" class="text-muted text-center">No storage points available.</td></tr>`;
     } else {
@@ -1446,23 +1479,181 @@ function populateStoragePointsTable(data) {
     }
 
     tbody.html(html);
+
+    $('#storageQtySummary').remove();
+    $('#storagePointsTable').after(`
+        <div class="mt-2 text-end" id="storageQtySummary">
+            <small><b>Total Quantity:</b> <span id="storageQtyTotal">0</span> / ${acceptedQty}</small>
+        </div>
+    `);
+
+    updateQtyTotal();
+    refreshDropdownDisabling();
 }
 
-// Save button logic
-$('#saveStoragePointsBtn').on('click', function () {
-    const rowIndex = $('#storagePointsRowIndex').val();
-    const $row = $(`#row_${rowIndex}`);
-    const input = $row.find(`input[name="components[${rowIndex}][storage_points]"]`);
-    let storageData = JSON.parse(input.val() || '[]');
+// Generate a new row
+function generateStorageRow(index, selectedId = '', qty = '', usedIds = []) {
+    let options = `<option value="">Select</option>`;
+    allStoragePointsList.forEach(point => {
+        const disabled = usedIds.includes(point.id) && point.id !== selectedId ? 'disabled' : '';
+        const selected = point.id === selectedId ? 'selected' : '';
+        const availableWeight = (point.max_weight || 0) - (point.current_weight || 0);
+        const availableVolume = (point.max_volume || 0) - (point.current_volume || 0);
 
+        const label = `${point.name} (${point.parents || '-'}) (W: ${availableWeight}/${point.max_weight}, V: ${availableVolume}/${point.max_volume})`;
+        options += `<option value="${point.id}" ${disabled} ${selected}>${label}</option>`;
+    });
+
+    const selectedPoint = allStoragePointsList.find(p => p.id === selectedId);
+    const parents = selectedPoint?.parents || '-';
+    const availableWeight = (selectedPoint?.max_weight || 0) - (selectedPoint?.current_weight || 0);
+    const availableVolume = (selectedPoint?.max_volume || 0) - (selectedPoint?.current_volume || 0);
+
+    return `
+        <tr data-index="${index}">
+            <td>${index + 1}</td>
+            <td>
+                <select class="form-select form-select-sm storage-point-dropdown" data-index="${index}">
+                    ${options}
+                </select>
+            </td>
+            <td class="weight-display">${availableWeight} / ${selectedPoint?.max_weight || 0}</td>
+            <td class="volume-display">${availableVolume} / ${selectedPoint?.max_volume || 0}</td>
+            <td class="parents-display">${parents}</td>
+            <td>
+                <input type="number" step="any" class="form-control form-control-sm quantity-input"
+                       data-index="${index}" value="${qty}" />
+            </td>
+        </tr>`;
+}
+
+// Add row from header
+$(document).on('click', '.add-storage-row-header', function () {
+    const index = $('#storagePointsTable tbody tr').length;
+    const acceptedQty = Number($("#itemTable #row_" + activeRowIndex).find("[name*='[accepted_qty]']").val()) || 0;
+    let currentTotal = 0;
+
+    $('.quantity-input').each(function () {
+        currentTotal += parseFloat($(this).val()) || 0;
+    });
+
+    if (currentTotal >= acceptedQty) {
+        Swal.fire('Notice', 'Total quantity already equals accepted quantity.', 'info');
+        return;
+    }
+
+    const remainingQty = acceptedQty - currentTotal;
+
+    const usedIds = $('#storagePointsTable tbody select.storage-point-dropdown')
+        .map(function () { return $(this).val(); })
+        .get()
+        .filter(val => val)
+        .map(Number);
+
+    const newRow = generateStorageRow(index, '', remainingQty, usedIds);
+    $('#storagePointsTable tbody').append(newRow);
+    updateQtyTotal();
+    refreshDropdownDisabling();
+});
+
+// Add new row (from row-level + button)
+$(document).on('click', '.add-storage-row', function () {
+    $('.add-storage-row-header').click();
+});
+
+// Change parent label on dropdown change
+$(document).on('change', '.storage-point-dropdown', function () {
+    const selectedId = Number($(this).val());
+    const index = $(this).data('index');
+    const point = allStoragePointsList.find(p => p.id === selectedId);
+
+    const parents = point?.parents || '-';
+    const availableWeight = (point?.max_weight || 0) - (point?.current_weight || 0);
+    const availableVolume = (point?.max_volume || 0) - (point?.current_volume || 0);
+
+    const $row = $(`#storagePointsTable tbody tr[data-index="${index}"]`);
+    $row.find('.parents-display').text(parents);
+    $row.find('.weight-display').text(`${availableWeight} / ${point?.max_weight || 0}`);
+    $row.find('.volume-display').text(`${availableVolume} / ${point?.max_volume || 0}`);
+
+    updateQtyTotal();
+    refreshDropdownDisabling();
+});
+
+// Update total quantity
+$(document).on('input', '.quantity-input', function () {
+    updateQtyTotal();
+});
+
+function updateQtyTotal() {
+    let total = 0;
+    $('.quantity-input').each(function () {
+        total += parseFloat($(this).val()) || 0;
+    });
+    $('#storageQtyTotal').text(total);
+
+    const acceptedQty = Number($("#itemTable #row_" + activeRowIndex).find("[name*='[accepted_qty]']").val()) || 0;
+    const btn = $('.add-storage-row-header');
+    btn.prop('disabled', total >= acceptedQty);
+}
+
+// Prevent duplicates across rows
+function refreshDropdownDisabling() {
+    const selectedValues = $('#storagePointsTable select.storage-point-dropdown')
+        .map(function () { return $(this).val(); })
+        .get()
+        .filter(val => val);
+
+    $('#storagePointsTable select.storage-point-dropdown').each(function () {
+        const currentSelect = $(this);
+        const currentValue = currentSelect.val();
+
+        currentSelect.find('option').each(function () {
+            const val = $(this).val();
+            if (!val) return;
+            if (val !== currentValue && selectedValues.includes(val)) {
+                $(this).prop('disabled', true);
+            } else {
+                $(this).prop('disabled', false);
+            }
+        });
+    });
+}
+
+// Validate total on save
+$(document).on('click', '#saveStoragePointsBtn', function () {
+    const acceptedQty = Number($("#itemTable #row_" + activeRowIndex).find("[name*='[accepted_qty]']").val()) || 0;
+    let total = 0;
+    $('.quantity-input').each(function () {
+        total += parseFloat($(this).val()) || 0;
+    });
+
+    if (total !== acceptedQty) {
+        Swal.fire({
+            title: 'Error!',
+            text: `Total quantity (${total}) must equal accepted quantity (${acceptedQty})`,
+            icon: 'error'
+        });
+        return;
+    }
+
+    // 🔽 Prepare and store data
+    const storageData = [];
     $('#storagePointsTable tbody tr').each(function () {
-        const index = $(this).data('index');
+        const id = $(this).find('select.storage-point-dropdown').val();
         const qty = parseFloat($(this).find('.quantity-input').val()) || 0;
-        if (storageData[index]) {
-            storageData[index].quantity = qty;
+        if (id && qty > 0) {
+            storageData.push({ id: Number(id), quantity: qty });
         }
     });
 
-    input.val(JSON.stringify(storageData));
+    const $row = $(`#row_${activeRowIndex}`);
+    const targetInput = $row.find(`input[name="components[${activeRowIndex}][storage_points_data]"]`);
+    if (targetInput.length) {
+        targetInput.val(JSON.stringify(storageData));
+    }
+
     $('#storagePointsModal').modal('hide');
+    // optionally proceed with saving data
 });
+

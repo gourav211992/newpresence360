@@ -67,6 +67,7 @@ $assets_group = Helper::getGroupsQuery($organizations)->where('name', 'Assets')
         ->where('parent_group_id',$liabilities_group)
         ->select('id','name')->get();
 
+
         $assets=Helper::getGroupsQuery($organizations)
         ->where('parent_group_id',$assets_group)
         ->select('id','name')->get();
@@ -178,29 +179,22 @@ $data[] = [
         array_push($orgIds, $user?->organization_id);
         $companies = $user -> access_rights_org;
         $organization=Organization::where('id',Helper::getAuthenticatedUser()->organization_id)->value('name');
-        if ($request->date) {
+        $fyear = Helper::getFinancialYear(date('Y-m-d'));
+
+        if ($fyear) {
+            $startDate = $fyear['start_date'];
+            $today = Carbon::today();
+            $endDate = Carbon::parse($fyear['end_date']);
+
+            if ($endDate->greaterThan($today)) {
+                $endDate = $today;
+            }
+            $endDate = $endDate->format('Y-m-d');
+        } else {
             $dates = explode(' to ', $request->date);
             $startDate = date('Y-m-d', strtotime($dates[0]));
             $endDate = date('Y-m-d', strtotime($dates[1]));
             $today = date('Y-m-d');
-
-// if ($endDate > $today) {
-//     $endDate = $today;
-// }
-        }
-        else{
-                $fyear = Helper::getFinancialYear(date('Y-m-d'));
-                $startDate = $fyear['start_date'];
-                $today = Carbon::today();
-$endDate = Carbon::parse($fyear['end_date']);
-
-if ($endDate->greaterThan($today)) {
-    $endDate = $today;
-}
-
-$endDate = $endDate->format('Y-m-d');
-
-
         }
 
         $cost_centers = CostCenterOrgLocations::withDefaultGroupCompanyOrg()

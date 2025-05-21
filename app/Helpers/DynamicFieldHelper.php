@@ -4,10 +4,7 @@ namespace App\Helpers;
 use App\Models\Book;
 use App\Models\BookDynamicField;
 use App\Models\DynamicFieldDetail;
-use App\Models\ErpSoDynamicField;
 use App\Models\Service;
-use Illuminate\Database\Eloquent\Model;
-
 class DynamicFieldHelper
 {
     public static function generateFieldUI(DynamicFieldDetail $dynamicFieldDetail, null|string $value = "") : string
@@ -100,7 +97,7 @@ class DynamicFieldHelper
         $serviceId = Service::where('alias', $serviceAlias) -> first() ?-> id;
         $bookIds = Book::withDefaultGroupCompanyOrg() -> where('service_id', $serviceId) -> get() -> pluck('id') -> toArray();
         $dynamicFieldIds = BookDynamicField::whereIn('book_id', $bookIds) -> get() -> pluck('dynamic_field_id') -> toArray();
-        $dynamicFields = DynamicFieldDetail::whereIn('header_id', $dynamicFieldIds)  -> get();
+        $dynamicFields = DynamicFieldDetail::whereIn('header_id', $dynamicFieldIds) -> get();
         return $dynamicFields;
     }
 }

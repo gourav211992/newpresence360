@@ -59,18 +59,18 @@ class CloseFyController extends Controller
         $organizationId = $r->organization_id;
         if($r->fyear){
            $allFyears = Helper::getFinancialYears($organizationId);
-            $currentFy = $allFyears->firstWhere('id', $r->fyear);
+            $financialYear = $allFyears->firstWhere('id', $r->fyear);
 
-            if ($currentFy && isset($currentFy['range'])) {
-                [$start, $end] = explode('-', $currentFy['range']);
-                $nextStart = (int)$start + 1;
-                $nextEnd = (int)$end + 1;
-                $nextRange = $nextStart . '-' . str_pad($nextEnd % 100, 2, '0', STR_PAD_LEFT);
+            // if ($currentFy && isset($currentFy['range'])) {
+            //     [$start, $end] = explode('-', $currentFy['range']);
+            //     $nextStart = (int)$start + 1;
+            //     $nextEnd = (int)$end + 1;
+            //     $nextRange = $nextStart . '-' . str_pad($nextEnd % 100, 2, '0', STR_PAD_LEFT);
 
-                $financialYear = $allFyears->first(function ($item) use ($nextRange) {
-                    return trim($item['range']) === trim($nextRange);
-                });
-            }
+            //     $financialYear = $allFyears->first(function ($item) use ($nextRange) {
+            //         return trim($item['range']) === trim($nextRange);
+            //     });
+            // }
         }
          $organizations = $r->organization_id && is_array($r->organization_id)
             ? $r->organization_id

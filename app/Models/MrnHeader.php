@@ -72,6 +72,7 @@ class MrnHeader extends Model
         'taxable_amount',
         'expense_amount',
         'total_amount',
+        'is_warehouse_required',
         'item_remark',
         'final_remarks',
         'status'

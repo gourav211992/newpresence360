@@ -37,9 +37,15 @@ class BankDetail extends Model
     {
         return $this->belongsTo(Ledger::class);
     }
+
     public function ledgerGroup()
     {
         return $this->belongsTo(Group::class); 
+    }
+
+    public function bankInfo()
+    {
+        return $this->belongsTo(Bank::class,'bank_id','id');
     }
     
 }

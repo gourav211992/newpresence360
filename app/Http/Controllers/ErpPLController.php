@@ -15,6 +15,8 @@ use App\Helpers\ServiceParametersHelper;
 use App\Helpers\UserHelper;
 use App\Http\Requests\ErpPlRequest;
 use App\Models\Address;
+use App\Helpers\DynamicFieldHelper;
+use App\Models\ErpPlDynamicField;
 use App\Models\AuthUser;
 use App\Models\Country;
 use App\Models\Department;
@@ -233,6 +235,8 @@ class ErpPlController extends Controller
             $users = AuthUser::select('id', 'name') -> where('organization_id', $user -> organization_id) 
             -> where('status', ConstantHelper::ACTIVE) -> get();   
             $SubStores = InventoryHelper::getAccesibleSubLocations($doc -> store_id, 0, ConstantHelper::ERP_SUB_STORE_LOCATION_TYPES);
+            $dynamicFieldsUI = $doc -> dynamicfieldsUi();
+
             $data = [
                 'user' => $user,
                 'series' => $books,
@@ -253,7 +257,8 @@ class ErpPlController extends Controller
                 'selectedDepartmentId' => $doc ?-> department_id,
                 'requesters' => $users,
                 'selectedUserId' => $doc ?-> user_id,
-                'sub_stores' => $SubStores,
+                'sub_stores' => $SubStores,                
+                'dynamicFieldsUi' => $dynamicFieldsUI,
                 'redirect_url' => $redirect_url
             ];
             return view('PL.layout', $data);  
@@ -599,6 +604,15 @@ class ErpPlController extends Controller
                 //             ], 422);
                 //     }
                 // }
+                //Dynamic Fields
+                $status = DynamicFieldHelper::saveDynamicFields(ErpPlDynamicField::class, $PL -> id, $request -> dynamic_field ?? []);
+                if ($status && !$status['status'] ) {
+                    DB::rollBack();
+                    return response() -> json([
+                        'message' => $status['message'],
+                        'error' => ''
+                    ], 422);
+                }
                 DB::commit();
                 $module = "Pick List";
                 return response() -> json([

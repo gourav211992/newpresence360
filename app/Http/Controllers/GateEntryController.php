@@ -781,7 +781,7 @@ class GateEntryController extends Controller
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$mrn->document_status];
         $revisionNumbers = $approvalHistory->pluck('revision_number')->unique()->values()->all();
 
-        $erpStores = ErpStore::where('organization_id', $user->organization_id)
+        $erpStores = ErpStore::withDefaultGroupCompanyOrg()
             ->orderBy('id', 'DESC')
             ->get();
 
@@ -838,7 +838,7 @@ class GateEntryController extends Controller
                 ->first();
             $view = 'procurement.gate-entry.view';
         }
-        $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$mrn->document_status] ?? '';
+        $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[@$mrn->document_status] ?? '';
         $locations = InventoryHelper::getAccessibleLocations('stock');
         $store = $mrn->erpStore;
         $deliveryAddress = $store?->address?->display_address;
@@ -848,7 +848,7 @@ class GateEntryController extends Controller
             ->first();
         $orgAddress = $organizationAddress?->display_address;
 
-        $erpStores = ErpStore::where('organization_id', $user->organization_id)
+        $erpStores = ErpStore::withDefaultGroupCompanyOrg()
             ->orderBy('id', 'DESC')
             ->get();
         $dynamicFieldsUI = $mrn -> dynamicfieldsUi();
@@ -1437,7 +1437,7 @@ class GateEntryController extends Controller
                 // return response()->json(['data' => ['html' => ''], 'status' => 422, 'message' => 'Please fill all component details before adding new row more!']);
             }
         }
-        // $erpStores = ErpStore::where('organization_id', $user->organization_id)
+        // $erpStores = ErpStore::withDefaultGroupCompanyOrg()
         //     ->orderBy('id', 'ASC')
         //     ->get();
         $locations = InventoryHelper::getAccessibleLocations('stock');
@@ -1854,7 +1854,7 @@ class GateEntryController extends Controller
         $approvalHistory = Helper::getApprovalHistory(@$mrn->mrn->series_id, @$mrn->mrn->id, @$mrn->mrn->revision_number);
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[@$mrn->mrn->document_status];
         $revisionNumbers = $approvalHistory->pluck('revision_number')->unique()->values()->all();
-        $erpStores = ErpStore::where('organization_id', $user->organization_id)
+        $erpStores = ErpStore::withDefaultGroupCompanyOrg()
             ->orderBy('id', 'DESC')
             ->get();
         $mrnRevisionNumbers = GateEntryHeaderHistory::where('header_id', $id)->get();
@@ -2235,7 +2235,7 @@ class GateEntryController extends Controller
             return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => "One time mrn create from one PO."]);
         }
 
-        // $erpStores = ErpStore::where('organization_id', $user->organization_id)
+        // $erpStores = ErpStore::withDefaultGroupCompanyOrg()
         //     ->orderBy('id', 'ASC')
         //     ->get();
         $locations = InventoryHelper::getAccessibleLocations('stock');
@@ -2470,8 +2470,7 @@ class GateEntryController extends Controller
             });
         },
         'items.item', 'items.item.category', 'items.item.subCategory', 'vendor',
-        'items.so', 'po', 'items.erpStore'])
-        ->where('organization_id', $user->organization_id);
+        'items.so', 'po', 'items.erpStore']);
 
         // Date Filtering
         if (($startDate && $endDate) || $period) {

@@ -1020,8 +1020,8 @@ class Helper
                 ->where('organization_id', $user->organization_id)
                 ->where('level', 1)
                 ->where('min_value', '<=', $docValue)
-                ->whereHas('approvers', function ($approver) use ($currUser) {
-                    $approver->where('user_id', $currUser['user_id']);
+                ->whereHas('approvers', function ($approver) use ($user) {
+                    $approver->where('user_id', $user -> auth_user_id);
                         // ->where('user_type', $currUser['type']);
                 })
                 ->orderByDesc('min_value')
@@ -1040,8 +1040,8 @@ class Helper
         if ($docStatus == ConstantHelper::APPROVED || $docStatus == ConstantHelper::APPROVAL_NOT_REQUIRED) {
             $amendmentWorkflow = AmendmentWorkflow::where('book_id', $book->id)
                 ->where('organization_id', $user->organization_id)
-                ->whereHas('approvers', function ($user) use ($currUser) {
-                    $user->where('user_id', $currUser['user_id']);
+                ->whereHas('approvers', function ($approvers) use ($user) {
+                    $approvers->where('user_id', $user -> auth_user_id);
                         // ->where('user_type', $currUser['type']);
                 })
                 ->where('min_value', '<=', $docValue)
@@ -1067,8 +1067,8 @@ class Helper
             $approvalWorkflow = BookLevel::where('book_id', $book->id)
                 ->where('organization_id', $user->organization_id)
                 ->where('min_value', '<=', $docValue)
-                ->whereHas('approvers', function ($approver) use ($currUser) {
-                    $approver->where('user_id', $currUser['user_id']);
+                ->whereHas('approvers', function ($approver) use ($user) {
+                    $approver->where('user_id', $user -> auth_user_id);
                         // ->where('user_type', $currUser['type']);
                 })
                 ->orderByDesc('min_value')
@@ -1117,7 +1117,9 @@ class Helper
             'voucher' => $voucher,
             'revoke' => $revoke,
             'close' => $close,
-            'print' => $print
+            'print' => $print,
+            'user' => $user
+
         ];
     }
 
@@ -1150,8 +1152,8 @@ class Helper
             $approvalWorkflow = BookLevel::where('book_id', $book->id)
                 ->where('organization_id', $user->organization_id)
                 ->where('level', 1)
-                ->whereHas('approvers', function ($approver) use ($currUser) {
-                    $approver->where('user_id', $currUser['user_id']);
+                ->whereHas('approvers', function ($approver) use ($user) {
+                    $approver->where('user_id', $user -> auth_user_id);
                         // ->where('user_type', $currUser['type']);
                 })
                 ->orderByDesc('min_value')
@@ -1169,8 +1171,8 @@ class Helper
             $approvalWorkflow = BookLevel::where('book_id', $book->id)
                 ->where('organization_id', $user->organization_id)
                 ->where('level', 1)
-                ->whereHas('approvers', function ($approver) use ($currUser) {
-                    $approver->where('user_id', $currUser['user_id']);
+                ->whereHas('approvers', function ($approver) use ($user) {
+                    $approver->where('user_id', $user -> auth_user_id);
                         // ->where('user_type', $currUser['type']);
                 })
                 ->orderByDesc('min_value')
@@ -1186,8 +1188,8 @@ class Helper
         if ($docStatus == ConstantHelper::PARTIALLY_APPROVED) {
             $approvalWorkflow = BookLevel::where('book_id', $book->id)
             ->where('organization_id', $user->organization_id)
-            ->whereHas('approvers', function ($approver) use ($currUser) {
-                $approver->where('user_id', $currUser['user_id']);
+            ->whereHas('approvers', function ($approver) use ($user) {
+                $approver->where('user_id', $user -> auth_user_id);
                     // ->where('user_type', $currUser['type']);
             })
             ->orderByDesc('min_value')
@@ -1218,8 +1220,8 @@ class Helper
             $approvalWorkflow = BookLevel::where('book_id', $book->id)
                 ->where('organization_id', $user->organization_id)
                 ->where('level', 1)
-                ->whereHas('approvers', function ($approver) use ($currUser) {
-                    $approver->where('user_id', $currUser['user_id']);
+                ->whereHas('approvers', function ($approver) use ($user) {
+                    $approver->where('user_id', $user -> auth_user_id);
                         // ->where('user_type', $currUser['type']);
                 })
                 ->orderByDesc('min_value')
@@ -1375,8 +1377,8 @@ class Helper
                 ->where('organization_id', $user->organization_id)
                 ->where('level', 1)
                 ->where('min_value', '<=', $docValue)
-                ->whereHas('approvers', function ($approver) use ($currUser) {
-                    $approver->where('user_id', $currUser['user_id']);
+                ->whereHas('approvers', function ($approver) use ($user) {
+                    $approver->where('user_id', $user -> auth_user_id);
                         // ->where('user_type', $currUser['type']);
                 })
                 ->orderByDesc('min_value')
@@ -1404,8 +1406,8 @@ class Helper
             $approvalWorkflow = BookLevel::where('book_id', $book->id)
                 ->where('organization_id', $user->organization_id)
                 ->where('min_value', '<=', $docValue)
-                ->whereHas('approvers', function ($approver) use ($currUser) {
-                    $approver->where('user_id', $currUser['user_id']);
+                ->whereHas('approvers', function ($approver) use ($user) {
+                    $approver->where('user_id', $user -> auth_user_id);
                         // ->where('user_type', $currUser['type']);
                 })
                 ->orderByDesc('min_value')
@@ -2190,7 +2192,7 @@ return [
         } elseif (Auth::guard('web2')->check()) {
             return Auth::guard('web2')->user();
         } elseif (Auth::guard('api')) {
-            return Auth::guard('api')->user()?->authUser();
+            return Auth::guard('api')->user();
         }
     }
     public static function getOrgWiseUserAndEmployees($organizationId)
@@ -2209,12 +2211,13 @@ return [
 
         $user = self::getAuthenticatedUser();
         $employees = AuthUser::where('db_name', $user->db_name)
-        ->where(function ($empQuery) use($employeeIds) {
-            $empQuery -> where('authenticable_type', 'employee') -> whereIn('authenticable_id', $employeeIds);
-        }) -> orWhere(function ($userQuery) use($userIds) {
-            $userQuery -> where('authenticable_type', 'user') -> whereIn('authenticable_id', $userIds);
-        })
-        ->get();
+        -> where(function ($subQuery) use($employeeIds, $userIds) {
+            $subQuery->where(function ($empQuery) use($employeeIds) {
+                $empQuery -> where('authenticable_type', 'employee') -> whereIn('authenticable_id', $employeeIds);
+            }) -> orWhere(function ($userQuery) use($userIds) {
+                $userQuery -> where('authenticable_type', 'user') -> whereIn('authenticable_id', $userIds);
+            });
+        })->get();
         return $employees;
     }
 

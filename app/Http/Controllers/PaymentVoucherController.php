@@ -116,8 +116,8 @@ class PaymentVoucherController extends Controller
     public function getParties(Request $r)
     {
         $ledger_account = $r->type == ConstantHelper::RECEIPTS_SERVICE_ALIAS ? ConstantHelper::RECEIVABLE : ConstantHelper::PAYABLE;
-        $ledger_group = Helper::getGroupsQuery()->where('name', $ledger_account)->first(); 
-            
+        $ledger_group = Helper::getGroupsQuery()->where('name', $ledger_account)->first();
+
 
         $ids = [];
         $group_id = $ledger_group->getAllChildIds();
@@ -129,10 +129,10 @@ class PaymentVoucherController extends Controller
                 foreach ($group_id as $id) {
                     $q->orWhereJsonContains('ledger_group_id', (string) $id);
                 }
-    
+
                 $q->orWhereIn('ledger_group_id', $group_id);
             });
-    
+
             $query->where('status', 1);
         });
 
@@ -205,7 +205,7 @@ class PaymentVoucherController extends Controller
         if (count($organizations) == 0) {
             $organizations[] = $organizationId;
         }
-          
+
           $fyear = Helper::getFinancialYear(date('Y-m-d'));
         // Retrieve vouchers based on organization_id and include series with levels
         $data = PaymentVoucher::withDefaultGroupCompanyOrg()
@@ -335,7 +335,7 @@ class PaymentVoucherController extends Controller
         $currencies = Currency::where('status', ConstantHelper::ACTIVE)->select('id', 'name', 'short_name')->get();
 
         $orgCurrency = Organization::where('id', Helper::getAuthenticatedUser()->organization_id)->value('currency_id');
-        
+
         $cost_centers = CostCenterOrgLocations::where('organization_id', Helper::getAuthenticatedUser()->organization_id)
     ->with(['costCenter' => function ($query) {
         $query->where('status', 'active');
@@ -390,9 +390,9 @@ if ($ref) {
         ->withErrors(['Reference No. Already Exist!'])->withInput();
 }
 }
-   
-        
-                       
+
+
+
         // Begin transaction
         DB::beginTransaction();
 
@@ -418,7 +418,7 @@ if ($ref) {
             $voucher->payment_type = $request->payment_type;
             $voucher->bank_id = $request->bank_id;
             $voucher->cost_center_id = $request->cost_center_id??null;
-            
+
 
             if ($request->payment_type === "Bank") {
                 $bank = Bank::find($request->bank_id);
@@ -602,7 +602,7 @@ if ($ref) {
             $buttons['cancel'] = false;
 
         if ($data->document_status === ConstantHelper::POSTED)
-            $buttons['amend'] = false;       
+            $buttons['amend'] = false;
 
         $revision_number = $data->revision_number;
         $revNo = $data->revision_number;
@@ -674,7 +674,7 @@ if ($ref) {
             ];
         })
         ->toArray();
-        
+
 
 
         $locations = Helper::getStoreLocation(Helper::getAuthenticatedUser()->organization_id);
@@ -700,12 +700,12 @@ if ($ref) {
 }
 
         DB::beginTransaction();
-    
+
         try {
             $voucher = PaymentVoucher::find($id);
             PaymentVoucherDetails::where('payment_voucher_id', $id)->delete();
             VoucherReference::where('payment_voucher_id', $id)->delete();
-    
+
             foreach ($request->party_id as $index => $party) {
                 $details = new PaymentVoucherDetails();
                 $details->payment_voucher_id = $voucher->id;
@@ -718,15 +718,15 @@ if ($ref) {
                 $details->orgAmount = $request->amount_exc[$index];
                 $details->reference = $request->reference[$index];
                 $details->save();
-                
+
                 if ($request->reference[$index] == "Invoice") {
                     $partyVouchers = json_decode($request->party_vouchers[$index], true);
-    
+
                     if (!is_array($partyVouchers)) {
                         DB::rollBack();
                         return response()->json(['error' => 'Invalid party_vouchers data'], 400);
                     }
-    
+
                     $insertData = [];
                     foreach ($partyVouchers as $reference) {
                         if (self::getVoucherBalance($reference['amount'],$reference['voucher_id'], $request->document_type, $details->ledger_id, $details->ledger_group_id, $id) >= 0) {
@@ -745,28 +745,28 @@ if ($ref) {
                             return redirect()->route($request->document_type . '.edit', [$id])->withErrors($voucherNo . ' Settle amount is greater than balance amount!');
                         }
                     }
-    
+
                     if (!empty($insertData)) {
                         VoucherReference::insert($insertData);
                     }
                 }
             }
-    
+
             $voucher->document_type = $request->document_type;
             $voucher->date = $request->date;
             $voucher->payment_type = $request->payment_type;
             $voucher->location = $request->location;
             $status = $request->status;
-    
+
             if ($status == ConstantHelper::SUBMITTED) {
                 $status = Helper::checkApprovalRequired($voucher->book_id, $request->totalAmount);
             }
-    
+
             if ($voucher->payment_type == "Bank") {
                 $voucher->bank_id = $request->bank_id;
                 $bank = Bank::find($request->bank_id);
                 $voucher->bankCode = $bank->bank_code;
-    
+
                 $voucher->account_id = $request->account_id;
                 $account = BankDetail::find($request->account_id);
                 $voucher->accountNo = $account->account_number;
@@ -776,7 +776,7 @@ if ($ref) {
                 $voucher->ledger_group_id = $bank->ledger_group_id;
             } else {
                 $groupId = Helper::getGroupsQuery()->where('name', 'Cash-in-Hand')->value('id');
-    
+
                 $voucher->ledger_id = $request->ledger_id;
                 $voucher->ledger_group_id = $groupId;
                 $voucher->account_id = null;
@@ -785,42 +785,42 @@ if ($ref) {
                 $voucher->payment_mode = null;
                 $voucher->reference_no = null;
             }
-    
+
             $voucher->payment_mode = $request->payment_mode;
             $voucher->payment_date = $request->payment_date;
-    
+
             $voucher->currency_id = $request->currency_id;
             $voucher->cost_center_id = $request->cost_center_id??null;
             $currency = Currency::find($request->currency_id);
             $voucher->currencyCode = $currency->short_name;
-    
+
             $voucher->org_currency_id = $request->org_currency_id;
             $voucher->org_currency_code = $request->org_currency_code;
             $voucher->org_currency_exg_rate = $request->org_currency_exg_rate;
-    
+
             $voucher->comp_currency_id = $request->comp_currency_id;
             $voucher->comp_currency_code = $request->comp_currency_code;
             $voucher->comp_currency_exg_rate = $request->comp_currency_exg_rate;
-    
+
             $voucher->group_currency_id = $request->group_currency_id;
             $voucher->group_currency_code = $request->group_currency_code;
             $voucher->group_currency_exg_rate = $request->group_currency_exg_rate;
-    
+
             $voucher->amount = $request->totalAmount;
             $voucher->remarks = $request->remarks;
             $voucher->document_status = $status;
-    
+
             if ($request->hasFile('document')) {
                 $fileName = time() . '_' . $request->file('document')->getClientOriginalName();
                 $destinationPath = public_path('voucherPaymentDocuments');
                 $request->file('document')->move($destinationPath, $fileName);
                 $voucher->document = $fileName;
             }
-    
+
             $voucher->save();
 
-    
-    
+
+
             // Reload voucher for approval flow
             $voucher = PaymentVoucher::find($id);
             if ($voucher->document_status == ConstantHelper::SUBMITTED) {
@@ -832,19 +832,19 @@ if ($ref) {
             } else if ($voucher->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED) {
                 $approveDocument = Helper::approveDocument($voucher->book_id, $voucher->id, $voucher->revision_number, $voucher->remarks, $request->file('attachment'), $voucher->approval_level, 'approve');
             }
-    
+
             if (isset($approveDocument)) {
                 $voucher->approvalLevel = $approveDocument['nextLevel'];
                 $voucher->document_status = $approveDocument['approvalStatus'];
                 $voucher->save();
             }
-    
+
             DB::commit();
-    
+
             return redirect()->route(
                 $voucher->document_type === ConstantHelper::PAYMENTS_SERVICE_ALIAS ? "payments.index" : "receipts.index"
             )->with('success', __('message.created', ['module' => 'Payment Voucher']));
-    
+
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withErrors('Something went wrong: ' . $e->getMessage());
@@ -1080,16 +1080,22 @@ if ($ref) {
     }
     public static function getPrint($id, $ledger, $group, $details = null)
     {
+    try {
         $document = PaymentVoucher::find($id);
-        $type = $document?->document_type === "receipts" ? "debit" : "credit";
 
+        if (!$document) {
+            throw new \Exception("Payment voucher not found.");
+        }
+
+        $type = $document->document_type === "receipts" ? "debit" : "credit";
         $ledger_group = $group;
-
         $organization_id = Helper::getAuthenticatedUser()->organization_id;
 
-        $ledger_name = Ledger::find($ledger)?->name;
-        $group_name = Group::find($group)?->name;
+        $ledger_name = Ledger::find($ledger)?->name ?? throw new \Exception("Ledger not found.");
+        $group_name = Group::find($group)?->name ?? throw new \Exception("Group not found.");
+
         $model = $type == 'debit' ? Customer::class : Vendor::class;
+
         $credit_days = $model::where('ledger_group_id', $group)
             ->where('ledger_id', $ledger)
             ->value('credit_days');
@@ -1166,14 +1172,26 @@ if ($ref) {
         $party = $model::where('ledger_group_id', $group)
             ->where('ledger_id', $ledger)
             ->first();
-        $user = Helper::getAuthenticatedUser();
 
+        if (!$party) {
+            throw new \Exception("Party (" . ($type == 'debit' ? 'customer' : 'vendor') . ") not found for the selected group and ledger");
+        }
+
+        $user = Helper::getAuthenticatedUser();
         $organization = Organization::find($organization_id);
-        $organization = Organization::where('id', $user->organization_id)->first();
+
+        if (!$organization) {
+            throw new \Exception("Organization not found.");
+        }
+
         $organizationAddress = Address::with(['city', 'state', 'country'])
             ->where('addressable_id', $user->organization_id)
             ->where('addressable_type', Organization::class)
             ->first();
+
+        if (!$organizationAddress) {
+            throw new \Exception("Organization address not found.");
+        }
 
         $party_address = ErpAddress::with(['city', 'state', 'country'])
             ->where('addressable_id', $party->id)
@@ -1235,12 +1253,23 @@ if ($ref) {
                 'document_type' => $document_type // Fixed this line
             ]
         );
-        
+
         $pdf->setPaper('A4', 'portrait');
-        
+
         return $pdf->stream($fileName);
 
+        } catch (\Throwable $e) {
+            \Log::error('Payment Print Error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            if (request()->ajax()) {
+                return response()->json(['message' => $e->getMessage()], 422);
+            }
+            return redirect()->back()->with('print_error', $e->getMessage());
+        }
     }
+
     public function sendMail(Request $request)
     {
         // Validate request data
@@ -1266,16 +1295,16 @@ if ($ref) {
             if ($user) {
                 try {
                     // Generate the report Excel data
-                   
+
 
                     // Ensure the directory exists
                     if (!Storage::disk('public')->exists('payment-report')) {
                         Storage::disk('public')->makeDirectory('payment-report');
                     }
                     $ledger_name = str_replace(' ', '_',Ledger::find($toId['ledger_id'])?->name);
-        
+
                     $fileName = "{$ledger_name}_{$f}_{$date}.pdf";
-            
+
                     $filePath = 'payment-report/' . $fileName;
                     $pdf = self::getPrint($validatedData['payment_id'],$toId['ledger_id'],$toId['ledger_group_id']);
 
@@ -1338,9 +1367,9 @@ if ($ref) {
     {
 
         $type = $doc_type == ConstantHelper::RECEIPTS_SERVICE_ALIAS ? 'customer' : 'vendor';
-      
-      
-      
+
+
+
         if ($ledger && $group) {
             $ledger = (int) $ledger;
             $ledger_group = (int)$group;
@@ -1361,9 +1390,9 @@ if ($ref) {
                 ->orderBy('created_at', 'asc');
 
 
-            
+
             if (!$id) {
-               
+
                 $data = $data->with(['series' => function ($s) {
                     $s->select('id', 'book_code');
                 }])->select('id', 'amount', 'book_id', 'document_date as date','created_at', 'voucher_name', 'voucher_no')
@@ -1375,17 +1404,17 @@ if ($ref) {
                                 $query->where('organization_id', Helper::getAuthenticatedUser()->organization_id);
                                 $query->whereNotIn('document_status', ConstantHelper::DOCUMENT_STATUS_REJECTED);
                             })->where('party_id', $ledger);
-               
+
                         $balance = $balance->sum('amount');
                         $voucher->set = $balance;
                         $voucher->balance = $voucher->amount - $balance;
-                       
-                        
+
+
 
                         return $voucher;
                     });
-                   
-                
+
+
                     $advanceSum = PaymentVoucherDetails::where('type', $type)
                     ->whereIn('reference', ['On Account'])
                     ->withWhereHas('voucher', function ($query) {
@@ -1399,15 +1428,15 @@ if ($ref) {
                             return $adv->ledger_id == $ledger && $adv->ledger_group_id == $ledger_group;
                         }
                     })->sum('orgAmount');
-                  
-                   
+
+
 
                 foreach ($data as $v) {
                     if ($advanceSum > 0 && isset($v->id)) {
                         $deductAmount = min($advanceSum, $v->balance);
                         $v->balance -= $deductAmount;
                         $advanceSum -= $deductAmount;
-                    
+
                     } else {
                         break; // Stop if advance is fully utilized
                     }
@@ -1428,7 +1457,7 @@ if ($ref) {
                     foreach ($advanceItems as $advanceItem) {
                         $bucketTotalDeducted = 0;
                         $remainingAdvanceAmount = $advanceItem->orgAmount;
-                    
+
                         // Loop through each customer in the result set
                         foreach ($data as $res) {
                             $documentDate = $advanceItem->voucher->document_date; // e.g. '2025-04-10'
@@ -1440,17 +1469,17 @@ if ($ref) {
                             $vendorDateTimestamp = $combinedDateTime ? $combinedDateTime->getTimestamp() : null;
                             $resDate = $res->date; // e.g. '10/04/2025'
                             $resCreatedAt = $res->created_at; // e.g. '2025-04-10 14:45:00'
-                            
+
                             // Extract the time from created_at
                             $resTime = date('H:i:s', strtotime($resCreatedAt));
-                            
+
                             // Combine date (converted to Y-m-d) with time
                             $parsedDate = \DateTime::createFromFormat('d/m/Y H:i:s', $resDate . ' ' . $resTime);
-                            
+
                             $resDateTimestamp = $parsedDate ? $parsedDate->getTimestamp() : null;
 
-                         
-        
+
+
                             if ($vendorDateTimestamp < $resDateTimestamp) {
                                 $bucketTotalDeducted = 0; // Track total amount deducted from all aging buckets
                                 if ($remainingAdvanceAmount > 0) {
@@ -1460,12 +1489,12 @@ if ($ref) {
                                             $bucketTotalDeducted += $deductAmount; // Track total deducted
                                         }
                             }
-        
+
                         }
-                        
-                        
-                    } 
-                    
+
+
+                    }
+
 
             } else {
                    $data = $data->with(['series' => function ($s) {
@@ -1479,18 +1508,18 @@ if ($ref) {
                                     $query->where('organization_id', Helper::getAuthenticatedUser()->organization_id);
                                     $query->whereNotIn('document_status', ConstantHelper::DOCUMENT_STATUS_REJECTED);
                                 })->where('party_id', $ledger)->sum('amount');
-                            
+
                                 $settle = VoucherReference::where('voucher_id', $voucher->id)
                                 ->where('payment_voucher_id', (int)$id)
                                 ->where('party_id', $ledger)->sum('amount');
 
                             $voucher->balance = (int)$voucher->amount-(int)$balance;
                             $voucher->settle = $settle;
-                       
-    
+
+
                             return $voucher;
                         });
-                    
+
 
                         $advanceSum = PaymentVoucherDetails::where('type', $type)
                         ->whereIn('reference', ['On Account'])
@@ -1505,18 +1534,18 @@ if ($ref) {
                                 return $adv->ledger_id == $ledger && $adv->ledger_group_id == $ledger_group;
                             }
                         })->sum('orgAmount');
-                      
-                     
 
-                     
-    
-                        
+
+
+
+
+
                     foreach ($data as $v) {
                         if ($advanceSum > 0 && isset($v->id)) {
                             $deductAmount = min($advanceSum, $v->balance);
                             $v->balance -= $deductAmount;
                             $advanceSum -= $deductAmount;
-                        
+
                         } else {
                             break; // Stop if advance is fully utilized
                         }
@@ -1537,7 +1566,7 @@ if ($ref) {
                     foreach ($advanceItems as $advanceItem) {
                         $bucketTotalDeducted = 0;
                         $remainingAdvanceAmount = $advanceItem->orgAmount;
-                    
+
                         // Loop through each customer in the result set
                         foreach ($data as $res) {
                             $documentDate = $advanceItem->voucher->document_date; // e.g. '2025-04-10'
@@ -1549,16 +1578,16 @@ if ($ref) {
                             $vendorDateTimestamp = $combinedDateTime ? $combinedDateTime->getTimestamp() : null;
                             $resDate = $res->date; // e.g. '10/04/2025'
                             $resCreatedAt = $res->created_at; // e.g. '2025-04-10 14:45:00'
-                            
+
                             // Extract the time from created_at
                             $resTime = date('H:i:s', strtotime($resCreatedAt));
-                            
+
                             // Combine date (converted to Y-m-d) with time
                             $parsedDate = \DateTime::createFromFormat('d/m/Y H:i:s', $resDate . ' ' . $resTime);
-                            
+
                             $resDateTimestamp = $parsedDate ? $parsedDate->getTimestamp() : null;
-                            
-        
+
+
                             if ($vendorDateTimestamp < $resDateTimestamp) {
                                 $bucketTotalDeducted = 0; // Track total amount deducted from all aging buckets
                                 if ($remainingAdvanceAmount > 0) {
@@ -1568,17 +1597,17 @@ if ($ref) {
                                             $bucketTotalDeducted += $deductAmount; // Track total deducted
                                         }
                             }
-        
+
                         }
-                        
-                        
+
+
                     }
 
-                    
-                
-                
+
+
+
             }
-        
+
             return $data->filter(fn($item) => $item->id == $voucher_id)
             ->pluck('balance')
             ->first()-$settle;
@@ -1602,7 +1631,7 @@ if ($ref) {
     //                 $query->whereNotIn('document_status', ConstantHelper::DOCUMENT_STATUS_REJECTED);
     //                 $query->where('document_type',$doc_type);
     //             })->sum('amount');
-                
+
 
     //           $balance =   (int)$voucher->amount - $settle;
     //         return $balance;

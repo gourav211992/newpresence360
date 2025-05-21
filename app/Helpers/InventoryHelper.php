@@ -68,8 +68,6 @@ use Illuminate\Support\Collection;
 use App\Models\PslipBomConsumption;
 use Illuminate\Support\Facades\Log;
 use stdClass;
-
-
 class InventoryHelper
 {
     public function __construct()
@@ -579,19 +577,32 @@ class InventoryHelper
         $totalItemCost = 0.00;
         $costPerUnit = 0.00;
         $qty = 0.00;
+        $holdQty = 0.00;
         $lotNumber = null;
 
         // Receive
         if($bookType == ConstantHelper::MRN_SERVICE_ALIAS){
-            $qty = ($documentItemLocation->inventory_uom_qty - $utilizedQty);
             $documentHeader = MrnHeader::find($documentItemLocation->mrn_header_id);
             $documentDetail = MrnDetail::with(['header', 'attributes'])->find($documentItemLocation->id);
+            $stockLedger->book_id = @$documentHeader->book_id;
+            if(!$documentItemLocation->inventory_uom_qty || $documentItemLocation->inventory_uom_qty < 1){
+                $qty = 0.00;
+                $holdQty = ItemHelper::convertToBaseUom($documentItemLocation->item_id, $documentItemLocation->uom_id, $documentItemLocation->order_qty);
+                $stockLedger->receipt_qty = $qty;
+                $stockLedger->hold_qty = $holdQty;
+                $totalItemCost = $documentDetail->basic_value - ($documentDetail->discount_amount + $documentDetail->header_discount_amount);
+                $costPerUnit = $totalItemCost/$holdQty;
+            }else {
+                $qty = ($documentItemLocation->inventory_uom_qty - $utilizedQty);
+                $holdQty = 0.00;
+                $stockLedger->receipt_qty = $qty;
+                $stockLedger->hold_qty = $holdQty;
+                $stockLedger->book_id = @$documentHeader->book_id;
+                $totalItemCost = $documentDetail->basic_value - ($documentDetail->discount_amount + $documentDetail->header_discount_amount);
+                $costPerUnit = $totalItemCost/$qty;
+            }
             $stockLedger->vendor_id = @$documentHeader->vendor_id;
             $stockLedger->vendor_code = @$documentHeader->vendor_code;
-            $stockLedger->receipt_qty = $qty ?? 0;
-            $stockLedger->book_id = @$documentHeader->book_id;
-            $totalItemCost = $documentDetail->basic_value - ($documentDetail->discount_amount + $documentDetail->header_discount_amount);
-            $costPerUnit = $totalItemCost/$qty;
 
             // Item Location Data
             $stockLedger->store_id = $documentItemLocation->store_id ?? null;
@@ -959,6 +970,9 @@ class InventoryHelper
         $stockLedger->json_item_attributes = $attributeJsonArray;
         $stockLedger->save();
 
+        // Store Storage Points If Available
+        $storagePoint = StoragePointHelper::saveStoragePoints($stockLedger, $documentDetail->storage_points ?? []);        
+
         return $stockLedger;
     }
 
@@ -1087,13 +1101,20 @@ class InventoryHelper
                         }
                     } else{
                         // Handle extra quantity by creating a new stock ledger entry
-                        if ($extraQty > 0) {
+                        if (($extraQty > 0) || ($stockLedger->hold_qty > 0)) {
                             $newStockLedger = $stockLedger->replicate();
                             $newStockLedger->receipt_qty = $extraQty;
                             $newStockLedger->issue_qty = 0.00;
                             $newStockLedger->utilized_id = null;
                             $newStockLedger->utilized_date = null;
                             $newStockLedger->save();
+
+                            if($stockLedger->hold_qty > 0){
+                                $newStockLedger->hold_qty = $stockLedger->hold_qty;
+                                $newStockLedger->save();
+                                $stockLedger->hold_qty = 0;
+                                $stockLedger->save();
+                            }
 
                             $newStockLedger->total_cost = round(($newStockLedger->cost_per_unit*$newStockLedger->receipt_qty), 2);
                             $newStockLedger->save();
@@ -1164,6 +1185,7 @@ class InventoryHelper
         $utilizedStockLedger = StockLedger::withDefaultGroupCompanyOrg()
             ->where('utilized_id', $invoiceLedger->id)
             ->whereNotNull('receipt_qty')
+            ->whereNull('hold_qty')
             ->orderBy('document_date', 'DESC')
             ->get();
 
@@ -2031,6 +2053,13 @@ class InventoryHelper
                     ->whereNotNull('utilized_id')
                     ->sum('receipt_qty');
 
+                if(!$documentItemLocation->inventory_uom_qty || $documentItemLocation->inventory_uom_qty < 1){
+                    $holdQty = ItemHelper::convertToBaseUom($documentItemLocation->item_id, $documentItemLocation->uom_id, $documentItemLocation->order_qty); 
+                    if($holdQty > $utilizedQty){
+                        $stockLedger = new StockLedger();
+                        $invoiceLedger = self::insertStockLedger($stockLedger, $documentItemLocation, $bookType, $documentStatus, $transactionType, $holdQty);
+                    }
+                }    
                 if($documentItemLocation->inventory_uom_qty > $utilizedQty){
                     $stockLedger = new StockLedger();
                     $invoiceLedger = self::insertStockLedger($stockLedger, $documentItemLocation, $bookType, $documentStatus, $transactionType, $utilizedQty);

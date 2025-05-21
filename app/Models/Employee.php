@@ -134,11 +134,11 @@ class Employee extends Authenticatable
         'configuration',
     ];
 
-    protected $appends = [
-        'authenticable_type',
-        'auth_user_id',
-        'db_name'
-    ];
+    // protected $appends = [
+    //     'authenticable_type',
+    //     'auth_user_id',
+    //     'db_name'
+    // ];
 
     public function areaMaster()
     {
@@ -220,20 +220,20 @@ class Employee extends Authenticatable
     {
         return $this -> belongsTo(AuthUser::class, 'id', 'authenticable_id');
     }
-    public function getAuthenticableTypeAttribute()
-    {
-        return $this -> auth_user -> authenticable_type ??null;
-    }
+    // public function getAuthenticableTypeAttribute()
+    // {
+    //     return $this -> auth_user -> authenticable_type ??null;
+    // }
 
-    public function getAuthUserIdAttribute()
-    {
-        return $this -> auth_user -> id??null;
-    }
+    // public function getAuthUserIdAttribute()
+    // {
+    //     return $this -> auth_user -> id??null;
+    // }
 
-    public function getDbNameAttribute()
-    {
-        return $this->auth_user->db_name ?? '';
-    }
+    // public function getDbNameAttribute()
+    // {
+    //     return $this->auth_user->db_name ?? '';
+    // }
     public function groupOrganizationsIds()
     {
         if (isset($this->organization->group->organizations)) {

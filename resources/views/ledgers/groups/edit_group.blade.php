@@ -50,10 +50,11 @@
                                     </div>
 
                                     <div class="col-md-9">
-                                        <form action="{{ route('ledger-groups.update', $data->id) }}" method="POST">
+                                        <form id="groupEditForm">
                                             @csrf
                                             @method('PUT')
-                                        
+                                            <input type="hidden" id="id" value="{{ $data->id }}">
+
                                             <div class="row align-items-center mb-1">
                                                 <div class="col-md-3">
                                                     <label class="form-label">Parent Group</label>
@@ -71,7 +72,7 @@
                                                     </select>
                                                 </div>
                                             </div>
-                                        
+
                                             <div class="row align-items-center mb-1">
                                                 <div class="col-md-3">
                                                     <label class="form-label">Group Name</label>
@@ -85,7 +86,7 @@
                                                     @enderror
                                                 </div>
                                             </div>
-                                        
+
                                             <div class="row align-items-center mb-1">
                                                 <div class="col-md-3">
                                                     <label class="form-label">Status</label>
@@ -105,19 +106,19 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                        
+
                                             <div class="mt-3">
                                                 <a type="button" onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm">
                                                     <i data-feather="arrow-left-circle"></i> Back
                                                 </a>
                                                 @if($update)
-                                                <button type="submit" class="btn btn-primary btn-sm ms-1">
+                                                <button type="submit" id="submitBtn" class="btn btn-primary btn-sm ms-1">
                                                     <i data-feather="check-circle"></i> Submit
                                                 </button>
                                                 @endif
                                             </div>
                                         </form>
-                                        
+
                                     </div>
                                 </div>
                             </div>
@@ -132,6 +133,83 @@
 @endsection
 
 @section('scripts')
+<script>
+    const existingGroupNames = @json($existingGroupname);
+
+    $(document).ready(function () {
+        $('#groupEditForm').on('submit', function (e) {
+            e.preventDefault();
+
+            const groupId = $('#id').val();
+            const name = $('input[name="name"]').val()?.trim().toLowerCase();
+            const form = $(this);
+            const formData = form.serialize();
+            $('.preloader').show();
+            let submitBtn = $('#submitBtn');
+            submitBtn.prop('disabled', true);
+
+            // Client-side duplicate name check
+            if (existingGroupNames.includes(name)) {
+                $('.preloader').hide();
+                submitBtn.prop('disabled', false);
+               Swal.fire({
+                    icon: 'error',
+                    title: 'Duplicate Entry',
+                    text: 'Group name already exists. Please choose a different name.',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    confirmButtonText: 'OK'
+                });
+                return;
+            }
+
+            $.ajax({
+                url: `/ledger-groups/${groupId}`, // assumes resourceful route
+                type: 'POST',
+                data: formData,
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function (response) {
+                    $('.preloader').hide();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Updated!',
+                        text: 'Group updated successfully.',
+                        confirmButtonText: 'OK'
+                    }).then(() => {
+                        window.location.href = "{{ route('ledger-groups.index') }}";
+                    });
+                },
+                error: function (xhr) {
+                    $('.preloader').hide();
+                    submitBtn.prop('disabled', false);
+                    if (xhr.status === 422) {
+                        const errors = xhr.responseJSON.errors;
+                        let message = Object.values(errors)[0][0];
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Validation Error',
+                            text: message
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Something went wrong. Please try again.'
+                        });
+                    }
+                }
+            });
+        });
+
+        // Optional: Feather icons refresh
+        if (typeof feather !== 'undefined') {
+            feather.replace();
+        }
+    });
+</script>
+
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const masterSelect = document.getElementById('master_group_id');

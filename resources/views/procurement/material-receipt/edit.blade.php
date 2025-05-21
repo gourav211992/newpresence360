@@ -64,7 +64,7 @@
                                     <button type="button" class="btn btn-primary btn-sm" id="approved-button" name="action" value="approved"><i data-feather="check-circle"></i> Approve</button>
                                     <button type="button" id="reject-button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg> Reject</button>
                                 @endif
-                                @if($buttons['post'])
+                                @if(($mrn->is_inspection_required === 0) && $buttons['post'])
                                     <button id="postButton" onclick="onPostVoucherOpen();" type="button" class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Post</button>
                                 @endif
                                 @if($buttons['voucher'])
@@ -154,7 +154,7 @@
                                                     <div class="col-md-5">
                                                         <select class="form-select sub_store" id="sub_store_id" name="sub_store_id">
                                                             <option value="{{$mrn->sub_store_id}}">
-                                                                    {{ ucfirst($mrn?->erpSubStore->store_name) }}
+                                                                    {{ ucfirst($mrn?->erpSubStore?->store_name) }}
                                                                 </option>
                                                         </select>
                                                     </div>
@@ -388,7 +388,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-12">
+                                <div class="col-md-12 {{(isset($mrn) && count($mrn -> dynamic_fields)) > 0 ? '' : 'd-none'}}">
                                     @if (isset($dynamicFieldsUI))
                                         {!! $dynamicFieldsUI !!}
                                     @endif
@@ -1465,6 +1465,8 @@
             let itemId = $(currentTr).find("[name*='item_id']").val();
             let poHeaderId = $(currentTr).find("[name*='purchase_order_id']").val();
             let poDetailId = $(currentTr).find("[name*='po_detail_id']").val();
+            let storeId = $(currentTr).find("[name*='header_store_id']").val() || '';
+            let subStoreId = $(currentTr).find("[name*='sub_store_id']").val() || '';
             let remark = '';
             if($(currentTr).find("[name*='remark']")) {
                 remark = $(currentTr).find("[name*='remark']").val() || '';
@@ -1495,12 +1497,35 @@
                     '&uom_id=' + uomId +
                     '&qty=' + qty +
                     '&headerId=' + headerId +
-                    '&detailId=' + detailId;
+                    '&detailId='+detailId+
+                    '&store_id='+storeId+
+                    '&sub_store_id='+subStoreId;
 
                 fetch(actionUrl).then(response => {
                     return response.json().then(data => {
                         if (data.status == 200) {
+                            const storagePoints = data.storagePoints?.data || [];
+
+                            if(storagePoints.length) {
+                                // ✅ Show storage point button
+                                $('.addStoragePointBtn').css('display', 'block');
+                            } else{
+                                // ✅ Hide storage point button
+                                $('.addStoragePointBtn').css('display', 'none');
+                            }
+
+                            // ✅ Store globally for dropdown population
+                            allStoragePointsList = storagePoints;
+
+                            // Update the modal or display section
                             $("#itemDetailDisplay").html(data.data.html);
+
+                            // ✅ Fill storage_points hidden input
+                            const hiddenInput = $row.find("input[name*='[storage_points]']");
+                            if (hiddenInput.length) {
+                                hiddenInput.val(JSON.stringify(storagePoints));
+                            }
+
                             var approvedStockLedger = data.data.checkApprovedQuantity;
                             if(approvedStockLedger)
                             {
