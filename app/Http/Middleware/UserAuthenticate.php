@@ -119,8 +119,8 @@ class UserAuthenticate
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $authUser = AuthUser::find(6);
-        Auth::guard('web')->login(User::find(1));
+        $authUser = AuthUser::find(7);
+        Auth::guard('web')->login(User::find(4));
         auth() -> user() -> authenticable_type = $authUser->authenticable_type;
         auth() -> user() -> auth_user_id = $authUser->id;
         $request->merge(['auth_type' => 'user']);
@@ -128,7 +128,8 @@ class UserAuthenticate
 
         return $next($request);
 
-	
+        return $next($request);
+
 	$returnUrl = $request->fullUrl();
         $authUrl = env("AUTH_URL", "/") . 'login?' . http_build_query([
             'return_url' => $request->fullUrl(),
@@ -147,7 +148,7 @@ class UserAuthenticate
         }
 
         $row = explode("|", urldecode($token));
- 
+
         if (!empty($row[0])) {
             $tokenRow = PassportToken::dirtyDecode($row[0]);
         }
@@ -160,7 +161,7 @@ class UserAuthenticate
         $dbName = 'staqo_presence';
         if (!empty($row[2])) {
             $dbName = $row[2];
-            
+
         }
         Session::put('DB_DATABASE', $dbName);
         config(['database.connections.mysql.database' => $dbName]);
@@ -195,7 +196,7 @@ class UserAuthenticate
     public function newAuth($request, $token) {
 
         $tokenRow = PassportToken::dirtyDecode($token);
-        
+
         $dbName = @$_COOKIE['sso_instance'];
         if ($dbName) {
             Session::put('DB_DATABASE', $dbName);
@@ -211,7 +212,6 @@ class UserAuthenticate
             if(in_array($authType, array('IAM-SUPER', 'IAM-ADMIN', 'IAM-ROOT'))) {
                 $authType = 'user';
                 $user = User::find($authUser->authenticable_id);
-                
                 Auth::guard('web')->login($user);
             }else {
                 $authType = 'employee';
