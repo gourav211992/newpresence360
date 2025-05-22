@@ -49,8 +49,9 @@
                                                 <th>#</th>
                                                 <th>Asset NAme</th>
                                                 <th>Asset Code</th>
-                                                <th>Issue/Transfer Date</th>
                                                 <th>Location</th>
+                                                <th>Cost Center</th>
+                                                <th>Issue/Transfer Date</th>
                                                 <th>Qty</th>
                                                 <th>Auth. Person</th>
                                                 <th>Status</th>
@@ -60,11 +61,14 @@
                                         <tbody>
                                         @forelse($data as $key => $item)
                                             <tr>
+                                                {{-- {{ dd($item->location) }} --}}
                                                 <td>{{ $key + 1 }}</td>
                                                 <td>{{ $item?->asset?->asset_name }}</td>
                                                 <td>{{ $item?->asset?->asset_code }}</td>
+                                                <td>{{  $item?->Erplocation?->store_name }}</td>
+                                                <td>{{  $item?->cost_center?->name }}</td>
                                                 <td>{{ $item->created_at->format('d-m-Y') }}</td>
-                                                <td>{{ $item->location }}</td>
+                                                {{-- <td>{{ $item->location }}</td> --}}
                                                 <td>{{ $item?->asset?->quantity }}</td>
                                                 <td>{{ $item->authorizedPerson->name }}</td>
                                                 <td>{{ $item->status }}</td>
@@ -185,7 +189,7 @@
                     targets: [0, -1] // Disable sorting for the first and last columns (# and Action)
                 },
                 {
-                    targets: 7, // Status column
+                    targets: 8, // Status column
                     render: function (data, type, row, meta) {
                         if (type === 'export') {
                             return data; // Return raw data for export
@@ -213,7 +217,7 @@
                                   exportOptions: {
       columns: ':not(:last-child)' // exclude the last column
     },
-         
+
                         }
                     ],
                     init: function (api, node, config) {

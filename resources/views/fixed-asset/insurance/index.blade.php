@@ -49,6 +49,8 @@
                                                 <th>#</th>
                                                 <th>Asset Name</th>
                                                 <th>Asset Code</th>
+                                                <th>Location</th>
+                                                <th>Cost Center</th>
                                                 <th>Renewal Date</th>
                                                 <th>Insured Value</th>
                                                 <th>Expiry Date</th>
@@ -65,6 +67,8 @@
                                                         <td>{{ $key + 1 }}</td>
                                                         <td>{{ $item?->asset?->asset_name }}</td>
                                                         <td>{{ $item?->asset?->asset_code }}</td>
+                                                        <td>{{ $item?->location?->store_name }}</td>
+                                                        <td>{{ $item?->cost_center?->name }}</td>
                                                         <td>{{ $item->renewal_date }}</td>
                                                         <td>{{ $item->insured_value }}</td>
                                                         <td>{{ $item->expiry_date }}</td>
@@ -204,7 +208,7 @@
                     targets: [0, -1], // Disable sorting for the first (#) and last (Action) columns
                 },
                 {
-                    targets: 8, // Status column
+                    targets: 10, // Status column
                     render: function (data, type, row, meta) {
                         if (type === 'export') {
                             return data; // Return raw data for export
@@ -239,7 +243,7 @@
                                   exportOptions: {
       columns: ':not(:last-child)' // exclude the last column
     },
-         
+
                         },
                     ],
                     init: function (api, node, config) {
