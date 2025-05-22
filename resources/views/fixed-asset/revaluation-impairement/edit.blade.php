@@ -271,10 +271,8 @@
                                                                         <label class="form-check-label"
                                                                             for="Email"></label>
                                                                     </div>
-                                                                    </td>
+                                                                </td>
                                                                
-                                                                <td class="poprod-decpt">  
-                                                                        <input type="text" required class="form-control asset-search-input mw-100" value="{{$value->asset_code??null}}" />
                                                               
                                                                     </td>
                                                                       

@@ -2,6 +2,13 @@
     @php
         $attributes = json_decode($soItem->attributes, TRUE);
         $html = '';
+        $orderQty = $soItem->inventory_uom_qty - $soItem->pwo_qty;
+        $prodQty = $orderQty; 
+        if($soItem?->bom) {
+            $safetyBufferperc = \App\Helpers\ItemHelper::getBomSafetyBufferPerc($soItem?->bom_id);
+            $prodQty = $orderQty + ($orderQty * $safetyBufferperc / 100);
+            $prodQty = ceil($prodQty);
+        }
         foreach($attributes as $attribute) {
             $attN =  $attribute['attribute_name'] ?? '';
             $attV =  $attribute['attribute_value'] ?? '';
@@ -27,11 +34,12 @@
             <td>{!! $html ? $html : '' !!}</td>
         @endif
         <td>{{$soItem?->inventory_uom_code ?? ''}}</td>
-        <td class="text-end">{{number_format(($soItem->inventory_uom_qty - $soItem->pwo_qty),2)}}</td>
+        <td class="text-end">{{number_format($orderQty, 2)}}</td>
+        <td class="text-end">{{number_format($prodQty, 2)}}</td>
         <td class="fw-bolder text-dark">{{$soItem?->header?->customer?->company_name ?? ''}}</td>
     </tr>
 @empty
     <tr>
-        <td colspan="9" class="text-center">No record found!</td>
+        <td colspan="10" class="text-center">No record found!</td>
     </tr>
 @endforelse

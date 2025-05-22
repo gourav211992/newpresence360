@@ -871,7 +871,7 @@ $(function(){
            let td = $('tfoot .totalsubheadpodetail:eq(0)').find("td[colspan]");
            if (td.length > 0) {
                 let colspanValue = parseInt(td.attr("colspan"));
-                let newColspanValue = colspanValue - 1;
+                let newColspanValue = colspanValue - 2;
                 td.attr("colspan", newColspanValue);
             }
             if($("#section_required").length) {
@@ -880,40 +880,47 @@ $(function(){
            if($("#section_required2").length) {
                $("#section_required2").remove();
            }
-
-           let td2 = $("tfoot").find("tr[valign]").find('td[rowspan]');
-           if (td2.length > 0) {
-                let colspanValue = parseInt(td2.attr("colspan"));
-                if(colspanValue > 6) {
-                    let newColspanValue = colspanValue - 1;
-                    td2.attr("colspan", newColspanValue);
-                }
-            }
-       }
-
-       if (parameters.sub_section_required && !parameters.sub_section_required.includes('yes')) {
-           let td = $('tfoot .totalsubheadpodetail:eq(0)').find("td[colspan]");
-           if (td.length > 0) {
-                let colspanValue = parseInt(td.attr("colspan"));
-                let newColspanValue = colspanValue - 1;
-                td.attr("colspan", newColspanValue);
-            }
-            if($("#sub_section_required").length) {
-                $("#sub_section_required").remove();
-            }
+           if($("#sub_section_required").length) {
+               $("#sub_section_required").remove();
+           }
            if($("#sub_section_required2").length) {
                $("#sub_section_required2").remove();
            }
-
            let td2 = $("tfoot").find("tr[valign]").find('td[rowspan]');
            if (td2.length > 0) {
                 let colspanValue = parseInt(td2.attr("colspan"));
                 if(colspanValue > 6) {
-                    let newColspanValue = colspanValue - 1;
+                    let newColspanValue = colspanValue - 2;
                     td2.attr("colspan", newColspanValue);
                 }
             }
        }
+
+       if(parameters.section_required.includes('yes')) {
+            if (parameters.sub_section_required && !parameters.sub_section_required.includes('yes')) {
+            let td = $('tfoot .totalsubheadpodetail:eq(0)').find("td[colspan]");
+            if (td.length > 0) {
+                    let colspanValue = parseInt(td.attr("colspan"));
+                    let newColspanValue = colspanValue - 1;
+                    td.attr("colspan", newColspanValue);
+                }
+            if($("#sub_section_required").length) {
+                $("#sub_section_required").remove();
+            }
+            if($("#sub_section_required2").length) {
+                $("#sub_section_required2").remove();
+            }
+
+            let td2 = $("tfoot").find("tr[valign]").find('td[rowspan]');
+            if (td2.length > 0) {
+                    let colspanValue = parseInt(td2.attr("colspan"));
+                    if(colspanValue > 6) {
+                        let newColspanValue = colspanValue - 1;
+                        td2.attr("colspan", newColspanValue);
+                    }
+                }
+        }  
+       }  
 
        if (parameters.component_overhead_required && !parameters.component_overhead_required.includes('yes')) {
            $("#component_overhead_required").remove();
@@ -954,7 +961,7 @@ $(function(){
    }
 
     function itemCodeChange(itemId){
-        let customer_id = $("#customer_id").val();
+        let customer_id = $("#customer_id").val() || '';
         let type = '{{ $servicesBooks['services'][0]?->alias }}';
         let actionUrl = '{{route("bill.of.material.item.code")}}'+'?item_id='+itemId+'&customer_id='+customer_id+'&type='+type;
         fetch(actionUrl).then(response => {
@@ -1149,18 +1156,6 @@ $(document).on('click','#addNewItemBtn', (e) => {
         }
     }
     
-    let headerSelectedAttr = [];
-    if($(".heaer_item").find("input[name*='[attr_group_id]']").length) {
-        $(".heaer_item").find("input[name*='[attr_group_id]']").each(function(index1,item){
-            let attr_group_id = $(item).val();
-            let attr_val = $(`select[name="attributes[${index1+1}][attr_group_id][${attr_group_id}][attr_name]"]`).val();
-            headerSelectedAttr.push({
-                'attr_name' : attr_group_id,
-                'attr_value' : attr_val
-            });
-        });
-    }
-    
     let componentAttr = [];
     if($("tr input[type='hidden'][name*='[attr_group_id]']").length) {
         $("tr input[type='hidden'][name*='[attr_group_id]']").each(function () {
@@ -1179,7 +1174,7 @@ $(document).on('click','#addNewItemBtn', (e) => {
     let book_id = $("#book_id").val() || '';
 
     let type = '{{ $servicesBooks['services'][0]?->alias }}';
-    let actionUrl = '{{route("bill.of.material.item.row")}}'+'?count='+rowsLength+'&item='+JSON.stringify(itemObj)+'&component_item='+JSON.stringify(lastTrObj)+'&header_attr='+JSON.stringify(headerSelectedAttr)+'&comp_attr='+JSON.stringify(componentAttr)+'&type='+type+'&customer_id='+customerId+'&d_date='+d_date+'&book_id='+book_id; 
+    let actionUrl = '{{route("bill.of.material.item.row")}}'+'?count='+rowsLength+'&item='+JSON.stringify(itemObj)+'&component_item='+JSON.stringify(lastTrObj)+'&comp_attr='+JSON.stringify(componentAttr)+'&type='+type+'&customer_id='+customerId+'&d_date='+d_date+'&book_id='+book_id; 
     fetch(actionUrl).then(response => {
         return response.json().then(data => {
             if (data.status == 200) {
@@ -1218,43 +1213,9 @@ $(document).on('click','#addNewItemBtn', (e) => {
 $(document).on('click', '#addNewInstructionBtn', (e) => {
     let rowsLength = $("#itemTable3 > tbody > tr").length;
     let type = '{{ $servicesBooks['services'][0]?->alias }}';
-    let itemCode = $("#item_code").val();
-    let selectedAttrRequired = false; 
-    let a = $("select[name*='[attr_name]']").filter(function () {
-        return !$(this).val();
-    });
-    if(a.length) {
-        selectedAttrRequired = true;
-    }
-    if(!$(".heaer_item").length) {
-      selectedAttrRequired = true;
-    }
-    let head_item_id = $("#head_item_id").val();
-    let itemObj = {
-      item_code : itemCode,
-      item_id : head_item_id,
-      selectedAttrRequired : selectedAttrRequired
-    };
-
-    if($("[name*='attributes[1][attr_group_id]']").length == 0 && itemCode) {
-      itemObj.selectedAttrRequired = false;
-    }
-
-    let headerSelectedAttr = [];
-    if($(".heaer_item").find("input[name*='[attr_group_id]']").length) {
-        $(".heaer_item").find("input[name*='[attr_group_id]']").each(function(index1,item){
-            let attr_group_id = $(item).val();
-            let attr_val = $(`select[name="attributes[${index1+1}][attr_group_id][${attr_group_id}][attr_name]"]`).val();
-            headerSelectedAttr.push({
-                'attr_name' : attr_group_id,
-                'attr_value' : attr_val || ''
-            });
-        });
-    }
-
     let d_date = $("input[name='document_date']").val() || '';
     let book_id = $("#book_id").val() || '';
-    let actionUrl = '{{route("bill.of.material.instruction.row")}}'+'?count='+rowsLength+'&item='+JSON.stringify(itemObj)+'&header_attr='+JSON.stringify(headerSelectedAttr)+'&type='+type+'&d_date='+d_date+'&book_id='+book_id; 
+    let actionUrl = '{{route("bill.of.material.instruction.row")}}'+'?count='+rowsLength+'&type='+type+'&d_date='+d_date+'&book_id='+book_id; 
     fetch(actionUrl).then(response => {
         return response.json().then(data => {
             if (data.status == 200) {
@@ -1266,6 +1227,7 @@ $(document).on('click', '#addNewInstructionBtn', (e) => {
                 initializeInstructionStationAutocomplete();
                 initializeInstructionProductSectionAutocomplete();
                 feather.replace();
+                focusAndScrollToLastRowInput("input[name*='instruction_station']","#itemTable3");
             } else if(data.status == 422) {
                Swal.fire({
                     title: 'Error!',

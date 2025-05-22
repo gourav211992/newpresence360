@@ -569,6 +569,14 @@ function focusAndScrollToLastRowInput(inputSelector = '.comp_item_code', tableSe
    let $input = $lastRow.find(inputSelector);
 
    if ($input.length) {
+        let isSection = false; 
+        if($lastRow.find("input[name*='product_section']").length) {
+            $input = $lastRow.find("input[name*='product_section']");
+            isSection = true;
+        }
+        if($lastRow.find("input[name*='product_sub_section']").length && !isSection) {
+            $input = $lastRow.find("input[name*='product_sub_section']");
+        }
        $input.focus().autocomplete('search', '');
        $input[0].scrollIntoView({
            behavior: 'smooth',

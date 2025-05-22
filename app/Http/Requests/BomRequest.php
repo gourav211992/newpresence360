@@ -184,9 +184,10 @@ class BomRequest extends FormRequest
         $itemId = $this->input('item_id');
         $itemCustomerId = $this->input('customer_id');
         $attributes = $this->input('attributes') ?? [];
-        $bomId = $this->route('id');
+        // $bomId = $this->route('id');
+
         $moduleType = $this->type ?? null;
-        if ($itemId && !$bomId) {
+        if ($itemId) {
             $selectedAttributes = [];
             if(count($attributes)) {
                 foreach($attributes as $k => $attribute) {
@@ -197,9 +198,17 @@ class BomRequest extends FormRequest
                     $selectedAttributes[] = ['attribute_id' => $ia->id, 'attribute_value' => intval(@$attr_group[0]['attr_name'])];
                 }
             }
-            $bomExists = ItemHelper::checkItemBomExists($itemId, $selectedAttributes, $moduleType, $itemCustomerId);
-            if ($bomExists['bom_id']) {
-                $validator->errors()->add("item_code", $bomExists['message']);
+            $bomExists = Bom::where('item_id', $itemId)
+                ->where(function ($query) use ($itemCustomerId) {
+                    if ($itemCustomerId) {
+                        $query->where('customer_id', $itemCustomerId);
+                    }
+                })
+                ->where('status', ConstantHelper::ACTIVE)
+                ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_SUBMITTED)
+                ->first();
+            if ($bomExists) {
+                $validator->errors()->add("item_code", "Bom already exists for this item.");
             }
         }
         # For component item

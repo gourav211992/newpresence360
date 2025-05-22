@@ -45,8 +45,8 @@
 								<thead>
 									<tr>
 										<th>Sr. No</th>
-										<th>Name</th>
 										<th>Code</th>
+										<th>Name</th>
 										<th>Group</th>
 										<th>Status</th>
 										<th>Created Date</th>
@@ -169,8 +169,8 @@
                         return meta.row + 1 + meta.settings._iDisplayStart;
                     }
                 },
-                    { data: 'name', name: 'name' },
                     { data: 'code', name: 'code' },
+                    { data: 'name', name: 'name' },
                     { data: 'group_name', name: 'group_name' },
                     { data: 'status', name: 'status' },
                     { data: 'created_at', name: 'created_at' },
