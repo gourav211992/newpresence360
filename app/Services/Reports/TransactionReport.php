@@ -71,6 +71,11 @@ class TransactionReport
         $filters = $this -> getBasicFilters(); // Get the Filters
         $reportName = $this -> reportName; // Report Name Label
         $filterRoute = $this -> filterRoute; // Filter Route (Query Function for each service/ table)
+        $filterRoute = explode(',', $filterRoute, 2); // max 2 parts
+        $routeName = $filterRoute[0];
+        $params = isset($filterRoute[1]) ? json_decode($filterRoute[1], true) : [];
+
+        $filterRoute = route($routeName, $params);
         $indexRoute = $this -> indexRoute; // Index Route (For Breadcrumb)
         $tableHeadersColumn = $this -> reportColumns; //Columns or Headers for Table
         $autoCompleteFilters = $this -> filters;// Applicable Side filters

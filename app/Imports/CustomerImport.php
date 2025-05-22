@@ -2,23 +2,25 @@
 
 namespace App\Imports;
 
-use App\Models\Customer;  
-use App\Models\UploadCustomerMaster;  
-use App\Helpers\Helper; 
-use Maatwebsite\Excel\Concerns\ToModel;
+use App\Models\Customer;
+use App\Models\UploadCustomerMaster;
+use Illuminate\Support\Facades\Validator;
+use App\Helpers\Helper;
+use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Validator;
 use App\Services\ItemImportExportService;
-use Illuminate\Validation\Rule;
 use App\Helpers\ConstantHelper;
 use App\Helpers\ServiceParametersHelper;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Exception;
 use stdClass;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Arr;
 
-class CustomerImport implements ToModel, WithHeadingRow, WithChunkReading
+class CustomerImport implements ToCollection, WithHeadingRow, WithChunkReading
 {
     protected $successfulCustomers = [];
     protected $failedCustomers = [];
@@ -26,7 +28,7 @@ class CustomerImport implements ToModel, WithHeadingRow, WithChunkReading
 
     public function chunkSize(): int
     {
-        return 500; 
+        return 500;
     }
 
     public function __construct(ItemImportExportService $service)
@@ -34,17 +36,17 @@ class CustomerImport implements ToModel, WithHeadingRow, WithChunkReading
         $this->service = $service;
     }
 
-    public function onSuccess(Customer $customer)
+    public function onSuccess($row)
     {
         $this->successfulCustomers[] = [
-            'customer_code' => $customer->customer_code,
-            'company_name' => $customer->company_name,  
-            'customer_type' => $customer->customer_type,
+            'customer_code' => $row->customer_code,
+            'company_name' => $row->company_name,
+            'customer_type' => $row->customer_type,
             'status' => 'success',
-            'customer_remark' => 'Successfully uploaded',
+            'customer_remark' => $row->remarks,
         ];
     }
-    
+
     public function onFailure($uploadedCustomer)
     {
         $this->failedCustomers[] = [
@@ -66,48 +68,29 @@ class CustomerImport implements ToModel, WithHeadingRow, WithChunkReading
         return $this->failedCustomers;
     }
 
-    public function model(array $row)
+    public function collection(Collection $rows)
     {
         $user = Helper::getAuthenticatedUser();
         $organization = $user->organization;
-        $batchNo = $this->service->generateBatchNo($organization->id, $organization->group_id, $organization->company_id, $user->id);
-        $uploadedCustomer = null;
-        $validatedData = [];
+
+        $parentUrl = ConstantHelper::CUSTOMER_SERVICE_ALIAS;
+        $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
+
+        $validatedData = $this->getPolicyData($services, $organization);
+
+        $customersToInsert = [];
         $errors = [];
-    
-        DB::beginTransaction();
-    
-        try {
 
-            $parentUrl = ConstantHelper::CUSTOMER_SERVICE_ALIAS;
-            $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
-            $customerCodeType = 'Manual';
-    
-            if ($services && $services['services'] && $services['services']->isNotEmpty()) {
-                $firstService = $services['services']->first();
-                $serviceId = $firstService->service_id;
-                $policyData = Helper::getPolicyByServiceId($serviceId);
-                if ($policyData && isset($policyData['policyLevelData'])) {
-                    $policyLevelData = $policyData['policyLevelData'];
-                    $validatedData['group_id'] = $policyLevelData['group_id'] ?? $organization->group_id;
-                    $validatedData['company_id'] = $policyLevelData['company_id'] ?? null;
-                    $validatedData['organization_id'] = $policyLevelData['organization_id'] ?? null;
-                } else {
-                    $validatedData['group_id'] = $organization->group_id;
-                    $validatedData['company_id'] = null;
-                    $validatedData['organization_id'] = null;
+        foreach ($rows as $row) {
+            try {
+                if ($this->isEmptyRow($row)) {
+                    continue; 
                 }
-            } else {
-                $validatedData['group_id'] = $organization->group_id;
-                $validatedData['company_id'] = null;
-                $validatedData['organization_id'] = null;
-            }
-
-            if ($services && $services['current_book']) {
-                if (isset($services['current_book'])) {
-                    $book=$services['current_book'];
+                $customerCodeType = 'Manual';
+                if ($services && isset($services['current_book'])) {
+                    $book = $services['current_book'];
                     if ($book) {
-                        $parameters = new stdClass(); 
+                        $parameters = new stdClass();
                         foreach (ServiceParametersHelper::SERVICE_PARAMETERS as $paramName => $paramNameVal) {
                             $param = ServiceParametersHelper::getBookLevelParameterValue($paramName, $book->id)['data'];
                             $parameters->{$paramName} = $param;
@@ -116,112 +99,119 @@ class CustomerImport implements ToModel, WithHeadingRow, WithChunkReading
                             $customerCodeType = $parameters->customer_code_type[0] ?? null;
                         }
                     }
-             }
-            }
-            $customerInitials = strtoupper(substr($row['customer_name'], 0, 3)); 
+                }
 
-            $gstinRegDate = $row['gstin_reg_date'] ?? null;
-            $gstinRegistrationDate = null;
-            
-            if ($gstinRegDate) {
-                if (is_numeric($gstinRegDate)) {
-                    $gstinRegistrationDate = \Carbon\Carbon::createFromFormat('Y-m-d', '1900-01-01')
-                        ->addDays($gstinRegDate - 2) 
-                        ->format('Y-m-d');
-                } else {
-                    $gstinRegistrationDate = $gstinRegDate; 
-                    \Log::warning("Non-numeric GSTIN registration date encountered: " . $gstinRegDate);
-                }
-            }
-            
-            $tdsWefDate = $row['tds_wef_date'] ?? null;
-            $tdsWefDatee = null;
-            
-            if ($tdsWefDate) {
-                if (is_numeric($tdsWefDate)) {
-                    $tdsWefDatee = \Carbon\Carbon::createFromFormat('Y-m-d', '1900-01-01')
-                        ->addDays($tdsWefDate - 2) 
-                        ->format('Y-m-d');
-                } else {
-                    $tdsWefDatee = $tdsWefDate; 
-                    \Log::warning("Non-numeric TDS WEF date encountered: " . $tdsWefDate);
-                }
-            }
-            
-            $uploadedCustomer = UploadCustomerMaster::create([
-                'company_name' => $row['customer_name'] ?? null,
-                'customer_initial' => $customerInitials ?? null,
-                'customer_code' => $row['customer_code'] ?? null,
-                'customer_code_type' => $customerCodeType ?? null,
-                'customer_type' =>$row['customer_type'] ?? null,
-                'organization_type' => $row['organization_type'] ?? null,
-                'category' => $row['category'] ?? null,
-                'subcategory' => $row['sub_category'] ?? null,
-                'sales_person' => $row['sales_person'] ?? null,
-                'currency' => $row['currency'] ?? null,
-                'payment_term' => $row['payment_term'] ?? null,
-                'country' => $row['country'] ?? null,
-                'state' => $row['state'] ?? null,
-                'city' => $row['city'] ?? null,
-                'address' => $row['address'] ?? null,
-                'pin_code' => $row['pin_code'] ?? null,
-                'email' => $row['email_id'] ?? null,
-                'phone' => $row['phone_no'] ?? null,
-                'mobile' => $row['mobile_no'] ?? null,
-                'whatsapp_number' => $row['whatsapp_no'] ?? null,
-                'notification_mode' => $row['notification_mode'] ?? null,
-                'pan_number' => $row['pan_no'] ?? null,
-                'tin_number' => $row['tin_no'] ?? null,
-                'aadhar_number' => $row['adhaar_no'] ?? null,
-                'ledger_code' => $row['ledger_code'] ?? null,
-                'ledger_group' => $row['ledger_group'] ?? null,
-                'credit_limit' => $row['credit_limit'] ?? null,
-                'credit_days' => $row['credit_days'] ?? null,
-                'gst_applicable' => ($row['gst_registered'] ?? 'N') === 'Y' ? 1 : 0,
-                'gstin_no' => $row['gstin_no'] ?? null,
-                'gst_registered_name' => $row['gst_registered_name'] ?? null,
-                'gstin_registration_date' => $gstinRegistrationDate ?? null,
-                'tds_applicable' => ($row['tds_applicable'] ?? 'N') === 'Y' ? 1 : 0, 
-                'wef_date' =>  $tdsWefDatee ?? null,
-                'tds_certificate_no' => $row['tds_certificate_no'] ?? null,
-                'tds_tax_percentage' => $row['tds_tax'] ?? null,
-                'tds_category' => $row['tds_category'] ?? null,
-                'tds_value_cab' => $row['tds_value_cap'] ?? null,
-                'tan_number' => $row['tan_no'] ?? null,
-                'status' => 'Processed',
-                'group_id' => $validatedData['group_id'],
-                'company_id' => $validatedData['company_id'],
-                'organization_id' => $validatedData['organization_id'],
-                'remarks' => "Processing customer upload",
-                'batch_no' => $batchNo,
-                'user_id' => $user->id,
-            ]);
-    
-            DB::commit();
-    
-            $this->processCustomerFromUpload($uploadedCustomer);
-    
-            return $uploadedCustomer;
-        } catch (Exception $e) {
-            DB::rollback();
-    
-            Log::error("Error importing customer: " . $e->getMessage(), [
-                'error' => $e,
-                'row' => $row
-            ]);
-    
-            if (isset($uploadedCustomer)) {
-                $uploadedCustomer->update([
-                    'status' => 'Failed',
-                    'remarks' => "Error importing customer: " . $e->getMessage(),
+                $customerInitials = strtoupper(substr($row['customer_name'], 0, 3));
+
+                $customersToInsert[] = [
+                    'company_name' => $row['customer_name'] ?? null,
+                    'customer_initial' => $customerInitials ?? null,
+                    'customer_code' => $row['customer_code'] ?? null,
+                    'customer_code_type' => $customerCodeType ?? null,
+                    'customer_type' => $row['customer_type'] ?? null,
+                    'organization_type' => $row['organization_type'] ?? null,
+                    'category' => $row['category'] ?? null,
+                    'subcategory' => $row['sub_category'] ?? null,
+                    'sales_person' => $row['sales_person'] ?? null,
+                    'currency' => $row['currency'] ?? null,
+                    'payment_term' => $row['payment_term'] ?? null,
+                    'country' => $row['country'] ?? null,
+                    'state' => $row['state'] ?? null,
+                    'city' => $row['city'] ?? null,
+                    'address' => $row['address'] ?? null,
+                    'pin_code' => $row['pin_code'] ?? null,
+                    'email' => $row['email_id'] ?? null,
+                    'phone' => $row['phone_no'] ?? null,
+                    'mobile' => $row['mobile_no'] ?? null,
+                    'whatsapp_number' => $row['whatsapp_no'] ?? null,
+                    'notification_mode' => $row['notification_mode'] ?? null,
+                    'pan_number' => $row['pan_no'] ?? null,
+                    'tin_number' => $row['tin_no'] ?? null,
+                    'aadhar_number' => $row['adhaar_no'] ?? null,
+                    'ledger_code' => $row['ledger_code'] ?? null,
+                    'ledger_group' => $row['ledger_group'] ?? null,
+                    'credit_limit' => $row['credit_limit'] ?? null,
+                    'credit_days' => $row['credit_days'] ?? null,
+                    'gst_applicable' => ($row['gst_registered'] ?? 'N') === 'Y' ? 1 : 0,
+                    'gstin_no' => $row['gstin_no'] ?? null,
+                    'gst_registered_name' => $row['gst_registered_name'] ?? null,
+                    'gstin_registration_date' => $row['gstin_reg_date'] ?? null,
+                    'tds_applicable' => ($row['tds_applicable'] ?? 'N') === 'Y' ? 1 : 0,
+                    'wef_date' => $row['tds_wef_date'] ?? null,
+                    'tds_certificate_no' => $row['tds_certificate_no'] ?? null,
+                    'tds_tax_percentage' => $row['tds_tax'] ?? null,
+                    'tds_category' => $row['tds_category'] ?? null,
+                    'tds_value_cab' => $row['tds_value_cap'] ?? null,
+                    'tan_number' => $row['tan_no'] ?? null,
+                    'status' => 'Processed',
+                    'group_id' => $validatedData['group_id'],
+                    'company_id' => $validatedData['company_id'],
+                    'organization_id' => $validatedData['organization_id'],
+                    'remarks' => "Processing customer upload",
+                    'batch_no' => $this->service->generateBatchNo($organization->id, $organization->group_id, $organization->company_id, $user->id),
+                    'user_id' => $user->id,
+                ];
+            } catch (Exception $e) {
+                Log::error("Error importing customer: " . $e->getMessage(), [
+                    'error' => $e,
+                    'row' => $row
                 ]);
+                $errors[] = "Error importing customer: " . $e->getMessage();
             }
-    
-            $this->onFailure($uploadedCustomer);
-            throw new Exception("Error importing customer: " . $e->getMessage());
         }
+
+        if (!empty($customersToInsert)) {
+            try {
+                DB::beginTransaction();
+                $chunks = array_chunk($customersToInsert, 500);
+
+                foreach ($chunks as $chunk) {
+                    UploadCustomerMaster::insert($chunk);
+                    $insertedCustomers = UploadCustomerMaster::get();
+                    foreach ($insertedCustomers as $insertedCustomer) {
+                        $this->processCustomerFromUpload($insertedCustomer);
+                    }
+                }
+
+                DB::commit();
+            } catch (Exception $e) {
+                DB::rollBack();
+                Log::error("Batch insert failed: " . $e->getMessage());
+                $errors[] = "Batch processing failed: " . $e->getMessage();
+            }
+        }
+
+        if (!empty($errors)) {
+            throw new Exception("Import errors: " . implode("; ", $errors));
+        }
+
+        return count($customersToInsert);
     }
-    
+
+    private function getPolicyData($services, $organization)
+    {
+        $validatedData = [
+            'group_id' => $organization->group_id,
+            'company_id' => null,
+            'organization_id' => null,
+        ];
+
+        if ($services && isset($services['services']) && $services['services']->isNotEmpty()) {
+            $firstService = $services['services']->first();
+            $serviceId = $firstService->service_id;
+            $policyData = Helper::getPolicyByServiceId($serviceId);
+            if ($policyData && isset($policyData['policyLevelData'])) {
+                $policyLevelData = $policyData['policyLevelData'];
+                $validatedData = [
+                    'group_id' => $policyLevelData['group_id'] ?? $organization->group_id,
+                    'company_id' => $policyLevelData['company_id'] ?? null,
+                    'organization_id' => $policyLevelData['organization_id'] ?? null,
+                ];
+            }
+        }
+
+        return $validatedData;
+    }
     private function processCustomerFromUpload(UploadCustomerMaster $uploadedCustomer)
     {
         $user = Helper::getAuthenticatedUser();
@@ -282,7 +272,7 @@ class CustomerImport implements ToModel, WithHeadingRow, WithChunkReading
             }
         } 
     
-        $organizationType = $uploadedCustomer->organization_type ?? 'Private Limited'; 
+        $organizationType = $uploadedCustomer->organization_type ?? 'Private Ltd'; 
         try {
             $organizationTypeId = $this->service->getOrganizationTypeId($organizationType);
         } catch (Exception $e) {
@@ -568,6 +558,38 @@ class CustomerImport implements ToModel, WithHeadingRow, WithChunkReading
                 return; 
             }
 
+            $addressData = [
+                'country_id' => $locationIds['country_id'] ?? null,
+                'state_id' => $locationIds['state_id'] ?? null,
+                'city_id' => $locationIds['city_id'] ?? null,
+                'pincode' => $uploadedCustomer->pin_code,
+                'address' => $uploadedCustomer->address,
+                'is_billing' => 1,
+                'is_shipping' => 1,
+            ];
+    
+            $gstAndAddressData = [
+                'company_name' => $uploadedCustomer->company_name ?? null,
+                'addresses' => [$addressData], 
+                'compliance' => [
+                    'gstin_no' => $uploadedCustomer->gstin_no ?? null,
+                    'gstin_registration_date' => $uploadedCustomer->gstin_registration_date ?? null,
+                    'gst_registered_name' => $uploadedCustomer->gst_registered_name ?? null,
+                ],
+            ];
+    
+            $gstAddressErrors = $this->service->validateGstAndAddresses($gstAndAddressData);
+    
+            if (!empty($gstAddressErrors)) {
+                $errors = array_merge($errors, $gstAddressErrors);
+                  $uploadedCustomer->update([
+                    'status' => 'Failed',
+                    'remarks' => implode(', ', $errors),
+                ]);
+                $this->onFailure($uploadedCustomer);
+                return; 
+            }
+
             $customer->save();
             $customer->compliances()->create([
                 'gst_applicable' =>$uploadedCustomer->gst_applicable ?? 0,
@@ -614,6 +636,16 @@ class CustomerImport implements ToModel, WithHeadingRow, WithChunkReading
             Log::error("Error creating customer from upload: " . $e->getMessage(), ['error' => $e]);
             throw new Exception("Error creating customer from upload: " . $e->getMessage());
         }
+    }
+
+    private function isEmptyRow(Collection $row): bool
+    {
+        foreach ($row as $value) {
+            if (!empty($value)) { 
+                return false; 
+            }
+        }
+        return true;
     }
 
 }

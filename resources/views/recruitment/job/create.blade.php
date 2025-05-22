@@ -443,12 +443,14 @@
                                                                         </div>
 
                                                                         <div class="col-md-3 mb-sm-0 mb-1">
-                                                                            <input type="number" class="form-control"
+                                                                            <input type="number"
+                                                                                class="form-control numberonly"
                                                                                 placeholder="Min" name="work_exp_min" />
                                                                         </div>
 
                                                                         <div class="col-md-3 mb-sm-0 mb-1">
-                                                                            <input type="number" class="form-control"
+                                                                            <input type="number"
+                                                                                class="form-control numberonly"
                                                                                 placeholder="Max" name="work_exp_max" />
                                                                         </div>
                                                                     </div>
@@ -482,7 +484,8 @@
                                                                         </div>
 
                                                                         <div class="col-md-3 mb-sm-0 mb-1">
-                                                                            <input type="number" class="form-control"
+                                                                            <input type="number"
+                                                                                class="form-control numberonly"
                                                                                 placeholder="Min"
                                                                                 name="annual_salary_min" />
                                                                             <div
@@ -498,7 +501,8 @@
                                                                         </div>
 
                                                                         <div class="col-md-3 mb-sm-0 mb-1">
-                                                                            <input type="number" class="form-control"
+                                                                            <input type="number"
+                                                                                class="form-control numberonly"
                                                                                 placeholder="Max"
                                                                                 name="annual_salary_max" />
                                                                         </div>

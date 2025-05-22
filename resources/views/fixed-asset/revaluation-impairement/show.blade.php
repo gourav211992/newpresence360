@@ -297,11 +297,31 @@
                                         </div>
                                       <div class="row mt-2"> 
                                                          
-													<div class="col-md-4 mb-1"> 
-														<label class="form-label">Document</label>  
+												 <div class="col-md-4">
+                                                            <label class="form-label">Document</label>
 
-														<input type="file" name="document" class="form-control"  disabled />
-													</div>
+                                                            <div class="d-flex align-items-center gap-2">
+                                                                {{-- File input --}}
+                                                                <input type="file" name="document" disabled class="form-control" id="documentInput" style="max-width: 85%;" />
+
+                                                                {{-- Preview selected file or existing one --}}
+                                                                <div id="filePreview">
+                                                                    @if(!empty($data->document))
+                                                                        {{-- Existing file icon --}}
+                                                                        <div id="existingFilePreview">
+                                                                            <a href="{{ asset('documents/' . $data->document) }}" target="_blank">
+                                                                                <i data-feather="file-text" class="text-success"></i>
+                                                                            </a>
+                                                                        </div>
+                                                                    @endif
+
+                                                                    {{-- New file preview icon --}}
+                                                                    <div id="newFilePreview" style="display: none;">
+                                                                        <i data-feather="file" class="text-primary"></i>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
 
 
 												<div class="col-md-12">

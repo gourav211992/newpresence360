@@ -36,6 +36,8 @@ use App\Services\ItemImportExportService;
 use App\Exports\CustomersExport;
 use App\Exports\FailedCustomersExport;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Mail\ImportComplete;
+use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
 use stdClass;
 use Auth;
@@ -692,7 +694,13 @@ class CustomerController extends Controller
     
             $successfulCustomers = $import->getSuccessfulCustomers();
             $failedCustomers = $import->getFailedCustomers();
-    
+            $mailData = [
+                'modelName' => 'Customer',
+                'successful_items' => $successfulCustomers,
+                'failed_items' => $failedCustomers,
+                'export_successful_url' => route('customers.export.successful'), 
+                'export_failed_url' => route('customers.export.failed'), 
+            ];
             if (count($failedCustomers) > 0) {
                 $message = 'Record import failed. Some records were not imported.';
                 $status = 'failure';
@@ -700,7 +708,13 @@ class CustomerController extends Controller
                 $message = 'Record import successfully.';
                 $status = 'success';
             }
-    
+            if ($user->email) {
+                try {
+                    Mail::to($user->email)->send(new ImportComplete( $mailData)); 
+                } catch (\Exception $e) {
+                    $message .= " However, there was an error sending the email notification.";
+                }
+            }
             return response()->json([
                 'status' => $status,
                 'message' => $message,

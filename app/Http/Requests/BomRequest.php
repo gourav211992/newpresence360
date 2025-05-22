@@ -198,17 +198,23 @@ class BomRequest extends FormRequest
                     $selectedAttributes[] = ['attribute_id' => $ia->id, 'attribute_value' => intval(@$attr_group[0]['attr_name'])];
                 }
             }
-            $bomExists = Bom::where('item_id', $itemId)
-                ->where(function ($query) use ($itemCustomerId) {
-                    if ($itemCustomerId) {
-                        $query->where('customer_id', $itemCustomerId);
-                    }
-                })
-                ->where('status', ConstantHelper::ACTIVE)
-                ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_SUBMITTED)
-                ->first();
-            if ($bomExists) {
-                $validator->errors()->add("item_code", "Bom already exists for this item.");
+            if($this->action_type !== 'amendment') {
+                $quoteBomId = $this->quote_bom_id ?? null;
+                $bomExists = Bom::where('item_id', $itemId)
+                    ->where(function ($query) use ($itemCustomerId, $quoteBomId) {
+                        if ($itemCustomerId) {
+                            $query->where('customer_id', $itemCustomerId);
+                        }
+                        if($quoteBomId) {
+                            $query->whereNotIn('id', [$quoteBomId]);
+                        }
+                    })
+                    ->where('status', ConstantHelper::ACTIVE)
+                    ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_SUBMITTED)
+                    ->first();
+                if ($bomExists) {
+                    $validator->errors()->add("item_code", "Bom already exists for this item.");
+                }
             }
         }
         # For component item

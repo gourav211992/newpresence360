@@ -191,7 +191,24 @@ function implementBookDynamicFields(html, data)
         dynamicBookSection.classList.add('d-none');
     }
 }
+/**
+ * Restrict all date inputs to current financial year.
+ * Assumes `currentfy` is an object like { start: 'YYYY-MM-DD', end: 'YYYY-MM-DD' }
+ */
 
+// Make sure to define `window.currentfy` in your Blade template or HTML before this script runs, e.g.:
+// <script>window.currentfy = {!! json_encode($currentfy ?? null) !!};</script>
+var currentfy = window.currentfy;
+function restrictDateInputsToFY(currentfy) {
+    if (!currentfy || !currentfy.start || !currentfy.end) return;
+    document.querySelectorAll('input[type="date"]').forEach(input => {
+        input.setAttribute('min', currentfy.start);
+        input.setAttribute('max', currentfy.end);
+    });
+}
+
+// Example usage: call after DOMContentLoaded or when currentfy is available
+// restrictDateInputsToFY(currentfy);
 function onDocDateChange()
 {
     let bookId = $("#series_id_input").val();

@@ -12,6 +12,7 @@ use App\Helpers\SaleModuleHelper;
 use App\Http\Requests\ErpRateContractRequest;
 use App\Models\AuthUser;
 use App\Helpers\DynamicFieldHelper;
+use App\Models\Customer;
 use App\Models\ErpRcDynamicField;
 use App\Models\Country;
 use App\Models\Currency;
@@ -89,7 +90,7 @@ class ErpRCController extends Controller
                     return strval($row->revision_number);
                 })
                 ->addColumn('vendor_name', function ($row) {
-                    return $row->vendor_code?? $row->vendor?->company_name ?? 'NA';
+                    return $row->vendor_code?? $row->vendor?->company_name ?? ($row->customer?->company_name ?? 'NA');
                 })
                 ->addColumn('items_count', function ($row) {
                     return $row->items->count();
@@ -272,6 +273,13 @@ class ErpRCController extends Controller
     public function store(ErpRateContractRequest $request)
     {
         try {
+            $party = null;
+            if ($request->filled("party_type") && $request->party_type == 'vendor') {
+                $party = Vendor::find($request->party_id);
+            }
+            else{
+                $party = Customer::find($request->party_id);
+            }
             //Reindex
             $request -> from_item_qty =  array_values($request -> from_item_qty);
             $request -> to_item_qty =  array_values($request -> to_item_qty);
@@ -319,7 +327,14 @@ class ErpRCController extends Controller
                 $rateContract -> start_date = $request -> start_date ?? $rateContract -> start_date;
                 $rateContract -> end_date = $request -> end_date ?? $rateContract -> end_date;
                 $rateContract -> payment_term_id = isset($request -> payment_terms_id) ? $request->payment_terms_id : $rateContract -> payment_term_id;
-                $rateContract -> vendor_id = $request -> vendor_id ?? $rateContract -> vendor_id;
+                if($request->party_type == "customer")
+                {
+                    $rateContract -> customer_id = $request -> customer_id ?? $rateContract -> customer_id;
+                }
+                else
+                {
+                    $rateContract -> vendor_id = $request -> vendor_id ?? $rateContract -> vendor_id;
+                }
 
 
                 // $rateContract -> reference_number = $request -> reference_no;
@@ -358,10 +373,13 @@ class ErpRCController extends Controller
                     }
                 }
             } else { //Create
-
-                $vendor = null;
-                if ($request->filled('vendor_id')) {
-                    $vendor = Vendor::find($request->vendor_id);
+                $party = null;
+                
+                if ($request->filled("party_type") && $request->party_type == 'vendor') {
+                    $party = Vendor::find($request->vendor_id);
+                }
+                else{
+                    $party = Customer::find($request->customer_id);
                 }
                 $currency = Currency::find($request->currency_id);
                 $rateContract = ErpRateContract::create([
@@ -383,8 +401,10 @@ class ErpRCController extends Controller
                     'revision_date' => null,
                     'currency_id' => $request->currency_id,
                     'currency_code' => isset($request -> currency_id) ? $currency->short_name : null,
-                    'vendor_id' =>  $request->filled('vendor_id') ? $vendor?->id : null,
-                    'vendor_code' =>  $request->filled('vendor_id') ? $vendor?->company_name : null,
+                    'vendor_id' =>  $request->party_type == 'vendor' ? $party?->id : null,
+                    'vendor_code' =>  $request->party_type == 'vendor' ? $party?->company_name : null,
+                    'customer_id' =>  $request->party_type == 'customer' ? $party?->id : null,
+                    'customer_code' =>  $request->party_type == 'customer' ? $party?->company_name : null,
                     'document_status' => ConstantHelper::DRAFT,
                     'approval_level' => 1,
                     'applicable_organizations' => json_encode($request->organization_id),
@@ -549,10 +569,9 @@ class ErpRCController extends Controller
                     $currentLevel = $rateContract->approval_level;
                     $modelName = get_class($rateContract);
                     $actionType = $request -> action_type ?? "";
-                    $vendor = Vendor::find($request->vendor_id);
                     $currency = Currency::find($request->currency_id);
                     $rateContract->vendor_id = $request->vendor_id;
-                    $rateContract->vendor_code = $vendor?->company_name;
+                    $rateContract->vendor_code = $party?->company_name;
                     $rateContract->applicable_organizations = isset($request->applicable_organization) ? json_encode($request->applicable_organization) : $rateContract->applicable_organizations;
                     $rateContract->payment_term_id = isset($request->payment_terms_id) ? $request->payment_terms_id : ($rateContract->payment_term_id??null);
                     // $rateContract->currency_id = $request->currency_id;
@@ -702,38 +721,42 @@ class ErpRCController extends Controller
             ]);
         }
 
-        $vendorId = $request->vendor_id;
+        $partyId = $request->vendor_id;
         $startDate = $request->start_date;
         $endDate = $request->end_date;
 
-        $rateContract = ErpRateContract::where('vendor_id', $vendorId)
+        // Determine which party column to use based on request type
+        $partyColumn = $request->type === 'customer' ? 'customer_id' : 'vendor_id';
+        $partyId = $request->vendor_id;
+
+        $rateContract = ErpRateContract::where($partyColumn, $partyId)
             ->where('document_status', ConstantHelper::APPROVED)
             ->where(function ($query) use ($startDate, $endDate) {
-                $query->where(function ($q) use ($startDate, $endDate) {
-                    $q->where(function ($sub) use ($startDate) {
-                        // Contract open-ended
-                        $sub->whereNull('end_date')
-                            ->where(function ($cond) use ($startDate) {
-                                $cond->whereNull('start_date')
-                                    ->orWhere('start_date', '<=', $startDate);
-                            });
-                    })
-                    ->orWhere(function ($sub) use ($startDate, $endDate) {
-                        // Request open-ended
-                        $sub->whereNull($endDate ? DB::raw('1 = 0') : 'end_date')
-                            ->where('start_date', '<=', $endDate ?? now());
-                    })
-                    ->orWhere(function ($sub) use ($startDate, $endDate) {
-                        // Standard overlap
-                        $sub->whereNotNull('start_date')
-                            ->where(function ($overlap) use ($startDate, $endDate) {
-                                $overlap->where('start_date', '<=', $endDate ?? now())
-                                        ->where(function ($c) use ($startDate) {
-                                            $c->whereNull('end_date')->orWhere('end_date', '>=', $startDate);
-                                        });
-                            });
+            $query->where(function ($q) use ($startDate, $endDate) {
+                $q->where(function ($sub) use ($startDate) {
+                // Contract open-ended
+                $sub->whereNull('end_date')
+                    ->where(function ($cond) use ($startDate) {
+                    $cond->whereNull('start_date')
+                        ->orWhere('start_date', '<=', $startDate);
+                    });
+                })
+                ->orWhere(function ($sub) use ($startDate, $endDate) {
+                // Request open-ended
+                $sub->whereNull($endDate ? DB::raw('1 = 0') : 'end_date')
+                    ->where('start_date', '<=', $endDate ?? now());
+                })
+                ->orWhere(function ($sub) use ($startDate, $endDate) {
+                // Standard overlap
+                $sub->whereNotNull('start_date')
+                    ->where(function ($overlap) use ($startDate, $endDate) {
+                    $overlap->where('start_date', '<=', $endDate ?? now())
+                        ->where(function ($c) use ($startDate) {
+                            $c->whereNull('end_date')->orWhere('end_date', '>=', $startDate);
+                        });
                     });
                 });
+            });
             })
             ->first();
 

@@ -13,7 +13,7 @@
                             <h2 class="content-header-title float-start mb-0">Bank Reconciliation</h2>
                             <div class="breadcrumb-wrapper">
                                 <ol class="breadcrumb">
-                                    <li class="breadcrumb-item"><a href="index.html">Home</a></li>
+                                    <li class="breadcrumb-item"><a href="{{ route('/') }}">Home</a></li>
                                     <li class="breadcrumb-item active">Bank List</li>
                                 </ol>
                             </div>
@@ -54,10 +54,10 @@
                                                 <th>Ledger NAme</th>
                                                 <th>Bank NAme</th>
                                                 <th>A/C No.</th>
-                                                <th>Opening Balance</th>
-                                                <th>Debit</th>
-                                                <th>Credit</th>
-                                                <th>Closing Balance</th>
+                                                <th class="text-end">Opening Balance</th>
+                                                <th class="text-end">Debit</th>
+                                                <th class="text-end">Credit</th>
+                                                <th class="text-end">Closing Balance</th>
                                                 <th>Action</th>
                                             </tr>
                                         </thead>
@@ -69,21 +69,21 @@
                                                     <td class="fw-bolder text-dark">{{ $ledger->name }}</td>
                                                     <td class="fw-bolder text-dark">{{ $ledger->bank_name }}</td>
                                                     <td>{{ $ledger->account_number }}</td>
-                                                    <td>
+                                                    <td class="text-end">
                                                         {{ number_format(abs($ledger->opening), 2) }}
                                                         {{ $ledger->opening >= 0 ? 'Dr' : 'Cr' }}
                                                     </td>
-                                                    <td>{{ number_format($ledger->debit_amount, 2) }}
+                                                    <td class="text-end">{{ number_format($ledger->debit_amount, 2) }}
                                                     </td>
-                                                    <td>{{ number_format($ledger->credit_amount, 2) }}
+                                                    <td class="text-end">{{ number_format($ledger->credit_amount, 2) }}
                                                     </td>
-                                                    <td>
+                                                    <td class="text-end">
                                                         {{ number_format(abs($ledger->closing), 2) }}
                                                         {{ $ledger->closing >= 0 ? 'Dr' : 'Cr' }}
                                                     </td>
                                                     <td><a href="{{ route('bank.statements.upload', ['id' => $ledger->account_id]) }}{{ request()->has('date') ? '?date=' . request()->get('date') : '' }}"
                                                             class="btn btn-outline-primary btn-sm font-small-2"><i
-                                                                data-feather="upload"></i> Upload Excel</a></td>
+                                                                data-feather="upload"></i> Upload Bank Statement</a></td>
                                                 </tr>
                                             @empty
                                                 <tr>
@@ -159,10 +159,10 @@
     </div>
     <!-- END: Modal-->
 @endsection
-@section('scripts')
+{{-- @section('scripts')
     <script>
         $(document).ready(function() {
             $('#company_name').text($('#organization_id option:selected').text());
         });
     </script>
-@endsection
+@endsection --}}

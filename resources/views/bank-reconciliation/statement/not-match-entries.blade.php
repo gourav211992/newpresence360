@@ -13,8 +13,8 @@
                             <h2 class="content-header-title float-start mb-0">Reconcile Report</h2>
                             <div class="breadcrumb-wrapper">
                                 <ol class="breadcrumb">
-                                    <li class="breadcrumb-item"><a href="#">Home</a></li>
-                                    <li class="breadcrumb-item"><a href="#">Finance</a></li>
+                                    <li class="breadcrumb-item"><a href="{{ route('/') }}">Home</a></li>
+                                    <li class="breadcrumb-item"><a href="{{ route('bank.ledgers.index') }}">Finance</a></li>
                                     <li class="breadcrumb-item active">Reconcile View</li>
                                 </ol>
                             </div>
@@ -23,10 +23,10 @@
                 </div>
                 <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
                     <div class="form-group breadcrumb-right">
+                        <a href="{{ route('bank.statements.upload', ['id' => $bank->id]) }}{{ request()->has('date') ? '?date=' . request()->get('date') : '' }}"
+                            class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</a>
                         <button class="btn btn-warning btn-sm mb-50 mb-sm-0" data-bs-target="#filter"
                             data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button>
-                        <a href="{{ route('bank.statements.upload', ['id' => $bank->id]) }}"
-                            class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</a>
                         <a href="{{ route('bank.reconcile.index', ['id' => $bank->id]) }}{{ request()->has('date') ? '?date=' . request()->get('date') : '' }}"
                             class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather="check-circle"></i> Reconcile
                             Now</a>
@@ -45,7 +45,7 @@
                                 <div class="col-md-12 bg-light border-bottom po-reportfileterBox">
                                     <div class="pofilterhead newheader">
                                         <h4 class="card-title text-theme text-dark">{{ @$bank->bankInfo->bank_name }}:
-                                            <strong>{{ @$bank->ledger->name }}</strong>
+                                            <strong>{{ @$bank->ledger->name }}({{ $bank->account_number }})</strong>
                                         </h4>
                                         <p class="card-text">{{ $dateRange }}</p>
                                     </div>
@@ -86,8 +86,8 @@
                                                                 <th>Particulars</th>
                                                                 <th>Vch. Type</th>
                                                                 <th>Vch. No.</th>
-                                                                <th>Debit</th>
-                                                                <th>Credit</th>
+                                                                <th class="text-end">Debit</th>
+                                                                <th class="text-end">Credit</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
@@ -100,9 +100,11 @@
                                                                     </td>
                                                                     <td>{{ $voucher->book_code }}</td>
                                                                     <td>{{ $voucher->voucher_no }}</td>
-                                                                    <td>{{ number_format($voucher->debit_amt_org, 2) }}
+                                                                    <td class="text-end">
+                                                                        {{ number_format($voucher->debit_amt_org, 2) }}
                                                                     </td>
-                                                                    <td>{{ number_format($voucher->credit_amt_org, 2) }}
+                                                                    <td class="text-end">
+                                                                        {{ number_format($voucher->credit_amt_org, 2) }}
                                                                     </td>
                                                                 </tr>
                                                             @empty

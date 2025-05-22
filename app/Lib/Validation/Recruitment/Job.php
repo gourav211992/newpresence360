@@ -36,7 +36,7 @@ class Job
 				'required'
 			],
 			'last_apply_date' => [
-				'nullable','date'
+				'nullable','date','after:today'
 			],
 			'third_party_assessment' => [
 				'required'
@@ -194,7 +194,7 @@ class Job
 				'url'
 			],
 			'last_apply_date' => [
-				'nullable','date'
+				'nullable','date','after:today'
 			],
 			'publish_for' => [
 				'required'

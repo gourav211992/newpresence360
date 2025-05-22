@@ -16,8 +16,9 @@
                                 <h2 class="content-header-title float-start mb-0">Bank Reconciliation</h2>
                                 <div class="breadcrumb-wrapper">
                                     <ol class="breadcrumb">
-                                        <li class="breadcrumb-item"><a href="index.html">Home</a></li>
-                                        <li class="breadcrumb-item"><a href="index.html">Finance</a></li>
+                                        <li class="breadcrumb-item"><a href="{{ route('/') }}">Home</a></li>
+                                        <li class="breadcrumb-item"><a href="{{ route('bank.ledgers.index') }}">Finance</a>
+                                        </li>
                                         <li class="breadcrumb-item active">Reconcile View</li>
                                     </ol>
                                 </div>
@@ -67,8 +68,8 @@
                                                         <th>Reference No.</th>
                                                         <th>Payment Date</th>
                                                         <th width="100px">Bank Date</th>
-                                                        <th>Debit</th>
-                                                        <th>Credit</th>
+                                                        <th class="text-end">Debit</th>
+                                                        <th class="text-end">Credit</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody class="">
@@ -91,11 +92,11 @@
                                                                 <input type="date" class="form-control font-small-2"
                                                                     name="bank_date[{{ $voucher->id }}]" />
                                                             </td>
-                                                            <td>
-                                                                {{ $voucher->debit_amt_org }}
+                                                            <td class="text-end">
+                                                                {{ $voucher->debit_amt_org ? number_format($voucher->debit_amt_org, 2) : 0 }}
                                                             </td>
-                                                            <td>
-                                                                {{ $voucher->credit_amt_org }}
+                                                            <td class="text-end">
+                                                                {{ $voucher->credit_amt_org ? number_format($voucher->credit_amt_org, 2) : 0 }}
                                                             </td>
                                                         </tr>
                                                     @empty

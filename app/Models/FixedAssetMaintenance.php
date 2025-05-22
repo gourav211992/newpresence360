@@ -18,4 +18,13 @@ class FixedAssetMaintenance extends Model
     {
         return $this->belongsTo(FixedAssetRegistration::class, 'asset_id','id');
     }
+
+    public function location()
+    {
+        return $this->belongsTo(ErpStore::class, 'location_id');
+    }
+    public function cost_center()
+    {
+        return $this->belongsTo(CostCenter::class, 'cost_center_id');
+    }
 }

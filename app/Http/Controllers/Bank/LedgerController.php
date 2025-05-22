@@ -32,7 +32,6 @@ class LedgerController extends Controller
 
         $date = $request->date ? $request->date : null;
         $dateRange = $this->getDateRange($date);
-        // dd($dateRange);
         
         $erpGroup = Group::select('id')->where('name','Bank Accounts')->where('status', 'active')->first();
         $bankAccountGroupId = $erpGroup->id ?? 0;
@@ -40,7 +39,7 @@ class LedgerController extends Controller
         $openingSubquery = $this->openingSubquery($bankAccountGroupId, $groupId, $dateRange['startDate'], $dateRange['endDate'], $companyId, $organizationId);
         $debitSubquery = $this->debitSubquery($bankAccountGroupId, $groupId, $dateRange['startDate'], $dateRange['endDate'], $companyId, $organizationId);
         $creditSubquery = $this->creditSubquery($bankAccountGroupId, $groupId, $dateRange['startDate'], $dateRange['endDate'], $companyId, $organizationId);
-        // dd($openingSubquery->get()->toArray(),$debitSubquery->get()->toArray(),$creditSubquery->get()->toArray());
+        
         $data = Ledger::join('erp_bank_details','erp_bank_details.ledger_id','=','erp_ledgers.id')
                 ->join('erp_banks','erp_banks.id','=','erp_bank_details.bank_id')
                 ->join('erp_item_details','erp_item_details.ledger_id','=','erp_ledgers.id')
@@ -64,10 +63,13 @@ class LedgerController extends Controller
                 ->whereDate('erp_vouchers.document_date', '>=', $dateRange['startDate'])
                 ->whereDate('erp_vouchers.document_date', '<=', $dateRange['endDate'])
                 ->where('erp_ledgers.group_id', $groupId)
-                ->when($companyId, function ($q) use ($companyId) {
-                    $q->whereNull('erp_ledgers.company_id')->orWhere('erp_ledgers.company_id', $companyId);
+                ->when($companyId, function ($query) use ($companyId) {
+                    $query->where(function($q) use ($companyId) {
+                        $q->whereNull('erp_ledgers.company_id')
+                        ->orWhere('erp_ledgers.company_id', $companyId);
+                    });
                 })
-                ->when($request->has('search') && $request->search != '', function($query) use ($request) {
+                ->when($request->has('search'), function($query) use ($request) {
                     $search = $request->search;
                     $query->where(function($q) use ($search) {
                         $q->where('erp_banks.bank_name', 'like', '%' . $search . '%')
@@ -195,32 +197,18 @@ class LedgerController extends Controller
         $fyear = Helper::getFinancialYear(date('Y-m-d'));
         $startDate = $fyear['start_date'];
         $endDate = $fyear['end_date'];
-        $openingStartDate = Carbon::parse($startDate)->subYear()->format('Y-m-d'); // 2024-04-01
-        $openingEndDate = Carbon::parse($startDate)->subDay()->format('Y-m-d');    // 2025-03-31
 
 
         if ($date) {
             $dates = explode(' to ', $date);
             $startDate = Carbon::parse($dates[0])->format('Y-m-d');
             $endDate = Carbon::parse($dates[1])->format('Y-m-d');
-
-            $fiscalYearStartMonth = 4; // April
-            $startMonth = Carbon::parse($startDate)->month;
-            $startYear = Carbon::parse($startDate)->year;
-            if ($startMonth < $fiscalYearStartMonth) {
-                $openingStartDate = Carbon::create($startYear - 1, 4, 1)->format('Y-m-d');
-            } else {
-                $openingStartDate = Carbon::create($startYear, 4, 1)->format('Y-m-d');
-            }
-
-            $openingEndDate = Carbon::parse($startDate)->subDay()->format('Y-m-d');
         }
+        // dd($startDate,$endDate);
 
         return [
             'startDate' => $startDate,
-            'endDate' => $endDate,
-            'openingStartDate' => $openingStartDate,
-            'openingEndDate' => $openingEndDate,
+            'endDate' => $endDate
         ];
     }
 

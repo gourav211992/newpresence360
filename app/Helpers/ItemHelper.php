@@ -209,6 +209,11 @@ class ItemHelper
     # Get item rate by it, uom and attribute
     public static function getItemCostPrice($itemId, $attributes = [], $uomId, $currencyId, $transactionDate, $vendorId = null,$item_qty=0)
     {
+        if (is_string($attributes)) {
+            $attributes = json_decode($attributes, true); // JSON string → array
+        } elseif (is_object($attributes)) {
+            $attributes = (array) $attributes; // stdClass or Eloquent model → array
+        }
         $costPrice = 0;
         $user = Helper::getAuthenticatedUser()??AuthUser::find(5);
         $uomConversion = 0;
@@ -244,8 +249,12 @@ class ItemHelper
                                 return;
                             }
                             foreach ($attributes as $attr) {
+                                if(is_object($attr))
+                                {
+                                    $attr = (array)$attr;
+                                }
                                 $subQuery->orWhereHas('item_attributes', function ($attrQuery) use ($attr) {
-                                    $attrQuery->where('attr_name', $attr['attr_name']??$attr['attribute_name'])
+                                    $attrQuery->where('attr_name', $attr['attr_name']??($attr['attribute_name']??$attr['group_name']))
                                     ->where('attr_value', $attr['attr_value']??$attr['attribute_value']);
                                 });
                             }
@@ -338,18 +347,104 @@ class ItemHelper
     }
 
     # Get item rate by it, uom and attribute
-    public static function getItemSalePrice($itemId, $attributes, $uomId, $currencyId, $transactionDate, $customerId = null)
+    public static function getItemSalePrice($itemId, $attributes=[], $uomId, $currencyId, $transactionDate, $customerId = null,$item_qty=0)
     {
         $costPrice = 0;
         $uomConversion = 0;
+        $user = Helper::getAuthenticatedUser()??AuthUser::find(5);
         $item = Item::find($itemId);
         if($customerId) {
-            $customerItem = $item->approvedCustomers()
-                        ->where('customer_id', $customerId)
-                        ->where('uom_id', $uomId)
-                        ->first();
-            if($customerItem) {
-                $costPrice = floatval($customerItem?->sell_price ?? 0);
+            $rateContractQuery = ErpRateContract::where('customer_id', $customerId)
+            ->whereJsonContains('applicable_organizations', (string) $user->organization_id)
+            ->where(function ($q) {
+                $q->where('document_status', ConstantHelper::APPROVED)
+                  ->orWhere('document_status', ConstantHelper::APPROVAL_NOT_REQUIRED);
+            })
+            ->where('start_date', '<=', $transactionDate)
+            ->where(function ($q) use ($transactionDate) {
+                $q->where('end_date', '>=', $transactionDate)
+                  ->orWhereNull('end_date');
+            })
+            ->withWhereHas('items', function ($query) use ($itemId, $item_qty, $transactionDate, $attributes, $uomId) {
+                $query->where('item_id', $itemId)
+                      ->where('from_qty', '<=', $item_qty)
+                      ->where(function ($q) use ($item_qty) {
+                        $q->whereNull('to_qty')
+                        ->orWhere('to_qty', '>=', $item_qty);
+                        })
+                      
+                      ->where('from_date', '<=', $transactionDate)
+                      ->where(function ($q) use ($transactionDate) {
+                        $q->whereNull('to_date')
+                        ->orWhere('to_date', '>=', $transactionDate);
+                        })
+                      ->where('uom_id', $uomId)
+                      ->where(function ($subQuery) use ($attributes) {
+                            if (empty($attributes)) {
+                                return;
+                            }
+                            foreach ($attributes as $attr) {
+                                if(is_object($attr))
+                                {
+                                    $attr = (array)$attr;
+                                }
+                                $subQuery->orWhereHas('item_attributes', function ($attrQuery) use ($attr) {
+                                    $attrQuery->where('attr_name', $attr['attr_name']??$attr['attribute_name'])
+                                    ->where('attr_value', $attr['attr_value']??$attr['attribute_value']);
+                                });
+                            }
+                      });
+            });
+            $rateContract = $rateContractQuery->first();
+            if($rateContract) {
+                $costPrice = floatval($rateContract->items[0]->rate);
+            }
+            if(!$costPrice)
+            {
+                $rateContractQuery = ErpRateContract::where('customer_id', $customerId)
+                    ->whereJsonContains('applicable_organizations', (string) $user->organization_id)
+                    ->where(function ($q) {
+                        $q->where('document_status', ConstantHelper::APPROVED)
+                        ->orWhere('document_status', ConstantHelper::APPROVAL_NOT_REQUIRED);
+                    })
+                    ->where('start_date', '<=', $transactionDate)
+                    ->where(function ($q) use ($transactionDate) {
+                        $q->where('end_date', '>=', $transactionDate)
+                        ->orWhereNull('end_date');
+                    })
+                    ->withWhereHas('items', function ($query) use ($itemId, $item_qty, $transactionDate, $attributes, $uomId) {
+                        $query->where('item_id', $itemId)
+                            ->where('from_qty', '<=', $item_qty)
+                            ->where(function ($q) use ($item_qty) {
+                                $q->whereNull('to_qty')
+                                ->orWhere('to_qty', '>=', $item_qty);
+                                })
+                            
+                            ->where('from_date', '<=', $transactionDate)
+                            ->where(function ($q) use ($transactionDate) {
+                                $q->whereNull('to_date')
+                                ->orWhere('to_date', '>=', $transactionDate);
+                                })
+                            ->where('uom_id', $uomId)
+                            ->where(function ($subQuery) use ($attributes) {
+                                    $subQuery->whereDoesntHave('item_attributes');
+                            });
+                    });
+                    $rateContract = $rateContractQuery->first();
+                    if($rateContract) {
+                        $costPrice = floatval($rateContract->items[0]->rate);
+                    }
+                    
+            }
+            if(!$costPrice) {
+
+                $vendorItem = $item->approvedVendors
+                ->where('vendor_id', $customerId)
+                ->where('uom_id', $uomId)
+                ->first();
+                if($vendorItem) {
+                    $costPrice = floatval($vendorItem?->cost_price ?? 0);
+                }
             }
         }
 

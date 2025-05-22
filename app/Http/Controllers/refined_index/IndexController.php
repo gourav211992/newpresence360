@@ -52,7 +52,7 @@ class IndexController extends Controller
                     $alias = $row->book->service->service->alias;
                     $routeName = ConstantHelper::SERVICE_ALIAS_VIEW_ROUTE[$alias];
 
-                    $documentType = $row->document_type === 'po' ? 'purchase-order' : $row->document_type;
+                    $documentType = $row->document_type === 'po' ? 'purchase-order' : $row->document_type; 
                     $documentId = $row->document_id;
 
                     $routeParams = [

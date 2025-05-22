@@ -30,7 +30,7 @@ class ActivityController extends Controller
 
         self::filter($request, $query);    
 
-        $requestLog = $query->paginate($length);
+        $requestLog = $query->orderBy('created_at','desc')->paginate($length);
 
         $masterData = self::masterData();
         $summaryData = CommonHelper::getSummaryData($request, $user);

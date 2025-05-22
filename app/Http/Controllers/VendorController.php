@@ -49,10 +49,13 @@ use App\Services\ItemImportExportService;
 use App\Exports\VendorsExport;
 use App\Exports\FailedVendorsExport;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\ImportComplete;
 use Carbon\Carbon;
 use stdClass;
 use Auth;
 use Illuminate\Support\Facades\Hash;
+
 
 class VendorController extends Controller
 {
@@ -791,6 +794,13 @@ class VendorController extends Controller
             
                 $successfulVendors = $import->getSuccessfulVendors();
                 $failedVendors = $import->getFailedVendors();
+                $mailData = [
+                    'modelName' => 'Vendor',
+                    'successful_items' => $successfulVendors,
+                    'failed_items' => $failedVendors,
+                    'export_successful_url' => route('vendors.export.successful'), 
+                    'export_failed_url' => route('vendors.export.failed'), 
+                ];
             
                 if (count($failedVendors) > 0) {
                     $message = 'Record import failed. Some records were not imported.';
@@ -798,6 +808,14 @@ class VendorController extends Controller
                 } else {
                     $message = 'Record import successfully.';
                     $status = 'success';
+                }
+
+                if ($user->email) {
+                    try {
+                        Mail::to($user->email)->send(new ImportComplete( $mailData)); 
+                    } catch (\Exception $e) {
+                        $message .= " However, there was an error sending the email notification.";
+                    }
                 }
             
                 return response()->json([

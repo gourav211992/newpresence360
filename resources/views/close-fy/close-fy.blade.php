@@ -524,6 +524,7 @@
                                 text: data.message,
                                 confirmButtonText: 'OK'
                             }).then(() => {
+                                $('.preloader').show();
                                 location.reload();
                             });
                         } else {
@@ -1459,6 +1460,7 @@
                                         'Action completed successfully!',
                                     confirmButtonText: 'OK'
                                 }).then(() => {
+                                    $('.preloader').show();
                                     setTimeout(() => location.reload(), 1000);
                                 });
                             })

@@ -178,17 +178,26 @@ class BankReconciliationController extends Controller
                     continue;
                 }
 
-                $itemDetail = ItemDetail::find($voucherId);
+                $itemDetail = ItemDetail::join('erp_vouchers','erp_vouchers.id','=','erp_item_details.voucher_id')
+                            ->join('erp_payment_vouchers','erp_payment_vouchers.id','=','erp_vouchers.reference_doc_id')
+                            ->select(
+                                'erp_item_details.credit_amt_org',
+                                'erp_item_details.debit_amt_org',
+                                'erp_payment_vouchers.reference_no'
+                            )
+                            ->find($voucherId);
+
                 if (!$itemDetail) {
                     $validator->errors()->add('bank_date', "Invalid voucher ID: $voucherId");
                     continue;
                 }
 
-
                 $bankStatement = BankStatement::select('id','date','credit_amt','debit_amt')
                             ->where('date',$bankDate)
                             ->where('debit_amt',$itemDetail->credit_amt_org)
                             ->where('credit_amt',$itemDetail->debit_amt_org)
+                            ->where('ref_no',$itemDetail->reference_no)
+                            ->whereNull('matched')
                             ->first();
                 if (!$bankStatement) {
                     $validator->errors()->add('bank_date', 'No bank statement found matching the given date.');
@@ -206,7 +215,14 @@ class BankReconciliationController extends Controller
                 continue;
             }
 
-            $itemDetail = ItemDetail::find($voucherId);
+            $itemDetail = ItemDetail::join('erp_vouchers','erp_vouchers.id','=','erp_item_details.voucher_id')
+                        ->join('erp_payment_vouchers','erp_payment_vouchers.id','=','erp_vouchers.reference_doc_id')
+                        ->select(
+                            'erp_item_details.credit_amt_org',
+                            'erp_item_details.debit_amt_org',
+                            'erp_payment_vouchers.reference_no'
+                        )
+                        ->find($voucherId);
             if (!$itemDetail) {
                 continue;
             }
@@ -215,6 +231,8 @@ class BankReconciliationController extends Controller
                             ->where('date',$bankDate)
                             ->where('debit_amt',$itemDetail->credit_amt_org)
                             ->where('credit_amt',$itemDetail->debit_amt_org)
+                            ->where('ref_no',$itemDetail->reference_no)
+                            ->whereNull('matched')
                             ->first();
 
             $itemDetail->statement_uid = $bankStatement->uid;

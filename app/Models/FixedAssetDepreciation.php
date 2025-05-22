@@ -24,4 +24,13 @@ class FixedAssetDepreciation extends Model
 
         return FixedAssetRegistration::whereIn('id', $assetIds)->get();
     }
+
+    public function Erplocation()
+    {
+        return $this->belongsTo(ErpStore::class, 'location_id');
+    }
+    public function cost_center()
+    {
+        return $this->belongsTo(CostCenter::class, 'cost_center_id');
+    }
 }

@@ -2623,8 +2623,7 @@ class ErpSaleInvoiceController extends Controller
     {
         $pathUrl = route('sale.invoice.index');
         $orderType = [ConstantHelper::SI_SERVICE_ALIAS, ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS];
-        $salesOrders = ErpSaleInvoice::with('items')->whereIn('document_type', $orderType) ->where('invoice_required', 0) -> bookViewAccess($pathUrl) 
-        -> withDefaultGroupCompanyOrg() -> withDraftListingLogic() -> orderByDesc('id');
+        $salesOrders = ErpSaleInvoice::with('items')->whereIn('document_type', $orderType) ->where('invoice_required', 0)-> withDefaultGroupCompanyOrg() -> withDraftListingLogic() -> orderByDesc('id');
         //Customer Filter
         $salesOrders = $salesOrders -> when($request -> customer_id, function ($custQuery) use($request) {
             $custQuery -> where('customer_id', $request -> customer_id);

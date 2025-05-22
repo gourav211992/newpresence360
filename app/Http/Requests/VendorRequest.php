@@ -480,9 +480,9 @@ class VendorRequest extends FormRequest
                 if (empty($ifscCode)) {
                     $validator->errors()->add("bank_info.$index.ifsc_code", 'IFSC code is required when account number is provided.');
                 }
-                if ((!empty($accountNumber) || !empty($ifscCode)) && empty($chequeFiles) && empty($existingFile)) {
-                    $validator->errors()->add("bank_info.$index.cancel_cheque", 'Cancel cheque is required.');
-                }
+                // if ((!empty($accountNumber) || !empty($ifscCode)) && empty($chequeFiles) && empty($existingFile)) {
+                //     $validator->errors()->add("bank_info.$index.cancel_cheque", 'Cancel cheque is required.');
+                // }
             }
         }
     

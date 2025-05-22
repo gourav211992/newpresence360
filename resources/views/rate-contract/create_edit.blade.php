@@ -254,17 +254,26 @@
                                         <div class="card quation-card">
                                             <div class="card-header newheader">
                                                 <div>
-                                                    <h4 class="card-title">Vendor Details</h4> 
+                                                    <h4 class="card-title">Party Details</h4> 
                                                 </div>
                                             </div>
                                             <div class="card-body"> 
                                                 <div class="row">
-                                                    <div class="col-md-4"> 
+                                                    <div class="col-md-3">
+                                                            <label class="form-label">Party Type<span class="text-danger">*</span></label>  
+                                                            <select class="form-select disable_on_edit" id="party_type" name="party_type">
+                                                                <option value="customer" {{ (isset($order) && $order->customer_id) ? 'selected' : '' }}>Customer</option>
+                                                                <option value="vendor" {{ (isset($order) && $order->vendor_id) ? 'selected' : '' }}>Vendor</option>
+                                                            </select>
+                                                    </div>
+                                                    <div class="col-md-3"> 
                                                         
                                                         <div class="mb-1">
-                                                            <label class="form-label">Vendor<span class="text-danger">*</span></label>  
-                                                            <input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct disable_on_edit" id="vendor_name" name="vendor_name" value = "{{ isset($order) && $order->vendor ? $order->vendor_code : ""}}" />
+                                                            <label class="form-label">Party<span class="text-danger">*</span></label>  
+                                                            <input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct disable_on_edit" id="vendor_name" name="vendor_name" value = "{{ isset($order) && $order->vendor ? $order->vendor_code : (isset($order) && $order->customer ? $order->customer_code : "")}}" />
                                                         </div>
+                                                        <input type="hidden" id="customer_id" name="customer_id" value = "{{ isset($order) ? $order->customer_id : '' }}"/>
+                                                        <input type="hidden" id="customer_code" name="customer_code" value ="{{ isset($order) ? $order->customer_code : '' }}"/>
                                                         <input type="hidden" id="vendor_id" name="vendor_id" value = "{{ isset($order) ? $order->vendor_id : '' }}"/>
                                                         <input type="hidden" id="vendor_code" name="vendor_code" value ="{{ isset($order) ? $order->vendor_code : '' }}"/>
                                                         <input type="hidden" id="hidden_currency_id" name="hidden_currency_id[]" value="{{ isset($order) ? $order->items->first()->currency_id : '' }}"/>
@@ -272,12 +281,14 @@
                                                         <input type="hidden" id="hidden_payment_terms" name="hidden_payment_terms[]" />
                                                         <input type="hidden" id="hidden_payment_terms_ids" name="hidden_payment_terms_ids[]" />
                                                     </div>
-                                                    <div class="col-md-4">
+                                                    <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Currency <span class="text-danger">*</span></label>
                                                              <select class="form-select disable_on_edit" id = "currency_dropdown" name = "currency_id" readonly>
                                                                 @if (isset($order) && isset($order -> vendor))
                                                                  <option value = "{{$order -> vendor -> currency_id}}">{{$order -> vendor ?-> currency ?-> name}}</option>
+                                                                @elseif (isset($order) && isset($order -> customer))
+                                                                 <option value = "{{$order -> customer -> currency_id}}">{{$order -> customer ?-> currency ?-> name}}</option>
                                                                 @else
                                                                     <option value = "">Select</option> 
                                                                 @endif
@@ -285,7 +296,7 @@
                                                         </div>
                                                         <input type = "hidden" name = "currency_code" value = "{{isset($order) ? $order -> currency_code : ''}}" id = "currency_code_input"></input>
                                                     </div>                                                    
-                                                    <div class="col-md-4">
+                                                    <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Payment Terms <span class="text-danger">*</span></label>
                                                             <select class="form-select disable_on_edit" id = "payment_terms_dropdown" name = "payment_terms_id" readonly>
@@ -2744,113 +2755,8 @@
         if (order) {
             //Disable header fields which cannot be changed
             disableHeader();
-            if(order.return_type != "Consumption"){
-                $(".requester").addClass('d-none');
-                $('.requester').prop('disabled',true);
-            }
-            else{
-                $(".requester").removeClass('d-none');
-                $('.requester').prop('disabled',false);
-            }
             //Item Discount
             order.items.forEach((item, itemIndex) => {
-                //Item Locations
-                var itemLocations = [];
-                var itemLocationsTo = [];
-                
-
-                //Assign HTML also while retrieving data
-                let racksHTML = `<option disabled>Select</option>`;
-                let binsHTML = `<option disabled>Select</option>`;
-                // if (item.item_locations && item.item_locations.length > 0) { // Only add if qty is greater than 0
-                //     let racksPromise = $.ajax({
-                //         url: "{{ route('store.racksAndBins') }}",
-                //         type: "GET",
-                //         dataType: "json",
-                //         data: {
-                //             store_id: item.item_locations[0].store_id
-                //         }
-                //     });
-
-                //     racksPromise.then(data => {
-                //         let racksHTML = `<option value = "" disabled >Select</option>`;
-                //         let binsHTML = `<option value = "" disabled >Select</option>`;
-
-                //         if (data.data.racks) {
-                //             data.data.racks.forEach(rack => {
-                //                 racksHTML += `<option value='${rack.id}'>${rack.rack_code}</option>`;
-                //             });
-                //         }
-                //         if (data.data.bins) {
-                //             data.data.bins.forEach(bin => {
-                //                 binsHTML += `<option value='${bin.id}'>${bin.bin_code}</option>`;
-                //             });
-                //         }
-
-                //         let shelfPromises = item.item_locations.map(itemLoc => {
-                //             let shelfsHTML = `<option value="" disabled>Select</option>`;
-
-                //             if (itemLoc.rack_id) {
-                //                 return $.ajax({
-                //                     url: "{{ route('store.rack.shelfs') }}",
-                //                     type: "GET",
-                //                     dataType: "json",
-                //                     data: {
-                //                         rack_id: itemLoc.rack_id
-                //                     }
-                //                 }).then(shelfData => {
-                //                     if (shelfData.data.shelfs) {
-                //                         shelfData.data.shelfs.forEach(shelf => {
-                //                             shelfsHTML += `<option value='${shelf.id}'>${shelf.shelf_code}</option>`;
-                //                         });
-                //                     }
-
-                //                     itemLocationsTo.push({
-                //                         store_id: itemLoc.store_id,
-                //                         store_code: itemLoc.store_code,
-                //                         rack_id: itemLoc.rack_id,
-                //                         rack_code: itemLoc.rack_code,
-                //                         rack_html: racksHTML,
-                //                         shelf_id: itemLoc.shelf_id,
-                //                         shelf_code: itemLoc.shelf_code,
-                //                         shelf_html: shelfsHTML,
-                //                         bin_id: itemLoc.bin_id,
-                //                         bin_code: itemLoc.bin_code,
-                //                         bin_html: binsHTML,
-                //                         qty: itemLoc.qty
-                //                     });
-                //                 });
-                //             } else {
-                //                 itemLocationsTo.push({
-                //                     store_id: itemLoc.store_id,
-                //                     store_code: itemLoc.store_code,
-                //                     rack_id: itemLoc.rack_id,
-                //                     rack_code: itemLoc.rack_code,
-                //                     rack_html: racksHTML,
-                //                     shelf_id: itemLoc.shelf_id,
-                //                     shelf_code: itemLoc.shelf_code,
-                //                     shelf_html: shelfsHTML,
-                //                     bin_id: itemLoc.bin_id,
-                //                     bin_code: itemLoc.bin_code,
-                //                     bin_html: binsHTML,
-                //                     qty: itemLoc.quantity
-                //                 });
-                //                 return Promise.resolve(); // Resolve immediately if no AJAX call is needed
-                //             }
-                //         });
-
-                //         return Promise.all(shelfPromises);
-                //     }).then(() => {
-                //         console.log("All AJAX calls completed. Now executing final task.");
-                //         document.getElementById('data_stores_to_' + itemIndex).setAttribute('data-stores', encodeURIComponent(JSON.stringify(itemLocationsTo)))
-                //     }).catch(error => {
-                //         console.error("An error occurred:", error);
-                //         document.getElementById('data_stores_to_' + itemIndex).setAttribute('data-stores', encodeURIComponent(JSON.stringify(itemLocationsTo)))
-                //     });
-                // }
-                // document.getElementById('data_stores_' + itemIndex).setAttribute('data-stores', encodeURIComponent(JSON.stringify(itemLocations)))
-                // openStoreLocationModal(itemIndex);
-
                 itemUomsHTML = ``;
                 if (item.item.uom && item.item.uom.id) {
                     itemUomsHTML += `<option value = '${item.item.uom.id}' ${item.item.uom.id == item.uom_id ? "selected" : ""}>${item.item.uom.alias}</option>`;
@@ -3715,117 +3621,6 @@
         }
     }
 
-    function onProcessOrder(type, data) {
-        let s_value = data.to_store_code;
-        let s_id = data.to_store_id;
-        let ven_id = data.vendor_id;
-        let ven_code = data.vendor_code;
-
-        $("#issue_type").val(type);
-        // Always handle return_location as a <select>
-        $('#return_location_input').empty(); // Clear all previous options
-
-        if ($('#return_location_input option[value="' + s_id + '"]').length === 0) {
-            $('#return_location_input').append(
-                $('<option>', {
-                    value: s_id,
-                    text: s_value
-                })
-            );
-        }
-
-        $('#return_location_input').prop('disabled', false);
-        $('#return_location_input').val(s_id); // Set the selected value
-        $('.return_location').removeClass('d-none');
-        $('.user_field').addClass('d-none');
-        $('.department_field').addClass('d-none');
-
-        if (type === 'Location Transfer') {
-            $('#return_location_hidden_input').val(s_id); // Additional input for Location Transfer
-            $('.vendor_id').addClass('d-none');
-            $('#vendor_id_input').empty(); // Clear all previous options
-            $('#vendor_id_input').prop('disabled', true);
-            $('.user_field').addClass('d-none');
-            $('#user_input').empty();
-            $('#user_input').prop('disabled', true);
-            $('.department_field').addClass('d-none');
-            $('#department_input').empty();
-            $('#department_input').prop('disabled', true);
-
-        } 
-        else if (type === 'Sub Contracting') {
-            // Handle vendor select for Sub Contracting
-            $('#vendor_id_input').empty(); // Clear all previous options
-            if ($('#vendor_id_input option[value="' + ven_id + '"]').length === 0) {
-                $('#vendor_id_input').append(
-                    $('<option>', {
-                        value: ven_id,
-                        text: ven_code
-                    })
-                );
-            }
-            $('#vendor_id_input').prop('disabled', false);
-            $('#vendor_id_input').val(ven_id);
-            $('.vendor_id').removeClass('d-none');
-            $('.user_field').addClass('d-none');
-            $('#user_input').empty();
-            $('#user_input').prop('disabled', true);
-            $('.department_field').addClass('d-none');
-            $('#department_input').empty();
-            $('#department_input').prop('disabled', true);
-
-        } 
-        else {
-            if (type === 'Consumption') {
-                if (data.requester_type === 'Department') {
-                    // Show department instead of vendor
-                    $('#department_input').empty();
-                    if ($('#department_input option[value="' + data.department_id + '"]').length === 0) {
-                        $('#department_input').append(
-                            $('<option>', {
-                                value: data.department_id,
-                                text: data.department_code
-                            })
-                        );
-                    }
-                    $('#department_input').prop('disabled', false);
-                    $('#department_input').val(data.department_id);
-                    $('.department_field').removeClass('d-none'); // Make sure .department_field wraps the select
-                    $('#user_input').empty();
-                    $('#user_input').prop('disabled', true);
-                    $('.user_field').addClass('d-none');
-                } 
-                else if (data.requester_type === 'User') {
-                    // Show user instead of vendor
-                    $('#user_input').empty();
-                    if ($('#user_input option[value="' + data.user_id + '"]').length === 0) {
-                        $('#user_input').append(
-                            $('<option>', {
-                                value: data.user_id,
-                                text: data.user_code
-                            })
-                        );
-                    }
-                    $('#user_input').prop('disabled', false);
-                    $('#user_input').val(data.user_id);
-                    $('.user_field').removeClass('d-none'); // Make sure .user_field wraps the select
-                    $('#department_input').empty();
-                    $('#department_input').prop('disabled', true);
-                    $('.department_field').addClass('d-none');
-                }
-
-                // Hide return location for consumption
-                $('#vendor_id_input').empty();
-                $('#return_location_input').empty();         
-                $('#return_location_input').prop('disabled', true);
-                $('#vendor_id_input').prop('disabled', true);
-                $('.return_location').addClass('d-none');
-                $('.vendor_id').addClass('d-none');
-            } 
-        }
-
-    }
-
     editScript();
 
     
@@ -3855,55 +3650,6 @@
             element.value = 0;
         }
     }
-
-    function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "") {
-            $("#" + selector).autocomplete({
-                source: function(request, response) {
-                    $.ajax({
-                        url: '/search',
-                        method: 'GET',
-                        dataType: 'json',
-                        data: {
-                            q: request.term,
-                            type: typeVal,
-                            customer_id : $("#customer_id_qt_val").val(),
-                            header_book_id : $("#series_id_input").val(),
-                            mi_item_ids : $('#mi_item_ids').val()
-                        },
-                        success: function(data) {
-                            response($.map(data, function(item) {
-                                return {
-                                    id: item.id,
-                                    label: `${item[labelKey1]} ${item[labelKey2] ? '- ' + item[labelKey2] : ''}`,
-                                    code: item[labelKey1] || '', 
-                                };
-                            }));
-                        },
-                        error: function(xhr) {
-                            console.error('Error fetching customer data:', xhr.responseText);
-                        }
-                    });
-                },
-                minLength: 0,
-                select: function(event, ui) {
-                    var $input = $(this);
-                    $input.val(ui.item.label);
-                    $("#" + selectorSibling).val(ui.item.id);
-                    return false;
-                },
-                change: function(event, ui) {
-                    if (!ui.item) {
-                        $(this).val("");
-                        $("#" + selectorSibling).val("");
-                    }
-                }
-            }).focus(function() {
-                if (this.value === "") {
-                    $(this).autocomplete("search", "");
-                }
-            });
-    }
-
     //Disable form submit on enter button
     document.querySelector("form").addEventListener("keydown", function(event) {
         if (event.key === "Enter") {
@@ -4189,20 +3935,20 @@ function initializeAutocompleteV(selector, type) {
                 dataType: 'json',
                 data: {
                     q: request.term,
-                    type:'vendor_list'
+                    type: type+'_list'
                 },
                 success: function(data) {
                     response($.map(data, function(item) {
                         console.log(item);
                         return {
                             id: item.id,
-                            label: item.company_name.trim() + ' - ' + item.vendor_code.trim(),
-                            code: item.vendor_code,
+                            label: item.company_name.trim() + ' - ' + (item.vendor_code ? item.vendor_code.trim() : item.customer_code.trim()),
+                            code: item.vendor_code ? item.vendor_code : item.customer_code,
                             addresses: item.addresses,
-                            currency_name: item.currency_name,
-                            currency_id: item.currency_id,
-                            payment_terms_id : item.payment_terms_id,
-                            payment_terms_name : item.payment_terms_name,
+                            currency_name: item?.currency_name ? item?.currency_name : (item?.currency?.name ?? ''),
+                            currency_id: item?.currency_id ? item?.currency_id : (item?.currency?.id ?? ''),
+                            payment_terms_id : item?.payment_terms_id ? item?.payment_terms_id : (item?.payment_terms?.id ?? ''),
+                            payment_terms_name : item?.payment_terms_name ? item?.payment_terms_name : (item?.payment_terms?.name ?? ''),
                         };
                     }));
                 },
@@ -4212,20 +3958,26 @@ function initializeAutocompleteV(selector, type) {
             });
         },
         select: function(event, ui) {
+            console.log(ui , 'ui');
             var $input = $(this);
             var itemName = ui.item.value;
             var itemId = ui.item.id;
             var itemCode = ui.item.code;
+            var currency_id = ui.item.currency_id;
+            var currency_name = ui.item.currency_name;
+            var payment_terms_id = ui.item.payment_terms_id;
+            var payment_terms = ui.item.payment_terms_name;
+            
             $input.attr('data-name', itemName);
             $input.val(itemName);
-            $("#vendor_id").val(itemId);
-            $("#vendor_code").val(itemCode);
-            $("#hidden_currency_name").val(ui.item.currency_name);
-            $("#hidden_currency_id").val(ui.item.currency_id);
-            $("#hidden_payment_terms").val(ui.item.payment_terms_name);
-            $("#hidden_payment_terms_ids").val(ui.item.payment_terms_id);
+            $("#"+type+"_id").val(itemId);
+            $("#"+type+"_code").val(itemCode);
+            $("#hidden_currency_name").val(currency_name);
+            $("#hidden_currency_id").val(currency_id);
+            $("#hidden_payment_terms").val(payment_terms);
+            $("#hidden_payment_terms_ids").val(payment_terms_id);
 
-            vendorOnChange(ui.item.currency_id,ui.item.currency_name,ui.item.payment_terms_id,ui.item.payment_terms_name);
+            vendorOnChange(currency_id,currency_name,payment_terms_id,payment_terms);
             return false;
         },
         change: function(event, ui) {
@@ -4242,7 +3994,20 @@ function initializeAutocompleteV(selector, type) {
     });
 }
 
-initializeAutocompleteV("#vendor_name");
+initializeAutocompleteV("#vendor_name",$("#party_type").val());
+$("#party_type").on('change',function(){
+    $('#vendor_name').val('');
+    setCurrencyAndPaymentTerms(null, null, null, null);
+    $("#customer_id").val('');
+    $("#customer_code").val('');
+    $("#vendor_id").val('');
+    $("#vendor_name").val('');
+    $("#hidden_currency_name").val('');
+    $("#hidden_currency_id").val('');
+    $("#hidden_payment_terms").val('');
+    $("#hidden_payment_terms_ids").val('');
+    initializeAutocompleteV("#vendor_name",$("#party_type").val());
+});
 
 function setCurrencyAndPaymentTerms(currency_id, currency_name, payment_terms_id, payment_terms_name) {
     // Add currency in select currency_dropdown
@@ -4266,25 +4031,30 @@ function setCurrencyAndPaymentTerms(currency_id, currency_name, payment_terms_id
     }
 }
 function vendorOnChange(currency_id, currency_name, payment_terms_id, payment_terms_name)
-{
-    vendorId = $("#vendor_name").val();
+{   
+    type = $("#party_type").val();
+    console.log('type' , type);
+    vendorId = $("#"+type+"_id").val();
     setCurrencyAndPaymentTerms(currency_id, currency_name, payment_terms_id, payment_terms_name);
 
     if (vendorId) {
-        checkVendorContracts(document.getElementById('vendor_name'));
+        checkVendorContracts(document.getElementById(type+'_name'));
     } else {
         setCurrencyAndPaymentTerms('', '', '', '');
     }
 }
 function checkVendorContracts(elementToReset = null) {
+    $type = $("#party_type").val();
     $.ajax({
         url: "{{ route('rate.contract.check') }}",
         method: 'GET',
         dataType: 'json',
         data: {
-            vendor_id: $("#vendor_id").val(),
+            vendor_id: $("#"+type+"_id").val(),
             start_date: $("#start_date_input").val(),
             end_date: $("#end_date_input").val(),
+            type : type,
+
         },
         success: function(response) {
             if (response.status === 'error') {

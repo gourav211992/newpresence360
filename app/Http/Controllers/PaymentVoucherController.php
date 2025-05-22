@@ -85,31 +85,42 @@ class PaymentVoucherController extends Controller
 
     public function approvePaymentVoucher(Request $request)
     {
-        $request->validate([
-            'remarks' => 'nullable',
+       $request->validate([
+            'remarks' => 'nullable|string|max:255',
             'attachment' => 'nullable'
         ]);
         DB::beginTransaction();
         try {
-            $update = PaymentVoucher::find($request->id);
-            $attachments = $request->file('attachment');
-            $approveDocument = Helper::approveDocument($update->book_id, $update->id, $update->revision_number, $request->remarks, $attachments, $update->approval_level, $request->action_type);
-            $update->approval_level = $approveDocument['nextLevel'];
-            $update->document_status = $approveDocument['approvalStatus'];
-            $update->save();
+            $saleOrder = PaymentVoucher::find($request->id);
+            $bookId = $saleOrder->book_id;
+            $docId = $saleOrder->id;
+            $docValue = $saleOrder->amount;
+            $remarks = $request->remarks;
+            $attachments = $request->file('attachments');
+            $currentLevel = $saleOrder->approval_level;
+            $revisionNumber = $saleOrder->revision_number ?? 0;
+            $actionType = $request->action_type; // Approve or reject
+            $modelName = get_class($saleOrder);
+            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
+            $saleOrder->approvalLevel = $approveDocument['nextLevel'];
+            $saleOrder->document_status = $approveDocument['approvalStatus'];
+            $saleOrder->approvalStatus = $approveDocument['approvalStatus'];
+            $saleOrder->approval_level = $approveDocument['nextLevel'];
+            $saleOrder->save();
 
             DB::commit();
             return response()->json([
-                'message' => __('message.approved', ['module' => 'Payment Voucher']),
-                'data' => $update,
+                'message' => "Document $actionType successfully!",
+                'data' => $saleOrder,
             ]);
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
-                'message' => __('message.approve_failed', ['module' => 'Payment Voucher']),
+                'message' => "Error occurred while $actionType document.",
                 'error' => $e->getMessage(),
             ], 500);
         }
+        
     }
 
     public function getParties(Request $r)
@@ -518,7 +529,6 @@ if ($ref) {
                 $voucher = PaymentVoucher::find($voucher->id);
                 if ($voucher->document_status == ConstantHelper::SUBMITTED) {
                         $approveDocument = Helper::approveDocument($voucher->book_id, $voucher->id, $voucher->revision_number, $voucher->remarks, $request->file('attachment'), 1, 'submit',$voucher->amount,get_class($voucher));
-                        $voucher->approvalLevel = $approveDocument['nextLevel']?? 1;
                         $voucher->document_status = $approveDocument['approvalStatus']?? ConstantHelper::SUBMITTED;
                         $voucher->save();
                     
@@ -807,7 +817,6 @@ if ($ref) {
             $voucher = PaymentVoucher::find($id);
             if ($voucher->document_status == ConstantHelper::SUBMITTED) {
                 $approveDocument = Helper::approveDocument($voucher->book_id, $voucher->id, $voucher->revision_number, $voucher->remarks, $request->file('attachment'), 1, 'submit',$voucher->amount,get_class($voucher));
-                $voucher->approvalLevel = $approveDocument['nextLevel']??1;
                 $voucher->document_status = $approveDocument['approvalStatus']?? ConstantHelper::SUBMITTED;
                 $voucher->save();
             

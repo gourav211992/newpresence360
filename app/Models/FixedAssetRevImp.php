@@ -33,6 +33,34 @@ class FixedAssetRevImp extends Model
     {
         return $this->belongsTo(CostCenter::class, 'cost_center_id');
     }
+    public static function updateRegistration($id){
+        try{
+        $request = FixedAssetRevImp::find($id);
+        $sub_assets = json_decode($request->asset_details, true) ?? [];
+        foreach($sub_assets as $sub_asset){
+            $sub = FixedAssetSub::find($sub_asset->sub_asset_id);
+            $sub->current_value = $sub_asset->revaluate;
+            $sub->current_value_after_dep = $sub_asset->revaluate;
+            $sub->save();
+        }
+
+           return array(
+                    'status' => true,
+                    'message' => "Registration Updated Successfully",
+                    'data' => []
+            );
+        
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return array(
+                    'status' => false,
+                    'message' => $e->getMessage(),
+                    'data' => []
+            );
+        
+           
+        }
+    }
     
     
 }

@@ -13,6 +13,7 @@ use App\Helpers\UserHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PiRequest;
 use App\Models\Address;
+use App\Models\AttributeGroup;
 use App\Models\ErpSaleOrder;
 use App\Models\Bom;
 use App\Models\ErpSoItem;
@@ -28,10 +29,13 @@ use App\Models\PiSoMappingItem;
 use App\Models\ErpSoItemBom;
 use App\Models\Unit;
 use App\Models\Vendor;
+use App\Models\Attribute;
+use Carbon\Carbon;
 use DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use PDF;
+use stdClass;
 use Yajra\DataTables\DataTables;
 
 class PiController extends Controller
@@ -1389,4 +1393,138 @@ class PiController extends Controller
             'selectedDeaprtmentId' => $departments['selectedDepartmentId'] 
         );
    }
+
+   public function piReport(Request $request)
+    {
+        $pathUrl = route('pi.index');
+        $orderType = [ConstantHelper::PI_SERVICE_ALIAS];
+        $puchaseIndents = PurchaseIndent::with('items')-> withDefaultGroupCompanyOrg() -> withDraftListingLogic() -> orderByDesc('id');
+        //Vendor Filter
+        $puchaseIndents = $puchaseIndents -> when($request -> vendor_id, function ($vendorQuery) use($request) {
+            $vendorQuery -> where('vendor_id', $request -> vendor_id);
+        });
+        //Book Filter
+        $puchaseIndents = $puchaseIndents -> when($request -> book_id, function ($bookQuery) use($request) {
+            $bookQuery -> where('book_id', $request -> book_id);
+        });
+        //Document Id Filter
+        $puchaseIndents = $puchaseIndents -> when($request -> document_number, function ($docQuery) use($request) {
+            $docQuery -> where('document_number', 'LIKE', '%' . $request -> document_number . '%');
+        });
+        //Location Filter
+        $puchaseIndents = $puchaseIndents -> when($request -> location_id, function ($docQuery) use($request) {
+            $docQuery -> where('store_id', $request -> location_id);
+        });
+        //Company Filter
+        $puchaseIndents = $puchaseIndents -> when($request -> company_id, function ($docQuery) use($request) {
+            $docQuery -> where('store_id', $request -> company_id);
+        });
+        //Organization Filter
+        $puchaseIndents = $puchaseIndents -> when($request -> organization_id, function ($docQuery) use($request) {
+            $docQuery -> where('organization_id', $request -> organization_id);
+        });
+        //Document Status Filter
+        $puchaseIndents = $puchaseIndents -> when($request -> doc_status, function ($docStatusQuery) use($request) {
+            $searchDocStatus = [];
+            if ($request -> doc_status === ConstantHelper::DRAFT) {
+                $searchDocStatus = [ConstantHelper::DRAFT];
+            } else if ($request -> doc_status === ConstantHelper::SUBMITTED) {
+                $searchDocStatus = [ConstantHelper::SUBMITTED, ConstantHelper::PARTIALLY_APPROVED];
+            } else {
+                $searchDocStatus = [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED];
+            }
+            $docStatusQuery -> whereIn('document_status', $searchDocStatus);
+        });
+        //Date Filters
+        $dateRange = $request -> date_range ??  Carbon::now()->startOfMonth()->format('Y-m-d') . " to " . Carbon::now()->endOfMonth()->format('Y-m-d');
+        $puchaseIndents = $puchaseIndents -> when($dateRange, function ($dateRangeQuery) use($request, $dateRange) {
+           $dateRanges = explode('to', $dateRange);
+           if (count($dateRanges) == 2) {
+                $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
+                $toDate = Carbon::parse(trim($dateRanges[1])) -> format('Y-m-d');
+                $dateRangeQuery -> whereDate('document_date', ">=" , $fromDate) -> where('document_date', '<=', $toDate);
+            }
+            else{
+                $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
+                $dateRangeQuery -> whereDate('document_date', $fromDate);
+            }
+        });
+        //Item Id Filter
+        $puchaseIndents = $puchaseIndents -> when($request -> item_id, function ($itemQuery) use($request) {
+            $itemQuery -> withWhereHas('items', function ($itemSubQuery) use($request) {
+                $itemSubQuery -> where('item_id', $request -> item_id)
+                //Compare Item Category
+                -> when($request -> item_category_id, function ($itemCatQuery) use($request) {
+                    $itemCatQuery -> whereHas('item', function ($itemRelationQuery) use($request) {
+                        $itemRelationQuery -> where('category_id', $request -> category_id)
+                        //Compare Item Sub Category
+                        -> when($request -> item_sub_category_id, function ($itemSubCatQuery) use($request) {
+                            $itemSubCatQuery -> where('subcategory_id', $request -> item_sub_category_id);
+                        });
+                    });
+                });
+            });
+        });
+        $puchaseIndents = $puchaseIndents -> get();
+        $processedSalesOrder = collect([]);
+        foreach ($puchaseIndents as $pi) {
+            foreach ($pi -> items as $piItem) {
+                $reportRow = new stdClass();
+                //Header Details
+                $header = $piItem -> pi;
+                $reportRow -> id = $header -> id;
+                $reportRow -> book_name = $header -> book_code;
+                $reportRow -> document_number = $header -> document_number;
+                $reportRow -> document_date = $header -> document_date;
+                $reportRow -> store_name = $header -> store ?-> store_name;
+                $reportRow -> sub_store_name = $header -> sub_store ?-> name;
+                $reportRow -> requester_type = $header -> requester_type;
+                $reportRow -> requester_name = $header -> requester_name();
+                $reportRow -> vendor_currency = $header -> currency_code;
+                $reportRow -> payment_terms_name = $header -> payment_term_code;
+                //Item Details
+                $reportRow -> item_name = $piItem -> item_name;
+                $reportRow -> item_code = $piItem -> item_code;
+                $reportRow -> hsn_code = $piItem -> hsn ?-> code;
+                $reportRow -> uom_name = $piItem -> uom ?-> name;
+                //Amount Details
+                $reportRow -> po_qty = number_format($piItem -> indent_qty, 2);
+                $reportRow -> mi_qty = number_format($piItem -> mi_qty ?? 0.00, 2);
+                $reportRow -> so_qty = number_format($piItem -> order_qty ?? 0.00, 2);
+                $reportRow -> so_no = $piItem ?-> so ? $piItem ?-> so ?-> book_code."-".$piItem ?-> so ?-> document_number : " ";
+                //Attributes UI
+                $attributesUi = '';
+                if (count($piItem -> attributes) > 0) {
+                    foreach ($piItem -> attributes as $soAttribute) {
+                        $attrName = AttributeGroup::find($soAttribute -> attribute_group_id)?->name;
+                        $attrValue = Attribute::find( $soAttribute -> attribute_value)?->value;
+                        $attributesUi .= "<span class='badge rounded-pill badge-light-primary' > $attrName : $attrValue </span>";
+                    }
+                } else {
+                    $attributesUi = 'N/A';
+                }
+                $reportRow -> attributes = $attributesUi;
+                //Main header Status
+                $reportRow -> status = $header -> document_status;
+                $processedSalesOrder -> push($reportRow);
+            }
+        }
+            return DataTables::of($processedSalesOrder) ->addIndexColumn()
+            ->editColumn('status', function ($row) use($orderType) {
+                $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->status ?? ConstantHelper::DRAFT];    
+                $displayStatus = ucfirst($row -> status);   
+                $editRoute = null;
+                $editRoute = route('sale.return.edit', ['id' => $row->id]);
+                return "
+                <div style='text-align:right;'>
+                    <span class='badge rounded-pill $statusClasss badgeborder-radius'>$displayStatus</span>
+                        <a href='" . $editRoute . "'>
+                            <i class='cursor-pointer' data-feather='eye'></i>
+                        </a>
+                </div>
+            ";
+            })
+            ->rawColumns(['attributes','delivery_schedule','status'])
+            ->make(true);
+    }
 }
