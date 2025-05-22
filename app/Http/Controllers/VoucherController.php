@@ -683,12 +683,9 @@ class VoucherController extends Controller
         // }
 
         $bookTypes = $serviceAlias['services'];
+        $bookTypes = collect($bookTypes)->whereIn('alias', [ConstantHelper::CONTRA_VOUCHER,ConstantHelper::JOURNAL_VOUCHER])->values()??[];
 
-        $books = [];
-        // Loop through each alias and collect the series
-        foreach ($bookTypes as $alias) {
-            $books[] = Helper::getBookSeriesNew($alias->alias, $parentUrl)->get(); // Keep the structure as it is
-        }
+        
 
         $lastVoucher = Voucher::where('organization_id', Helper::getAuthenticatedUser()->organization_id)->orderBy('id', 'desc')->select('book_type_id', 'book_id')->first();
         $currencies = Currency::where('status', ConstantHelper::ACTIVE)->select('id', 'name', 'short_name')->get();
@@ -767,15 +764,15 @@ class VoucherController extends Controller
         }
         $ref_view_route="#";
 
-        $history = Helper::getApprovalHistory($data->book_id, $id, $revNo, $data->amount, strtolower(end($creatorType)));
-        $revisionNumbers = $history->pluck('revision_number')->unique()->values()->all();
+                $history = Helper::getApprovalHistory($data->book_id, $id, $revNo,$data->amount,$data->created_by);
+            $revisionNumbers = $history->pluck('revision_number')->unique()->values()->all();
 
         if ($data->reference_doc_id && $data->reference_service) {
             $model = Helper::getModelFromServiceAlias($data->reference_service);
             if ($model != null) {
                 $referenceDoc = $model::find($data->reference_doc_id);
                 if ($referenceDoc != null) {
-                    $history = Helper::getApprovalHistory($referenceDoc->book_id, $referenceDoc->id, $referenceDoc->revision_number);
+                    $history = Helper::getApprovalHistory($referenceDoc->book_id, $referenceDoc->id, $referenceDoc->revision_number,0,$referenceDoc->created_by);
                     $ref_view_route = Helper::getRouteNameFromServiceAlias($data->reference_service,$data->reference_doc_id);
                     $buttons['reference']=true;
                 }
@@ -920,6 +917,9 @@ class VoucherController extends Controller
         $voucher->doc_suffix = $numberPatternData['suffix'];
         $voucher->approvalStatus = $request->status;
         $voucher->created_by = Helper::getAuthenticatedUser()->auth_user_id;
+        $voucher->approvalLevel = 1;
+
+        
 
 
         if ($request->hasFile('document')) {
@@ -943,19 +943,24 @@ class VoucherController extends Controller
         $voucher->voucherable_type = $userData['user_type'];
 
         $voucher->save();
-        $voucher = Voucher::find($voucher->id);
-
-        if ($voucher->approvalStatus == ConstantHelper::SUBMITTED) {
-            $approveDocument = Helper::approveDocument($request->book_id, $voucher->id, $voucher->revision_number, $voucher->remarks, $request->file('attachment'), 1, 'submit', 0, get_class($voucher));
-                        $voucher->approvalLevel = $approveDocument['nextLevel']?? 1;
-                        $voucher->approvalStatus= $approveDocument['approvalStatus']?? ConstantHelper::SUBMITTED;
-                        $voucher->save();
-        }
-       
-
-        //NumberPattern::where('organization_id', $organization->id)->where('book_id', $request->book_id)->orderBy('id', 'DESC')->first()->increment('current_no');
-
+        
         $voucherId = $voucher->id;
+        if ($request->status == ConstantHelper::SUBMITTED) {
+                        $bookId = $voucher->book_id;
+                        $docId = $voucher->id;
+                        $remarks = $voucher->remarks;
+                        $attachments = $request->file('attachment');
+                        $currentLevel = $voucher->approval_level;
+                        $revisionNumber = $voucher->revision_number ?? 0;
+                        $actionType = 'submit'; // Approve // reject // submit
+                        $modelName = get_class($voucher);
+                        $totalValue = $voucher->amount ?? 0;
+                        $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
+                        $voucher->approvalStatus = $approveDocument['approvalStatus'] ?? $voucher->document_status;
+                        $voucher->save();
+
+        }
+    
 
         // Process item details
         $debitAmts = $request->input('debit_amt');
@@ -1093,13 +1098,24 @@ class VoucherController extends Controller
         $voucher->document_date = $request->date;
         $voucher->location = $request->location;
 
-        $voucher->approvalStatus = $request->status;
 
-        if ($voucher->approvalStatus == ConstantHelper::SUBMITTED) {
-            $approveDocument = Helper::approveDocument($voucher->book_id, $voucher->id, $voucher->revision_number, $voucher->remarks, $request->file('attachment'), 1, 'submit', 0, get_class($voucher));
-                        $voucher->approvalLevel = $approveDocument['nextLevel']?? 1;
-                        $voucher->approvalStatus= $approveDocument['approvalStatus']?? ConstantHelper::SUBMITTED;
+         if ($request->status == ConstantHelper::SUBMITTED) {
+                        $bookId = $voucher->book_id;
+                        $docId = $voucher->id;
+                        $remarks = $voucher->remarks;
+                        $attachments = $request->file('attachment');
+                        $currentLevel = $voucher->approval_level;
+                        $revisionNumber = $voucher->revision_number ?? 0;
+                        $actionType = 'submit'; // Approve // reject // submit
+                        $modelName = get_class($voucher);
+                        $totalValue = $voucher->amount ?? 0;
+                        $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
+                        $voucher->approvalStatus = $approveDocument['approvalStatus'] ?? $voucher->document_status;
+
         }
+        else
+                $voucher->approvalStatus = $request->status;
+
 
         if ($request->hasFile('document')) {
             $files = $request->file('document'); // 'document' should be an array of files

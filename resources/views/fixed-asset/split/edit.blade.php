@@ -638,10 +638,19 @@
         }
 
 
-        $('#delete_new_sub_asset').on('click', function() {
-            $('.mrntableselectexcel .row-check:checked').closest('tr').remove();
-            updateSubAssetCodes();
-        });
+         $('#delete_new_sub_asset').on('click', function() {
+    let totalRows = $('.mrntableselectexcel tr').length;
+    let checkedRows = $('.mrntableselectexcel tr .row-check:checked').length;
+    console.log(totalRows, checkedRows);
+
+    if ((totalRows - checkedRows) < 1) {
+        showToast('warning','At least one row must remain.');
+        return;
+    }
+
+    $('.mrntableselectexcel .row-check:checked').closest('tr').remove();
+    updateSubAssetCodes();
+});
 
         function resetParametersDependentElements(data) {
             let backDateAllowed = false;

@@ -35,30 +35,11 @@
 </head>
 <body>
     <div style="width:700px; font-size: 11px; font-family:Arial;">
-
-    <table style="width: 100%; border-collapse: collapse; margin-bottom: 0;">
-            <tr>
-                <!-- Organization Logo (Left) -->
-                <td style="vertical-align: top;">
-                    @if (isset($orgLogo) && $orgLogo)
-                        <img src="{!! $orgLogo !!}" alt="" height="50px" />
-                    @else
-                        <img src="{{$imagePath}}" height="50px" alt="">
-                    @endif
-                </td>
-
-                <!--  Purchase Order Text (Center) -->
-                <td style="width: 34%; text-align: center; font-size: 24px; font-weight: 100; padding: 0;">
-                    Purchase Order
-                </td>
-
-                <!-- Organization Name (Right) -->
-                <td style="width: 33%; text-align: right; font-size: 20px; font-weight: 100; padding: 0;">
-                    {{ @$organization->name }}
-                </td>
-            </tr>
-        </table>
-
+        @include('pdf.partials.header', [
+            'orgLogo' => $orgLogo,
+            'imagePath' => $imagePath,
+            'moduleTitle' => 'Purchase Order'
+        ])
         <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
             <tr>
                 <td style="border: 1px solid #000; padding: 3px; width: 40%; vertical-align: top;">

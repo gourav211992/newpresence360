@@ -224,8 +224,10 @@
               extend: 'excel',
               text: feather.icons['file'].toSvg({ class: 'font-small-4 mr-50' }) + 'Excel',
               className: 'dropdown-item',
-              exportOptions: { columns: [1,2,3,4,5,6,7,8,9] }
-            }
+                  exportOptions: {
+      columns: ':not(:last-child)' // exclude the last column
+    },
+         }
           ],
           init: function (api, node, config) {
             $(node).removeClass('btn-secondary');

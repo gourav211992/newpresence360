@@ -179,12 +179,11 @@ class RevImpController extends Controller
         
         $userType = Helper::userCheck();
         
-        $buttons = Helper::actionButtonDisplay($data->book_id,$data->document_status , $data->id, $data->current_value, 
+        $buttons = Helper::actionButtonDisplay($data->book_id,$data->document_status , $data->id, 0, 
         $data->approval_level, $data -> created_by ?? 0, $userType['type'], $revision_number);
-        
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$data->document_status] ?? '';
         $revNo = $data->revision_number;
-        $approvalHistory = Helper::getApprovalHistory($data->book_id, $data->id, $revNo,$data->current_value,$data->created_by);
+        $approvalHistory = Helper::getApprovalHistory($data->book_id, $data->id, $revNo,0,$data->created_by);
         
         $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()->whereIn('document_status',ConstantHelper::DOCUMENT_STATUS_APPROVED)->get();
         
@@ -297,7 +296,7 @@ class RevImpController extends Controller
             $doc = FixedAssetRevImp::find($request->id);
             $bookId = $doc->book_id; 
             $docId = $doc->id;
-            $docValue = $doc->current_value;
+            $docValue = 0;
             $remarks = $request->remarks;
             $attachments = $request->file('attachments');
             $currentLevel = $doc->approval_level;

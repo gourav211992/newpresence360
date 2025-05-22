@@ -35,24 +35,11 @@
 </head>
 <body>
     <div style="width:700px; font-size: 11px; font-family:Arial;">
-
-        <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
-            <tr>
-                <td style="vertical-align: top;">
-                    @if (isset($orgLogo))
-                        <img src="{!! $orgLogo !!}" alt="" height="50px" />
-                    @else
-                        <img src="{{$imagePath}}" height="50px" alt="">
-                    @endif
-                </td>
-                <td style="text-align: right; vertical-align: bottom; font-weight: bold; font-size: 18px;">
-                    Supplier Invoice
-                    <br>
-                    {{ Str::ucfirst(@$organization->name) }}
-                </td>
-            </tr>
-        </table>
-
+        @include('pdf.partials.header', [
+            'orgLogo' => $orgLogo,
+            'imagePath' => $imagePath,
+            'moduleTitle' => 'Supplier Invoice'
+        ])
         <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
             <tr>
                 <td rowspan="2" style="border: 1px solid #000; padding: 3px; width: 40%; vertical-align: top;">

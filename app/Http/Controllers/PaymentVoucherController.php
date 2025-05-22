@@ -95,7 +95,6 @@ class PaymentVoucherController extends Controller
             $attachments = $request->file('attachment');
             $approveDocument = Helper::approveDocument($update->book_id, $update->id, $update->revision_number, $request->remarks, $attachments, $update->approval_level, $request->action_type);
             $update->approval_level = $approveDocument['nextLevel'];
-            $update->approval_level = $approveDocument['nextLevel'];
             $update->document_status = $approveDocument['approvalStatus'];
             $update->save();
 
@@ -518,7 +517,7 @@ if ($ref) {
                 // Handle approval process
                 $voucher = PaymentVoucher::find($voucher->id);
                 if ($voucher->document_status == ConstantHelper::SUBMITTED) {
-                        $approveDocument = Helper::approveDocument($voucher->book_id, $voucher->id, $voucher->revision_number, $voucher->remarks, $request->file('attachment'), 0, 'submit',$voucher->amount,get_class($voucher));
+                        $approveDocument = Helper::approveDocument($voucher->book_id, $voucher->id, $voucher->revision_number, $voucher->remarks, $request->file('attachment'), 1, 'submit',$voucher->amount,get_class($voucher));
                         $voucher->approvalLevel = $approveDocument['nextLevel']?? 1;
                         $voucher->document_status = $approveDocument['approvalStatus']?? ConstantHelper::SUBMITTED;
                         $voucher->save();
@@ -598,7 +597,7 @@ if ($ref) {
             $revNo = $data->revision_number;
         }
 
-        $history = Helper::getApprovalHistory($data->book_id, $id, $revNo);
+        $history = Helper::getApprovalHistory($data->book_id, $id, $revNo,$data->amount,$data->created_by);
 
         $banks = Bank::withDefaultGroupCompanyOrg()->with('bankDetails')->get();
         $groupId = Helper::getGroupsQuery()->where('name', 'Cash-in-Hand')->value('id');
@@ -807,7 +806,7 @@ if ($ref) {
             // Reload voucher for approval flow
             $voucher = PaymentVoucher::find($id);
             if ($voucher->document_status == ConstantHelper::SUBMITTED) {
-                $approveDocument = Helper::approveDocument($voucher->book_id, $voucher->id, $voucher->revision_number, $voucher->remarks, $request->file('attachment'), 0, 'submit',$voucher->amount,get_class($voucher));
+                $approveDocument = Helper::approveDocument($voucher->book_id, $voucher->id, $voucher->revision_number, $voucher->remarks, $request->file('attachment'), 1, 'submit',$voucher->amount,get_class($voucher));
                 $voucher->approvalLevel = $approveDocument['nextLevel']??1;
                 $voucher->document_status = $approveDocument['approvalStatus']?? ConstantHelper::SUBMITTED;
                 $voucher->save();

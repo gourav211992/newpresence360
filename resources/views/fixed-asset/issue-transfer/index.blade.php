@@ -206,34 +206,14 @@
                     text: feather.icons['share'].toSvg({ class: 'font-small-4 mr-50' }) + 'Export',
                     buttons: [
                         {
-                            extend: 'csv',
-                            text: feather.icons['file-text'].toSvg({ class: 'font-small-4 mr-50' }) + 'Csv',
-                            className: 'dropdown-item',
-                            filename: 'Asset_TrackingReport',
-                            exportOptions: {
-                                columns: ':not(:first-child):not(:last-child)', // Exclude the first (#) and last (Action) columns
-                                format: {
-                                    header: function (data, columnIdx) {
-                                        const headers = ['Asset Name', 'Asset Code', 'Issue/Transfer Date', 'Location', 'Qty', 'Auth. Person', 'Status'];
-                                        return headers[columnIdx - 1] || data;
-                                    }
-                                }
-                            }
-                        },
-                        {
                             extend: 'excel',
                             text: feather.icons['file'].toSvg({ class: 'font-small-4 mr-50' }) + 'Excel',
                             className: 'dropdown-item',
                             filename: 'Asset_TrackingReport',
-                            exportOptions: {
-                                columns: ':not(:first-child):not(:last-child)', // Exclude the first (#) and last (Action) columns
-                                format: {
-                                    header: function (data, columnIdx) {
-                                        const headers = ['Asset Name', 'Asset Code', 'Issue/Transfer Date', 'Location', 'Qty', 'Auth. Person', 'Status'];
-                                        return headers[columnIdx - 1] || data;
-                                    }
-                                }
-                            }
+                                  exportOptions: {
+      columns: ':not(:last-child)' // exclude the last column
+    },
+         
                         }
                     ],
                     init: function (api, node, config) {

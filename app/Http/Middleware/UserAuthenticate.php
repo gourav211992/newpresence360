@@ -128,6 +128,7 @@ class UserAuthenticate
 
         return $next($request);
 
+        return $next($request);
 
 	$returnUrl = $request->fullUrl();
         $authUrl = env("AUTH_URL", "/") . 'login?' . http_build_query([
@@ -211,7 +212,6 @@ class UserAuthenticate
             if(in_array($authType, array('IAM-SUPER', 'IAM-ADMIN', 'IAM-ROOT'))) {
                 $authType = 'user';
                 $user = User::find($authUser->authenticable_id);
-
                 Auth::guard('web')->login($user);
             }else {
                 $authType = 'employee';

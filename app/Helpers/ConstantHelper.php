@@ -84,6 +84,7 @@ class ConstantHelper
 
     const DOCUMENT_STATUS_APPROVED = [self::APPROVED,self::APPROVAL_NOT_REQUIRED,self::POSTED];
     const DOCUMENT_STATUS_REJECTED = [self::CANCEL,self::REJECTED];
+    const DOCUMENT_STATUS_SUBMITTED = [self::SUBMITTED, self::APPROVED, self::APPROVAL_NOT_REQUIRED, self::POSTED, self::PARTIALLY_APPROVED];
 
 
     // Titles

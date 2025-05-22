@@ -406,12 +406,6 @@
                                                      
                                                         </div>
                                                     </div>  
-                                                    <div class="col-md-3">
-                                                        <div class="mb-1">
-                                                            <label class="form-label">Total Dep. <span class="text-danger">*</span></label>
-                                                            <input type="number" id="total_depreciation" name="total_depreciation" class="form-control" value="0" readonly /> 
-                                                        </div>
-                                                    </div>
                                                     
                                                    
 
@@ -425,6 +419,13 @@
                                                                 value="{{ old('current_value') }}" readonly />
                                                         </div>
                                                     </div>
+                                                    <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">Total Dep. <span class="text-danger">*</span></label>
+                                                            <input type="number" id="total_depreciation" name="total_depreciation" class="form-control" value="0" readonly /> 
+                                                        </div>
+                                                    </div>
+                                                    
                                                 </div>
                                             </div>
                                         </div>

@@ -1,6 +1,13 @@
 @foreach($pwoItems as $key => $pwoItem)
 @php
    $rowCount = $rowCount + $key;
+   $orderQty = $pwoItem->inventory_uom_qty - $pwoItem->pwo_qty;
+   $prodQty = $orderQty; 
+   if($pwoItem?->bom) {
+      $safetyBufferperc = \App\Helpers\ItemHelper::getBomSafetyBufferPerc($pwoItem?->bom_id);
+      $prodQty = $orderQty + ($orderQty * $safetyBufferperc / 100);
+      $prodQty = ceil($prodQty);
+   }
 @endphp
 <tr id="row_{{$rowCount}}" data-index="{{$rowCount}}">
    <td class="customernewsection-form">
@@ -35,19 +42,13 @@
       </select>
    </td>
    <td>
-      <input type="number" value="{{$pwoItem->inventory_uom_qty - $pwoItem->pwo_qty}}" step="any" class="form-control mw-100 text-end"  name="components[{{$rowCount}}][qty]"/>
+      <input type="number" value="{{$prodQty}}" step="any" class="form-control mw-100 text-end"  name="components[{{$rowCount}}][qty]"/>
    </td>
    <td>
       <input type="hidden" name="components[{{$rowCount}}][customer_id]" value="{{$pwoItem?->header?->customer_id}}" />
       <input readonly type="text" placeholder="Select" class="form-control mw-100 ledgerselecct" value="{{$pwoItem?->header?->customer?->company_name}}" name="components[{{$rowCount}}][customer_code]" />
    </td>
    <td>{{$pwoItem?->header?->document_number ?? ''}}</td>
-   {{-- <td>
-      <div class="d-flex align-items-center justify-content-center">
-      <input type="hidden" name="components[{{$rowCount}}][remark]" value="{{$pwoItem->remark}}"/>
-         <div class="me-50 mx-1 cursor-pointer addRemarkBtn" data-row-count="{{$rowCount}}"><span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary" data-bs-original-title="Remarks" aria-label="Remarks"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg></span></div>
-      </div>
-   </td> --}}
    <input type="hidden" name="components[{{$rowCount}}][bom_id]" value="{{$pwoItem?->bom_id}}">
    <input type="hidden" name="components[{{$rowCount}}][so_item_id]" value="{{$pwoItem?->id}}">
    <input type="hidden" name="components[{{$rowCount}}][so_id]" value="{{$pwoItem?->header?->id}}">
