@@ -42,9 +42,9 @@
                                                 <th>Series</th>
                                                 <th>Voucher No.</th>
                                                 <th>Ledger</th>
+                                                <th class="text-end">Amount</th>
                                                 <th>Location</th>
                                                 <th>Cost Center</th>
-                                                <th class="text-end">Amount</th>
                                                 <th>Document</th>
                                                 <th>Remarks</th>
                                                 <th class="text-end">Status</th>
@@ -74,10 +74,11 @@
                                                     <td class="text-nowrap">{{ $item->series->book_code ?? '-' }}</td>
                                                     <td class="text-nowrap">{{ $item->voucher_no ?? '-' }}</td>
                                                     <td class="text-nowrap">{{ $item?->items?->first()?->ledger?->name ?? '-' }}</td>
-                                                    <td class="text-nowrap">{{ $item?->ErpLocation?->store_name ?? ''}}</td>
-                                                    <td class="text-nowrap">{{ $item?->items?->first()?->costCenter?->name ?? '-' }}</td>
                                                     <td class="text-nowrap" style="text-align: end;">
                                                         {{ Helper::formatIndianNumber($item->amount) ?? '-' }}</td>
+                                                    <td class="text-nowrap">{{ $item?->ErpLocation?->store_name ?? ''}}</td>
+                                                    <td class="text-nowrap">{{ $item?->items?->first()?->costCenter?->name ?? '-' }}</td>
+
                                                     <td>
                                                         @php $documents = $item->document
                                                                                                                             ? json_decode($item->document, true)
@@ -301,7 +302,7 @@
                             text: feather.icons['file'].toSvg({ class: 'font-small-4 me-50' }) + 'Excel',
                             className: 'btn btn-outline-secondary',
                             exportOptions: {
-                                columns: [0, 1, 2, 3, 4, 5, 6, 7]
+                                columns: [0, 1, 2, 3, 4, 5, 6, 7,8]
                             },
                             filename: 'Vouchers Report'
                     ,
