@@ -7,6 +7,7 @@ use App\Models\FixedAssetRegistration;
 use Illuminate\Http\Request;
 use App\Helpers\Helper;
 use App\Models\Employee;
+use App\Models\ErpStore;
 use App\Models\FixedAssetMaintenance;
 use Carbon\Carbon;
 
@@ -18,8 +19,8 @@ class MaintenanceController extends Controller
     public function index(Request $request)
     {
         $parentURL = "fixed-asset_registration";
-        
-        
+
+
          $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
          if (count($servicesBooks['services']) == 0) {
             return redirect() -> route('/');
@@ -47,7 +48,7 @@ class MaintenanceController extends Controller
             $query->whereBetween('created_at', [$start_date, $end_date]);
         }
     }
-    
+
 
     // Get the filtered data
     $data = $query->get();
@@ -61,8 +62,8 @@ class MaintenanceController extends Controller
     public function create()
     {
         $parentURL = "fixed-asset_registration";
-        
-        
+
+
          $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
          if (count($servicesBooks['services']) == 0) {
             return redirect() -> route('/');
@@ -78,8 +79,8 @@ class MaintenanceController extends Controller
         ->whereNotNull('asset_code')
         ->whereNotNull('asset_name')
         ->get();
-
-        return view('fixed-asset.maintenance.create',compact('assets','employees'));
+        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
+        return view('fixed-asset.maintenance.create',compact('assets','employees','locations'));
     }
 
     /**
@@ -117,8 +118,8 @@ class MaintenanceController extends Controller
         ->whereNotNull('asset_code')
         ->whereNotNull('asset_name')
         ->get();
-
-        return view('fixed-asset.maintenance.show',compact('assets','data'));
+        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
+        return view('fixed-asset.maintenance.show',compact('assets','data','locations'));
     }
 
     /**
@@ -131,8 +132,8 @@ class MaintenanceController extends Controller
         ->whereNotNull('asset_code')
         ->whereNotNull('asset_name')
         ->get();
-
-        return view('fixed-asset.maintenance.edit',compact('assets','data'));
+        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
+        return view('fixed-asset.maintenance.edit',compact('assets','data','locations'));
     }
 
     /**

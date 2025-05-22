@@ -146,16 +146,27 @@
           </div>
       
           <div class="mb-1">
-              <label class="form-label">Asset Code</label>
-              <select class="form-select" name="filter_asset">
+              <label class="form-label">Type</label>
+              <select class="form-select" name="filter_type">
                   <option value="">Select</option>
-                  @foreach($assetCodes as $assetCode)
-                      <option value="{{ $assetCode->id }}" {{ request('filter_asset') == $assetCode->id ? 'selected' : '' }}>
-                          {{ $assetCode->asset_code }}
-                      </option>
-                  @endforeach
+                  <option value="revaluation" {{ request('filter_type') == 'revaluation' ? 'selected' : '' }}>Revaluation </option>
+                  <option value="impairment" {{ request('filter_type') == 'impairement' ? 'selected' : '' }}>Impairment</option>
+                
               </select>
           </div>
+          <div class="mb-1">
+              <label class="form-label">Categories</label>
+              <select class="form-select" name="filter_category">
+                @foreach($categories as $category)
+                  <option value="{{ $category->id }}" {{ request('filter_category') == $category->id ? 'selected' : '' }}>
+                      {{ $category->name }}
+                  </option>
+                @endforeach
+
+              </select>
+          </div>
+          
+
       
          
           <div class="mb-1">

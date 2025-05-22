@@ -455,33 +455,37 @@ class VoucherController extends Controller
     public function approveVoucher(Request $request)
     {
         $request->validate([
-            'remarks' => 'nullable',
+            'remarks' => 'nullable|string|max:255',
             'attachment' => 'nullable'
         ]);
         DB::beginTransaction();
         try {
-            $update = Voucher::find($request->id);
-            $attachments = $request->file('attachment');
-            $approveDocument = Helper::approveDocument($update->book_id, $update->id, $update->revision_number, $request->remarks, $attachments, $update->approvalLevel, $request->action_type);
-            $update->approvalLevel = $approveDocument['nextLevel'];
-            $update->approvalStatus = $approveDocument['approvalStatus'];
-            $update->save();
+            $saleOrder = Voucher::find($request->id);
+            $bookId = $saleOrder->book_id;
+            $docId = $saleOrder->id;
+            $docValue = $saleOrder->amount;
+            $remarks = $request->remarks;
+            $attachments = $request->file('attachments');
+            $currentLevel = $saleOrder->approval_level;
+            $revisionNumber = $saleOrder->revision_number ?? 0;
+            $actionType = $request->action_type; // Approve or reject
+            $modelName = get_class($saleOrder);
+            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
+            $saleOrder->approvalLevel = $approveDocument['nextLevel'];
+            $saleOrder->document_status = $approveDocument['approvalStatus'];
+            $saleOrder->approvalStatus = $approveDocument['approvalStatus'];
+            $saleOrder->approval_level = $approveDocument['nextLevel'];
+            $saleOrder->save();
 
             DB::commit();
-            if ($request->action_type == "approve")
-                return response()->json([
-                    'message' => __('message.approved', ['module' => 'Voucher']),
-                    'data' => $update,
-                ]);
-            else if ($request->action_type == 'reject')
-                return response()->json([
-                    'message' => __('message.reject', ['module' => 'Voucher']),
-                    'data' => $update,
-                ]);
+            return response()->json([
+                'message' => "Document $actionType successfully!",
+                'data' => $saleOrder,
+            ]);
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
-                'message' => __('message.approve_failed', ['module' => 'Voucher']),
+                'message' => "Error occurred while $actionType document.",
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -1135,13 +1139,6 @@ class VoucherController extends Controller
         }
         $voucher->save();
 
-        /*Create document submit log*/
-        if ($voucher->approvalStatus == ConstantHelper::SUBMITTED) {
-            Helper::approveDocument($voucher->book_id, $voucher->id, $voucher->revision_number, $voucher->remarks, $request->file('attachment'),1, 'submit');
-        }
-        if ($voucher->approvalStatus == ConstantHelper::APPROVAL_NOT_REQUIRED || $voucher->approvalStatus == ConstantHelper::APPROVED)  {
-            Helper::approveDocument($voucher->book_id, $voucher->id, $voucher->revision_number, $voucher->remarks, $request->file('attachment'), 1, 'approve');
-        }
         ItemDetail::where('voucher_id', $id)->delete();
 
         // Process item details

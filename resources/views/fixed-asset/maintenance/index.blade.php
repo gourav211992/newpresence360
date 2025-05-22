@@ -49,6 +49,8 @@
                                                 <th>#</th>
                                                 <th>Asset NAme</th>
                                                 <th>Asset Code</th>
+                                                <th>Location</th>
+                                                <th>Cost Center</th>
                                                 <th>Verf. Date</th>
                                                 <th>Condition</th>
                                                 <th>Action</th>
@@ -60,6 +62,8 @@
                                                     <td>{{ $key + 1 }}</td>
                                                     <td>{{ $item?->asset?->asset_name }}</td>
                                                     <td>{{ $item?->asset?->asset_code }}</td>
+                                                    <td>{{  $item?->location?->store_name }}</td>
+                                                    <td>{{  $item?->cost_center?->name }}</td>
                                                     <td>{{ $item->verf_date }}</td>
                                                     <td>{{ $item->condition }}</td>
                                                     <td class="tableactionnew">
@@ -182,7 +186,7 @@
                     targets: [0, -1] // Disable sorting for the first (#) and last (Action) columns
                 },
                 {
-                    targets: 4, // Condition column (adjust if necessary based on your structure)
+                    targets: 6, // Condition column (adjust if necessary based on your structure)
                     render: function(data, type, row, meta) {
                         if (type === 'export') {
                             return data; // Return raw data for export
@@ -217,7 +221,7 @@
                           exportOptions: {
       columns: ':not(:last-child)' // exclude the last column
     },
-         
+
                 }]
             }],
             init: function(api, node, config) {

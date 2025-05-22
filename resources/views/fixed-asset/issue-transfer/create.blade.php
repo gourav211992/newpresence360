@@ -107,6 +107,51 @@
                                             </div>
 
                                             <div class="col-md-9">
+                                                {{-- location --}}
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Location <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+
+                                                    <div class="col-md-5">
+                                                        <select id="location" class="form-select"
+                                                            name="location_id" required>
+                                                             <option value="">Select</option>
+                                                            @foreach ($locations as $location)
+                                                                <option value="{{ $location->id }}">
+                                                                    {{ $location->store_name }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+
+                                                </div>
+                                                {{-- costcenter & categories --}}
+                                                <div class="row align-items-center mb-1 cost_center">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Cost Center <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+
+                                                    <div class="col-md-5">
+                                                        <select id="cost_center" class="form-select"
+                                                            name="cost_center_id" required>
+                                                        </select>
+                                                    </div>
+
+                                                </div>
+                                                <div class="row align-items-center mb-1">
+                                                     <div class="col-md-3">
+
+                                                            <label class="form-label">Category <span
+                                                                    class="text-danger">*</span></label>
+                                                        </div>
+                                                        <div class="col-md-5">
+                                                            <select class="form-select select2" required name="category_id"
+                                                                id="category" required>
+                                                               </select>
+                                                        </div>
+                                                    </div>
                                                 <!-- Asset Code & Name -->
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
@@ -119,12 +164,12 @@
                                                             <option value=""
                                                                 {{ old('asset_id') == '' ? 'selected' : '' }}>Select
                                                             </option>
-                                                            @foreach ($assets as $asset)
+                                                            {{-- @foreach ($assets as $asset)
                                                                 <option value="{{ $asset->id }}"
                                                                     {{ old('asset_id') == $asset->id ? 'selected' : '' }}>
                                                                     {{ $asset->asset_code }} ({{ $asset->asset_name }})
                                                                 </option>
-                                                            @endforeach
+                                                            @endforeach --}}
                                                         </select>
                                                     </div>
                                                 </div>
@@ -179,23 +224,7 @@
                                                     </div>
                                                 </div>
 
-                                                <!-- Location -->
-                                                <div class="row align-items-center mb-1">
-                                                    <div class="col-md-3">
-                                                        <label for="location" class="form-label">Location <span
-                                                                class="text-danger">*</span></label>
-                                                    </div>
-                                                    <div class="col-md-5">
-                                                        <select name="location" id="location" required class="form-select">
-                                                            <option value=""
-                                                                {{ old('location') == '' ? 'selected' : '' }}>Select
-                                                            </option>
-                                                            <option value="2100"
-                                                                {{ old('location') == '2100' ? 'selected' : '' }}>2100,
-                                                                Noida</option>
-                                                        </select>
-                                                    </div>
-                                                </div>
+                                              
                                                 <div id="transferLocation">
                                                     <!-- Transfer Location -->
                                                     <div class="row align-items-center mb-1">
@@ -458,6 +487,161 @@
                 "@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach"
             );
         @endif
+        //
+        // location ,cost center, categories
+        $('#location').on('change', function () {
+            $('#category').empty();
+
+            const locationId = $(this).val();
+
+            if (locationId) {
+                const costCenterUrl = '{{ route("cost-center.get-cost-center", ":id") }}'.replace(':id', locationId);
+
+                $.ajax({
+                    url: costCenterUrl,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (data) {
+                        const $costCenter = $('#cost_center');
+                        $costCenter.empty();
+
+                        if (data.length === 0) {
+                            $costCenter.prop('required', false);
+                            $('.cost_center').hide();
+
+                            loadCategories({ locationId });
+                        } else {
+                            $('.cost_center').show();
+                            $costCenter.prop('required', true);
+                            $costCenter.append('<option value="">Select Cost Center</option>');
+
+                            $.each(data, function (key, value) {
+                                $costCenter.append('<option value="' + value.id + '">' + value.name + '</option>');
+                            });
+
+                            $costCenter.trigger('change'); // 🔹 This will handle the rest
+                        }
+                    },
+                    error: function () {
+                        $('#cost_center').empty();
+                    }
+                });
+            } else {
+                $('#cost_center').empty();
+                $('#category').empty();
+            }
+        });
+
+        // When cost center is changed
+        $('#cost_center').on('change', function () {
+            const costCenterId = $(this).val();
+            const locationId = $('#location').val();
+
+            if (locationId) {
+                if (costCenterId) {
+                    loadCategories({ locationId, costCenterId });
+                } else {
+                    loadCategories({ locationId });
+                }
+            }
+        });
+
+        // Centralized function to load categories
+        function loadCategories({ locationId, costCenterId = null }) {
+            const url = '{{ route("finance.fixed-asset.get-categories") }}';
+
+            $.ajax({
+                url: url,
+                type: 'GET',
+                data: {
+                    location_id: locationId,
+                    cost_center_id: costCenterId
+                },
+                dataType: 'json',
+                success: function (data) {
+                    const $category = $('#category');
+                    $category.empty().append('<option value="">Select Category</option>');
+
+                    $.each(data, function (key, value) {
+                        $category.append('<option value="' + value.id + '">' + value.name + '</option>');
+                    });
+                },
+                error: function () {
+                    $('#category').empty();
+                }
+            });
+        }
+
+
+        $('#location').trigger('change');
+
+        $('#category').on('change', function () {
+            updateAssetOptions();
+        });
+
+        function getAllAssetIds() {
+            let assetIds = [];
+
+            $('.asset_id').each(function () {
+                let val = $(this).val();
+                if (val) {
+                    assetIds.push(parseFloat(val));
+                }
+            });
+
+            return assetIds;
+        }
+        function updateAssetOptions() {
+            const category = $('#category').val();
+
+            $.ajax({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                url: '{{ route("finance.fixed-asset.asset-search") }}',
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    q: '', // optional, if your API needs a search term
+                    ids: getAllAssetIds(), // your existing helper
+                    category: category,
+                    location: $('#location').val(),
+                    cost_center: $('#cost_center').val()
+                },
+                success: function (data) {
+                    const $assetSelect = $('#asset_id');
+                    $assetSelect.empty(); // clear old options
+
+                    // Add default "Select" option
+                    $assetSelect.append(
+                        $('<option>', {
+                            value: '',
+                            text: 'Select'
+                        })
+                    );
+
+                    // Loop through returned assets
+                    if (Array.isArray(data)) {
+                        data.forEach(asset => {
+                            $assetSelect.append(
+                                $('<option>', {
+                                    value: asset.id,
+                                    text: `${asset.asset_code} (${asset.asset_name})`
+                                })
+                            );
+                        });
+                    }
+                },
+                error: function () {
+                    $('#asset_id').empty().append(
+                        $('<option>', {
+                            value: '',
+                            text: 'Select'
+                        })
+                    );
+                }
+            });
+        }
     </script>
     <script src="{{ asset('assets/js/subasset.js') }}"></script>
 

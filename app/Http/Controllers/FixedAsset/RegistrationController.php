@@ -139,10 +139,6 @@ class RegistrationController extends Controller
         }
 
         $user = Helper::getAuthenticatedUser();
-        $status = ($request->document_status === ConstantHelper::SUBMITTED)
-            ? Helper::checkApprovalRequired($request->book_id)
-            : $request->document_status;
-
         $additionalData = [
             'created_by' => $user->auth_user_id,
             'type' => get_class($user),
@@ -150,7 +146,6 @@ class RegistrationController extends Controller
             'group_id' => $user->organization->group_id,
             'company_id' => $user->organization->company_id,
             'last_dep_date' => $request->capitalize_date,
-            'document_status' => $status,
             'approval_level' => 1,
             'revision_number' => 0,
             'current_value_after_dep' => $request->current_value,
@@ -164,12 +159,11 @@ class RegistrationController extends Controller
             $asset = FixedAssetRegistration::create($data);
             FixedAssetSub::generateSubAssets($asset->id, $asset->asset_code, $asset->quantity, $asset->current_value, $asset->salvage_value);
 
-            if ($asset->document_status == ConstantHelper::SUBMITTED) {
-                Helper::approveDocument($request->book_id, $asset->id, $asset->revision_number, "", null, 1, 'submit', 0, get_class($asset));
-            }
-
-            if ($asset->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED || $asset->approvalStatus == ConstantHelper::APPROVED) {
-                Helper::approveDocument($request->book_id, $asset->id, $asset->revision_number, "", null, 1, 'approve', 0, get_class($asset));
+            if ($asset->document_status != ConstantHelper::DRAFT) {
+                $doc = Helper::approveDocument($asset->book_id, $asset->id, $asset->revision_number, "", null, 1, 'submit', 0, get_class($asset));
+                $asset->document_status = $doc['approvalStatus']??$asset->document_status;
+                $asset->approval_level = $doc['nextLevel']??$asset->approval_level;
+                $asset->save();
             }
 
             DB::commit();
@@ -341,12 +335,6 @@ class RegistrationController extends Controller
                 ->withErrors($request->errors());
         }
 
-        // Merge request data with additional data
-        if ($request->document_status === ConstantHelper::SUBMITTED)
-            $status = Helper::checkApprovalRequired($asset->book_id);
-        else
-            $status = $request->document_status;
-        $request->merge(['document_status' => $status]);
         $request->merge(['last_dep_date' => $request->capitalize_date]);
         $request->merge(['current_value_after_dep' => $request->current_value]);
         $data = $request->all();
@@ -357,11 +345,11 @@ class RegistrationController extends Controller
         // Update the asset
         try {
             $asset->update($data);
-            if ($asset->document_status == ConstantHelper::SUBMITTED) {
-                Helper::approveDocument($asset->book_id, $asset->id, $asset->revision_number, "", null, 1, 'submit', 0, get_class($asset));
-            }
-            if ($asset->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED || $asset->approvalStatus == ConstantHelper::APPROVED) {
-                Helper::approveDocument($asset->book_id, $asset->id, $asset->revision_number, "", null, 1, 'approve', 0, get_class($asset));
+            if ($asset->document_status != ConstantHelper::DRAFT) {
+                $doc = Helper::approveDocument($asset->book_id, $asset->id, $asset->revision_number, "", null, 1, 'submit', 0, get_class($asset));
+                $asset->document_status = $doc['approvalStatus']??$asset->document_status;
+                $asset->approval_level = $doc['nextLevel']??$asset->approval_level;
+                $asset->save();
             }
             FixedAssetSub::regenerateSubAssets($asset->id, $asset->asset_code, $asset->quantity, $asset->current_value, $asset->salvage_value);
             DB::commit();
@@ -584,10 +572,12 @@ class RegistrationController extends Controller
 
 
    public function assetSearch(Request $request)
-{
+    {
     $q = $request->input('q');
     $ids = $request->input('ids');
     $category = $request->input('category');
+    $location = $request->input('location');
+    $cost_center = $request->input('cost_center');
 
     $oldAssets = FixedAssetSub::oldSubAssets();
 
@@ -613,6 +603,12 @@ class RegistrationController extends Controller
 
     if (!empty($category)) {
         $query->where('category_id', $category);
+    }
+    if (!empty($location)) {
+        $query->where('location_id', $location);
+    }
+    if (!empty($cost_center)) {
+        $query->where('cost_center_id', $cost_center);
     }
 
     return $query->limit(20)->get();

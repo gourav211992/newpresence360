@@ -17,7 +17,7 @@ $errorsList = session('errors'); // This is auto-flashed by Laravel
                             <h2 class="content-header-title float-start mb-0">Depreciation</h2>
                             <div class="breadcrumb-wrapper">
                                 <ol class="breadcrumb">
-                                    <li class="breadcrumb-item"><a href="index.html">Home</a></li>  
+                                    <li class="breadcrumb-item"><a href="index.html">Home</a></li>
                                     <li class="breadcrumb-item active">Depreciation List</li>
                                 </ol>
                             </div>
@@ -27,28 +27,30 @@ $errorsList = session('errors'); // This is auto-flashed by Laravel
                 <div class="content-header-right text-sm-end col-md-7 mb-50 mb-sm-0">
                     <div class="form-group breadcrumb-right">
                         <button class="btn btn-warning btn-sm mb-50 mb-sm-0" data-bs-target="#filter" data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button>
-						<a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{route('finance.fixed-asset.depreciation.create')}}"><i data-feather="check-circle"></i> Process</a> 
+						<a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{route('finance.fixed-asset.depreciation.create')}}"><i data-feather="check-circle"></i> Process</a>
                     </div>
                 </div>
             </div>
             <div class="content-body">
-                 
-                
-				
+
+
+
 				<section id="basic-datatable">
                     <div class="row">
                         <div class="col-12">
                             <div class="card">
-								
-								   
+
+
                                 <div class="table-responsive">
-									<table class="datatables-basic table myrequesttablecbox tableistlastcolumnfixed newerptabledesignlisthome"> 
+									<table class="datatables-basic table myrequesttablecbox tableistlastcolumnfixed newerptabledesignlisthome">
                                         <thead>
                                              <tr>
 												<th>#</th>
 												<th>Date</th>
 												<th>Series</th>
 												<th> Document NO.</th>
+												<th>Location</th>
+												<th>Cost Center</th>
 												<th>Period</th>
 												<th>Dep. AMt</th>
 												<th>Status</th>
@@ -62,7 +64,9 @@ $errorsList = session('errors'); // This is auto-flashed by Laravel
 													<td>{{$index+1}}</td>
 													<td class="fw-bolder text-dark">{{ \Carbon\Carbon::parse($d->document_date)->format('d-m-Y') }}</td>
                       	<td class="fw-bolder text-dark">{{strtoupper($d?->book?->book_code)}}</td>
-													<td class="fw-bolder text-dark">{{$d->document_number}}</td>
+                          <td class="fw-bolder text-dark">{{$d->document_number}}</td>
+													<td>{{$d->Erplocation->store_name}}</td>
+													<td>{{$d->cost_center->name}}</td>
 													<td>{{\DateTime::createFromFormat('d-m-Y', explode(" to ", $d->period)[1])->format("M 'y")}}                          </td>
                           <td>{{number_format($d->grand_total_dep_amount,2)}}</td>
                           <td>
@@ -85,7 +89,7 @@ $errorsList = session('errors'); // This is auto-flashed by Laravel
 																<a class="dropdown-item" href="{{route('finance.fixed-asset.depreciation.show', $d->id)}}">
 																	<i data-feather="edit" class="me-50"></i>
 																	<span>View Detail</span>
-																</a> 
+																</a>
 															</div>
 														</div>
 													</td>
@@ -96,16 +100,16 @@ $errorsList = session('errors'); // This is auto-flashed by Laravel
 
 									</table>
 								</div>
-								
-								
-								
-								
-								
+
+
+
+
+
                             </div>
                         </div>
                     </div>
                 </section>
-                 
+
 
             </div>
         </div>
@@ -114,7 +118,7 @@ $errorsList = session('errors'); // This is auto-flashed by Laravel
 
     <div class="modal modal-slide-in fade filterpopuplabel" id="filter">
 		<div class="modal-dialog sidebar-sm">
-			<form class="add-new-record modal-content pt-0"> 
+			<form class="add-new-record modal-content pt-0">
 				<div class="modal-header mb-1">
 					<h5 class="modal-title" id="exampleModalLabel">Apply Filter</h5>
 					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">×</button>
@@ -125,28 +129,28 @@ $errorsList = session('errors'); // This is auto-flashed by Laravel
 <!--                        <input type="text" id="fp-default" class="form-control flatpickr-basic" placeholder="YYYY-MM-DD" />-->
 						  <input type="text" id="fp-range" class="form-control flatpickr-range bg-white" placeholder="YYYY-MM-DD to YYYY-MM-DD" />
 					</div>
-					
+
 					<div class="mb-1">
 						<label class="form-label">Group</label>
 						<select class="form-select select2">
 							<option>Select</option>
 						</select>
-					</div> 
-                    
+					</div>
+
                     <div class="mb-1">
 						<label class="form-label">Company</label>
 						<select class="form-select select2">
-							<option>Select</option> 
+							<option>Select</option>
 						</select>
-					</div> 
-                    
+					</div>
+
                     <div class="mb-1">
 						<label class="form-label">Organization</label>
 						<select class="form-select select2">
-							<option>Select</option> 
+							<option>Select</option>
 						</select>
-					</div> 
-					 
+					</div>
+
 				</div>
 				<div class="modal-footer justify-content-start">
 					<button type="button" class="btn btn-primary data-submit mr-1">Apply</button>
@@ -157,7 +161,7 @@ $errorsList = session('errors'); // This is auto-flashed by Laravel
 	</div>
 
 @section('scripts')
-   
+
     <script>
         $(window).on('load', function() {
             if (feather) {
@@ -167,7 +171,7 @@ $errorsList = session('errors'); // This is auto-flashed by Laravel
                 });
             }
         })
-		$(function () { 
+		$(function () {
 
   var dt_basic_table = $('.datatables-basic'),
     dt_date_table = $('.dt-date'),
@@ -185,9 +189,9 @@ $errorsList = session('errors'); // This is auto-flashed by Laravel
 
   if (dt_basic_table.length) {
     var dt_basic = dt_basic_table.DataTable({
-      
+
       order: [[0, 'asc']],
-      dom: 
+      dom:
         '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-3 withoutheadbuttin dt-action-buttons text-end"B><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
       displayLength: 7,
       lengthMenu: [7, 10, 25, 50, 75, 100],
@@ -204,7 +208,7 @@ $errorsList = session('errors'); // This is auto-flashed by Laravel
           exportOptions: {
       columns: ':not(:last-child)' // exclude the last column
     }},
-            
+
           ],
           init: function (api, node, config) {
             $(node).removeClass('btn-secondary');
@@ -214,9 +218,9 @@ $errorsList = session('errors'); // This is auto-flashed by Laravel
             }, 50);
           }
         },
-         
+
       ],
-      
+
       language: {
         paginate: {
           // remove previous & next text from pagination
@@ -268,23 +272,23 @@ $errorsList = session('errors'); // This is auto-flashed by Laravel
   $('.datatables-basic tbody').on('click', '.delete-record', function () {
     dt_basic.row($(this).parents('tr')).remove().draw();
   });
-	
-	 
- 
+
+
+
 });
-        
+
         $(".myrequesttablecbox tr").click(function() {
           $(this).addClass('trselected').siblings().removeClass('trselected');
           value = $(this).find('td:first').html();
         });
 
-        $(document).on('keydown', function(e) { 
+        $(document).on('keydown', function(e) {
           if (e.which == 38) {
             $('.trselected').prev('tr').addClass('trselected').siblings().removeClass('trselected');
           } else if (e.which == 40) {
             $('.trselected').next('tr').addClass('trselected').siblings().removeClass('trselected');
-          } 
-          $('html, body').scrollTop($('.trselected').offset().top - 100); 
+          }
+          $('html, body').scrollTop($('.trselected').offset().top - 100);
         });
 
      function showToast(icon, title) {
@@ -319,14 +323,14 @@ $errorsList = session('errors'); // This is auto-flashed by Laravel
       );
   @endif
 
-        
-        
-        
-        
-		
-		 
-		
-		
+
+
+
+
+
+
+
+
     </script>
 @endsection
 <!-- END: Body-->

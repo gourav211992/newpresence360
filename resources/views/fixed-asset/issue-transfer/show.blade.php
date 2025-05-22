@@ -92,7 +92,7 @@
                              <div class="card-body customernewsection-form">
                                 <form id="fixed-asset-issue-transfer-form">
                                     <input type="hidden" id="selectedSubAssets" name="sub_asset" value="{{$data->sub_asset}}">
-                               
+
                                 <div class="row">
                                     <div class="col-md-12">
                                         <div class="newheader border-bottom mb-2 pb-25">
@@ -102,6 +102,52 @@
                                     </div>
 
                                     <div class="col-md-9">
+                                        {{-- location --}}
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Location <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+
+                                                    <div class="col-md-5">
+                                                        {{-- {{ dd($data->asset) }} --}}
+                                                        <select id="location" disabled class="form-select"
+                                                            name="location_id" required>
+                                                             <option value="">Select</option>
+                                                            @foreach ($locations as $location)
+                                                                <option value="{{ $location->id }}" {{ $data->location_id == $location->id ? 'selected' : '' }}>
+                                                                    {{ $location->store_name }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+
+                                                </div>
+                                                {{-- costcenter & categories --}}
+                                                <div class="row align-items-center mb-1 cost_center">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Cost Center <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+
+                                                    <div class="col-md-5">
+                                                        <select id="cost_center" disabled class="form-select"
+                                                            name="cost_center_id" required>
+                                                        </select>
+                                                    </div>
+
+                                                </div>
+                                                <div class="row align-items-center mb-1">
+                                                     <div class="col-md-3">
+
+                                                            <label class="form-label">Category <span
+                                                                    class="text-danger">*</span></label>
+                                                        </div>
+                                                        <div class="col-md-5">
+                                                            <select class="form-select select2" disabled required name="category_id"
+                                                                id="category" required>
+                                                               </select>
+                                                        </div>
+                                                    </div>
                                         <!-- Asset Code & Name -->
                                         <div class="row align-items-center mb-1">
                                             <div class="col-md-3">
@@ -125,7 +171,7 @@
                                             </div>
 
                                             <div class="col-md-5 action-button">
-                                               
+
                                                 <div class="d-flex align-items-center my-1"
                                                     id="subAssetBadgeContainer">
                                                 </div>
@@ -175,17 +221,7 @@
                                         </div>
 
                                         <!-- Location -->
-                                        <div class="row align-items-center mb-1">
-                                            <div class="col-md-3">
-                                                <label for="location" class="form-label">Location <span class="text-danger">*</span></label>
-                                            </div>
-                                            <div class="col-md-5">
-                                                <select name="location" id="location" required class="form-select">
-                                                    <option value="" {{ $data->location == '' ? 'selected' : '' }}>Select</option>
-                                                    <option value="2100" {{ $data->location == '2100' ? 'selected' : '' }}>2100, Noida</option>
-                                                </select>
-                                            </div>
-                                        </div>
+                                        
                                         <div id="transferLocation">
                                         <!-- Transfer Location -->
                                         <div class="row align-items-center mb-1">
@@ -284,7 +320,7 @@
                                         {{ $asset->asset_code }} ({{ $asset->asset_name }})
                                     </option>
                                 @endforeach
-                           
+
                             </select>
                         </div>
                     </div>
@@ -341,6 +377,7 @@
 <script type="text/javascript">
   $(document).ready(function() {
     edit_page();
+    loadCategoriesOnSelection();
 });
 
     function initMap() {
@@ -441,7 +478,77 @@ function showToast(icon, title) {
     });
 });
 
+function loadCategoriesOnSelection() {
+        const locationId = $("#location").val();
+        const selectedCostCenterId = '{{ $data->cost_center_id ?? '' }}';
+        const selectedCategoryId = '{{ $data->category_id ?? '' }}';
 
+        if (locationId) {
+            const url = '{{ route("cost-center.get-cost-center", ":id") }}'.replace(':id', locationId);
+
+            $.ajax({
+                url: url,
+                type: 'GET',
+                dataType: 'json',
+                success: function (data) {
+                    const $costCenter = $('#cost_center');
+                    $costCenter.empty();
+
+                    if (data.length === 0) {
+                        $costCenter.prop('required', false);
+                        $('.cost_center').hide();
+                    } else {
+                        $costCenter.prop('required', true).append('<option value="">Select Cost Center</option>');
+                        $('.cost_center').show();
+
+                        $.each(data, function (key, value) {
+                            const selected = (value.id == selectedCostCenterId) ? 'selected' : '';
+                            $costCenter.append('<option value="' + value.id + '" ' + selected + '>' + value.name + '</option>');
+                        });
+                    }
+
+                    // Now get the updated costCenterId value
+                    const costCenterId = selectedCostCenterId || $('#cost_center').val();
+
+                    // Load categories after cost centers are set
+                    loadCategories(locationId, costCenterId, selectedCategoryId);
+                },
+                error: function () {
+                    $('#cost_center').empty();
+                    loadCategories(locationId, null, selectedCategoryId);
+                }
+            });
+        } else {
+            $('#cost_center').empty();
+            loadCategories(null, null, null);
+        }
+    }
+
+    function loadCategories(locationId, costCenterId, selectedCategoryId) {
+        const url = '{{ route("finance.fixed-asset.get-categories") }}';
+
+        $.ajax({
+            url: url,
+            type: 'GET',
+            data: {
+                cost_center_id: costCenterId,
+                location_id: locationId
+            },
+            dataType: 'json',
+            success: function (data) {
+                const $category = $('#category');
+                $category.empty().append('<option value="">Select Category</option>');
+
+                $.each(data, function (key, value) {
+                    const selected = (value.id == selectedCategoryId) ? 'selected' : '';
+                    $category.append('<option value="' + value.id + '" ' + selected + '>' + value.name + '</option>');
+                });
+            },
+            error: function () {
+                $('#category').empty();
+            }
+        });
+    }
     </script>
         <script src="{{ asset('assets/js/subasset.js') }}"></script>
 

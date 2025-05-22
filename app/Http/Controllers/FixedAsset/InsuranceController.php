@@ -7,6 +7,7 @@ use App\Models\FixedAssetRegistration;
 use Illuminate\Http\Request;
 use App\Helpers\Helper;
 use App\Models\Employee;
+use App\Models\ErpStore;
 use App\Models\FixedAssetInsurance;
 use Carbon\Carbon;
 
@@ -15,8 +16,8 @@ class InsuranceController extends Controller
     public function index(Request $request)
     {
         $parentURL = "fixed-asset_registration";
-        
-        
+
+
          $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
          if (count($servicesBooks['services']) == 0) {
             return redirect() -> route('/');
@@ -51,7 +52,7 @@ class InsuranceController extends Controller
                 $query->whereBetween('created_at', [$start_date, $end_date]);
             }
         }
-       
+
 
         // Get the filtered data
         $data = $query->get();
@@ -61,8 +62,8 @@ class InsuranceController extends Controller
     public function create()
     {
         $parentURL = "fixed-asset_registration";
-        
-        
+
+
          $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
          if (count($servicesBooks['services']) == 0) {
             return redirect() -> route('/');
@@ -71,8 +72,8 @@ class InsuranceController extends Controller
             ->whereNotNull('asset_code')
             ->whereNotNull('asset_name')
             ->get();
-
-        return view('fixed-asset.insurance.create', compact('assets'));
+        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
+        return view('fixed-asset.insurance.create', compact('assets','locations'));
     }
 
     public function store(Request $request)
@@ -103,8 +104,8 @@ class InsuranceController extends Controller
             ->whereNotNull('asset_code')
             ->whereNotNull('asset_name')
             ->get();
-
-        return view('fixed-asset.insurance.show', compact('assets', 'data'));
+        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
+        return view('fixed-asset.insurance.show', compact('assets', 'data','locations'));
     }
 
     public function edit(string $id)
@@ -114,8 +115,8 @@ class InsuranceController extends Controller
             ->whereNotNull('asset_code')
             ->whereNotNull('asset_name')
             ->get();
-
-        return view('fixed-asset.insurance.edit', compact('assets', 'data'));
+        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
+        return view('fixed-asset.insurance.edit', compact('assets', 'data','locations'));
     }
 
     public function update(Request $request, $id)

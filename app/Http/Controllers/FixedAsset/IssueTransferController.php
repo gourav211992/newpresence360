@@ -7,6 +7,7 @@ use App\Models\FixedAssetRegistration;
 use Illuminate\Http\Request;
 use App\Helpers\Helper;
 use App\Models\Employee;
+use App\Models\ErpStore;
 use App\Models\FixedAssetIssueTransfer;
 use Carbon\Carbon;
 
@@ -18,8 +19,8 @@ class IssueTransferController extends Controller
     public function index(Request $request)
     {
         $parentURL = "fixed-asset_registration";
-        
-        
+
+
          $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
          if (count($servicesBooks['services']) == 0) {
             return redirect() -> route('/');
@@ -60,8 +61,8 @@ class IssueTransferController extends Controller
     public function create()
     {
         $parentURL = "fixed-asset_registration";
-        
-        
+
+
          $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
          if (count($servicesBooks['services']) == 0) {
             return redirect() -> route('/');
@@ -78,8 +79,8 @@ class IssueTransferController extends Controller
         ->whereNotNull('asset_code')
         ->whereNotNull('asset_name')
         ->get();
-
-        return view('fixed-asset.issue-transfer.create',compact('assets','employees'));
+        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
+        return view('fixed-asset.issue-transfer.create',compact('assets','employees','locations'));
     }
 
     /**
@@ -123,8 +124,8 @@ class IssueTransferController extends Controller
         ->whereNotNull('asset_code')
         ->whereNotNull('asset_name')
         ->get();
-
-        return view('fixed-asset.issue-transfer.show',compact('assets','employees','data'));
+        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
+        return view('fixed-asset.issue-transfer.show',compact('assets','employees','data','locations'));
     }
 
     /**
@@ -143,8 +144,8 @@ class IssueTransferController extends Controller
         ->whereNotNull('asset_code')
         ->whereNotNull('asset_name')
         ->get();
-
-        return view('fixed-asset.issue-transfer.edit',compact('assets','employees','data'));
+        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
+        return view('fixed-asset.issue-transfer.edit',compact('assets','employees','data','locations'));
     }
 
     /**

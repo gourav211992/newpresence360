@@ -93,7 +93,7 @@
                                 <div class="card-body customernewsection-form">
                                     <form id="fixed-asset-insurance-form" method="POST"
                                     onsubmit="return validateForm()"
-                                        
+
                                         action="{{ route('finance.fixed-asset.insurance.update',$data->id) }}"
                                         enctype="multipart/form-data">
                                         @csrf
@@ -107,6 +107,52 @@
                                             </div>
 
                                             <div class="col-md-9">
+                                                {{-- location --}}
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Location <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+
+                                                    <div class="col-md-5">
+                                                        {{-- {{ dd($data->asset) }} --}}
+                                                        <select id="location" disabled class="form-select"
+                                                            name="location_id" required>
+                                                             <option value="">Select</option>
+                                                            @foreach ($locations as $location)
+                                                                <option value="{{ $location->id }}" {{ $data->location_id == $location->id ? 'selected' : '' }}>
+                                                                    {{ $location->store_name }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+
+                                                </div>
+                                                {{-- costcenter & categories --}}
+                                                <div class="row align-items-center mb-1 cost_center">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Cost Center <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+
+                                                    <div class="col-md-5">
+                                                        <select id="cost_center" disabled class="form-select"
+                                                            name="cost_center_id" required>
+                                                        </select>
+                                                    </div>
+
+                                                </div>
+                                                <div class="row align-items-center mb-1">
+                                                     <div class="col-md-3">
+
+                                                            <label class="form-label">Category <span
+                                                                    class="text-danger">*</span></label>
+                                                        </div>
+                                                        <div class="col-md-5">
+                                                            <select class="form-select select2" disabled required name="category_id"
+                                                                id="category" required>
+                                                               </select>
+                                                        </div>
+                                                    </div>
                                                 <!-- Asset Code & Name -->
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
@@ -129,7 +175,7 @@
                                                     </div>
                                                 </div>
                                                 <input type="hidden" id="selectedSubAssets" name="sub_asset" value="{{$data->sub_asset}}">
-                                
+
                                                 <div class="row mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Sub-Asset Code <span
@@ -238,7 +284,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="modal fade text-start" id="sub_asset_modal" tabindex="-1" aria-labelledby="myModalLabel17"
         aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 1000px">
@@ -253,7 +299,7 @@
                 </div>
                 <div class="modal-body">
                     <div class="row">
-    
+
                         <div class="col">
                             <div class="mb-1">
                                 <label class="form-label">Asset Code. <span class="text-danger">*</span></label>
@@ -264,7 +310,7 @@
                                             {{ $asset->asset_code }} ({{ $asset->asset_name }})
                                         </option>
                                     @endforeach
-                               
+
                                 </select>
                             </div>
                         </div>
@@ -275,14 +321,14 @@
                                 </select>
                             </div>
                         </div>
-    
+
                         <div class="col  mb-1">
                             <label class="form-label">&nbsp;</label><br />
                         </div>
-    
+
                         <div class="col-md-12">
-    
-    
+
+
                             <div class="table-responsive">
                                 <table id="grn_table" class="mt-1 table myrequesttablecbox table-striped po-order-detail">
                                     <thead>
@@ -294,15 +340,15 @@
                                         </tr>
                                     </thead>
                                     <tbody id="sub_asset">
-    
+
                                     </tbody>
-    
-    
+
+
                                 </table>
                             </div>
                         </div>
-    
-    
+
+
                     </div>
                 </div>
                 <div class="modal-footer text-end">
@@ -321,6 +367,7 @@
     <script type="text/javascript">
     $(document).ready(function() {
     edit_page();
+    loadCategoriesOnSelection();
 });
         function showToast(icon, title) {
             const Toast = Swal.mixin({
@@ -353,8 +400,246 @@
                 "@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach"
             );
         @endif
+        //
 
-        
+        function loadCategoriesOnSelection() {
+            const locationId = $("#location").val();
+            const selectedCostCenterId = '{{ $data->cost_center_id ?? '' }}';
+            const selectedCategoryId = '{{ $data->category_id ?? '' }}';
+            console.log(selectedCostCenterId,'cost')
+            if (locationId) {
+                const url = '{{ route("cost-center.get-cost-center", ":id") }}'.replace(':id', locationId);
+
+                $.ajax({
+                    url: url,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (data) {
+                        const $costCenter = $('#cost_center');
+                        $costCenter.empty();
+
+                        if (data.length === 0) {
+                            $costCenter.prop('required', false);
+                            $('.cost_center').hide();
+                        } else {
+                            $costCenter.prop('required', true).append('<option value="">Select Cost Center</option>');
+                            $('.cost_center').show();
+
+                            $.each(data, function (key, value) {
+                                const selected = (value.id == selectedCostCenterId) ? 'selected' : '';
+                                $costCenter.append('<option value="' + value.id + '" ' + selected + '>' + value.name + '</option>');
+                            });
+                        }
+
+                        // Now get the updated costCenterId value
+                        const costCenterId = selectedCostCenterId || $('#cost_center').val();
+
+                        // Load categories after cost centers are set
+                        loadCategories(locationId, costCenterId, selectedCategoryId);
+                    },
+                    error: function () {
+                        $('#cost_center').empty();
+                        loadCategories(locationId, null, selectedCategoryId);
+                    }
+                });
+            } else {
+                $('#cost_center').empty();
+                loadCategories(null, null, null);
+            }
+        }
+
+        function loadCategories(locationId, costCenterId, selectedCategoryId) {
+            const url = '{{ route("finance.fixed-asset.get-categories") }}';
+
+            $.ajax({
+                url: url,
+                type: 'GET',
+                data: {
+                    cost_center_id: costCenterId,
+                    location_id: locationId
+                },
+                dataType: 'json',
+                success: function (data) {
+                    const $category = $('#category');
+                    $category.empty().append('<option value="">Select Category</option>');
+
+                    $.each(data, function (key, value) {
+                        const selected = (value.id == selectedCategoryId) ? 'selected' : '';
+                        $category.append('<option value="' + value.id + '" ' + selected + '>' + value.name + '</option>');
+                    });
+                },
+                error: function () {
+                    $('#category').empty();
+                }
+            });
+        }
+
+        // location ,cost center, categories
+        $('#location').on('change', function () {
+        $('#category').empty();
+        // add_blank();
+        var locationId = $(this).val();
+
+        if (locationId) {
+            // Build the route manually
+            var url = '{{ route("cost-center.get-cost-center", ":id") }}'.replace(':id', locationId);
+
+            $.ajax({
+                url: url,
+                type: 'GET',
+                dataType: 'json',
+                success: function (data) {
+                    if(data.length==0){
+                        $('#cost_center').empty();
+                    $('#cost_center').prop('required', false);
+                    $('.cost_center').hide();
+                    var url = '{{ route('finance.fixed-asset.get-categories') }}';
+
+                                $.ajax({
+                                    url: url,
+                                    type: 'GET',
+                                    data: {
+                                        location_id: locationId
+                                    },
+                                    dataType: 'json',
+                                    success: function(data) {
+                                        $('#category').empty().append(
+                                            '<option value="">Select Category</option>');
+                                        $.each(data, function(key, value) {
+                                            $('#category').append('<option value="' +
+                                                value.id + '>' + value.name +
+                                                '</option>');
+                                        });
+                                    },
+                                    error: function() {
+                                        $('#category').empty();
+                                    }
+                                });
+                    }
+                    else{
+                        $('.cost_center').show();
+                        $('#cost_center').prop('required', true);
+                    $('#cost_center').empty(); // Clear previous options
+                    $.each(data, function (key, value) {
+                        $('#cost_center').append('<option value="' + value.id + '">' + value.name + '</option>');
+                    });
+                    $('#cost_center').trigger('change'); // Trigger change to load categories
+
+
+
+                }
+                },
+                error: function () {
+                    $('#cost_center').empty();
+                }
+            });
+        } else {
+            $('#cost_center').empty();
+        }
+    });
+    $('#cost_center').on('change', function () {
+        $('#category').empty();
+
+        var costCenterId = $(this).val();
+        var locationId = $('#location').val();
+
+        if (locationId && costCenterId) {
+            // Use Blade to render the correct route with parameters
+            var url = '{{ route("finance.fixed-asset.get-categories") }}';
+
+            $.ajax({
+                url: url,
+                type: 'GET',
+                data: {
+                    cost_center_id: costCenterId,
+                    location_id: locationId
+                },
+                dataType: 'json',
+                success: function (data) {
+                    $('#category').empty().append('<option value="">Select Category</option>');
+                    $.each(data, function (key, value) {
+                        $('#category').append('<option value="' + value.id + '">' + value.name + '</option>');
+                    });
+                },
+                error: function () {
+                    $('#category').empty();
+                }
+            });
+        } else {
+            $('#category').empty();
+        }
+    });
+
+    // $('#location').trigger('change');
+
+    // $('#category').on('change', function () {
+    //     initializeAssetAutocomplete('.')
+    // });
+    $('#category').on('change', function () {
+        updateAssetOptions();
+    });
+
+    function getAllAssetIds() {
+        let assetIds = [];
+
+        $('.asset_id').each(function () {
+            let val = $(this).val();
+            if (val) {
+                assetIds.push(parseFloat(val));
+            }
+        });
+
+        return assetIds;
+    }
+    function updateAssetOptions() {
+        const category = $('#category').val();
+
+        $.ajax({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            url: '{{ route("finance.fixed-asset.asset-search") }}',
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                q: '', // optional, if your API needs a search term
+                ids: getAllAssetIds(), // your existing helper
+                category: category
+            },
+            success: function (data) {
+                const $assetSelect = $('#asset_id');
+                $assetSelect.empty(); // clear old options
+
+                // Add default "Select" option
+                $assetSelect.append(
+                    $('<option>', {
+                        value: '',
+                        text: 'Select'
+                    })
+                );
+
+                // Loop through returned assets
+                if (Array.isArray(data)) {
+                    data.forEach(asset => {
+                        $assetSelect.append(
+                            $('<option>', {
+                                value: asset.id,
+                                text: `${asset.asset_code} (${asset.asset_name})`
+                            })
+                        );
+                    });
+                }
+            },
+            error: function () {
+                $('#asset_id').empty().append(
+                    $('<option>', {
+                        value: '',
+                        text: 'Select'
+                    })
+                );
+            }
+        });
+    }
     </script>
         <script src="{{ asset('assets/js/subasset.js') }}"></script>
 
