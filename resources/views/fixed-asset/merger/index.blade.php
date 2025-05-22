@@ -48,6 +48,8 @@
 												<th>Asset Name</th>
 												<th>Asset Code</th>
 												<th>Ledger Name</th>
+                         <th>Location</th>
+                                                <th>Cost Center</th>
 												<th>Qty</th>
 												<th>Cap. Date</th>
 												<th>Status</th>
@@ -64,6 +66,8 @@
 													<td>{{$d?->asset_name}}</td>
 													<td>{{$d?->asset_code}}</td>
 													<td>{{$d?->ledger?->name}}</td>
+                          <td>{{ $d?->location?->store_name ??"-" }}</td>
+                          <td>{{ $d?->cost_center?->name ??"-" }}</td>
                           <td>{{ $d?->quantity }}</td>
                           <td>{{ $d?->capitalize_date ? \Carbon\Carbon::parse($d->capitalize_date)->format('d-m-Y') : '' }}</td>
                           
@@ -233,35 +237,14 @@
           text: feather.icons['share'].toSvg({ class: 'font-small-4 mr-50' }) + 'Export',
           buttons: [
             {
-              extend: 'print',
-              text: feather.icons['printer'].toSvg({ class: 'font-small-4 mr-50' }) + 'Print',
-              className: 'dropdown-item',
-              exportOptions: { columns: [3, 4, 5, 6, 7] }
-            },
-            {
-              extend: 'csv',
-              text: feather.icons['file-text'].toSvg({ class: 'font-small-4 mr-50' }) + 'Csv',
-              className: 'dropdown-item',
-              exportOptions: { columns: [3, 4, 5, 6, 7] }
-            },
-            {
               extend: 'excel',
               text: feather.icons['file'].toSvg({ class: 'font-small-4 mr-50' }) + 'Excel',
               className: 'dropdown-item',
-              exportOptions: { columns: [3, 4, 5, 6, 7] }
+               exportOptions: {
+      columns: ':not(:last-child)' // exclude the last column
+    }
             },
-            {
-              extend: 'pdf',
-              text: feather.icons['clipboard'].toSvg({ class: 'font-small-4 mr-50' }) + 'Pdf',
-              className: 'dropdown-item',
-              exportOptions: { columns: [3, 4, 5, 6, 7] }
-            },
-            {
-              extend: 'copy',
-              text: feather.icons['copy'].toSvg({ class: 'font-small-4 mr-50' }) + 'Copy',
-              className: 'dropdown-item',
-              exportOptions: { columns: [3, 4, 5, 6, 7] }
-            }
+            
           ],
           init: function (api, node, config) {
             $(node).removeClass('btn-secondary');

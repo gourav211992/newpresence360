@@ -37,12 +37,13 @@
                                             <th>Sr. No</th>
                                             <th>Date</th>
                                             {{-- <th>Document Type</th> --}}
+                                            <th>Series</th>
                                             <th>Document No.</th>
                                             <th>Bank/Ledger Name</th>
+                                            <th class="text-end">Amount (INR)</th>
                                             <th>Location</th>
                                             <th>Cost Center</th>
                                             <th>Currency</th>
-                                            <th class="text-end">Amount (INR)</th>
                                             <th>Document</th>
                                             <th class="text-end">Status</th>
                                         </tr>
@@ -64,15 +65,17 @@
                                                 };
                                             @endphp
                                             <tr>
+                                                {{-- {{ dd($item->series) }} --}}
                                                 <td>{{ $index+1 }}</td>
                                                 <td class="fw-bolder text-dark text-nowrap">{{ date('d-m-Y',strtotime($item->document_date)) }}</td>
                                                 {{-- <td>{{ ucfirst($item->document_type) }}</td> --}}
+                                                <td class="text-nowrap">{{ $item->series?->book_name }}</td>
                                                 <td class="text-nowrap">{{ $item->voucher_no }}</td>
                                                 <td class="text-nowrap">{{ $item->payment_type=="Bank" ? $item->bank->name : $item->ledger->name }}</td>
+                                                <td class="text-nowrap" style="text-align: end;">{{ Helper::formatIndianNumber($item->amount) }}</td>
                                                 <td class="text-nowrap">{{ $item?->ErpLocation?->store_name ?? ''}}</td>
                                                 <td class="text-nowrap">{{ $item?->costCenter?->name}}</td>
                                                 <td class="text-nowrap">{{ $item->currency->name.' ('.$item->currency->short_name.')' }}</td>
-                                                <td class="text-nowrap" style="text-align: end;">{{ Helper::formatIndianNumber($item->amount) }}</td>
                                                 <td class="text-nowrap">@if($item->document)<a href="voucherPaymentDocuments/{{$item->document}}" target="_blank">View Doc</a>@endif</td>
                                                 <td class="tableactionnew">
                                                     <div class="d-flex align-items-center justify-content-end">

@@ -65,6 +65,7 @@
 										<th id="soHeaderAttribute" class="d-none">Attributes</th>
 										<th>UOM</th>
 										<th>Quantity</th> 
+										<th>PQty</th> 
 										<th>Customer</th>
 									</tr>
 								</thead>

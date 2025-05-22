@@ -40,23 +40,11 @@
 </head>
 <body>
     <div style="width:700px; font-size: 11px; font-family:Arial;">
-        <table style="width: 100%; margin-bottom: 10px;" cellspacing="0" cellpadding="0">
-            <tr>
-                <td style="width: 25%; text-align: left; vertical-align: middle;">
-                    @if (isset($orgLogo) && $orgLogo)
-                        <img src="{!! $orgLogo !!}" alt="Logo" style="height: 50px;">
-                    @else
-                        <img src="{{ $imagePath }}" alt="Default Logo" style="height: 50px;">
-                    @endif
-                </td>
-                <td style="width: 50%; text-align: right; vertical-align: middle; font-weight: bold; font-size: 18px;">
-                    {{ $title }}
-                </td>
-                <td style="width: 25%; text-align: right; vertical-align: middle; font-weight: bold; font-size: 18px;">
-                    {{ Str::ucfirst(@$organization->name) }}
-                </td>
-            </tr>
-        </table>        
+        @include('pdf.partials.header', [
+            'orgLogo' => $orgLogo,
+            'imagePath' => $imagePath,
+            'moduleTitle' => $title
+        ])    
         <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
             <tr>
                 <td rowspan="2" style="border: 1px solid #000; padding: 3px; width: 40%; vertical-align: top;">

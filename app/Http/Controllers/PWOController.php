@@ -1338,7 +1338,7 @@ class PWOController extends Controller
         ->with(['header', 'item']);
 
         if(!$isAttribute) {
-            $groupByColumns = ['sale_order_id', 'item_id', 'item_name', 'item_code', 'inventory_uom_code'];
+            $groupByColumns = ['sale_order_id', 'item_id', 'item_name', 'item_code', 'inventory_uom_code','bom_id'];
             $soItems = $soItems->groupBy($groupByColumns)
                     ->selectRaw(implode(',', array_merge($groupByColumns, [
                         'SUM(inventory_uom_qty) as inventory_uom_qty',

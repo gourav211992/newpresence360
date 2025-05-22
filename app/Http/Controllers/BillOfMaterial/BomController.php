@@ -516,10 +516,17 @@ class BomController extends Controller
         $moduleType = $request->type ?? 'bom';
         $customerId = $request->customer_id ?? null;
         if($request->type == 'bom') {
-            $bomExists = ItemHelper::checkItemBomExists($item->id, [], $moduleType, $customerId);
-            if ($bomExists['bom_id']) {
-                $bomExists['message'] = "Bom already exists for this item.";
-                return response()->json(['data' => ['html' => ''], 'status' => 422, 'message' => $bomExists['message']]);
+            $bomExists = Bom::where('item_id', $item->id)
+                ->where(function ($query) use ($customerId) {
+                    if ($customerId) {
+                        $query->where('customer_id', $customerId);
+                    }
+                })
+                ->where('status', ConstantHelper::ACTIVE)
+                ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_SUBMITTED)
+                ->first();
+            if ($bomExists) {
+                return response()->json(['data' => ['html' => ''], 'status' => 422, 'message' => "Bom already exists for this item."]);
             }
         }
         if($item) {
@@ -609,21 +616,7 @@ class BomController extends Controller
         if(!$item['item_id']) {
             return response()->json(['data' => ['html' => ''], 'status' => 422, 'message' => 'Please fill all the header details before adding components.']);
         }
-        $headerSelectedAttr = json_decode($request->header_attr,true) ?? []; 
-        $attributes = [];
-        if(count($headerSelectedAttr)) {
-               foreach($headerSelectedAttr as $headerAttr) {
-                $itemAttr = ItemAttribute::where("item_id",$item['item_id'])
-                                ->where("attribute_group_id",$headerAttr['attr_name'])
-                                ->first();
-                $attributes[] = ['attribute_id' => intval($itemAttr?->id), 'attribute_value' => intval($headerAttr['attr_value'])];
-               }
-        }
-        // $bomExists = ItemHelper::checkItemBomExists($item['item_id'], $attributes, $moduleType, $customerId);
-        // if ($bomExists['bom_id']) {
-        //     $bomExists['message'] = "Bom already exists for this item.";
-        //     return response()->json(['data' => ['html' => ''], 'status' => 422, 'message' => $bomExists['message']]);
-        // }
+
         /*Check last tr in table mandatory*/
         if(isset($componentItem['attr_require']) && isset($componentItem['item_id']) && $componentItem['row_length']) {
             if (($componentItem['attr_require'] == true || !$componentItem['item_id']) && $componentItem['row_length'] != 0) {
@@ -682,31 +675,7 @@ class BomController extends Controller
     # Add Instruction row
     public function addInstructionRow(Request $request)
     {
-        $item = json_decode($request->item,true) ?? [];
-        $moduleType = $request->type ?? null;
         $rowCount = intval($request->count) == 0 ? 1 : intval($request->count) + 1;
-        $customerId = $request->customer_id ?? null;
-        /*Check header mandatory*/
-        if ($item['selectedAttrRequired'] && $item['item_code']) {
-            if(!$item['item_code'] || $item['selectedAttrRequired']) {
-                return response()->json(['data' => ['html' => ''], 'status' => 422, 'message' => 'Please fill all the header details before adding components.']);
-            }
-        }
-        if(!$item['item_id']) {
-            return response()->json(['data' => ['html' => ''], 'status' => 422, 'message' => 'Please fill all the header details before adding components.']);
-        }
-
-        $headerSelectedAttr = json_decode($request->header_attr,true) ?? []; 
-        $attributes = [];
-        if(count($headerSelectedAttr)) {
-               foreach($headerSelectedAttr as $headerAttr) {
-                $itemAttr = ItemAttribute::where("item_id",$item['item_id'])
-                                ->where("attribute_group_id",$headerAttr['attr_name'])
-                                ->first();
-                $attributes[] = ['attribute_id' => intval($itemAttr?->id), 'attribute_value' => intval($headerAttr['attr_value'])];
-               }
-        }
-
         $response = BookHelper::fetchBookDocNoAndParameters($request->book_id, $request->d_date);
         $parameters = json_decode(json_encode($response['data']['parameters']), true) ?? [];
         $sectionRequired = isset($parameters['section_required']) && is_array($parameters['section_required']) && in_array('yes', array_map('strtolower', $parameters['section_required']));

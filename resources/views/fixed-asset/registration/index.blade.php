@@ -240,12 +240,10 @@
                         }) + 'Excel',
                         className: 'dropdown-item',
                         filename: 'Asset_RegistrationReport', // Set filename as needed
-                        exportOptions: {
-                            columns: function(idx, data, node) {
-                                // Exclude the first and last columns from CSV export
-                                return idx !== 0 && idx !== 12; // Assuming 9 is the Action column
-                            }
-                        }
+                              exportOptions: {
+      columns: ':not(:last-child)' // exclude the last column
+    },
+         
                     }],
                 init: function(api, node, config) {
                     $(node).removeClass('btn-secondary');

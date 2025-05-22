@@ -40,6 +40,14 @@ class FixedAssetSplit extends Model
     {
         return $this->belongsTo(Group::class, 'ledger_group_id');
     }
+    public function location()
+    {
+        return $this->belongsTo(ErpStore::class, 'location_id');
+    }
+    public function cost_center()
+    {
+        return $this->belongsTo(CostCenter::class, 'cost_center_id');
+    }
     // public function getAssetsAttribute()
     // {
     //     $assetIds = json_decode($this->attributes['assets'], true) ?? [];

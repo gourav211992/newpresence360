@@ -42,23 +42,11 @@
 
 <body>
     <div style="width:700px; font-size: 11px; font-family:Arial;">
-        <table style="width: 100%; margin-bottom: 10px;" cellspacing="0" cellpadding="0">
-            <tr>
-                <td style="text-align: left;">
-                    @if (isset($orgLogo) && $orgLogo)
-                        <img src="{!! $orgLogo !!}" alt="" height="50px" />
-                    @else
-                        <img src="{{$imagePath}}" height="50px" alt="">
-                    @endif
-                </td>
-                <td style="align-content: center; font-weight: bold; font-size: 22px;">
-                    Purchase Indent
-                </td>
-                <td style="text-align: right; font-weight: bold; font-size: 18px;">
-                    {{ Str::ucfirst(@$organization->name) }}
-                </td>
-            </tr>
-        </table>
+        @include('pdf.partials.header', [
+            'orgLogo' => $orgLogo,
+            'imagePath' => $imagePath,
+            'moduleTitle' => 'Purchase Indent'
+        ])
         <table style="width: 100%; margin-bottom: 0px; border-collapse: collapse;" cellspacing="0" cellpadding="5">
             <tr>
                 <td rowspan="2" style="border: 1px solid #000; padding: 8px; width: 40%; vertical-align: top;">
@@ -110,45 +98,37 @@
         <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
             <tr>
                 <td
-                    style="padding: 2px; border: 1px solid #000; background: #80808070; text-align: center; font-weight: bold;width: 10px;">
+                    style="padding: 2px; border: 1px solid #000; background: #80808070; text-align: center; font-weight: bold;width: 15px;">
                     #
                 </td>
                 <td
-                    style="font-weight: bold; width: 100px; padding: 2px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
-                    Item Code
+                    style="font-weight: bold; width: 100px; padding: 2px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;width:150px">
+                    Item
                 </td>
                 <td
-                    style="font-weight: bold; width: 100px; padding: 2px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
-                    Item Name
-                </td>
-                <td
-                    style="font-weight: bold; width: 100px; padding: 2px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
+                    style="font-weight: bold; width: 100px; padding: 2px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;width:100px">
                     Attributes
                 </td>
-                {{-- <td
-                    style="font-weight: bold; width: 100px; padding: 2px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
-                    Specifications
-                </td> --}}
                 <td
-                    style="font-weight: bold; padding: 2px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
+                    style="font-weight: bold; padding: 2px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;width:40px">
                     UOM
                 </td>
                 <td
-                    style="font-weight: bold; padding: 2px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
+                    style="font-weight: bold; padding: 2px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;width:60px">
                     Quantity
                 </td>
                 <td
-                    style="font-weight: bold; padding: 2px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
+                    style="font-weight: bold; padding: 2px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;width:100px">
                     Vendor Name
                 </td>
                 @if(strtolower($pi->so_tracking_required) == 'yes')
                 <td
-                    style="font-weight: bold; padding: 2px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
+                    style="font-weight: bold; padding: 2px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;width:80px">
                     SO No.
                 </td>
                 @endif
                 <td
-                    style="font-weight: bold; padding: 2px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
+                    style="font-weight: bold; padding: 2px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;width:110px">
                     Remarks
                 </td>
             </tr>
@@ -165,20 +145,17 @@
                         {{ $key + 1 }}
                     </td>
                     <td
-                        style="vertical-align: top; padding:10px 3px; text-align:left; border: 1px solid #000; border-top: none; border-left: none;">
-                        {{ @$piItem->item_code }}<br />
-
-                    </td>
-                    <td
-                        style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: left;">
-                        {{@$piItem?->item?->item_name}}
-                        <br>
+                        style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: left;word-break: break-word;">
+                        <b>{{@$piItem?->item?->item_name}}</b>
+                        <br />
+                        Code : {{@$piItem->item_code}}
+                        <br />
                         @if($piItem?->item?->specifications->count())
                             {{ $piItem?->item->specifications->pluck('value')->implode(', ') }}
                         @endif
                     </td>
                     <td
-                        style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: left;">
+                        style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: left;word-break: break-word;">
                         @if($piItem?->item?->itemAttributes->count())
                             @foreach($piItem?->item?->itemAttributes as $index => $attribute)
                                 @php
@@ -201,25 +178,25 @@
                         @endif
                     </td> --}}
                     <td
-                        style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: left;">
+                        style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: left;word-break: break-word;">
                         {{@$piItem?->item?->uom?->name}}
                     </td>
                     <td
-                        style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
+                        style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;word-break: break-word;">
                         {{@$piItem->indent_qty}}
                     </td>
                     <td
-                        style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: left;">
+                        style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: left;word-break: break-word;">
                         {{@$piItem?->vendor?->company_name}}
                     </td>
                     @if(strtolower($pi->so_tracking_required) == 'yes')
                     <td
-                        style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: left;">
+                        style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: left;word-break: break-word;">
                         {{@$piItem?->so?->full_document_number ?? ''}}
                     </td>
                     @endif
                     <td
-                        style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: left;">
+                        style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: left;word-break: break-word;">
                         {{ $piItem->remarks }}
                     </td>
                 </tr>

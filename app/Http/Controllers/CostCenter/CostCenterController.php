@@ -39,7 +39,7 @@ class CostCenterController extends Controller
     {
         $user = Helper::getAuthenticatedUser();
         $companies = $user -> access_rights_org;
-        $existingCostCenters = CostCenter::pluck('name')->toArray();
+        $existingCostCenters = CostCenter::withDefaultGroupCompanyOrg()->pluck('name')->toArray();
         $groups = CostGroup::where('organization_id',Helper::getAuthenticatedUser()->organization_id)->where('status','active')->get();
         return view('costCenter.create', compact('groups','companies','existingCostCenters'));
     }
@@ -111,7 +111,7 @@ class CostCenterController extends Controller
         $data = CostCenter::find($id);
         $user = Helper::getAuthenticatedUser();
         $companies = $user -> access_rights_org;
-         $existingCostCenters = CostCenter::where('id', '!=', $id)
+         $existingCostCenters = CostCenter::withDefaultGroupCompanyOrg()->where('id', '!=', $id)
         ->pluck('name')
         ->toArray();
 
