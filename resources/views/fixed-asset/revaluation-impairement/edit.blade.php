@@ -118,7 +118,7 @@
                                                     <div class="col-md-5">
                                                         <select class="form-select" id="book_id" name="book_id" required>
                                                             @foreach ($series as $book)
-                                                                <option value="{{ $book->id }}">{{ $book->book_code }}
+                                                                <option value="{{ $book->id }}" {{$book->id==$data->book_id?'selected':''}}>{{ $book->book_code }}
                                                                 </option>
                                                             @endforeach
                                                         </select>
@@ -132,7 +132,7 @@
                                                     </div>
                                                     <div class="col-md-5">
                                                         <input type="text" class="form-control" id="document_number"
-                                                            name="document_number" required>
+                                                            name="document_number" value="{{$data->document_number}}" required>
                                                     </div>
                                                 </div>
 
@@ -143,7 +143,7 @@
                                                     </div>
                                                     <div class="col-md-5">
                                                         <input type="date" class="form-control" id="document_date"
-                                                            name="document_date" value="{{ date('Y-m-d') }}" required>
+                                                            name="document_date" value="{{ $data->document_date }}" required>
                                                     </div>
                                                 </div>
                                                 <div class="row align-items-center mb-1">
@@ -156,7 +156,7 @@
                                                         <select id="location" class="form-select"
                                                             name="location_id" required>
                                                             @foreach ($locations as $location)
-                                                                <option value="{{ $location->id }}">
+                                                                <option value="{{ $location->id }}"  {{$location->id==$data->location_id?'selected':''}}>
                                                                     {{ $location->store_name }}</option>
                                                             @endforeach
                                                         </select>
@@ -259,38 +259,46 @@
                                                             </tr>
                                                         </thead>
                                                         <tbody class="mrntableselectexcel">
+                                                                @if($data->asset_details)
+                                                                @foreach (json_decode($data->asset_details) as $key => $value)
+                                                                   
                                                             <tr>
-                                                                <td class="customernewsection-form">
-                                                                    <div
+                                                                <td>
+                                                                 <div
                                                                         class="form-check form-check-primary custom-checkbox">
                                                                         <input type="checkbox" class="form-check-input row-check"
                                                                             id="Email">
                                                                         <label class="form-check-label"
                                                                             for="Email"></label>
                                                                     </div>
-                                                                </td>
+                                                                    </td>
+                                                               
                                                                 <td class="poprod-decpt">  
-                                                                        <input type="text" required class="form-control asset-search-input mw-100"/>
-                                                                   <input type="hidden" name="asset_id[]" class="asset_id" data-id="1" id="asset_id_1"/> 
+                                                                        <input type="text" required class="form-control asset-search-input mw-100" value="{{$value->asset_code??null}}" />
                                                               
                                                                     </td>
                                                                       
                                                                 <td class="poprod-decpt">
-                                                                    <input type="text" required class="form-control subasset-search-input mw-100"/>
+                                                                    <input type="text" required class="form-control subasset-search-input mw-100" value="{{$value->sub_asset_code??null}}"/>
                                                                    <input type="hidden" name="sub_asset_id[]" class="sub_asset_id" data-id="1" id="sub_asset_id_1"/> 
                                                                 </td>
-                                                                <td><input type="number" name="quantity[]" id="quantity_1" readonly data-id="1"
+                                                                <td><input type="number" name="quantity[]" id="quantity_1" readonly data-id="1" value="{{$value->quantity??null}}"
                                                                         class="form-control mw-100 quantity" /></td>
                                                                 <td class="text-end"><input type="text" name="currentvalue[]" id="currentvalue_1" data-id="1"
-                                                                        class="form-control mw-100 text-end currentvalue" readonly/>
+                                                                        class="form-control mw-100 text-end currentvalue" value="{{$value->currentvalue??null}}"/>
                                                                 </td>
                                                                 
                                                                 <td><input type="date" name="last_dep_date[]" id="last_dep_date_1" data-id="1"
-                                                                    class="form-control mw-100 last_dep_date" readonly/>
+                                                                    class="form-control mw-100 last_dep_date" value="{{$value->last_dep_date??null}}" readonly/>
                                                             </td>
-                                                                <td><input type="number" step="2" required name="revaluate_amount[]" id="revaluate_amount_1" data-id="1"
+                                                                <td><input type="number" step="2" value="{{$value->revaluate??null}}" required name="revaluate_amount[]" id="revaluate_amount_1" data-id="1"
             class="form-control mw-100 text-end revaluate_amount" /></td>
                                                             </tr>
+
+
+                                                            @endforeach
+                                                            @endif
+                                                        
 
 
                                                             
@@ -460,37 +468,6 @@
                 return response.json().then(data => {
                     if (data.status == 200) {
                         resetParametersDependentElements(data.data);
-                        $("#book_code_input").val(data.data.book_code);
-                        if (!data.data.doc.document_number) {
-                            $("#document_number").val('');
-                            $('#doc_number_type').val('');
-                            $('#doc_reset_pattern').val('');
-                            $('#doc_prefix').val('');
-                            $('#doc_suffix').val('');
-                            $('#doc_no').val('');
-                        } else {
-                            $("#document_number").val(data.data.doc.document_number);
-                            $('#doc_number_type').val(data.data.doc.type);
-                            $('#doc_reset_pattern').val(data.data.doc.reset_pattern);
-                            $('#doc_prefix').val(data.data.doc.prefix);
-                            $('#doc_suffix').val(data.data.doc.suffix);
-                            $('#doc_no').val(data.data.doc.doc_no);
-                        }
-                        if (data.data.doc.type == 'Manually') {
-                            $("#document_number").attr('readonly', false);
-                        } else {
-                            $("#document_number").attr('readonly', true);
-                        }
-
-                    }
-                    if (data.status == 404) {
-                        $("#document_number").val('');
-                        $('#doc_number_type').val('');
-                        $('#doc_reset_pattern').val('');
-                        $('#doc_prefix').val('');
-                        $('#doc_suffix').val('');
-                        $('#doc_no').val('');
-                        showToast('error', data.message);
                     }
                 });
             });
@@ -805,6 +782,47 @@ $('#location').on('change', function () {
     if (locationId) {
         // Build the route manually
         var url = '{{ route("cost-center.get-cost-center", ":id") }}'.replace(':id', locationId);
+        
+        $.ajax({
+            url: url,
+            type: 'GET',
+            dataType: 'json',
+            success: function (data) {
+                if(data.length==0){
+                    $('#cost_center').empty(); 
+                $('#cost_center').prop('required', false);
+                $('.cost_center').hide();
+                }
+                else{
+                    $('.cost_center').show();
+                    $('#cost_center').prop('required', true);
+                $('#cost_center').empty(); // Clear previous options
+                $.each(data, function (key, value) {
+                        $('#cost_center').append('<option value="' + value.id +'>' + value.name + '</option>');
+             
+                });
+                $('#cost_center').trigger('change'); // Trigger change to load categories
+                
+                
+                
+            }
+            },
+            error: function () {
+                $('#cost_center').empty();
+            }
+        });
+    } else {
+        $('#cost_center').empty();
+    }
+});
+function loadCategoriesOnSelection() {
+    var locationId = $("#location").val();
+    console.log(locationId);
+
+    if (locationId) {
+        // Build the route manually
+        var url = '{{ route("cost-center.get-cost-center", ":id") }}'.replace(':id', locationId);
+        var selectedCostCenterId = '{{ $data->cost_center_id ?? '' }}'; // Use null coalescing for safety
 
         $.ajax({
             url: url,
@@ -821,10 +839,10 @@ $('#location').on('change', function () {
                     $('#cost_center').prop('required', true);
                 $('#cost_center').empty(); // Clear previous options
                 $.each(data, function (key, value) {
-                    $('#cost_center').append('<option value="' + value.id + '">' + value.name + '</option>');
+                              let selected = (value.id == selectedCostCenterId) ? 'selected' : '';
+                        $('#cost_center').append('<option value="' + value.id + '" ' + selected + '>' + value.name + '</option>');
+             
                 });
-                $('#cost_center').trigger('change'); // Trigger change to load categories
-                
                 
                 
             }
@@ -836,7 +854,44 @@ $('#location').on('change', function () {
     } else {
         $('#cost_center').empty();
     }
-});
+
+    var costCenterId = $('#cost_center').val();
+    var locationId = $('#location').val();
+    console.log(costCenterId, locationId);
+
+    if (locationId && costCenterId) {
+        var url = '{{ route("finance.fixed-asset.get-categories") }}';
+        var selectedCategoryId = '{{ $data->category_id ?? '' }}';
+
+        $.ajax({
+            url: url,
+            type: 'GET',
+            data: {
+                cost_center_id: costCenterId,
+                location_id: locationId
+            },
+            dataType: 'json',
+            success: function (data) {
+                $('#category').empty().append('<option value="">Select Category</option>');
+                $.each(data, function (key, value) {
+                    let selectedc = (value.id == selectedCategoryId) ? 'selected' : '';
+                    $('#category').append('<option value="' + value.id + '" ' + selectedc + '>' + value.name + '</option>');
+                });
+            },
+            error: function () {
+                $('#category').empty();
+            }
+        });
+    } else {
+        $('#category').empty();
+    }
+}
+
+
+// Trigger once on page load (first time)
+    loadCategoriesOnSelection();
+
+
 $('#cost_center').on('change', function () {
     add_blank(); // Custom function, assuming you're resetting rows
 
@@ -858,7 +913,7 @@ $('#cost_center').on('change', function () {
             success: function (data) {
                 $('#category').empty().append('<option value="">Select Category</option>');
                 $.each(data, function (key, value) {
-                    $('#category').append('<option value="' + value.id + '">' + value.name + '</option>');
+                    $('#category').append('<option value="' + value.id +'>' + value.name + '</option>');
                 });
             },
             error: function () {
@@ -870,7 +925,7 @@ $('#cost_center').on('change', function () {
     }
 });
 
-$('#location').trigger('change');
+//$('#location').trigger('change');
 
 function getAllAssetIds() {
     let assetIds = [];
@@ -939,33 +994,29 @@ function validateRevaluationAmounts(showErrors = true) {
 }
 
   
-    function updateJsonData(){
-          const allRows = [];
+   function updateJsonData() {
+    const allRows = [];
 
     $('.mrntableselectexcel tr').each(function () {
         const row = $(this);
-        const rowId = row.find('.asset_id').attr('data-id');
-        let sub_asset_codes = [];
-        row.find(`#sub_asset_id_${rowId} option:selected`).each(function () {
-            sub_asset_codes.push($(this).text());
-        });
-
         const rowData = {
-            asset_id: row.find(`#asset_id_${rowId}`).val(),
-            sub_asset_id: row.find(`#sub_asset_id_${rowId}`).val(), // array from select2
-            quantity: row.find(`#quantity_${rowId}`).val(),
-            sub_asset_code :sub_asset_codes,
-            currentvalue: row.find(`#currentvalue_${rowId}`).val(),
-            revaluate: row.find(`#revaluate_amount${rowId}`).val(),
-            last_dep_date: row.find(`#last_dep_date_${rowId}`).val(),
+            asset_id: row.find('.asset_id').val(),
+            asset_code: row.find('.asset-search-input').val(), // assuming it's a text input
+            sub_asset_id: row.find('.sub_asset_id').val(),     // array if select2 multi-select
+            sub_asset_code: row.find('.subasset-search-input').val(),
+            quantity: row.find('.quantity').val(),
+            currentvalue: row.find('.currentvalue').val(),
+            revaluate: row.find('.revaluate_amount').val(),
+            last_dep_date: row.find('.last_dep_date').val(),
         };
 
         allRows.push(rowData);
     });
 
     $('#asset_details').val(JSON.stringify(allRows));
-    }
-    $('#category').on('change', function() {
+}
+
+$('#category').on('change', function() {
         add_blank();
         });
         function add_blank(){

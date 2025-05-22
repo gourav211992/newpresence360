@@ -939,32 +939,27 @@ function validateRevaluationAmounts(showErrors = true) {
 }
 
   
-    function updateJsonData(){
-          const allRows = [];
+function updateJsonData() {
+    const allRows = [];
 
     $('.mrntableselectexcel tr').each(function () {
         const row = $(this);
-        const rowId = row.find('.asset_id').attr('data-id');
-        let sub_asset_codes = [];
-        row.find(`#sub_asset_id_${rowId} option:selected`).each(function () {
-            sub_asset_codes.push($(this).text());
-        });
-
         const rowData = {
-            asset_id: row.find(`#asset_id_${rowId}`).val(),
-            sub_asset_id: row.find(`#sub_asset_id_${rowId}`).val(), // array from select2
-            quantity: row.find(`#quantity_${rowId}`).val(),
-            sub_asset_code :sub_asset_codes,
-            currentvalue: row.find(`#currentvalue_${rowId}`).val(),
-            revaluate: row.find(`#revaluate_amount${rowId}`).val(),
-            last_dep_date: row.find(`#last_dep_date_${rowId}`).val(),
+            asset_id: row.find('.asset_id').val(),
+            asset_code: row.find('.asset-search-input').val(), // assuming it's a text input
+            sub_asset_id: row.find('.sub_asset_id').val(),     // array if select2 multi-select
+            sub_asset_code: row.find('.subasset-search-input').val(),
+            quantity: row.find('.quantity').val(),
+            currentvalue: row.find('.currentvalue').val(),
+            revaluate: row.find('.revaluate_amount').val(),
+            last_dep_date: row.find('.last_dep_date').val(),
         };
 
         allRows.push(rowData);
     });
 
     $('#asset_details').val(JSON.stringify(allRows));
-    }
+}
     $('#category').on('change', function() {
         add_blank();
         });

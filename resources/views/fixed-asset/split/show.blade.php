@@ -45,10 +45,7 @@
                                         <i data-feather="file-text"></i> Voucher</button>
                                 @endif
                               
-                            <button type="submit" hidden form="fixed-asset-split-form" class="btn btn-primary btn-sm"
-                                id="submit-btn">
-                                <i data-feather="check-circle"></i> Submit
-                            </button>
+                          
                         </div>
                     </div>
                 </div>
