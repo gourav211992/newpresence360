@@ -15,7 +15,7 @@ class FixedAssetRevImpHistory extends Model
 {
     use HasFactory, SoftDeletes, DefaultGroupCompanyOrg, Deletable;
 
-    protected $table = 'erp_finance_fixed_asset_revaluation_impairement_history';
+    protected $table = 'erp_finance_fixed_asset_rev_history';
 
     protected $guarded = ['id'];
     public function book(){

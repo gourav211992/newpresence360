@@ -81,7 +81,7 @@
                             <a onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i
                                     data-feather="arrow-left-circle"></i> Back</a>
                             <button form="setup" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i
-                                    data-feather="check-circle"></i> Create</button>
+                                    data-feather="check-circle"></i> Update</button>
                         </div>
                     </div>
                 </div>
@@ -237,6 +237,96 @@
                                                     </select>
                                                 </div>
                                             </div>
+                                                                                    <div class="row align-items-center mb-1">
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Rev. Ledger <span class="text-danger">*</span></label>
+                                                </div>
+                                                <div class="col-md-5">
+                                                    <select class="form-select select2" name="rev_ledger_id"
+                                                    id="rev_ledger" required>
+                                                    <option value=""
+                                                        {{ old('rev_ledger') ? '' : 'selected' }}>Select</option>
+                                                    @foreach ($sales_exp_ledgers as $rev)
+                                                        <option value="{{ $rev->id }}"
+                                                            {{ $data->rev_ledger_id == $rev->id ? 'selected' : '' }}>
+                                                            {{ $rev->name }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                             </div>
+                                            </div>
+                                    
+                                            <div class="row align-items-center mb-1">
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Rev. Ledger Group <span class="text-danger">*</span></label>
+                                                </div>
+                                                <div class="col-md-5">
+                                                    <select class="form-select" name="rev_ledger_group_id"
+                                                    id="rev_ledger_group" required>
+                                                    </select>
+                                            
+                                                </div>
+                                            </div>
+                                            <div class="row align-items-center mb-1">
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Imp. Ledger <span class="text-danger">*</span></label>
+                                                </div>
+                                                <div class="col-md-5">
+                                                    <select class="form-select select2" name="imp_ledger_id"
+                                                    id="imp_ledger" required>
+                                                    <option value=""
+                                                        {{ old('imp_ledger') ? '' : 'selected' }}>Select</option>
+                                                    @foreach ($sur_ledgers as $imp)
+                                                        <option value="{{ $imp->id }}"
+                                                            {{ $data->imp_ledger_id == $imp->id ? 'selected' : '' }}>
+                                                            {{ $imp->name }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                             </div>
+                                            </div>
+                                    
+                                            <div class="row align-items-center mb-1">
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Rev. Ledger Group <span class="text-danger">*</span></label>
+                                                </div>
+                                                <div class="col-md-5">
+                                                    <select class="form-select" name="imp_ledger_group_id"
+                                                    id="imp_ledger_group" required>
+                                                    </select>
+                                            
+                                                </div>
+                                            </div>
+                                            <div class="row align-items-center mb-1">
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Sales Ledger <span class="text-danger">*</span></label>
+                                                </div>
+                                                <div class="col-md-5">
+                                                    <select class="form-select select2" name="sales_ledger_id"
+                                                    id="sales_ledger" required>
+                                                    <option value=""
+                                                        {{ old('sales_ledger') ? '' : 'selected' }}>Select</option>
+                                                    @foreach ($sales_exp_ledgers as $sales)
+                                                        <option value="{{ $sales->id }}"
+                                                            {{ $data->sales_ledger_id == $sales->id ? 'selected' : '' }}>
+                                                            {{ $sales->name }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                             </div>
+                                            </div>
+                                    
+                                            <div class="row align-items-center mb-1">
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Rev. Ledger Group <span class="text-danger">*</span></label>
+                                                </div>
+                                                <div class="col-md-5">
+                                                    <select class="form-select" name="sales_ledger_group_id"
+                                                    id="sales_ledger_group" required>
+                                                    </select>
+                                            
+                                                </div>
+                                            </div>
                                         </div>
                 
                                             <div class="col-md-3 border-start">
@@ -279,6 +369,53 @@
 @section('scripts')
 
     <script type="text/javascript">
+    function handleLedgerChange(ledgerSelector, groupSelector, selectedGroupId = null) {
+    console.log('ledgerSelector', $(ledgerSelector).val());
+
+    // Always bind the change event
+    $(ledgerSelector).change(function() {
+        const ledgerId = $(this).val();
+        const groupDropdown = $(groupSelector);
+
+        if (ledgerId === '') {
+            groupDropdown.empty(); // Optional: Clear group dropdown if ledger is empty
+            return;
+        }
+
+        $.ajax({
+            url: '{{ route('finance.fixed-asset.getLedgerGroups') }}',
+            method: 'GET',
+            data: {
+                ledger_id: ledgerId,
+                _token: $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function(response) {
+                groupDropdown.empty();
+                response.forEach(item => {
+                    const selected = (selectedGroupId == item.id) ? 'selected' : '';
+                    groupDropdown.append(
+                        `<option value="${item.id}" ${selected}>${item.name}</option>`
+                    );
+                });
+            },
+            error: function() {
+                alert('Error fetching group items.');
+            }
+        });
+    });
+
+    // Optional: Trigger change once on load if value exists
+    if ($(ledgerSelector).val() !== '') {
+        $(ledgerSelector).trigger('change');
+    }
+}
+
+        handleLedgerChange('#ledger', '#ledger_group', "{{ $data->ledger_group_id }}");
+        handleLedgerChange('#rev_ledger', '#rev_ledger_group', "{{ $data->rev_ledger_group_id }}");
+        handleLedgerChange('#imp_ledger', '#imp_ledger_group', "{{ $data->imp_ledger_group_id }}");
+        handleLedgerChange('#sales_ledger', '#sales_ledger_group', "{{ $data->sales_ledger_group_id }}");
+        handleLedgerChange('#dep_ledger', '#dep_ledger_group', "{{ $data->dep_ledger_group_id }}");
+
     $('#dep_ledger_group').val("{{$data->dep_ledger_group_id}}");
         function showToast(icon, title) {
             const Toast = Swal.mixin({
@@ -312,58 +449,7 @@
             );
         @endif
 
-        $('#ledger').change(function() {
-                let groupDropdown = $('#ledger_group');
-                $.ajax({
-                    url: '{{ route('finance.fixed-asset.getLedgerGroups') }}',
-                    method: 'GET',
-                    data: {
-                        ledger_id: $(this).val(),
-                        _token: $('meta[name="csrf-token"]').attr(
-                            'content') // CSRF token
-                    },
-                    success: function(response) {
-                        groupDropdown.empty(); // Clear previous options
-
-                        response.forEach(item => {
-                            groupDropdown.append(
-                                `<option value="${item.id}">${item.name}</option>`
-                            );
-                        });
-
-                    },
-                    error: function() {
-                        alert('Error fetching group items.');
-                    }
-                });
-
-            });
-            $('#dep_ledger').change(function() {
-                let groupDropdown = $('#dep_ledger_group');
-                $.ajax({
-                    url: '{{ route('finance.fixed-asset.getLedgerGroups') }}',
-                    method: 'GET',
-                    data: {
-                        ledger_id: $(this).val(),
-                        _token: $('meta[name="csrf-token"]').attr(
-                            'content') // CSRF token
-                    },
-                    success: function(response) {
-                        groupDropdown.empty(); // Clear previous options
-
-                        response.forEach(item => {
-                            groupDropdown.append(
-                                `<option value="${item.id}">${item.name}</option>`
-                            );
-                        });
-
-                    },
-                    error: function() {
-                        alert('Error fetching group items.');
-                    }
-                });
-
-            });
+          
     </script>
 @endsection
 

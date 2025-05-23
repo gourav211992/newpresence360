@@ -510,18 +510,19 @@ document.getElementById("process_btn").addEventListener("click", function () {
                
                 // If expiry date > toDate, then toDate = expiry date
                 if (expiryDate < toDateObj) {
-                        toDateObj = expiryDate;
+                        // Set toDateObj to one day before expiryDate
+                        toDateObj = new Date(expiryDate);
+                        toDateObj.setDate(toDateObj.getDate() - 1);
 
                         // Format the updated `to_date`
                         let d = toDateObj.getDate().toString().padStart(2, '0');
                         let m = (toDateObj.getMonth() + 1).toString().padStart(2, '0');
                         let y = toDateObj.getFullYear();
                         to_date = `${d}-${m}-${y}`;
-                            //console.log("Expiry Date:"+expiryDate);
-                            
-                        
+
+                        // Optional debug log
+                        // console.log("Adjusted To Date:", to_date);
                     }
-                
                 // Calculate difference in milliseconds
                 let diffTime = toDateObj - fromDateObj;
                 

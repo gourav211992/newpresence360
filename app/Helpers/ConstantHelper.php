@@ -562,7 +562,7 @@ class ConstantHelper
     const FIXED_ASSET_DEPRECIATION = 'depreciation';
     const FIXED_ASSET_SPLIT = 'fixed-asset-split';
     const FIXED_ASSET_MERGER = 'fixed-asset-merger';
-    const FIXED_ASSET_REV_IMP = 'fixed-asset-revaluation-impairement';
+    const FIXED_ASSET_REV_IMP = 'fixed-asset-rev';
     const STAKEHOLDER_INTERACTION = 'stakeholder-interaction';
     const COMPLAINT_MANAGEMENT = 'complaint';
     const FEEDBACK_PROCESS = 'feedback-process';
@@ -580,6 +580,7 @@ class ConstantHelper
     const DIRECT_INCOMES = "Direct Incomes";
     const FIXED_ASSETS = "Fixed Assets";
     const INDIRECT_EXPENSES = "Indirect Expenses";
+    const RESERVE_SURPLUS ="Reserves & Surplus";
     const INDIRECT_INCOMES = "Indirect Incomes";
     const INVESTMENTS = "Investments";
     const LOANS_LIABILITY = "Loans (Liability)";
@@ -623,6 +624,7 @@ class ConstantHelper
         self::FIXED_ASSET_SPLIT=>self::FIXED_ASSET_SPLIT,
         self::FIXED_ASSET_MERGER=>self::FIXED_ASSET_MERGER,
         self::FIXED_ASSET_REV_IMP=>self::FIXED_ASSET_REV_IMP,
+        self::FIXEDASSET=>self::FIXEDASSET,
         self::SR_SERVICE_ALIAS=>self::CREDIT_Note,
         self::PSV_SERVICE_ALIAS => self::JOURNAL_VOUCHER,
     ];

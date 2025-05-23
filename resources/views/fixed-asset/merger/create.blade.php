@@ -23,20 +23,20 @@
                             </div>
                         </div>
                     </div>
-               
+
                     <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
                         <div class="form-group breadcrumb-right">
                             <a href="{{ route('finance.fixed-asset.merger.index') }}"> <button
-                                class="btn btn-secondary btn-sm"><i data-feather="arrow-left-circle"></i> Back</button>
-                        </a>
+                                    class="btn btn-secondary btn-sm"><i data-feather="arrow-left-circle"></i> Back</button>
+                            </a>
                             <button class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" type="button" id="save-draft-btn">
                                 <i data-feather="save"></i> Save as Draft
                             </button>
-                          
+
                             <button type="submit" form="fixed-asset-merger-form" class="btn btn-primary btn-sm"
-                            id="submit-btn">
-                            <i data-feather="check-circle"></i> Submit
-                        </button>
+                                id="submit-btn">
+                                <i data-feather="check-circle"></i> Submit
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -59,7 +59,7 @@
                             <input type="hidden" name="doc_suffix" id="doc_suffix">
                             <input type="hidden" name="doc_no" id="doc_no">
                             <input type="hidden" name="document_status" id="document_status" value="">
-                            <input type="hidden" name="dep_type" id="depreciation_type" value="{{$dep_type}}">
+                            <input type="hidden" name="dep_type" id="depreciation_type" value="{{ $dep_type }}">
                             <div class="col-12">
 
 
@@ -134,8 +134,8 @@
                                                     </div>
 
                                                     <div class="col-md-5">
-                                                        <select id="location" class="form-select"
-                                                            name="location_id" required>
+                                                        <select id="location" class="form-select" name="location_id"
+                                                            required>
                                                             @foreach ($locations as $location)
                                                                 <option value="{{ $location->id }}">
                                                                     {{ $location->store_name }}</option>
@@ -157,6 +157,26 @@
                                                     </div>
 
                                                 </div>
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Category <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <select class="form-select select2" name="category_id"
+                                                            id="category" required>
+                                                            <option value="" {{ old('category') ? '' : 'selected' }}>
+                                                                Select</option>
+                                                            @foreach ($categories as $category)
+                                                                <option value="{{ $category->id }}"
+                                                                    {{ old('category') == $category->id ? 'selected' : '' }}>
+                                                                    {{ $category->name }}
+                                                                </option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+                                                </div>
+
 
                                             </div>
 
@@ -187,7 +207,8 @@
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6 text-sm-end">
-                                                    <a href="#" class="btn btn-sm btn-outline-danger me-50" id="delete">
+                                                    <a href="#" class="btn btn-sm btn-outline-danger me-50"
+                                                        id="delete">
                                                         <i data-feather="x-circle"></i> Delete</a>
                                                     <a id="addNewRowBtn" class="btn btn-sm btn-outline-primary">
                                                         <i data-feather="plus"></i> Add New</a>
@@ -212,7 +233,7 @@
                                                                 <th class="customernewsection-form">
                                                                     <div
                                                                         class="form-check form-check-primary custom-checkbox">
-                                                                        <input type="checkbox" class="form-check-input"  
+                                                                        <input type="checkbox" class="form-check-input"
                                                                             id="checkAll">
                                                                         <label class="form-check-label"
                                                                             for="Email"></label>
@@ -231,40 +252,55 @@
                                                                 <td class="customernewsection-form">
                                                                     <div
                                                                         class="form-check form-check-primary custom-checkbox">
-                                                                        <input type="checkbox" class="form-check-input row-check"
+                                                                        <input type="checkbox"
+                                                                            class="form-check-input row-check"
                                                                             id="Email">
                                                                         <label class="form-check-label"
                                                                             for="Email"></label>
                                                                     </div>
                                                                 </td>
-                                                                <td class="poprod-decpt">  
-                                                                        <input type="text" required class="form-control asset-search-input mw-100"/>
-                                                                   <input type="hidden" name="asset_id[]" class="asset_id" data-id="1" id="asset_id_1"/> 
-                                                              
-                                                                    </td>
-                                                                      
                                                                 <td class="poprod-decpt">
-                                                                    <select id="sub_asset_id_1" name="sub_asset_id[]" data-id="1"
-                                                                        class="form-select mw-100 select2 sub_asset_id" multiple required>
-                                                                <option disabled value="">Select</option>
-                                                                <!-- Will be filled via AJAX -->
-                                                            </select>
+                                                                    <input type="text" required
+                                                                        class="form-control asset-search-input mw-100" />
+                                                                    <input type="hidden" name="asset_id[]"
+                                                                        class="asset_id" data-id="1"
+                                                                        id="asset_id_1" />
+
                                                                 </td>
-                                                                <td><input type="number" name="quantity[]" id="quantity_1" readonly data-id="1"
+
+                                                                <td class="poprod-decpt">
+                                                                    <select id="sub_asset_id_1" name="sub_asset_id[]"
+                                                                        data-id="1"
+                                                                        class="form-select mw-100 select2 sub_asset_id"
+                                                                        multiple required>
+                                                                        <option disabled value="">Select</option>
+                                                                        <!-- Will be filled via AJAX -->
+                                                                    </select>
+                                                                </td>
+                                                                <td><input type="number" name="quantity[]"
+                                                                        id="quantity_1" readonly data-id="1"
                                                                         class="form-control mw-100 quantity" /></td>
-                                                                <td class="text-end"><input type="text" name="currentvalue[]" id="currentvalue_1" data-id="1"
-                                                                        class="form-control mw-100 text-end currentvalue" readonly/>
+                                                                <td class="text-end"><input type="text"
+                                                                        name="currentvalue[]" id="currentvalue_1"
+                                                                        data-id="1"
+                                                                        class="form-control mw-100 text-end currentvalue"
+                                                                        readonly />
                                                                 </td>
-                                                                <td class="text-end"><input type="text" name="salvagevalue[]" id="salvagevalue_1" data-id="1"
-                                                                    class="form-control mw-100 text-end salvagevalue" readonly/>
-                                                            </td>
-                                                                <td><input type="date" name="last_dep_date[]" id="last_dep_date_1" data-id="1"
-                                                                    class="form-control mw-100 last_dep_date" readonly/>
-                                                            </td>
+                                                                <td class="text-end"><input type="text"
+                                                                        name="salvagevalue[]" id="salvagevalue_1"
+                                                                        data-id="1"
+                                                                        class="form-control mw-100 text-end salvagevalue"
+                                                                        readonly />
+                                                                </td>
+                                                                <td><input type="date" name="last_dep_date[]"
+                                                                        id="last_dep_date_1" data-id="1"
+                                                                        class="form-control mw-100 last_dep_date"
+                                                                        readonly />
+                                                                </td>
                                                             </tr>
 
 
-                                                            
+
                                                         </tbody>
 
 
@@ -288,28 +324,14 @@
                                             </div>
                                             <div class="card-body">
                                                 <div class="row">
-                                                    <div class="col-md-3">
-                                                        <div class="mb-1">
-                                                            <label class="form-label">Category <span
-                                                                    class="text-danger">*</span></label>
-                                                                    <select class="form-select select2" name="category_id" id="category" required>
-                                                                        <option value="" {{ old('category') ? '' : 'selected' }}>Select</option>
-                                                                        @foreach($categories as $category)
-                                                                            <option value="{{ $category->id }}" {{ old('category') == $category->id ? 'selected' : '' }}>
-                                                                                {{ $category->name }}
-                                                                            </option>
-                                                                        @endforeach
-                                                                    </select>
-                                                                    </div>
-                                                    </div>
 
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Asset Name <span
                                                                     class="text-danger">*</span></label>
                                                             <input type="text" class="form-control" name="asset_name"
-                                                                id="asset_name"
-                                                                value="{{ old('asset_name') }}" required />
+                                                                id="asset_name" value="{{ old('asset_name') }}"
+                                                                required />
                                                         </div>
                                                     </div>
 
@@ -329,8 +351,7 @@
                                                             <label class="form-label">Quantity <span
                                                                     class="text-danger">*</span></label>
                                                             <input type="text" class="form-control" name="quantity"
-                                                                id="quantity" value="1"
-                                                                readonly />
+                                                                id="quantity" value="1" readonly />
                                                         </div>
                                                     </div>
 
@@ -359,7 +380,7 @@
                                                                     class="text-danger">*</span></label>
                                                             <select class="form-select select2" name="ledger_group_id"
                                                                 id="ledger_group" required>
-                                                                </select>
+                                                            </select>
                                                         </div>
                                                     </div>
 
@@ -369,7 +390,9 @@
                                                                     class="text-danger">*</span></label>
                                                             <input type="date" class="form-control"
                                                                 name="capitalize_date" id="capitalize_date"
-                                                                value="{{ old('capitalize_date') }}" min="{{$financialStartDate}}" max="{{$financialEndDate}}" required />
+                                                                value="{{ old('capitalize_date') }}"
+                                                                min="{{ $financialStartDate }}"
+                                                                max="{{ $financialEndDate }}" required />
                                                         </div>
                                                     </div>
 
@@ -379,30 +402,45 @@
                                                                     class="text-danger">*</span></label>
                                                             <select class="form-select" name="maintenance_schedule"
                                                                 id="maintenance_schedule" required>
-                                                                <option value="" {{ old('maintenance_schedule') == '' ? 'selected' : '' }}>Select</option>
-                                                                <option value="weekly" {{ old('maintenance_schedule') == 'Weekly' ? 'selected' : '' }}>Weekly</option>
-                                                                <option value="monthly" {{ old('maintenance_schedule') == 'Monthly' ? 'selected' : '' }}>Monthly</option>
-                                                                <option value="quarterly" {{ old('maintenance_schedule') == 'Quarterly' ? 'selected' : '' }}>Quarterly</option>
-                                                                <option value="semi-annually" {{ old('maintenance_schedule') == 'Semi-Annually' ? 'selected' : '' }}>Semi-Annually</option>
-                                                                <option value="annually" {{ old('maintenance_schedule') == 'Annually' ? 'selected' : '' }}>Annually</option>
+                                                                <option value=""
+                                                                    {{ old('maintenance_schedule') == '' ? 'selected' : '' }}>
+                                                                    Select</option>
+                                                                <option value="weekly"
+                                                                    {{ old('maintenance_schedule') == 'Weekly' ? 'selected' : '' }}>
+                                                                    Weekly</option>
+                                                                <option value="monthly"
+                                                                    {{ old('maintenance_schedule') == 'Monthly' ? 'selected' : '' }}>
+                                                                    Monthly</option>
+                                                                <option value="quarterly"
+                                                                    {{ old('maintenance_schedule') == 'Quarterly' ? 'selected' : '' }}>
+                                                                    Quarterly</option>
+                                                                <option value="semi-annually"
+                                                                    {{ old('maintenance_schedule') == 'Semi-Annually' ? 'selected' : '' }}>
+                                                                    Semi-Annually</option>
+                                                                <option value="annually"
+                                                                    {{ old('maintenance_schedule') == 'Annually' ? 'selected' : '' }}>
+                                                                    Annually</option>
                                                             </select>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Dep. Method <span class="text-danger">*</span></label>
-                                                            <input type="text" name="depreciation_method" id="depreciation_method" class="form-control" value="{{$dep_method}}" readonly /> 
+                                                            <label class="form-label">Dep. Method <span
+                                                                    class="text-danger">*</span></label>
+                                                            <input type="text" name="depreciation_method"
+                                                                id="depreciation_method" class="form-control"
+                                                                value="{{ $dep_method }}" readonly />
                                                         </div>
                                                     </div>
-                                                    
+
 
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Est. Useful Life (yrs) <span
                                                                     class="text-danger">*</span></label>
                                                             <input type="text" class="form-control" name="useful_life"
-                                                                id="useful_life" value="{{ old('useful_life') }}" oninput="updateDepreciationValues()"
-                                                                required />
+                                                                id="useful_life" value="{{ old('useful_life') }}"
+                                                                oninput="updateDepreciationValues()" required />
                                                         </div>
                                                     </div>
 
@@ -418,21 +456,29 @@
 
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Dep % <span class="text-danger">*</span></label>
-                                                            <input type="number" class="form-control" id="depreciation_rate" name="depreciation_percentage" readonly /> 
-                                                            <input type="hidden" value="{{$dep_percentage}}" id="depreciation_percentage" /> 
-                                                            <input type="hidden" id="depreciation_rate_year" name="depreciation_percentage_year" /> 
-                                                     
-                                                        </div>
-                                                    </div>  
-                                                    <div class="col-md-3">
-                                                        <div class="mb-1">
-                                                            <label class="form-label">Total Dep. <span class="text-danger">*</span></label>
-                                                            <input type="number" id="total_depreciation" name="total_depreciation" class="form-control" value="0" readonly /> 
+                                                            <label class="form-label">Dep % <span
+                                                                    class="text-danger">*</span></label>
+                                                            <input type="number" class="form-control"
+                                                                id="depreciation_rate" name="depreciation_percentage"
+                                                                readonly />
+                                                            <input type="hidden" value="{{ $dep_percentage }}"
+                                                                id="depreciation_percentage" />
+                                                            <input type="hidden" id="depreciation_rate_year"
+                                                                name="depreciation_percentage_year" />
+
                                                         </div>
                                                     </div>
-                                                    
-                                                   
+                                                    <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">Total Dep. <span
+                                                                    class="text-danger">*</span></label>
+                                                            <input type="number" id="total_depreciation"
+                                                                name="total_depreciation" class="form-control"
+                                                                value="0" readonly />
+                                                        </div>
+                                                    </div>
+
+
 
 
                                                     <div class="col-md-3">
@@ -526,7 +572,7 @@
             genereateSubAssetRow(subAssetCode);
         });
 
-       
+
         function resetParametersDependentElements(data) {
             let backDateAllowed = false;
             let futureDateAllowed = false;
@@ -559,18 +605,18 @@
             const today = moment().format("YYYY-MM-DD");
 
             if (backDateAllowed && futureDateAllowed) {
-                dateInput.setAttribute("min","{{$financialStartDate}}");
-                dateInput.setAttribute("max","{{$financialEndDate}}");
+                dateInput.setAttribute("min", "{{ $financialStartDate }}");
+                dateInput.setAttribute("max", "{{ $financialEndDate }}");
             } else if (backDateAllowed) {
                 dateInput.setAttribute("max", today);
-                dateInput.setAttribute("min","{{$financialStartDate}}");
+                dateInput.setAttribute("min", "{{ $financialStartDate }}");
             } else if (futureDateAllowed) {
                 dateInput.setAttribute("min", today);
-                dateInput.setAttribute("max","{{$financialEndDate}}");
+                dateInput.setAttribute("max", "{{ $financialEndDate }}");
             } else {
                 dateInput.setAttribute("min", today);
                 dateInput.setAttribute("max", today);
-            
+
             }
         }
 
@@ -625,61 +671,61 @@
             document.getElementById('document_status').value = 'draft';
             const allRows = [];
 
-    $('.mrntableselectexcel tr').each(function () {
-        const row = $(this);
-        const rowId = row.find('.asset_id').attr('data-id');
-        let sub_asset_codes = [];
-        row.find(`#sub_asset_id_${rowId} option:selected`).each(function () {
-            sub_asset_codes.push($(this).text());
-        });
+            $('.mrntableselectexcel tr').each(function() {
+                const row = $(this);
+                const rowId = row.find('.asset_id').attr('data-id');
+                let sub_asset_codes = [];
+                row.find(`#sub_asset_id_${rowId} option:selected`).each(function() {
+                    sub_asset_codes.push($(this).text());
+                });
 
-        const rowData = {
-            asset_id: row.find(`#asset_id_${rowId}`).val(),
-            sub_asset_id: row.find(`#sub_asset_id_${rowId}`).val(), // array from select2
-            quantity: row.find(`#quantity_${rowId}`).val(),
-            sub_asset_code :sub_asset_codes,
-            currentvalue: row.find(`#currentvalue_${rowId}`).val(),
-            salvagevalue: row.find(`#salvagevalue_${rowId}`).val(),
-            last_dep_date: row.find(`#last_dep_date_${rowId}`).val(),
-        };
+                const rowData = {
+                    asset_id: row.find(`#asset_id_${rowId}`).val(),
+                    sub_asset_id: row.find(`#sub_asset_id_${rowId}`).val(), // array from select2
+                    quantity: row.find(`#quantity_${rowId}`).val(),
+                    sub_asset_code: sub_asset_codes,
+                    currentvalue: row.find(`#currentvalue_${rowId}`).val(),
+                    salvagevalue: row.find(`#salvagevalue_${rowId}`).val(),
+                    last_dep_date: row.find(`#last_dep_date_${rowId}`).val(),
+                };
 
-        allRows.push(rowData);
-    });
+                allRows.push(rowData);
+            });
 
-    $('#asset_details').val(JSON.stringify(allRows));
+            $('#asset_details').val(JSON.stringify(allRows));
 
             document.getElementById('fixed-asset-merger-form').submit();
         });
 
 
-$('#fixed-asset-merger-form').on('submit', function(e) {
+        $('#fixed-asset-merger-form').on('submit', function(e) {
             e.preventDefault(); // Always prevent default first
 
             document.getElementById('document_status').value = 'submitted';
             const allRows = [];
 
-    $('.mrntableselectexcel tr').each(function () {
-        const row = $(this);
-        const rowId = row.find('.asset_id').attr('data-id');
-        let sub_asset_codes = [];
-        row.find(`#sub_asset_id_${rowId} option:selected`).each(function () {
-            sub_asset_codes.push($(this).text());
-        });
+            $('.mrntableselectexcel tr').each(function() {
+                const row = $(this);
+                const rowId = row.find('.asset_id').attr('data-id');
+                let sub_asset_codes = [];
+                row.find(`#sub_asset_id_${rowId} option:selected`).each(function() {
+                    sub_asset_codes.push($(this).text());
+                });
 
-        const rowData = {
-            asset_id: row.find(`#asset_id_${rowId}`).val(),
-            sub_asset_id: row.find(`#sub_asset_id_${rowId}`).val(), // array from select2
-            quantity: row.find(`#quantity_${rowId}`).val(),
-            sub_asset_code :sub_asset_codes,
-            currentvalue: row.find(`#currentvalue_${rowId}`).val(),
-            salvagevalue: row.find(`#salvagevalue_${rowId}`).val(),
-            last_dep_date: row.find(`#last_dep_date_${rowId}`).val(),
-        };
+                const rowData = {
+                    asset_id: row.find(`#asset_id_${rowId}`).val(),
+                    sub_asset_id: row.find(`#sub_asset_id_${rowId}`).val(), // array from select2
+                    quantity: row.find(`#quantity_${rowId}`).val(),
+                    sub_asset_code: sub_asset_codes,
+                    currentvalue: row.find(`#currentvalue_${rowId}`).val(),
+                    salvagevalue: row.find(`#salvagevalue_${rowId}`).val(),
+                    last_dep_date: row.find(`#last_dep_date_${rowId}`).val(),
+                };
 
-        allRows.push(rowData);
-    });
+                allRows.push(rowData);
+            });
 
-    $('#asset_details').val(JSON.stringify(allRows));
+            $('#asset_details').val(JSON.stringify(allRows));
 
 
             this.submit();
@@ -716,28 +762,39 @@ $('#fixed-asset-merger-form').on('submit', function(e) {
                 "@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach"
             );
         @endif
-        $('#category').on('change',function(){
-           
-           var category_id = $(this).val();
-           if(category_id){
-               $.ajax({
-                   type:"GET",
-                   url:"{{route('finance.fixed-asset.setup.category')}}?category_id="+category_id,
-                   success:function(res){
-                       if(res){
-                           $('#ledger').val(res.ledger_id).select2();
-                           $('#ledger').trigger('change');
-                           $('#ledger_group').val(res.ledger_group_id).select2();
-                           $('#maintenance_schedule').val(res.maintenance_schedule);
-                           $('#useful_life').val(res.expected_life_years);
-                           updateDepreciationValues();
-                          
-                       }
-                   }
-               });
-           }
-       });
-       $('#ledger').change(function() {
+        $('#category').on('change', function() {
+            $('.mrntableselectexcel').empty();
+            $('#addNewRowBtn').trigger('click');
+            $('#ledger').val("").select2();
+            $('#ledger').trigger('change');
+            $('#ledger_group').val("").select2();
+            $('#maintenance_schedule').val("");
+            $('#useful_life').val("");
+            updateDepreciationValues();
+
+            var category_id = $(this).val();
+            if (category_id) {
+                $.ajax({
+                    type: "GET",
+                    url: "{{ route('finance.fixed-asset.setup.category') }}?category_id=" + category_id,
+                    success: function(res) {
+                        if (res) {
+                            $('#ledger').val(res.ledger_id).select2();
+                            $('#ledger').trigger('change');
+                            $('#ledger_group').val(res.ledger_group_id).select2();
+                            $('#maintenance_schedule').val(res.maintenance_schedule);
+                            $('#useful_life').val(res.expected_life_years);
+                            updateDepreciationValues();
+
+                        }
+                    }
+                });
+            }
+        });
+        $('#ledger').change(function() {
+            if ($(this).val() == "") {
+                return;
+            }
             let groupDropdown = $('#ledger_group');
             $.ajax({
                 url: '{{ route('finance.fixed-asset.getLedgerGroups') }}',
@@ -758,255 +815,265 @@ $('#fixed-asset-merger-form').on('submit', function(e) {
 
                 },
                 error: function() {
-                    showToast('error','Error fetching group items.');
+                    showToast('error', 'Error fetching group items.');
                 }
             });
 
         });
+
         function updateDepreciationValues() {
-    let depreciationType = document.getElementById("depreciation_type").value;
-    let currentValue = parseFloat(document.getElementById("current_value").value) || 0;
-    let depreciationPercentage = parseFloat(document.getElementById("depreciation_percentage").value) || 0;
-    let usefulLife = parseFloat(document.getElementById("useful_life").value) || 0;
-    let method = document.getElementById("depreciation_method").value;
+            let depreciationType = document.getElementById("depreciation_type").value;
+            let currentValue = parseFloat(document.getElementById("current_value").value) || 0;
+            let depreciationPercentage = parseFloat(document.getElementById("depreciation_percentage").value) || 0;
+            let usefulLife = parseFloat(document.getElementById("useful_life").value) || 0;
+            let method = document.getElementById("depreciation_method").value;
 
-    // Ensure all required values are provided
-    if (!depreciationType || !currentValue || !depreciationPercentage || !usefulLife || !method) {
-        return;
-    }
-    
+            // Ensure all required values are provided
+            if (!depreciationType || !currentValue || !depreciationPercentage || !usefulLife || !method) {
+                return;
+            }
 
-    // Determine financial date based on depreciation type
-    let financialDate;
-    let financialEnd = new Date("{{$financialEndDate}}");
-    
-    
-    // Extract the financial year-end month and day
-    let financialEndMonth = financialEnd.getMonth(); 
-    let financialEndDay = financialEnd.getDate();
-    let devidend = 1; 
 
-    switch (depreciationType) {
-       case 'half_yearly':
-            devidend = 2; // Adjust dividend for half-yearly
-            break;
+            // Determine financial date based on depreciation type
+            let financialDate;
+            let financialEnd = new Date("{{ $financialEndDate }}");
 
-        case 'quarterly':
-            devidend = 4; // Adjust dividend for quarterly
-            break;
 
-        case 'monthly':
-            devidend = 12; // Adjust dividend for monthly
-            break;
+            // Extract the financial year-end month and day
+            let financialEndMonth = financialEnd.getMonth();
+            let financialEndDay = financialEnd.getDate();
+            let devidend = 1;
 
-    }
-    
+            switch (depreciationType) {
+                case 'half_yearly':
+                    devidend = 2; // Adjust dividend for half-yearly
+                    break;
 
-    let salvageValue = (parseFloat($('#salvage_value').val())).toFixed(2);
+                case 'quarterly':
+                    devidend = 4; // Adjust dividend for quarterly
+                    break;
 
-    let depreciationRate = 0;
-    if (method === "SLM") {
-        depreciationRate = ((((currentValue - salvageValue) / usefulLife) / currentValue)*100).toFixed(2);
-    } else if (method === "WDV") {
-        depreciationRate = ((1 - Math.pow(salvageValue / currentValue, 1 / usefulLife))*100).toFixed(2);
-    }
+                case 'monthly':
+                    devidend = 12; // Adjust dividend for monthly
+                    break;
 
-    let totalDepreciation = 0;
-    document.getElementById("salvage_value").value = salvageValue;
-    console.log("dep_rate"+depreciationRate+"devidend"+devidend);
-    document.getElementById("depreciation_rate").value = depreciationRate;
-    document.getElementById("depreciation_rate_year").value = depreciationRate;
-    document.getElementById("total_depreciation").value = totalDepreciation;
-}
+            }
 
-function initializeAssetAutocomplete(selector) {
-    $(selector).autocomplete({
-        source: function (request, response) {
-            $.ajax({
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+
+            let salvageValue = (parseFloat($('#salvage_value').val())).toFixed(2);
+
+            let depreciationRate = 0;
+            if (method === "SLM") {
+                depreciationRate = ((((currentValue - salvageValue) / usefulLife) / currentValue) * 100).toFixed(2);
+            } else if (method === "WDV") {
+                depreciationRate = ((1 - Math.pow(salvageValue / currentValue, 1 / usefulLife)) * 100).toFixed(2);
+            }
+
+            let totalDepreciation = 0;
+            document.getElementById("salvage_value").value = salvageValue;
+            console.log("dep_rate" + depreciationRate + "devidend" + devidend);
+            document.getElementById("depreciation_rate").value = depreciationRate;
+            document.getElementById("depreciation_rate_year").value = depreciationRate;
+            document.getElementById("total_depreciation").value = totalDepreciation;
+        }
+
+        function initializeAssetAutocomplete(selector) {
+            $(selector).autocomplete({
+                source: function(request, response) {
+                    $.ajax({
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        },
+                        url: '{{ route('finance.fixed-asset.asset-search') }}',
+                        type: 'POST',
+                        dataType: 'json',
+                        data: {
+                            q: request.term,
+                            ids: getAllAssetIds(),
+                            category: $('#category').val(),
+                            location: $('#location').val(),
+                            cost_center: $('#cost_center').val(),
+                        },
+                        success: function(data) {
+                            response(data.map(function(item) {
+                                return {
+                                    label: item.asset_code + ' (' + item.asset_name +
+                                        ')',
+                                    value: item.id,
+                                    asset: item
+                                };
+                            }));
+                        },
+                        error: function() {
+                            response([]);
+                        }
+                    });
                 },
-                url: '{{ route("finance.fixed-asset.asset-search") }}',
-                type: 'POST',
-                dataType: 'json',
-                data: {
-                    q: request.term,
-                    ids:getAllAssetIds(),
-                },
-                success: function (data) {
-                    response(data.map(function (item) {
-                        return {
-                            label: item.asset_code + ' (' + item.asset_name + ')',
-                            value: item.id,
-                            asset: item
-                        };
-                    }));
-                },
-                error: function () {
-                    response([]);
-                }
-            });
-        },
-        minLength: 0,
-        select: function (event, ui) {
-            const asset = ui.item.asset;
-            const row = $(this).closest('tr');
-            const rowId = row.data('id'); // assuming you set `data-id` on the <tr>
+                minLength: 0,
+                select: function(event, ui) {
+                    const asset = ui.item.asset;
+                    const row = $(this).closest('tr');
+                    const rowId = row.data('id'); // assuming you set `data-id` on the <tr>
 
-            // Set visible label and hidden ID
-            $(this).val(ui.item.label);
-            row.find('.asset_id').val(ui.item.value);
+                    // Set visible label and hidden ID
+                    $(this).val(ui.item.label);
+                    row.find('.asset_id').val(ui.item.value);
 
-            let subAssetSelect = row.find('.sub_asset_id');
-            let last_dep = row.find('.last_dep_date');
-            subAssetSelect.html('<option value="">Loading...</option>');
+                    let subAssetSelect = row.find('.sub_asset_id');
+                    let last_dep = row.find('.last_dep_date');
+                    subAssetSelect.html('<option value="">Loading...</option>');
 
-            $.ajax({
-                url: '{{ route("finance.fixed-asset.sub_asset") }}',
-                type: 'GET',
-                data: { id: ui.item.value },
-                success: function (response) {
-                subAssetSelect.empty();
-                    subAssetSelect.html('<option disabled value="">Select</option>');
-                    $.each(response, function (key, subAsset) {
-                        subAssetSelect.append(
-                            '<option value="' + subAsset.id + '">' + subAsset.sub_asset_code + '</option>'
-                        );
+                    $.ajax({
+                        url: '{{ route('finance.fixed-asset.sub_asset') }}',
+                        type: 'GET',
+                        data: {
+                            id: ui.item.value
+                        },
+                        success: function(response) {
+                            subAssetSelect.empty();
+                            subAssetSelect.html('<option disabled value="">Select</option>');
+                            $.each(response, function(key, subAsset) {
+                                subAssetSelect.append(
+                                    '<option value="' + subAsset.id + '">' + subAsset
+                                    .sub_asset_code + '</option>'
+                                );
+                            });
+
+                            if (response[0].asset) {
+                                last_dep.val("");
+                                if (response[0].asset.last_dep_date != response[0].asset
+                                    .capitalize_date) {
+                                    let lastDepDate = new Date(response[0].asset.last_dep_date);
+                                    lastDepDate.setDate(lastDepDate.getDate() - 1);
+                                    let formatted = lastDepDate.toISOString().split('T')[0];
+                                    last_dep.val(formatted);
+                                }
+                            }
+                            row.find('.quantity').val('');
+                            row.find('.currentvalue').val('');
+                            row.find('.salvagevalue').val('');
+                            refreshAssetSelects();
+                            updateSum();
+                        },
+                        error: function() {
+                            showToast('error', 'Failed to load sub-assets.');
+                        }
                     });
 
-                    if (response[0].asset) {
-                        last_dep.val("");
-                        if(response[0].asset.last_dep_date!=response[0].asset.capitalize_date){
-                        let lastDepDate = new Date(response[0].asset.last_dep_date);
-                        lastDepDate.setDate(lastDepDate.getDate() - 1);
-                        let formatted = lastDepDate.toISOString().split('T')[0];
-                        last_dep.val(formatted);
-                    }
-                    }
-                row.find('.quantity').val('');
-                row.find('.currentvalue').val('');
-                row.find('.salvagevalue').val('');
-                    refreshAssetSelects();
-                    updateSum();
+                    return false;
                 },
-                error: function () {
-                    showToast('error', 'Failed to load sub-assets.');
+                change: function(event, ui) {
+                    const row = $(this).closest('tr');
+                    let subAssetSelect = row.find('.sub_asset_id');
+                    if (!ui.item) {
+                        $(this).val('');
+                        subAssetSelect.empty();
+                        row.find('.sub_asset_id').empty();
+                        row.find('.asset_id').val('');
+                        row.find('.quantity').val('');
+                        row.find('.currentvalue').val('');
+                        row.find('.salvagevalue').val('');
+                        row.find('.last_dep_date').val('');
+                        refreshAssetSelects();
+                        updateSum();
+                    }
+                }
+            }).focus(function() {
+                if (this.value === '') {
+                    $(this).autocomplete('search');
                 }
             });
+        }
 
-            return false;
-        },
-        change: function (event, ui) {
-            const row = $(this).closest('tr');
-            let subAssetSelect = row.find('.sub_asset_id');
-            if (!ui.item) {
-                $(this).val('');
-                subAssetSelect.empty();
-                row.find('.sub_asset_id').empty();
-                row.find('.asset_id').val('');
-                row.find('.quantity').val('');
-                row.find('.currentvalue').val('');
-                row.find('.salvagevalue').val('');
-                row.find('.last_dep_date').val('');
-                refreshAssetSelects();
+
+        initializeAssetAutocomplete('.asset-search-input');
+
+        // On Sub-Asset change, get value and last dep date
+        $(document).on('change', '.sub_asset_id', function() {
+            let subAssetIds = $(this).val();
+            let row = $(this).data('id');
+            let assetId = $('#asset_id_' + row).val();
+            let totalCurrentValue = 0; // To accumulate values
+            let responsesReceived = 0; // Counter to check when all requests are done
+            if (subAssetIds && subAssetIds.length > 0) {
+                subAssetIds.forEach(function(subAssetId) {
+                    $.ajax({
+                        url: '{{ route('finance.fixed-asset.sub_asset_details') }}',
+                        type: 'GET',
+                        data: {
+                            id: assetId,
+                            sub_asset_id: subAssetId,
+                        },
+                        success: function(response) {
+                            let currentValue = parseFloat(response.current_value_after_dep) ||
+                            0;
+                            totalCurrentValue += currentValue;
+                            responsesReceived++;
+                            if (responsesReceived === subAssetIds.length) {
+                                $('#currentvalue_' + row).val(totalCurrentValue.toFixed(2));
+                                $('#quantity_' + row).val(responsesReceived);
+                                updateSum();
+                            }
+                        },
+                        error: function() {
+                            showToast('error', 'Failed to load sub-asset details.');
+                            responsesReceived++;
+
+                            // Still check if all requests have completed (including failures)
+                            if (responsesReceived === subAssetIds.length) {
+                                $('#currentvalue_' + row).val(0);
+                                $('#quantity_' + row).val(0);
+                                updateSum();
+                            }
+                        }
+                    });
+                });
+            } else {
+                $('#currentvalue_' + row).val(0);
+                $('#quantity_' + row).val(0);
                 updateSum();
             }
-        }
-    }).focus(function () {
-        if (this.value === '') {
-            $(this).autocomplete('search');
-        }
-    });
-}
-
-
-   initializeAssetAutocomplete('.asset-search-input');
-        
-            // On Sub-Asset change, get value and last dep date
-$(document).on('change', '.sub_asset_id', function () {
-    let subAssetIds = $(this).val();
-    let row = $(this).data('id');
-    let assetId = $('#asset_id_'+row).val();
-    let totalCurrentValue = 0; // To accumulate values
-    let responsesReceived = 0; // Counter to check when all requests are done
-    if (subAssetIds && subAssetIds.length > 0) {
-        subAssetIds.forEach(function (subAssetId) {
-            $.ajax({
-                url: '{{ route('finance.fixed-asset.sub_asset_details') }}',
-                type: 'GET',
-                data: {
-                    id: assetId,
-                    sub_asset_id: subAssetId,
-                },
-                success: function (response) {
-                    let currentValue = parseFloat(response.current_value_after_dep) || 0;
-                    totalCurrentValue += currentValue;
-                    responsesReceived++;
-                    if (responsesReceived === subAssetIds.length) {
-                        $('#currentvalue_'+row).val(totalCurrentValue.toFixed(2));
-                        $('#quantity_'+row).val(responsesReceived);
-                        updateSum();
-                   }
-                },
-                error: function () {
-                    showToast('error', 'Failed to load sub-asset details.');
-                    responsesReceived++;
-
-                    // Still check if all requests have completed (including failures)
-                    if (responsesReceived === subAssetIds.length) {
-                        $('#currentvalue_'+row).val(0);
-                        $('#quantity_'+row).val(0);
-                        updateSum();
-                    }
-                }
-            });
         });
-    } else {
-        $('#currentvalue_'+row).val(0);
-    $('#quantity_'+row).val(0);
-                        updateSum();
-    }
-});
- $('.select2').select2();
-
-            
- function updateSum() {
-    let depreciationPercentage = parseFloat(document.getElementById("depreciation_percentage").value) || 0;
-
-    let totalValue = 0;
-    let totalQuantity = 0;
-    let salvageValue = 0;
-
-    $('.currentvalue').each(function () {
-        let value = parseFloat($(this).val()) || 0;
-        let salvageValue = (value * (depreciationPercentage / 100)).toFixed(2);
-        $(this).closest('tr').find('.salvagevalue').val(salvageValue);
-        totalValue += value;
-    });
-    $('.salvagevalue').each(function () {
-        let value = parseFloat($(this).val()) || 0;
-        salvageValue += value;
-    });
-
-    $('.quantity').each(function () {
-        let qty = parseFloat($(this).val()) || 0;
-        totalQuantity += qty;
-    });
-
-    // Example: Update totals in specific HTML elements
-    $('#current_value').val(totalValue.toFixed(2));
-    $('#salvage_value').val(salvageValue.toFixed(2));
-    //$('#quantity').val(totalQuantity);
-    updateDepreciationValues();
+        $('.select2').select2();
 
 
-}
+        function updateSum() {
+            let depreciationPercentage = parseFloat(document.getElementById("depreciation_percentage").value) || 0;
 
-let rowCount = 1;
+            let totalValue = 0;
+            let totalQuantity = 0;
+            let salvageValue = 0;
 
-$('#addNewRowBtn').on('click', function () {
-    rowCount++;
-    let newRow = `
+            $('.currentvalue').each(function() {
+                let value = parseFloat($(this).val()) || 0;
+                let salvageValue = (value * (depreciationPercentage / 100)).toFixed(2);
+                $(this).closest('tr').find('.salvagevalue').val(salvageValue);
+                totalValue += value;
+            });
+            $('.salvagevalue').each(function() {
+                let value = parseFloat($(this).val()) || 0;
+                salvageValue += value;
+            });
+
+            $('.quantity').each(function() {
+                let qty = parseFloat($(this).val()) || 0;
+                totalQuantity += qty;
+            });
+
+            // Example: Update totals in specific HTML elements
+            $('#current_value').val(totalValue.toFixed(2));
+            $('#salvage_value').val(salvageValue.toFixed(2));
+            //$('#quantity').val(totalQuantity);
+            updateDepreciationValues();
+
+
+        }
+
+        let rowCount = 1;
+
+        $('#addNewRowBtn').on('click', function() {
+            rowCount++;
+            let newRow = `
     <tr>
         <td class="customernewsection-form">
             <div class="form-check form-check-primary custom-checkbox">
@@ -1037,141 +1104,175 @@ $('#addNewRowBtn').on('click', function () {
     </tr>
     `;
 
-    $('.mrntableselectexcel').append(newRow);
-    $(".select2").select2();
-    refreshAssetSelects();
-    initializeAssetAutocomplete('.asset-search-input');
-});
-function refreshAssetSelects() {
-    let selectedAssets = [];
+            $('.mrntableselectexcel').append(newRow);
+            $(".select2").select2();
+            refreshAssetSelects();
+            initializeAssetAutocomplete('.asset-search-input');
+        });
 
-// Collect all selected asset values
-$('.asset_id').each(function () {
-    let val = $(this).val();
-    if (val) {
-        selectedAssets.push(val);
-    }
-});
+        function refreshAssetSelects() {
+            let selectedAssets = [];
 
-// Disable already selected options in other selects
-$('.asset_id').each(function () {
-    let currentSelect = $(this);
-    let currentVal = currentSelect.val();
-
-    currentSelect.find('option').each(function () {
-        let optionVal = $(this).val();
-
-        if (optionVal === "") return; // skip placeholder
-
-        if (selectedAssets.includes(optionVal) && optionVal !== currentVal) {
-            $(this).prop('disabled', true);
-        } else {
-            $(this).prop('disabled', false);
-        }
-    });
-});
-
-}
-
-
- 
-$('#delete').on('click', function () {
-    let $rows = $('.mrntableselectexcel tr');
-    let $checked = $rows.find('.row-check:checked');
-
-    // Prevent deletion if only one row exists
-    if ($rows.length <= 1) {
-        showToast('error','At least one row is required.');
-        return;
-    }
-
-    // Prevent deletion if checked rows would remove all
-    if ($rows.length - $checked.length < 1) {
-        showToast('error','You must keep at least one row.');
-        return;
-    }
-
-    // Remove only the checked rows
-    $checked.closest('tr').remove();
-    updateSum();
-});
-$('#checkAll').on('change', function () {
-    let isChecked = $(this).is(':checked');
-    $('.mrntableselectexcel .row-check').prop('checked', isChecked);
-});
-
-function getAllRowsAsJson() {
-    const allRows = [];
-
-    $('.mrntableselectexcel tr').each(function () {
-        const row = $(this);
-        const rowId = row.find('.asset_id').attr('data-id');
-
-        const rowData = {
-            asset_id: row.find(`#asset_id_${rowId}`).val(),
-            sub_asset_id: row.find(`#sub_asset_id_${rowId}`).val(),
-            sub_asset_code :row.find(`#sub_asset_id_${rowId} option:selected`).text(),
-            quantity: row.find(`#quantity_${rowId}`).val(),
-            currentvalue: row.find(`#currentvalue_${rowId}`).val(),
-            last_dep_date: row.find(`#last_dep_date_${rowId}`).val(),
-        };
-
-        allRows.push(rowData);
-    });
-
-    return allRows;
-}
-$('#location').on('change', function () {
-    var locationId = $(this).val();
-
-    if (locationId) {
-        // Build the route manually
-        var url = '{{ route("cost-center.get-cost-center", ":id") }}'.replace(':id', locationId);
-
-        $.ajax({
-            url: url,
-            type: 'GET',
-            dataType: 'json',
-            success: function (data) {
-                if(data.length==0){
-                    $('#cost_center').empty(); 
-                $('#cost_center').prop('required', false);
-                $('.cost_center').hide();
+            // Collect all selected asset values
+            $('.asset_id').each(function() {
+                let val = $(this).val();
+                if (val) {
+                    selectedAssets.push(val);
                 }
-                else{
-                    $('.cost_center').show();
-                    $('#cost_center').prop('required', true);
-                $('#cost_center').empty(); // Clear previous options
-                $.each(data, function (key, value) {
-                    $('#cost_center').append('<option value="' + value.id + '">' + value.name + '</option>');
+            });
+
+            // Disable already selected options in other selects
+            $('.asset_id').each(function() {
+                let currentSelect = $(this);
+                let currentVal = currentSelect.val();
+
+                currentSelect.find('option').each(function() {
+                    let optionVal = $(this).val();
+
+                    if (optionVal === "") return; // skip placeholder
+
+                    if (selectedAssets.includes(optionVal) && optionVal !== currentVal) {
+                        $(this).prop('disabled', true);
+                    } else {
+                        $(this).prop('disabled', false);
+                    }
                 });
+            });
+
+        }
+
+
+
+        $('#delete').on('click', function() {
+            let $rows = $('.mrntableselectexcel tr');
+            let $checked = $rows.find('.row-check:checked');
+
+            // Prevent deletion if only one row exists
+            if ($rows.length <= 1) {
+                showToast('error', 'At least one row is required.');
+                return;
             }
-            },
-            error: function () {
+
+            // Prevent deletion if checked rows would remove all
+            if ($rows.length - $checked.length < 1) {
+                showToast('error', 'You must keep at least one row.');
+                return;
+            }
+
+            // Remove only the checked rows
+            $checked.closest('tr').remove();
+            updateSum();
+        });
+        $('#checkAll').on('change', function() {
+            let isChecked = $(this).is(':checked');
+            $('.mrntableselectexcel .row-check').prop('checked', isChecked);
+        });
+
+        function getAllRowsAsJson() {
+            const allRows = [];
+
+            $('.mrntableselectexcel tr').each(function() {
+                const row = $(this);
+                const rowId = row.find('.asset_id').attr('data-id');
+
+                const rowData = {
+                    asset_id: row.find(`#asset_id_${rowId}`).val(),
+                    sub_asset_id: row.find(`#sub_asset_id_${rowId}`).val(),
+                    sub_asset_code: row.find(`#sub_asset_id_${rowId} option:selected`).text(),
+                    quantity: row.find(`#quantity_${rowId}`).val(),
+                    currentvalue: row.find(`#currentvalue_${rowId}`).val(),
+                    last_dep_date: row.find(`#last_dep_date_${rowId}`).val(),
+                };
+
+                allRows.push(rowData);
+            });
+
+            return allRows;
+        }
+        $('#location').on('change', function() {
+            var locationId = $(this).val();
+
+            if (locationId) {
+                // Build the route manually
+                var url = '{{ route('cost-center.get-cost-center', ':id') }}'.replace(':id', locationId);
+
+                $.ajax({
+                    url: url,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(data) {
+                        if (data.length == 0) {
+                            $('#cost_center').empty();
+                            $('#cost_center').prop('required', false);
+                            $('.cost_center').hide();
+                            loadCategories();
+
+                        } else {
+                            $('.cost_center').show();
+                            $('#cost_center').prop('required', true);
+                            $('#cost_center').empty(); // Clear previous options
+                            $.each(data, function(key, value) {
+                                $('#cost_center').append('<option value="' + value.id + '">' +
+                                    value.name + '</option>');
+                            });
+                            loadCategories();
+                        }
+                    },
+                    error: function() {
+                        $('#cost_center').empty();
+                    }
+                });
+            } else {
                 $('#cost_center').empty();
             }
         });
-    } else {
-        $('#cost_center').empty();
-    }
-});
 
-$('#location').trigger('change');
+        $('#location').trigger('change');
 
-function getAllAssetIds() {
-    let assetIds = [];
+        $('#cost_center').on('change', function() {
+            loadCategories();
+        });
 
-    $('.asset_id').each(function () {
-        let val = $(this).val();
-        if (val) {
-            assetIds.push(parseFloat(val));
+        function loadCategories(selectcategory = null) {
+            const url = '{{ route('finance.fixed-asset.get-categories') }}';
+
+            $.ajax({
+                url: url,
+                type: 'GET',
+                data: {
+                    location_id: $('#location').val(),
+                    cost_center_id: $('#cost_center').val(),
+                },
+                dataType: 'json',
+                success: function(data) {
+                    const $category = $('#category');
+                    $category.empty().append('<option value="">Select Category</option>');
+
+                    $.each(data, function(key, value) {
+                        const isSelected = selectcategory == value.id ? ' selected' : '';
+                        $category.append('<option value="' + value.id + '"' + isSelected + '>' + value
+                            .name + '</option>');
+                    });
+                },
+                error: function() {
+                    $('#category').empty();
+                }
+            });
         }
-    });
+  
 
-    return assetIds;
-}
+        function getAllAssetIds() {
+            let assetIds = [];
 
+            $('.asset_id').each(function() {
+                let val = $(this).val();
+                if (val) {
+                    assetIds.push(parseFloat(val));
+                }
+            });
 
+            return assetIds;
+        }
     </script>
     <!-- END: Content-->
 @endsection

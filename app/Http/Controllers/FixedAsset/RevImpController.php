@@ -27,7 +27,7 @@ class RevImpController extends Controller
      */
     public function index(Request $request)
     {
-        $parentURL = "fixed-asset_revaluation-impairement";
+        $parentURL = "fixed-asset_rev";
 
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
         if (count($servicesBooks['services']) == 0) {
@@ -79,7 +79,7 @@ class RevImpController extends Controller
      */
     public function create()
     {
-        $parentURL = "fixed-asset_revaluation-impairement";
+        $parentURL = "fixed-asset_rev";
         $series = [];
 
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
@@ -149,7 +149,6 @@ class RevImpController extends Controller
             if ($asset->document_status != ConstantHelper::DRAFT) {
                 $doc = Helper::approveDocument($asset->book_id, $asset->id, $asset->revision_number, $asset->remarks, null, 1, 'submit', 0, get_class($asset));
                 $asset->document_status = $doc['approvalStatus'] ?? $asset->document_status;
-                $asset->approval_level = $doc['nextLevel'] ?? $asset->approval_level;
                 $asset->save();
             }
 
@@ -168,7 +167,7 @@ class RevImpController extends Controller
      */
     public function show(Request $r, string $id)
     {
-        $parentURL = "fixed-asset_revaluation-impairement";
+        $parentURL = "fixed-asset_rev";
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
         if (count($servicesBooks['services']) == 0) {
             return redirect()->route('/');
@@ -209,7 +208,7 @@ class RevImpController extends Controller
      */
     public function edit(Request $request, $id)
     {
-        $parentURL = "fixed-asset_revaluation-impairement";
+        $parentURL = "fixed-asset_rev";
         $series = [];
 
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
@@ -273,7 +272,6 @@ class RevImpController extends Controller
             if ($asset->document_status != ConstantHelper::DRAFT) {
                 $doc = Helper::approveDocument($asset->book_id, $asset->id, $asset->revision_number, $asset->remarks, null, 1, 'submit', 0, get_class($asset));
                 $asset->document_status = $doc['approvalStatus'] ?? $asset->document_status;
-                $asset->approval_level = $doc['nextLevel'] ?? $asset->approval_level;
                 $asset->save();
             }
             DB::commit();
@@ -348,39 +346,28 @@ class RevImpController extends Controller
     public function postInvoice(Request $request)
     {
         DB::beginTransaction();
-        $register = FixedAssetRevImp::makeRegistration((int)$request->document_id);
-        if ($register['status']) {
-            try {
-
-                $data = FinancialPostingHelper::financeVoucherPosting($request->book_id ?? 0, $request->document_id ?? 0, "post");
-                if ($data['status']) {
-
-                    DB::commit();
-                } else {
-                    DB::rollBack();
-                }
-                return response()->json([
-                    'status' => 'success',
-                    'data' => $data
-                ]);
-            } catch (Exception $ex) {
+        try {
+        $data = FinancialPostingHelper::financeVoucherPosting($request -> book_id ?? 0, $request -> document_id ?? 0, "post");
+            if ($data['status']) {
+               
+                DB::commit();
+            } else {
                 DB::rollBack();
-                return response()->json([
-                    'status' => 'exception',
-                    'message' => 'Some internal error occured',
-                    'error' => $ex->getMessage()
-                ]);
             }
-        } else {
+            return response() -> json([
+                'status' => 'success',
+                'data' => $data
+            ]);
+        } catch(Exception $ex) {
             DB::rollBack();
-            return response()->json([
-                'status' => false,
-                'message' => $register['message'],
-                'error' =>  $register['message']
+            return response() -> json([
+                'status' => 'exception',
+                'message' => 'Some internal error occured',
+                'error' => $ex -> getMessage()
             ]);
         }
     }
-    public function amendment(Request $request, $id)
+   public function amendment(Request $request, $id)
     {
         $asset_id = FixedAssetRevImp::find($id);
         if (!$asset_id) {
