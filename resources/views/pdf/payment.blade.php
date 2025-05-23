@@ -22,7 +22,7 @@
                 window.print();
         });
     </script>
-    
+
 </head>
 
 <body>
@@ -35,11 +35,11 @@
                 <td style="vertical-align: top;">
                     <img src="{{$orgLogo}}" height="50px">
                 </td>
-                
+
                 <td style="text-align: center;  font-weight: bold; font-size: 20px;">
                     {{ucfirst($document_type)}} Advice
               </td>
-                
+
               <td style="text-align: right;  font-weight: bold; font-size: 16px; width: 260px;">
                 {{ Str::ucfirst(@$organization->name) }}
               </td>
@@ -57,7 +57,7 @@
                         <tr>
                             <td colspan="2">
                                 <span style="font-weight: 700; font-size: 13px; padding-top: 5px">{{ Str::ucfirst(@$organization->name) }}</span> <br>
-                               
+
                             </td>
                         </tr>
                         <tr valign="top">
@@ -65,7 +65,7 @@
                             <td style="padding-top: 10px;">
                                 {{ @$organizationAddress->line_1 }} @if (!empty($organizationAddress->line_2)), {{ $organizationAddress->line_2 }}@endif @if (!empty($organizationAddress->line_3)), {{ $organizationAddress->line_3 }}@endif
                             </td>
-                        </tr> 
+                        </tr>
                         <tr>
                             <td style="padding-top: 5px;">City:</td>
                             <td style="padding-top: 5px;">{{ @$organizationAddress?->city?->name }}</td>
@@ -75,7 +75,7 @@
                             <td style="padding-top: 5px;">State: </td>
                             <td style="padding-top: 5px;">{{ @$organizationAddress?->state?->name }}</td>
                         </tr>
-						
+
 						 <tr>
                             <td style="padding-top: 5px;">State Code: </td>
                             <td style="padding-top: 5px;">{{ @$organizationAddress?->state?->state_code }}</td>
@@ -89,7 +89,7 @@
                         <tr>
                             <td style="padding-top: 5px;">Pin Code:</td>
                             <td style="padding-top: 5px;">{{ @$organizationAddress?->postal_code }}</td>
-                        </tr>  
+                        </tr>
 
                         <tr>
                             <td style="padding-top: 5px;">Phone:</td>
@@ -99,14 +99,14 @@
                         <tr>
                             <td style="padding-top: 5px;">Email ID:</td>
                             <td style="padding-top: 5px;">{{ @$organization?->email }}</td>
-                        </tr> 
-						
+                        </tr>
+
 						<tr>
                             <td style="padding-top: 5px;">GSTIN No:</td>
                             <td style="padding-top: 5px;"><strong>{{@$organization?->gst_number}}</strong></td>
                         </tr>
- 
-                      
+
+
 
                     </table>
                 </td>
@@ -118,7 +118,7 @@
                         </tr>
                         <tr>
                             <td colspan="2" style="font-weight: 700; font-size: 13px; padding-top: 5px">
-                                {{strtoupper($party?->company_name)}} 
+                                {{strtoupper($party?->company_name)}}
                             </td>
                         </tr>
                         <tr valign="top">
@@ -134,7 +134,7 @@
                             <td style="padding-top: 5px;">State: </td>
                             <td style="padding-top: 5px;">{{$party_address?->state?->name}}</td>
                         </tr>
-						
+
 						 <tr>
                             <td style="padding-top: 5px;">State Code: </td>
                             <td style="padding-top: 5px;">{{$party_address?->state?->state_code}}</td>
@@ -148,7 +148,7 @@
                         <tr>
                             <td style="padding-top: 5px;">Pin Code:</td>
                             <td style="padding-top: 5px;">{{@$party_address?->pincode}}</td>
-                        </tr>  
+                        </tr>
 
                         <tr>
                             <td style="padding-top: 5px;">Phone:</td>
@@ -158,14 +158,14 @@
                         <tr>
                             <td style="padding-top: 5px;">Email ID:</td>
                             <td style="padding-top: 5px;">{{$party?->email}}</td>
-                        </tr> 
-						
+                        </tr>
+
 						<tr>
                             <td style="padding-top: 5px;">GSTIN No:</td>
                             <td style="padding-top: 5px;"><strong>{{@$party?->compliances?->gstin_no}}</strong></td>
-                        </tr> 
+                        </tr>
                     </table>
-                </td> 
+                </td>
                 <td rowspan="2" style="border: 1px solid #000; padding: 3px; border-left: none; vertical-align: top; width: 30%;">
                     <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
                        <tr>
@@ -176,37 +176,37 @@
                     </tr>
                     <tr>
                         <td style="padding: 5px;"><strong>Payment Type:</strong> {{$payment_type}} </td>
-                    </tr> 
+                    </tr>
                     <tr>
                         <td style="padding: 5px;"><strong>Payment Mode:</strong> {{$payment_mode}}</td>
                     </tr>
                     <tr>
                         <td style="padding: 5px;"><strong>Ref No:</strong> {{$ref_no}}</td>
                     </tr>
-        
-                    @if($status=="approved" || $status=="approval_not_required")
+
+                    {{-- @if($status=="approved" || $status=="approval_not_required") --}}
                     <tr>
                         <td style="padding: 5px;"><strong>Status:</strong> <span style="color: green">Approved</span></td>
-                    </tr>  
+                    </tr>
                     <tr>
                         <td style="padding: 5px;"><strong>Approved by:</strong> {{$approver}}</td>
                     </tr>
-                    @endif
-                    @if($status=="posted" )
+                    {{-- @endif --}}
+                    {{-- @if($status=="posted" )
                     <tr>
                         <td style="padding: 5px;"><strong>Status:</strong> <span style="color: blue">Posted</span></td>
-                    </tr>  
+                    </tr>
                     <tr>
                         <td style="padding: 5px;"><strong>Posted by:</strong> {{$approver}}</td>
                     </tr>
-                    @endif
-                         
+                    @endif --}}
+
               </table>
             </td>
-        
+
           </tr>
-           
-       
+
+
     </table>
 
         <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
@@ -223,7 +223,7 @@
                     style="font-weight: bold; padding: 2px; border: 1px solid #000;   border-left: none; background: #80808070; text-align: right; padding-right: 30px">{{$report_type}} Amount</td>
             </tr>
             @php $index=0; @endphp
-            
+
             @foreach($data as $key => $row)
             @php $index++; @endphp
             <tr>
@@ -235,7 +235,7 @@
                 <td style="vertical-align: top; padding: 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right; padding-right: 30px"> {{ number_format($row->paid,2) }}
                 </td>
             </tr>
-            
+
             @endforeach
 
         </table>
@@ -251,7 +251,7 @@
                         <tr>
                             <td style="padding-top: 15px;"><strong>Currency:</strong> {{$organization?->currency?->name}}</td>
                         </tr>
-                       
+
                     </table>
 
                 </td>
@@ -271,7 +271,7 @@
                     <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
                         <tr>
                             <td style="font-size: 13px; text-align: right; font-style: italic; padding-right: 15px"> E. & O.E</td>
-                        </tr> 
+                        </tr>
                     </table>
 
                 </td>
@@ -298,15 +298,15 @@
                 </td>
             </tr>
 
-             
+
 
             <!--  -->
 
-            <tr> 
+            <tr>
             <td
                 style="padding: 3px; border: 1px solid #000; width: 50%; border-top: none; border-right: none; vertical-align: top;">
                 <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
-                     
+
                     <tr>
                         <td style="padding-top: 5px;width: 70px">Created By :</td>
                         <td style="padding-top: 5px;">{{$auth_user?->name}}</td>
@@ -338,10 +338,10 @@
                 </td>
             </tr>
 
-        </table> 
+        </table>
 
     </div>
-    
+
 </body>
 
 

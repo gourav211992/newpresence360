@@ -87,15 +87,19 @@
 												<th>O/S Days</th>
                                                 <th class="text-end">Invoice Amt.</th>
 												<th class="outstanding text-end">Balance Amt.</th>
+												<th class="outstanding text-end">Running Bal.</th>
                                                 <th class="overdue text-end">Overdue Amt.</th>
 												<th>Action</th>
 											  </tr>
 											</thead>
 											<tbody>
-                                                @php $i=0; @endphp
+                                                @php $i=0; $runningTotal = 0;  @endphp
                                                 @foreach($data as $index=>$d)
                                                 @if($d->total_outstanding!=0)
-                                                @php $i++; @endphp
+                                                @php $i++;
+                                                $currentOutstanding = $d->total_outstanding < 0 ? 0 : $d->total_outstanding;
+                                                    $runningTotal += $currentOutstanding;
+                                                @endphp
                                                 <tr class="table-row" data-overdue="{{ $d->overdue }}">
 													<td>{{$i}}</td>
 													<td class="fw-bolder text-dark">
@@ -110,6 +114,7 @@
                                                     </td>
                                                         <td class="text-end">@if($d->invoice_amount!=""){{ Helper::formatIndianNumber($d->invoice_amount)}}@endif</td>
                                                     <td class="outstanding text-end">{{ $d->total_outstanding < 0 ? 0: Helper::formatIndianNumber($d->total_outstanding) }}</td>
+                                                    <td class="outstanding text-end">{{ $runningTotal }}</td>
 
                                                     <td class="overdue text-end">
                                                           @if($d->overdue_days!="-")
@@ -522,9 +527,10 @@ if (dt_basic_table.length) {
 
             // If 'service' is selected, hide column 7 (index 6)
             // Else hide column 6 (index 5)
-            if (isServiceSelected && node.cellIndex === 6) {
+            console.log(isServiceSelected,'here')
+            if (isServiceSelected && node.cellIndex === 6 || isServiceSelected && node.cellIndex === 7) {
                 return false;
-            } else if (!isServiceSelected && node.cellIndex === 7) {
+            } else if (!isServiceSelected && node.cellIndex === 8) {
                 return false;
             }
 

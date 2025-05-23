@@ -137,7 +137,7 @@
                                                     </div>
 
                                                     <div class="col-md-4">
-                                                        <select class="form-select select2" name="book_type_id"
+                                                        <select class="form-select" name="book_type_id"
                                                             id="book_type_id" required onchange="getBooks()">
                                                             <option disabled selected value="">Select Document Type
                                                             </option>
