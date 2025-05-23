@@ -1442,8 +1442,29 @@ function hasDuplicateObjects(arr) {
 }
 
 // UOM on change bind rate
-$(document).on('change', 'select[name*="[uom_id]"]',(e) => {
-    let tr = $(e.target).closest('tr');
+function handleRowChange(tr) {
+    console.log(tr,'tr');
     getItemCostPrice(tr);
     setTableCalculation();
+}
+
+// Debounced handler for select/input changes
+let debounceTimer;
+$(document).on('input', 'select[name*="[uom_id]"], input[name*="[qty]"]', function(e){
+    clearTimeout(debounceTimer);
+    const tr = $(e.target).closest('tr');
+    debounceTimer = setTimeout(() => {
+        handleRowChange(tr);
+    }, 300);
+});
+
+// Handle attribute button click
+$('.submitAttributeBtn').on('click', function(e) {
+    let currentTr = $(e.target).closest('tr'); // this is the button's tr, likely modal-footer
+    let row = $('#attribute tbody tr'); // there's only one attribute row in the modal table
+
+    let rowCount = row.find('input[name^="row_count"]').val();
+    let tr = $('#row_'+rowCount);
+    console.log(tr);
+    handleRowChange(tr);
 });

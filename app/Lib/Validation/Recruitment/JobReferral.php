@@ -63,17 +63,22 @@ class JobReferral
         }
 
         $validator->after(function ($validator) {
+			$candidate = ErpRecruitmentJobCandidate::where('mobile_no',$this->request->mobile_no)->first();
+			$candidateId = $this->request->candidate_id ? $this->request->candidate_id : @$candidate->id;
 			$isexist = ErpRecruitmentJobReferral::where('job_id', $this->request->job_id)
-				->where('candidate_id', $this->request->candidate_id)
+				->where('candidate_id', $candidateId)
 				->first();
-
+				
 			// If the round has feedback (meaning it's completed), add an error
 			if ($isexist) {
-				$validator->errors()->add('candidate_id', 'The request candidate has already been added in refered for this job.');
+				$validator->errors()->add('mobile_no', 'The request candidate has already been added in refered for this job.');
 			}
 			
-			$candidate = ErpRecruitmentJobCandidate::where('mobile_no',$this->request->mobile_no)->first();
-			if($candidate && !$candidate->resume_path){
+			if(!$candidate && !$this->request->resume){
+				$validator->errors()->add('resume', 'Resume field is required!.');
+			}
+
+			if($candidate && !$candidate->resume_path && !$this->request->resume){
 				$validator->errors()->add('resume', 'Resume field is required!.');
 			}
 

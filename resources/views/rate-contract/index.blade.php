@@ -51,7 +51,7 @@
                                                 <th>Series</th>
                                                 <th>Doc No.</th>
                                                 <th>Rev No</th>
-                                                <th>Vendor</th>
+                                                <th>Party</th>
                                                 <th>Start Date</th>
                                                 <th>End Date</th>
                                                 <th>Applicable Organizations</th>

@@ -2,8 +2,9 @@
 @foreach($itemAttributes as $index => $attribute)
 @if($attribute?->attributeGroup)
 <tr>
-   <input type="hidden" name="row_count[{{$rowCount}}]" value="{{$rowCount}}">
-   <td>{{$attribute?->attributeGroup?->name}}</td>
+
+   <td>
+   <input type="hidden" name="row_count[{{$rowCount}}]" value="{{$rowCount}}">{{$attribute?->attributeGroup?->name}}</td>
    <td>
       @if(isset($isPi) && $isPi)
       <select disabled class="form-select select2" name="comp_attribute[{{$rowCount}}][item_name]" data-attr-name="{{$attribute?->attributeGroup?->name}}" data-attr-group-id="{{$attribute?->attributeGroup?->id}}">

@@ -37,8 +37,12 @@ class ErpRateContractRequest extends FormRequest
             'document_date' => 'required|date',
             'reference_no' => 'nullable|string',
 
-            'vendor_id' => 'required|numeric|integer|exists:erp_vendors,id',
-            'vendor_code' => 'required|string|max:50',
+            // Either vendor or customer pair is required
+            'vendor_id' => 'required_without:customer_id|nullable|numeric|integer|exists:erp_vendors,id',
+            'vendor_code' => 'required_with:vendor_id|required_without:customer_id|nullable|string|max:50',
+
+            'customer_id' => 'required_without:vendor_id|nullable|numeric|integer|exists:erp_customers,id',
+            'customer_code' => 'required_with:customer_id|required_without:vendor_id|nullable|string|max:50',
 
             'start_date' => 'required|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',

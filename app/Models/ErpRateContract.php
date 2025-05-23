@@ -37,8 +37,10 @@ class ErpRateContract extends Model
         'approval_level',
         'remarks',
         'vendor_id',
+        'customer_id',
         'currency_id',
         'vendor_code',
+        'customer_code',
         'applicable_organizations',
         'payment_term_id',
     ];
@@ -71,6 +73,10 @@ class ErpRateContract extends Model
     public function vendor()
     {
         return $this -> hasOne(Vendor::class, 'id', 'vendor_id');
+    }
+    public function customer()
+    {
+        return $this -> hasOne(Customer::class, 'id', 'customer_id');
     }
     public function media()
     {

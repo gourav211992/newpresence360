@@ -165,6 +165,8 @@
     var fileInput = $("#fileUpload");
     let simulateProgress;
     var backBtn = $(".btn-secondary"); 
+    const IMPORT_TIMEOUT = 5000; 
+    let timeoutWarningShown = false;
     const ALLOWED_EXTENSIONS = [
         'xls', 'xlsx'
     ];
@@ -266,7 +268,16 @@
         $('#uploadSuccess').hide();
         $('#uploadError').hide();
     });
-
+    function showTimeoutMessage() {
+        Swal.fire({
+            title: 'Processing Your Import',
+            html: 'Your file is being processed. This may take some time depending on the file size.<br><br>' +
+                    'You will be notified by email once the import is complete.',
+            icon: 'info',
+            showConfirmButton: true,
+            timer: 10000
+        });
+    }
     $(document).on('submit', '.importForm', function (e) {
         e.preventDefault(); 
         const currentForm = this;
@@ -274,7 +285,6 @@
         var submitButtonHtml = submitButton.innerHTML;
         submitButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i>'; 
         submitButton.disabled = true;
-
         var method = $(this).attr('method');
         var url = $(this).attr('action');
         var data = new FormData($(this)[0]); 
@@ -304,6 +314,14 @@
             data: data,
             contentType: false,
             processData: false,
+            beforeSend: function () {
+                setTimeout(function () {
+                    if (!timeoutWarningShown) {
+                        showTimeoutMessage();
+                        timeoutWarningShown = true;
+                    }
+                }, IMPORT_TIMEOUT);
+            },
             xhr: function() {
             const xhr = new window.XMLHttpRequest();
             xhr.upload.addEventListener('progress', function(e) {

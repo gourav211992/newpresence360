@@ -1273,8 +1273,7 @@ class ErpMaterialReturnController extends Controller
     {
         $pathUrl = route('material.return.index');
         $orderType = [ConstantHelper::MATERIAL_RETURN_SERVICE_ALIAS_NAME];
-        $materialReturn = ErpMaterialReturnHeader::with('items') -> bookViewAccess($pathUrl) 
-        -> withDefaultGroupCompanyOrg() -> withDraftListingLogic() -> orderByDesc('id');
+        $materialReturn = ErpMaterialReturnHeader::with('items')-> withDefaultGroupCompanyOrg() -> withDraftListingLogic() -> orderByDesc('id');
         //Customer Filter
         $materialReturn = $materialReturn -> when($request -> vendor_id, function ($custQuery) use($request) {
             $custQuery -> where('vendor_id', $request -> vendor_id);

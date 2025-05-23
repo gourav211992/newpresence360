@@ -20,6 +20,7 @@ Route::middleware(['user.auth'])->group(function () {
         Route::get('/dashboard', 'index')->name('recruitment.dashboard');
         Route::get('/hr-dashboard', 'hrDashboard')->name('recruitment.hr-dashboard');
         Route::get('/fetch-employees', 'fetchEmployees')->name('recruitment.fetch-employees');
+        Route::get('/fetch-candidates', 'fetchCandidates')->name('recruitment.fetch-candidates');
         Route::get('/fetch-team', 'fetchTeam')->name('recruitment.fetch-team');
         Route::get('/fetch-emails', 'fetchEmails')->name('recruitment.fetch-emails');
         Route::get('/fetch-applicants', 'fetchApplicants')->name('recruitment.fetch-applicants');

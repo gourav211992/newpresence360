@@ -2632,15 +2632,29 @@ function getItemCostPrice(currentTr)
     let currencyId = $("select[name='currency_id']").val();
     let transactionDate = $("input[name='document_date']").val(); 
     let itemId = $(currentTr).find("input[name*='[item_id]']").val();
-    let attributes = '';
+    let attributesRaw = $(currentTr).find('td[attribute-array]').attr('attribute-array');
+    let parsedAttributes = attributesRaw ? JSON.parse(attributesRaw) : [];
+
+    let formattedAttributes = parsedAttributes.map(attr => {
+        let selectedValue = attr.values_data.find(val => val.selected);
+        return {
+            id: attr.id,
+            group_name: attr.group_name,
+            attr_name: attr.attribute_group_id,
+            attr_value: selectedValue ? selectedValue.id : null
+        };
+    });
+
+    let itemQty = $(currentTr).find("input[name*='[qty]']").val() ?? 0;
     let uomId = $(currentTr).find("select[name*='[uom_id]']").val();
     let queryParams = new URLSearchParams({
         vendor_id: vendorId,
         currency_id: currencyId,
         transaction_date: transactionDate,
         item_id: itemId,
-        attributes: attributes,
-        uom_id: uomId
+        attr: JSON.stringify(formattedAttributes),
+        uom_id: uomId,
+        item_qty : itemQty
     });
     let actionUrl = '{{ route("items.get.cost") }}'+'?'+queryParams.toString();
     fetch(actionUrl).then(response => {

@@ -578,13 +578,13 @@
                                                                             </div>
                                                                         </div>
                                                                     </td>
-                                                                    <td><input type="text"
+                                                                    <td><input type="number"
                                                                             class="form-control mw-100 text-end amount"
                                                                             name="amount[]"
                                                                             id="excAmount{{ $no }}"
                                                                             value="{{ $item->currentAmount }}" required />
                                                                     </td>
-                                                                    <td><input type="text" readonly
+                                                                    <td><input type="number" readonly
                                                                             class="form-control mw-100 text-end amount_exc excAmount{{ $no }}"
                                                                             name="amount_exc[]"
                                                                             value="{{ $item->orgAmount }}" required />
@@ -1640,9 +1640,9 @@ $('#revisionNumber').prop('disabled', false);
                             </div>
                         </td>
 
-                        <td><input type="text" value="0" class="form-control mw-100 text-end amount" name="amount[]" id="excAmount${rowCount}" required/></td>
+                        <td><input type="number" value="0" class="form-control mw-100 text-end amount" name="amount[]" id="excAmount${rowCount}" required/></td>
 
-                        <td><input type="text" value="0" readonly class="form-control mw-100 text-end amount_exc excAmount${rowCount}" name="amount_exc[]" required/></td>
+                        <td><input type="number" value="0" readonly class="form-control mw-100 text-end amount_exc excAmount${rowCount}" name="amount_exc[]" required/></td>
                         <td><a href="#" class="text-danger deleteRow"><i data-feather="trash-2"></i></a></td>
                     </tr>`;
                 $('.mrntableselectexcel').append(newRow);

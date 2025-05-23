@@ -153,7 +153,7 @@
                                             <div class="col-md-5"> 
                                                 <input type="text" value = "{{isset($order) ? $order -> document_number : ''}}" class="form-control disable_on_edit" readonly id = "order_no_input" name = "document_no">
                                             </div> 
-                                            </div>  
+                                        </div>  
 
                                         <div class="row align-items-center mb-1">
                                             <div class="col-md-3"> 
@@ -252,6 +252,7 @@
 
     @section('scripts')
     <script>
+    var currentfy = json_encode({!! isset($order) ? $order : null !!});
     let requesterTypeParam = "{{isset($order) ? $order -> requester_type : 'Department'}}";
     let redirect = "{{$redirect_url}}";   
     </script>

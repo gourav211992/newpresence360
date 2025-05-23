@@ -133,6 +133,35 @@ class PurchaseIndent extends Model
     {
         return $this->belongsTo(ErpSubStore::class, 'sub_store_id');
     }
+    public function requester_name()
+    {
+        $modelType = $this->requester_type; // e.g., 'User', 'Department'
+        if (!$modelType) {
+            return null;
+        }
+
+        // Map type to actual model class
+        $modelMap = [
+            'User' => \App\Models\AuthUser::class,
+            'Department' => \App\Models\Department::class,
+            // Add other mappings as needed
+        ];
+
+        $modelClass = $modelMap[$modelType] ?? "App\\Models\\$modelType";
+
+        if (!class_exists($modelClass)) {
+            return null;
+        }
+
+        $foreignKey = strtolower($modelType) . '_id';
+
+        if (!isset($this->$foreignKey)) {
+            return null;
+        }
+
+        return optional($modelClass::find($this->$foreignKey))->name;
+    }
+
 
     public function book()
     {
