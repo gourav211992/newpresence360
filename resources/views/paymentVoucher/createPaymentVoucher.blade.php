@@ -1588,6 +1588,7 @@
     // Get the div
     let $costCenterRow = $('#costCenterRow');
     let $dropdown = $('.costCenter');
+    console.log(costCenterSet)
 
     // Show or hide the row based on availability
     if (costCenterSet.size > 0) {

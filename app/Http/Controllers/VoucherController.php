@@ -605,10 +605,13 @@ class VoucherController extends Controller
             }
         })
         ->where('approvalStatus', '!=', 'cancel');
-
         // Apply filters based on the request
         if ($request->book_type) {
             $data = $data->where('book_type_id', $request->book_type);
+        }
+
+        if ($request->location_id) {
+            $data = $data->where('location', $request->location_id);
         }
 
         if ($request->voucher_no) {
@@ -658,7 +661,7 @@ class VoucherController extends Controller
         $voucher_name = $request->voucher_name;
         $cost_centers = CostCenterOrgLocations::where('organization_id', Helper::getAuthenticatedUser()->organization_id)
         ->with(['costCenter' => function ($query) {
-            $query->where('status', 'active');
+            $query->withDefaultGroupCompanyOrg()->where('status', 'active');
         }])
         ->get()
         ->filter(function ($item) {
@@ -668,11 +671,13 @@ class VoucherController extends Controller
             return [
                 'id' => $item->costCenter->id,
                 'name' => $item->costCenter->name,
+                'location' => $item->costCenter->locations,
             ];
         })
         ->toArray();
          $fyearLocked = $fyear['authorized'];
-        return view('voucher.view_vouchers', compact('cost_centers','bookTypes', 'mappings', 'organizationId', 'data', 'book_type', 'date', 'voucher_no', 'voucher_name','date2','fyearLocked'));
+        $locations = ErpStore::where('status','active')->get();
+        return view('voucher.view_vouchers', compact('cost_centers','bookTypes', 'mappings', 'organizationId', 'data', 'book_type', 'date', 'voucher_no', 'voucher_name','date2','fyearLocked','locations'));
     }
 
     public function create()

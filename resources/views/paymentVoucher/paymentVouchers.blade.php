@@ -153,7 +153,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="mb-1">
+                {{-- <div class="mb-1">
                     <label class="form-label">Cost Center</label>
                     <select id="cost_center_id" class="form-select select2"
                         name="cost_center_id">
@@ -162,7 +162,7 @@
                         <option value="{{ $value['id'] }}" @if(request('cost_center_id')==$value['id']) selected @endif>{{ $value['name'] }}</option>
                         @endforeach
                     </select>
-                </div>
+                </div> --}}
 
                 <div class="mb-1">
                     <label class="form-label">Organization</label>
@@ -174,6 +174,17 @@
                                 {{ $organization->organization->name }}
                             </option>
                         @endforeach
+                    </select>
+                </div>
+                 <div class="mb-1">
+                    <label class="form-label">Location</label>
+                    <select name="location_id" id="location_id" class="form-select select2">
+                    </select>
+                </div>
+                <div class="mb-1">
+                    <label class="form-label">Cost Center</label>
+                    <select id="cost_center_id" class="form-select select2"
+                        name="cost_center_id">
                     </select>
                 </div>
 
@@ -188,9 +199,81 @@
 @endsection
 
 @section('scripts')
+<script>
+    const locations = @json($locations);
+    const costCenters = @json($cost_centers);
+</script>
 <script type="text/javascript" src="{{asset('assets/js/modules/finance-table.js')}}"></script>
 <script>
-     $(document).ready(function() {
+     function updateLocationsDropdown(selectedOrgIds) {
+        const filteredLocations = locations.filter(loc =>
+            selectedOrgIds.includes(String(loc.organization_id))
+        );
+
+        const $locationDropdown = $('#location_id');
+        $locationDropdown.empty().append('<option value="">Select</option>');
+
+        filteredLocations.forEach(loc => {
+            $locationDropdown.append(`<option value="${loc.id}">${loc.store_name}</option>`);
+        });
+
+        $locationDropdown.trigger('change');
+    }
+
+    function loadCostCenters(locationId) {
+            if (locationId) {
+               const filteredCenters = costCenters.filter(center => {
+                    if (!center.location) return false;
+
+                    const locationArray = Array.isArray(center.location)
+                        ? center.location.flatMap(loc => loc.split(','))
+                        : [];
+
+                    return locationArray.includes(String(locationId));
+                });
+            console.log(filteredCenters,costCenters,locationId);
+
+            const $costCenter = $('#cost_center_id');
+            $costCenter.empty();
+
+            if (filteredCenters.length === 0) {
+                    $costCenter.append('<option value="">Select Cost Center</option>');
+            } else {
+                $costCenter.append('<option value="">Select Cost Center</option>');
+                $('.cost_center').show();
+
+                filteredCenters.forEach(center => {
+                    $costCenter.append(`<option value="${center.id}">${center.name}</option>`);
+                });
+            }
+
+            $costCenter.trigger('change');
+        }
+    }
+
+
+    $(document).ready(function () {
+        // On change of organization
+        $('#filter-organization').on('change', function () {
+            const selectedOrgIds = $(this).val() || [];
+            updateLocationsDropdown(selectedOrgIds);
+        });
+
+        // On page load, check for preselected orgs
+        const preselectedOrgIds = $('#filter-organization').val() || [];
+        if (preselectedOrgIds.length > 0) {
+            updateLocationsDropdown(preselectedOrgIds);
+        }
+        // On location change, load cost centers
+        $('#location_id').on('change', function () {
+            const locationId = $(this).val();
+          if (!locationId) {
+        $('#cost_center_id').empty().append('<option value="">Select Cost Center</option>');
+            // $('.cost_center').hide(); // Optional: hide the section if needed
+                return;
+            }
+            loadCostCenters(locationId);
+        });
        $('.datatables-basic').DataTable({
         processing: true,  // Show processing indicator
         scrollX: true,
