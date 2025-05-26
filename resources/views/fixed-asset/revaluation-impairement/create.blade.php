@@ -304,11 +304,31 @@
                                         </div>
                                       <div class="row mt-2"> 
                                                          
-													<div class="col-md-4 mb-1"> 
-														<label class="form-label">Document</label>  
+													 <div class="col-md-4">
+                                                            <label class="form-label">Document</label>
 
-														<input type="file" name="document" class="form-control"   />
-													</div>
+                                                            <div class="d-flex align-items-center gap-2">
+                                                                {{-- File input --}}
+                                                                <input type="file" name="document" class="form-control" id="documentInput" style="max-width: 85%;" />
+
+                                                                {{-- Preview selected file or existing one --}}
+                                                                <div id="filePreview">
+                                                                    @if(!empty($data->document))
+                                                                        {{-- Existing file icon --}}
+                                                                        <div id="existingFilePreview">
+                                                                            <a href="{{ asset('documents/' . $data->document) }}" target="_blank">
+                                                                                <i data-feather="file-text" class="text-success"></i>
+                                                                            </a>
+                                                                        </div>
+                                                                    @endif
+
+                                                                    {{-- New file preview icon --}}
+                                                                    <div id="newFilePreview" style="display: none;">
+                                                                        <i data-feather="file" class="text-primary"></i>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
 
 
 												<div class="col-md-12">
@@ -564,6 +584,8 @@ function initializeAssetAutocomplete(selector) {
                 data: {
                     q: request.term,
                     ids:getAllAssetIds(),
+                    location_id: $('#location').val(),
+                    cost_center_id: $('#cost_center').val(),
                     category:category,
                 },
                 success: function (data) {
@@ -662,7 +684,10 @@ function initializeSubAssetAutocomplete(selector) {
 
             $(this).val(ui.item.label);
             subAssetId.val(ui.item.value);
-            lastdep.val("");
+                        row.find('.quantity').val('');
+                        row.find('.currentvalue').val('');
+                        row.find('.last_dep_date').val('');
+                        row.find('.revaluate_amount').val('');
 
             if (asset.last_dep_date !== asset.capitalize_date) {
                 let lastDepDate = new Date(asset.last_dep_date);
@@ -682,10 +707,12 @@ function initializeSubAssetAutocomplete(selector) {
 
             if (!ui.item) {
                 $(this).val('');
-                subAssetId.val("");
-                lastdep.val("");
-                row.find('.quantity').val('');
-                row.find('.currentvalue').val('');
+               row.find('.sub_asset_id').val();
+                        row.find('.subasset-search-input').val('');
+                        row.find('.quantity').val('');
+                        row.find('.currentvalue').val('');
+                        row.find('.last_dep_date').val('');
+                        row.find('.revaluate_amount').val('');
             }
         },
         focus: function () {
@@ -799,6 +826,7 @@ $('#checkAll').on('change', function () {
 });
 
 $('#location').on('change', function () {
+    $('#category').empty();
     add_blank();
     var locationId = $(this).val();
 
@@ -815,6 +843,28 @@ $('#location').on('change', function () {
                     $('#cost_center').empty(); 
                 $('#cost_center').prop('required', false);
                 $('.cost_center').hide();
+                var url = '{{ route('finance.fixed-asset.get-categories') }}';
+
+                            $.ajax({
+                                url: url,
+                                type: 'GET',
+                                data: {
+                                    location_id: locationId
+                                },
+                                dataType: 'json',
+                                success: function(data) {
+                                    $('#category').empty().append(
+                                        '<option value="">Select Category</option>');
+                                    $.each(data, function(key, value) {
+                                        $('#category').append('<option value="' +
+                                            value.id + '>' + value.name +
+                                            '</option>');
+                                    });
+                                },
+                                error: function() {
+                                    $('#category').empty();
+                                }
+                            });
                 }
                 else{
                     $('.cost_center').show();
@@ -838,6 +888,7 @@ $('#location').on('change', function () {
     }
 });
 $('#cost_center').on('change', function () {
+    $('#category').empty();
     add_blank(); // Custom function, assuming you're resetting rows
 
     var costCenterId = $(this).val();
@@ -906,37 +957,36 @@ function getAllAssetIds() {
         return selected ? selected.value : null;
     }
 function validateRevaluationAmounts(showErrors = true) {
-    const documentType = getSelectedDocumentType();
-    let isValid = true;
+            const documentType = getSelectedDocumentType();
+            let isValid = true;
 
-    document.querySelectorAll('.revaluate_amount').forEach(input => {
-        const row = input.closest('tr');
-        const currentValueInput = row.querySelector('.currentvalue');
+            document.querySelectorAll('.revaluate_amount').forEach(input => {
+                const row = input.closest('tr');
+                const currentValueInput = row.querySelector('.currentvalue');
 
-        if (currentValueInput.value.trim() === "" && input.value.trim() === "") return;
+                if (currentValueInput.value.trim() === "" && input.value.trim() === "") return;
 
-        const currentVal = parseFloat(currentValueInput.value) || 0;
-        const revalVal = parseFloat(input.value) || 0;
+                const currentVal = parseFloat(currentValueInput.value) || 0;
+                const revalVal = parseFloat(input.value) || 0;
 
-        //input.classList.remove('is-invalid');
+                //input.classList.remove('is-invalid');
 
-        if (documentType === 'revaluation' && revalVal <= currentVal) {
-            isValid = false;
-            //input.classList.add('is-invalid');
-            if (showErrors) {
-                showToast('error', 'Revaluation amount must be greater than current value.');
-            }
-        } else if (documentType === 'impairement' && revalVal >= currentVal) {
-            isValid = false;
-           // input.classList.add('is-invalid');
-            if (showErrors) {
-                showToast('error', 'Impairement amount must be less than current value.');
-            }
+               if (documentType === 'revaluation' && revalVal <= currentVal) {
+                    isValid = false;
+                    
+                } else if (documentType === 'impairement' && revalVal >= currentVal) {
+                    isValid = false;
+                }
+            });
+                if (!isValid) {
+                    if (documentType === 'revaluation') 
+                        showToast('error', 'Revaluation amount must be greater than current value.');
+                    else
+                        showToast('error', 'Impairement amount must be less than current value.');
+                    }
+
+            return isValid;
         }
-    });
-
-    return isValid;
-}
 
   
 function updateJsonData() {
@@ -995,15 +1045,33 @@ function updateJsonData() {
    initializeSubAssetAutocomplete('.subasset-search-input');
 
 }
-$(document).on('input change', '.revaluate_amount', function() {
+$(document).on('change', '.revaluate_amount', function() {
     validateRevaluationAmounts();
 });
-$(document).on('input change', '[name="document_type"]', function() {
+$(document).on('change', '[name="document_type"]', function() {
     validateRevaluationAmounts();
 });
-    $(document).on('input change', '.currentvalue', function() {
+    $(document).on('change', '.currentvalue', function() {
         validateRevaluationAmounts();
     });
+        document.getElementById('documentInput').addEventListener('change', function (e) {
+        const file = e.target.files[0];
+        const newPreview = document.getElementById('newFilePreview');
+        const existingPreview = document.getElementById('existingFilePreview');
+
+        if (file) {
+            newPreview.style.display = 'block';
+            if (existingPreview) existingPreview.style.display = 'none';
+        } else {
+            newPreview.style.display = 'none';
+            if (existingPreview) existingPreview.style.display = 'block';
+        }
+
+        feather.replace(); // Update feather icons dynamically
+    });
+
+    // Initialize feather icons on load
+    feather.replace();
 
     </script>
     <!-- END: Content-->

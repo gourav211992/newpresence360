@@ -1992,8 +1992,7 @@ class ErpSaleReturnController extends Controller
     {
         $pathUrl = route('sale.return.index');
         $orderType = [ConstantHelper::SR_SERVICE_ALIAS];
-        $salesOrders = ErpSaleReturn::with('items')->whereIn('document_type', $orderType) -> bookViewAccess($pathUrl) 
-        -> withDefaultGroupCompanyOrg() -> withDraftListingLogic() -> orderByDesc('id');
+        $salesOrders = ErpSaleReturn::with('items')->whereIn('document_type', $orderType)-> withDefaultGroupCompanyOrg() -> withDraftListingLogic() -> orderByDesc('id');
         //Customer Filter
         $salesOrders = $salesOrders -> when($request -> customer_id, function ($custQuery) use($request) {
             $custQuery -> where('customer_id', $request -> customer_id);
@@ -2023,7 +2022,7 @@ class ErpSaleReturnController extends Controller
             $searchDocStatus = [];
             if ($request -> doc_status === ConstantHelper::DRAFT) {
                 $searchDocStatus = [ConstantHelper::DRAFT];
-            } else if ($searchDocStatus === ConstantHelper::SUBMITTED) {
+            } else if ($request -> doc_status === ConstantHelper::SUBMITTED) {
                 $searchDocStatus = [ConstantHelper::SUBMITTED, ConstantHelper::PARTIALLY_APPROVED];
             } else {
                 $searchDocStatus = [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED];
@@ -2039,6 +2038,10 @@ class ErpSaleReturnController extends Controller
                 $toDate = Carbon::parse(trim($dateRanges[1])) -> format('Y-m-d');
                 $dateRangeQuery -> whereDate('document_date', ">=" , $fromDate) -> where('document_date', '<=', $toDate);
            }
+           else{
+                $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
+                $dateRangeQuery -> whereDate('document_date', $fromDate);
+            }
         });
         //Item Id Filter
         $salesOrders = $salesOrders -> when($request -> item_id, function ($itemQuery) use($request) {
@@ -2069,8 +2072,15 @@ class ErpSaleReturnController extends Controller
         });
         //SI Date Range Filter
         $salesOrders = $salesOrders -> when($request -> si_dt, function ($orderDtQuery) use($request) {
-            $orderDtQuery -> whereDate('document_date', '>=', $request -> si_dt[0])
-                           -> whereDate('document_date', '<=', $request -> si_dt[1]);
+            if (count($request -> si_dt) == 2) {
+                $fromDate = Carbon::parse(trim($request -> si_dt[0])) -> format('Y-m-d');
+                $toDate = Carbon::parse(trim($request -> si_dt[1])) -> format('Y-m-d');
+                $orderDtQuery -> whereDate('document_date', ">=" , $fromDate) -> where('document_date', '<=', $toDate);
+           }
+           else{
+                $fromDate = Carbon::parse(trim($request -> si_dt[0])) -> format('Y-m-d');
+                $orderDtQuery -> whereDate('document_date', $fromDate);
+            }
         });
         //Order No Filter
         $salesOrders = $salesOrders -> when($request -> so_no, function ($orderNoQuery) use($request) {
@@ -2152,23 +2162,23 @@ class ErpSaleReturnController extends Controller
                 $processedSalesOrder -> push($reportRow);
             }
         }
-            return DataTables::of($processedSalesOrder) ->addIndexColumn()
-            ->editColumn('status', function ($row) use($orderType) {
-                $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->status ?? ConstantHelper::DRAFT];    
-                $displayStatus = ucfirst($row -> status);   
-                $editRoute = null;
-                $editRoute = route('sale.return.edit', ['id' => $row->id]);
-                return "
-                <div style='text-align:right;'>
-                    <span class='badge rounded-pill $statusClasss badgeborder-radius'>$displayStatus</span>
-                        <a href='" . $editRoute . "'>
-                            <i class='cursor-pointer' data-feather='eye'></i>
-                        </a>
-                </div>
-            ";
-            })
-            ->rawColumns(['item_attributes','delivery_schedule','status'])
-            ->make(true);
+        return DataTables::of($processedSalesOrder) ->addIndexColumn()
+        ->editColumn('status', function ($row) use($orderType) {
+            $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->status ?? ConstantHelper::DRAFT];    
+            $displayStatus = ucfirst($row -> status);
+            $editRoute = null;
+            $editRoute = route('sale.return.edit', ['id' => $row->id]);
+            return "
+            <div style='text-align:right;'>
+                <span class='badge rounded-pill $statusClasss badgeborder-radius'>$displayStatus</span>
+                    <a href='" . $editRoute . "'>
+                        <i class='cursor-pointer' data-feather='eye'></i>
+                    </a>
+            </div>
+        ";
+        })
+        ->rawColumns(['item_attributes','delivery_schedule','status'])
+        ->make(true);
     }
 }
 

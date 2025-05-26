@@ -188,6 +188,22 @@
                                                     </div>
 
                                                 </div>
+                                                 <div class="row align-items-center mb-1">
+                                                  <div class="col-md-3">
+                                                            <label class="form-label">Category <span
+                                                                    class="text-danger">*</span></label>
+                                                        </div>
+                                                        <div class="col-md-5">
+                                                                    <select class="form-select select2" name="category_id" id="category" required>
+                                                                        <option value="" {{ $data->category_id ? '' : 'selected' }}>Select</option>
+                                                                        @foreach($categories as $category)
+                                                                            <option value="{{ $category->id }}" {{ $data->category_id == $category->id ? 'selected' : '' }}>
+                                                                                {{ $category->name }}
+                                                                            </option>
+                                                                        @endforeach
+                                                                    </select>
+                                                                    </div>
+                                                    </div>
 
 
                                                 <div class="row align-items-center mb-1">
@@ -259,20 +275,7 @@
                                             </div>
                                             <div class="card-body">
                                                 <div class="row">
-                                                    <div class="col-md-3">
-                                                        <div class="mb-1">
-                                                            <label class="form-label">Category <span
-                                                                    class="text-danger">*</span></label>
-                                                                    <select class="form-select select2" name="category_id" id="category" required>
-                                                                        <option value="" {{ $data->category_id ? '' : 'selected' }}>Select</option>
-                                                                        @foreach($categories as $category)
-                                                                            <option value="{{ $category->id }}" {{ $data->category_id == $category->id ? 'selected' : '' }}>
-                                                                                {{ $category->name }}
-                                                                            </option>
-                                                                        @endforeach
-                                                                    </select>
-                                                                    </div>
-                                                    </div>
+                                                  
 
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
@@ -574,7 +577,7 @@
 
                     <div class="col">
                         <div class="mb-1">
-                            <label class="form-label">GRN No. <span class="text-danger">*</span></label>
+                            <label class="form-label">GRN No. </label>
                             <select class="form-select filter" name="grn_no" id="grn_no" >
                                 <option value="">Select</option>
                                 @foreach ($grns->unique('document_number') as $grn)
@@ -586,7 +589,7 @@
 
                     <div class="col">
                         <div class="mb-1">
-                            <label class="form-label">Code <span class="text-danger">*</span></label>
+                            <label class="form-label">Code </label>
                             <select class="form-select filter" name="vendor_code" id="vendor_code">
                                 <option value="">Select</option>
                                 @foreach ($grns->unique('vendor_code') as $grn)
@@ -598,7 +601,7 @@
 
                     <div class="col">
                         <div class="mb-1">
-                            <label class="form-label">Vendor Name <span class="text-danger">*</span></label>
+                            <label class="form-label">Vendor Name </label>
                             <select class="form-select filter" id="vendor_name" name="vendor_name">
                                 <option value="">Select</option>
                                 @foreach ($grns->unique('vendor_id') as $grn)
@@ -610,7 +613,7 @@
 
                     <div class="col">
                         <div class="mb-1">
-                            <label class="form-label">Item Name <span class="text-danger">*</span></label>
+                            <label class="form-label">Item Name </label>
                             <select class="form-select filter" id="item_name" name="item_name">
                                 <option value="">Select</option>
                                 @foreach ($grn_details->unique('item_id') as $item)

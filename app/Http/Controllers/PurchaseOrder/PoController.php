@@ -5,6 +5,7 @@ namespace App\Http\Controllers\PurchaseOrder;
 use App\Helpers\BookHelper;
 use App\Helpers\ConstantHelper;
 use App\Helpers\CurrencyHelper;
+use App\Helpers\DynamicFieldHelper;
 use App\Helpers\InventoryHelper;
 use App\Helpers\Helper;
 use App\Helpers\ItemHelper;
@@ -13,6 +14,8 @@ use App\Helpers\ServiceParametersHelper;
 use App\Helpers\TaxHelper;
 use App\Http\Controllers\Controller;
 use App\Jobs\SendEmailJob;
+use App\Models\Attribute;
+use App\Models\AttributeGroup;
 use App\Models\AuthUser;
 use App\Models\ErpSaleOrder;
 use App\Http\Requests\PoBulkRequest;
@@ -34,6 +37,7 @@ use App\Models\TermsAndCondition;
 use App\Models\Unit;
 use App\Models\Vendor;
 use App\Models\PiPoMapping;
+use Carbon\Carbon;
 use DB;
 use Illuminate\Http\Request;
 use PDF;
@@ -3154,5 +3158,204 @@ class PoController extends Controller
         ]);
             
     }
+
+    public function poReport(Request $request)
+    {
+        $pathUrl = route('po.index', ['type' => request()->route('type')]);
+        $orderType = ConstantHelper::PO_SERVICE_ALIAS;
+        $poItems = PoItem::whereHas('po', function ($headerQuery) use($orderType, $pathUrl, $request) {
+            $headerQuery -> where('type', $orderType)-> withDefaultGroupCompanyOrg() -> withDraftListingLogic();
+            //Vendor Filter
+            $headerQuery = $headerQuery -> when($request -> vendor_id, function ($custQuery) use($request) {
+                $custQuery -> where('vendor_id', $request -> vendor_id);
+            });
+            //Book Filter
+            $headerQuery = $headerQuery -> when($request -> book_id, function ($bookQuery) use($request) {
+                $bookQuery -> where('book_id', $request -> book_id);
+            });
+            //Document Id Filter
+            $headerQuery = $headerQuery -> when($request -> document_number, function ($docQuery) use($request) {
+                $docQuery -> where('document_number', 'LIKE', '%' . $request -> document_number . '%');
+            });
+            //Location Filter
+            $headerQuery = $headerQuery -> when($request -> location_id, function ($docQuery) use($request) {
+                $docQuery -> where('store_id', $request -> location_id);
+            });
+            //Company Filter
+            $headerQuery = $headerQuery -> when($request -> company_id, function ($docQuery) use($request) {
+                $docQuery -> where('store_id', $request -> company_id);
+            });
+            //Organization Filter
+            $headerQuery = $headerQuery -> when($request -> organization_id, function ($docQuery) use($request) {
+                $docQuery -> where('organization_id', $request -> organization_id);
+            });
+            //Document Status Filter
+            $headerQuery = $headerQuery -> when($request -> doc_status, function ($docStatusQuery) use($request) {
+                $searchDocStatus = [];
+                if ($request -> doc_status === ConstantHelper::DRAFT) {
+                    $searchDocStatus = [ConstantHelper::DRAFT];
+                } else if ($searchDocStatus === ConstantHelper::SUBMITTED) {
+                    $searchDocStatus = [ConstantHelper::SUBMITTED, ConstantHelper::PARTIALLY_APPROVED];
+                } else {
+                    $searchDocStatus = [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED];
+                }
+                $docStatusQuery -> whereIn('document_status', $searchDocStatus);
+            });
+            //Date Filters
+            $dateRange = $request -> date_range ??  Carbon::now()->startOfMonth()->format('Y-m-d') . " to " . Carbon::now()->endOfMonth()->format('Y-m-d');
+            $headerQuery = $headerQuery -> when($dateRange, function ($dateRangeQuery) use($request, $dateRange) {
+            $dateRanges = explode('to', $dateRange);
+            if (count($dateRanges) == 2) {
+                    $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
+                    $toDate = Carbon::parse(trim($dateRanges[1])) -> format('Y-m-d');
+                    $dateRangeQuery -> whereDate('document_date', ">=" , $fromDate) -> where('document_date', '<=', $toDate);
+            }
+            else{
+                $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
+                $dateRangeQuery -> whereDate('document_date', $fromDate);
+            }
+            });
+            //Item Id Filter
+            $headerQuery = $headerQuery -> when($request -> item_id, function ($itemQuery) use($request) {
+                $itemQuery -> withWhereHas('po_items', function ($itemSubQuery) use($request) {
+                    $itemSubQuery -> where('item_id', $request -> item_id)
+                    //Compare Item Category
+                    -> when($request -> item_category_id, function ($itemCatQuery) use($request) {
+                        $itemCatQuery -> whereHas('item', function ($itemRelationQuery) use($request) {
+                            $itemRelationQuery -> where('category_id', $request -> category_id)
+                            //Compare Item Sub Category
+                            -> when($request -> item_sub_category_id, function ($itemSubCatQuery) use($request) {
+                                $itemSubCatQuery -> where('subcategory_id', $request -> item_sub_category_id);
+                            });
+                        });
+                    });
+                });
+            });
+        }) -> orderByDesc('id');
+            $dynamicFields = DynamicFieldHelper::getServiceDynamicFields(ConstantHelper::PO_SERVICE_ALIAS);
+            $datatables = DataTables::of($poItems) ->addIndexColumn()
+            ->editColumn('status', function ($row) use($orderType) {
+                $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->po->document_status ?? ConstantHelper::DRAFT];    
+                $displayStatus = ucfirst($row -> po -> document_status);   
+                $editRoute = null;
+                $editRoute = route('po.edit', ['id' => $row->po->id,'type' => request()->route('type')]);
+                return "
+                <div style='text-align:right;'>
+                    <span class='badge rounded-pill $statusClasss badgeborder-radius'>$displayStatus</span>
+                        <a href='" . $editRoute . "'>
+                            <i class='cursor-pointer' data-feather='eye'></i>
+                        </a>
+                </div>
+            ";
+            })
+            ->addColumn('book_name', function ($row) {
+                return $row -> po -> book -> book_code;
+            })
+            ->addColumn('indent', function ($row) {
+                return $row ?-> pi_item ?-> pi ?-> book ?-> book_code."-".$row ?-> pi_item ?-> pi ?-> document_number;
+            })
+            ->addColumn('order', function ($row) {
+                return $row ?-> so ?-> book ?-> book_code."-".$row ?-> so ?-> document_number;
+            })
+            ->addColumn('item_name', function ($row) {
+                return $row -> item -> item_name;
+            })
+            ->addColumn('item_code', function ($row) {
+                return $row -> item -> item_code;
+            })
+            ->editColumn('location', function ($row) {
+                return $row ?-> po ?-> store_location ?-> store_name;
+            })
+            ->addColumn('vendor_currency',function($row){
+                return $row -> po ?-> currency ?-> name;
+            })
+            ->addColumn('document_number', function ($row) {
+                return $row -> po -> document_number;
+            })
+            ->addColumn('document_date', function ($row) {
+                return $row -> po -> document_date;
+            })
+            ->addColumn('store_name', function ($row) {
+                return $row -> po ?-> store ?-> store_name;
+            })
+            ->addColumn('store_name', function ($row) {
+                return $row -> po ?-> store ?-> store_name;
+            })
+            ->addColumn('vendor_name', function ($row) {
+                return $row -> po ?-> vendor ?-> company_name;
+            })
+            ->addColumn('vendor_currency', function ($row) {
+                return $row -> po -> currency_code;
+            })
+            ->addColumn('payment_terms_name', function ($row) {
+                return $row -> po -> payment_term_code;
+            })
+            ->addColumn('hsn_code', function ($row) {
+                return $row -> hsn ?-> code;
+            })
+            ->addColumn('uom_name', function ($row) {
+                return $row -> uom ?-> name;
+            })
+            ->addColumn('po_qty', function ($row) {
+                return number_format($row -> order_qty, 2);
+            })
+            ->editColumn('ge_qty', function ($row) {
+                return number_format($row -> ge_qty, 2);
+            })
+            ->editColumn('grn_qty', function ($row) {
+                return number_format($row -> grn_qty, 2);
+            })
+            ->editColumn('short_close_qty', function ($row) {
+                return number_format($row -> short_close_qty, 2);
+            })
+            ->editColumn('rate', function ($row) {
+                return number_format($row -> rate, 2);
+            })
+            ->addColumn('total_discount_amount', function ($row) {
+                return number_format($row -> header_discount_amount + $row -> item_discount_amount, 2);
+            })
+            ->editColumn('tax_amount', function ($row) {
+                return number_format($row -> tax_amount, 2);
+            })
+            ->addColumn('taxable_amount', function ($row) {
+                return number_format(($row -> rate * $row->order_qty) - ($row -> header_discount_amount + $row -> item_discount_amount), 2);
+            })
+            ->editColumn('total_item_amount', function ($row) {
+                return number_format(($row -> rate * $row->order_qty) - ($row -> header_discount_amount + $row -> item_discount_amount) + $row -> tax_amount, 2);
+            })
+            // ->editColumn('pending_qty', function ($row) {
+            //     return number_format($row -> pending_qty, 2);
+            // })
+            ->addColumn('item_attributes', function ($row) {
+                $attributesUi = '';
+                if (count($row -> attributes) > 0) {
+                    foreach ($row -> attributes as $soAttribute) {
+                        $attrName = AttributeGroup::find($soAttribute->attribute_name);
+                        $attrValue = Attribute::find($soAttribute -> attribute_value);
+                        $attributesUi .= "<span class='badge rounded-pill badge-light-primary' > $attrName?->name : $attrValue?->value </span>";
+                    }
+                } else {
+                    $attributesUi = 'N/A';
+                }
+                return $attributesUi;
+            });
+            foreach ($dynamicFields as $field) {
+                $datatables = $datatables->addColumn($field -> name, function ($row) use ($field) {
+                    $value = "";
+                    $actualDynamicFields = $row -> po ?-> dynamic_fields;
+                    foreach ($actualDynamicFields as $actualDynamicField) {
+                        if ($field -> name == $actualDynamicField -> name) {
+                            $value = $actualDynamicField -> value;
+                        }
+                    }
+                    return $value;
+                });
+            }
+            $datatables = $datatables
+            ->rawColumns(['item_attributes','status'])
+            ->make(true);
+            return $datatables;
+    }
+
 
 }

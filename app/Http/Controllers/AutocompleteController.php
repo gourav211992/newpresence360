@@ -814,7 +814,7 @@ class AutocompleteController extends Controller
                         ->get(['id','name']);
 
                 }
-            } else if ($type === 'customer') {
+            } else if ($type === 'customer' || $type === 'customer_list') {
                 $results = Customer::withDefaultGroupCompanyOrg() -> with(['payment_terms', 'currency', 'compliances'])
                 ->where('company_name', 'LIKE', "%$term%")
                 ->where('status', ConstantHelper::ACTIVE)

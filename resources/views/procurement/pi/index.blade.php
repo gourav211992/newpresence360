@@ -25,7 +25,7 @@
                         @if(count($servicesBooks['services']))
                         <a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{ route('pi.create') }}"><i data-feather="plus-circle"></i> Create Indent</a>
                         @endif
-                        {{-- <a class="btn btn-dark btn-sm mb-50 mb-sm-0" href="{{ route('po.report') }}"><i data-feather="bar-chart-2"></i>Report</a> --}}
+                         <a class="btn btn-dark btn-sm mb-50 mb-sm-0" href="{{ route('transactions.report', ['serviceAlias' => 'purchase-indent']) }}"><i data-feather="bar-chart-2"></i>Report</a>
                     </div>
                 </div>
             </div>

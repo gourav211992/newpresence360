@@ -447,7 +447,7 @@ class ConstantHelper
         self::SHARING_POLICY_HYBRID => 'Hybrid',
     ];
     //Service Labels
-        const SERVICE_LABEL = [self::SO_SERVICE_ALIAS => "Sales Order", self::SI_SERVICE_ALIAS => "Tax Invoice", self::SQ_SERVICE_ALIAS => "Sales Quotation", self::SR_SERVICE_ALIAS => "Sales Return",self::DELIVERY_CHALLAN_SERVICE_ALIAS => "Delivery Note", self::BOM_SERVICE_ALIAS => "Bill Of Material" , self::PO_SERVICE_ALIAS => "Purchase Order" , self::SUPPLIER_INVOICE_SERVICE_ALIAS => "Supplier Invoice" , self::PI_SERVICE_ALIAS => "Purchase Indent" , self:: MRN_SERVICE_ALIAS => "MRN" , self:: GATE_ENTRY_SERVICE_ALIAS => "Gate Entry" , self::EXPENSE_SERVICE_ALIAS => "Expense" , self::EXPENSE_ADVISE_SERVICE_ALIAS => 'Expense Advise', self::PURCHASE_RETURN_SERVICE_ALIAS => "Purchase Return", self::PB_SERVICE_ALIAS => "Purchase Bill", self::MATERIAL_ISSUE_SERVICE_ALIAS_NAME => "Material Issue", self::MATERIAL_RETURN_SERVICE_ALIAS_NAME => "Material Return", self::JO_SERVICE_ALIAS => "Job Order"];
+        const SERVICE_LABEL = [self::SO_SERVICE_ALIAS => "Sales Order", self::SI_SERVICE_ALIAS => "Tax Invoice", self::SQ_SERVICE_ALIAS => "Sales Quotation", self::SR_SERVICE_ALIAS => "Sales Return",self::DELIVERY_CHALLAN_SERVICE_ALIAS => "Delivery Note", self::BOM_SERVICE_ALIAS => "Bill Of Material" , self::PO_SERVICE_ALIAS => "Purchase Order" , self::SUPPLIER_INVOICE_SERVICE_ALIAS => "Supplier Invoice" , self::PI_SERVICE_ALIAS => "Purchase Indent" , self:: MRN_SERVICE_ALIAS => "MRN" , self:: GATE_ENTRY_SERVICE_ALIAS => "Gate Entry" , self::EXPENSE_SERVICE_ALIAS => "Expense" , self::EXPENSE_ADVISE_SERVICE_ALIAS => 'Expense Advise', self::PURCHASE_RETURN_SERVICE_ALIAS => "Purchase Return", self::PB_SERVICE_ALIAS => "Purchase Bill", self::MATERIAL_ISSUE_SERVICE_ALIAS_NAME => "Material Issue", self::MATERIAL_RETURN_SERVICE_ALIAS_NAME => "Material Return", self::JO_SERVICE_ALIAS => "Job Order",self::VOUCHERS => "Vouchers",self::PAYMENTS_SERVICE_ALIAS => 'Payment Voucher',self::RECEIPTS_SERVICE_ALIAS => 'Receipt Voucher'];
 
     //Service Alias
     const MO_SERVICE_ALIAS = 'mo'; # Manufacturing Order
@@ -499,6 +499,7 @@ class ConstantHelper
 
     const RC_SERVICE_ALIAS = "rc";
     const PSV_SERVICE_ALIAS = "psv";
+    const DR_SERVICE_ALIAS = "dr";
     const PL_SERVICE_ALIAS = "pl";
     const PL_SERVICE_NAME = "Pick List";
     const LAND_PARCEL = 'land-parcel';
@@ -562,7 +563,7 @@ class ConstantHelper
     const FIXED_ASSET_DEPRECIATION = 'depreciation';
     const FIXED_ASSET_SPLIT = 'fixed-asset-split';
     const FIXED_ASSET_MERGER = 'fixed-asset-merger';
-    const FIXED_ASSET_REV_IMP = 'fixed-asset-revaluation-impairement';
+    const FIXED_ASSET_REV_IMP = 'fixed-asset-rev';
     const STAKEHOLDER_INTERACTION = 'stakeholder-interaction';
     const COMPLAINT_MANAGEMENT = 'complaint';
     const FEEDBACK_PROCESS = 'feedback-process';
@@ -580,6 +581,7 @@ class ConstantHelper
     const DIRECT_INCOMES = "Direct Incomes";
     const FIXED_ASSETS = "Fixed Assets";
     const INDIRECT_EXPENSES = "Indirect Expenses";
+    const RESERVE_SURPLUS ="Reserves & Surplus";
     const INDIRECT_INCOMES = "Indirect Incomes";
     const INVESTMENTS = "Investments";
     const LOANS_LIABILITY = "Loans (Liability)";
@@ -623,6 +625,7 @@ class ConstantHelper
         self::FIXED_ASSET_SPLIT=>self::FIXED_ASSET_SPLIT,
         self::FIXED_ASSET_MERGER=>self::FIXED_ASSET_MERGER,
         self::FIXED_ASSET_REV_IMP=>self::FIXED_ASSET_REV_IMP,
+        self::FIXEDASSET=>self::FIXEDASSET,
         self::SR_SERVICE_ALIAS=>self::CREDIT_Note,
         self::PSV_SERVICE_ALIAS => self::JOURNAL_VOUCHER,
     ];

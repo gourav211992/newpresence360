@@ -1,5 +1,5 @@
 $(document).ready(function () {
-    $(document).on('keypress', '.numberonly', function (e) {
+    $(document).on('keypress', '.numberonly-v2', function (e) {
         var charCode = (e.which) ? e.which : event.keyCode;
 
         if (String.fromCharCode(charCode).match(/[^0-9]/g)) {
@@ -380,7 +380,8 @@ function show_validation_error(msg) {
                     $('form [name="' + name + '"]').closest('.attachment-container').find('#preview')
                         .before('<span class="help-block text-danger fw-bolder">' + value + '</span><br>');
                     $('form [name="' + name + '"]').parent().after('<span class="help-block text-danger fw-bolder">' + value + "</span>");
-
+                } else if ($('form [name="' + name + '"]').hasClass("summernote")) {
+                    $('form [name="' + name + '"]').next('.note-editor.note-frame').after('<span class="help-block text-danger fw-bolder">' + value + "</span>");
                 } else {
                     // $('form [name="' + name + '"]').addClass("is-invalid error");
                     $('form [name="' + name + '"]').after('<span class="help-block text-danger fw-bolder" role="alert">' + value + "</span>");
@@ -428,146 +429,3 @@ function dropdown(url, selected_id, selected_value) {
         },
     });
 }
-
-
-/* Lead Contacts */
-$(document).on("click", '[data-request="lead-contacts"]', function () {
-    /*REMOVING PREVIOUS ALERT AND ERROR CLASS*/
-    $(".is-invalid").removeClass("is-invalid");
-    $(".help-block").remove();
-    var $this = $(this);
-    var $target = $this.data("target");
-    var $url = $(this).data("action") ? $(this).data("action") : $($target).attr("action");
-    var $method = $($target).attr("method") ? $($target).attr("method") : "POST";
-    var $data = new FormData($($target)[0]);
-    $this.prop('disabled', true);
-    $.ajax({
-        url: $url,
-        data: $data,
-        cache: false,
-        type: $method,
-        dataType: "JSON",
-        contentType: false,
-        processData: false,
-        beforeSend: function () {
-            $('#loaderDiv').show();
-        },
-        success: function ($response) {
-            $('#loaderDiv').hide();
-            if ($response.status === 200) {
-                let html = '';
-                $.each($response.data, function (index, contact) {
-                    html += '<div class="contact-card" id="contact-card-' + index + '">';
-                    html += '<input type="hidden" name="leads[' + index + '][contact_name]" value="' + contact.contact_name + '"/>';
-                    html += '<input type="hidden" name="leads[' + index + '][contact_email]" value="' + contact.contact_email + '"/>';
-                    html += '<input type="hidden" name="leads[' + index + '][contact_number]" value="' + contact.contact_number + '"/>';
-                    html += '</div>';
-                });
-
-                $('#render-lead-contacts').html(html);
-                $('#leadContacts').modal('hide');
-                $this.prop('disabled', false);
-            }
-        },
-        error: function ($response) {
-            $('#loaderDiv').hide();
-            $this.prop('disabled', false);
-            if ($response.status === 422) {
-                console.log($response.responseJSON.errors);
-                if (
-                    Object.size($response.responseJSON) > 0 &&
-                    Object.size($response.responseJSON.errors) > 0
-                ) {
-                    show_validation_error($response.responseJSON.errors);
-                }
-            } else {
-                Swal.fire(
-                    "Info!",
-                    $response.responseJSON.message,
-                    "warning"
-                );
-                setTimeout(function () { }, 1200);
-            }
-        },
-    });
-});
-
-let add_row_count = 1;
-let max_fields = 5;
-function addMoreLeadContacts() {
-    $(".help-block").remove();
-
-    var html = $(".add-more-row").first().clone();
-    let currentRowCount = $(".add-more-row").length;
-    if (currentRowCount < max_fields) {
-        $(html).find("#lead_contact_name").attr('name', "data[" + add_row_count + "][contact_name]");
-        $(html).find("#lead_contact_name").val('');
-        $(html).find("#lead_contact_number").attr('name', "data[" + add_row_count + "][contact_number]");
-        $(html).find("#lead_contact_number").val('');
-        $(html).find("#lead_contact_email").attr('name', "data[" + add_row_count + "][contact_email]");
-        $(html).find("#lead_contact_email").val('');
-
-        var uniqueClass = 'lead-contact-row-' + add_row_count;
-        $(html).addClass(uniqueClass);
-
-        var trashUrl = $("#add-more-contact").data("trash-url");
-        $(html).find("#change-to-remove").html('<a id="remove-lead-contact"><img src="' + trashUrl + '" onclick="removeLeadContact(event, ' + add_row_count + ')"></a>');
-        $(".add-more-row").last().after(html);
-        add_row_count++;
-    } else {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Alert! ',
-            text: 'You can add only ' + max_fields + ' contacts'
-        })
-    }
-
-}
-
-function removeLeadContact(event, rowCount) {
-    var rowClass = '.lead-contact-row-' + rowCount;  // Create the class based on the rowCount
-    var contactCard = '#contact-card-' + rowCount;  // Create the class based on the rowCount
-    $(rowClass).remove();  // Remove the specific row with that class
-    $(contactCard).remove();  // Remove the specific row with that class
-}
-
-$(document).on("click", '[data-request="remove-lead-contact"]', function () {
-    var $this = $(this);
-    var $url = $this.attr("data-url");
-    Swal.fire({
-        title: "Alert! ",
-        text: "Are you sure you want to delete contacts?",
-        showCancelButton: true,
-        confirmButtonColor: "#3085d6",
-        cancelButtonColor: "#d33",
-        confirmButtonText: "Yes, please!",
-    }).then((result) => {
-        if (result.value) {
-            $.ajax({
-                url: $url,
-                type: "DELETE",
-                beforeSend: function () {
-                    $('#loaderDiv').show();
-                },
-                success: function (data) {
-                    if (data.status == 200) {
-                        $('#loaderDiv').hide();
-                        let id = data.data.id;
-                        Swal.fire("Success!", data.message, "success");
-
-                        $('.existing-contact-' + id).remove();
-                    }
-                },
-                error: function (data) {
-                    $('#loaderDiv').hide();
-                    Swal.fire(
-                        "Info!",
-                        data.responseJSON.message,
-                        "warning"
-                    );
-                    setTimeout(function () { }, 1200);
-                },
-            });
-        }
-    });
-});

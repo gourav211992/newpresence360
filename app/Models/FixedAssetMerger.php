@@ -18,8 +18,9 @@ class FixedAssetMerger extends Model
     protected $table = 'erp_finance_fixed_asset_merger';
 
     protected $guarded = ['id'];
-    public function book(){
-       return $this->belongsTo(Book::class, 'book_id');
+    public function book()
+    {
+        return $this->belongsTo(Book::class, 'book_id');
     }
     public function asset()
     {
@@ -47,7 +48,7 @@ class FixedAssetMerger extends Model
     }
     public function ledgerGroup()
     {
-        return $this->belongsTo(Ledger::class, 'ledger_group_id');
+        return $this->belongsTo(Group::class, 'ledger_group_id');
     }
     // public function getAssetsAttribute()
     // {
@@ -55,127 +56,116 @@ class FixedAssetMerger extends Model
 
     //     return FixedAssetRegistration::whereIn('id', $assetIds)->get();
     // }
-    public static function makeRegistration($id){
-        try{
+    public static function makeRegistration($id)
+    {
         $request = FixedAssetMerger::find($id);
-        $user = Helper::getAuthenticatedUser();
-        
+
 
         $parentURL = "fixed-asset_registration";
-        
-        
-        
+
+
+
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
         if (count($servicesBooks['services']) == 0) {
-            DB::rollBack();
-            return response() -> json([
-                'status' => 'exception',
-                'data' => array(
-                    'status' => false,
-                    'message' => 'Service not found',
-                    'data' => []
-                )
-            ]);
-       }
-       $firstService = $servicesBooks['services'][0];
-       $series = Helper::getBookSeriesNew($firstService -> alias, $parentURL)->first();
-
-
-            if($series!=null){
-            $book = Helper::generateDocumentNumberNew($series->id, date('Y-m-d'));
-            if($book['document_number']!=null){
-            $existingAsset = FixedAssetRegistration::where('asset_code', $request->asset_code)
-                ->where('organization_id', $user->organization->id)
-                ->where('group_id', $user->organization->group_id)
-                ->first();
-            
-                if($existingAsset){
-                    DB::rollBack();
-                    return array(
-                            'status' => false,
-                            'message' => 'Asset Code '.$existingAsset->asset_code . ' already exists.',
-                            'data' => []
-                    );
-                }
-
-            
-
-                
-            // Step 1: Create main asset registration (only once per asset_code)
-            $data = [
-                'organization_id' => $user->organization->id,
-                'group_id' => $user->organization->group_id,
-                'company_id' => $user->organization->company_id,
-                'book_id' => $series->id,
-                'document_number'=>$book['document_number'],
-                'document_date' => $request->document_date,
-                'doc_number_type' => $book['type'],
-                'doc_reset_pattern' => $book['reset_pattern'],
-                'doc_prefix' => $book['prefix'],
-                'doc_suffix' => $book['suffix'],
-                'doc_no' => $book['doc_no'],
-                'asset_code' => $request->asset_code,
-                'asset_name' => $request->asset_name,
-                'quantity' => $request->quantity,
-                'category_id'=>$request->category_id,
-                'reference_doc_id'=>$request->id,
-                'reference_series'=>'fixed-asset-merger',
-                'ledger_id' => $request->ledger_id,
-                'ledger_group_id' => $request->ledger_group_id,
-                'capitalize_date' => $request->capitalize_date,
-                'last_dep_date'=> $request->capitalize_date,
-                'currency_id'=> $user->organization->currency_id,
-                'location_id'=>$request->location_id,
-                'cost_center_id'=>$request->cost_center_id,
-                'maintenance_schedule' => $request->maintenance_schedule,
-                'depreciation_method' => $request->depreciation_method,
-                'useful_life' => $request->useful_life,
-                'salvage_value' => $request->salvage_value,
-                'depreciation_percentage' => $request->depreciation_percentage,
-                'depreciation_percentage_year' => $request->depreciation_percentage,
-                'total_depreciation' => $request->total_depreciation,
-                'dep_type' => $request->dep_type,
-                'current_value' => $request->current_value,
-                'current_value_after_dep' => $request->current_value,
-                'document_status' => Helper::checkApprovalRequired($series->id),
-                'approval_level' => 1,
-                'revision_number' => 0,
-                'revision_date' => null,
-                'created_by' => $user->auth_user_id,
-                'type' => get_class($user),
-                'status' => 'active',
-
-            ];
-
-                $asset = FixedAssetRegistration::create($data);
-                FixedAssetSub::generateSubAssets($asset->id, $asset->asset_code, $asset->quantity, $asset->current_value, $asset->salvage_value);
-                //delete old assets
-                foreach(json_decode($request->asset_details) as $item){
-                    foreach($item->sub_asset_id as $sub){
-                        $old = FixedAssetSub::find($sub);
-                        if($old)
-                        FixedAssetSub::find($sub)->delete();
-                    }
-                }   
-                return array(
-                    'status' => true,
-                    'message' => "Registration Added",
-                    'data' => []
-            );
-            }
-            
-        }
-    }catch (\Exception $e) {
-        DB::rollBack();
-        return array(
+            return array(
                 'status' => false,
-                'message' => $e->getMessage(),
+                'message' => 'Service Not Found',
                 'data' => []
-        );
-    
-       
-    }
-        
+            );
+        }
+        $firstService = $servicesBooks['services'][0];
+        $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->first();
+        if (!$series) {
+            return array(
+                'status' => false,
+                'message' => 'Series Not Found',
+                'data' => []
+            );
+        }
 
+
+        $book = Helper::generateDocumentNumberNew($series->id, date('Y-m-d'));
+        if ($book['document_number'] == null) {
+            return array(
+                'status' => false,
+                'message' => 'Document Number Not Found',
+                'data' => []
+            );
+        }
+
+        $existingAsset = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('asset_code', $request->asset_code)->first();
+
+        if ($existingAsset) {
+            return array(
+                'status' => false,
+                'message' => 'Asset Code ' . $existingAsset->asset_code . ' already exists.',
+                'data' => []
+            );
+        }
+
+
+
+
+        // Step 1: Create main asset registration (only once per asset_code)
+        $data = [
+            'organization_id' => $request->organization_id,
+            'group_id' => $request->group_id,
+            'company_id' => $request->company_id,
+            'created_by' => $request->created_by,
+            'type' => $request->type,
+            'book_id' => $series->id,
+            'document_number' => $book['document_number'],
+            'document_date' => $request->document_date,
+            'doc_number_type' => $book['type'],
+            'doc_reset_pattern' => $book['reset_pattern'],
+            'doc_prefix' => $book['prefix'],
+            'doc_suffix' => $book['suffix'],
+            'doc_no' => $book['doc_no'],
+            'asset_code' => $request->asset_code,
+            'asset_name' => $request->asset_name,
+            'quantity' => $request->quantity,
+            'category_id' => $request->category_id,
+            'reference_doc_id' => $request->id,
+            'reference_series' => 'fixed-asset-merger',
+            'ledger_id' => $request->ledger_id,
+            'ledger_group_id' => $request->ledger_group_id,
+            'capitalize_date' => $request->capitalize_date,
+            'last_dep_date' => $request->capitalize_date,
+            'currency_id' => $request->currency_id,
+            'location_id' => $request->location_id,
+            'cost_center_id' => $request->cost_center_id,
+            'maintenance_schedule' => $request->maintenance_schedule,
+            'depreciation_method' => $request->depreciation_method,
+            'useful_life' => $request->useful_life,
+            'salvage_value' => $request->salvage_value,
+            'depreciation_percentage' => $request->depreciation_percentage,
+            'depreciation_percentage_year' => $request->depreciation_percentage,
+            'total_depreciation' => $request->total_depreciation,
+            'dep_type' => $request->dep_type,
+            'current_value' => $request->current_value,
+            'current_value_after_dep' => $request->current_value,
+            'document_status' => 'approved',
+            'approval_level' => 1,
+            'revision_number' => 0,
+            'revision_date' => null,
+            'status' => 'active',
+
+        ];
+
+        $asset = FixedAssetRegistration::create($data);
+        FixedAssetSub::generateSubAssets($asset->id, $asset->asset_code, $asset->quantity, $asset->current_value, $asset->salvage_value);
+        //delete old assets
+        foreach (json_decode($request->asset_details) as $item) {
+            foreach ($item->sub_asset_id as $sub) {
+                $old = FixedAssetSub::find($sub);
+                if ($old)
+                    FixedAssetSub::find($sub)->delete();
+            }
+        }
+        return array(
+            'status' => true,
+            'message' => "Registration Added",
+            'data' => []
+        );
     }
 }

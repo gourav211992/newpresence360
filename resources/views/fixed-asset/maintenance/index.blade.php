@@ -186,7 +186,7 @@
                     targets: [0, -1] // Disable sorting for the first (#) and last (Action) columns
                 },
                 {
-                    targets: 4, // Condition column (adjust if necessary based on your structure)
+                    targets: 6, // Condition column (adjust if necessary based on your structure)
                     render: function(data, type, row, meta) {
                         if (type === 'export') {
                             return data; // Return raw data for export

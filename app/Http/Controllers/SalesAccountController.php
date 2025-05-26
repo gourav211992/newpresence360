@@ -24,7 +24,7 @@ class SalesAccountController extends Controller
     {
         $user = Helper::getAuthenticatedUser();
         $userType = Helper::userCheck()['type'];
-        $orgIds = $user -> organizations() -> pluck('organizations.id') -> toArray();
+        $orgIds = $user->organizations()->pluck('organizations.id')->toArray();
         array_push($orgIds, $user?->organization_id);
         $orgData = Organization::whereIn('id', $orgIds);
         $companyIds = $orgData
@@ -57,7 +57,7 @@ class SalesAccountController extends Controller
             $salesAccounts = SalesAccount::with([
                 'organization', 'group', 'company', 'ledgerGroup',
                 'ledger', 'customerCategory.customers',
-                'customerSubCategory.customersSub','customerCategory', 'customerSubCategory','itemCategory.items', 'itemCategory', 'itemSubCategory','itemSubCategory.itemsSub', 'item', 'book','orgIds'
+                'customerSubCategory.customersSub','customerCategory', 'customerSubCategory','itemCategory.items', 'itemCategory', 'itemSubCategory','itemSubCategory.itemsSub', 'item', 'book'
             ])
             ->orderBy('group_id')
             ->orderBy('company_id') 
@@ -97,7 +97,7 @@ class SalesAccountController extends Controller
         }
 
         return view('procurement.sales-account.index', compact(
-            'companies', 'categories', 'subCategories', 'ledgerGroups', 'ledgers', 'items', 'salesAccount','erpBooks','customers'
+            'companies', 'categories', 'subCategories', 'ledgerGroups', 'ledgers', 'items', 'salesAccount','erpBooks','customers','orgIds'
         ));
     }
 

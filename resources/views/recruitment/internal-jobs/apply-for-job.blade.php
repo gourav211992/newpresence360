@@ -1,4 +1,4 @@
-@extends('recruitment.layouts.app')
+@extends('layouts.app')
 @section('content')
     <!-- BEGIN: Content-->
     <div class="app-content content ">
@@ -127,8 +127,7 @@
 
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Upload Resume <span
-                                                                class="text-danger">*</span></label>
+                                                        <label class="form-label">Upload Resume</label>
                                                     </div>
 
                                                     <div class="col-md-5">
@@ -160,15 +159,18 @@
     <!-- END: Content-->
 @endsection
 @section('scripts')
+    <script src="{{ asset('app-assets/js/common-script-v2.js') }}"></script>
+
     <script>
         $(document).ready(function() {
             toggleAppliedFor();
 
             $('#refered_by').select2({
-                placeholder: "Select Employee...",
+                placeholder: "Select or add candidate...",
                 minimumInputLength: 2,
+                tags: true,
                 ajax: {
-                    url: "{{ route('recruitment.fetch-employees') }}",
+                    url: "{{ route('recruitment.fetch-candidates') }}",
                     dataType: 'json',
                     data: function(params) {
                         return {
@@ -191,6 +193,21 @@
                         };
                     },
                     cache: true
+                },
+                createTag: function(params) {
+                    return {
+                        id: params.term,
+                        text: params.term,
+                        newOption: true
+                    };
+                },
+                templateResult: function(data) {
+                    var $result = $("<span></span>");
+                    $result.text(data.text);
+                    if (data.newOption) {
+                        $result.append(" <em>(new)</em>");
+                    }
+                    return $result;
                 }
             });
         });
@@ -227,19 +244,20 @@
         }
 
         $('#refered_by').on('change', function() {
-            var employeeId = $(this).val();
-            if (employeeId) {
+            var selectedVal = $(this).val();
+            if ($.isNumeric(selectedVal)) {
+                $('input[name="email"], input[name="mobile_no"]').prop('readonly', true);
                 $.ajax({
-                    url: "{{ route('recruitment.fetch-employees') }}", // Add this route in web.php
+                    url: "{{ route('recruitment.fetch-candidates') }}", // Add this route in web.php
                     type: "GET",
                     data: {
-                        id: employeeId
+                        id: selectedVal
                     },
                     success: function(data) {
                         if (data && data.data && data.data.length > 0) {
                             const emp = data.data[0];
                             $('input[name="email"]').val(emp.email);
-                            $('input[name="mobile_no"]').val(emp.mobile);
+                            $('input[name="mobile_no"]').val(emp.mobile_no);
                             $('input[name="name"]').val(emp.name);
                         }
                     },
@@ -249,6 +267,8 @@
                     }
                 });
             } else {
+                $('input[name="email"], input[name="mobile_no"]').prop('readonly', false).val('');
+                $('input[name="name"]').val(selectedVal);
                 $('input[name="email"]').val('');
                 $('input[name="mobile_no"]').val('');
             }

@@ -28,11 +28,10 @@ class TaxRequest extends FormRequest
         $taxGroupId = $this->route('id'); 
         $taxCategory = $this->input('tax_category'); 
         return [
-           
            'tax_group' => [
             'required',
             'string',
-            'max:100',
+            'max:10',
              Rule::unique('erp_taxes', 'tax_group')  
                 ->ignore($taxGroupId) 
                 ->where('group_id', $this->group_id)  
@@ -91,7 +90,7 @@ class TaxRequest extends FormRequest
         return [
             'tax_group.required' => 'The tax group field is required.',
             'tax_group.string' => 'The tax group must be a string.',
-            'tax_group.max' => 'The tax group may not be greater than 100 characters.',
+            'tax_group.max' => 'The tax group may not be greater than 10 characters.',
             'tax_type.required' => 'The tax type field is required.',
             'tax_category.required' => 'The tax category field is required.',
             'description.string' => 'The description must be a string.',

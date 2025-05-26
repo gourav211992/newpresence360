@@ -35,6 +35,8 @@ use App\Exports\FailedItemsExport;
 use App\Models\UploadItemMaster;
 use App\Services\ItemImportExportService;
 use Carbon\Carbon;
+use App\Mail\ImportComplete;
+use Illuminate\Support\Facades\Mail;
 use Auth;
 use stdClass;
 
@@ -468,7 +470,13 @@ class ItemController extends Controller
             
             $successfulItems = $import->getSuccessfulItems();
             $failedItems = $import->getFailedItems();
-    
+            $mailData = [
+                'modelName' => 'Item',
+                'successful_items' => $successfulItems,
+                'failed_items' => $failedItems,
+                'export_successful_url' => route('items.export.successful'), 
+                'export_failed_url' => route('items.export.failed'), 
+            ];
             if (count($failedItems) > 0) {
                 $message = 'Items import failed.';
                 $status = 'failure';
@@ -476,7 +484,13 @@ class ItemController extends Controller
                 $message = 'Items imported successfully.';
                 $status = 'success';
             }
-    
+            if ($user->email) {
+                try {
+                    Mail::to($user->email)->send(new ImportComplete( $mailData)); 
+                } catch (\Exception $e) {
+                    $message .= " However, there was an error sending the email notification.";
+                }
+            }
             return response()->json([
                 'status' => $status,
                 'message' => $message,
@@ -796,7 +810,7 @@ class ItemController extends Controller
                 if ($attributeGroupId && ($attributeId || $allChecked)) {
                 if (isset($attributeData['id'])) {
                     if ($attributeGroupId || $attributeId) {
-                        $item->itemAttributes()->where('id', $attributeData['id'])->update([
+                        $item->itemAttributes()->where('id', operator: $attributeData['id'])->update([
                             'attribute_id' => $attributeId,
                             'attribute_group_id' => $attributeGroupId,
                             'required_bom' => $requiredBom,
@@ -1073,12 +1087,13 @@ class ItemController extends Controller
     public function getItemCost(Request $request)
     {
         $itemId = $request->item_id;
-        $attributes = null;
+        $attributes = $request->attr;
         $uomId = $request->uom_id;
         $currencyId = $request->currency_id;
         $transactionDate = $request->transaction_date ?? date('Y-m-d');
+        $item_qty = $request->item_qty ?? 0;
         $vendorId = $request->vendor_id;
-        $a = ItemHelper::getItemCostPrice($itemId, $attributes, $uomId, $currencyId, $transactionDate, $vendorId);
+        $a = ItemHelper::getItemCostPrice($itemId, $attributes, $uomId, $currencyId, $transactionDate, $vendorId,$item_qty);
         return response()->json(['data' => ['cost' => $a], 'message' => 'get item cost', 'status' => 200]);
     }
 }

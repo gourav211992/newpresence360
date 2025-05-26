@@ -224,23 +224,7 @@
                                                     </div>
                                                 </div>
 
-                                                <!-- Location -->
-                                                <div class="row align-items-center mb-1">
-                                                    <div class="col-md-3">
-                                                        <label for="location" class="form-label">Location <span
-                                                                class="text-danger">*</span></label>
-                                                    </div>
-                                                    <div class="col-md-5">
-                                                        <select name="location" id="location" required class="form-select">
-                                                            <option value=""
-                                                                {{ old('location') == '' ? 'selected' : '' }}>Select
-                                                            </option>
-                                                            <option value="2100"
-                                                                {{ old('location') == '2100' ? 'selected' : '' }}>2100,
-                                                                Noida</option>
-                                                        </select>
-                                                    </div>
-                                                </div>
+                                              
                                                 <div id="transferLocation">
                                                     <!-- Transfer Location -->
                                                     <div class="row align-items-center mb-1">
@@ -620,7 +604,9 @@
                 data: {
                     q: '', // optional, if your API needs a search term
                     ids: getAllAssetIds(), // your existing helper
-                    category: category
+                    category: category,
+                    location: $('#location').val(),
+                    cost_center: $('#cost_center').val()
                 },
                 success: function (data) {
                     const $assetSelect = $('#asset_id');

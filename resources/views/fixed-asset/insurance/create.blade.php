@@ -509,7 +509,9 @@
                 data: {
                     q: '', // optional, if your API needs a search term
                     ids: getAllAssetIds(), // your existing helper
-                    category: category
+                    category: category,
+                    location: $('#location').val(),
+                    cost_center: $('#cost_center').val()
                 },
                 success: function (data) {
                     const $assetSelect = $('#asset_id');

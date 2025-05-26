@@ -5343,7 +5343,7 @@
                                                                                         ${subStoresHTML}       
                                         </select>
                                         </td>
-                                        <input type = "hidden" value = "${item.store_id}" name = "item_store[${currentOrderIndexVal}]" />
+                                        <input type = "hidden" value = "${$("#store_id_input").val()}" name = "item_store[${currentOrderIndexVal}]" />
                                         <td><input ${disableQty} type="text" id = "item_qty_${currentOrderIndexVal}" name = "item_qty[${currentOrderIndexVal}]" oninput = "changeItemQty(this, '${currentOrderIndexVal}');" value = "${item?.balance_qty}" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" max = "${item?.balance_qty}"/></td>
                                         <td><input ${disableQty} type="text" id = "item_rate_${currentOrderIndexVal}" name = "item_rate[]" oninput = "changeItemRate(this, '${currentOrderIndexVal}');" ${amountMax} value = "${item?.rate}" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" ${invoiceToFollowParam ? 'readonly' : ''} /></td> 
                                         <td><input type="text" id = "item_value_${currentOrderIndexVal}" disabled class="form-control mw-100 text-end item_values_input" value = "${(item?.balance_qty ? item?.balance_qty : 0) * (item?.rate ? item?.rate : 0)}" /></td>

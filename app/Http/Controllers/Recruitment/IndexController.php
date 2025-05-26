@@ -360,6 +360,35 @@ class IndexController extends Controller
         ]);
     }
 
+    public function fetchCandidates(Request $request)
+    {
+        $user = Helper::getAuthenticatedUser();
+        $search = $request->get('search'); // The search term from the select2
+        $page = $request->get('page', 1);  // The current page from select2
+
+        if ($request->has('id')) {
+            $employee = ErpRecruitmentJobCandidate::select('id','name','email','mobile_no')->find($request->id);
+            return response()->json([
+                'success' => true,
+                'data' => $employee ? [ $employee ] : [],
+            ]);
+        }
+
+        $employees = ErpRecruitmentJobCandidate::select('id','name','email','mobile_no')
+                        ->where('name', 'like', '%' . $search . '%')
+                        ->where('organization_id',$user->organization_id)
+                        ->paginate(10);
+                        // dd($employees,$user->organization_id);
+
+        return response()->json([
+            'success' => true,
+            'data' => $employees->items(),
+            'pagination' => [
+                'more' => $employees->hasMorePages() // Indicate if there are more pages
+            ]
+        ]);
+    }
+
     public function fetchEmails(Request $request)
     {
         $search = $request->get('search'); // The search term from the select2

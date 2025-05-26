@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\FixedAsset;
+
 use Exception;
 
 use App\Http\Controllers\Controller;
@@ -19,6 +20,7 @@ use App\Models\FixedAssetSub;
 use App\Models\ErpStore;
 use App\Models\Group;
 use App\Models\Ledger;
+
 class SplitController extends Controller
 {
     /**
@@ -33,43 +35,40 @@ class SplitController extends Controller
             return redirect()->route('/');
         }
 
-        $data=FixedAssetSplit::withDefaultGroupCompanyOrg()->orderBy('id','desc');
-        if($request->filter_asset)
-        $data=$data->where('asset_id',$request->filter_asset);
-        if($request->filter_ledger)
-        $data=$data->where('ledger_id',$request->filter_ledger);
-        if($request->filter_status)
-        $data=$data->where('document_status',$request->filter_status);
+        $data = FixedAssetSplit::withDefaultGroupCompanyOrg()->orderBy('id', 'desc');
+        if ($request->filter_asset)
+            $data = $data->where('asset_id', $request->filter_asset);
+        if ($request->filter_ledger)
+            $data = $data->where('ledger_id', $request->filter_ledger);
+        if ($request->filter_status)
+            $data = $data->where('document_status', $request->filter_status);
         if ($request->date) {
             $dates = explode(' to ', $request->date);
             $start = date('Y-m-d', strtotime($dates[0]));
             $end = date('Y-m-d', strtotime($dates[1]));
             $data = $data->whereDate('document_date', '>=', $start)
                 ->whereDate('document_date', '<=', $end);
-        }
-        else{
-           $fyear = Helper::getFinancialYear(date('Y-m-d'));
+        } else {
+            $fyear = Helper::getFinancialYear(date('Y-m-d'));
 
-            $data = $data->whereDate('document_date', '>=',$fyear['start_date'])
-                ->whereDate('document_date', '<=',$fyear['end_date']);
-                $start = $fyear['start_date'];
-                $end = $fyear['end_date'];
-            
-        
+            $data = $data->whereDate('document_date', '>=', $fyear['start_date'])
+                ->whereDate('document_date', '<=', $fyear['end_date']);
+            $start = $fyear['start_date'];
+            $end = $fyear['end_date'];
         }
 
-        
-        
-        
-        
-        
-        $data=$data->get();
+
+
+
+
+
+        $data = $data->get();
         $assetCodes = FixedAssetSplit::withDefaultGroupCompanyOrg()->pluck('asset_id')->unique();
         $assetCodes = FixedAssetRegistration::withDefaultGroupCompanyOrg()->whereIn('id', $assetCodes)->get();
         $ledgers = FixedAssetSplit::withDefaultGroupCompanyOrg()->pluck('ledger_id')->unique();
         $ledgers = Ledger::withDefaultGroupCompanyOrg()->whereIn('id', $ledgers)->get();
-        
-        return view('fixed-asset.split.index',compact('data','assetCodes','ledgers',));
+
+        return view('fixed-asset.split.index', compact('data', 'assetCodes', 'ledgers',));
     }
 
     /**
@@ -96,21 +95,19 @@ class SplitController extends Controller
             $query->whereIn('ledger_group_id', $allChildIds)
                 ->orWhere(function ($subQuery) use ($allChildIds) {
                     foreach ($allChildIds as $child) {
-                        $subQuery->orWhereJsonContains('ledger_group_id',(string)$child);
+                        $subQuery->orWhereJsonContains('ledger_group_id', (string)$child);
                     }
                 });
-                })->get(); 
-                $financialEndDate = Helper::getFinancialYear(date('Y-m-d'))['end_date'];
-                $financialStartDate = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
-                $organization = Helper::getAuthenticatedUser()->organization;
-                $dep_percentage = $organization->dep_percentage;
-                $dep_type = $organization->dep_type;
-                $dep_method = $organization->dep_method;
-                $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
-       
-                return view('fixed-asset.split.create', compact('locations','series','assets', 'categories','ledgers','financialEndDate','financialStartDate','dep_percentage','dep_type','dep_method'));
-       
-        
+        })->get();
+        $financialEndDate = Helper::getFinancialYear(date('Y-m-d'))['end_date'];
+        $financialStartDate = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
+        $organization = Helper::getAuthenticatedUser()->organization;
+        $dep_percentage = $organization->dep_percentage;
+        $dep_type = $organization->dep_type;
+        $dep_method = $organization->dep_method;
+        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+
+        return view('fixed-asset.split.create', compact('locations', 'series', 'assets', 'categories', 'ledgers', 'financialEndDate', 'financialStartDate', 'dep_percentage', 'dep_type', 'dep_method'));
     }
 
     /**
@@ -119,15 +116,24 @@ class SplitController extends Controller
     public function store(Request $request)
     {
         $user = Helper::getAuthenticatedUser();
-        $status = ($request->document_status === ConstantHelper::SUBMITTED)
-            ? Helper::checkApprovalRequired($request->book_id)
-            : $request->document_status;
+        $grouped = collect(json_decode($request->sub_assets))->groupBy('asset_code');
+       foreach ($grouped as $assetCode => $items) {
+            $existingAsset = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('asset_code', $assetCode)->first();
+
+            if ($existingAsset) {
+               return redirect()
+                ->route('finance.fixed-asset.split.create')
+                ->withInput()
+                ->withErrors('Asset Code# ' . $existingAsset->asset_code . ' already exists.');
+            }
+        }
+        $status = $request->document_status;
 
         $additionalData = [
             'created_by' => $user->auth_user_id,
             'type' => get_class($user),
             'organization_id' => $user->organization->id,
-            'currency_id'=>$user->organization->currency_id,
+            'currency_id' => $user->organization->currency_id,
             'group_id' => $user->organization->group_id,
             'company_id' => $user->organization->company_id,
             'document_status' => $status,
@@ -136,22 +142,21 @@ class SplitController extends Controller
         ];
 
         $data = array_merge($request->all(), $additionalData);
-        
 
-        
+
+
+
         DB::beginTransaction();
 
         try {
             $asset = FixedAssetSplit::create($data);
 
-            if ($status == ConstantHelper::SUBMITTED) {
-                Helper::approveDocument($request->book_id, $asset->id, $asset->revision_number, "", null, 1, 'submit', 0, get_class($asset));
+            if ($asset->document_status == ConstantHelper::SUBMITTED) {
+                $doc = Helper::approveDocument($asset->book_id, $asset->id, $asset->revision_number, "", null, 1, 'submit', 0, get_class($asset));
+                $asset->document_status = $doc['approvalStatus'] ?? $asset->document_status;
+                $asset->save();
             }
 
-            if ($status == ConstantHelper::APPROVAL_NOT_REQUIRED || $status == ConstantHelper::APPROVED) {
-                Helper::approveDocument($request->book_id, $asset->id, $asset->revision_number, "", null, 1, 'approve', 0, get_class($asset));
-            }
-        
             DB::commit();
             return redirect()->route("finance.fixed-asset.split.index")->with('success', 'Asset Split successfully!');
         } catch (\Exception $e) {
@@ -163,9 +168,9 @@ class SplitController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Request $r,string $id)
+    public function show(Request $r, string $id)
     {
-        
+
         $parentURL = "fixed-asset_split";
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
         if (count($servicesBooks['services']) == 0) {
@@ -173,27 +178,34 @@ class SplitController extends Controller
         }
         $currNumber = $r->revisionNumber;
         if ($currNumber) {
-            $data= FixedAssetSplitHistory::withDefaultGroupCompanyOrg()->findorFail($id);
+            $data = FixedAssetSplitHistory::withDefaultGroupCompanyOrg()->findorFail($id);
         } else {
-            $data= FixedAssetSplit::withDefaultGroupCompanyOrg()->with(['subAsset' => function ($query) {
+            $data = FixedAssetSplit::withDefaultGroupCompanyOrg()->with(['subAsset' => function ($query) {
                 $query->withTrashed();
             }])->findorFail($id);
         }
         $revision_number = $data->revision_number;
         $userType = Helper::userCheck();
-        
-        $buttons = Helper::actionButtonDisplay($data->book_id,$data->document_status , $data->id, $data->current_value, 
-        $data->approval_level, $data -> created_by ?? 0, $userType['type'], $revision_number);
-        
+
+        $buttons = Helper::actionButtonDisplay(
+            $data->book_id,
+            $data->document_status,
+            $data->id,
+            $data->current_value,
+            $data->approval_level,
+            $data->created_by ?? 0,
+            $userType['type'],
+            $revision_number
+        );
+
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$data->document_status] ?? '';
         $revNo = $data->revision_number;
-        $approvalHistory = Helper::getApprovalHistory($data->book_id, $data->id, $revNo,$data->current_value,$data->created_by);
-        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
-        
+        $approvalHistory = Helper::getApprovalHistory($data->book_id, $data->id, $revNo, $data->current_value, $data->created_by);
+        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
 
-        
-        return view('fixed-asset.split.show', compact('locations','data', 'buttons', 'docStatusClass', 'approvalHistory','revision_number'));
-        
+
+
+        return view('fixed-asset.split.show', compact('locations', 'data', 'buttons', 'docStatusClass', 'approvalHistory', 'revision_number'));
     }
 
     /**
@@ -221,60 +233,66 @@ class SplitController extends Controller
             $query->whereIn('ledger_group_id', $allChildIds)
                 ->orWhere(function ($subQuery) use ($allChildIds) {
                     foreach ($allChildIds as $child) {
-                        $subQuery->orWhereJsonContains('ledger_group_id',(string)$child);
+                        $subQuery->orWhereJsonContains('ledger_group_id', (string)$child);
                     }
                 });
-                })->get(); 
-                $financialEndDate = Helper::getFinancialYear(date('Y-m-d'))['end_date'];
-                $financialStartDate = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
-                $organization = Helper::getAuthenticatedUser()->organization;
-                $dep_percentage = $organization->dep_percentage;
-                $dep_type = $organization->dep_type;
-                $dep_method = $organization->dep_method;
-                $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
-       
-                return view('fixed-asset.split.edit', compact('locations','data','series','assets', 'categories','ledgers','financialEndDate','financialStartDate','dep_percentage','dep_type','dep_method'));
-       
+        })->get();
+        $financialEndDate = Helper::getFinancialYear(date('Y-m-d'))['end_date'];
+        $financialStartDate = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
+        $organization = Helper::getAuthenticatedUser()->organization;
+        $dep_percentage = $organization->dep_percentage;
+        $dep_type = $organization->dep_type;
+        $dep_method = $organization->dep_method;
+        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+
+        return view('fixed-asset.split.edit', compact('locations', 'data', 'series', 'assets', 'categories', 'ledgers', 'financialEndDate', 'financialStartDate', 'dep_percentage', 'dep_type', 'dep_method'));
     }
 
     /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, $id)
-{
-    $asset = FixedAssetSplit::findOrFail($id);
-    $user = Helper::getAuthenticatedUser();
-    $status = ($request->document_status === ConstantHelper::SUBMITTED)
-        ? Helper::checkApprovalRequired($asset->book_id)
-        : $request->document_status;
+    {
+        $asset = FixedAssetSplit::findOrFail($id);
+        $user = Helper::getAuthenticatedUser();
+        $status = $request->document_status;
 
-    $additionalData = [
-        'document_status' => $status,
-    ];
+        $additionalData = [
+            'document_status' => $status,
+        ];
 
-    $data = array_merge($request->all(), $additionalData);
+        $data = array_merge($request->all(), $additionalData);
+        $grouped = collect(json_decode($request->sub_assets))->groupBy('asset_code');
+        foreach ($grouped as $assetCode => $items) {
+            $existingAsset = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('asset_code', $assetCode)->first();
 
-    DB::beginTransaction();
-
-    try {
-      
-        $asset->update($data);
-
-        if ($status == ConstantHelper::SUBMITTED) {
-            Helper::approveDocument($asset->book_id, $asset->id, $asset->revision_number, "", null, 1, 'submit', 0, get_class($asset));
+            if ($existingAsset) {
+               return redirect()
+                ->route('finance.fixed-asset.split.edit',$id)
+                ->withInput()
+                ->withErrors('Asset Code# ' . $existingAsset->asset_code . ' already exists.');
+            }
         }
 
-        if ($status == ConstantHelper::APPROVAL_NOT_REQUIRED || $status == ConstantHelper::APPROVED) {
-            Helper::approveDocument($asset->book_id, $asset->id, $asset->revision_number, "", null, 1, 'approve', 0, get_class($asset));
-        }
+        DB::beginTransaction();
 
-        DB::commit();
-        return redirect()->route("finance.fixed-asset.split.index")->with('success', 'Asset Split updated successfully!');
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return redirect()->route("finance.fixed-asset.split.edit", $id)->with('error', $e->getMessage());
+        try {
+
+            $asset->update($data);
+
+            if ($asset->document_status == ConstantHelper::SUBMITTED) {
+                $doc = Helper::approveDocument($asset->book_id, $asset->id, $asset->revision_number, "", null, 1, 'submit', 0, get_class($asset));
+                $asset->document_status = $doc['approvalStatus'] ?? $asset->document_status;
+                $asset->save();
+            }
+
+            DB::commit();
+            return redirect()->route("finance.fixed-asset.split.index")->with('success', 'Asset Split updated successfully!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->route("finance.fixed-asset.split.edit", $id)->with('error', $e->getMessage());
+        }
     }
-}
 
 
     /**
@@ -293,7 +311,7 @@ class SplitController extends Controller
         DB::beginTransaction();
         try {
             $doc = FixedAssetSplit::find($request->id);
-            $bookId = $doc->book_id; 
+            $bookId = $doc->book_id;
             $docId = $doc->id;
             $docValue = $doc->current_value;
             $remarks = $request->remarks;
@@ -302,7 +320,7 @@ class SplitController extends Controller
             $revisionNumber = $doc->revision_number ?? 0;
             $actionType = $request->action_type; // Approve or reject
             $modelName = get_class($doc);
-            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
+            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
             $doc->approval_level = $approveDocument['nextLevel'];
             $doc->document_status = $approveDocument['approvalStatus'];
             $doc->save();
@@ -323,16 +341,16 @@ class SplitController extends Controller
     public function getPostingDetails(Request $request)
     {
         try {
-        $data = FinancialPostingHelper::financeVoucherPosting((int)$request -> book_id ?? 0, $request -> document_id ?? 0, $request -> type ?? 'get');
-            return response() -> json([
+            $data = FinancialPostingHelper::financeVoucherPosting((int)$request->book_id ?? 0, $request->document_id ?? 0, $request->type ?? 'get');
+            return response()->json([
                 'status' => 'success',
                 'data' => $data
             ]);
-        } catch(Exception $ex) {
-            return response() -> json([
+        } catch (Exception $ex) {
+            return response()->json([
                 'status' => 'exception',
                 'message' => 'Some internal error occured',
-                'error' => $ex -> getMessage() . $ex -> getFile() . $ex -> getLine()
+                'error' => $ex->getMessage() . $ex->getFile() . $ex->getLine()
             ]);
         }
     }
@@ -340,39 +358,27 @@ class SplitController extends Controller
     public function postInvoice(Request $request)
     {
         DB::beginTransaction();
-        $register = FixedAssetSplit::makeRegistration((int)$request -> document_id);
-        if($register['status']){
         try {
 
-            $data = FinancialPostingHelper::financeVoucherPosting($request -> book_id ?? 0, $request -> document_id ?? 0, "post");
+            $data = FinancialPostingHelper::financeVoucherPosting($request->book_id ?? 0, $request->document_id ?? 0, "post");
             if ($data['status']) {
-               
+
                 DB::commit();
             } else {
                 DB::rollBack();
             }
-            return response() -> json([
+            return response()->json([
                 'status' => 'success',
                 'data' => $data
             ]);
-        } catch(Exception $ex) {
+        } catch (Exception $ex) {
             DB::rollBack();
-            return response() -> json([
+            return response()->json([
                 'status' => 'exception',
                 'message' => 'Some internal error occured',
-                'error' => $ex -> getMessage()
+                'error' => $ex->getMessage()
             ]);
         }
-    }
-    else{
-        DB::rollBack();
-        return response() -> json([
-            'status' => false,
-            'message' => $register['message'],
-            'error' =>  $register['message']
-        ]);
-
-    }
     }
     public function amendment(Request $request, $id)
     {

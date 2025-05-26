@@ -228,17 +228,7 @@
                                         </div>
 
                                         <!-- Location -->
-                                        <div class="row align-items-center mb-1">
-                                            <div class="col-md-3">
-                                                <label for="location" class="form-label">Location <span class="text-danger">*</span></label>
-                                            </div>
-                                            <div class="col-md-5">
-                                                <select name="location" id="location" required class="form-select">
-                                                    <option value="" {{ $data->location == '' ? 'selected' : '' }}>Select</option>
-                                                    <option value="2100" {{ $data->location == '2100' ? 'selected' : '' }}>2100, Noida</option>
-                                                </select>
-                                            </div>
-                                        </div>
+                                       
                                         <div id="transferLocation">
                                         <!-- Transfer Location -->
                                         <div class="row align-items-center mb-1">

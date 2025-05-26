@@ -1,4 +1,4 @@
-@extends('recruitment.layouts.app')
+@extends('layouts.app')
 
 @section('content')
     <!-- BEGIN: Content-->
@@ -569,6 +569,7 @@
 @endsection
 
 @section('scripts')
+    <script src="{{ asset('app-assets/js/common-script-v2.js') }}"></script>
     <script src="{{ asset('app-assets/vendors/js/charts/apexcharts.min.js') }}"></script>
     <script src="{{ asset('app-assets/vendors/js/calendar/fullcalendar.min.js') }}"></script>
 

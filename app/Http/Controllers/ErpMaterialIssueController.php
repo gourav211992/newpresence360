@@ -1403,8 +1403,7 @@ class ErpMaterialIssueController extends Controller
     {
         $pathUrl = route('material.issue.index');
         $orderType = [ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME];
-        $materialIssue = ErpMaterialIssueHeader::with('items') -> bookViewAccess($pathUrl)
-        -> withDefaultGroupCompanyOrg() -> withDraftListingLogic() -> orderByDesc('id');
+        $materialIssue = ErpMaterialIssueHeader::with('items')-> withDefaultGroupCompanyOrg() -> withDraftListingLogic() -> orderByDesc('id');
         //Customer Filter
         $materialIssue = $materialIssue -> when($request -> vendor_id, function ($custQuery) use($request) {
             $custQuery -> where('vendor_id', $request -> vendor_id);
@@ -1442,7 +1441,7 @@ class ErpMaterialIssueController extends Controller
             $searchDocStatus = [];
             if ($request -> doc_status === ConstantHelper::DRAFT) {
                 $searchDocStatus = [ConstantHelper::DRAFT];
-            } else if ($searchDocStatus === ConstantHelper::SUBMITTED) {
+            } else if ($request -> doc_status === ConstantHelper::SUBMITTED) {
                 $searchDocStatus = [ConstantHelper::SUBMITTED, ConstantHelper::PARTIALLY_APPROVED];
             } else {
                 $searchDocStatus = [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED];
@@ -1458,6 +1457,10 @@ class ErpMaterialIssueController extends Controller
                 $toDate = Carbon::parse(trim($dateRanges[1])) -> format('Y-m-d');
                 $dateRangeQuery -> whereDate('document_date', ">=" , $fromDate) -> where('document_date', '<=', $toDate);
            }
+           else{
+                $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
+                $dateRangeQuery -> whereDate('document_date', $fromDate);
+            }
         });
         //Item Id Filter
         $materialIssue = $materialIssue -> when($request -> item_id, function ($itemQuery) use($request) {

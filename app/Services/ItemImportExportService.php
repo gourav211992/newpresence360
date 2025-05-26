@@ -26,6 +26,8 @@ use App\Models\PaymentTerm;
 use App\Models\SubType;
 use App\Models\UploadItemMaster;
 use App\Models\OrganizationType;
+use App\Helpers\EInvoiceHelper;
+use App\Helpers\GstnHelper;
 use Illuminate\Support\Facades\Log;
 use Exception;
 
@@ -278,7 +280,7 @@ class ItemImportExportService
             foreach ($attributes as $attribute) {
                 if (empty($attribute['value'])) {
                     continue;
-                }
+                }  
                 $attributeGroup = $this->getAttributeGroupByName($attribute['name'], $errors); 
                 if ($attributeGroup) {
                     $attributeValues = explode(',', $attribute['value']);
@@ -319,7 +321,7 @@ class ItemImportExportService
     {
         if ($alternateUoms) {
             foreach ($alternateUoms as $uomData) {
-                $uom = $this->getUomId($uomData['uom'], $errors);
+                $uom = $this->getUomId($uomData['uom']);
                 if (!$uom) {
                     $errors[] = "UOM not found for {$uomData['uom']}";
                 }
@@ -375,6 +377,7 @@ class ItemImportExportService
     
     public function getAttributeGroupByName($attributeName, &$errors)
     {
+        
         try {
             $attributeGroup = AttributeGroup::withDefaultGroupCompanyOrg()
             ->where('name', $attributeName)
@@ -572,5 +575,96 @@ class ItemImportExportService
             'city_id' => $cityId
         ];
     }
+
+    public function validateGstAndAddresses($data)
+    {
+        $errors = [];
+        $addresses = $data['addresses'] ?? [];
+        $billingCount = 0;
+        $shippingCount = 0;
+        if (empty($addresses)) {
+            $errors['addresses'] = 'At least one address is required.';
+            return $errors; 
+        }
+    
+        foreach ($addresses as $index => $address) {
+            if (empty($address['address'])) {
+                $errors["addresses.{$index}.address"] = 'Address is required.';
+            }
+            if (empty($address['city_id'])) {
+                $errors["addresses.{$index}.city_id"] = 'City is required.';
+            }
+            if (empty($address['state_id'])) {
+                $errors["addresses.{$index}.state_id"] = 'State is required.';
+            }
+            if (empty($address['country_id'])) {
+                $errors["addresses.{$index}.country_id"] = 'Country is required.';
+            }
+            if (empty($address['pincode'])) {
+                $errors["addresses.{$index}.pincode"] = 'Pincode is required.';
+            }
+            if (!empty($address['is_billing'])) {
+                $billingCount++;
+            }
+            if (!empty($address['is_shipping'])) {
+                $shippingCount++;
+            }
+        }
+    
+        if ($billingCount === 0) {
+            $errors['addresses'] = 'At least one billing address is required.';
+        }
+        if ($shippingCount === 0) {
+            $errors['addresses'] = 'At least one shipping address is required.';
+        }
+    
+        // GST Validation
+        $gstinNo = $data['compliance']['gstin_no'] ?? null;
+        $companyName = $data['company_name'] ?? null;
+        $gstinRegistrationDate = $data['compliance']['gstin_registration_date'] ?? null;
+        $gstinLegalName = $data['compliance']['gst_registered_name'] ?? null;
+    
+        if ($gstinNo) {
+            $gstValidation = EInvoiceHelper::validateGstNumber($gstinNo);
+            if ($gstValidation['Status'] == 1) {
+                $gstData = json_decode($gstValidation['checkGstIn'], true);
+    
+                if ($companyName && $companyName !== ($gstData['TradeName'] ?? '')) {
+                    $errors['company_name'] = 'Company name does not match GSTIN record.';
+                }
+    
+                if ($gstinLegalName && $gstinLegalName !== ($gstData['LegalName'] ?? '')) {
+                    $errors['compliance.gst_registered_name'] = 'Legal name does not match GSTIN record.';
+                }
+    
+                if (($gstData['DtReg'] ?? null) && $gstinRegistrationDate !== $gstData['DtReg']) {
+                    $errors['compliance.gstin_registration_date'] = 'GSTIN registration date does not match GSTIN records.';
+                }
+    
+                $this->addAddressValidationErrors($addresses, $gstData, $errors);
+            } else {
+                $errors['compliance.gstin_no'] = 'The provided GSTIN number is invalid. Please verify and try again.';
+            }
+        }
+    
+        return $errors;
+    }
+
+    private function addAddressValidationErrors($addresses, $gstData, &$errors)
+    {
+        $gstnHelper = new GstnHelper();
+        foreach ($addresses as $index => $address) {
+            if (!empty($address['state_id'])) {
+                $stateValidation = $gstnHelper->validateStateCode(
+                    $address['state_id'],
+                    $gstData['StateCode'] ?? null
+                );
+                if (!$stateValidation['valid']) {
+                    $errors["addresses.{$index}.state_id"] = $stateValidation['message'] ?? 'State does not match GSTIN records';
+                }
+            }
+        }
+    }
+    
 
 }

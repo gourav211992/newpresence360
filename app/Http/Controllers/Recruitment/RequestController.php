@@ -326,8 +326,12 @@ class RequestController extends Controller
         $rejectedRequestCount = ErpRecruitmentJobRequests::where(function($query) use($request){
                 self::filter($request, $query);
             })
-            ->where('created_by',$user->id)
-            ->where('created_by_type',$user->authenticable_type)
+            ->when(\Request::route()->getName() === "recruitment.requests.for-approval", function($q) use ($user) {
+                $q->where('approval_authority', $user->id);
+            }, function($q) use ($user) {
+                $q->where('created_by', $user->id)
+                ->where('created_by_type', $user->authenticable_type);
+            })
             ->where('status',CommonHelper::REJECTED)
             ->count();
         

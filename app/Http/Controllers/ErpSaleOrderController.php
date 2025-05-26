@@ -1844,8 +1844,7 @@ class ErpSaleOrderController extends Controller
         $pathUrl = route('sale.order.index');
         $orderType = ConstantHelper::SO_SERVICE_ALIAS;
         $soItems = ErpSoItem::whereHas('header', function ($headerQuery) use($orderType, $pathUrl, $request) {
-            $headerQuery -> where('document_type', $orderType) -> bookViewAccess($pathUrl) 
-            -> withDefaultGroupCompanyOrg() -> withDraftListingLogic();
+            $headerQuery -> where('document_type', $orderType)-> withDefaultGroupCompanyOrg() -> withDraftListingLogic();
             //Customer Filter
             $headerQuery = $headerQuery -> when($request -> customer_id, function ($custQuery) use($request) {
                 $custQuery -> where('customer_id', $request -> customer_id);
@@ -1890,6 +1889,10 @@ class ErpSaleOrderController extends Controller
                     $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
                     $toDate = Carbon::parse(trim($dateRanges[1])) -> format('Y-m-d');
                     $dateRangeQuery -> whereDate('document_date', ">=" , $fromDate) -> where('document_date', '<=', $toDate);
+            }
+            else{
+                $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
+                $dateRangeQuery -> whereDate('document_date', $fromDate);
             }
             });
             //Item Id Filter
