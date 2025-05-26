@@ -22,7 +22,8 @@ class BookController extends Controller
             if($validator->fails()){
                 throw new ApiGenericException($validator->errors()->first());
             }
-            $documentNoDetails = Helper::generateDocumentNumberNew($request -> book_id, $request -> document_date);
+            $authUser = $request -> user();
+            $documentNoDetails = Helper::generateDocumentNumberNew($request -> book_id, $request -> document_date, null, $authUser);
             return array(
                 'message' => 'Document Number generated',
                 'data' => array(
