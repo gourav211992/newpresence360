@@ -54,6 +54,7 @@ class Kernel extends HttpKernel
      * @var array<string, class-string|string>
      */
     protected $middlewareAliases = [
+        'sso-api' => \App\Http\Middleware\SsoAuthApi::class,
         'auth' => \App\Http\Middleware\Authenticate::class,
         'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
         'auth.session' => \Illuminate\Session\Middleware\AuthenticateSession::class,
@@ -67,7 +68,6 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'user.auth' => UserAuthenticate::class,
         'SwitchDatabaseConnection' => \App\Http\Middleware\SwitchDatabaseConnection::class,
-        'apiresponse' => \App\Http\Middleware\ApiResponseMiddleware::class,
-        'role' => \App\Http\Middleware\RoleMiddleware::class,
+        'apiresponse' => \App\Http\Middleware\ApiResponseMiddleware::class
     ];
 }

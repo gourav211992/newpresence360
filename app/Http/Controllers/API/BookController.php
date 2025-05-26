@@ -14,6 +14,7 @@ class BookController extends Controller
     public function generateDocumentNumber(Request $request)
     {
         try {
+
             $validator = Validator::make($request->all(),[
                 'book_id' => 'required|numeric|string',
                 'document_date' => 'required|date',

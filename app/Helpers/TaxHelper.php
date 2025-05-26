@@ -56,12 +56,12 @@ class TaxHelper
                                 if ($matches) {
                                     $taxDetails[] = [
                                         'id' => $taxDetail->id,
-                                        'applicability_type' => $taxGroup->applicability_type,
+                                        'applicability_type' => $taxDetail->applicability_type,
                                         'tax_group' => $taxGroup->tax_group,
                                         'tax_percentage' => $taxDetail->tax_percentage,
                                         'tax_type' => $taxDetail->tax_type,
                                         'tax_id' => $taxDetail->tax_id,
-                                        'tax_code' => $taxDetail->tax_code,
+                                        'tax_code' =>$taxDetail->tax_type,
                                     ];
                                 }
                             }
@@ -73,12 +73,12 @@ class TaxHelper
                             if ($matches) {
                                 $taxDetails[] = [
                                     'id' => $taxDetail->id,
-                                    'applicability_type' => $taxGroup->applicability_type,
+                                    'applicability_type' => $taxDetail->applicability_type,
                                     'tax_group' => $taxGroup->tax_group,
                                     'tax_percentage' => $taxDetail->tax_percentage,
                                     'tax_type' => $taxDetail->tax_type,
                                     'tax_id' => $taxDetail->tax_id,
-                                    'tax_code' => $taxDetail->tax_code,
+                                    'tax_code' =>$taxDetail->tax_type,
                                 ];
                             }
                         }

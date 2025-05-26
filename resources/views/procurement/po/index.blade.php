@@ -45,7 +45,7 @@
                             <a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{ url(request()->type) }}/create"><i data-feather="plus-circle"></i> Create PO</a>
                             @endif
                         @endif
-                        <a class="btn btn-dark btn-sm mb-50 mb-sm-0" href="{{ route('po.report') }}"><i data-feather="bar-chart-2"></i>Report</a>
+                        <a class="btn btn-dark btn-sm mb-50 mb-sm-0" href="{{ route('transactions.report', ['serviceAlias' => request() -> type]) }}"><i data-feather="bar-chart-2"></i>Report</a>
                     </div>
                 </div>
             </div>

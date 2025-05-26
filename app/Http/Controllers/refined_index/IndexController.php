@@ -40,6 +40,7 @@ class IndexController extends Controller
                         ->whereColumn('user_id', 'erp_approval_workflows.user_id');
                 });
         })
+        ->whereNot('created_by',$user->auth_user_id)
         ->orderBy('created_at', 'desc')
         ->get();
         // Handle Ajax request for DataTables
@@ -85,7 +86,6 @@ class IndexController extends Controller
                 ->addColumn('document_type', fn($row) => ConstantHelper::SERVICE_LABEL[$row->document_type] ?? 'Unknown')
                 ->addColumn('book_name', fn($row) => $row->book_code ?? 'N/A')
                 ->addColumn('document_number', fn($row) => $row->document_number ?: 'N/A')
-                ->addColumn('document_type', fn($row) => strtoupper($row->document_type) ?: 'N/A')
                 ->editColumn('document_date', fn($row) => $row->document_date ? date('Y-m-d', strtotime($row->document_date)) : 'N/A')
                 ->editColumn('revision_number', fn($row) => strval($row->revision_number ?? '0'))
                 ->addColumn('party_name', fn($row) => $row->party_code ?? 'NA')
@@ -152,7 +152,6 @@ class IndexController extends Controller
                 })
                 ->addColumn('document_type', fn($row) => ConstantHelper::SERVICE_LABEL[$row->document_type] ?? 'Unknown')
                 ->addColumn('book_name', fn($row) => $row->book_code ?? 'N/A')
-                ->addColumn('document_type', fn($row) => strtoupper($row->document_type) ?: 'N/A')
                 ->addColumn('document_number', fn($row) => $row->document_number ?: 'N/A')
                 ->editColumn('document_date', fn($row) => $row->document_date ? date('Y-m-d', strtotime($row->document_date)) : 'N/A')
                 ->editColumn('revision_number', fn($row) => strval($row->revision_number ?? '0'))

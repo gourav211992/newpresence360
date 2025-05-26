@@ -1327,6 +1327,10 @@ class ErpMaterialReturnController extends Controller
                 $toDate = Carbon::parse(trim($dateRanges[1])) -> format('Y-m-d');
                 $dateRangeQuery -> whereDate('document_date', ">=" , $fromDate) -> where('document_date', '<=', $toDate);
            }
+           else{
+                $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
+                $dateRangeQuery -> whereDate('document_date', $fromDate);
+            }
         });
         //Item Id Filter
         $materialReturn = $materialReturn -> when($request -> item_id, function ($itemQuery) use($request) {
@@ -1361,8 +1365,15 @@ class ErpMaterialReturnController extends Controller
             $issueDtQuery -> whereHas('items', function ($mrItemQuery) use($request) {
                 $mrItemQuery -> whereHas('issue_item', function ($issueQuery) use($request) {
                     $issueQuery -> whereHas('header', function ($headerQuery) use($request) {
-                        $headerQuery -> whereDate('document_date', '>=', $request -> mi_dt[0])
-                        -> whereDate('document_date', '<=', $request -> mi_dt[1]);
+                    if (count($request -> mi_dt) == 2) {
+                            $fromDate = Carbon::parse(trim($request -> mi_dt[0])) -> format('Y-m-d');
+                            $toDate = Carbon::parse(trim($request -> mi_dt[1])) -> format('Y-m-d');
+                            $headerQuery -> whereDate('document_date', ">=" , $fromDate) -> where('document_date', '<=', $toDate);
+                    }
+                    else{
+                            $fromDate = Carbon::parse(trim($request -> mi_dt[0])) -> format('Y-m-d');
+                            $headerQuery -> whereDate('document_date', $fromDate);
+                        }
                     }); 
                 });
             });

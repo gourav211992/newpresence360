@@ -30,11 +30,11 @@
 				<div class="content-header-right text-md-end col-md-6 mb-50 mb-sm-0">
                     <div class="form-group breadcrumb-right">
                         <button class="btn btn-warning btn-sm mb-50 mb-sm-0" data-bs-target="#filter" data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button>
-                    
+
                         <button type="button" class="btn btn-sm btn-primary dropdown-toggle exportcustomdrop" data-bs-toggle="dropdown">
                             <i data-feather="download-cloud"></i> Export
                         </button>
-                        
+
                         <div class="dropdown-menu dropdown-menu-end">
                             <a class="dropdown-item" href="javascript:;" onclick="exportTrialBalanceReport(1)">
                                 <i data-feather="download" class="me-50"></i>
@@ -130,7 +130,7 @@
                         <input type="text" id="fp-range" class="form-control flatpickr-range bg-white"
                             placeholder="YYYY-MM-DD to YYYY-MM-DD" value="{{$dateRange}}"/>
                     </div>
-                    <div class="mb-1">
+                    {{-- <div class="mb-1">
                         <label class="form-label">Cost Center</label>
                         <select id="cost_center_id" class="form-select select2"
                             name="cost_center_id">
@@ -139,12 +139,11 @@
                             <option value="{{ $value['id'] }}" @if(request('cost_center_id')==$value['id']) selected @endif>{{ $value['name'] }}</option>
                             @endforeach
                         </select>
-                    </div>
-                    
+                    </div> --}}
                     @php
                         $companies = $companies->unique(function ($item) {
-    return $item->organization->id;
-});
+                        return $item->organization->id;
+                        });
                     @endphp
                     <div class="mb-1">
                                     <label class="form-label">Organization</label>
@@ -155,7 +154,18 @@
                                             {{ $organization->organization->id == $organizationId ? 'selected' : '' }}>
                                             {{ $organization->organization->name }}
                                         </option>
-                                    @endforeach 
+                                    @endforeach
+                                    </select>
+                                </div>
+                                <div class="mb-1">
+                                    <label class="form-label">Location</label>
+                                    <select id="location_id" class="form-select select2">
+                                    </select>
+                                </div>
+                                <div class="mb-1">
+                                    <label class="form-label">Cost Center</label>
+                                    <select id="cost_center_id" class="form-select select2"
+                                        name="cost_center_id" required>
                                     </select>
                                 </div>
                                 <div class="mb-1">
@@ -194,12 +204,83 @@
 
 @section('scripts')
 <script>
+    const locations = @json($locations);
+    const costCenters = @json($cost_centers);
+</script>
+<script>
+
     const group_id=@json($id);
     var reservesSurplus='';
 
+    function updateLocationsDropdown(selectedOrgIds) {
+        const filteredLocations = locations.filter(loc =>
+            selectedOrgIds.includes(String(loc.organization_id))
+        );
+
+        const $locationDropdown = $('#location_id');
+        $locationDropdown.empty().append('<option value="">Select</option>');
+
+        filteredLocations.forEach(loc => {
+            $locationDropdown.append(`<option value="${loc.id}">${loc.store_name}</option>`);
+        });
+
+        $locationDropdown.trigger('change');
+    }
+
+    function loadCostCenters(locationId) {
+            if (locationId) {
+               const filteredCenters = costCenters.filter(center => {
+                    if (!center.location) return false;
+
+                    const locationArray = Array.isArray(center.location)
+                        ? center.location.flatMap(loc => loc.split(','))
+                        : [];
+
+                    return locationArray.includes(String(locationId));
+                });
+            // console.log(filteredCenters,costCenters,locationId);
+
+            const $costCenter = $('#cost_center_id');
+            $costCenter.empty();
+
+            if (filteredCenters.length === 0) {
+                $costCenter.prop('required', false);
+                $('.cost_center').hide();
+            } else {
+                $costCenter.prop('required', true).append('<option value="">Select Cost Center</option>');
+                $('.cost_center').show();
+
+                filteredCenters.forEach(center => {
+                    $costCenter.append(`<option value="${center.id}">${center.name}</option>`);
+                });
+            }
+
+            $costCenter.trigger('change');
+        }
+    }
+
     $(document).ready(function () {
-        
-      
+    // On change of organization
+    $('#organization_id').on('change', function () {
+        const selectedOrgIds = $(this).val() || [];
+        updateLocationsDropdown(selectedOrgIds);
+    });
+
+    // On page load, check for preselected orgs
+    const preselectedOrgIds = $('#organization_id').val() || [];
+    if (preselectedOrgIds.length > 0) {
+        updateLocationsDropdown(preselectedOrgIds);
+    }
+    // On location change, load cost centers
+    $('#location_id').on('change', function () {
+            const locationId = $(this).val();
+          if (!locationId) {
+        $('#cost_center_id').empty().append('<option value="">Select Cost Center</option>');
+            // $('.cost_center').hide(); // Optional: hide the section if needed
+            return;
+        }
+        loadCostCenters(locationId);
+    });
     getInitialGroups();
     if($('#organization_id').val()!=""){
         $('#company_name').text(
@@ -211,9 +292,9 @@
                     .join(', ')
             );
 }
-   
-           
-      
+
+
+
 
         // Filter record
 		$(".apply-filter").on("click", function () {
@@ -224,6 +305,7 @@
             let params = new URLSearchParams(window.location.search);
                 params.set('date', $('#fp-range').val());
                 params.set('cost_center_id', $('#cost_center_id').val());
+                params.set('location_id', $('#location_id').val());
 
 
                 let newUrl = window.location.pathname + '?' + params.toString();
@@ -246,9 +328,9 @@
 		})
 
         function getInitialGroups() {
-          
-            
-            var obj={ date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),currency:$('#currency').val(),'_token':'{!!csrf_token()!!}',group_id:group_id};
+
+
+            var obj={ date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),location_id:$('#location_id').val(),currency:$('#currency').val(),'_token':'{!!csrf_token()!!}',group_id:group_id};
             var selectedValues = $('#organization_id').val() || [];
             var filteredValues = selectedValues.filter(function(value) {
                 return value !== null && value.trim() !== '';
@@ -256,7 +338,6 @@
             if (filteredValues.length>0) {
                 obj.organization_id=filteredValues
             }
-
             $.ajax({
 				headers: {'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')},
 				type    :"POST",
@@ -283,12 +364,12 @@
                             var closingText='';
                             var closing= opening +(total_debit-total_credit);
 
-                        
+
 
                             if (closing != 0) {
                                 closingText=closing > 0 ? 'Dr' : 'Cr';
                             }
-                          
+
                             // if (data['data'][i].name=="Liabilities") {
                             //     if (data['profitLoss']['closing_type']==data['data'][i].opening_type) {
                             //         opening_type=data['data'][i].opening_type;
@@ -322,27 +403,27 @@
                             //         closing=closingDiff;
                             //     }
                             // }
-                            
 
-                            
-                            
-                            
+
+
+
+
                             opening_tot+=opening;
                             let close = parseFloat(data['data'][i].open + (data['data'][i].total_debit-data['data'][i].total_credit));
                             let closeType="";
                             if(close<0)
                             closeType = "Cr";
-                            else 
+                            else
                             closeType = "Dr";
 
                                 openingDrTotal+= parseFloat(data['data'][i].open);
-                            
+
                                 closingCrTotal+= parseFloat(closing);
-                            
-                            
+
+
 
                             const groupUrl="{{ route('trial_balance') }}/"+data['data'][i].id;
-                            
+
                             html += `
                                 <tr class="trail-bal-tabl-none" id="${data['data'][i].id}">
                                     <input type="hidden" id="check${data['data'][i].id}">
@@ -426,7 +507,7 @@
             $('.open_amt').each(function () {
                 const raw = $(this).text().trim();
                 const match = raw.match(/^([\d,.\-]+)\s*(Dr|Cr)?$/i);
-                
+
                 if (match) {
                     let amount = removeCommas(match[1]);
                     let type = match[2] ? match[2].toLowerCase() : 'dr'
@@ -459,7 +540,7 @@
                 }
             }
         });
-      
+
 
         // $('#closingAmt').text(Math.abs(closing_total).toLocaleString('en-IN') + ' ' + (closing_total >= 0 ? 'Dr' : 'Cr'));
         $('.urls').each(function () {
@@ -469,17 +550,17 @@
         // Append new query parameters
         let updatedUrl = `${baseUrl}?date=${encodeURIComponent($('#fp-range').val())}&cost_center_id=${encodeURIComponent($('#cost_center_id').val())}`;
         $(this).attr('href', updatedUrl);
-        
+
     });
     let r_date = "{{ request('date')}}";
     if(r_date!=""){
         console.log("date"+r_date);
-    
+
         $("#fp-range").val(r_date);
     }
 
-       
-            
+
+
         }
 
         function removeCommas(str) {
@@ -508,7 +589,7 @@
                 $('#'+id).closest('tr').after(html);
             } else {
                 if ($('#check' + id).val() == "") {
-                    var obj={ id:id,date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),currency:$('#currency').val(),'_token':'{!!csrf_token()!!}'};
+                    var obj={ id:id,date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),location_id:$('#location_id').val(),currency:$('#currency').val(),'_token':'{!!csrf_token()!!}'};
                     var selectedValues = $('#organization_id').val() || [];
                     var filteredValues = selectedValues.filter(function(value) {
                         return value !== null && value.trim() !== '';
@@ -612,10 +693,10 @@
         // Append new query parameters
         let updatedUrl = `${baseUrl}?date=${encodeURIComponent($('#fp-range').val())}&cost_center_id=${encodeURIComponent($('#cost_center_id').val())}`;
         $(this).attr('href', updatedUrl);
-        
+
     });
-                               
-                                
+
+
                             }
 
                             if (feather) {
@@ -626,7 +707,7 @@
                             }
                         }
                     });
-       
+
                 }
             }
 
@@ -668,7 +749,7 @@
 
             if (trIds.length>0) {
 
-                var obj={ ids:trIds,date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),currency:$('#currency').val(),'_token':'{!!csrf_token()!!}'};
+                var obj={ ids:trIds,date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),location_id:$('#location_id').val(),currency:$('#currency').val(),'_token':'{!!csrf_token()!!}'};
                 var selectedValues = $('#organization_id').val() || [];
                 var filteredValues = selectedValues.filter(function(value) {
                     return value !== null && value.trim() !== '';
@@ -685,7 +766,7 @@
                     data    :obj,
                     success: function(res) {
                         if (res['data'].length > 0) {
-                            
+
 
                             res['data'].forEach(data => {
                                 let tot_credit =0;
@@ -710,7 +791,7 @@
                                     if (data['data'].length > 0) {
                                         let tot_debt=0;
                                     let tot_credit=0;
-                                    
+
                                         let html = '';
                                         if (data['type'] == "group") {
                                             for (let i = 0; i < data['data'].length; i++) {
@@ -785,10 +866,10 @@
                                                     tot_credit+=data['data'][i].details_sum_credit_amt;
                                             }
                                             console.log(tot_credit,tot_debt);
-                                          
+
                                         }
-                                        
-                               
+
+
                                 $('#'+data['id']).closest('tr').after(html);
                                     }
                                 }
@@ -835,7 +916,7 @@
     });
 
     function exportTrialBalanceReport(level){
-        var obj={ date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),currency:$('#currency').val(),'_token':'{!!csrf_token()!!}',group_id:group_id,level:level};
+        var obj={ date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),location_id:$('#location_id').val(),currency:$('#currency').val(),'_token':'{!!csrf_token()!!}',group_id:group_id,level:level};
         var selectedValues = $('#organization_id').val() || [];
         var filteredValues = selectedValues.filter(function(value) {
             return value !== null && value.trim() !== '';
@@ -947,7 +1028,7 @@
             }
         });
 
-    
+
     });
 </script>
 @endsection

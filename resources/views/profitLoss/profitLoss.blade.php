@@ -36,7 +36,7 @@
                         <a type="button" onclick="location.reload();" style="display:none;" class="zero_clear btn btn-sm btn-danger exportcustomdrop">
                             <i data-feather="x-circle"></i> Clear Zero Filter
                         </a>
-                      
+
                         <button type="button" class="btn btn-sm btn-primary dropdown-toggle exportcustomdrop" data-bs-toggle="dropdown">
                             <i data-feather="download-cloud"> </i> Export as Excel
                         </button>
@@ -50,7 +50,7 @@
                                 <span>Level2</span>
                             </a>
                         </div>
-                        
+
                         {{-- <button type="button" class="btn btn-sm btn-danger dropdown-toggle exportcustomdrop" data-bs-toggle="dropdown">
                             <i class="fa fa-file-pdf"></i> Export as PDF
                         </button> --}}
@@ -312,7 +312,7 @@
                         <input type="text" id="fp-range" class="form-control flatpickr-range bg-white"
                             placeholder="YYYY-MM-DD to YYYY-MM-DD" value="{{$dateRange}}" />
                     </div>
-                    <div class="mb-1">
+                    {{-- <div class="mb-1">
                         <label class="form-label">Cost Center</label>
                         <select id="cost_center_id" class="form-select select2"
                             name="cost_center_id">
@@ -321,10 +321,10 @@
                             <option value="{{ $value['id'] }}" @if(request('cost_center_id')==$value['id']) selected @endif>{{ $value['name'] }}</option>
                             @endforeach
                         </select>
-                    </div>
-                    
+                    </div> --}}
 
-                    <div class="mb-1">
+
+                                <div class="mb-1">
                                     <label class="form-label">Organization</label>
                                     <select id="organization_id" class="form-select select2" multiple>
                                         <option value="" disabled>Select</option>
@@ -333,9 +333,20 @@
                                             {{ $organization->organization->id == $organizationId ? 'selected' : '' }}>
                                             {{ $organization->organization->name }}
                                         </option>
-                                    @endforeach 
+                                    @endforeach
 
                                 </select>
+                                </div>
+                                <div class="mb-1">
+                                    <label class="form-label">Location</label>
+                                    <select id="location_id" class="form-select select2">
+                                    </select>
+                                </div>
+                                <div class="mb-1">
+                                    <label class="form-label">Cost Center</label>
+                                    <select id="cost_center_id" class="form-select select2"
+                                        name="cost_center_id" required>
+                                    </select>
                                 </div>
                                 <div class="mb-1">
                                     <label class="form-label">Currency</label>
@@ -372,11 +383,15 @@
 
 @section('scripts')
 <script>
+    const locations = @json($locations);
+    const costCenters = @json($cost_centers);
+</script>
+<script>
      function removeZeroRows() {
         $('.zero_btn').css("display", "none");
         $('.zero_clear').css("display", "");
         let selectors = ['#tot2','#tot1','#GPco','#GLco','#grossLoss','#grossProfit','#closing','#opening', '#purchase', '#directExpense', '#indirectExpense', '#salesAccount', '#directIncome', '#indirectIncome'];
-        
+
         selectors.forEach(function(selector) {
             if ($(selector).text().trim() === "0") {
                 $(selector).closest("tr").remove(); // Remove the entire row
@@ -390,7 +405,7 @@
         });
     }
     function exportPLLevel(level,type='excel'){
-        var obj={ date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),'_token':'{!!csrf_token()!!}',level:level,currency:$('#currency').val()};
+        var obj={ date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),location_id:$('#location_id').val(),'_token':'{!!csrf_token()!!}',level:level,currency:$('#currency').val()};
         var selectedValues = $('#organization_id').val() || [];
         var filteredValues = selectedValues.filter(function(value) {
             return value !== null && value.trim() !== '';
@@ -425,8 +440,75 @@
         });
     }
 
-    $(document).ready(function() {
+    function updateLocationsDropdown(selectedOrgIds) {
+        const filteredLocations = locations.filter(loc =>
+            selectedOrgIds.includes(String(loc.organization_id))
+        );
 
+        const $locationDropdown = $('#location_id');
+        $locationDropdown.empty().append('<option value="">Select</option>');
+
+        filteredLocations.forEach(loc => {
+            $locationDropdown.append(`<option value="${loc.id}">${loc.store_name}</option>`);
+        });
+
+        $locationDropdown.trigger('change');
+    }
+
+    function loadCostCenters(locationId) {
+            if (locationId) {
+               const filteredCenters = costCenters.filter(center => {
+                    if (!center.location) return false;
+
+                    const locationArray = Array.isArray(center.location)
+                        ? center.location.flatMap(loc => loc.split(','))
+                        : [];
+
+                    return locationArray.includes(String(locationId));
+                });
+            // console.log(filteredCenters,costCenters,locationId);
+
+            const $costCenter = $('#cost_center_id');
+            $costCenter.empty();
+
+            if (filteredCenters.length === 0) {
+                $costCenter.prop('required', false).append('<option value="">Select Cost Center</option>');
+                // $('.cost_center').hide();
+            } else {
+                $costCenter.prop('required', true).append('<option value="">Select Cost Center</option>');
+                $('.cost_center').show();
+
+                filteredCenters.forEach(center => {
+                    $costCenter.append(`<option value="${center.id}">${center.name}</option>`);
+                });
+            }
+
+            $costCenter.trigger('change');
+        }
+    }
+
+    $(document).ready(function () {
+    // On change of organization
+    $('#organization_id').on('change', function () {
+        const selectedOrgIds = $(this).val() || [];
+        updateLocationsDropdown(selectedOrgIds);
+    });
+
+    // On page load, check for preselected orgs
+    const preselectedOrgIds = $('#organization_id').val() || [];
+    if (preselectedOrgIds.length > 0) {
+        updateLocationsDropdown(preselectedOrgIds);
+    }
+    // On location change, load cost centers
+    $('#location_id').on('change', function () {
+            const locationId = $(this).val();
+          if (!locationId) {
+        $('#cost_center_id').empty().append('<option value="">Select Cost Center</option>');
+            // $('.cost_center').hide(); // Optional: hide the section if needed
+            return;
+        }
+        loadCostCenters(locationId);
+    });
         getInitialGroups();
 
         // Filter record
@@ -454,7 +536,7 @@
 
         function getInitialGroups() {
 
-            var obj={ date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),'_token':'{!!csrf_token()!!}'};
+            var obj={ date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),location_id:$('#location_id').val(),'_token':'{!!csrf_token()!!}'};
             var selectedValues = $('#organization_id').val() || [];
             var filteredValues = selectedValues.filter(function(value) {
                 return value !== null && value.trim() !== '';
@@ -462,7 +544,7 @@
             if (filteredValues.length>0) {
                 obj.organization_id=filteredValues
             }
-           
+
 
             $.ajax({
                 headers: {
@@ -545,7 +627,7 @@ if (data['data']['netLoss'] == 0) {
 
             if ($('#check' + id).val() == "") {
 
-                var obj={ id:id,date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),currency:$('#currency').val(),'_token':'{!!csrf_token()!!}'};
+                var obj={ id:id,date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),location_id:$('#location_id').val(),currency:$('#currency').val(),'_token':'{!!csrf_token()!!}'};
                 var selectedValues = $('#organization_id').val() || [];
                 var filteredValues = selectedValues.filter(function(value) {
                     return value !== null && value.trim() !== '';
@@ -590,7 +672,7 @@ if (data['data']['netLoss'] == 0) {
                 // Append new query parameters
                 let updatedUrl = `${baseUrl}?date=${encodeURIComponent($('#fp-range').val())}&cost_center_id=${encodeURIComponent($('#cost_center_id').val())}`;
         $(this).attr('href', updatedUrl);
-                
+
             });
                         }
 
@@ -601,7 +683,7 @@ if (data['data']['netLoss'] == 0) {
                             });
                         }
                         if ($(".zero_btn").css("display") === "none")
-                        removeZeroRows(); 
+                        removeZeroRows();
                     }
                 });
             }
@@ -643,7 +725,7 @@ if (data['data']['netLoss'] == 0) {
 
             if (trIds.length>0) {
 
-                var obj={ ids:trIds,date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),currency:$('#currency').val(),'_token':'{!!csrf_token()!!}'};
+                var obj={ ids:trIds,date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),location_id:$('#location_id').val(),currency:$('#currency').val(),'_token':'{!!csrf_token()!!}'};
                 var selectedValues = $('#organization_id').val() || [];
                 var filteredValues = selectedValues.filter(function(value) {
                     return value !== null && value.trim() !== '';
@@ -693,7 +775,7 @@ if (data['data']['netLoss'] == 0) {
                 // Append new query parameters
                 let updatedUrl = `${baseUrl}?date=${encodeURIComponent($('#fp-range').val())}&cost_center_id=${encodeURIComponent($('#cost_center_id').val())}`;
         $(this).attr('href', updatedUrl);
-                
+
             });
                         }
 
@@ -770,6 +852,6 @@ if (data['data']['netLoss'] == 0) {
             });
         }
     });
-    
+
 </script>
 @endsection

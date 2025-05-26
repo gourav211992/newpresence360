@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Models\CostCenterOrgLocations;
+use App\Models\ErpStore;
+
 class BalanceSheetController extends Controller
 {
     public function exportBalanceSheet(Request $r){
@@ -73,10 +75,10 @@ $assets_group = Helper::getGroupsQuery($organizations)->where('name', 'Assets')
         ->select('id','name')->get();
 
         // Get Reserves & Surplus
-        $reservesSurplus=Helper::getReservesSurplus($startDate,$endDate,$organizations,'balanceSheet',$currency,$r->cost_center_id);
+        $reservesSurplus=Helper::getReservesSurplus($startDate,$endDate,$organizations,'balanceSheet',$currency,$r->cost_center_id,$r->location_id);
 
-        $liabilitiesData=Helper::getBalanceSheetData($liabilities, $startDate, $endDate,$organizations,'liabilities',$currency,$r->cost_center_id);
-        $assetsData=Helper::getBalanceSheetData($assets, $startDate, $endDate,$organizations,'assets',$currency,$r->cost_center_id);
+        $liabilitiesData=Helper::getBalanceSheetData($liabilities, $startDate, $endDate,$organizations,'liabilities',$currency,$r->cost_center_id,$r->location_id);
+        $assetsData=Helper::getBalanceSheetData($assets, $startDate, $endDate,$organizations,'assets',$currency,$r->cost_center_id,$r->location_id);
 
         $data = [];
         $liabilitiesTotal = 0;
@@ -111,12 +113,12 @@ $assets_group = Helper::getGroupsQuery($organizations)->where('name', 'Assets')
                     ]);
                 } else {
                     if ($liabilitiesGroupId) {
-                        $liabilitiesLedgerData=Helper::getBalanceSheetLedgers($liabilitiesGroupId, $startDate, $endDate,$organizations,$currency,$r->cost_center_id);
+                        $liabilitiesLedgerData=Helper::getBalanceSheetLedgers($liabilitiesGroupId, $startDate, $endDate,$organizations,$currency,$r->cost_center_id,$r->location_id);
                     }
                 }
 
                 if ($assetsGroupId) {
-                    $assetsLedgerData=Helper::getBalanceSheetLedgers($assetsGroupId, $startDate, $endDate,$organizations,$currency,$r->cost_center_id)->values();
+                    $assetsLedgerData=Helper::getBalanceSheetLedgers($assetsGroupId, $startDate, $endDate,$organizations,$currency,$r->cost_center_id,$r->location_id)->values();
                 }
 
                 $loopLengthLevel2=Helper::checkCount($liabilitiesLedgerData)>Helper::checkCount($assetsLedgerData) ? Helper::checkCount($liabilitiesLedgerData) : Helper::checkCount($assetsLedgerData);
@@ -197,9 +199,8 @@ $data[] = [
             $today = date('Y-m-d');
         }
 
-        $cost_centers = CostCenterOrgLocations::withDefaultGroupCompanyOrg()
-        ->with(['costCenter' => function ($query) {
-            $query->where('status', 'active');
+        $cost_centers = CostCenterOrgLocations::with(['costCenter' => function ($query) {
+            $query->withDefaultGroupCompanyOrg()->where('status', 'active');
         }])
         ->get()
         ->filter(function ($item) {
@@ -209,15 +210,17 @@ $data[] = [
             return [
                 'id' => $item->costCenter->id,
                 'name' => $item->costCenter->name,
+                'location' => $item->costCenter->locations,
             ];
         })
         ->toArray();
 
         $dateRange = \Carbon\Carbon::parse($startDate)->format('d-m-Y') . " to " . \Carbon\Carbon::parse($endDate)->format('d-m-Y');
         $date2 = \Carbon\Carbon::parse($startDate)->format('jS-F-Y') . ' to ' . \Carbon\Carbon::parse($endDate)->format('jS-F-Y');
+        $locations = ErpStore::where('status','active')->get();
 
 
-        return view('balanceSheet.balanceSheet',compact('cost_centers','organizationId','companies','organization','dateRange','date2'));
+        return view('balanceSheet.balanceSheet',compact('cost_centers','organizationId','companies','organization','dateRange','date2','locations'));
     }
 
     public function balanceSheetInitialGroups(Request $r)
@@ -273,10 +276,10 @@ $data[] = [
         ->where('parent_group_id',$assets_group)
         ->select('id','name')->get();
 
-        $reservesSurplus=Helper::getReservesSurplus($startDate,$endDate,$organizations,'balanceSheet',$currency,$r->cost_center_id);
+        $reservesSurplus=Helper::getReservesSurplus($startDate,$endDate,$organizations,'balanceSheet',$currency,$r->cost_center_id,$r->location_id);
 
-        $liabilitiesData=Helper::getBalanceSheetData($liabilities, $startDate, $endDate,$organizations,'liabilities',$currency,$r->cost_center_id);
-        $assetsData=Helper::getBalanceSheetData($assets, $startDate, $endDate,$organizations,'assets',$currency,$r->cost_center_id);
+        $liabilitiesData=Helper::getBalanceSheetData($liabilities, $startDate, $endDate,$organizations,'liabilities',$currency,$r->cost_center_id,$r->location_id);
+        $assetsData=Helper::getBalanceSheetData($assets, $startDate, $endDate,$organizations,'assets',$currency,$r->cost_center_id,$r->location_id);
         // dd($reservesSurplus);
         return response()->json(['liabilitiesData'=>$liabilitiesData,'assetsData'=>$assetsData,'startDate'=>date('d-M-Y',strtotime($startDate)),'endDate'=>date('d-M-Y',strtotime($endDate)),'reservesSurplus'=>$reservesSurplus]);
     }
@@ -363,7 +366,7 @@ $endDate = $endDate->format('Y-m-d');
         $allData=[];
         foreach ($r->ids as $id) {
 
-            $data=Helper::getBalanceSheetLedgers($id, $startDate, $endDate,$organizations,$currency,$r->cost_center_id);
+            $data=Helper::getBalanceSheetLedgers($id, $startDate, $endDate,$organizations,$currency,$r->cost_center_id,$r->location_id);
 
             $gData['id']=$id;
             $gData['data']=$data;

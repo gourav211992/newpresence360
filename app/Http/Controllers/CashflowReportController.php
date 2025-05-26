@@ -16,6 +16,7 @@ use App\Models\Address;
 use PDF;
 use App\Models\Currency;
 use App\Models\AuthUser;
+use App\Models\ErpStore;
 use Maatwebsite\Excel\Facades\Excel;
 
 class CashflowReportController extends Controller
@@ -142,6 +143,7 @@ class CashflowReportController extends Controller
             $startDate = date('d-m-Y', strtotime($startDate));
         $endDate = date('d-m-Y', strtotime($endDate));
         $range = $startDate . ' to ' . $endDate;
+        $locations = ErpStore::where('status','active')->get();
         return view('cashflow.index', compact('scheduler','users','opening', 'payment_received', 'payment_made', 'payment_made_t', 'payment_received_t', 'closing', 'fy', 'mappings', 'organization_id', 'range'));
         }
     }

@@ -17,8 +17,11 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
+Route::middleware(['sso-api', 'apiresponse'])->get('/user', function (Request $request) {
+    return [
+        'data' => $request->user(),
+        'message' => 'success',
+    ];
 });
 
 Route::group(['middleware' => ['apiresponse']], function () {
@@ -38,7 +41,7 @@ Route::group(['middleware' => ['apiresponse']], function () {
         Route::post('transporter-requests/close','close')->name('close');
         // Route::post('transporter-requests/reopen','reopen')->name('reopen');
     });
-    Route::group(['middleware' => ['auth:api']], function () {
+    Route::group(['middleware' => ['sso-api', 'apiresponse']], function () {
         Route::controller(BookController::class)->prefix('book')->group(function(){
             Route::get('get-document-number','generateDocumentNumber')->name('book.get.docNo');
         });

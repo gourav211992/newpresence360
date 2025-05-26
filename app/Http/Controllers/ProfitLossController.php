@@ -16,6 +16,7 @@ use App\Helpers\ConstantHelper;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Models\CostCenterOrgLocations;
+use App\Models\ErpStore;
 
 class ProfitLossController extends Controller
 {
@@ -49,7 +50,7 @@ class ProfitLossController extends Controller
             $organizations[]=Helper::getAuthenticatedUser()->organization_id;
         }
         $organizationName=implode(",",DB::table('organizations')->whereIn('id',$organizations)->pluck('name')->toArray());
-        $plData=Helper::getPlGroupsData($startDate,$endDate,$organizations,$currency,$r->cost_center_id,"profitloss");
+        $plData=Helper::getPlGroupsData($startDate,$endDate,$organizations,$currency,$r->cost_center_id,"profitloss",$r->location_id);
 
         $sales=0;
         $purchase=0;
@@ -83,21 +84,21 @@ class ProfitLossController extends Controller
                 $purchase=$pl->closing + $purchase;
                 $openingAmount=abs($pl->closing);
                 if ($r->level==2) {
-                    $openingLedgers=$this->getGroupLedgers($pl->id,$organizations,$startDate,$endDate,$currency,$r->cost_center_id);
+                    $openingLedgers=$this->getGroupLedgers($pl->id,$organizations,$startDate,$endDate,$currency,$r->cost_center_id,$r->location_id);
                 }
             }
             if($pl->name == "Purchase Accounts"){
                 $purchase=$pl->closing + $purchase;
                 $purchaseAmount=abs($pl->closing);
                 if ($r->level==2) {
-                    $purchaseLedgers=$this->getGroupLedgers($pl->id,$organizations,$startDate,$endDate,$currency,$r->cost_center_id);
+                    $purchaseLedgers=$this->getGroupLedgers($pl->id,$organizations,$startDate,$endDate,$currency,$r->cost_center_id,$r->location_id);
                 }
             }
             if($pl->name == "Direct Expenses"){
                 $purchase=$pl->closing + $purchase;
                 $directExpenseAmount=abs($pl->closing);
                 if ($r->level==2) {
-                    $directExpenseLedgers=$this->getGroupLedgers($pl->id,$organizations,$startDate,$endDate,$currency,$r->cost_center_id);
+                    $directExpenseLedgers=$this->getGroupLedgers($pl->id,$organizations,$startDate,$endDate,$currency,$r->cost_center_id,$r->location_id);
                 }
             }
             if($pl->name == "Indirect Expenses"){
@@ -105,21 +106,21 @@ class ProfitLossController extends Controller
                 $indExpTotal=$pl->closing;
                 $indirectExpenseAmount=abs($pl->closing);
                 if ($r->level==2) {
-                    $indirectExpenseLedgers=$this->getGroupLedgers($pl->id,$organizations,$startDate,$endDate,$currency,$r->cost_center_id);
+                    $indirectExpenseLedgers=$this->getGroupLedgers($pl->id,$organizations,$startDate,$endDate,$currency,$r->cost_center_id,$r->location_id);
                 }
             }
             if($pl->name == "Sales Accounts"){
                 $sales=$pl->closing + $sales;
                 $saleAmount=abs($pl->closing);
                 if ($r->level==2) {
-                    $saleLedgers=$this->getGroupLedgers($pl->id,$organizations,$startDate,$endDate,$currency,$r->cost_center_id);
+                    $saleLedgers=$this->getGroupLedgers($pl->id,$organizations,$startDate,$endDate,$currency,$r->cost_center_id,$r->location_id);
                 }
             }
             if($pl->name == "Direct Income"){
                 $sales=$pl->closing + $sales;
                 $directIncomeAmount=abs($pl->closing);
                 if ($r->level==2) {
-                    $directIncomeLedgers=$this->getGroupLedgers($pl->id,$organizations,$startDate,$endDate,$currency,$r->cost_center_id);
+                    $directIncomeLedgers=$this->getGroupLedgers($pl->id,$organizations,$startDate,$endDate,$currency,$r->cost_center_id,$r->location_id);
                 }
             }
             if($pl->name == "Indirect Income"){
@@ -127,7 +128,7 @@ class ProfitLossController extends Controller
                 $indIncTotal=$pl->closing;
                 $indirectIncomeAmount=abs($pl->closing);
                 if ($r->level==2) {
-                    $indirectIncomeLedgers=$this->getGroupLedgers($pl->id,$organizations,$startDate,$endDate,$currency,$r->cost_center_id);
+                    $indirectIncomeLedgers=$this->getGroupLedgers($pl->id,$organizations,$startDate,$endDate,$currency,$r->cost_center_id,$r->location_id);
                 }
             }
         }
@@ -177,8 +178,8 @@ class ProfitLossController extends Controller
             return Excel::download(new PLLevel1ReportExport($organizationName, $dateRange, $data), 'plLevel1Report.pdf',\Maatwebsite\Excel\Excel::DOMPDF);
             else
             return Excel::download(new PLLevel1ReportExport($organizationName, $dateRange, $data), 'plLevel1Report.xlsx');
-          
-          
+
+
         } else {
             $data[] = ['Opening Stock','', Helper::formatIndianNumber($openingAmount),'','Sales Accounts','', Helper::formatIndianNumber($saleAmount)];
             $loopLength=Helper::checkCount($openingLedgers)>Helper::checkCount($saleLedgers) ? Helper::checkCount($openingLedgers) : Helper::checkCount($saleLedgers);
@@ -225,7 +226,7 @@ class ProfitLossController extends Controller
             return Excel::download(new PLLevel2ReportExport($organizationName, $dateRange, $data), 'plLevel2Report.pdf',\Maatwebsite\Excel\Excel::DOMPDF,);
             else
             return Excel::download(new PLLevel2ReportExport($organizationName, $dateRange, $data), 'plLevel2Report.xlsx');
-        
+
         }
     }
 
@@ -233,8 +234,8 @@ class ProfitLossController extends Controller
          $groups =  Helper::getGroupsQuery()->whereNotNull('parent_group_id')
         ->select('id', 'name')
         ->get();
-    
-    
+
+
 
         $plGroups=PLGroups::get();
         return view('profitLoss.groups',compact('groups','plGroups'));
@@ -305,21 +306,22 @@ class ProfitLossController extends Controller
             $fyear = Helper::getFinancialYear(date('Y-m-d'));
                 $startDate = $fyear['start_date'];
                 $endDate = $fyear['end_date'];
-            
-        
+
+
         }
-        $cost_centers = CostCenterOrgLocations::withDefaultGroupCompanyOrg()->with('costCenter')->get()->map(function ($item) {
-            $item->where('status', 'active');
-           
+        $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
+            $item->withDefaultGroupCompanyOrg()->where('status', 'active');
+
             return [
                 'id' => $item->costCenter->id,
                 'name' => $item->costCenter->name,
+                'location' => $item->costCenter->locations,
             ];
         })->toArray();
         $dateRange = \Carbon\Carbon::parse($startDate)->format('d-m-Y') . " to " . \Carbon\Carbon::parse($endDate)->format('d-m-Y');
         $date2 = \Carbon\Carbon::parse($startDate)->format('jS-F-Y') . ' to ' . \Carbon\Carbon::parse($endDate)->format('jS-F-Y');
-
-        return view('profitLoss.profitLoss',compact('cost_centers','organizations','organization','companies','organizationId','dateRange','date2'));
+        $locations = ErpStore::where('status','active')->get();
+        return view('profitLoss.profitLoss',compact('cost_centers','organizations','organization','companies','organizationId','dateRange','date2','locations'));
     }
 
     public function getPLInitialGroups(Request $r)
@@ -348,7 +350,7 @@ class ProfitLossController extends Controller
             $organizations[]=Helper::getAuthenticatedUser()->organization_id;
         }
 
-        $data=Helper::getPlGroupsData($startDate,$endDate,$organizations,$currency,$r->cost_center_id,"profitloss");
+        $data=Helper::getPlGroupsData($startDate,$endDate,$organizations,$currency,$r->cost_center_id,"profitloss",$r->location_id);
         $details=Helper::getPlGroupDetails($data);
 
         return response()->json(['startDate'=>date('d-M-Y',strtotime($startDate)),'endDate'=>date('d-M-Y',strtotime($endDate)),'data'=>$details]);
@@ -380,7 +382,7 @@ class ProfitLossController extends Controller
             $organizations[]=Helper::getAuthenticatedUser()->organization_id;
         }
 
-        $data=$this->getGroupLedgers($r->id,$organizations,$startDate,$endDate,$currency,$r->cost_center_id);
+        $data=$this->getGroupLedgers($r->id,$organizations,$startDate,$endDate,$currency,$r->cost_center_id,$r->location_id);
 
         return response()->json(['data'=>$data]);
     }
@@ -413,7 +415,7 @@ class ProfitLossController extends Controller
 
         $allData=[];
         foreach ($r->ids as $id) {
-            $data=$this->getGroupLedgers($id,$organizations,$startDate,$endDate,$currency,$r->cost_center_id);
+            $data=$this->getGroupLedgers($id,$organizations,$startDate,$endDate,$currency,$r->cost_center_id,$r->location_id);
 
             $gData['id']=$id;
             $gData['data']=$data;
@@ -423,7 +425,7 @@ class ProfitLossController extends Controller
         return response()->json(['data'=>$allData]);
     }
 
-    public function getGroupLedgers($id,$organizations,$startDate,$endDate,$currency,$cost=null){
+    public function getGroupLedgers($id,$organizations,$startDate,$endDate,$currency,$cost=null,$location=null){
         $non_carry = Helper::getNonCarryGroups();
         $fy = Helper::getFinancialYear($startDate);
                             
@@ -448,43 +450,52 @@ class ProfitLossController extends Controller
                 });
         })->where('status', 1)
         ->select('id', 'name','ledger_group_id')
-        ->withSum(['details as details_sum_debit_amt' => function ($query) use ($startDate, $endDate,$childrens,$cost,$organizations) {
+        ->withSum(['details as details_sum_debit_amt' => function ($query) use ($startDate, $endDate,$childrens,$cost,$organizations,$location) {
                         $query->whereIn('ledger_parent_id',$childrens);
                         $query->when($cost, function ($query) use ($cost) {
                             $query->where('cost_center_id', $cost);
                         });
-                        $query->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations) {
+                        $query->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations,$location) {
                             $query->withDefaultGroupCompanyOrg();
                             $query->when(!empty($organizations), function ($query) use ($organizations) {
                                 $query->whereIn('organization_id', $organizations);
-                            });   
+                            });
+                            $query->when(!empty($location), function ($query) use ($location) {
+                                $query->where('location', $location);
+                            });
                         $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
                         $query->whereBetween('document_date', [$startDate, $endDate]);
                         $query->orderBy('document_date', 'asc');
                     });
         }], "debit_amt_{$currency}")
-        ->withSum(['details as details_sum_credit_amt' => function ($query) use ($startDate, $endDate,$childrens,$cost,$organizations) {
+        ->withSum(['details as details_sum_credit_amt' => function ($query) use ($startDate, $endDate,$childrens,$cost,$organizations,$location) {
             $query->whereIn('ledger_parent_id',$childrens);
             $query->when($cost, function ($query) use ($cost) {
                 $query->where('cost_center_id', $cost);
             });
-            $query->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations) {
+            $query->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations,$location) {
                 $query->withDefaultGroupCompanyOrg();
                 $query->when(!empty($organizations), function ($query) use ($organizations) {
                     $query->whereIn('organization_id', $organizations);
+                });
+                $query->when(!empty($location), function ($query) use ($location) {
+                    $query->where('location', $location);
                 });
                 $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
                 $query->whereBetween('document_date', [$startDate, $endDate]);
                 $query->orderBy('document_date', 'asc');
             });
         }], "credit_amt_{$currency}")
-        ->with(['details' => function ($query) use ($startDate, $endDate,$childrens,$organizations) {
+        ->with(['details' => function ($query) use ($startDate, $endDate,$childrens,$organizations,$location) {
             $query->whereIn('ledger_parent_id',$childrens);
-            $query->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations) {
+            $query->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations,$location) {
                 $query->withDefaultGroupCompanyOrg();
                 $query->when(!empty($organizations), function ($query) use ($organizations) {
                     $query->whereIn('organization_id', $organizations);
                 });
+                 $query->when(!empty($location), function ($query) use ($location) {
+                                $query->where('location', $location);
+                            });
                 $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
                 $query->whereBetween('document_date', [$startDate, $endDate]);
                 $query->orderBy('document_date', 'asc');
@@ -503,11 +514,14 @@ class ProfitLossController extends Controller
                     ->where('ledger_id',$ledger->id)
                     ->when($cost, function ($query) use ($cost) {
                         $query->where('cost_center_id', $cost);
-                    })->withwhereHas('voucher', function ($query) use($startDate,$carry,$fy,$organizations) {
+                    })->withwhereHas('voucher', function ($query) use($startDate,$carry,$fy,$organizations,$location) {
                         $query->withDefaultGroupCompanyOrg();
                         $query->when(!empty($organizations), function ($query) use ($organizations) {
                             $query->whereIn('organization_id', $organizations);
                         });
+                         $query->when(!empty($location), function ($query) use ($location) {
+                                $query->where('location', $location);
+                            });
                         $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
                     $query->where('document_date', '<', $startDate);
                         if(!$carry)

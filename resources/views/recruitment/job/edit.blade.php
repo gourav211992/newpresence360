@@ -1,5 +1,4 @@
-@extends('recruitment.layouts.app')
-
+@extends('layouts.app')
 @section('style')
     <style>
         .note-editor.note-frame.card {
@@ -285,7 +284,7 @@
                                                                         <div class="col-md-6">
                                                                             <input type="text" name="no_of_position"
                                                                                 value="{{ $job->no_of_position }}"
-                                                                                class="form-control numberonly" />
+                                                                                class="form-control numberonly-v2" />
                                                                         </div>
                                                                     </div>
 
@@ -440,13 +439,13 @@
 
                                                                         <div class="col-md-3 mb-sm-0 mb-1">
                                                                             <input type="number" class="form-control"
-                                                                                placeholder="Min" name="work_exp_min"
+                                                                                placeholder="Min" name="work_exp_min numberonly-v2"
                                                                                 value="{{ $job->work_exp_min }}" />
                                                                         </div>
 
                                                                         <div class="col-md-3 mb-sm-0 mb-1">
                                                                             <input type="number" class="form-control"
-                                                                                placeholder="Max" name="work_exp_max"
+                                                                                placeholder="Max" name="work_exp_max numberonly-v2"
                                                                                 value="{{ $job->work_exp_max }}" />
                                                                         </div>
                                                                     </div>
@@ -482,7 +481,7 @@
 
                                                                         <div class="col-md-3 mb-sm-0 mb-1">
                                                                             <input type="number" class="form-control"
-                                                                                placeholder="Min" name="annual_salary_min"
+                                                                                placeholder="Min" name="annual_salary_min numberonly-v2"
                                                                                 value="{{ $job->annual_salary_min }}" />
                                                                             <div
                                                                                 class="form-check form-check-primary mt-25 custom-checkbox">
@@ -499,7 +498,7 @@
 
                                                                         <div class="col-md-3 mb-sm-0 mb-1">
                                                                             <input type="number" class="form-control"
-                                                                                placeholder="Max" name="annual_salary_max"
+                                                                                placeholder="Max" name="annual_salary_max numberonly-v2"
                                                                                 value="{{ $job->annual_salary_max }}" />
                                                                         </div>
                                                                     </div>
@@ -697,6 +696,8 @@
 @endsection
 
 @section('scripts')
+    <script src="{{ asset('app-assets/js/common-script-v2.js') }}"></script>
+
     <script>
         $("#skill").select2({
             tags: true

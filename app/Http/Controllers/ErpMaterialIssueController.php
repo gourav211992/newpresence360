@@ -1457,6 +1457,10 @@ class ErpMaterialIssueController extends Controller
                 $toDate = Carbon::parse(trim($dateRanges[1])) -> format('Y-m-d');
                 $dateRangeQuery -> whereDate('document_date', ">=" , $fromDate) -> where('document_date', '<=', $toDate);
            }
+           else{
+                $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
+                $dateRangeQuery -> whereDate('document_date', $fromDate);
+            }
         });
         //Item Id Filter
         $materialIssue = $materialIssue -> when($request -> item_id, function ($itemQuery) use($request) {

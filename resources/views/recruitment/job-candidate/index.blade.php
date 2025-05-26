@@ -1,4 +1,4 @@
-@extends('recruitment.layouts.app')
+@extends('layouts.app')
 
 @section('content')
     <!-- BEGIN: Content-->
@@ -67,7 +67,8 @@
                                                                 <h3>{{ $candidate->name }}</h3>
                                                                 <h4>{{ $candidate->current_organization }}</h4>
                                                                 <h5>{{ $candidate->mobile_no }}
-                                                                    <a>{{ $candidate->email }}</a></h5>
+                                                                    <a>{{ $candidate->email }}</a>
+                                                                </h5>
                                                             </div>
 
                                                         </div>
@@ -215,6 +216,8 @@
     <!-- END: MODAL-->
 @endsection
 @section('scripts')
+    <script src="{{ asset('app-assets/js/common-script-v2.js') }}"></script>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const skillModal = document.getElementById('skillModal');

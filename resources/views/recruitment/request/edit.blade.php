@@ -1,4 +1,4 @@
-@extends('recruitment.layouts.app')
+@extends('layouts.app')
 @section('content')
     <!-- BEGIN: Content-->
     <div class="app-content content">
@@ -127,7 +127,7 @@
                                                     </div>
 
                                                     <div class="col-md-5">
-                                                        <input type="text" class="form-control numberonly"
+                                                        <input type="text" class="form-control numberonly-v2"
                                                             name="no_of_position"
                                                             value="{{ $jobRequest->no_of_position }}" />
                                                     </div>
@@ -364,6 +364,7 @@
 @endsection
 
 @section('scripts')
+    <script src="{{ asset('app-assets/js/common-script-v2.js') }}"></script>
     <script>
         $(document).ready(function() {
             $("#skill").select2({

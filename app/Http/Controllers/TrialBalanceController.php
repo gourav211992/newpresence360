@@ -20,6 +20,7 @@ use Carbon\Carbon;
 use App\Helpers\CurrencyHelper;
 use Illuminate\Support\Facades\DB;
 use App\Helpers\ConstantHelper;
+use App\Models\ErpStore;
 use Maatwebsite\Excel\Facades\Excel;
 
 class TrialBalanceController extends Controller
@@ -74,8 +75,8 @@ class TrialBalanceController extends Controller
 
 
         // Get Reserves & Surplus
-        $profitLoss = Helper::getReservesSurplus($startDate, $endDate, $organizations, 'trialBalance', $currency, $r->cost_center_id);
-        $trialData = Helper::getGroupsData($groups, $startDate, $endDate, $organizations, $currency, $r->cost_center_id);
+        $profitLoss = Helper::getReservesSurplus($startDate, $endDate, $organizations, 'trialBalance', $currency, $r->cost_center_id,$r->location_id);
+        $trialData = Helper::getGroupsData($groups, $startDate, $endDate, $organizations, $currency, $r->cost_center_id,$r->location_id);
         $grandDebitTotal = 0;
         $grandCreditTotal = 0;
         $grandClosingTotal = 0;
@@ -107,7 +108,7 @@ class TrialBalanceController extends Controller
             $data[] = [$trialGroup->name, '', '', Helper::formatIndianNumber($opening) . $opening_type, Helper::formatIndianNumber($total_debit), Helper::formatIndianNumber($total_credit), Helper::formatIndianNumber($closing) . $closingText];
 
             if ($r->level == 2 || $r->level == 3) {
-                $groupLedgers = Helper::getTrialBalanceGroupLedgers($trialGroup->id, $startDate, $endDate, $organizations, $currency, $r->cost_center_id);
+                $groupLedgers = Helper::getTrialBalanceGroupLedgers($trialGroup->id, $startDate, $endDate, $organizations, $currency, $r->cost_center_id,$r->location_id);
                 $groupLedgersData = $groupLedgers['data'];
                 foreach ($groupLedgersData as $groupLedger) {
                     if ($groupLedgers['type'] == 'group') {
@@ -134,7 +135,7 @@ class TrialBalanceController extends Controller
                         if ($groupLedger->name == "Reserves & Surplus") {
                             $data[] = ['', '', 'Profit & Loss', Helper::formatIndianNumber($profitLoss['closingFinal']) . $profitLoss['closing_type'], 0, 0, Helper::formatIndianNumber($profitLoss['closingFinal']) . $profitLoss['closing_type']];
                         } else {
-                            $subGroupLedgers = Helper::getTrialBalanceGroupLedgers($groupLedger->id, $startDate, $endDate, $organizations, $currency, $r->cost_center_id);
+                            $subGroupLedgers = Helper::getTrialBalanceGroupLedgers($groupLedger->id, $startDate, $endDate, $organizations, $currency, $r->cost_center_id,$r->location);
                             $subGroupLedgersData = $subGroupLedgers['data'];
                             foreach ($subGroupLedgersData as $subGroupLedger) {
                                 if ($subGroupLedgers['type'] == 'group') {
@@ -428,9 +429,8 @@ class TrialBalanceController extends Controller
             $startDate = $fyear['start_date'];
             $endDate = $fyear['end_date'];
         }
-        $cost_centers = CostCenterOrgLocations::withDefaultGroupCompanyOrg()
-            ->with(['costCenter' => function ($query) {
-                $query->where('status', 'active');
+        $cost_centers = CostCenterOrgLocations::with(['costCenter' => function ($query) {
+                $query->withDefaultGroupCompanyOrg()->where('status', 'active');
             }])
             ->get()
             ->filter(function ($item) {
@@ -440,15 +440,16 @@ class TrialBalanceController extends Controller
                 return [
                     'id' => $item->costCenter->id,
                     'name' => $item->costCenter->name,
+                    'location' => $item->costCenter->locations,
                 ];
             })
             ->toArray();
 
         $dateRange = \Carbon\Carbon::parse($startDate)->format('d-m-Y') . " to " . \Carbon\Carbon::parse($endDate)->format('d-m-Y');
         $orgname=Organization::where('id',Helper::getAuthenticatedUser()->organization_id)->value('name');
-
+        $locations = ErpStore::where('status','active')->get();
         $date2 = \Carbon\Carbon::parse($startDate)->format('jS-F-Y') . ' to ' . \Carbon\Carbon::parse($endDate)->format('jS-F-Y');
-        return view('trialBalance.view-trial-balance', compact('orgname','cost_centers', 'companies', 'organizationId', 'id', 'date2', 'dateRange'));
+        return view('trialBalance.view-trial-balance', compact('orgname','cost_centers', 'companies', 'organizationId', 'id', 'date2', 'dateRange','locations'));
     }
 
     public function getInitialGroups(Request $r)
@@ -487,9 +488,9 @@ class TrialBalanceController extends Controller
         }
 
         // Get Reserves & Surplus
-        $profitLoss = Helper::getReservesSurplus($startDate, $endDate, $organizations, 'trialBalance', $currency, $r->cost_center_id);
+        $profitLoss = Helper::getReservesSurplus($startDate, $endDate, $organizations, 'trialBalance', $currency, $r->cost_center_id,$r->location_id);
 
-        $data = Helper::getGroupsData($groups, $startDate, $endDate, $organizations, $currency, $r->cost_center_id);
+        $data = Helper::getGroupsData($groups, $startDate, $endDate, $organizations, $currency, $r->cost_center_id,$r->location_id);
         return response()->json(['currency' => $currency, 'data' => $data, 'type' => 'group', 'startDate' => date('d-M-Y', strtotime($startDate)), 'endDate' => date('d-M-Y', strtotime($endDate)), 'profitLoss' => $profitLoss, 'groups' => $groups]);
     }
 
@@ -549,7 +550,7 @@ class TrialBalanceController extends Controller
 
         $allData = [];
         foreach ($r->ids as $id) {
-            $groupLedgers = Helper::getTrialBalanceGroupLedgers($id, $startDate, $endDate, $organizations, $currency, $r->cost_center_id);
+            $groupLedgers = Helper::getTrialBalanceGroupLedgers($id, $startDate, $endDate, $organizations, $currency, $r->cost_center_id,$r->location_id);
             $gData['id'] = $id;
             $gData['type'] = $groupLedgers['type'];
             $gData['data'] = $groupLedgers['data'];

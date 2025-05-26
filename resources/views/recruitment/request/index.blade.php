@@ -1,4 +1,4 @@
-@extends('recruitment.layouts.app')
+@extends('layouts.app')
 
 @section('content')
     <!-- BEGIN: Content-->
@@ -406,6 +406,7 @@
 @endsection
 
 @section('scripts')
+    <script src="{{ asset('app-assets/js/common-script-v2.js') }}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const skillModal = document.getElementById('skillModal');

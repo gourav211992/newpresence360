@@ -1,4 +1,4 @@
-@extends('recruitment.layouts.app')
+@extends('layouts.app')
 
 @section('content')
     <!-- BEGIN: Content-->
@@ -99,6 +99,7 @@
 @endsection
 
 @section('scripts')
+    <script src="{{ asset('app-assets/js/common-script-v2.js') }}"></script>
     <script>
         $('#file-input').on('change', function() {
             const filename = this.files[0]?.name || "No file selected";
@@ -191,7 +192,7 @@
                                 </span>
                                 ${failureCount > 0 ? 
                                     `<span class="badge rounded-pill badge-light-danger fw-bold mb-1">Failed Rows: ${failureCount}</span>
-                                                                                                                    <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#errorDetailsModal">View Details</button>` 
+                                                                                                                                            <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#errorDetailsModal">View Details</button>` 
                                 : ''}
                                 <button type="button" class="editbtnNew mt-2" id="upload-again-btn">
                                     <i data-feather='upload'></i> Upload Again
