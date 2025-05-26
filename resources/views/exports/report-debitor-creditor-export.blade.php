@@ -21,14 +21,19 @@
         <th><strong>O/S Days</strong></th>
         <th><strong>Invoice Amount</strong></th>
         <th><strong>Balance Amount</strong></th>
+        <th><strong>Running Bal</strong></th>
     </tr>
     @if (isset($entities))
-        @php $serial = 1; @endphp
+        @php $serial = 1; $runningBalTotal = 0; @endphp
 
 
         {{-- {{ dd($entities) }} --}}
         @foreach ($entities as $item)
             @foreach ($item['records'] as $record)
+            @php
+                $currentOutstanding = $record->total_outstanding < 0 ? 0 : $record->total_outstanding;
+                $runningBalTotal += $currentOutstanding;
+            @endphp
                 <tr>
                     <td>{{ $serial++ }}</td>
                     <td>{{ $item['vendor_name'] }}</td>
@@ -42,6 +47,7 @@
                     @endif</td>
                     <td align="right">@if($record->invoice_amount!=""){{ \App\Helpers\Helper::formatIndianNumber($record->invoice_amount ??0)}}@endif</td>
                     <td align="right">{{  \App\Helpers\Helper::formatIndianNumber($record->total_outstanding ??0)}}</td>
+                    <td align="right">{{  \App\Helpers\Helper::formatIndianNumber($runningBalTotal ??0)}}</td>
                 </tr>
             @endforeach
         @endforeach
