@@ -50,34 +50,7 @@ class RevImpController extends Controller
                 ->whereDate('document_date', '<=', $end);
         } else {
             $fyear = Helper::getFinancialYear(date('Y-m-d'));
-        } else {
-            $fyear = Helper::getFinancialYear(date('Y-m-d'));
 
-            $data = $data->whereDate('document_date', '>=', $fyear['start_date'])
-                ->whereDate('document_date', '<=', $fyear['end_date']);
-            $start = $fyear['start_date'];
-            $end = $fyear['end_date'];
-        }
-        if($request->filter_category)
-        {
-            $data = $data->whereHas('category', function ($query) use ($request) {
-                $query->where('id', $request->filter_category);
-            });
-        }
-        if($request->filter_type)
-        {
-            $data = $data->where('document_type', $request->filter_type);
-        }
-
-
-
-
-
-
-
-        $data = $data->orderby('document_date','desc')->get();
-        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
-        return view('fixed-asset.revaluation-impairement.index', compact('data', 'categories'));
             $data = $data->whereDate('document_date', '>=', $fyear['start_date'])
                 ->whereDate('document_date', '<=', $fyear['end_date']);
             $start = $fyear['start_date'];
@@ -120,11 +93,8 @@ class RevImpController extends Controller
         $firstService = $servicesBooks['services'][0];
         $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
         $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)->get();
-        $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)->get();
         $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         $group_name = ConstantHelper::FIXED_ASSETS;
-
-        $group = Group::withDefaultGroupCompanyOrg()->where('name', $group_name)->first() ?: Group::where('edit', 0)->where('name', $group_name)->first();
 
         $group = Group::withDefaultGroupCompanyOrg()->where('name', $group_name)->first() ?: Group::where('edit', 0)->where('name', $group_name)->first();
         $allChildIds = $group->getAllChildIds();
@@ -133,7 +103,6 @@ class RevImpController extends Controller
             $query->whereIn('ledger_group_id', $allChildIds)
                 ->orWhere(function ($subQuery) use ($allChildIds) {
                     foreach ($allChildIds as $child) {
-                        $subQuery->orWhereJsonContains('ledger_group_id', (string)$child);
                         $subQuery->orWhereJsonContains('ledger_group_id', (string)$child);
                     }
                 });
@@ -146,15 +115,6 @@ class RevImpController extends Controller
         $dep_method = $organization->dep_method;
         $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
 
-        return view('fixed-asset.revaluation-impairement.create', compact('locations', 'assets', 'series', 'assets', 'categories', 'ledgers', 'financialEndDate', 'financialStartDate', 'dep_percentage', 'dep_type', 'dep_method'));
-        })->get();
-        $financialEndDate = Helper::getFinancialYear(date('Y-m-d'))['end_date'];
-        $financialStartDate = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
-        $organization = Helper::getAuthenticatedUser()->organization;
-        $dep_percentage = $organization->dep_percentage;
-        $dep_type = $organization->dep_type;
-        $dep_method = $organization->dep_method;
-        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
 
         return view('fixed-asset.revaluation-impairement.create', compact('locations', 'assets', 'series', 'assets', 'categories', 'ledgers', 'financialEndDate', 'financialStartDate', 'dep_percentage', 'dep_type', 'dep_method'));
     }
@@ -170,14 +130,11 @@ class RevImpController extends Controller
             'type' => get_class($user),
             'organization_id' => $user->organization->id,
             'currency_id' => $user->organization->currency_id,
-            'currency_id' => $user->organization->currency_id,
             'group_id' => $user->organization->group_id,
             'company_id' => $user->organization->company_id,
             'approval_level' => 1,
             'revision_number' => 0,
         ];
-
-        $data = array_merge($request->all(), $additionalData);
 
 
         DB::beginTransaction();
@@ -192,20 +149,8 @@ class RevImpController extends Controller
             }
 
             $data = array_merge($request->all(), $additionalData);
-            if ($request->hasFile('document')) {
-                $file = $request->file('document');
-                $filename = time() . '_' . $file->getClientOriginalName();
-                $file->move(public_path('documents'), $filename);
-                $additionalData['document'] = $filename;
-            }
-
-            $data = array_merge($request->all(), $additionalData);
             $asset = FixedAssetRevImp::create($data);
 
-            if ($asset->document_status != ConstantHelper::DRAFT) {
-                $doc = Helper::approveDocument($asset->book_id, $asset->id, $asset->revision_number, $asset->remarks, null, 1, 'submit', 0, get_class($asset));
-                $asset->document_status = $doc['approvalStatus'] ?? $asset->document_status;
-                $asset->save();
             if ($asset->document_status != ConstantHelper::DRAFT) {
                 $doc = Helper::approveDocument($asset->book_id, $asset->id, $asset->revision_number, $asset->remarks, null, 1, 'submit', 0, get_class($asset));
                 $asset->document_status = $doc['approvalStatus'] ?? $asset->document_status;
@@ -236,9 +181,7 @@ class RevImpController extends Controller
         $currNumber = $r->revisionNumber;
         if ($currNumber) {
             $data = FixedAssetRevImpHistory::withDefaultGroupCompanyOrg()->findorFail($id);
-            $data = FixedAssetRevImpHistory::withDefaultGroupCompanyOrg()->findorFail($id);
         } else {
-            $data = FixedAssetRevImp::withDefaultGroupCompanyOrg()->findorFail($id);
             $data = FixedAssetRevImp::withDefaultGroupCompanyOrg()->findorFail($id);
         }
         $revision_number = $data->revision_number;
@@ -257,25 +200,8 @@ class RevImpController extends Controller
             $revision_number
         );
 
-        $buttons = Helper::actionButtonDisplay(
-            $data->book_id,
-            $data->document_status,
-            $data->id,
-            0,
-            $data->approval_level,
-            $data->created_by ?? 0,
-            $userType['type'],
-            $revision_number
-        );
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$data->document_status] ?? '';
         $revNo = $data->revision_number;
-        $approvalHistory = Helper::getApprovalHistory($data->book_id, $data->id, $revNo, 0, $data->created_by);
-
-        $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)->get();
-
-        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
-
-        return view('fixed-asset.revaluation-impairement.show', compact('locations', 'assets', 'data', 'buttons', 'docStatusClass', 'approvalHistory', 'revision_number'));
         $approvalHistory = Helper::getApprovalHistory($data->book_id, $data->id, $revNo, 0, $data->created_by);
 
         $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)->get();
@@ -289,7 +215,6 @@ class RevImpController extends Controller
      * Show the form for editing the specified resource.
      */
     public function edit(Request $request, $id)
-    public function edit(Request $request, $id)
     {
         $parentURL = "fixed-asset_rev";
         $series = [];
@@ -301,14 +226,12 @@ class RevImpController extends Controller
         $firstService = $servicesBooks['services'][0];
         $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
         $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)->get();
-        $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)->get();
         $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         $group_name = ConstantHelper::FIXED_ASSETS;
 
 
         $group = Group::withDefaultGroupCompanyOrg()->where('name', $group_name)->first() ?: Group::where('edit', 0)->where('name', $group_name)->first();
 
-        $group = Group::withDefaultGroupCompanyOrg()->where('name', $group_name)->first() ?: Group::where('edit', 0)->where('name', $group_name)->first();
         $allChildIds = $group->getAllChildIds();
         $allChildIds[] = $group->id;
         $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
@@ -320,17 +243,7 @@ class RevImpController extends Controller
                     }
                 });
         })->get();
-        $financialEndDate = Helper::getFinancialYear(date('Y-m-d'))['end_date'];
-        $financialStartDate = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
-        $organization = Helper::getAuthenticatedUser()->organization;
-        $dep_percentage = $organization->dep_percentage;
-        $dep_type = $organization->dep_type;
-        $dep_method = $organization->dep_method;
-        $data = FixedAssetRevImp::find($id);
-        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
-
-        return view('fixed-asset.revaluation-impairement.edit', compact('locations', 'data', 'assets', 'series', 'assets', 'categories', 'ledgers', 'financialEndDate', 'financialStartDate', 'dep_percentage', 'dep_type', 'dep_method'));
-        })->get();
+     
         $financialEndDate = Helper::getFinancialYear(date('Y-m-d'))['end_date'];
         $financialStartDate = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
         $organization = Helper::getAuthenticatedUser()->organization;
@@ -350,15 +263,11 @@ class RevImpController extends Controller
     public function update(Request $request, $id)
     {
         $asset = FixedAssetRevImp::findOrFail($id);
-    {
-        $asset = FixedAssetRevImp::findOrFail($id);
 
         $data = $request->all();
-        $data = $request->all();
-
+        
         DB::beginTransaction();
-        DB::beginTransaction();
-
+        
         try {
              if ($request->hasFile('document')) {
                 $file = $request->file('document');
@@ -370,19 +279,8 @@ class RevImpController extends Controller
 
             
             $asset->update($data);
-        try {
-             if ($request->hasFile('document')) {
-                $file = $request->file('document');
-                $filename = time() . '_' . $file->getClientOriginalName();
-                $file->move(public_path('documents'), $filename);
-                $additionalData['document'] = $filename;
-                $data = array_merge($request->all(), $additionalData);
-            }
-
-            
-            $asset->update($data);
-
-            if ($asset->document_status != ConstantHelper::DRAFT) {
+        
+                if ($asset->document_status != ConstantHelper::DRAFT) {
                 $doc = Helper::approveDocument($asset->book_id, $asset->id, $asset->revision_number, $asset->remarks, null, 1, 'submit', 0, get_class($asset));
                 $asset->document_status = $doc['approvalStatus'] ?? $asset->document_status;
                 $asset->save();
@@ -394,18 +292,7 @@ class RevImpController extends Controller
             return redirect()->route("finance.fixed-asset.revaluation-impairement.edit", $id)->with('error', $e->getMessage());
         }
     }
-            if ($asset->document_status != ConstantHelper::DRAFT) {
-                $doc = Helper::approveDocument($asset->book_id, $asset->id, $asset->revision_number, $asset->remarks, null, 1, 'submit', 0, get_class($asset));
-                $asset->document_status = $doc['approvalStatus'] ?? $asset->document_status;
-                $asset->save();
-            }
-            DB::commit();
-            return redirect()->route("finance.fixed-asset.revaluation-impairement.index")->with('success', 'Asset Rev/Imp updated successfully!');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return redirect()->route("finance.fixed-asset.revaluation-impairement.edit", $id)->with('error', $e->getMessage());
-        }
-    }
+
 
 
     /**
@@ -425,7 +312,6 @@ class RevImpController extends Controller
         try {
             $doc = FixedAssetRevImp::find($request->id);
             $bookId = $doc->book_id;
-            $bookId = $doc->book_id;
             $docId = $doc->id;
             $docValue = 0;
             $remarks = $request->remarks;
@@ -434,7 +320,6 @@ class RevImpController extends Controller
             $revisionNumber = $doc->revision_number ?? 0;
             $actionType = $request->action_type; // Approve or reject
             $modelName = get_class($doc);
-            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
             $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
             $doc->approval_level = $approveDocument['nextLevel'];
             $doc->document_status = $approveDocument['approvalStatus'];
@@ -458,18 +343,13 @@ class RevImpController extends Controller
         try {
             $data = FinancialPostingHelper::financeVoucherPosting((int)$request->book_id ?? 0, $request->document_id ?? 0, $request->type ?? 'get');
             return response()->json([
-            $data = FinancialPostingHelper::financeVoucherPosting((int)$request->book_id ?? 0, $request->document_id ?? 0, $request->type ?? 'get');
-            return response()->json([
                 'status' => 'success',
                 'data' => $data
             ]);
         } catch (Exception $ex) {
             return response()->json([
-        } catch (Exception $ex) {
-            return response()->json([
                 'status' => 'exception',
                 'message' => 'Some internal error occured',
-                'error' => $ex->getMessage() . $ex->getFile() . $ex->getLine()
                 'error' => $ex->getMessage() . $ex->getFile() . $ex->getLine()
             ]);
         }

@@ -24,6 +24,7 @@ use App\Models\FixedAssetSplit;
 use App\Models\FixedAssetDepreciation;
 use App\Models\FixedAssetSubHistory;
 use App\Models\FixedAssetRevImp;
+use App\Models\CostCenter;
 use Exception;
 use App\Models\ErpStore;
 use App\Models\Group;
@@ -676,5 +677,29 @@ class RegistrationController extends Controller
         FixedAssetSplit::truncate();
         FixedAssetDepreciation::truncate();
         FixedAssetRevImp::truncate();
+    }
+    public function getLocations(Request $request)
+    {
+        $categoryId = $request->input('category_id');
+        $locationIds = FixedAssetRegistration::withDefaultGroupCompanyOrg()->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)->where('category_id', $categoryId)->pluck('location_id')->unique()->toArray();
+        $locations = ErpStore::withDefaultGroupCompanyOrg()->whereIn('id',$locationIds)
+            ->where('status', 'active')
+            ->get(['id', 'store_name as name']);
+       
+        return response()->json($locations);
+    }
+     public function getCostCenters(Request $request)
+    {
+        $categoryId = $request->input('category_id');
+        $locationId =  $request->input('location_id');
+        $locationIds = FixedAssetRegistration::withDefaultGroupCompanyOrg()->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
+        ->where('category_id', $categoryId)
+        ->where('location_id',$locationId)
+        ->pluck('cost_center_id')->unique()->toArray();
+        $costCenters = CostCenter::withDefaultGroupCompanyOrg()->whereIn('id',$locationIds)
+            ->where('status', 'active')
+            ->get(['id', 'name']);
+       
+        return response()->json($costCenters);
     }
 }

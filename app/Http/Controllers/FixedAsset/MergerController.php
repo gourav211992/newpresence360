@@ -197,10 +197,11 @@ class MergerController extends Controller
         $approvalHistory = Helper::getApprovalHistory($data->book_id, $data->id, $revNo, $data->current_value, $data->created_by);
 
         $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)->get();
-
+$categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
+        
         $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
 
-        return view('fixed-asset.merger.show', compact('locations', 'assets', 'data', 'buttons', 'docStatusClass', 'approvalHistory', 'revision_number'));
+        return view('fixed-asset.merger.show', compact('categories','locations', 'assets', 'data', 'buttons', 'docStatusClass', 'approvalHistory', 'revision_number'));
     }
 
     /**
@@ -241,7 +242,7 @@ class MergerController extends Controller
         $dep_method = $organization->dep_method;
         $data = FixedAssetMerger::find($id);
         $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
-
+        
         return view('fixed-asset.merger.edit', compact('locations', 'data', 'assets', 'series', 'assets', 'categories', 'ledgers', 'financialEndDate', 'financialStartDate', 'dep_percentage', 'dep_type', 'dep_method'));
     }
 

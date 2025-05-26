@@ -124,6 +124,24 @@
                                                             name="document_date" value="{{ $data->document_date }}" required>
                                                     </div>
                                                 </div>
+                                                 <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Category <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <select class="form-select select2" name="old_category_id"
+                                                            id="old_category" required>
+                                                            @foreach ($categories as $category)
+                                                                <option value="{{ $category->id }}"
+                                                                    {{$data->old_category_id == $category->id ? 'selected' : '' }}>
+                                                                    {{ $category->name }}
+                                                                </option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+                                                </div>
+
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Location <span
@@ -154,22 +172,7 @@
                                                     </div>
 
                                                 </div>
-                                               <div class="row align-items-center mb-1">
-                                                        <div class="col-md-3">
-                                                            <label class="form-label">Category <span
-                                                                    class="text-danger">*</span></label>
-                                                        </div>
-                                                        <div class="col-md-5">
-                                                                    <select class="form-select select2" name="category_id" id="category" required>
-                                                                        <option value="" {{ old('category') ? '' : 'selected' }}>Select</option>
-                                                                        @foreach($categories as $category)
-                                                                            <option value="{{ $category->id }}" {{ $data->category_id == $category->id ? 'selected' : '' }}>
-                                                                                {{ $category->name }}
-                                                                            </option>
-                                                                        @endforeach
-                                                                    </select>
-                                                                    </div>
-                                                    </div>
+                                          
 
                                             </div>
 
@@ -305,6 +308,24 @@
                                             </div>
                                             <div class="card-body">
                                                 <div class="row">
+                                                    <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">Category <span
+                                                                    class="text-danger">*</span></label>
+                                                             <select class="form-select select2" name="category_id"
+                                                            id="category" required>
+                                                            <option value="" {{ old('category') ? '' : 'selected' }}>
+                                                                Select</option>
+                                                            @foreach ($categories as $category)
+                                                                <option value="{{ $category->id }}"
+                                                                    {{ $data->category_id == $category->id ? 'selected' : '' }}>
+                                                                    {{ $category->name }}
+                                                                </option>
+                                                            @endforeach
+                                                        </select>
+                                                        </div>
+                                                    </div>
+
                                                    
 
                                                     <div class="col-md-3">
@@ -692,9 +713,13 @@
                 "@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach"
             );
         @endif
-        $('#category').on('change',function(){
-                 $('.mrntableselectexcel').empty();
+        $('#old_category').on('change', function() {
+            $('.mrntableselectexcel').empty();
             $('#addNewRowBtn').trigger('click');
+            loadLocation();
+        
+        });
+        $('#category').on('change', function() {
             $('#ledger').val("").select2();
             $('#ledger').trigger('change');
             $('#ledger_group').val("").select2();
@@ -1123,48 +1148,51 @@ function initializeAssetAutocomplete(selector) {
     }
 });
 
-$('#location').on('change', function () {
-    var locationId = $(this).val();
+        $('#location').on('change', function() {
+            var locationId = $(this).val();
+             var selectedCostCenterId = '{{ $data->cost_center_id ?? '' }}'; 
 
-    if (locationId) {
-        // Build the route manually
-        var url = '{{ route("cost-center.get-cost-center", ":id") }}'.replace(':id', locationId);
-        var selectedCostCenterId = '{{ $data->cost_center_id ?? '' }}'; // Use null coalescing for safety
+            if (locationId) {
+                // Build the route manually
+                var url = '{{ route('finance.fixed-asset.get-cost-centers') }}';
 
-        $.ajax({
-            url: url,
-            type: 'GET',
-            dataType: 'json',
-            success: function (data) {
-                if(data.length==0){
-                    $('#cost_center').empty(); 
-                $('#cost_center').prop('required', false);
-                $('.cost_center').hide();
-                loadCategories("{{ $data->category_id }}");
-                }
-                else{
-                    $('.cost_center').show();
-                    $('#cost_center').prop('required', true);
-                $('#cost_center').empty(); // Clear previous options
-                $.each(data, function (key, value) {
-                        let selected = (value.id == selectedCostCenterId) ? 'selected' : '';
-                        $('#cost_center').append('<option value="' + value.id + '" ' + selected + '>' + value.name + '</option>');
-                    });
-                    loadCategories("{{ $data->category_id }}");
-                
-
-            }
-            },
-            error: function () {
+                $.ajax({
+                    url: url,
+                    type: 'GET',
+                    data: {
+                        location_id: locationId,
+                        category_id: $('#old_category').val(),
+                    },
+                    dataType: 'json',
+                    success: function(data) {
+                        if (data.length == 0) {
+                            $('#cost_center').empty();
+                            $('#cost_center').prop('required', false);
+                            $('.cost_center').hide();
+                           // loadCategories();
+                        } else {
+                            $('.cost_center').show();
+                            $('#cost_center').prop('required', true);
+                            $('#cost_center').empty(); // Clear previous options
+                              $.each(data, function (key, value) {
+                                let selected = (value.id == selectedCostCenterId) ? 'selected' : '';
+                                $('#cost_center').append('<option value="' + value.id + '" ' + selected + '>' + value.name + '</option>');
+                            });
+                            $('#cost_center').trigger('change');
+                        }
+                    },
+                    error: function() {
+                        $('#cost_center').empty();
+                    }
+                });
+            } else {
                 $('#cost_center').empty();
             }
         });
-    } else {
-        $('#cost_center').empty();
-    }
-});
 
-$('#location').trigger('change');
+
+       
+
 function getAllAssetIds() {
     let assetIds = [];
 
@@ -1178,36 +1206,39 @@ function getAllAssetIds() {
     return assetIds;
 }
 
-        $('#cost_center').on('change', function() {
-            loadCategories();
-        });
-
-        function loadCategories(selectcategory = null) {
-            const url = '{{ route('finance.fixed-asset.get-categories') }}';
+              function loadLocation(selectlocation = null) {
+            $('#cost_center').empty();
+            $('#cost_center').prop('required', false);
+            $('.cost_center').hide();
+            if(!$('#old_category').val()) {
+                return;
+            }
+            const url = '{{ route('finance.fixed-asset.get-locations') }}';
 
             $.ajax({
                 url: url,
                 type: 'GET',
                 data: {
-                    location_id: $('#location').val(),
-                    cost_center_id: $('#cost_center').val(),
+                    category_id: $('#old_category').val(),
                 },
                 dataType: 'json',
                 success: function(data) {
-                    const $category = $('#category');
-                    $category.empty().append('<option value="">Select Category</option>');
+                    const $category = $('#location');
+                    $category.empty();
 
                     $.each(data, function(key, value) {
-                        const isSelected = selectcategory == value.id ? ' selected' : '';
+                        const isSelected = selectlocation == value.id ? ' selected' : '';
                         $category.append('<option value="' + value.id + '"' + isSelected + '>' + value
                             .name + '</option>');
                     });
+                    $('#location').trigger('change');
                 },
                 error: function() {
-                    $('#category').empty();
+                    $('#location').empty();
                 }
             });
         }
+        loadLocation('{{ $data->location_id ?? '' }}');
 
     </script>
     <!-- END: Content-->
