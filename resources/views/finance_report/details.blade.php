@@ -114,7 +114,7 @@
                                                     </td>
                                                         <td class="text-end">@if($d->invoice_amount!=""){{ Helper::formatIndianNumber($d->invoice_amount)}}@endif</td>
                                                     <td class="outstanding text-end">{{ $d->total_outstanding < 0 ? 0: Helper::formatIndianNumber($d->total_outstanding) }}</td>
-                                                    <td class="outstanding text-end">{{ $runningTotal }}</td>
+                                                    <td class="outstanding text-end">{{ Helper::formatIndianNumber($runningTotal) }}</td>
 
                                                     <td class="overdue text-end">
                                                           @if($d->overdue_days!="-")

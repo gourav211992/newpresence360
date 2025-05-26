@@ -165,7 +165,7 @@ class Helper
         $startDate = request()->cookie('fyear_start_date') ?? $date;
         $endDate = request()->cookie('fyear_end_date') ?? $date;
 
-        \Log::info('FY Start Date: ' . $startDate . ' | FY End Date: ' . $endDate);
+        
         $financialYear = ErpFinancialYear::withDefaultGroupCompanyOrg()
             ->where('start_date', '<=', $startDate)
             ->where('end_date', '>=', $endDate)
@@ -1976,7 +1976,6 @@ class Helper
             $totalCreditOpen = 0;
             $totalDebitOpen = 0;
             foreach ($groups as $master) {
-                // dd($master)
                 $allChildIds = $master->getAllChildIds();
                 $allChildIds[] = $master->id;
                 $allChildIds = Helper::getGroupsQuery($organizations)

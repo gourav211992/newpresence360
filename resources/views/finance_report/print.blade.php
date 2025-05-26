@@ -211,14 +211,18 @@
                 <td
                     style="font-weight: bold; padding: 2px; border: 1px solid #000;  border-left: none; background: #80808070; text-align: right;padding-right:30px">
                     Balance Amt.</td>
+               @if($bill_type=="outstanding")<td
+                    style="font-weight: bold; padding: 2px; border: 1px solid #000;  border-left: none; background: #80808070; text-align: right;padding-right:30px">
+                    Running Bal.</td>@endif
             </tr>
-            @php $index=0; @endphp
-
+            @php $index=0; $runningTotal = 0; @endphp
             @foreach($data as $key => $row)
             @if($bill_type=="outstanding")
             @if($row->total_outstanding > 0)
-            @php $index++; @endphp
-
+            @php $index++;
+               $currentOutstanding = $row->total_outstanding < 0 ? 0 : $row->total_outstanding;
+                $runningTotal += $currentOutstanding;
+            @endphp
             <tr>
                 <td
                     style="padding: 2px; border: 1px solid #000; border-top: none; text-align: center; font-weight: bold;">{{@$index}}</td>
@@ -238,6 +242,9 @@
                 <td
                     style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;padding-right:30px">
                     {{App\Helpers\Helper::formatIndianNumber($row->total_outstanding)}}</td>
+                <td
+                    style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;padding-right:30px">
+                    {{App\Helpers\Helper::formatIndianNumber($runningTotal)}}</td>
             </tr>
             @endif
             @else
