@@ -203,9 +203,10 @@ class SplitController extends Controller
         $approvalHistory = Helper::getApprovalHistory($data->book_id, $data->id, $revNo, $data->current_value, $data->created_by);
         $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
 
+$categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
+        
 
-
-        return view('fixed-asset.split.show', compact('locations', 'data', 'buttons', 'docStatusClass', 'approvalHistory', 'revision_number'));
+        return view('fixed-asset.split.show', compact('categories','locations', 'data', 'buttons', 'docStatusClass', 'approvalHistory', 'revision_number'));
     }
 
     /**

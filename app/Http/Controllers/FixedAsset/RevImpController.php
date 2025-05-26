@@ -38,6 +38,10 @@ class RevImpController extends Controller
         
         if ($request->filter_status)
             $data = $data->where('document_status', $request->filter_status);
+        $data = FixedAssetRevImp::withDefaultGroupCompanyOrg()->orderBy('id', 'desc');
+        
+        if ($request->filter_status)
+            $data = $data->where('document_status', $request->filter_status);
         if ($request->date) {
             $dates = explode(' to ', $request->date);
             $start = date('Y-m-d', strtotime($dates[0]));
@@ -111,6 +115,7 @@ class RevImpController extends Controller
         $dep_method = $organization->dep_method;
         $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
 
+
         return view('fixed-asset.revaluation-impairement.create', compact('locations', 'assets', 'series', 'assets', 'categories', 'ledgers', 'financialEndDate', 'financialStartDate', 'dep_percentage', 'dep_type', 'dep_method'));
     }
 
@@ -131,9 +136,9 @@ class RevImpController extends Controller
             'revision_number' => 0,
         ];
 
-        $data = array_merge($request->all(), $additionalData);
 
         DB::beginTransaction();
+
 
         try {
             if ($request->hasFile('document')) {
@@ -151,6 +156,7 @@ class RevImpController extends Controller
                 $asset->document_status = $doc['approvalStatus'] ?? $asset->document_status;
                 $asset->save();
             }
+
 
 
             DB::commit();
@@ -180,6 +186,7 @@ class RevImpController extends Controller
         }
         $revision_number = $data->revision_number;
 
+
         $userType = Helper::userCheck();
 
         $buttons = Helper::actionButtonDisplay(
@@ -192,6 +199,7 @@ class RevImpController extends Controller
             $userType['type'],
             $revision_number
         );
+
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$data->document_status] ?? '';
         $revNo = $data->revision_number;
         $approvalHistory = Helper::getApprovalHistory($data->book_id, $data->id, $revNo, 0, $data->created_by);
@@ -223,6 +231,7 @@ class RevImpController extends Controller
 
 
         $group = Group::withDefaultGroupCompanyOrg()->where('name', $group_name)->first() ?: Group::where('edit', 0)->where('name', $group_name)->first();
+
         $allChildIds = $group->getAllChildIds();
         $allChildIds[] = $group->id;
         $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
@@ -230,9 +239,11 @@ class RevImpController extends Controller
                 ->orWhere(function ($subQuery) use ($allChildIds) {
                     foreach ($allChildIds as $child) {
                         $subQuery->orWhereJsonContains('ledger_group_id', (string)$child);
+                        $subQuery->orWhereJsonContains('ledger_group_id', (string)$child);
                     }
                 });
         })->get();
+     
         $financialEndDate = Helper::getFinancialYear(date('Y-m-d'))['end_date'];
         $financialStartDate = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
         $organization = Helper::getAuthenticatedUser()->organization;
@@ -254,9 +265,9 @@ class RevImpController extends Controller
         $asset = FixedAssetRevImp::findOrFail($id);
 
         $data = $request->all();
-
+        
         DB::beginTransaction();
-
+        
         try {
              if ($request->hasFile('document')) {
                 $file = $request->file('document');
@@ -268,8 +279,8 @@ class RevImpController extends Controller
 
             
             $asset->update($data);
-
-            if ($asset->document_status != ConstantHelper::DRAFT) {
+        
+                if ($asset->document_status != ConstantHelper::DRAFT) {
                 $doc = Helper::approveDocument($asset->book_id, $asset->id, $asset->revision_number, $asset->remarks, null, 1, 'submit', 0, get_class($asset));
                 $asset->document_status = $doc['approvalStatus'] ?? $asset->document_status;
                 $asset->save();
@@ -281,6 +292,7 @@ class RevImpController extends Controller
             return redirect()->route("finance.fixed-asset.revaluation-impairement.edit", $id)->with('error', $e->getMessage());
         }
     }
+
 
 
     /**

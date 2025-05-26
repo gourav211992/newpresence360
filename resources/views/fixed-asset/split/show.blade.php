@@ -122,6 +122,7 @@
                                                             name="document_number" required disabled value="{{ $data->document_number }}">
                                                     </div>
                                                 </div>
+                                                
 
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
@@ -131,6 +132,23 @@
                                                     <div class="col-md-5">
                                                         <input type="date" class="form-control indian-number " id="document_date"
                                                             name="document_date" value="{{ $data->document_date }}" readonly required>
+                                                    </div>
+                                                </div>
+                                                  <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Category <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <select class="form-select select2" name="old_category_id" disabled
+                                                            id="old_category" required>
+                                                            @foreach ($categories as $category)
+                                                                <option value="{{ $category->id }}"
+                                                                    {{ $data->old_category_id == $category->id ? 'selected' : '' }}>
+                                                                    {{ $category->name }}
+                                                                </option>
+                                                            @endforeach
+                                                        </select>
                                                     </div>
                                                 </div>
                                                 <div class="row align-items-center mb-1">

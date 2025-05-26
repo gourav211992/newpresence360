@@ -272,7 +272,7 @@ class Helper
         ];
     }
 
-    public static function generateDocumentNumberNew(int $book_id, string $document_date, stdClass $parameters = null): mixed
+    public static function generateDocumentNumberNew(int $book_id, string $document_date, stdClass $parameters = null, $authUser = null): mixed
     {
 
         $book = Book::find($book_id);
@@ -297,7 +297,7 @@ class Helper
                 if ($data->reset_pattern === ConstantHelper::DOC_RESET_PATTERN_NEVER) {
                     $prefix = $data->prefix;
                     $suffix = $data->suffix;
-                    $currentDocNo = $model->withDefaultGroupCompanyOrg()->where('book_id', $book_id)
+                    $currentDocNo = $model->withDefaultGroupCompanyOrg($authUser)->where('book_id', $book_id)
                         ->whereNotNull('doc_no')->orderBy('doc_no', 'DESC')->pluck('doc_no')->first() ?? $startFrom;
                 } else if ($data->reset_pattern === ConstantHelper::DOC_RESET_PATTERN_YEARLY) {
                     if (!(isset($financialYear) && isset($financialQuarter) && isset($financialMonth))) {
@@ -314,7 +314,7 @@ class Helper
                     }
                     $prefix = $financialYear['alias'];
                     $suffix = $data->suffix;
-                    $currentDocNo = $model->withDefaultGroupCompanyOrg()->where('book_id', $book_id)
+                    $currentDocNo = $model->withDefaultGroupCompanyOrg($authUser)->where('book_id', $book_id)
                         ->whereNotNull('doc_no')
                         ->whereBetween('document_date', [$financialYear['start_date'], $financialYear['end_date']])
                         ->orderBy('doc_no', 'DESC')->pluck('doc_no')->first() ?? $startFrom;
@@ -333,7 +333,7 @@ class Helper
                     }
                     $prefix = $financialYear['alias'] . "-" . $financialQuarter['alias'];
                     $suffix = $data->suffix;
-                    $currentDocNo = $model->withDefaultGroupCompanyOrg()->where('book_id', $book_id)
+                    $currentDocNo = $model->withDefaultGroupCompanyOrg($authUser)->where('book_id', $book_id)
                         ->whereNotNull('doc_no')
                         ->whereBetween('document_date', [$financialQuarter['start_date'], $financialQuarter['end_date']])
                         ->orderBy('doc_no', 'DESC')->pluck('doc_no')->first() ?? $startFrom;
@@ -341,7 +341,7 @@ class Helper
                     if (isset($financialYear) && isset($financialQuarter) && isset($financialMonth)) {
                         $prefix = $financialYear['alias'] . "-" . $financialMonth['alias'];
                         $suffix = $data->suffix;
-                        $currentDocNo = $model->withDefaultGroupCompanyOrg()->where('book_id', $book_id)
+                        $currentDocNo = $model->withDefaultGroupCompanyOrg($authUser)->where('book_id', $book_id)
                             ->whereNotNull('doc_no')
                             ->whereBetween('document_date', [$financialMonth['start_date'], $financialMonth['end_date']])
                             ->orderBy('doc_no', 'DESC')->pluck('doc_no')->first() ?? $startFrom;
