@@ -79,13 +79,13 @@
                                                             <i data-feather="more-vertical"></i>
                                                         </button>
                                                         <div class="dropdown-menu dropdown-menu-end">
-                                                            <a class="dropdown-item" href="{{ route('finance.fixed-asset.setup.show', $asset->id) }}">
+                                                            {{-- <a class="dropdown-item" href="{{ route('finance.fixed-asset.setup.show', $asset->id) }}">
                                                                 <i data-feather="edit" class="me-50"></i>
                                                                 <span>View Detail</span>
-                                                            </a>
+                                                            </a> --}}
                                                             <a class="dropdown-item" href="{{ route('finance.fixed-asset.setup.edit', $asset->id) }}">
                                                                 <i data-feather="edit-3" class="me-50"></i>
-                                                                <span>Edit</span>
+                                                                <span>View</span>
                                                             </a>
                                                             <a class="dropdown-item" href="{{ route('finance.fixed-asset.setup.destroy', $asset->id) }}" onclick="event.preventDefault(); document.getElementById('delete-form-{{ $asset->id }}').submit();">
                                                                 <i data-feather="trash-2" class="me-50"></i>

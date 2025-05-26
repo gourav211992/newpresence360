@@ -2379,7 +2379,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::post('fixed-asset/merger/post', [MergerController::class, 'postInvoice'])->name('finance.fixed-asset.merger.post');
     Route::get('fixed-asset/merger/amendment/{id}', [MergerController::class, 'amendment'])->name('finance.fixed-asset.merger.amendment');
 
-    Route::resource('fixed-asset/revaluation-impairement', RevImpController::class)->names([
+    Route::resource('fixed-asset/rev', RevImpController::class)->names([
         'index' => 'finance.fixed-asset.revaluation-impairement.index',
         'create' => 'finance.fixed-asset.revaluation-impairement.create',
         'store' => 'finance.fixed-asset.revaluation-impairement.store',
@@ -2387,11 +2387,11 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         'edit' => 'finance.fixed-asset.revaluation-impairement.edit',
         'update' => 'finance.fixed-asset.revaluation-impairement.update',
     ]);
-    Route::post('fixed-asset/revaluation-impairement/approval', [RevImpController::class, 'documentApproval'])->name('finance.fixed-asset.revaluation-impairement.approval');
-    Route::post('fixed-asset/revaluation-impairement/filter', [RevImpController::class, 'index'])->name('finance.fixed-asset.revaluation-impairement.filter');
-    Route::get('fixed-asset/revaluation-impairement/posting/get', [RevImpController::class, 'getPostingDetails'])->name('finance.fixed-asset.revaluation-impairement.posting.get');
-    Route::post('fixed-asset/revaluation-impairement/post', [RevImpController::class, 'postInvoice'])->name('finance.fixed-asset.revaluation-impairement.post');
-    Route::get('fixed-asset/revaluation-impairement/amendment/{id}', [RevImpController::class, 'amendment'])->name('finance.fixed-asset.revaluation-impairement.amendment');
+    Route::post('fixed-asset/rev/approval', [RevImpController::class, 'documentApproval'])->name('finance.fixed-asset.revaluation-impairement.approval');
+    Route::post('fixed-asset/rev/filter', [RevImpController::class, 'index'])->name('finance.fixed-asset.revaluation-impairement.filter');
+    Route::get('fixed-asset/rev/posting/get', [RevImpController::class, 'getPostingDetails'])->name('finance.fixed-asset.revaluation-impairement.posting.get');
+    Route::post('fixed-asset/rev/post', [RevImpController::class, 'postInvoice'])->name('finance.fixed-asset.revaluation-impairement.post');
+    Route::get('fixed-asset/rev/amendment/{id}', [RevImpController::class, 'amendment'])->name('finance.fixed-asset.revaluation-impairement.amendment');
 
 
     Route::resource('asset-category',AssetCategoryController::class);

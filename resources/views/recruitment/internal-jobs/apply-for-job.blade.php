@@ -1,4 +1,4 @@
-@extends('recruitment.layouts.app')
+@extends('layouts.app')
 @section('content')
     <!-- BEGIN: Content-->
     <div class="app-content content ">
@@ -159,6 +159,8 @@
     <!-- END: Content-->
 @endsection
 @section('scripts')
+    <script src="{{ asset('app-assets/js/common-script-v2.js') }}"></script>
+
     <script>
         $(document).ready(function() {
             toggleAppliedFor();

@@ -68,7 +68,8 @@ class SetupController extends Controller
             ->where('status', 'active')
             ->get();
 
-        $group_names = [ConstantHelper::INDIRECT_EXPENSES, ConstantHelper::DIRECT_EXPENSES];
+        //depreciation ledgers
+            $group_names = [ConstantHelper::INDIRECT_EXPENSES, ConstantHelper::DIRECT_EXPENSES];
 
         // Get all matching groups
         $groups = Helper::getGroupsQuery()->whereIn('name', $group_names)->get();
@@ -93,7 +94,7 @@ class SetupController extends Controller
                     });
             })->get();
 
-
+        //assets ledgers
         $group_name = ConstantHelper::FIXED_ASSETS;
         $group = Helper::getGroupsQuery()->where('name', $group_name)->first();
         $allChildIds = $group->getAllChildIds();
@@ -107,9 +108,38 @@ class SetupController extends Controller
                 });
         })->get();
 
+        //expense and sales ledgers
+        $group_name = ConstantHelper::INDIRECT_EXPENSES;
+        $group = Helper::getGroupsQuery()->where('name', $group_name)->first();
+        $allChildIds = $group->getAllChildIds();
+        $allChildIds[] = $group->id;
+        $sales_exp_ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
+            $query->whereIn('ledger_group_id', $allChildIds)
+                ->orWhere(function ($subQuery) use ($allChildIds) {
+                    foreach ($allChildIds as $child) {
+                        $subQuery->orWhereJsonContains('ledger_group_id', (string)$child);
+                    }
+                });
+        })->get();
+
+        //surplus ledgers
+        $group_name = ConstantHelper::RESERVE_SURPLUS;
+        $group = Helper::getGroupsQuery()->where('name', $group_name)->first();
+        $allChildIds = $group->getAllChildIds();
+        $allChildIds[] = $group->id;
+        $sur_ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
+            $query->whereIn('ledger_group_id', $allChildIds)
+                ->orWhere(function ($subQuery) use ($allChildIds) {
+                    foreach ($allChildIds as $child) {
+                        $subQuery->orWhereJsonContains('ledger_group_id', (string)$child);
+                    }
+                });
+        })->get();
+
+        
         $dep_ledger_id = FixedAssetSetup::withDefaultGroupCompanyOrg()->orderBy('updated_at', 'desc')->first()?->dep_ledger_id;
         $dep_ledger_group_id = FixedAssetSetup::withDefaultGroupCompanyOrg()->orderBy('updated_at', 'desc')->first()?->dep_ledger_group_id;
-        return view('fixed-asset.setup.create', compact('categories', 'ledgers', 'dep_ledger_id', 'dep_ledger_group_id', 'dep_ledgers'));
+        return view('fixed-asset.setup.create', compact('categories', 'ledgers', 'dep_ledger_id', 'dep_ledger_group_id', 'dep_ledgers', 'sur_ledgers', 'sales_exp_ledgers'));
     }
 
     /**
@@ -230,6 +260,35 @@ class SetupController extends Controller
                 });
         })->get();
 
+        
+        //expense ledgers
+        $group_name = ConstantHelper::INDIRECT_EXPENSES;
+        $group = Helper::getGroupsQuery()->where('name', $group_name)->first();
+        $allChildIds = $group->getAllChildIds();
+        $allChildIds[] = $group->id;
+        $sales_exp_ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
+            $query->whereIn('ledger_group_id', $allChildIds)
+                ->orWhere(function ($subQuery) use ($allChildIds) {
+                    foreach ($allChildIds as $child) {
+                        $subQuery->orWhereJsonContains('ledger_group_id', (string)$child);
+                    }
+                });
+        })->get();
+
+        //surplus ledgers
+        $group_name = ConstantHelper::RESERVE_SURPLUS;
+        $group = Helper::getGroupsQuery()->where('name', $group_name)->first();
+        $allChildIds = $group->getAllChildIds();
+        $allChildIds[] = $group->id;
+        $sur_ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
+            $query->whereIn('ledger_group_id', $allChildIds)
+                ->orWhere(function ($subQuery) use ($allChildIds) {
+                    foreach ($allChildIds as $child) {
+                        $subQuery->orWhereJsonContains('ledger_group_id', (string)$child);
+                    }
+                });
+        })->get();
+
 
         $ledgerGroups = json_decode(self::getLedgerGroups($data->ledger_id)->content());
         $ledgerGroupsDep = json_decode(self::getLedgerGroups($data->dep_ledger_id)->content());
@@ -239,7 +298,7 @@ class SetupController extends Controller
 
 
 
-        return view('fixed-asset.setup.edit', compact('ledgerGroups', 'categories', 'data', 'ledgers', 'ledgerGroupsDep', 'dep_ledgers'));
+        return view('fixed-asset.setup.edit', compact('ledgerGroups', 'categories', 'data', 'ledgers', 'ledgerGroupsDep', 'dep_ledgers', 'sur_ledgers', 'sales_exp_ledgers'));
     }
 
     /**

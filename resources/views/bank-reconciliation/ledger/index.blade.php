@@ -1,4 +1,4 @@
-@extends('recruitment.layouts.app')
+@extends('layouts.app')
 
 @section('content')
     <!-- BEGIN: Content-->

@@ -1,4 +1,4 @@
-@extends('recruitment.layouts.app')
+@extends('layouts.app')
 
 @section('content')
     <!-- BEGIN: Content-->
@@ -143,4 +143,7 @@
         </div>
     </div>
     <!-- END: Content-->
+@endsection
+@section('scripts')
+    <script src="{{ asset('app-assets/js/common-script-v2.js') }}"></script>
 @endsection

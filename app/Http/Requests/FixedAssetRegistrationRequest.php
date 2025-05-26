@@ -79,7 +79,7 @@ class FixedAssetRegistrationRequest extends FormRequest
                     'status' => 'required|string',
                     'category_id' => 'required|integer',
                     'asset_name' => 'required|string',
-                    'asset_code' => 'required|string|unique:erp_finance_fixed_asset_registration,asset_code', // Unique rule without exclusion
+                    'asset_code' => 'required|string', // Unique rule without exclusion
                     'quantity' => 'required|numeric',
                     'ledger_id' => 'nullable|integer',
                     'ledger_group_id' => 'nullable|integer',
@@ -109,7 +109,7 @@ class FixedAssetRegistrationRequest extends FormRequest
                     'document_number' => 'required|string',
                     'document_date' => 'required|date',
                     'asset_name' => 'required|string',
-                    'asset_code' => 'required|string|unique:erp_finance_fixed_asset_registration,asset_code', // Unique rule without exclusion
+                    'asset_code' => 'required|string', // Unique rule without exclusion
                     'status' => 'required|string',
                 ];
             }

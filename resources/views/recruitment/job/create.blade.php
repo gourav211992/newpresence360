@@ -1,5 +1,4 @@
-@extends('recruitment.layouts.app')
-
+@extends('layouts.app')
 @section('style')
     <style>
         .note-editor.note-frame.card {
@@ -274,7 +273,7 @@
                                                                         <div class="col-md-6">
                                                                             <input type="text" name="no_of_position"
                                                                                 value=""
-                                                                                class="form-control numberonly" />
+                                                                                class="form-control numberonly-v2" />
                                                                         </div>
                                                                     </div>
 
@@ -444,13 +443,13 @@
 
                                                                         <div class="col-md-3 mb-sm-0 mb-1">
                                                                             <input type="number"
-                                                                                class="form-control numberonly"
+                                                                                class="form-control numberonly-v2"
                                                                                 placeholder="Min" name="work_exp_min" />
                                                                         </div>
 
                                                                         <div class="col-md-3 mb-sm-0 mb-1">
                                                                             <input type="number"
-                                                                                class="form-control numberonly"
+                                                                                class="form-control numberonly-v2"
                                                                                 placeholder="Max" name="work_exp_max" />
                                                                         </div>
                                                                     </div>
@@ -485,7 +484,7 @@
 
                                                                         <div class="col-md-3 mb-sm-0 mb-1">
                                                                             <input type="number"
-                                                                                class="form-control numberonly"
+                                                                                class="form-control numberonly-v2"
                                                                                 placeholder="Min"
                                                                                 name="annual_salary_min" />
                                                                             <div
@@ -502,7 +501,7 @@
 
                                                                         <div class="col-md-3 mb-sm-0 mb-1">
                                                                             <input type="number"
-                                                                                class="form-control numberonly"
+                                                                                class="form-control numberonly-v2"
                                                                                 placeholder="Max"
                                                                                 name="annual_salary_max" />
                                                                         </div>
@@ -555,6 +554,7 @@
                                                                             <textarea class="form-control summernote" name="description">{{ old('description') }}</textarea>
                                                                         </div>
                                                                     </div>
+
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -656,6 +656,8 @@
 @endsection
 
 @section('scripts')
+    <script src="{{ asset('app-assets/js/common-script-v2.js') }}"></script>
+
     <script>
         $("#skill").select2({
             tags: true

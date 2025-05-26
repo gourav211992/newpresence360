@@ -29,34 +29,31 @@ class DepreciationController extends Controller
 {
     public function index(Request $request)
     {
-        $parentURL = request() -> segments()[0];
+        $parentURL = request()->segments()[0];
         $parentURL = "fixed-asset_depreciation";
-        
-        
-         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
-         if (count($servicesBooks['services']) == 0) {
-            return redirect() -> route('/');
-        }
-       $data = FixedAssetDepreciation::withDefaultGroupCompanyOrg()->orderBy('id','desc');
-       if ($request->date) {
-            $dates = explode(' to ', $request->date);
-            $start = date('Y-m-d', strtotime($dates[0]));
-            $end = date('Y-m-d', strtotime($dates[1]));
-            $data = $data->whereDate('document_date', '>=', $start)
-                ->whereDate('document_date', '<=', $end);
-        }
-        else{
-           $fyear = Helper::getFinancialYear(date('Y-m-d'));
 
-            $data = $data->whereDate('document_date', '>=',$fyear['start_date'])
-                ->whereDate('document_date', '<=',$fyear['end_date']);
-                $start = $fyear['start_date'];
-                $end = $fyear['end_date'];
-            
-        
+
+        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
+        if (count($servicesBooks['services']) == 0) {
+            return redirect()->route('/');
         }
-        $data= $data->get();
-        return view('fixed-asset.depreciation.index',compact('data'));
+        $data = FixedAssetDepreciation::withDefaultGroupCompanyOrg()->orderBy('id', 'desc');
+        // if ($request->date) {
+        //     $dates = explode(' to ', $request->date);
+        //     $start = date('Y-m-d', strtotime($dates[0]));
+        //     $end = date('Y-m-d', strtotime($dates[1]));
+        //     $data = $data->whereDate('document_date', '>=', $start)
+        //         ->whereDate('document_date', '<=', $end);
+        // } else {
+        //     $fyear = Helper::getFinancialYear(date('Y-m-d'));
+
+        //     $data = $data->whereDate('document_date', '>=', $fyear['start_date'])
+        //         ->whereDate('document_date', '<=', $fyear['end_date']);
+        //     $start = $fyear['start_date'];
+        //     $end = $fyear['end_date'];
+        // }
+        $data = $data->get();
+        return view('fixed-asset.depreciation.index', compact('data'));
     }
 
     /**
@@ -67,161 +64,138 @@ class DepreciationController extends Controller
         $parentURL = "fixed-asset_depreciation";
         $organization = Helper::getAuthenticatedUser()->organization;
         $financialYear = Helper::getFinancialYear(date('Y-m-d'));
-         $dep_type = $organization->dep_type; 
-        
+        $dep_type = $organization->dep_type;
+
         $periods = $this->getPeriods($financialYear['start_date'], $financialYear['end_date'], $dep_type);
-        
+
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
-         if (count($servicesBooks['services']) == 0) {
-            return redirect() -> route('/');
+        if (count($servicesBooks['services']) == 0) {
+            return redirect()->route('/');
         }
         $firstService = $servicesBooks['services'][0];
-        $series = Helper::getBookSeriesNew($firstService -> alias, $parentURL)->get();
-        $fy = date('Y', strtotime($financialYear['start_date']))."-".date('Y', strtotime($financialYear['end_date']));
+        $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
+        $fy = date('Y', strtotime($financialYear['start_date'])) . "-" . date('Y', strtotime($financialYear['end_date']));
         $financialEndDate = Helper::getFinancialYear(date('Y-m-d'))['end_date'];
         $financialStartDate = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
-                
-    
-       $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
-        
-        
-        return view('fixed-asset.depreciation.create',compact('financialEndDate','financialStartDate','locations','series', 'periods','fy','dep_type'));
+
+
+        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+
+
+        return view('fixed-asset.depreciation.create', compact('financialEndDate', 'financialStartDate', 'locations', 'series', 'periods', 'fy', 'dep_type'));
     }
 
     /**
      * Store a newly created resource in storage.
      */
-public function store(DepreciationRequest $request)
-{
-    $validator = $request->validated();
-    if (!$validator) {
-        return redirect()
-            ->route('finance.fixed-asset.depreciation.create')
-            ->withInput()
-            ->withErrors($request->errors());
-    }
-
-    $user = Helper::getAuthenticatedUser();
-    $status = Helper::checkApprovalRequired($request->book_id);
-    $additionalData = [
-        'created_by' => $user->auth_user_id,
-        'type' => get_class($user),
-        'organization_id' => $user->organization->id,
-        'group_id' => $user->organization->group_id,
-        'revision_number' => 0,
-        'company_id' => $user->organization->company_id,
-        'assets' => json_encode($request->assets),
-        'currency_id' => $user?->organization?->currency_id,
-        'document_status' => $status,
-    ];
-    $data = array_merge($request->all(), $additionalData);
-
-    DB::beginTransaction();
-
-    try {
-        $insert = FixedAssetDepreciation::create($data);
-        if ($request->document_status == ConstantHelper::SUBMITTED) {
-            $insert->document_status = Helper::checkApprovalRequired($request->book_id);
-            if (Helper::checkApprovalRequired($request->book_id) == ConstantHelper::SUBMITTED) {
-                if (self::check_approved($request->book_id))
-                    $insert->document_status = 'approved';
-                    $insert->save();
-            }
-        }
-        $sub_assets = json_decode($request->asset_details, true);
-        $assets = array_unique(array_column($sub_assets, 'asset_id'));
-        
-        foreach ($assets as $asset) {
-            $index = array_search($asset, array_column($sub_assets, 'asset_id'));
-            $asset = $sub_assets[$index];
-            $assetReg = FixedAssetRegistration::find($asset['asset_id']);
-            if ($assetReg) {
-                $assetReg->posted_days += $asset['days'] ?? 0;
-                $assetReg->last_dep_date = Carbon::createFromFormat('d-m-Y', $asset['to_date'])->addDay()->format('Y-m-d');
-                $assetReg->save();
-            }
-        }
-
-        foreach ($sub_assets as $sub_asset) {
-            $subAsset = FixedAssetSub::find($sub_asset['sub_asset_id']);
-            if ($subAsset) {
-                $subAsset->total_depreciation += $sub_asset['dep_amount'] ?? 0;
-                $subAsset->current_value_after_dep = $sub_asset['after_dep_value'] ?? null;
-                $subAsset->save();
-            }
-        }
-        
-        foreach ($assets as $asset) {
-            $index = array_search($asset, array_column($sub_assets, 'asset_id'));
-            $asset = $sub_assets[$index];
-            $assetReg = FixedAssetRegistration::find($asset['asset_id']);
-            $assetReg->updateTotalDep();
-        }
-
-        
-        if ($insert->document_status == ConstantHelper::SUBMITTED) {
-            Helper::approveDocument($request->book_id, $insert->id, $insert->revision_number, "", null, 1, 'submit', 0, get_class($insert));
-        }
-
-        if ($insert->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED || $insert->approvalStatus == ConstantHelper::APPROVED) {
-            Helper::approveDocument($request->book_id, $insert->id, $insert->revision_number, "", null, 1, 'approve', 0, get_class($insert));
-        }
-
-        DB::commit();
-
-        return redirect()->route("finance.fixed-asset.depreciation.index")
-                         ->with('success', 'Depreciation created successfully!');
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return redirect()->route("finance.fixed-asset.depreciation.create")
-                         ->withInput()
-                         ->with('error', $e->getMessage().$e->getLine());
-    }
-}
-
-    public function check_approved($book_id)
+    public function store(DepreciationRequest $request)
     {
-        $workflow = ApprovalWorkflow::where('book_id', $book_id);
+        $validator = $request->validated();
+        if (!$validator) {
+            return redirect()
+                ->route('finance.fixed-asset.depreciation.create')
+                ->withInput()
+                ->withErrors($request->errors());
+        }
+
         $user = Helper::getAuthenticatedUser();
+        $status = ConstantHelper::SUBMITTED;
+        $additionalData = [
+            'created_by' => $user->auth_user_id,
+            'type' => get_class($user),
+            'organization_id' => $user->organization->id,
+            'group_id' => $user->organization->group_id,
+            'revision_number' => 0,
+            'company_id' => $user->organization->company_id,
+            'approval_level' => 1,
+            'assets' => json_encode($request->assets),
+            'currency_id' => $user?->organization?->currency_id,
+            'document_status' => $status,
+        ];
+        $data = array_merge($request->all(), $additionalData);
 
-        if ($workflow && $workflow->count() == 1) {
-            $workflow = $workflow->first();
-            if ($workflow->user_id === $user->auth_user_id) {
-                return true;
-            } else return false;
-        } else return false;
+        DB::beginTransaction();
+
+        try {
+            $insert = FixedAssetDepreciation::create($data);
+            $doc = Helper::approveDocument($insert->book_id, $insert->id, $insert->revision_number, "", null, 1, 'submit', 0, get_class($insert));
+            $insert->document_status = $doc['approvalStatus'] ?? $insert->document_status;
+            $insert->save();
+            $sub_assets = json_decode($request->asset_details, true);
+            $assets = array_unique(array_column($sub_assets, 'asset_id'));
+
+            foreach ($assets as $asset) {
+                $index = array_search($asset, array_column($sub_assets, 'asset_id'));
+                $asset = $sub_assets[$index];
+                $assetReg = FixedAssetRegistration::find($asset['asset_id']);
+                if ($assetReg) {
+                    $assetReg->posted_days += $asset['days'] ?? 0;
+                    $assetReg->last_dep_date = Carbon::createFromFormat('d-m-Y', $asset['to_date'])->addDay()->format('Y-m-d');
+                    $assetReg->save();
+                }
+            }
+
+            foreach ($sub_assets as $sub_asset) {
+                $subAsset = FixedAssetSub::find($sub_asset['sub_asset_id']);
+                if ($subAsset) {
+                    $subAsset->total_depreciation += $sub_asset['dep_amount'] ?? 0;
+                    $subAsset->current_value_after_dep = $sub_asset['after_dep_value'] ?? null;
+                    $subAsset->save();
+                }
+            }
+
+            foreach ($assets as $asset) {
+                $index = array_search($asset, array_column($sub_assets, 'asset_id'));
+                $asset = $sub_assets[$index];
+                $assetReg = FixedAssetRegistration::find($asset['asset_id']);
+                $assetReg->updateTotalDep();
+            }
+                 DB::commit();
+
+            return redirect()->route("finance.fixed-asset.depreciation.index")
+                ->with('success', 'Depreciation created successfully!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->route("finance.fixed-asset.depreciation.create")
+                ->withInput()
+                ->with('error', $e->getMessage() . $e->getLine());
+        }
     }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Request $r,string $id)
+    public function show(Request $r, string $id)
     {
         $currNumber = $r->revisionNumber;
         if ($currNumber) {
-            $data= FixedAssetDepreciationHistory::withDefaultGroupCompanyOrg()->findorFail($id);
+            $data = FixedAssetDepreciationHistory::withDefaultGroupCompanyOrg()->findorFail($id);
         } else {
-            $data= FixedAssetDepreciation::withDefaultGroupCompanyOrg()->findorFail($id);
+            $data = FixedAssetDepreciation::withDefaultGroupCompanyOrg()->findorFail($id);
         }
         $parentURL = "fixed-asset_depreciation";
         $organization = Helper::getAuthenticatedUser()->organization;
-        $dep_type = $organization->dep_type; 
-         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
-         if (count($servicesBooks['services']) == 0) {
-            return redirect() -> route('/');
+        $dep_type = $organization->dep_type;
+        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
+        if (count($servicesBooks['services']) == 0) {
+            return redirect()->route('/');
         }
         $firstService = $servicesBooks['services'][0];
-        $series = Helper::getBookSeriesNew($firstService -> alias, $parentURL)->get();
+        $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
         $userType = Helper::userCheck();
         $revision_number = $data->revision_number;
-            
-        $buttons = Helper::actionButtonDisplay($data->book_id,$data->document_status , $data->id, $data->grand_total_after_dep_value, 
-        $data->approval_level, $data -> created_by ?? 0, $userType['type'], $revision_number);
+
+        $buttons = Helper::actionButtonDisplay(
+            $data->book_id,
+            $data->document_status,
+            $data->id,
+            $data->grand_total_after_dep_value,
+            $data->approval_level,
+            $data->created_by ?? 0,
+            $userType['type'],
+            $revision_number
+        );
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$data->document_status] ?? '';
         list($startDate, $endDate) = explode(" to ", $data->period);
         $totalDays = (new DateTime($startDate))->diff(new DateTime($endDate))->days + 1;
-      
-        $fy = date('Y', strtotime($startDate))."-".date('Y', strtotime($endDate));
+
+        $fy = date('Y', strtotime($startDate)) . "-" . date('Y', strtotime($endDate));
         $createdAt = DateTime::createFromFormat('Y-m-d H:i:s', $data->created_at);
 
         // Step 2: Convert to d-m-Y format
@@ -233,9 +207,9 @@ public function store(DepreciationRequest $request)
         }
 
         // Format the result date as needed
-        $endDate = $resultDate; 
+        $endDate = $resultDate;
         $assetDetails = json_decode($data->asset_details, true);
-        
+
         $revNo = $data->revision_number;
         if ($r->has('revisionNumber')) {
             $revNo = intval($r->revisionNumber);
@@ -243,28 +217,28 @@ public function store(DepreciationRequest $request)
             $revNo = $data->revision_number;
         }
         // Split the period range string into from/to dates
-            [$fromDateRaw, $toDateRaw] = explode(' to ', $data->period);
+        [$fromDateRaw, $toDateRaw] = explode(' to ', $data->period);
 
-            // Convert the 'from' date to Y-m-d for comparison
-            $formattedStartDate = \Carbon\Carbon::createFromFormat('d-m-Y', $fromDateRaw)->format('Y-m-d');
+        // Convert the 'from' date to Y-m-d for comparison
+        $formattedStartDate = \Carbon\Carbon::createFromFormat('d-m-Y', $fromDateRaw)->format('Y-m-d');
 
-            // Fetch all depreciation records where the period is before the start date
-            $olderRecords = FixedAssetDepreciation::withDefaultGroupCompanyOrg()
-                ->whereRaw("STR_TO_DATE(period, '%d-%m-%Y') < ?", [$formattedStartDate])
-                ->get();
+        // Fetch all depreciation records where the period is before the start date
+        $olderRecords = FixedAssetDepreciation::withDefaultGroupCompanyOrg()
+            ->whereRaw("STR_TO_DATE(period, '%d-%m-%Y') < ?", [$formattedStartDate])
+            ->get();
 
-            // Disable the post button if any older record is not posted
-            if ($olderRecords->isNotEmpty() && !$olderRecords->every(fn($item) => $item->document_status === 'posted')) {
-                $buttons['post'] = false;
-            }
-
-
-        $approvalHistory = Helper::getApprovalHistory($data->book_id, $id, $revNo, $data->grand_total_current_value, $data -> created_by);
-        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
-        
+        // Disable the post button if any older record is not posted
+        if ($olderRecords->isNotEmpty() && !$olderRecords->every(fn($item) => $item->document_status === 'posted')) {
+            $buttons['post'] = false;
+        }
 
 
-        return view('fixed-asset.depreciation.show', compact('locations','data','series','buttons','docStatusClass','endDate','fy','totalDays','assetDetails','revision_number', 'currNumber','approvalHistory'));
+        $approvalHistory = Helper::getApprovalHistory($data->book_id, $id, $revNo, $data->grand_total_current_value, $data->created_by);
+        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+
+
+
+        return view('fixed-asset.depreciation.show', compact('locations', 'data', 'series', 'buttons', 'docStatusClass', 'endDate', 'fy', 'totalDays', 'assetDetails', 'revision_number', 'currNumber', 'approvalHistory'));
     }
 
     /**
@@ -296,7 +270,7 @@ public function store(DepreciationRequest $request)
     }
     public function getAssets(Request $request)
     {
-       $startDate = $endDate = null;
+        $startDate = $endDate = null;
         if ($request->filled('date_range')) {
             $dateRange = explode(' to ', $request->input('date_range'));
             if (count($dateRange) === 2) {
@@ -304,17 +278,17 @@ public function store(DepreciationRequest $request)
                 $endDate = Carbon::parse($dateRange[1])->format('Y-m-d');
             }
         }
-        $asset_details=[];
+        $asset_details = [];
         $asset_details = FixedAssetRegistration::withDefaultGroupCompanyOrg()
             ->withWhereHas('subAsset')
             ->whereNotNull('depreciation_percentage')
             ->whereNotNull('depreciation_percentage_year')
             ->withWhereHas('ledger')
-            ->whereIn('document_status',ConstantHelper::DOCUMENT_STATUS_APPROVED)
+            ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
             ->withWhereHas('category')
             ->get()
             ->where('last_dep_date', '<', $endDate)
-           ->filter(function ($asset) {
+            ->filter(function ($asset) {
                 $usefulLifeInYears = $asset->useful_life;
                 $postedDays = (int) $asset->posted_days; // Assuming this field exists and is in days
 
@@ -324,17 +298,18 @@ public function store(DepreciationRequest $request)
                 // Keep asset if posted days are less than useful life in days
                 return $postedDays < $usefulLifeInDays;
             })->values();
-        
-            
+
+
         return response()->json($asset_details);
     }
-    function getPeriods($startDate, $endDate, $period) {
+    function getPeriods($startDate, $endDate, $period)
+    {
         $periods = [];
-    
+
         // Convert to DateTime objects
         $start = new DateTime($startDate);
         $end = new DateTime($endDate);
-    
+
         switch ($period) {
             case 'yearly':
                 $periods[] = (object) [
@@ -342,12 +317,12 @@ public function store(DepreciationRequest $request)
                     "label" => $end->format("jS F Y")
                 ];
                 break;
-    
-                
+
+
             case 'half_yearly':
                 $half1_end = (clone $start)->modify('+5 months')->modify('last day of this month');
                 $half2_start = (clone $half1_end)->modify('+1 day');
-    
+
                 $periods[] = (object) [
                     "value" => $start->format("d-m-Y") . " to " . $half1_end->format("d-m-Y"),
                     "label" => $half1_end->format("jS F Y")
@@ -357,13 +332,13 @@ public function store(DepreciationRequest $request)
                     "label" => $end->format("jS F Y")
                 ];
                 break;
-    
+
             case 'quarterly':
                 $quarterStart = clone $start;
                 while ($quarterStart <= $end) {
                     $quarterEnd = (clone $quarterStart)->modify('+2 months')->modify('last day of this month');
                     if ($quarterEnd > $end) $quarterEnd = clone $end;
-    
+
                     $periods[] = (object) [
                         "value" => $quarterStart->format("d-m-Y") . " to " . $quarterEnd->format("d-m-Y"),
                         "label" => $quarterEnd->format("jS F Y")
@@ -371,13 +346,13 @@ public function store(DepreciationRequest $request)
                     $quarterStart = (clone $quarterEnd)->modify('+1 day');
                 }
                 break;
-    
+
             case 'monthly':
                 $monthStart = clone $start;
                 while ($monthStart <= $end) {
                     $monthEnd = (clone $monthStart)->modify('last day of this month');
                     if ($monthEnd > $end) $monthEnd = clone $end;
-    
+
                     $periods[] = (object) [
                         "value" => $monthStart->format("d-m-Y") . " to " . $monthEnd->format("d-m-Y"),
                         "label" => $monthEnd->format("jS F Y")
@@ -385,20 +360,19 @@ public function store(DepreciationRequest $request)
                     $monthStart->modify('+1 month');
                 }
                 break;
-    
+
             default:
                 return "Invalid period type. Choose from 'yearly', 'half_yearly', 'quarterly', or 'monthly'.";
         }
-        
-    
+
+
         $depreciationPeriods = FixedAssetDepreciation::withDefaultGroupCompanyOrg()->get()->pluck('period')->toArray();
-        
+
         $periods = array_filter($periods, function ($period) use ($depreciationPeriods) {
             return !in_array($period->value, $depreciationPeriods);
         });
         // Reset keys if needed
         return array_values($periods);
-        
     }
     public function documentApproval(Request $request)
     {
@@ -409,7 +383,7 @@ public function store(DepreciationRequest $request)
         DB::beginTransaction();
         try {
             $doc = FixedAssetDepreciation::find($request->id);
-            $bookId = $doc->book_id; 
+            $bookId = $doc->book_id;
             $docId = $doc->id;
             $docValue = $doc->grand_total_after_dep_value;
             $remarks = $request->remarks;
@@ -418,7 +392,7 @@ public function store(DepreciationRequest $request)
             $revisionNumber = $doc->revision_number ?? 0;
             $actionType = $request->action_type; // Approve or reject
             $modelName = get_class($doc);
-            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
+            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
             $doc->approval_level = $approveDocument['nextLevel'];
             $doc->document_status = $approveDocument['approvalStatus'];
             $doc->save();
@@ -439,16 +413,16 @@ public function store(DepreciationRequest $request)
     public function getPostingDetails(Request $request)
     {
         try {
-        $data = FinancialPostingHelper::financeVoucherPosting((int)$request -> book_id ?? 0, $request -> document_id ?? 0, $request -> type ?? 'get');
-            return response() -> json([
+            $data = FinancialPostingHelper::financeVoucherPosting((int)$request->book_id ?? 0, $request->document_id ?? 0, $request->type ?? 'get');
+            return response()->json([
                 'status' => 'success',
                 'data' => $data
             ]);
-        } catch(Exception $ex) {
-            return response() -> json([
+        } catch (Exception $ex) {
+            return response()->json([
                 'status' => 'exception',
                 'message' => 'Some internal error occured',
-                'error' => $ex -> getMessage() . $ex -> getFile() . $ex -> getLine()
+                'error' => $ex->getMessage() . $ex->getFile() . $ex->getLine()
             ]);
         }
     }
@@ -457,22 +431,22 @@ public function store(DepreciationRequest $request)
     {
         try {
             DB::beginTransaction();
-            $data = FinancialPostingHelper::financeVoucherPosting($request -> book_id ?? 0, $request -> document_id ?? 0, "post");
+            $data = FinancialPostingHelper::financeVoucherPosting($request->book_id ?? 0, $request->document_id ?? 0, "post");
             if ($data['status']) {
                 DB::commit();
             } else {
                 DB::rollBack();
             }
-            return response() -> json([
+            return response()->json([
                 'status' => 'success',
                 'data' => $data
             ]);
-        } catch(Exception $ex) {
+        } catch (Exception $ex) {
             DB::rollBack();
-            return response() -> json([
+            return response()->json([
                 'status' => 'exception',
                 'message' => 'Some internal error occured',
-                'error' => $ex -> getMessage()
+                'error' => $ex->getMessage()
             ]);
         }
     }
@@ -531,11 +505,4 @@ public function store(DepreciationRequest $request)
             ]);
         }
     }
-
-
-    
-    
-    
-    
-    
 }

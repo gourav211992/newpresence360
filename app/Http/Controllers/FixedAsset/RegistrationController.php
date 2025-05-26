@@ -19,6 +19,11 @@ use App\Models\FixedAssetRegistrationHistory;
 use App\Models\FixedAssetSub;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Models\FixedAssetMerger;
+use App\Models\FixedAssetSplit;
+use App\Models\FixedAssetDepreciation;
+use App\Models\FixedAssetSubHistory;
+use App\Models\FixedAssetRevImp;
 use Exception;
 use App\Models\ErpStore;
 use App\Models\Group;
@@ -35,7 +40,7 @@ class RegistrationController extends Controller
         $parentURL = "fixed-asset_registration";
 
         $data = FixedAssetRegistration::withDefaultGroupCompanyOrg()->orderBy('id', 'desc');
-        
+
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
         if (count($servicesBooks['services']) == 0) {
             return redirect()->route('/');
@@ -46,16 +51,13 @@ class RegistrationController extends Controller
             $end = date('Y-m-d', strtotime($dates[1]));
             $data = $data->whereDate('document_date', '>=', $start)
                 ->whereDate('document_date', '<=', $end);
-        }
-        else{
-           $fyear = Helper::getFinancialYear(date('Y-m-d'));
+        } else {
+            $fyear = Helper::getFinancialYear(date('Y-m-d'));
 
-            $data = $data->whereDate('document_date', '>=',$fyear['start_date'])
-                ->whereDate('document_date', '<=',$fyear['end_date']);
-                $start = $fyear['start_date'];
-                $end = $fyear['end_date'];
-            
-        
+            $data = $data->whereDate('document_date', '>=', $fyear['start_date'])
+                ->whereDate('document_date', '<=', $fyear['end_date']);
+            $start = $fyear['start_date'];
+            $end = $fyear['end_date'];
         }
         $data = $data->get();
         return view('fixed-asset.registration.index', compact('data'));
@@ -137,6 +139,14 @@ class RegistrationController extends Controller
                 ->withInput()
                 ->withErrors($request->errors());
         }
+        $existingAsset = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('asset_code', $request->asset_code)->first();
+
+        if ($existingAsset) {
+            return redirect()
+                ->route('finance.fixed-asset.registration.create')
+                ->withInput()
+                ->withErrors('Asset Code ' . $existingAsset->asset_code . ' already exists.');
+        }
 
         $user = Helper::getAuthenticatedUser();
         $additionalData = [
@@ -161,8 +171,7 @@ class RegistrationController extends Controller
 
             if ($asset->document_status != ConstantHelper::DRAFT) {
                 $doc = Helper::approveDocument($asset->book_id, $asset->id, $asset->revision_number, "", null, 1, 'submit', 0, get_class($asset));
-                $asset->document_status = $doc['approvalStatus']??$asset->document_status;
-                $asset->approval_level = $doc['nextLevel']??$asset->approval_level;
+                $asset->document_status = $doc['approvalStatus'] ?? $asset->document_status;
                 $asset->save();
             }
 
@@ -247,8 +256,8 @@ class RegistrationController extends Controller
 
         $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
 
-        $ref_view_route="#";
-        $buttons['reference']=false;
+        $ref_view_route = "#";
+        $buttons['reference'] = false;
 
         if ($data->reference_doc_id && $data->reference_series) {
             $model = Helper::getModelFromServiceAlias($data->reference_series);
@@ -256,12 +265,12 @@ class RegistrationController extends Controller
                 $referenceDoc = $model::find($data->reference_doc_id);
                 if ($referenceDoc != null) {
                     $history = Helper::getApprovalHistory($referenceDoc->book_id, $referenceDoc->id, $referenceDoc->revision_number);
-                    $ref_view_route = Helper::getRouteNameFromServiceAlias($data->reference_series,$data->reference_doc_id);
-                    $buttons['reference']=true;
+                    $ref_view_route = Helper::getRouteNameFromServiceAlias($data->reference_series, $data->reference_doc_id);
+                    $buttons['reference'] = true;
                 }
             }
         }
-        return view('fixed-asset.registration.show', compact('ref_view_route','locations', 'sub_assets', 'series', 'data', 'ledgers', 'categories', 'grns', 'vendors', 'currencies', 'grn_details', 'buttons', 'docStatusClass', 'revision_number', 'currNumber', 'approvalHistory'));
+        return view('fixed-asset.registration.show', compact('ref_view_route', 'locations', 'sub_assets', 'series', 'data', 'ledgers', 'categories', 'grns', 'vendors', 'currencies', 'grn_details', 'buttons', 'docStatusClass', 'revision_number', 'currNumber', 'approvalHistory'));
     }
 
     /**
@@ -334,6 +343,14 @@ class RegistrationController extends Controller
                 ->withInput()
                 ->withErrors($request->errors());
         }
+        $existingAsset = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('asset_code', $request->asset_code)->where('id', '!=', $id)->first();
+
+        if ($existingAsset) {
+            redirect()
+                ->route('finance.fixed-asset.registration.edit', $id)
+                ->withInput()
+                ->withErrors('Asset Code ' . $existingAsset->asset_code . ' already exists.');
+        }
 
         $request->merge(['last_dep_date' => $request->capitalize_date]);
         $request->merge(['current_value_after_dep' => $request->current_value]);
@@ -347,8 +364,7 @@ class RegistrationController extends Controller
             $asset->update($data);
             if ($asset->document_status != ConstantHelper::DRAFT) {
                 $doc = Helper::approveDocument($asset->book_id, $asset->id, $asset->revision_number, "", null, 1, 'submit', 0, get_class($asset));
-                $asset->document_status = $doc['approvalStatus']??$asset->document_status;
-                $asset->approval_level = $doc['nextLevel']??$asset->approval_level;
+                $asset->document_status = $doc['approvalStatus'] ?? $asset->document_status;
                 $asset->save();
             }
             FixedAssetSub::regenerateSubAssets($asset->id, $asset->asset_code, $asset->quantity, $asset->current_value, $asset->salvage_value);
@@ -571,48 +587,48 @@ class RegistrationController extends Controller
     }
 
 
-   public function assetSearch(Request $request)
+    public function assetSearch(Request $request)
     {
-    $q = $request->input('q');
-    $ids = $request->input('ids');
-    $category = $request->input('category');
-    $location = $request->input('location');
-    $cost_center = $request->input('cost_center');
+        $q = $request->input('q');
+        $ids = $request->input('ids');
+        $category = $request->input('category');
+        $location = $request->input('location');
+        $cost_center = $request->input('cost_center');
 
-    $oldAssets = FixedAssetSub::oldSubAssets();
+        $oldAssets = FixedAssetSub::oldSubAssets();
 
-    if ($request->merger) {
-        $oldAssets = FixedAssetSub::oldSubAssets($request->merger, null);
+        if ($request->merger) {
+            $oldAssets = FixedAssetSub::oldSubAssets($request->merger, null);
+        }
+
+        if ($request->split) {
+            $oldAssets = FixedAssetSub::oldSubAssets(null, $request->split);
+        }
+
+        $query = FixedAssetRegistration::withDefaultGroupCompanyOrg()
+            ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
+            ->where('asset_code', 'like', "%$q%")
+            ->whereHas('subAsset', function ($query) use ($oldAssets) {
+                $query->whereNotIn('id', $oldAssets);
+            });
+
+        if (!empty($ids)) {
+            $ids = array_map('intval', $ids);
+            $query->whereNotIn('id', $ids);
+        }
+
+        if (!empty($category)) {
+            $query->where('category_id', $category);
+        }
+        if (!empty($location)) {
+            $query->where('location_id', $location);
+        }
+        if (!empty($cost_center)) {
+            $query->where('cost_center_id', $cost_center);
+        }
+
+        return $query->limit(20)->get();
     }
-
-    if ($request->split) {
-        $oldAssets = FixedAssetSub::oldSubAssets(null, $request->split);
-    }
-
-    $query = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-        ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
-        ->where('asset_code', 'like', "%$q%")
-        ->whereHas('subAsset', function ($query) use ($oldAssets) {
-            $query->whereNotIn('id', $oldAssets);
-        });
-
-    if (!empty($ids)) {
-        $ids = array_map('intval', $ids);
-        $query->whereNotIn('id', $ids);
-    }
-
-    if (!empty($category)) {
-        $query->where('category_id', $category);
-    }
-    if (!empty($location)) {
-        $query->where('location_id', $location);
-    }
-    if (!empty($cost_center)) {
-        $query->where('cost_center_id', $cost_center);
-    }
-
-    return $query->limit(20)->get();
-}
 
     public function subAssetSearch(Request $request)
     {
@@ -633,26 +649,32 @@ class RegistrationController extends Controller
             ->limit(20)
             ->get();
     }
-public function getCategories(Request $request)
-{
-    $query = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-        ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED);
+    public function getCategories(Request $request)
+    {
+        $query = FixedAssetRegistration::withDefaultGroupCompanyOrg()
+            ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED);
 
-    if ($request->location_id) {
-        $query->where('location_id', $request->location_id);
+        if ($request->location_id) {
+            $query->where('location_id', $request->location_id);
+        }
+
+        if ($request->cost_center_id) {
+            $query->where('cost_center_id', $request->cost_center_id);
+        }
+
+        $categoryIds = $query->pluck('category_id')->unique()->toArray();
+
+        $categories = ErpAssetCategory::whereIn('id', $categoryIds)
+            ->get(['id', 'name']);
+
+        return response()->json($categories);
     }
-
-    if ($request->cost_center_id) {
-        $query->where('cost_center_id', $request->cost_center_id);
+    public function refereshAssetsData(){
+        FixedAssetRegistration::truncate();
+        FixedAssetSub::truncate();
+        FixedAssetMerger::truncate();
+        FixedAssetSplit::truncate();
+        FixedAssetDepreciation::truncate();
+        FixedAssetRevImp::truncate();
     }
-
-    $categoryIds = $query->pluck('category_id')->unique()->toArray();
-
-    $categories = ErpAssetCategory::whereIn('id', $categoryIds)
-                    ->get(['id', 'name']);
-
-    return response()->json($categories);
-}
-
-    
 }

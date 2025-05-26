@@ -25,8 +25,7 @@ use App\Models\Currency;
 use App\Models\ErpAddress;
 use App\Models\Item;
 use App\Models\Organization;
-use App\Models\PiItoem;
-use App\Models\PoIotem;
+use App\Models\PiItem;
 use App\Models\PoItem;
 use App\Models\PoItemAttribute;
 use App\Models\PoItemDelivery;
@@ -3210,6 +3209,10 @@ class PoController extends Controller
                     $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
                     $toDate = Carbon::parse(trim($dateRanges[1])) -> format('Y-m-d');
                     $dateRangeQuery -> whereDate('document_date', ">=" , $fromDate) -> where('document_date', '<=', $toDate);
+            }
+            else{
+                $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
+                $dateRangeQuery -> whereDate('document_date', $fromDate);
             }
             });
             //Item Id Filter

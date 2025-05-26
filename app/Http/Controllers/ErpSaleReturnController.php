@@ -2038,6 +2038,10 @@ class ErpSaleReturnController extends Controller
                 $toDate = Carbon::parse(trim($dateRanges[1])) -> format('Y-m-d');
                 $dateRangeQuery -> whereDate('document_date', ">=" , $fromDate) -> where('document_date', '<=', $toDate);
            }
+           else{
+                $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
+                $dateRangeQuery -> whereDate('document_date', $fromDate);
+            }
         });
         //Item Id Filter
         $salesOrders = $salesOrders -> when($request -> item_id, function ($itemQuery) use($request) {
@@ -2068,8 +2072,15 @@ class ErpSaleReturnController extends Controller
         });
         //SI Date Range Filter
         $salesOrders = $salesOrders -> when($request -> si_dt, function ($orderDtQuery) use($request) {
-            $orderDtQuery -> whereDate('document_date', '>=', $request -> si_dt[0])
-                           -> whereDate('document_date', '<=', $request -> si_dt[1]);
+            if (count($request -> si_dt) == 2) {
+                $fromDate = Carbon::parse(trim($request -> si_dt[0])) -> format('Y-m-d');
+                $toDate = Carbon::parse(trim($request -> si_dt[1])) -> format('Y-m-d');
+                $orderDtQuery -> whereDate('document_date', ">=" , $fromDate) -> where('document_date', '<=', $toDate);
+           }
+           else{
+                $fromDate = Carbon::parse(trim($request -> si_dt[0])) -> format('Y-m-d');
+                $orderDtQuery -> whereDate('document_date', $fromDate);
+            }
         });
         //Order No Filter
         $salesOrders = $salesOrders -> when($request -> so_no, function ($orderNoQuery) use($request) {
