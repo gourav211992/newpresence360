@@ -211,17 +211,17 @@
                 <td
                     style="font-weight: bold; padding: 2px; border: 1px solid #000;  border-left: none; background: #80808070; text-align: right;padding-right:30px">
                     Balance Amt.</td>
-               @if($bill_type=="outstanding")<td
+               <td
                     style="font-weight: bold; padding: 2px; border: 1px solid #000;  border-left: none; background: #80808070; text-align: right;padding-right:30px">
-                    Running Bal.</td>@endif
+                    Running Bal.</td>
             </tr>
-            @php $index=0; $runningTotal = 0; @endphp
+            @php $index=0; $runningBalTotal = 0; $runningOverDueTotal = 0; @endphp
             @foreach($data as $key => $row)
             @if($bill_type=="outstanding")
             @if($row->total_outstanding > 0)
             @php $index++;
                $currentOutstanding = $row->total_outstanding < 0 ? 0 : $row->total_outstanding;
-                $runningTotal += $currentOutstanding;
+                $runningBalTotal += $currentOutstanding;
             @endphp
             <tr>
                 <td
@@ -244,13 +244,16 @@
                     {{App\Helpers\Helper::formatIndianNumber($row->total_outstanding)}}</td>
                 <td
                     style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;padding-right:30px">
-                    {{App\Helpers\Helper::formatIndianNumber($runningTotal)}}</td>
+                    {{App\Helpers\Helper::formatIndianNumber($runningBalTotal)}}</td>
             </tr>
             @endif
             @else
-            @if($row->overdue > 0)
-            @php $index++; @endphp
 
+            @if($row->overdue > 0)
+            @php $index++; 
+            $currentOverdue = $row->overdue < 0 ? 0 : $row->overdue;
+                $runningOverDueTotal += $currentOverdue;
+            @endphp
             <tr>
                 <td
                     style="padding: 2px; border: 1px solid #000; border-top: none; text-align: center; font-weight: bold;">{{@$index}}</td>
@@ -271,6 +274,9 @@
                 <td
                     style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;padding-right:30px">
                     {{App\Helpers\Helper::formatIndianNumber($row->overdue)}}</td>
+                <td
+                    style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;padding-right:30px">
+                    {{App\Helpers\Helper::formatIndianNumber($runningOverDueTotal)}}</td>
             </tr>
             @endif
 

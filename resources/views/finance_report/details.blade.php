@@ -89,16 +89,19 @@
 												<th class="outstanding text-end">Balance Amt.</th>
 												<th class="outstanding text-end">Running Bal.</th>
                                                 <th class="overdue text-end">Overdue Amt.</th>
+												<th class="overdue text-end">Running Bal.</th>
 												<th>Action</th>
 											  </tr>
 											</thead>
 											<tbody>
-                                                @php $i=0; $runningTotal = 0;  @endphp
+                                                @php $i=0; $runningBalTotal = 0; $runningOverDueTotal = 0; @endphp
                                                 @foreach($data as $index=>$d)
                                                 @if($d->total_outstanding!=0)
                                                 @php $i++;
                                                 $currentOutstanding = $d->total_outstanding < 0 ? 0 : $d->total_outstanding;
-                                                    $runningTotal += $currentOutstanding;
+                                                    $runningBalTotal += $currentOutstanding;
+                                                $currentOverdue = $d->overdue < 0 ? 0 : $d->overdue;
+                                                    $runningOverDueTotal += $currentOverdue;
                                                 @endphp
                                                 <tr class="table-row" data-overdue="{{ $d->overdue }}">
 													<td>{{$i}}</td>
@@ -114,8 +117,7 @@
                                                     </td>
                                                         <td class="text-end">@if($d->invoice_amount!=""){{ Helper::formatIndianNumber($d->invoice_amount)}}@endif</td>
                                                     <td class="outstanding text-end">{{ $d->total_outstanding < 0 ? 0: Helper::formatIndianNumber($d->total_outstanding) }}</td>
-                                                    <td class="outstanding text-end">{{ Helper::formatIndianNumber($runningTotal) }}</td>
-
+                                                    <td class="outstanding text-end">{{ Helper::formatIndianNumber($runningBalTotal) }}</td>
                                                     <td class="overdue text-end">
                                                           @if($d->overdue_days!="-")
                                                            {{Helper::formatIndianNumber($d->overdue)}}
@@ -123,7 +125,7 @@
                                                            0
                                                           @endif
                                                         </td>
-
+                                                    <td class="overdue text-end">{{ Helper::formatIndianNumber($runningOverDueTotal) }}</td>
                                                         <td>
                                                         @if($d->view_route)
                                                             <a href="{{ $d->view_route }}" target="_blank">
@@ -530,7 +532,7 @@ if (dt_basic_table.length) {
             console.log(isServiceSelected,'here')
             if (isServiceSelected && node.cellIndex === 6 || isServiceSelected && node.cellIndex === 7) {
                 return false;
-            } else if (!isServiceSelected && node.cellIndex === 8) {
+            } else if (!isServiceSelected && node.cellIndex === 8 || !isServiceSelected && node.cellIndex === 9) {
                 return false;
             }
 
