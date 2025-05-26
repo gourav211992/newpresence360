@@ -10,6 +10,7 @@ use App\Models\Employee;
 use App\Models\ErpStore;
 use App\Models\FixedAssetMaintenance;
 use Carbon\Carbon;
+use App\Models\ErpAssetCategory;
 
 class MaintenanceController extends Controller
 {
@@ -80,7 +81,8 @@ class MaintenanceController extends Controller
         ->whereNotNull('asset_name')
         ->get();
         $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
-        return view('fixed-asset.maintenance.create',compact('assets','employees','locations'));
+        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
+        return view('fixed-asset.maintenance.create',compact('assets','employees','locations','categories'));
     }
 
     /**
@@ -119,7 +121,8 @@ class MaintenanceController extends Controller
         ->whereNotNull('asset_name')
         ->get();
         $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
-        return view('fixed-asset.maintenance.show',compact('assets','data','locations'));
+        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
+        return view('fixed-asset.maintenance.show',compact('assets','data','locations','categories'));
     }
 
     /**
@@ -133,7 +136,8 @@ class MaintenanceController extends Controller
         ->whereNotNull('asset_name')
         ->get();
         $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
-        return view('fixed-asset.maintenance.edit',compact('assets','data','locations'));
+        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
+        return view('fixed-asset.maintenance.edit',compact('assets','data','locations','categories'));
     }
 
     /**

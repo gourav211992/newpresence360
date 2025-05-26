@@ -7,6 +7,7 @@ use App\Models\FixedAssetRegistration;
 use Illuminate\Http\Request;
 use App\Helpers\Helper;
 use App\Models\Employee;
+use App\Models\ErpAssetCategory;
 use App\Models\ErpStore;
 use App\Models\FixedAssetIssueTransfer;
 use Carbon\Carbon;
@@ -80,7 +81,8 @@ class IssueTransferController extends Controller
         ->whereNotNull('asset_name')
         ->get();
         $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
-        return view('fixed-asset.issue-transfer.create',compact('assets','employees','locations'));
+        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
+        return view('fixed-asset.issue-transfer.create',compact('assets','employees','locations','categories'));
     }
 
     /**
@@ -125,7 +127,8 @@ class IssueTransferController extends Controller
         ->whereNotNull('asset_name')
         ->get();
         $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
-        return view('fixed-asset.issue-transfer.show',compact('assets','employees','data','locations'));
+        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
+        return view('fixed-asset.issue-transfer.show',compact('assets','employees','data','locations','categories'));
     }
 
     /**
@@ -145,7 +148,8 @@ class IssueTransferController extends Controller
         ->whereNotNull('asset_name')
         ->get();
         $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
-        return view('fixed-asset.issue-transfer.edit',compact('assets','employees','data','locations'));
+        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
+        return view('fixed-asset.issue-transfer.edit',compact('assets','employees','data','locations','categories'));
     }
 
     /**
