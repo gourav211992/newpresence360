@@ -72,6 +72,15 @@
                                     class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i data-feather="file-text">
                                     </i> View REF</a>
                             @endif
+                             @if($buttons['post'])
+                        <button id="postButton" onclick="onPostVoucherOpen();" type="button" class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i data-feather="check-circle"></i> Post</button>
+                    @endif
+                    @if ($buttons['voucher'])
+                                    <button type="button" onclick="onPostVoucherOpen('posted');"
+                                        class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
+                                        <i data-feather="file-text"></i> Voucher</button>
+                                @endif
+                   
                     </div>
                     </div>
                 </div>
@@ -724,101 +733,67 @@
     </div>
 
 
-    <div class="modal fade text-start" id="postvoucher" tabindex="-1" aria-labelledby="myModalLabel17"
-        aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 1000px">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <div>
-                        <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="myModalLabel17">Post Voucher
-                        </h4>
-                        <p class="mb-0">View Details</p>
+       <div class="modal fade text-start show" id="postvoucher" tabindex="-1" aria-labelledby="postVoucherModal" aria-modal="true" role="dialog">
+		<div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 1000px">
+			<div class="modal-content">
+				<div class="modal-header">
+					<div>
+                        <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="postVoucherModal"> Voucher Details</h4>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row">
-
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<div class="row">
                         <div class="col-md-3">
                             <div class="mb-1">
                                 <label class="form-label">Series <span class="text-danger">*</span></label>
-                                <input class="form-control indian-number" readonly value="VOUCH/2024" />
+                                <input id = "voucher_book_code" class="form-control indian-number " disabled="" >
                             </div>
                         </div>
-
                         <div class="col-md-3">
                             <div class="mb-1">
                                 <label class="form-label">Voucher No <span class="text-danger">*</span></label>
-                                <input class="form-control indian-number" readonly value="098" />
+                                <input id = "voucher_doc_no" class="form-control indian-number " disabled="" value="">
                             </div>
                         </div>
-
-                        <div class="col-md-12">
-
-
-                            <div class="table-responsive">
-                                <table
-                                    class="mt-1 table table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
-                                    <thead>
-                                        <tr>
-                                            <th>#</th>
-                                            <th>Leadger Code</th>
-                                            <th>Leadger Name</th>
+                        <div class="col-md-3">
+                            <div class="mb-1">
+                                <label class="form-label">Voucher Date <span class="text-danger">*</span></label>
+                                <input id = "voucher_date" class="form-control indian-number " disabled="" value="">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-1">
+                                <label class="form-label">Currency <span class="text-danger">*</span></label>
+                                <input id = "voucher_currency" class="form-control indian-number " disabled="" value="">
+                            </div>
+                        </div>
+						<div class="col-md-12">
+							<div class="table-responsive">
+								<table class="mt-1 table table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
+									<thead>
+										<tr>
+											<th>Type</th>
+											<th>Group</th>
+											<th>Leadger Code</th>
+											<th>Leadger Name</th>
                                             <th class="text-end">Debit</th>
                                             <th class="text-end">Credit</th>
-                                            <th>Remarks</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>1</td>
-                                            <td class="fw-bolder text-dark">2901</td>
-                                            <td>Finance</td>
-                                            <td class="text-end">10000</td>
-                                            <td class="text-end">0</td>
-                                            <td>Remarks come here...</td>
-                                        </tr>
-
-                                        <tr>
-                                            <td>2</td>
-                                            <td class="fw-bolder text-dark">2901</td>
-                                            <td>Finance</td>
-                                            <td class="text-end">0</td>
-                                            <td class="text-end">10000</td>
-                                            <td>Remarks come here...</td>
-                                        </tr>
-
-                                        <tr>
-                                            <td colspan="3" class="fw-bolder text-dark text-end">Total</td>
-                                            <td class="fw-bolder text-dark text-end">10000</td>
-                                            <td class="fw-bolder text-dark text-end">10000</td>
-                                            <td></td>
-                                        </tr>
-
-
-
-
-
-                                    </tbody>
-
-
-                                </table>
-                            </div>
-                        </div>
-
-
-                    </div>
-                </div>
-                <div class="modal-footer text-end">
-                    <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"><i
-                            data-feather="x-circle"></i> Cancel</button>
-                    <button class="btn btn-primary btn-sm" data-bs-dismiss="modal"><i data-feather="check-circle"></i>
-                        Submit</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
+										</tr>
+									</thead>
+									<tbody id="posting-table"></tbody>
+								</table>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="text-end">
+					<button style="margin: 1%;" onclick = "postVoucher(this);" id="posting_button" type = "button" class="btn btn-primary btn-sm waves-effect waves-float waves-light">Submit</button>
+				</div>
+			</div>
+		</div>
+	</div>
+ 
 
 
     <div class="modal fade" id="discount" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
@@ -1217,26 +1192,28 @@
                                 </tr>
                             </thead>
                             <tbody>
+                                <input type="hidden" value="{{$data->mrnDetail?->igst_value['ledger']}}" />
+                                <input type="hidden" value="{{$data->mrnDetail?->igst_value['ledger_group']}}" />
                                 <tr>
                                     <td>1</td>
                                     <td>IGST</td>
-                                    <td class="sub_total">{{$data->mrnDetail->net_value??0}}</td>
-                                    <td id="igst_per">{{$data->mrnDetail->igst_percentage??0}}</td>
-                                    <td id="igst_tax">{{(($data->mrnDetail->net_value??0)*($data->mrnDetail->igst_percentage??0))??0}}</td>
+                                    <td class="sub_total">{{$data?->mrnDetail?->basic_value??0}}</td>
+                                    <td id="igst_per">{{$data?->mrnDetail?->igst_value['rate']??0}}</td>
+                                    <td id="igst_tax" class="indian-number">{{$data?->mrnDetail?->igst_value['value']??0}}</td>
                                 </tr>
                                 <tr>
                                     <td>2</td>
                                     <td>CGST</td>
-                                    <td class="sub_total">{{$data->mrnDetail->net_value??0}}</td>
-                                    <td id="cgst_per">{{$data->mrnDetail->cgst_percentage??0}}</td>
-                                    <td id="cgst_tax">{{(($data->mrnDetail->net_value??0)*($data->mrnDetail->cgst_percentage??0))??0}}</td>
+                                    <td class="sub_total">{{$data->mrnDetail->basic_value??0}}</td>
+                                    <td id="cgst_per">{{$data->mrnDetail?->cgst_value['rate']??0}}</td>
+                                    <td id="cgst_tax" class="indian-number">{{$data->mrnDetail?->cgst_value['value']??0}}</td>
                                 </tr>
                                 <tr>
                                     <td>3</td>
                                     <td>SGST</td>
-                                    <td class="sub_total">{{$data->mrnDetail->net_value??0}}</td>
-                                    <td id="sgst_per">{{$data->mrnDetail->sgst_percentage??0}}</td>
-                                    <td id="sgst_tax">{{(($data->mrnDetail->net_value??0)*($data->mrnDetail->sgst_percentage??0))??0}}</td>
+                                    <td class="sub_total">{{$data->mrnDetail->basic_value??0}}</td>
+                                    <td id="sgst_per">{{$data->mrnDetail?->sgst_value['rate']??0}}</td>
+                                    <td id="sgst_tax" class="indian-number" >{{$data->mrnDetail?->sgst_value['value']??0}}</td>
                                  </tr>
                              </tbody>
                         </table>
@@ -1690,6 +1667,118 @@ $('#location').on('change', function () {
         $('#cost_center').empty();
     }
 });
+
+        function onPostVoucherOpen(type = "not_posted")
+        {
+            // resetPostVoucher();
+            const apiURL = "{{route('finance.fixed-asset.split.posting.get')}}";
+            $.ajax({
+                url: apiURL + "?book_id=" + $("#book_id").val() + "&document_id=" + "{{isset($data) ? $data -> id : ''}}",
+                type: "GET",
+                dataType: "json",
+                success: function(data) {
+                    if (!data.data.status) {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: data.data.message,
+                            icon: 'error',
+                        });
+                        return;
+                    }
+                    const voucherEntries = data.data.data;
+                    var voucherEntriesHTML = ``;
+                    Object.keys(voucherEntries.ledgers).forEach((voucher) => {
+                        voucherEntries.ledgers[voucher].forEach((voucherDetail, index) => {
+                            voucherEntriesHTML += `
+                            <tr>
+                            <td>${voucher}</td>
+                            <td class="indian-number fw-bolder text-dark">${voucherDetail.ledger_group_code ? voucherDetail.ledger_group_code : ''}</td>
+                            <td>${voucherDetail.ledger_code ? voucherDetail.ledger_code : ''}</td>
+                            <td>${voucherDetail.ledger_name ? voucherDetail.ledger_name : ''}</td>
+                            <td class="indian-number text-end">${voucherDetail.debit_amount > 0 ? parseFloat(voucherDetail.debit_amount).toFixed(2) : ''}</td>
+                            <td class="indian-number text-end">${voucherDetail.credit_amount > 0 ? parseFloat(voucherDetail.credit_amount).toFixed(2) : ''}</td>
+                            </tr>
+                            `
+                        });
+                    });
+                    voucherEntriesHTML+= `
+                    <tr>
+                        <td colspan="4" class="fw-bolder text-dark text-end">Total</td>
+                        <td class="indian-number fw-bolder text-dark text-end">${voucherEntries.total_debit.toFixed(2)}</td>
+                        <td class="indian-number fw-bolder text-dark text-end">${voucherEntries.total_credit.toFixed(2)}</td>
+                    </tr>
+                    `;
+                    document.getElementById('posting-table').innerHTML = voucherEntriesHTML;
+                    document.getElementById('voucher_doc_no').value = voucherEntries.document_number;
+                    document.getElementById('voucher_date').value = moment(voucherEntries.document_date).format('D/M/Y');
+                    document.getElementById('voucher_book_code').value = voucherEntries.book_code;
+                    document.getElementById('voucher_currency').value = voucherEntries.currency_code;
+                    if (type === "posted") {
+                        document.getElementById('posting_button').style.display = 'none';
+                    } else {
+                        document.getElementById('posting_button').style.removeProperty('display');
+                    }
+                    $('.indian-number').each(function () {
+            let $el = $(this);
+            let value = $el.is('input') ? $el.val() : $el.text();
+
+            if ($.isNumeric(value)) {
+                let formatted = formatIndianNumber(value);
+                $el.is('input') ? $el.val(formatted) : $el.text(formatted);
+            }
+        });
+
+                    $('#postvoucher').modal('show');
+                }
+            });
+
+        }
+
+        function postVoucher(element)
+        {
+            const bookId = "{{isset($data) ? $data -> book_id : ''}}";
+            const documentId = "{{isset($data) ? $data -> id : ''}}";
+            const postingApiUrl = "{{route('finance.fixed-asset.split.post')}}"
+            if (bookId && documentId) {
+                $.ajax({
+                    url: postingApiUrl,
+                    type: "POST",
+                    dataType: "json",
+                    contentType: "application/json", // Specifies the request payload type
+                    data: JSON.stringify({
+                        // Your JSON request data here
+                        book_id: bookId,
+                        document_id: documentId,
+                    }),
+                    success: function(data) {
+                        const response = data.data;
+                        if (response.status) {
+                            Swal.fire({
+                                title: 'Success!',
+                                text: response.message,
+                                icon: 'success',
+                            });
+                            location.reload();
+                        } else {
+                            Swal.fire({
+                                title: 'Error!',
+                                text: response.message,
+                                icon: 'error',
+                            });
+                        }
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: 'Some internal error occured',
+                            icon: 'error',
+                        });
+                    }
+                });
+
+            }
+        }
+
 
 $('#location').trigger('change');
 $('.select2').select2();

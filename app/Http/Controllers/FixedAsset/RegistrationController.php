@@ -98,6 +98,8 @@ class RegistrationController extends Controller
                 $q->whereHas('item.subTypes.subType', function ($q) {
                     $q->where('name', 'Asset');
                 })->doesntHave('asset');
+                $q->where('basic_value', '>',0);
+                
             })
             ->whereHas('vendor')
             ->with(['items.item', 'vendor'])
@@ -109,7 +111,7 @@ class RegistrationController extends Controller
             $q->where('organization_id', Helper::getAuthenticatedUser()->organization_id);
         })->whereHas('item.subTypes.subType', function ($q) {
             $q->where('name', 'Asset');
-        })->doesntHave('asset')->get();
+        })->where('basic_value', '>',0)->doesntHave('asset')->get();
 
         $vendors = Vendor::withDefaultGroupCompanyOrg()->select('id', 'display_name as name')->get();
         $currencies = Currency::where('status', ConstantHelper::ACTIVE)->select('id', 'short_name as name')->get();
@@ -448,7 +450,7 @@ class RegistrationController extends Controller
             $q->where('organization_id', Helper::getAuthenticatedUser()->organization_id);
         })->whereHas('item.subTypes.subType', function ($q) {
             $q->where('name', 'Asset');
-        })->doesntHave('asset');
+        })->doesntHave('asset')->where('basic_value', '>',0);
 
 
         if ($request->grn_no) {
@@ -482,7 +484,7 @@ class RegistrationController extends Controller
                 'item'
             ])->whereHas('header', function ($q) {
                 $q->where('organization_id', Helper::getAuthenticatedUser()->organization_id);
-            })->find($request->grn_id);
+            })->where('basic_value', '>',0)->find($request->grn_id);
         }
         $selected_grn_id = $request->grn_id ?? null;
 

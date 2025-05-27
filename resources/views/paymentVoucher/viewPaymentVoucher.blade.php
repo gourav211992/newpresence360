@@ -157,12 +157,19 @@
                                                                 default => 'danger',
                                                             };
                                                         @endphp
-                                                       <div class="col-md-6 text-sm-end">
-                                                        <span class="badge rounded-pill {{App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$data->document_status] ?? ''}} forminnerstatus">
-                                                            <span class="text-dark">Status</span>
-                                                             : <span class="{{App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS[$data->document_status] ?? ''}}">{{ucfirst($data->document_status)}}</span>
-                                                        </span>
-                                                </div>
+                                                        <div class="col-md-6 text-sm-end">
+                                                            <span class="badge rounded-pill {{App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$data->document_status] ?? ''}} forminnerstatus">
+                                                                <span class="text-dark">Status</span>
+                                                                 : <span class="{{App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS[$data->document_status] ?? ''}}">
+                                                                    @if ($data->document_status == App\Helpers\ConstantHelper::APPROVAL_NOT_REQUIRED)
+                                                                    Approved
+                                                                @else
+                                                                    {{ ucfirst($data->document_status) }}
+                                                                @endif
+                                                            </span>
+                                                            </span>        
+                                                    </div>
+                                                      
                                              </div>
                                                 </div>
                                             </div>
@@ -498,9 +505,9 @@
 
                                             </div>
                                                                {{-- History Code --}}
-                           @include('partials.approval-history', ['document_status' => $data->approvalStatus, 'revision_number' => $data->revision_number])
+                           @include('partials.approval-history', ['document_status' => $data->document_status, 'revision_number' => $data->revision_number])
                         </div>
-                                        <div class="row" @if($data->approvalStatus=="cancel") style="display:none;" @endif>
+                                        <div class="row" @if($data->document_status=="cancel") style="display:none;" @endif>
                                             <div class="col-md-12">
                                                 <div class="border-top mt-2 pt-2 mb-1">
                                                     <div class="row">

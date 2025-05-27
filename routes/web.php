@@ -2300,12 +2300,8 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::get('fixed-asset/get-categories', [RegistrationController::class, 'getCategories'])->name('finance.fixed-asset.get-categories');
     Route::get('fixed-asset/get-locations', [RegistrationController::class, 'getLocations'])->name('finance.fixed-asset.get-locations');
     Route::get('fixed-asset/get-cost-centers', [RegistrationController::class, 'getCostCenters'])->name('finance.fixed-asset.get-cost-centers');
-<<<<<<< HEAD
     Route::post('fixed-asset/check-code', [RegistrationController::class, 'checkCode'])->name('finance.fixed-asset.check-code');
     
-=======
-
->>>>>>> 5abd8ad10cc307ebdf91d5210b3415125178f305
     Route::resource('fixed-asset/issue-transfer', IssueTransferController::class)->names([
         'index' => 'finance.fixed-asset.issue-transfer.index',
         'create' => 'finance.fixed-asset.issue-transfer.create',

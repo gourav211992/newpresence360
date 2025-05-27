@@ -1463,12 +1463,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 const createdAt = parsedGrnData?.created_at || '';
                 const formattedCreatedAt = createdAt && createdAt !== '0000-00-00' ? createdAt.split('T')[0] : '';
                 $('#book_date').val(formattedCreatedAt);
-                $('#igst_per').html(parsedGrnData?.igst_percentage || 0);
-                $('#cgst_per').html(parsedGrnData?.cgst_percentage || 0);
-                $('#sgst_per').html(parsedGrnData?.sgst_percentage || 0);
-                $('#sgst_tax').html(((parsedGrnData?.sgst_percentage || 0)*(parsedGrnData?.basic_value || 0)||0));
-                $('#cgst_tax').html(((parsedGrnData?.cgst_percentage || 0)*(parsedGrnData?.basic_value || 0)||0));
-                $('#igst_tax').html(((parsedGrnData?.igst_percentage || 0)*(parsedGrnData?.basic_value || 0)||0));
+                let igstData = parsedGrnData?.igst_value;
+                let cgstData = parsedGrnData?.cgst_value;
+                let sgstData = parsedGrnData?.sgst_value;
+                
+                $('#igst_per').html(parseFloat((igstData['value']/parsedGrnData?.basic_value)*100).toFixed(2) || 0);
+                $('#cgst_per').html(parseFloat((cgstData['value']/parsedGrnData?.basic_value)*100).toFixed(2) || 0);
+                $('#sgst_per').html(parseFloat((sgstData['value']/parsedGrnData?.basic_value)*100).toFixed(2) || 0);
+                $('#sgst_tax').html(sgstData['value']||0);
+                $('#cgst_tax').html(cgstData['value']||0);
+                $('#igst_tax').html(igstData['value']||0);
                 updateDepreciationValues();
 
 

@@ -253,6 +253,9 @@ class PaymentVoucherController extends Controller
         if ($request->cost_center_id) {
             $data = $data->where('cost_center_id', $request->cost_center_id);
         }
+        if ($request->location_id) {
+            $data = $data->where('location', $request->location_id);
+        }
         if ($request->date) {
             $dates = explode(' to ', $request->date);
             $start = date('Y-m-d', strtotime($dates[0]));
@@ -290,7 +293,7 @@ class PaymentVoucherController extends Controller
 
         $cost_centers = CostCenterOrgLocations::where('organization_id', Helper::getAuthenticatedUser()->organization_id)
         ->with(['costCenter' => function ($query) {
-            $query->where('status', 'active');
+           $query->withDefaultGroupCompanyOrg()->where('status', 'active');
         }])
         ->get()
         ->filter(function ($item) {
@@ -300,12 +303,14 @@ class PaymentVoucherController extends Controller
             return [
                 'id' => $item->costCenter->id,
                 'name' => $item->costCenter->name,
+                'location' => $item->costCenter->locations,
             ];
         })
         ->toArray();
 
         $fyearLocked = $fyear['authorized'];
-        return view('paymentVoucher.paymentVouchers', compact('cost_centers','mappings', 'banks', 'ledgers', 'bank_id', 'ledger_id', 'organizationId', 'data', 'book_type', 'date', 'document_no', 'document_type', 'type', 'createRoute', 'editRouteString','date','date2','fyearLocked'));
+         $locations = ErpStore::where('status','active')->get();
+        return view('paymentVoucher.paymentVouchers', compact('cost_centers','mappings', 'banks', 'ledgers', 'bank_id', 'ledger_id', 'organizationId', 'data', 'book_type', 'date', 'document_no', 'document_type', 'type', 'createRoute', 'editRouteString','date','date2','fyearLocked','locations'));
     }
 
     /**
@@ -520,7 +525,7 @@ if ($ref) {
                             $insertRef->save();
                         } else {
                             $voucher = Voucher::find($reference->voucher_id)?->voucher_no;
-                            return redirect()->route($request->document_type . '.create')->withErrors($voucher .'Settle amount is greater than balance amount!');
+                            return redirect()->route($request->document_type . '.create')->withErrors("The settled amount exceeds the balance amount for Voucher No." . $voucher);
                         }
                     }
                 }
@@ -737,7 +742,7 @@ if ($ref) {
                         } else {
                             $voucherNo = Voucher::find($reference['voucher_id'])?->voucher_no;
                             DB::rollBack();
-                            return redirect()->route($request->document_type . '.edit', [$id])->withErrors($voucherNo . ' Settle amount is greater than balance amount!');
+                            return redirect()->route($request->document_type . '.edit', [$id])->withErrors("The settled amount exceeds the balance amount for Voucher No." . $voucherNo);
                         }
                     }
 
