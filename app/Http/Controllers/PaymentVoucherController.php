@@ -291,22 +291,15 @@ class PaymentVoucherController extends Controller
         $date = $request->date ?? \Carbon\Carbon::parse($fyear['start_date'])->format('d-m-Y') . " to " . \Carbon\Carbon::parse($fyear['end_date'])->format('d-m-Y');
         $date2 = \Carbon\Carbon::parse($start)->format('jS-F-Y') . ' to ' . \Carbon\Carbon::parse($end)->format('jS-F-Y');
 
-        $cost_centers = CostCenterOrgLocations::where('organization_id', Helper::getAuthenticatedUser()->organization_id)
-        ->with(['costCenter' => function ($query) {
-           $query->withDefaultGroupCompanyOrg()->where('status', 'active');
-        }])
-        ->get()
-        ->filter(function ($item) {
-            return $item->costCenter !== null;
-        })
-        ->map(function ($item) {
+        $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
+            $item->withDefaultGroupCompanyOrg()->where('status', 'active');
+
             return [
                 'id' => $item->costCenter->id,
                 'name' => $item->costCenter->name,
                 'location' => $item->costCenter->locations,
             ];
-        })
-        ->toArray();
+        })->toArray();
 
         $fyearLocked = $fyear['authorized'];
          $locations = ErpStore::where('status','active')->get();
@@ -525,7 +518,7 @@ if ($ref) {
                             $insertRef->save();
                         } else {
                             $voucher = Voucher::find($reference->voucher_id)?->voucher_no;
-                            return redirect()->route($request->document_type . '.create')->withErrors($voucher .'Settle amount is greater than balance amount!');
+                            return redirect()->route($request->document_type . '.create')->withErrors("The settled amount exceeds the balance amount for Voucher No." . $voucher);
                         }
                     }
                 }
@@ -742,7 +735,7 @@ if ($ref) {
                         } else {
                             $voucherNo = Voucher::find($reference['voucher_id'])?->voucher_no;
                             DB::rollBack();
-                            return redirect()->route($request->document_type . '.edit', [$id])->withErrors($voucherNo . ' Settle amount is greater than balance amount!');
+                            return redirect()->route($request->document_type . '.edit', [$id])->withErrors("The settled amount exceeds the balance amount for Voucher No." . $voucherNo);
                         }
                     }
 

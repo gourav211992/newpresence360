@@ -72,22 +72,17 @@ class TDSReportController extends Controller
             ->latest()
             ->get();
         
-        $taxTypes = Tax::all();
-        $cost_centers = CostCenterOrgLocations::with(['costCenter' => function ($query) {
-            $query->withDefaultGroupCompanyOrg()->where('status', 'active');
-        }])
-        ->get()
-        ->filter(function ($item) {
-            return $item->costCenter !== null;
-        })
-        ->map(function ($item) {
-            return [
-                'id' => $item->costCenter->id,
-                'name' => $item->costCenter->name,
-                'location' => $item->costCenter->locations,
-            ];
-        })
-        ->toArray();
+            $taxTypes = Tax::all();
+            $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
+                $item->withDefaultGroupCompanyOrg()->where('status', 'active');
+
+                return [
+                    'id' => $item->costCenter->id,
+                    'name' => $item->costCenter->name,
+                    'location' => $item->costCenter->locations,
+                ];
+            })->toArray();
+
         $locations = ErpStore::where('status','active')->get();
 
         return view('tds.index', compact('fy', 'mappings', 'organization_id', 'range', 'vendors', 'vendor_id','records','taxTypes','cost_centers','locations','cost_center_id', 'location_id'));

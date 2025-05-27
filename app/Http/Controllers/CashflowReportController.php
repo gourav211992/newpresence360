@@ -182,21 +182,15 @@ class CashflowReportController extends Controller
             $startDate = date('d-m-Y', strtotime($startDate));
         $endDate = date('d-m-Y', strtotime($endDate));
         $range = $startDate . ' to ' . $endDate;
-         $cost_centers = CostCenterOrgLocations::with(['costCenter' => function ($query) {
-            $query->withDefaultGroupCompanyOrg()->where('status', 'active');
-        }])
-        ->get()
-        ->filter(function ($item) {
-            return $item->costCenter !== null;
-        })
-        ->map(function ($item) {
+        $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
+            $item->withDefaultGroupCompanyOrg()->where('status', 'active');
+
             return [
                 'id' => $item->costCenter->id,
                 'name' => $item->costCenter->name,
                 'location' => $item->costCenter->locations,
             ];
-        })
-        ->toArray();
+        })->toArray();
         $locations = ErpStore::where('status','active')->get();
         return view('cashflow.index', compact('scheduler','users','opening', 'payment_received', 'payment_made','location_id','cost_center_id', 'payment_made_t', 'payment_received_t', 'closing', 'fy', 'mappings', 'organization_id', 'range','locations','cost_centers'));
         }

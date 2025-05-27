@@ -659,22 +659,15 @@ class VoucherController extends Controller
 
         $voucher_no = $request->voucher_no;
         $voucher_name = $request->voucher_name;
-        $cost_centers = CostCenterOrgLocations::where('organization_id', Helper::getAuthenticatedUser()->organization_id)
-        ->with(['costCenter' => function ($query) {
-            $query->withDefaultGroupCompanyOrg()->where('status', 'active');
-        }])
-        ->get()
-        ->filter(function ($item) {
-            return $item->costCenter !== null;
-        })
-        ->map(function ($item) {
+        $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
+            $item->withDefaultGroupCompanyOrg()->where('status', 'active');
+
             return [
                 'id' => $item->costCenter->id,
                 'name' => $item->costCenter->name,
                 'location' => $item->costCenter->locations,
             ];
-        })
-        ->toArray();
+        })->toArray();
          $fyearLocked = $fyear['authorized'];
         $locations = ErpStore::where('status','active')->get();
         return view('voucher.view_vouchers', compact('cost_centers','bookTypes', 'mappings', 'organizationId', 'data', 'book_type', 'date', 'voucher_no', 'voucher_name','date2','fyearLocked','locations'));
