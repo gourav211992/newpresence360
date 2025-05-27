@@ -145,7 +145,7 @@
                       <label class="form-label" for="fp-range">Select Date</label>
                       <input type="text" id="fp-range" class="form-control bg-whiteform-control flatpickr-range bg-white flatpickr-input" placeholder="YYYY-MM-DD" value="{{$dateRange}}"/>
                 </div>
-                <div class="mb-1">
+                {{-- <div class="mb-1">
                     <label class="form-label">Cost Center</label>
                     <select id="cost_center_id" class="form-select select2"
                         name="cost_center_id">
@@ -154,24 +154,35 @@
                         <option value="{{ $value['id'] }}" @if(request('cost_center_id')==$value['id']) selected @endif>{{ $value['name'] }}</option>
                         @endforeach
                     </select>
-                </div>
+                </div> --}}
                 
 
-                <div class="mb-1">
+                                <div class="mb-1">
                                     <label class="form-label">Organization</label>
                                     <select id="organization_id" class="form-select select2" multiple>
                                         <option value="" disabled>Select</option>
                                         @php
-    $uniqueCompanies = $companies->unique(fn($org) => $org->organization->id);
-@endphp
+                                            $uniqueCompanies = $companies->unique(fn($org) => $org->organization->id);
+                                        @endphp
 
-@foreach($uniqueCompanies as $organization)
-    <option value="{{ $organization->organization->id }}"
-        {{ $organization->organization->id == $organizationId ? 'selected' : '' }}>
-        {{ $organization->organization->name }}
-    </option>
-@endforeach </select>
+                                        @foreach($uniqueCompanies as $organization)
+                                            <option value="{{ $organization->organization->id }}"
+                                                {{ $organization->organization->id == $organizationId ? 'selected' : '' }}>
+                                                {{ $organization->organization->name }}
+                                            </option>
+                                        @endforeach </select>
 
+                                </div>
+                                <div class="mb-1">
+                                    <label class="form-label">Location</label>
+                                    <select id="location_id" class="form-select select2">
+                                    </select>
+                                </div>
+                                <div class="mb-1">
+                                    <label class="form-label">Cost Center</label>
+                                    <select id="cost_center_id" class="form-select select2"
+                                        name="cost_center_id" required>
+                                    </select>
                                 </div>
 
                                 <div class="mb-1">
@@ -211,8 +222,12 @@
 
 @section('scripts')
 <script>
+    const locations = @json($locations);
+    const costCenters = @json($cost_centers);
+</script>
+<script>
     function exportBalanceSheet(level){
-        var obj={ date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),currency:$('#currency').val(),'_token':'{!!csrf_token()!!}',filter_organization:$('#filter-organization').val(),level:level};
+        var obj={ date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),location_id:$('#location_id').val(),currency:$('#currency').val(),'_token':'{!!csrf_token()!!}',filter_organization:$('#filter-organization').val(),level:level};
         var selectedValues = $('#organization_id').val() || [];
         var filteredValues = selectedValues.filter(function(value) {
             return value !== null && value.trim() !== '';
@@ -243,9 +258,76 @@
             }
         });
     }
+    function updateLocationsDropdown(selectedOrgIds) {
+        const filteredLocations = locations.filter(loc =>
+            selectedOrgIds.includes(String(loc.organization_id))
+        );
+
+        const $locationDropdown = $('#location_id');
+        $locationDropdown.empty().append('<option value="">Select</option>');
+
+        filteredLocations.forEach(loc => {
+            $locationDropdown.append(`<option value="${loc.id}">${loc.store_name}</option>`);
+        });
+
+        $locationDropdown.trigger('change');
+    }
+
+    function loadCostCenters(locationId) {
+            if (locationId) {
+               const filteredCenters = costCenters.filter(center => {
+                    if (!center.location) return false;
+
+                    const locationArray = Array.isArray(center.location)
+                        ? center.location.flatMap(loc => loc.split(','))
+                        : [];
+
+                    return locationArray.includes(String(locationId));
+                });
+            // console.log(filteredCenters,costCenters,locationId);
+
+            const $costCenter = $('#cost_center_id');
+            $costCenter.empty();
+
+            if (filteredCenters.length === 0) {
+                $costCenter.prop('required', false);
+                $('.cost_center').hide();
+            } else {
+                $costCenter.prop('required', true).append('<option value="">Select Cost Center</option>');
+                $('.cost_center').show();
+
+                filteredCenters.forEach(center => {
+                    $costCenter.append(`<option value="${center.id}">${center.name}</option>`);
+                });
+            }
+
+            $costCenter.trigger('change');
+        }
+    }
+
 
     $(document).ready(function () {
+        // On change of organization
+        $('#organization_id').on('change', function () {
+            const selectedOrgIds = $(this).val() || [];
+            updateLocationsDropdown(selectedOrgIds);
+        });
 
+        // On page load, check for preselected orgs
+        const preselectedOrgIds = $('#organization_id').val() || [];
+        if (preselectedOrgIds.length > 0) {
+            updateLocationsDropdown(preselectedOrgIds);
+        }
+        // On location change, load cost centers
+        $('#location_id').on('change', function () {
+            const locationId = $(this).val();
+          if (!locationId) {
+        $('#cost_center_id').empty().append('<option value="">Select Cost Center</option>');
+            // $('.cost_center').hide(); // Optional: hide the section if needed
+                return;
+            }
+            loadCostCenters(locationId);
+        });
         var reservesSurplusValue=0;
 
         $(document).ready(function() {
@@ -266,6 +348,7 @@
             let params = new URLSearchParams(window.location.search);
                 params.set('date', $('#fp-range').val());
                 params.set('cost_center_id', $('#cost_center_id').val());
+                params.set('location_id', $('#location_id').val());
 
                 let newUrl = window.location.pathname + '?' + params.toString();
                 window.history.pushState({}, '', newUrl);
@@ -291,7 +374,7 @@
         function getInitialGroups() {
            
 
-            var obj={ date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),currency:$('#currency').val(),'_token':'{!!csrf_token()!!}',filter_organization:$('#filter-organization').val()};
+            var obj={ date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),location_id:$('#location_id').val(),currency:$('#currency').val(),'_token':'{!!csrf_token()!!}',filter_organization:$('#filter-organization').val()};
             var selectedValues = $('#organization_id').val() || [];
             var filteredValues = selectedValues.filter(function(value) {
                 return value !== null && value.trim() !== '';
@@ -415,7 +498,7 @@
                 $('#' + id).closest('tr').after(html);
             } else {
                 if ($('#check' + id).val() == "") {
-                    var obj={ id:id,date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),currency:$('#currency').val(),'_token':'{!!csrf_token()!!}'};
+                    var obj={ id:id,date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),location_id:$('#location_id').val(),currency:$('#currency').val(),'_token':'{!!csrf_token()!!}'};
                     var selectedValues = $('#organization_id').val() || [];
                     var filteredValues = selectedValues.filter(function(value) {
                         return value !== null && value.trim() !== '';
@@ -506,7 +589,7 @@
 
             if (trIds.length>0) {
 
-                var obj={ ids:trIds,date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),currency:$('#currency').val(),'_token':'{!!csrf_token()!!}'};
+                var obj={ ids:trIds,date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),location_id:$('#location_id').val(),currency:$('#currency').val(),'_token':'{!!csrf_token()!!}'};
                 var selectedValues = $('#organization_id').val() || [];
                 var filteredValues = selectedValues.filter(function(value) {
                     return value !== null && value.trim() !== '';

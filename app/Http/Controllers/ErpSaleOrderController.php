@@ -2031,14 +2031,14 @@ class ErpSaleOrderController extends Controller
             });
             foreach ($dynamicFields as $field) {
                 $datatables = $datatables->addColumn($field -> name, function ($row) use ($field) {
-                    $value = "";
+                    $value = '';
                     $actualDynamicFields = $row -> header ?-> dynamic_fields;
                     foreach ($actualDynamicFields as $actualDynamicField) {
-                        if ($field -> name == $actualDynamicField -> name) {
+                        if ($field -> id == $actualDynamicField -> dynamic_field_detail_id) {
                             $value = $actualDynamicField -> value;
+                            return $value;
                         }
                     }
-                    return $value;
                 });
             }
             $datatables = $datatables

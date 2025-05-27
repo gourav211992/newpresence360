@@ -6,6 +6,7 @@ use App\Helpers\Helper;
 use App\Models\EmployeeBookMapping;
 use App\Models\Organization;
 use App\Models\OrganizationMenu;
+use Log;
 
 trait DefaultGroupCompanyOrg
 {
@@ -20,9 +21,10 @@ trait DefaultGroupCompanyOrg
         if (isset($this -> attributes['company_id'])) {
             return $this -> attributes['company_id'];
         } else {
-            $authUser = Helper::getAuthenticatedUser();
-            $organization = Organization::find($authUser -> organization_id);
-            return $organization ?-> company_id;
+            // $authUser = Helper::getAuthenticatedUser();
+            // $organization = Organization::find($authUser -> organization_id);
+            // return $organization ?-> company_id;
+            return null;
         }
     }
 
@@ -31,15 +33,16 @@ trait DefaultGroupCompanyOrg
         if (isset($this -> attributes['organization_id'])) {
             return $this -> attributes['organization_id'];
         } else {
-            $authUser = Helper::getAuthenticatedUser();
-            $organization = Organization::find($authUser -> organization_id);
-            return $organization ?-> id;
+            // $authUser = Helper::getAuthenticatedUser();
+            // $organization = Organization::find($authUser -> organization_id);
+            // return $organization ?-> id;
+            return null;
         }
     }
 
-    public function scopeWithDefaultGroupCompanyOrg($query)
+    public function scopeWithDefaultGroupCompanyOrg($query, $paramAuthUser = null)
     {
-        $authUser = Helper::getAuthenticatedUser();
+        $authUser = $paramAuthUser ? $paramAuthUser : Helper::getAuthenticatedUser();
         $authOrganization = Organization::find($authUser -> organization_id);
         $companyId = $authOrganization ?-> company_id;
         $groupId = $authOrganization ?-> group_id;
