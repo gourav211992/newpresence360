@@ -426,7 +426,7 @@
                                                      <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Total Dep. <span class="text-danger">*</span></label>
-                                                            <input type="number" readonly id="total_depreciation" name="total_depreciation" class="form-control indian-number" value="{{ $data?->subAsset?->sum('total_depreciation')}}" disabled /> 
+                                                            <input type="number" readonly id="total_depreciation" name="total_depreciation" class="form-control indian-number" value="{{ $data->subAsset?->sum('total_depreciation')}}" disabled /> 
                                                         </div>
                                                     </div>
                                                     @php
@@ -501,19 +501,17 @@
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Supplier Invoice No. <span
-                                                                    class="text-danger">*</span></label>
+                                                            <label class="form-label">Supplier Invoice No. </label>
                                                             <input type="text" class="form-control indian-number"
                                                                 name="supplier_invoice_no" id="supplier_invoice_no"
-                                                                value="{{$data->supplier_invoice_no}}" required readonly />
+                                                                value="{{$data->supplier_invoice_no}}" readonly />
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Supplier Invoice Date <span
-                                                                    class="text-danger">*</span></label>
+                                                            <label class="form-label">Supplier Invoice Date </label>
                                                             <input type="date" class="form-control indian-number"
-                                                                name="supplier_invoice_date"  id="supplier_invoice_date" value="{{$data->supplier_invoice_date}}" required readonly />
+                                                                name="supplier_invoice_date"  id="supplier_invoice_date" value="{{$data->supplier_invoice_date}}" readonly />
 
                                                         </div>
                                                     </div>
@@ -1173,7 +1171,10 @@
                          <tr>
                              <th>S.No</th>
                              <th>Asset Code</th>
+                             <th>Location</th>
+                             <th>Cost Center</th>
                              <th>Current Value</th>
+
                          </tr>
                      </thead>
                      <tbody>
@@ -1181,6 +1182,8 @@
                          <tr>
                              <td>{{ $index + 1 }}</td>
                              <td>{{ $sub_asset->sub_asset_code }}</td>
+                              <td>{{ $sub_asset?->location?->store_name }}</td>
+                               <td>{{ $sub_asset?->costCenter?->name }}</td>
                              <td>{{ $sub_asset->current_value }}</td>
                          </tr>
                          @endforeach

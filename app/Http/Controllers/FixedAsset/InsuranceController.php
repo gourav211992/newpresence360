@@ -10,6 +10,7 @@ use App\Models\Employee;
 use App\Models\ErpStore;
 use App\Models\FixedAssetInsurance;
 use Carbon\Carbon;
+use App\Models\ErpAssetCategory;
 
 class InsuranceController extends Controller
 {
@@ -73,7 +74,8 @@ class InsuranceController extends Controller
             ->whereNotNull('asset_name')
             ->get();
         $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
-        return view('fixed-asset.insurance.create', compact('assets','locations'));
+        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
+        return view('fixed-asset.insurance.create', compact('assets','locations','categories'));
     }
 
     public function store(Request $request)
@@ -105,7 +107,8 @@ class InsuranceController extends Controller
             ->whereNotNull('asset_name')
             ->get();
         $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
-        return view('fixed-asset.insurance.show', compact('assets', 'data','locations'));
+        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
+        return view('fixed-asset.insurance.show', compact('assets', 'data','locations','categories'));
     }
 
     public function edit(string $id)
@@ -116,7 +119,8 @@ class InsuranceController extends Controller
             ->whereNotNull('asset_name')
             ->get();
         $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
-        return view('fixed-asset.insurance.edit', compact('assets', 'data','locations'));
+        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
+        return view('fixed-asset.insurance.edit', compact('assets', 'data','locations','categories'));
     }
 
     public function update(Request $request, $id)

@@ -98,6 +98,23 @@
                                     </div>
 
                                     <div class="col-md-9">
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Category <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <select class="form-select select2" name="old_category_id"
+                                                            id="old_category" required>
+                                                            @foreach ($categories as $category)
+                                                                <option value="{{ $category->id }}"
+                                                                    {{ $data->category_id == $category->id ? 'selected' : '' }}>
+                                                                    {{ $category->name }}
+                                                                </option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+                                                </div>
                                         {{-- location --}}
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
@@ -132,18 +149,7 @@
                                                     </div>
 
                                                 </div>
-                                                <div class="row align-items-center mb-1">
-                                                     <div class="col-md-3">
-
-                                                            <label class="form-label">Category <span
-                                                                    class="text-danger">*</span></label>
-                                                        </div>
-                                                        <div class="col-md-5">
-                                                            <select class="form-select select2" disabled required name="category_id"
-                                                                id="category" required>
-                                                               </select>
-                                                        </div>
-                                                    </div>
+                                                
                                         <!-- Asset Code & Name -->
                                         <div class="row align-items-center mb-1">
                                             <div class="col-md-3">
@@ -397,7 +403,6 @@ function showToast(icon, title) {
     function loadCategoriesOnSelection() {
         const locationId = $("#location").val();
         const selectedCostCenterId = '{{ $data->cost_center_id ?? '' }}';
-        const selectedCategoryId = '{{ $data->category_id ?? '' }}';
 
         if (locationId) {
             const url = '{{ route("cost-center.get-cost-center", ":id") }}'.replace(':id', locationId);
@@ -425,45 +430,14 @@ function showToast(icon, title) {
 
                     // Now get the updated costCenterId value
                     const costCenterId = selectedCostCenterId || $('#cost_center').val();
-
-                    // Load categories after cost centers are set
-                    loadCategories(locationId, costCenterId, selectedCategoryId);
                 },
                 error: function () {
                     $('#cost_center').empty();
-                    loadCategories(locationId, null, selectedCategoryId);
                 }
             });
         } else {
             $('#cost_center').empty();
-            loadCategories(null, null, null);
         }
-    }
-
-    function loadCategories(locationId, costCenterId, selectedCategoryId) {
-        const url = '{{ route("finance.fixed-asset.get-categories") }}';
-
-        $.ajax({
-            url: url,
-            type: 'GET',
-            data: {
-                cost_center_id: costCenterId,
-                location_id: locationId
-            },
-            dataType: 'json',
-            success: function (data) {
-                const $category = $('#category');
-                $category.empty().append('<option value="">Select Category</option>');
-
-                $.each(data, function (key, value) {
-                    const selected = (value.id == selectedCategoryId) ? 'selected' : '';
-                    $category.append('<option value="' + value.id + '" ' + selected + '>' + value.name + '</option>');
-                });
-            },
-            error: function () {
-                $('#category').empty();
-            }
-        });
     }
 
     </script>

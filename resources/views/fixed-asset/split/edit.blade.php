@@ -329,6 +329,7 @@
                                                                 </td>
                                                                 <td class="poprod-decpt">
                                                                     <input type="text" required placeholder="Enter" value="{{$item->asset_code}}" class="form-control mw-100 mb-25 asset-code-input" />
+                                                                  <span class="text-danger code_error"></span>
                                                                 </td>
                                                                 <td class="poprod-decpt">
                                                                     <input type="text" required placeholder="Enter" value="{{$item->asset_name}}" class="form-control mw-100 mb-25 asset-name-input" />
@@ -632,6 +633,7 @@
                 </td>
                 <td class="poprod-decpt">
                     <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-code-input" />
+                      <span class="text-danger code_error"></span>
                 </td>
                 <td class="poprod-decpt">
                     <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-name-input" />
@@ -752,6 +754,21 @@
         showToast('error', 'Total Current Value must be greater than 0.');
         return false;
     }
+    let isValid=true;
+            $('.asset-code-input').each(function(index) {
+                    if($(this).hasClass('is-invalid'))
+                    {
+                        isValid=false;
+                    }
+            });
+            if(isValid==false)
+            {
+                showToast('error', 'Code Already Exist.');
+                return false;
+            }
+
+
+
 
 
             document.getElementById('fixed-asset-split-form').submit();
@@ -775,6 +792,19 @@
         showToast('error', 'Total Current Value must be greater than 0.');
         return false;
     }
+
+let isValid=true;
+            $('.asset-code-input').each(function(index) {
+                    if($(this).hasClass('is-invalid'))
+                    {
+                        isValid=false;
+                    }
+            });
+            if(isValid==false)
+            {
+                showToast('error', 'Code Already Exist.');
+                return false;
+            }
 
     // Submit form manually if validation passes
     this.submit();
@@ -997,6 +1027,26 @@
         const $row = $(this);
 
         const assetCode = $row.find('.asset-code-input').val().trim();
+         $.ajax({
+                url: '{{ route("finance.fixed-asset.check-code") }}',
+                method: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    code: assetCode
+                },
+                success: function (response) {
+                    const $input = $row.find('.asset-code-input');
+                    const $errorEl = $row.find('.code_error'); // Use class instead of ID
+
+                    if (response.exists) {
+                        $errorEl.text('Code already exists.');
+                        $input.addClass('is-invalid');
+                    } else {
+                        $errorEl.text('');
+                        $input.removeClass('is-invalid');
+                    }
+                }
+            });
         const $assetNameInput = $row.find('.asset-name-input');
         const $subAssetInput = $row.find('.sub-asset-code-input');
         const $salvageValueInput = $row.find('.salvage-value-input');
@@ -1251,7 +1301,8 @@ function add_blank(){
                                                                 </td>
                                                                 <td class="poprod-decpt">
                                                                     <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-code-input" />
-                                                                </td>
+                                                                  <span class="text-danger code_error"></span>
+                                                                    </td>
                                                                 <td class="poprod-decpt">
                                                                     <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-name-input" />
                                                                 </td>

@@ -350,11 +350,10 @@
 
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Capitalize Date <span
-                                                                    class="text-danger">*</span></label>
+                                                            <label class="form-label">Capitalize Date </label>
                                                             <input type="date" class="form-control"
                                                                 name="capitalize_date" id="capitalize_date"
-                                                                value="{{ old('capitalize_date') }}" min="{{$financialStartDate}}" max="{{$financialEndDate}}" required />
+                                                                value="{{ old('capitalize_date') }}" min="{{$financialStartDate}}" max="{{$financialEndDate}}"/>
                                                         </div>
                                                     </div>
 
@@ -480,20 +479,18 @@
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Supplier Invoice No. <span
-                                                                    class="text-danger">*</span></label>
+                                                            <label class="form-label">Supplier Invoice No. </label>
                                                             <input type="text" class="form-control"
                                                                 name="supplier_invoice_no" id="supplier_invoice_no"
-                                                                value="" required readonly />
+                                                                value="" readonly />
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Supplier Invoice Date <span
-                                                                    class="text-danger">*</span></label>
+                                                            <label class="form-label">Supplier Invoice Date </label>
                                                             <input type="date" class="form-control"
                                                                 name="supplier_invoice_date" id="supplier_invoice_date"
-                                                                required readonly />
+                                                                 readonly />
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">

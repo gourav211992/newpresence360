@@ -17,8 +17,18 @@ class FixedAssetSub extends Model
     {
         return $this->belongsTo(FixedAssetRegistration::class, 'parent_id');
     }
+    public function location(){
+        return $this->belongsTo(ErpStore::class, 'location_id');
+    }
+    public function costCenter(){
+        return $this->belongsTo(CostCenter::class, 'cost_center_id');
+    }
     public static function generateSubAssets($parentId, $assetCode, $quantity, $totalValue,$salvageValue)
     {
+        $asset = FixedAssetRegistration::findOrFail($parentId); // Ensure parent asset exists
+        $cost_centerId = $asset?->cost_center_id; // Assuming cost_center_id is available in the parent asset
+        $locationId = $asset?->location_id; // Assuming location_id is available in the parent asset
+
         $subAssets = [];
         $unitValue = $totalValue / $quantity;
         $salvageValueUnit = $salvageValue / $quantity;
@@ -30,6 +40,8 @@ class FixedAssetSub extends Model
                 'current_value' => $unitValue,
                 'current_value_after_dep'=> $unitValue,
                 'salvage_value' => $salvageValueUnit,
+                'location_id' => $locationId, // Assuming location_id is nullable
+                'cost_center_id' => $cost_centerId, // Assuming cost_center_id is nullable
             ]);
         }
         

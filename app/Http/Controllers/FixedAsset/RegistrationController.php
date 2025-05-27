@@ -608,9 +608,11 @@ class RegistrationController extends Controller
 
         $query = FixedAssetRegistration::withDefaultGroupCompanyOrg()
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
+            ->whereNotNull('capitalize_date')
             ->where('asset_code', 'like', "%$q%")
             ->whereHas('subAsset', function ($query) use ($oldAssets) {
                 $query->whereNotIn('id', $oldAssets);
+                $query->where('current_value_after_dep', '>', 0);
             });
 
         if (!empty($ids)) {
@@ -630,6 +632,15 @@ class RegistrationController extends Controller
 
         return $query->limit(20)->get();
     }
+      public function checkCode(Request $request)
+{
+    if($request->edit_id)
+    $exists = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('asset_code', $request->code)->where('id','!=',$request->edit_id)->exists();
+    else
+    $exists = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('asset_code', $request->code)->exists();
+
+    return response()->json(['exists' => $exists]);
+}
 
     public function subAssetSearch(Request $request)
     {
@@ -646,6 +657,7 @@ class RegistrationController extends Controller
 
         return FixedAssetSub::where('parent_id', $Id)
             ->whereNotIn('id', $oldAssets)->with('asset')
+            ->where('current_value_after_dep', '>', 0)
             ->where('sub_asset_code', 'like', "%$q%")
             ->limit(20)
             ->get();

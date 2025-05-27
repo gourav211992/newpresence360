@@ -38,20 +38,20 @@ class DepreciationController extends Controller
             return redirect()->route('/');
         }
         $data = FixedAssetDepreciation::withDefaultGroupCompanyOrg()->orderBy('id', 'desc');
-        // if ($request->date) {
-        //     $dates = explode(' to ', $request->date);
-        //     $start = date('Y-m-d', strtotime($dates[0]));
-        //     $end = date('Y-m-d', strtotime($dates[1]));
-        //     $data = $data->whereDate('document_date', '>=', $start)
-        //         ->whereDate('document_date', '<=', $end);
-        // } else {
-        //     $fyear = Helper::getFinancialYear(date('Y-m-d'));
+        if ($request->date) {
+            $dates = explode(' to ', $request->date);
+            $start = date('Y-m-d', strtotime($dates[0]));
+            $end = date('Y-m-d', strtotime($dates[1]));
+            $data = $data->whereDate('document_date', '>=', $start)
+                ->whereDate('document_date', '<=', $end);
+        } else {
+            $fyear = Helper::getFinancialYear(date('Y-m-d'));
 
-        //     $data = $data->whereDate('document_date', '>=', $fyear['start_date'])
-        //         ->whereDate('document_date', '<=', $fyear['end_date']);
-        //     $start = $fyear['start_date'];
-        //     $end = $fyear['end_date'];
-        // }
+            $data = $data->whereDate('document_date', '>=', $fyear['start_date'])
+                ->whereDate('document_date', '<=', $fyear['end_date']);
+            $start = $fyear['start_date'];
+            $end = $fyear['end_date'];
+        }
         $data = $data->get();
         return view('fixed-asset.depreciation.index', compact('data'));
     }
@@ -138,8 +138,8 @@ class DepreciationController extends Controller
             foreach ($sub_assets as $sub_asset) {
                 $subAsset = FixedAssetSub::find($sub_asset['sub_asset_id']);
                 if ($subAsset) {
-                    $subAsset->total_depreciation += $sub_asset['dep_amount'] ?? 0;
-                    $subAsset->current_value_after_dep = $sub_asset['after_dep_value'] ?? null;
+                    $subAsset->total_depreciation += Helper::removeCommas($sub_asset['dep_amount']) ?? 0;
+                    $subAsset->current_value_after_dep = Helper::removeCommas($sub_asset['after_dep_value']) ?? ($subAsset->current_value_after_dep - Helper::removeCommas($sub_asset['dep_amount']));
                     $subAsset->save();
                 }
             }
@@ -280,10 +280,13 @@ class DepreciationController extends Controller
         }
         $asset_details = [];
         $asset_details = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-            ->withWhereHas('subAsset')
+            ->withWhereHas('subAsset', function ($query) {
+                $query->where('current_value_after_dep', '>', 0);
+            })
             ->whereNotNull('depreciation_percentage')
             ->whereNotNull('depreciation_percentage_year')
             ->withWhereHas('ledger')
+            ->whereNotNull('capitalize_date')
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
             ->withWhereHas('category')
             ->get()

@@ -171,6 +171,8 @@ class FixedAssetSplit extends Model
                     'quantity' => $subAsset->quantity,
                     'current_value' => $subAsset->current_value,
                     'current_value_after_dep' => $subAsset->current_value,
+                    'location_id' => $request->location_id,
+                    'cost_center_id' => $request->cost_center_id,
                 ]);
             }
         }

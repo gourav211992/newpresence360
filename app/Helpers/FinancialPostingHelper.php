@@ -78,6 +78,7 @@ class FinancialPostingHelper
     const NEW_ASSET = 'New Asset';
     const PAYMENT_ACCOUNT = 'Payment';
     const VENDOR_ACCOUNT = 'Party';
+    const FIXEDASSET_ACCOUNT = 'Fixed Asset';
 
     const WRITE_OFF_ACCOUNT = 'Writeoff';
     const Loan_Customer_Receivable_ACCOUNT = 'Loan Customer Receivable';
@@ -138,6 +139,11 @@ class FinancialPostingHelper
     const FIXED_ASSET_SPLIT_MERGER_POSTING_ACCOUNT = [
         self::NEW_ASSET => self::DEBIT,
         self::OLD_ASSET => self::CREDIT,
+    ];
+    const FIXED_ASSET_POSTING_ACCOUNT = [
+        self::VENDOR_ACCOUNT => self::CREDIT,
+        self::TAX_ACCOUNT => self::DEBIT,
+        self::FIXEDASSET_ACCOUNT=>self::DEBIT,
     ];
 
     const LOAN_SETTLE_POSTING_ACCOUNT = [
@@ -3303,7 +3309,7 @@ class FinancialPostingHelper
             $itemValue = 0;
             $orgCurrencyCost = 0;
             $asset = FixedAssetRegistration::find($docItem->asset_id);
-            $asset->updateTotalDep();
+            //$asset->updateTotalDep();
             $docValue = $docItem->dep_amount;
             $assetsCreditAmount = $docValue;
             $assetsLedgerId = $asset->ledger_id;

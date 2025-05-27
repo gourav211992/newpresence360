@@ -509,7 +509,7 @@ document.getElementById("process_btn").addEventListener("click", function () {
 
                
                 // If expiry date > toDate, then toDate = expiry date
-                if (expiryDate < toDateObj) {
+                if (expiryDate <= toDateObj) {
                         // Set toDateObj to one day before expiryDate
                         toDateObj = new Date(expiryDate);
                         toDateObj.setDate(toDateObj.getDate() - 1);
@@ -769,7 +769,7 @@ document.getElementById("process_btn").addEventListener("click", function () {
             document.getElementById('document_status').value = 'submitted';
         });
 
-        $('#location').on('change', function () {
+    $('#location').on('change', function () {
     var locationId = $(this).val();
 
     if (locationId) {
