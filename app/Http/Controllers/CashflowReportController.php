@@ -16,6 +16,7 @@ use App\Models\Address;
 use PDF;
 use App\Models\Currency;
 use App\Models\AuthUser;
+use App\Models\CostCenterOrgLocations;
 use App\Models\ErpStore;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -23,6 +24,7 @@ class CashflowReportController extends Controller
 {
     public function index(Request $request,$page=null)
     {
+        // dd($request->all());
         $fy = Helper::getFinancialYear(date('Y-m-d'));
         $startDate = date('Y-m-d', strtotime($fy['start_date']));
         $endDate = date('Y-m-d', strtotime($fy['end_date']));
@@ -36,16 +38,23 @@ class CashflowReportController extends Controller
             $organization_id = $request->organization;
         else
             $organization_id = Helper::getAuthenticatedUser()->organization_id;
-
+        $cost_center_id = $request->cost_center_id;
+        $location_id = $request->location_id;
 
         $payment_made = Voucher::withDefaultGroupCompanyOrg()->where('reference_service', ConstantHelper::PAYMENTS_SERVICE_ALIAS)
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
             ->whereBetween('document_date', [$startDate, $endDate])
+            ->when($location_id, function ($query) use ($location_id) {
+                    $query->where('location', $location_id);
+                })
             ->with('items.ledger') // assuming each item has a ledger relation
             ->get()
-            ->flatMap(function ($voucher) {
+            ->flatMap(function ($voucher,$cost_center_id) {
 
-                return $voucher->items->where('debit_amt_org', '>', 0)->map(function ($item) use ($voucher) {
+                return $voucher->items
+                  ->when($cost_center_id, function ($collection, $cost_center_id) {
+                        return $collection->where('cost_center_id',$cost_center_id);
+                    })->where('debit_amt_org', '>', 0)->map(function ($item) use ($voucher) {
                     $pay = PaymentVoucher::withDefaultGroupCompanyOrg()->find($voucher->reference_doc_id);
                     return (object)[
                         'voucher_id'    => $voucher->id,
@@ -59,25 +68,36 @@ class CashflowReportController extends Controller
                 });
             })->values()->all();
 
-
         $payment_made_t = Voucher::withDefaultGroupCompanyOrg()->where('reference_service', ConstantHelper::PAYMENTS_SERVICE_ALIAS)
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
             ->whereBetween('document_date', [$startDate, $endDate])
+            ->when($location_id, function ($query) use ($location_id) {
+                    $query->where('location', $location_id);
+                })
             ->with('items.ledger') // assuming each item has a ledger relation
             ->get()
-            ->flatMap(function ($voucher) {
+            ->flatMap(function ($voucher,$cost_center_id) {
 
-                return $voucher->items->where('debit_amt_org', '>', 0);
+                return $voucher->items
+                 ->when($cost_center_id, function ($collection, $cost_center_id) {
+                        return $collection->where('cost_center_id',$cost_center_id);
+                    })->where('debit_amt_org', '>', 0);
             })->sum('debit_amt_org');
 
 
         $opening_payment_made =  Voucher::withDefaultGroupCompanyOrg()->where('reference_service', ConstantHelper::PAYMENTS_SERVICE_ALIAS)
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
             ->where('document_date', '<', $startDate)
+            ->when($location_id, function ($query) use ($location_id) {
+                    $query->where('location', $location_id);
+                })
             ->with('items') // we just need items, ledger is not needed for sum
             ->get()
-            ->flatMap(function ($voucher) {
-                return $voucher->items->where('debit_amt_org', '>', 0);
+            ->flatMap(function ($voucher,$cost_center_id) {
+                return $voucher->items
+                 ->when($cost_center_id, function ($collection, $cost_center_id) {
+                        return $collection->where('cost_center_id',$cost_center_id);
+                    })->where('debit_amt_org', '>', 0);
             })
             ->sum('debit_amt_org');
 
@@ -86,10 +106,16 @@ class CashflowReportController extends Controller
         $payment_received = Voucher::withDefaultGroupCompanyOrg()->where('reference_service', ConstantHelper::RECEIPTS_SERVICE_ALIAS)
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
             ->whereBetween('document_date', [$startDate, $endDate])
+            ->when($location_id, function ($query) use ($location_id) {
+                    $query->where('location', $location_id);
+                })
             ->with('items.ledger') // assuming each item has a ledger relation
             ->get()
-            ->flatMap(function ($voucher) {
-                return $voucher->items->where('credit_amt_org', '>', 0)->map(function ($item) use ($voucher) {
+            ->flatMap(function ($voucher,$cost_center_id) {
+                return $voucher->items
+                 ->when($cost_center_id, function ($collection, $cost_center_id) {
+                        return $collection->where('cost_center_id',$cost_center_id);
+                    })->where('credit_amt_org', '>', 0)->map(function ($item) use ($voucher) {
                     $pay = PaymentVoucher::withDefaultGroupCompanyOrg()->find($voucher->reference_doc_id);
                     return (object) [
                         'voucher_id'    => $voucher->id,
@@ -106,20 +132,32 @@ class CashflowReportController extends Controller
         $payment_received_t = Voucher::withDefaultGroupCompanyOrg()->where('reference_service', ConstantHelper::RECEIPTS_SERVICE_ALIAS)
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
             ->whereBetween('document_date', [$startDate, $endDate])
+            ->when($location_id, function ($query) use ($location_id) {
+                    $query->where('location', $location_id);
+                })
             ->with('items.ledger') // assuming each item has a ledger relation
             ->get()
-            ->flatMap(function ($voucher) {
+            ->flatMap(function ($voucher,$cost_center_id) {
 
-                return $voucher->items->where('credit_amt_org', '>', 0);
+                return $voucher->items
+                 ->when($cost_center_id, function ($collection, $cost_center_id) {
+                        return $collection->where('cost_center_id',$cost_center_id);
+                    })->where('credit_amt_org', '>', 0);
             })->sum('credit_amt_org');
 
         $opening_payment_received =  Voucher::withDefaultGroupCompanyOrg()->where('reference_service', ConstantHelper::RECEIPTS_SERVICE_ALIAS)
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
             ->where('document_date', '<', $startDate)
+            ->when($location_id, function ($query) use ($location_id) {
+                    $query->where('location', $location_id);
+                })
             ->with('items') // we just need items, ledger is not needed for sum
             ->get()
-            ->flatMap(function ($voucher) {
-                return $voucher->items->where('credit_amt_org', '>', 0);
+            ->flatMap(function ($voucher,$cost_center_id) {
+                return $voucher->items
+                 ->when($cost_center_id, function ($collection, $cost_center_id) {
+                        return $collection->where('cost_center_id',$cost_center_id);
+                    })->where('credit_amt_org', '>', 0);
             })
             ->sum('credit_amt_org');
         $opening = $opening_payment_received - $opening_payment_made;
@@ -134,7 +172,8 @@ class CashflowReportController extends Controller
                 $endDate = date('Y-m-d', strtotime($dates[1]));
             }
         $createdBy= Helper::getAuthenticatedUser()->auth_user_id;
-        return self::print($startDate,$endDate,$organization_id,$createdBy);
+        // dd($location_id,$cost_center_id, $request->all());
+        return self::print($startDate,$endDate,$organization_id,$createdBy,$request->location_id, $request->cost_center_id);
         }
 
         else{
@@ -143,22 +182,44 @@ class CashflowReportController extends Controller
             $startDate = date('d-m-Y', strtotime($startDate));
         $endDate = date('d-m-Y', strtotime($endDate));
         $range = $startDate . ' to ' . $endDate;
+         $cost_centers = CostCenterOrgLocations::with(['costCenter' => function ($query) {
+            $query->withDefaultGroupCompanyOrg()->where('status', 'active');
+        }])
+        ->get()
+        ->filter(function ($item) {
+            return $item->costCenter !== null;
+        })
+        ->map(function ($item) {
+            return [
+                'id' => $item->costCenter->id,
+                'name' => $item->costCenter->name,
+                'location' => $item->costCenter->locations,
+            ];
+        })
+        ->toArray();
         $locations = ErpStore::where('status','active')->get();
-        return view('cashflow.index', compact('scheduler','users','opening', 'payment_received', 'payment_made', 'payment_made_t', 'payment_received_t', 'closing', 'fy', 'mappings', 'organization_id', 'range'));
+        return view('cashflow.index', compact('scheduler','users','opening', 'payment_received', 'payment_made','location_id','cost_center_id', 'payment_made_t', 'payment_received_t', 'closing', 'fy', 'mappings', 'organization_id', 'range','locations','cost_centers'));
         }
     }
-    public static function print($startDate,$endDate,$organization_id,$createdBy)
+    public static function print($startDate,$endDate,$organization_id,$createdBy,$location = null, $cost =null)
     {
     try {
+        // dd($location, $cost);
         $payment_made = Voucher::where('reference_service', ConstantHelper::PAYMENTS_SERVICE_ALIAS)
             ->where('organization_id', $organization_id)
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
             ->whereBetween('document_date', [$startDate, $endDate])
+            ->when($location, function ($query) use ($location) {
+                    $query->where('location', $location);
+                })
             ->with('items.ledger') // assuming each item has a ledger relation
             ->get()
-            ->flatMap(function ($voucher) {
+            ->flatMap(function ($voucher,$cost) {
 
-                return $voucher->items->where('debit_amt_org', '>', 0)->map(function ($item) use ($voucher) {
+                return $voucher->items
+                 ->when($cost, function ($collection, $cost) {
+                        return $collection->where('cost_center_id',$cost);
+                    })->where('debit_amt_org', '>', 0)->map(function ($item) use ($voucher) {
                     $pay = PaymentVoucher::withDefaultGroupCompanyOrg()->find($voucher->reference_doc_id);
                     return (object)[
                         'voucher_id'    => $voucher->id,
@@ -176,11 +237,17 @@ class CashflowReportController extends Controller
             ->where('organization_id', $organization_id)
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
             ->whereBetween('document_date', [$startDate, $endDate])
+             ->when($location, function ($query) use ($location) {
+                    $query->where('location', $location);
+                })
             ->with('items.ledger') // assuming each item has a ledger relation
             ->get()
-            ->flatMap(function ($voucher) {
+            ->flatMap(function ($voucher,$cost) {
 
-                return $voucher->items->where('debit_amt_org', '>', 0);
+                return $voucher->items
+                ->when($cost, function ($collection, $cost) {
+                        return $collection->where('cost_center_id',$cost);
+                    })->where('debit_amt_org', '>', 0);
             })->sum('debit_amt_org');
 
 
@@ -188,10 +255,16 @@ class CashflowReportController extends Controller
             ->where('organization_id', $organization_id)
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
             ->where('document_date', '<', $startDate)
+             ->when($location, function ($query) use ($location) {
+                    $query->where('location', $location);
+                })
             ->with('items') // we just need items, ledger is not needed for sum
             ->get()
-            ->flatMap(function ($voucher) {
-                return $voucher->items->where('debit_amt_org', '>', 0);
+            ->flatMap(function ($voucher,$cost) {
+                return $voucher->items
+                ->when($cost, function ($collection, $cost) {
+                        return $collection->where('cost_center_id',$cost);
+                    })->where('debit_amt_org', '>', 0);
             })
             ->sum('debit_amt_org');
 
@@ -199,10 +272,16 @@ class CashflowReportController extends Controller
             ->where('organization_id', $organization_id)
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
             ->whereBetween('document_date', [$startDate, $endDate])
+             ->when($location, function ($query) use ($location) {
+                    $query->where('location', $location);
+                })
             ->with('items.ledger') // assuming each item has a ledger relation
             ->get()
-            ->flatMap(function ($voucher) {
-                return $voucher->items->where('credit_amt_org', '>', 0)->map(function ($item) use ($voucher) {
+            ->flatMap(function ($voucher,$cost) {
+                return $voucher->items
+                ->when($cost, function ($collection, $cost) {
+                        return $collection->where('cost_center_id',$cost);
+                    })->where('credit_amt_org', '>', 0)->map(function ($item) use ($voucher) {
                     $pay = PaymentVoucher::withDefaultGroupCompanyOrg()->find($voucher->reference_doc_id);
                     return (object) [
                         'voucher_id'    => $voucher->id,
@@ -220,21 +299,33 @@ class CashflowReportController extends Controller
             ->where('organization_id', $organization_id)
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
             ->whereBetween('document_date', [$startDate, $endDate])
+             ->when($location, function ($query) use ($location) {
+                    $query->where('location', $location);
+                })
             ->with('items.ledger') // assuming each item has a ledger relation
             ->get()
-            ->flatMap(function ($voucher) {
+            ->flatMap(function ($voucher,$cost) {
 
-                return $voucher->items->where('credit_amt_org', '>', 0);
+                return $voucher->items
+                ->when($cost, function ($collection, $cost) {
+                        return $collection->where('cost_center_id',$cost);
+                    })->where('credit_amt_org', '>', 0);
             })->sum('credit_amt_org');
 
         $opening_payment_received =  Voucher::where('reference_service', ConstantHelper::RECEIPTS_SERVICE_ALIAS)
             ->where('organization_id', $organization_id)
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
             ->where('document_date', '<', $startDate)
+             ->when($location, function ($query) use ($location) {
+                    $query->where('location', $location);
+                })
             ->with('items') // we just need items, ledger is not needed for sum
             ->get()
-            ->flatMap(function ($voucher) {
-                return $voucher->items->where('credit_amt_org', '>', 0);
+            ->flatMap(function ($voucher,$cost) {
+                return $voucher->items
+                ->when($cost, function ($collection, $cost) {
+                        return $collection->where('cost_center_id',$cost);
+                    })->where('credit_amt_org', '>', 0);
             })
             ->sum('credit_amt_org');
 
