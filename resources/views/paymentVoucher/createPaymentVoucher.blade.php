@@ -1,5 +1,4 @@
 @extends('layouts.app')
-
 @section('styles')
     <style>
         .settleInput {
@@ -110,6 +109,7 @@
 
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-2">
+                                                        {{-- {{ dd($books) }} --}}
                                                         <label class="form-label">Series <span
                                                                 class="text-danger">*</span></label>
                                                     </div>
@@ -120,7 +120,7 @@
                                                             <option disabled selected value="">Select</option>
                                                             @foreach ($books as $book)
                                                                 <option value="{{ $book->id }}" {{ old('book_id') == $book->id ? 'selected' : '' }}>
-                                                                    {{ strtoupper($book->book_code) }}
+                                                                    {{ strtoupper($book->book_name) }}
                                                                 </option>
                                                             @endforeach
                                                         </select>
@@ -766,8 +766,8 @@
                                             <td>${val['date']}</td>
                                             <td class="fw-bolder text-dark">${val['series']['book_code'].toUpperCase()}</td>
                                             <td>${val['voucher_no']}</td>
-                                            <td class="text-end">${val['amount'].toLocaleString('en-IN')}</td>
-                                            <td class="balanceInput text-end">${parseFloat(val['balance']).toFixed(2).toLocaleString('en-IN')}</td>
+                                            <td class="text-end">${formatIndianNumber(val['amount'])}</td>
+                                            <td class="balanceInput text-end">${formatIndianNumber(val['balance'])}</td>
                                             <td class="text-end">
                                                 <input type="number" class="form-control mw-100 settleInput settleAmount${val['id']}" data-id="${val['id']}" value="${amount}"/>
                                             </td>

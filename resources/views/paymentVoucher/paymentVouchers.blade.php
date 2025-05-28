@@ -100,7 +100,7 @@
                                         @endforeach
                                     </tbody>
                                 </table>
-                                {{ $data->links('vendor.pagination.custom') }}
+                                {{-- {{ $data->links('vendor.pagination.custom') }} --}}
                             </div>
                         </div>
                     </div>
