@@ -708,7 +708,7 @@
 
                 allRows.push(rowData);
             });
-        ')
+        
 
             $('#asset_details').val(JSON.stringify(allRows));
    if($('#asset_code').hasClass('is-invalid'))
@@ -1241,6 +1241,7 @@
                     dataType: 'json',
                     success: function(data) {
                         if (data.length == 0) {
+
                             $('#cost_center').empty();
                             $('#cost_center').prop('required', false);
                             $('.cost_center').hide();

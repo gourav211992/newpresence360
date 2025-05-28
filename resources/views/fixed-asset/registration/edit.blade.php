@@ -462,7 +462,7 @@
 
                                                                      </div>
                                                     </div>
-                                                    <div class="col-md-3">
+                                                    <div class="col-md-3 d-none">
                                                         <div class="mb-1">
                                                             <label class="form-label">Supplier Invoice No. </label>
                                                             <input type="text" class="form-control"
@@ -470,7 +470,7 @@
                                                                 value="{{$data->supplier_invoice_no}}" readonly />
                                                         </div>
                                                     </div>
-                                                    <div class="col-md-3">
+                                                    <div class="col-md-3 d-none">
                                                         <div class="mb-1">
                                                             <label class="form-label">Supplier Invoice Date </label>
                                                             <input type="date" class="form-control"

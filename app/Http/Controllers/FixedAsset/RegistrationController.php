@@ -223,8 +223,8 @@ class RegistrationController extends Controller
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$data->document_status] ?? '';
 
 
-        if ($data->depreciations->count() != 0)
-            $buttons['amend'] = false;
+        // if ($data->depreciations->count() != 0)
+        //     $buttons['amend'] = false;
 
 
         $group_name = ConstantHelper::FIXED_ASSETS;

@@ -246,7 +246,7 @@
                                                     id="rev_ledger">
                                                     <option value=""
                                                         {{ old('rev_ledger') ? '' : 'selected' }}>Select</option>
-                                                    @foreach ($sales_exp_ledgers as $rev)
+                                                    @foreach ($sur_ledgers as $rev)
                                                         <option value="{{ $rev->id }}"
                                                             {{ $data->rev_ledger_id == $rev->id ? 'selected' : '' }}>
                                                             {{ $rev->name }}
@@ -256,7 +256,7 @@
                                              </div>
                                             </div>
                                     
-                                            <div class="row align-items-center mb-1" hidden>
+                                            <div class="row align-items-center mb-1 d-none">
                                                 <div class="col-md-3">
                                                     <label class="form-label">Rev. Ledger Group <span class="text-danger">*</span></label>
                                                 </div>
@@ -276,7 +276,7 @@
                                                     id="imp_ledger">
                                                     <option value=""
                                                         {{ old('imp_ledger') ? '' : 'selected' }}>Select</option>
-                                                    @foreach ($sur_ledgers as $imp)
+                                                    @foreach ($sales_exp_ledgers as $imp)
                                                         <option value="{{ $imp->id }}"
                                                             {{ $data->imp_ledger_id == $imp->id ? 'selected' : '' }}>
                                                             {{ $imp->name }}
@@ -286,7 +286,7 @@
                                              </div>
                                             </div>
                                     
-                                            <div class="row align-items-center mb-1" hidden>
+                                            <div class="row align-items-center mb-1 d-none">
                                                 <div class="col-md-3">
                                                     <label class="form-label">Rev. Ledger Group </label>
                                                 </div>
@@ -316,7 +316,7 @@
                                              </div>
                                             </div>
                                     
-                                            <div class="row align-items-center mb-1" hidden>
+                                            <div class="row align-items-center mb-1 d-none">
                                                 <div class="col-md-3">
                                                     <label class="form-label">Rev. Ledger Group <span class="text-danger">*</span></label>
                                                 </div>

@@ -287,7 +287,7 @@ class DepreciationController extends Controller
             ->whereNotNull('depreciation_percentage_year')
             ->withWhereHas('ledger')
             ->whereNotNull('capitalize_date')
-            ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
+            ->where('document_status', ConstantHelper::POSTED)
             ->withWhereHas('category')
             ->get()
             ->where('last_dep_date', '<', $endDate)

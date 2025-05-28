@@ -239,7 +239,7 @@
                                                             id="rev_ledger">
                                                             <option value=""
                                                                 {{ old('rev_ledger') ? '' : 'selected' }}>Select</option>
-                                                            @foreach ($sales_exp_ledgers as $rev)
+                                                            @foreach ($sur_ledgers as $rev)
                                                                 <option value="{{ $rev->id }}">
                                                                     {{ $rev->name }}
                                                                 </option>
@@ -248,7 +248,7 @@
                                                     </div>
                                                 </div>
 
-                                                <div class="row align-items-center mb-1" hidden>
+                                                <div class="row align-items-center mb-1 d-none">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Rev. Ledger Group <span
                                                                 class="text-danger">*</span></label>
@@ -268,7 +268,7 @@
                                                         <select class="form-select select2" name="imp_ledger_id"
                                                             id="imp_ledger">
                                                             <option value="">Select</option>
-                                                            @foreach ($sur_ledgers as $imp)
+                                                            @foreach ($sales_exp_ledgers as $imp)
                                                                 <option value="{{ $imp->id }}">
                                                                     {{ $imp->name }}
                                                                 </option>
@@ -277,7 +277,7 @@
                                                     </div>
                                                 </div>
 
-                                                <div class="row align-items-center mb-1" hidden>
+                                                <div class="row align-items-center mb-1 d-none">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Imp. Ledger Group <span
                                                                 class="text-danger">*</span></label>
@@ -306,7 +306,7 @@
                                                     </div>
                                                 </div>
 
-                                                <div class="row align-items-center mb-1" hidden>
+                                                <div class="row align-items-center mb-1 d-none">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Sales Ledger Group <span
                                                                 class="text-danger">*</span></label>

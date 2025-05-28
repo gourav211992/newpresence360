@@ -69,7 +69,7 @@ class FinancialPostingHelper
     const CREDIT = "Credit";
     const COGS_ACCOUNT = 'COGS';
     const SALES_ACCOUNT = 'Sales';
-    const STOCK_ACCOUNT = 'Stock';
+    const STOCK_ACCOUNT = 'Service';
     const PHYSICAL_STOCK_VARIANCE_ACCOUNT = 'PSVA';
     const WIP_ACCOUNT = 'FG/WIP';
     const RM_ACCOUNT = 'RM';
@@ -80,7 +80,6 @@ class FinancialPostingHelper
     const PAYMENT_ACCOUNT = 'Payment';
     const VENDOR_ACCOUNT = 'Party';
     const FIXEDASSET_ACCOUNT = 'Fixed Asset';
-
     const WRITE_OFF_ACCOUNT = 'Writeoff';
     const Loan_Customer_Receivable_ACCOUNT = 'Loan Customer Receivable';
 
@@ -3509,9 +3508,9 @@ class FinancialPostingHelper
         //Status to check if all ledger entries were properly set
         $ledgerErrorStatus = null;
         $assetValue  = $document->current_value;
-        $igstValue = $document?->mrnDetail?->igst_value['value']??0;
-        $cgstValue = $document?->mrnDetail?->cgst_value['value']??0;
-        $sgstValue = $document?->mrnDetail?->sgst_value['value']??0;
+        $igstValue = $document?->igst_value['value']??0;
+        $cgstValue = $document?->cgst_value['value']??0;
+        $sgstValue = $document?->sgst_value['value']??0;
         $totalValue = $assetValue + $igstValue + $cgstValue + $sgstValue;
 
 
@@ -3538,8 +3537,8 @@ class FinancialPostingHelper
         if($igstValue > 0) {
 
 
-        $igstLedgerId = $document?->mrnDetail?->igst_value['ledger']??null;
-        $igstLedgerGroupId = $document?->mrnDetail?->igst_value['ledger_group']??null;
+        $igstLedgerId = $document?->igst_value['ledger']??null;
+        $igstLedgerGroupId = $document?->igst_value['ledger_group']??null;
         $igstLedger = Ledger::find($igstLedgerId);
         $igstLedgerGroup = Group::find($igstLedgerGroupId);
         if (!isset($igstLedger) || !isset($igstLedgerGroup)) {
@@ -3561,8 +3560,8 @@ class FinancialPostingHelper
     
     if($cgstValue>0){
 
-        $cgstLedgerId = $document?->mrnDetail?->cgst_value['ledger']??null;
-        $cgstLedgerGroupId = $document?->mrnDetail?->cgst_value['ledger_group']??null;;
+        $cgstLedgerId = $document?->cgst_value['ledger']??null;
+        $cgstLedgerGroupId = $document?->cgst_value['ledger_group']??null;;
         $cgstLedger = Ledger::find($cgstLedgerId);
         $cgstLedgerGroup = Group::find($cgstLedgerGroupId);
         if (!isset($cgstLedger) || !isset($cgstLedgerGroup)) {
@@ -3582,8 +3581,8 @@ class FinancialPostingHelper
         ];
     }
      if($sgstValue>0){
-        $sgstLedgerId =  $document?->mrnDetail?->sgst_value['ledger']??null;
-        $sgstLedgerGroupId =  $document?->mrnDetail?->sgst_value['ledger_group']??null;
+        $sgstLedgerId =  $document?->sgst_value['ledger']??null;
+        $sgstLedgerGroupId =  $document?->sgst_value['ledger_group']??null;
         $sgstLedger = Ledger::find($sgstLedgerId);
         $sgstLedgerGroup = Group::find($sgstLedgerGroupId);
         if (!isset($sgstLedger) || !isset($sgstLedgerGroup)) {
@@ -5813,7 +5812,7 @@ class FinancialPostingHelper
             $itemValueAfterDiscount = $itemValue - $itemTotalDiscount;
             $stockDebitAmount = $discountSeperatePosting ? $itemValue : $itemValueAfterDiscount;
 
-            $stockLedgerDetails = AccountHelper::getStockLedgerGroupAndLedgerId($document->organization_id, $docItem->item_id, $document->book_id);
+            $stockLedgerDetails = AccountHelper::getServiceLedgerGroupAndLedgerId($document -> organization_id, $docItem -> item_id, $document -> book_id);
             // $stockLedgerId = $stockLedgerDetails -> first()['ledger_id'] ?? null;
             // $stockLedgerGroupId = $stockLedgerDetails-> first()['ledger_group'] ?? null;
             $stockLedgerId = is_a($stockLedgerDetails, Collection::class) ? $stockLedgerDetails->first()['ledger_id'] : null;
@@ -5882,16 +5881,33 @@ class FinancialPostingHelper
             });
             //Ledger found
             if (count($existingTaxLedger) > 0) {
-                $postingArray[self::TAX_ACCOUNT][0]['debit_amount'] += $tax->ted_amount;
+                if(trim(strtolower($taxDetail->applicability_type)) === ConstantHelper::DEDUCTION)
+                {
+                    $postingArray[self::TAX_ACCOUNT][0]['credit_amount'] += $tax -> ted_amount;
+                }
+                else
+                {
+                    $postingArray[self::TAX_ACCOUNT][0]['debit_amount'] += $tax -> ted_amount;
+                }
             } else { //Assign a new ledger
+                if(trim(strtolower($taxDetail->applicability_type)) === ConstantHelper::DEDUCTION)
+                    {
+                        $creditAmount = $tax -> ted_amount;
+                        $debitAmount = 0;
+                    }
+                else
+                    {
+                        $creditAmount = 0;
+                        $debitAmount = $tax -> ted_amount;
+                    }
                 array_push($postingArray[self::TAX_ACCOUNT], [
                     'ledger_id' => $taxLedgerId,
                     'ledger_group_id' => $taxLedgerGroupId,
-                    'ledger_code' => $taxLedger?->code,
-                    'ledger_name' => $taxLedger?->name,
-                    'ledger_group_code' => $taxLedgerGroup?->name,
-                    'credit_amount' => 0,
-                    'debit_amount' => $tax->ted_amount,
+                    'ledger_code' => $taxLedger ?-> code,
+                    'ledger_name' => $taxLedger ?-> name,
+                    'ledger_group_code' => $taxLedgerGroup ?-> name,
+                    'credit_amount' => $creditAmount,
+                    'debit_amount' => $debitAmount,
                 ]);
             }
             //Tax for SUPPLIER ACCOUNT
@@ -5900,7 +5916,14 @@ class FinancialPostingHelper
             });
             //Ledger found
             if (count($existingVendorLedger) > 0) {
-                $postingArray[self::SUPPLIER_ACCOUNT][0]['credit_amount'] += $tax->ted_amount;
+                if(trim(strtolower($taxDetail->applicability_type)) === ConstantHelper::DEDUCTION)
+                    {
+                        $postingArray[self::SUPPLIER_ACCOUNT][0]['credit_amount'] -= $tax -> ted_amount;
+                    }
+                    else
+                    {
+                        $postingArray[self::SUPPLIER_ACCOUNT][0]['credit_amount'] += $tax -> ted_amount;
+                    }
             } else { //Assign new ledger
                 array_push($postingArray[self::SUPPLIER_ACCOUNT], [
                     'ledger_id' => $vendorLedgerId,

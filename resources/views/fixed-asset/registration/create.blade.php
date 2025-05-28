@@ -477,15 +477,15 @@
 
                                                                      </div>
                                                     </div>
-                                                    <div class="col-md-3">
-                                                        <div class="mb-1">
+                                                    <div class="col-md-3 d-none">
+                                                        <div class="mb-1" >
                                                             <label class="form-label">Supplier Invoice No. </label>
                                                             <input type="text" class="form-control"
                                                                 name="supplier_invoice_no" id="supplier_invoice_no"
                                                                 value="" readonly />
                                                         </div>
                                                     </div>
-                                                    <div class="col-md-3">
+                                                    <div class="col-md-3 d-none">
                                                         <div class="mb-1">
                                                             <label class="form-label">Supplier Invoice Date </label>
                                                             <input type="date" class="form-control"

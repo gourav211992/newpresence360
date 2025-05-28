@@ -508,7 +508,7 @@
                                                                     </select>
                                                                     </div>
                                                     </div>
-                                                    <div class="col-md-3">
+                                                    <div class="col-md-3  d-none">
                                                         <div class="mb-1">
                                                             <label class="form-label">Supplier Invoice No. </label>
                                                             <input type="text" class="form-control indian-number"
@@ -516,7 +516,8 @@
                                                                 value="{{$data->supplier_invoice_no}}" readonly />
                                                         </div>
                                                     </div>
-                                                    <div class="col-md-3">
+                                                    <div class="col-md-3  d-none"
+                                                    >
                                                         <div class="mb-1">
                                                             <label class="form-label">Supplier Invoice Date </label>
                                                             <input type="date" class="form-control indian-number"
@@ -1192,28 +1193,26 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <input type="hidden" value="{{$data->mrnDetail?->igst_value['ledger']}}" />
-                                <input type="hidden" value="{{$data->mrnDetail?->igst_value['ledger_group']}}" />
                                 <tr>
                                     <td>1</td>
                                     <td>IGST</td>
-                                    <td class="sub_total">{{$data?->mrnDetail?->basic_value??0}}</td>
-                                    <td id="igst_per">{{$data?->mrnDetail?->igst_value['rate']??0}}</td>
-                                    <td id="igst_tax" class="indian-number">{{$data?->mrnDetail?->igst_value['value']??0}}</td>
+                                    <td class="sub_total">{{$data->mrnDetail->basic_value??0}}</td>
+                                    <td id="igst_per">{{$data?->igst_value['rate']??0}}</td>
+                                    <td id="igst_tax" class="indian-number">{{$data?->igst_value['value']??0}}</td>
                                 </tr>
                                 <tr>
                                     <td>2</td>
                                     <td>CGST</td>
                                     <td class="sub_total">{{$data->mrnDetail->basic_value??0}}</td>
-                                    <td id="cgst_per">{{$data->mrnDetail?->cgst_value['rate']??0}}</td>
-                                    <td id="cgst_tax" class="indian-number">{{$data->mrnDetail?->cgst_value['value']??0}}</td>
+                                    <td id="cgst_per">{{$data->cgst_value['rate']??0}}</td>
+                                    <td id="cgst_tax" class="indian-number">{{$data->cgst_value['value']??0}}</td>
                                 </tr>
                                 <tr>
                                     <td>3</td>
                                     <td>SGST</td>
                                     <td class="sub_total">{{$data->mrnDetail->basic_value??0}}</td>
-                                    <td id="sgst_per">{{$data->mrnDetail?->sgst_value['rate']??0}}</td>
-                                    <td id="sgst_tax" class="indian-number" >{{$data->mrnDetail?->sgst_value['value']??0}}</td>
+                                    <td id="sgst_per">{{$data->sgst_value['rate']??0}}</td>
+                                    <td id="sgst_tax" class="indian-number" >{{$data->sgst_value['value']??0}}</td>
                                  </tr>
                              </tbody>
                         </table>
