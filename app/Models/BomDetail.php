@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Helpers\InventoryHelper;
+use App\Helpers\ItemHelper;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -112,6 +114,45 @@ class BomDetail extends Model
         }
         $processedData = collect($processedData);
         return $processedData;
+    }
+
+    # only get selected attribute for view purpose
+    public function selected_item_attributes_array()
+    {
+        return $this->item_attributes_array()
+            ->map(function ($group) {
+                $selected = collect($group['values_data'])
+                    ->first(function ($attr) {
+                        return $attr->selected === true;
+                    });
+                if ($selected) {
+                    return [
+                        'attribute_group_id' => $group['attribute_group_id'],
+                        'attribute_group_name' => $group['group_name'],
+                        'attribute_id' => $selected->id,
+                        'attribute_value' => $selected->value,
+                    ];
+                }
+                return null;
+            })
+            ->filter()
+            ->values();
+    }
+
+    public function getStockBalanceQty($storeId = null)
+    {
+        $itemId = $this -> getAttribute('item_id');
+        $selectedAttributeIds = [];
+        if($this->selected_item_attributes_array()->count()){
+            $selectedAttributeIds = $this->selected_item_attributes_array()->pluck('attribute_id')->toArray();
+        }
+        $stocks = InventoryHelper::totalInventoryAndStock($itemId, $selectedAttributeIds,null,$storeId,null);
+        $stockBalanceQty = 0;
+        if (isset($stocks) && isset($stocks['confirmedStocks'])) {
+            $stockBalanceQty = $stocks['confirmedStocks'];
+        }
+        $stockBalanceQty = ItemHelper::convertToAltUom($this->getAttribute(('item_id')),$this->getAttribute('uom_id'),(float)$stockBalanceQty);
+        return $stockBalanceQty;
     }
 
     public function overheads()

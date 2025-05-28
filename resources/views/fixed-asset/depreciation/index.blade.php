@@ -65,8 +65,8 @@ $errorsList = session('errors'); // This is auto-flashed by Laravel
 													<td class="fw-bolder text-dark">{{ \Carbon\Carbon::parse($d->document_date)->format('d-m-Y') }}</td>
                       	<td class="fw-bolder text-dark">{{strtoupper($d?->book?->book_code)}}</td>
                           <td class="fw-bolder text-dark">{{$d->document_number}}</td>
-													<td>{{$d->Erplocation->store_name}}</td>
-													<td>{{$d->cost_center->name}}</td>
+													<td>{{$d?->Erplocation?->store_name??"-"}}</td>
+													<td>{{$d?->cost_center?->name ?? "-"}}</td>
 													<td>{{\DateTime::createFromFormat('d-m-Y', explode(" to ", $d->period)[1])->format("M 'y")}}                          </td>
                           <td>{{number_format($d->grand_total_dep_amount,2)}}</td>
                           <td>

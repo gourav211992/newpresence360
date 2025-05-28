@@ -33,31 +33,17 @@ $(document).on('change','#itemTable > thead .form-check-input',(e) => {
   });
   /*Delete Row*/
   $(document).on('click','#deleteBtn', (e) => {
-      let itemIds = [];
       let editItemIds = [];
       $('#itemTable > tbody .form-check-input').each(function() {
           if ($(this).is(":checked")) {
               if($(this).attr('data-id')) {
                  editItemIds.push($(this).attr('data-id'));
               } else {
-                 itemIds.push($(this).val());
+                $(this).closest('tr').remove();
               }
           }
       });
-      if (itemIds.length) {
-          itemIds.forEach(function(item,index) {
-            let so_item_id = $(`#row_${item}`).find("[name*='[so_item_id]']").val() || '';
-            let selectedPiIds = localStorage.getItem('selectedSoItemIds');
-            if(so_item_id && selectedPiIds) {
-                selectedPiIds = JSON.parse(selectedPiIds);
-                let updatedIds = selectedPiIds.filter(id => ![so_item_id].includes(id));
-                localStorage.setItem('selectedSoItemIds', JSON.stringify(updatedIds));
-
-            }
-            $(`#row_${index+1}`).remove();
-          });
-      }
-      if(editItemIds.length == 0 && itemIds.length == 0) {
+      if(editItemIds.length == 0) {
         alert("Please first add & select row item.");
       }
       if (editItemIds.length) {
@@ -69,8 +55,6 @@ $(document).on('change','#itemTable > thead .form-check-input',(e) => {
           $("#itemTable > thead .form-check-input").prop('checked',false);
         //   $(".prSelect").prop('disabled',false);
       }
-    //   let indexData = $("#row_1").attr('data-index');
-    //   totalCostEachRow(indexData);
   });
   
   /*Attribute on change*/
@@ -114,35 +98,6 @@ $(document).on('change','#itemTable > thead .form-check-input',(e) => {
      let actionType = 'reject';
      $("#approveModal").find("#action_type").val(actionType);
      $("#approveModal").modal('show');
-  });
-  
-  /*Open item remark modal*/
-  $(document).on('click', '.addRemarkBtn', (e) => {
-      let rowCount = e.target.closest('div').getAttribute('data-row-count');
-      $("#itemRemarkModal #row_count").val(rowCount);
-      let remarkValue = $("#itemTable #row_"+rowCount).find("[name*='remark']");
-  
-      if(!remarkValue.length) {
-          $("#itemRemarkModal textarea").val('');
-      } else {
-          $("#itemRemarkModal textarea").val(remarkValue.val());
-      }
-      $("#itemRemarkModal").modal('show');
-  });
-  
-  /*Submit item remark modal*/
-  $(document).on('click', '.itemRemarkSubmit', (e) => {
-      let rowCount = $("#itemRemarkModal #row_count").val();
-      let remarkValue = $("#itemTable #row_"+rowCount).find("[name*='remark']");
-       let textValue = $("#itemRemarkModal").find("textarea").val();
-      if(!remarkValue.length) {
-          rowHidden = `<input type="hidden" value="${textValue}" name="components[${rowCount}][remark]" />`;
-          $("#itemTable #row_"+rowCount).find('.addRemarkBtn').after(rowHidden);
-          
-      } else{
-          $("#itemTable #row_"+rowCount).find("[name*='remark']").val(textValue);
-      }
-      $("#itemRemarkModal").modal('hide');
   });
   
   //Disable form submit on enter button
@@ -225,3 +180,382 @@ function updateRowIndex(is_render = false) {
         },100);
     }
 }
+
+$(document).on('click', '.toggle-expand', function (e) {
+    e.preventDefault();
+    var targetKey = $(this).data('target');
+    var parentLevel = parseInt($(this).closest('tr').data('level'), 10);
+    $('tr[data-row-key^="' + targetKey + '-"]').each(function () {
+        var rowLevel = parseInt($(this).data('level'), 10);
+        if (rowLevel === parentLevel + 1) {
+            $(this).removeClass('d-none');
+        }
+    });
+    $(this).addClass('d-none');
+    $(this).siblings('.toggle-collapse').removeClass('d-none');
+});
+
+$(document).on('click', '.toggle-collapse', function (e) {
+    e.preventDefault();
+    var targetKey = $(this).data('target');
+    $('tr[data-row-key^="' + targetKey + '-"]').addClass('d-none');
+    $('tr[data-row-key^="' + targetKey + '-"] .toggle-collapse').addClass('d-none');
+    $('tr[data-row-key^="' + targetKey + '-"] .toggle-expand').removeClass('d-none');
+    $(this).addClass('d-none');
+    $(this).siblings('.toggle-expand').removeClass('d-none');
+});
+
+// Autocomplete for store name
+function initStoreAutocomplete(context = "#analyzeModal") {
+    $(context).find('input[name*="store_name"]').each(function () {
+        let $input = $(this);
+        // Avoid duplicating button
+        if (!$input.closest('.autocomplete-wrapper').length) {
+            // $input.wrap('<div class="autocomplete-wrapper" style="position:relative;"></div>');
+            // $input.css('padding-right', '10px');
+            // $input.after(`
+            //     <span class="clear-autocomplete" 
+            //         style="position:absolute; right:8px; top:50%; transform:translateY(-50%);
+            //                 cursor:pointer; font-size:18px; color:#888; display:none; z-index:1;">
+            //         &times;
+            //     </span>
+            // `);
+            $input.wrap('<div class="autocomplete-wrapper" style="position:relative;"></div>');
+            $input.after('<span class="clear-autocomplete" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); cursor:pointer; font-size:18px; color:#888; display:none;">&times;</span>');
+        }
+        let $clearBtn = $input.siblings('.clear-autocomplete');
+        // Show/hide clear button on input
+        $input.on('input focus', function () {
+            $clearBtn.toggle(!!$input.val());
+        });
+
+        // $input.on('blur', function () {
+        //     setTimeout(function () {
+        //         $clearBtn.hide();
+        //     }, 1000);
+        // });
+
+        $clearBtn.on('click', function () {
+            $input.val('').focus();
+            $input.closest('td').find('input[name="store_id"]').val('');
+            $(this).hide();
+        });
+
+        $input.autocomplete({
+            minLength: 0,
+            source: function (request, response) {
+                // let itemId = $input.closest('tr').find("input[name*='item_id']").val() || '';
+                // let attrGroupId = $input.data('attr-group-id');
+                $.ajax({
+                    url: '/search',
+                    method: 'GET',
+                    dataType: 'json',
+                    data: {
+                        q: request.term,
+                        type: "location",
+                        // item_id: itemId,
+                        // attr_group_id: attrGroupId,
+                    },
+                    success: function (data) {
+                        response($.map(data, function (item) {
+                            return {
+                                id: item.id,
+                                label: item.store_name,
+                                value: item.store_name
+                            };
+                        }));
+                    },
+                    error: function (xhr) {
+                        console.error('Error fetching attribute values:', xhr.responseText);
+                    }
+                });
+            },
+            select: function (event, ui) {
+                $input.val(ui.item.label);
+                $input.closest('td').find('input[name="store_id"]').val(ui.item.id);
+                $clearBtn.show();
+                let storeId = ui.item.id;
+                let checkBox = $input.closest('tr').find(".analyze_row");
+                let itemId = checkBox.data('item-id') || '';
+                let uomId = checkBox.data('uom-id') || '';
+                let selectAttribute = [];
+                let attribute = checkBox.data('attribute') || [];
+                if(attribute.length) {
+                    selectAttribute = attribute.flatMap(attr =>
+                        attr.values_data.filter(v => v.selected).map(v => v.id)
+                    );
+                }
+                let tr = $input.closest('tr')[0];
+                getStock(itemId, uomId, selectAttribute, storeId, tr);
+                return false;
+            },
+            focus: function (event, ui) {
+                event.preventDefault();
+            }
+        });
+        $input.on('focus', function () {
+            if (!$(this).val()) {
+                $(this).autocomplete("search", "");
+                $(this).closest('td').find('input[name="store_id"]').val("");
+                let storeId = "";
+                let checkBox = $(this).closest('tr').find(".analyze_row");
+                let itemId = checkBox.data('item-id') || '';
+                let uomId = checkBox.data('uom-id') || '';
+                let selectAttribute = [];
+                let attribute = checkBox.data('attribute') || [];
+                if(attribute.length) {
+                    selectAttribute = attribute.flatMap(attr =>
+                        attr.values_data.filter(v => v.selected).map(v => v.id)
+                    );
+                }
+                let tr = $input.closest('tr')[0];
+                getStock(itemId, uomId, selectAttribute, storeId, tr);
+            }
+        });
+        $input.on('input', function () {
+            if (!$(this).val()) {
+                $(this).closest('td').find('input[name="store_id"]').val("");
+                $clearBtn.hide();
+                let storeId = "";
+                let checkBox = $(this).closest('tr').find(".analyze_row");
+                let itemId = checkBox.data('item-id') || '';
+                let uomId = checkBox.data('uom-id') || '';
+                let selectAttribute = [];
+                let attribute = checkBox.data('attribute') || [];
+                if(attribute.length) {
+                    selectAttribute = attribute.flatMap(attr =>
+                        attr.values_data.filter(v => v.selected).map(v => v.id)
+                    );
+                }
+                let tr = $input.closest('tr')[0];
+                getStock(itemId, uomId, selectAttribute, storeId, tr);
+            }
+        });
+    });
+ }
+
+//  Get Stock store change
+function getStock(itemId, uomId, selectAttribute, storeId, tr) {
+    if (selectAttribute.length) {
+        selectAttribute = selectAttribute.join(',');
+    } else {
+        selectAttribute = '';
+    }
+    let actionUrl = `${getStockUrl}?item_id=${itemId}&uom_id=${uomId}&store_id=${storeId}&selected_attributes=${selectAttribute}`;
+    fetch(actionUrl, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 200) {
+            let stock = data?.data?.avl_stock || 0;
+            let stockElement = tr.querySelector('.avl_stock');
+            if (stockElement) {
+                stockElement.innerText = stock;
+            }
+        } else {
+            console.error('Error fetching stock:', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+// Analyze modal js code
+function getSelectedPiIDS()
+{
+    let ids = [];
+    $('.pi_item_checkbox:checked').each(function() {
+        ids.push($(this).val());
+    });
+    return ids;
+}
+
+function getSelectedPiIDS2()
+{
+    let ids = [];
+    $('.analyze_row:checked').each(function() {
+        ids.push($(this).val());
+    });
+    return ids;
+}
+
+$(document).on('click', '.analyzeButton', (e) => {
+    let ids = getSelectedPiIDS();
+    if (!ids.length) {
+        $("#prModal").modal('hide');
+        Swal.fire({
+            title: 'Error!',
+            text: 'Please select at least one line item',
+            icon: 'error',
+        });
+        return false;
+    }
+
+    ids = JSON.stringify(ids);
+    let d_date = $("input[name='document_date']").val() || '';
+    let book_id = $("#book_id").val() || '';
+    let rowCount = $("#itemTable tbody tr[id*='row_']").length;
+    let isAttribute = 0;
+    if($("#attributeCheck").is(':checked')) {
+        isAttribute = 1;
+    } else {
+        isAttribute = 0;
+    }
+    let selectedItems = [];
+    if(!isAttribute) {
+        $("#prModal .pi_item_checkbox:checked").each(function () {
+            selectedItems.push({
+                "sale_order_id": Number($(this).val()),
+                "item_id": Number($(this).data("item-id"))
+            });
+        });
+    }
+    let selectedItemsParam = encodeURIComponent(JSON.stringify(selectedItems));
+    let actionUrl = analyzeSoItemUrl +'?ids=' + ids+'&d_date='+d_date+'&book_id='+book_id+'&rowCount='+rowCount+`&is_attribute=${isAttribute}&selected_items=${selectedItemsParam}`;
+    fetch(actionUrl).then(response => {
+        return response.json().then(data => {
+            if(data.status == 200) {
+                $("#analyzeDataTable").empty().append(data.data.pos);
+                feather.replace();
+                $("#prModal").modal('hide');
+                $("#analyzeModal").modal('show');
+                initStoreAutocomplete();
+            }
+            if(data.status == 422) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: data.message,
+                    icon: 'error',
+                });
+                return false;
+            }
+        });
+    });
+});
+
+$(document).on('click', '.analyzeProcessBtn', (e) => {
+    let ids = getSelectedPiIDS2();
+    if (!ids.length) {
+        // $("#prModal").modal('show');
+        Swal.fire({
+            title: 'Error!',
+            text: 'Please select at least one line item',
+            icon: 'error',
+        });
+        return false;
+    }
+
+    ids = JSON.stringify(ids);
+    let d_date = $("input[name='document_date']").val() || '';
+    let book_id = $("#book_id").val() || '';
+    let rowCount = $("#itemTable tbody tr[id*='row_']").length;
+    let isAttribute = 0;
+    if($("#attributeCheck").is(':checked')) {
+        isAttribute = 1;
+    } else {
+        isAttribute = 0;
+    }
+    // if(!isAttribute) {
+    //     $("#prModal .pi_item_checkbox:checked").each(function () {
+    //         selectedItems.push({
+    //             "sale_order_id": Number($(this).val()),
+    //             "item_id": Number($(this).data("item-id"))
+    //         });
+    //     });
+    // }
+    let selectedItems = [];
+    $('.analyze_row:checked').each(function() {
+        let tr = $(this).closest('tr');
+        if(!tr.hasClass('d-none')) {
+            let $checkbox = $(this);
+            let soItemIdsRaw = $checkbox.data('so-item-ids') || '';
+            let soItemIds = soItemIdsRaw
+                            .toString()
+                            .split(',')
+                            .map(id => id.trim().replace(/^['"]|['"]$/g, ''))
+                            .map(id => Number(id))
+                            .filter(id => id > 0);
+                selectedItems.push({
+                bom_id: Number($checkbox.val()),
+                so_id: Number($checkbox.data('so-id')),
+                so_item_id: Number($checkbox.data('so-item-id')),
+                so_item_ids: soItemIds,
+                level: Number($checkbox.data('level')),
+                parent_bom_id: Number($checkbox.data('parent-bom-id')),
+                item_id: Number($checkbox.data('item-id')),
+                item_name: $checkbox.data('item-name'),
+                item_code: $checkbox.data('item-code'),
+                uom_id: Number($checkbox.data('uom-id')),
+                uom_name: $checkbox.data('uom-name'),
+                attribute: $checkbox.data('attribute'),
+                total_qty: parseFloat($checkbox.data('total-qty')),
+                store_name: $checkbox.data('store-name'),
+                store_id: Number($checkbox.data('store-id')),
+                doc_no: $checkbox.data('doc-no'),
+                doc_date: $checkbox.data('doc-date'),
+                main_so_item: Number($checkbox.data('main-so-item'))
+            });
+        }
+    });
+    let selectedItemsParam = JSON.stringify(selectedItems);
+    let postData = {
+        ids: ids,
+        d_date: d_date,
+        book_id: book_id,
+        rowCount: rowCount,
+        is_attribute: isAttribute,
+        selected_items: selectedItems
+    };
+    fetch(processSoItemUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        },
+        body: JSON.stringify(postData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status == 200) {
+            if ($("#itemTable > tbody tr").length) {
+                $("#itemTable > tbody > tr:last").after(data.data.pos);
+            } else {
+                $("#itemTable > tbody").empty().append(data.data.pos);
+            }
+            updateRowIndex(true);
+            $("#prModal").modal('hide');
+            initializeAutocomplete2(".comp_item_code");
+            initializeAutocompleteCustomer("[name*='[customer_code]']");
+            let newIds = [];
+            $('input[name^="components"][name$="[so_item_id]"]').each(function () {
+                let val = $(this).val();
+                if (val && val !== "0" && !newIds.includes(val)) {
+                    newIds.push(val);
+                }
+            });
+            let existingIds = localStorage.getItem('selectedSoItemIds');
+            if (existingIds) {
+                existingIds = JSON.parse(existingIds);
+                const mergedIds = Array.from(new Set([...existingIds, ...newIds]));
+                localStorage.setItem('selectedSoItemIds', JSON.stringify(mergedIds));
+            } else {
+                localStorage.setItem('selectedSoItemIds', JSON.stringify(newIds));
+            }
+            $("#analyzeModal").modal('hide');
+        }
+
+        if (data.status == 422) {
+            Swal.fire({
+                title: 'Error!',
+                text: data.message,
+                icon: 'error',
+            });
+            return false;
+        }
+    });
+});

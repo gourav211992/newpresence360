@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
 use App\Helpers\InventoryHelper;
+use App\Helpers\PackingList\Constants as PackingListConstants;
 use App\Helpers\ServiceParametersHelper;
 use App\Models\AuthUser;
 use App\Models\Book;
@@ -24,6 +25,7 @@ use App\Models\ErpRack;
 use App\Models\ErpSaleInvoice;
 use App\Models\ErpSaleOrder;
 use App\Models\ErpShelf;
+use App\Models\ErpSoItem;
 use App\Models\ErpStore;
 use App\Models\ErpVendor;
 use App\Models\ExpenseMaster;
@@ -38,6 +40,7 @@ use App\Models\MfgOrder;
 use App\Models\Organization;
 use App\Models\OrganizationCompany;
 use App\Models\OrganizationService;
+use App\Models\PackingList;
 use App\Models\ProductSection;
 use App\Models\ProductSectionDetail;
 use App\Models\ProductSpecification;
@@ -560,6 +563,24 @@ class AutocompleteController extends Controller
                         ->limit(10)
                         ->get(['id', 'book_name', 'book_code']);
                 }
+            } elseif ($type === 'book_plist') {
+                $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request -> header_book_id);
+
+                $subQuery = Helper::getBookSeries(PackingListConstants::SERVICE_ALIAS);
+                $results = $subQuery->where('book_name', 'LIKE', "%$term%")
+                ->when($request -> header_book_id, function ($applicableQuery) use($applicableBookIds) {
+                    $applicableQuery -> whereIn('id', $applicableBookIds);
+                })
+                    ->get(['id', 'book_name', 'book_code']);
+
+                if ($results->isEmpty()) {
+                    $results = $subQuery
+                    ->when($request -> header_book_id, function ($applicableQuery) use($applicableBookIds) {
+                        $applicableQuery -> whereIn('id', $applicableBookIds);
+                    })
+                        ->limit(10)
+                        ->get(['id', 'book_name', 'book_code']);
+                }
             } elseif ($type === 'book_din') {
                 $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request -> header_book_id);
                 $subQuery = Helper::getBookSeries(ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS);
@@ -826,18 +847,7 @@ class AutocompleteController extends Controller
                                     ->get(['id', 'customer_type', 'email', 'mobile', 'customer_code', 'company_name', 'currency_id', 'payment_terms_id','display_name']);
                                 }
             } else if ($type === 'location') {
-                $results = ErpStore::withDefaultGroupCompanyOrg()
-                ->where('store_name', 'LIKE', "%$term%")
-                ->where('status', ConstantHelper::ACTIVE)
-                ->withCount('subStores')
-                ->get(['id', 'store_name', 'store_code']);
-                if ($results->isEmpty()) {
-                    $results = ErpStore::withDefaultGroupCompanyOrg()
-                                    ->where('status', ConstantHelper::ACTIVE)
-                                    ->withCount('subStores')
-                                    ->limit(10)
-                                    ->get(['id', 'store_name', 'store_code']);
-                                }
+                $results = InventoryHelper::getAccessibleLocations();
             } else if ($type === 'sub_store') {
                 $storeId = $request->store_id ?? '';
                 $results = InventoryHelper::getAccesibleSubLocations($storeId ?? 0);
@@ -872,6 +882,19 @@ class AutocompleteController extends Controller
                     -> whereIn('document_status', [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED])
                     ->get(['id', 'document_number']);
                 }
+            } else if ($type === 'packing_list_so') {
+                $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request -> header_book_id);
+                $results = ErpSaleOrder::select('id', 'book_code', 'document_number', 'customer_code', 'document_date') -> when($term, function ($termQuery) use($term) {
+                    $termQuery -> where('document_number', 'LIKE', "%$term%") -> orWhere('book_code', 'LIKE', "%$term%");
+                })-> where('document_type', ConstantHelper::SO_SERVICE_ALIAS)-> withDefaultGroupCompanyOrg()
+                    -> when($request -> header_book_id, function ($applicableQuery) use($applicableBookIds) {
+                        $applicableQuery -> whereIn('book_id', $applicableBookIds);
+                    }) -> whereIn('document_status', [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED]) -> orderByDesc('id')
+                    ->limit(10) -> get();
+            } else if ($type === 'packing_list_so_items') {
+                $results = ErpSoItem::select('id', 'item_code', 'item_name') -> when($term, function ($termQuery) use($term) {
+                    $termQuery -> where('item_code', 'LIKE', "%$term%") -> orWhere('item_name', 'LIKE', "%$term%");
+                })-> where('sale_order_id', $request -> sale_order_id) -> orderByDesc('id') ->limit(10) -> get();
             } else if ($type === "sale_order_document_qt_pi") {
                 $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request -> header_book_id);
                 $results = ErpSaleOrder::where('document_number', 'LIKE', "%$term%")
@@ -1041,6 +1064,24 @@ class AutocompleteController extends Controller
                     $results = Bom::withDefaultGroupCompanyOrg()
                         ->where('type',ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS)
                         ->limit(10)
+                        ->get(['id', 'document_number']);
+                    }
+            } else if ($type === "plist_document") {
+                $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request -> header_book_id);
+                $results = PackingList::where('document_number', 'LIKE', "%$term%")
+                    -> withDefaultGroupCompanyOrg()
+                    -> when($request -> header_book_id, function ($applicableQuery) use($applicableBookIds) {
+                        $applicableQuery -> whereIn('book_id', $applicableBookIds);
+                    })
+                    -> whereIn('document_status', [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED])
+                    ->get(['id', 'document_number']);
+                if ($results->isEmpty()) {
+                    $results = PackingList::limit(10)
+                    -> withDefaultGroupCompanyOrg()
+                    -> when($request -> header_book_id, function ($applicableQuery) use($applicableBookIds) {
+                        $applicableQuery -> whereIn('book_id', $applicableBookIds);
+                    })
+                    -> whereIn('document_status', [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED])
                         ->get(['id', 'document_number']);
                     }
             } else if ($type === "sale_order_document") {
@@ -1334,6 +1375,7 @@ class AutocompleteController extends Controller
                               ->orWhere('unit_name', 'LIKE', "%$term%");
                     });
                 })
+                ->limit(20)
                 ->get(['id', 'unit_code', 'unit_name']);
 
                 if ($results->isEmpty()) {
@@ -1350,6 +1392,7 @@ class AutocompleteController extends Controller
                               ->orWhere('description', 'LIKE', "%$term%");
                     });
                 })
+                ->limit(20)
                 ->get(['id', 'code','description']);
 
                 if ($results->isEmpty()) {

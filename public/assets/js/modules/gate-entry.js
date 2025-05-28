@@ -1336,3 +1336,91 @@ $('.header_store_id').change(function() {
     updateItemStores();
 });
 
+function initAttributeAutocomplete(context = document) {
+    $(context).find('.attr-autocomplete').each(function () {
+        let $input = $(this);
+        $input.autocomplete({
+            minLength: 0,
+            source: function (request, response) {
+                let itemId = $input.closest('tr').find("input[name*='item_id']").val() || '';
+                let attrGroupId = $input.data('attr-group-id');
+                $.ajax({
+                    url: '/search',
+                    method: 'GET',
+                    dataType: 'json',
+                    data: {
+                        q: request.term,
+                        type: "item_attr_value",
+                        item_id: itemId,
+                        attr_group_id: attrGroupId,
+                    },
+                    success: function (data) {
+                        response($.map(data, function (item) {
+                            return {
+                                id: item.id,
+                                label: item.value,
+                                value: item.value
+                            };
+                        }));
+                    },
+                    error: function (xhr) {
+                        console.error('Error fetching attribute values:', xhr.responseText);
+                    }
+                });
+            },
+            select: function (event, ui) {
+                const row = $input.closest('tr');
+                const rowCount = row.find('[name*="row_count"]').val();
+                const attrGroupId = $input.data('attr-group-id');
+                $input.val(ui.item.label);
+                $(`[name="components[${rowCount}][attr_group_id][${attrGroupId}][attr_name]"]`).val(ui.item.id);
+                qtyEnabledDisabled();
+                setSelectedAttribute(rowCount);
+                const itemId = $("#attribute tbody tr").find('[name*="[item_id]"]').val();
+                const itemAttributes = [];
+                $("#attribute tbody tr").each(function () {
+                    const attr_id = $(this).find('[name*="[attribute_id]"]').val();
+                    const attr_value = $(this).find('[name*="[attribute_value]"]').val();
+                    itemAttributes.push({
+                        attr_id: attr_id,
+                        attr_value: attr_value
+                    });
+                });
+                return false;
+            },
+            focus: function (event, ui) {
+                event.preventDefault();
+            }
+        });
+        $input.on('focus', function () {
+            if (!$(this).val()) {
+                $(this).autocomplete("search", "");
+            }
+        });
+        $input.on('input', function () {
+            if (!$(this).val()) {
+                const row = $input.closest('tr');
+                const rowCount = row.find('[name*="row_count"]').val();
+                const attrGroupId = $input.data('attr-group-id');
+                $(`[name="components[${rowCount}][attr_group_id][${attrGroupId}][attr_name]"]`).val('');
+                qtyEnabledDisabled();
+            }
+        });
+    });
+}
+
+// Auto scroll when row added
+function focusAndScrollToLastRowInput(inputSelector = '.comp_item_code', tableSelector = '#itemTable') {
+    let $lastRow = $(`${tableSelector} > tbody > tr`).last();
+    let $input = $lastRow.find(inputSelector);
+
+    if ($input.length) {
+        $input.focus().autocomplete('search', '');
+        $input[0].scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+            inline: 'nearest'
+        });
+    }
+}
+

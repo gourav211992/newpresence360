@@ -272,7 +272,7 @@ class MrnHeaderHistory extends Model
 
     public function media()
     {
-        return $this->morphMany(GateEntryMedia::class, 'model');
+        return $this->morphMany(MrnMedia::class, 'model');
     }
 
     public function dynamic_fields()

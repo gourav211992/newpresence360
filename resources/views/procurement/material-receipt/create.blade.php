@@ -148,15 +148,8 @@
                                                         <select class="form-select sub_store" id="sub_store_id" name="sub_store_id">
                                                         </select>
                                                     </div>
+                                                    <input type="hidden" class="is_warehouse_required" name="is_warehouse_required" id="is_warehouse_required">
                                                 </div>
-                                                <!-- <div class="row align-items-center mb-1">
-                                                    <div class="col-md-3">
-                                                        <label class="form-label">Reference No </label>
-                                                    </div>
-                                                    <div class="col-md-5">
-                                                        <input type="text" name="reference_number" class="form-control">
-                                                    </div>
-                                                </div> -->
                                                 <div class="row align-items-center mb-1 d-none" id="reference_from">
                                                     <div class="col-md-3">
                                                         <label class="form-label">
@@ -188,7 +181,7 @@
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Vendor <span class="text-danger">*</span></label>
-                                                            <input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct" id="vendor_name" name="vendor_name" />
+                                                            <input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct vendor_name" id="vendor_name" name="vendor_name" />
                                                             <input type="hidden" id="vendor_id" name="vendor_id" />
                                                             <input type="hidden" id="vendor_code" name="vendor_code" />
                                                             <input type="hidden" id="shipping_id" name="shipping_id" />
@@ -386,7 +379,7 @@
                                                     <a href="javascript:;" id="deleteBtn" class="btn btn-sm btn-outline-danger me-50">
                                                         <i data-feather="x-circle"></i> Delete
                                                     </a>
-                                                    <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary">
+                                                    <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary addNewItemBtn">
                                                         <i data-feather="plus"></i> Add New Item
                                                     </a>
                                                 </div>
@@ -708,6 +701,8 @@
 
         function getDocNumberByBookId(bookId) {
             let document_date = $("[name='document_date']").val();
+            let storeId = $("[name='header_store_id']").val();
+            let subStoreId = $("[name='sub_store_id']").val();
             let actionUrl = '{{route("book.get.doc_no_and_parameters")}}'+'?book_id='+bookId+'&document_date='+document_date;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
@@ -732,6 +727,7 @@
                         implementBookDynamicFields(data.data.dynamic_fields_html, data.data.dynamic_fields);
                         setTableCalculation();
                         $("#bill_to_follow").val(parameters?.bill_to_follow[0]);
+                        getSubStores(storeId);
                     }
                     if(data.status == 404) {
                         $("#book_code").val('');
@@ -941,6 +937,108 @@
             });
         }
 
+
+        function initializeAutocomplete2(selector, type) {
+            $(selector).autocomplete({
+                source: function(request, response) {
+                    let selectedAllItemIds = [];
+                    $("#itemTable tbody [id*='row_']").each(function(index,item) {
+                        if(Number($(item).find('[name*="item_id"]').val())) {
+                            selectedAllItemIds.push(Number($(item).find('[name*="item_id"]').val()));
+                        }
+                    });
+                    $.ajax({
+                        url: '/search',
+                        method: 'GET',
+                        dataType: 'json',
+                        data: {
+                            q: request.term,
+                            type:'goods_item_list',
+                            selectedAllItemIds : JSON.stringify(selectedAllItemIds)
+                        },
+                        success: function(data) {
+                            response($.map(data, function(item) {
+                                return {
+                                    id: item.id,
+                                    label: `${item.item_name} (${item.item_code})`,
+                                    code: item.item_code || '',
+                                    item_id: item.id,
+                                    item_name:item.item_name,
+                                    is_inspection:item.is_inspection,
+                                    uom_name:item.uom?.name,
+                                    uom_id:item.uom_id,
+                                    hsn_id:item.hsn?.id,
+                                    hsn_code:item.hsn?.code,
+                                    alternate_u_o_ms:item.alternate_u_o_ms,
+                                };
+                            }));
+                        },
+                        error: function(xhr) {
+                            console.error('Error fetching customer data:', xhr.responseText);
+                        }
+                    });
+                },
+                minLength: 0,
+                select: function(event, ui) {
+                    let $input = $(this);
+                    let itemCode = ui.item.code;
+                    let itemName = ui.item.value;
+                    let itemN = ui.item.item_name;
+                    let itemId = ui.item.item_id;
+                    let uomId = ui.item.uom_id;
+                    let uomName = ui.item.uom_name;
+                    let hsnId = ui.item.hsn_id;
+                    let hsnCode = ui.item.hsn_code;
+                    let isInspection = ui.item.is_inspection;
+                    $input.attr('data-name', itemName);
+                    $input.attr('data-code', itemCode);
+                    $input.attr('data-id', itemId);
+
+                    let closestTr = $input.closest('tr');
+                    closestTr.find('[name*=item_id]').val(itemId);
+                    closestTr.find('[name*=item_code]').val(itemCode);
+                    closestTr.find('[name*=item_name]').val(itemN);
+                    closestTr.find('[name*=hsn_id]').val(hsnId);
+                    closestTr.find('[name*=hsn_code]').val(hsnCode);
+                    closestTr.find('[name*=is_inspection]').val(isInspection);
+                    closestTr.find("td[id*='itemAttribute_']").html(defautAttrBtn);
+                    $input.val(itemCode);
+                    let uomOption = `<option value=${uomId}>${uomName}</option>`;
+                    if(ui.item?.alternate_u_o_ms) {
+                        for(let alterItem of ui.item.alternate_u_o_ms) {
+                        uomOption += `<option value="${alterItem.uom_id}" ${alterItem.is_purchasing ? 'selected' : ''}>${alterItem.uom?.name}</option>`;
+                        }
+                    }
+                    closestTr.find('[name*=uom_id]').append(uomOption);
+                    closestTr.find('.attributeBtn').trigger('click');
+                    setTimeout(() => {
+                        if(ui.item.is_attr) {
+                            $input.closest('tr').find('.attributeBtn').trigger('click');
+                        } else {
+                            $input.closest('tr').find('.attributeBtn').trigger('click');
+                            $input.closest('tr').find('[name*="[order_qty]"]').val('').focus();
+                        }
+                    }, 100);
+
+                    getItemDetail(closestTr);
+                    getItemCostPrice($input.closest('tr'));
+                    return false;
+                },
+                change: function(event, ui) {
+                    if (!ui.item) {
+                        $(this).val("");
+                            // $('#itemId').val('');
+                        $(this).attr('data-name', '');
+                        $(this).attr('data-code', '');
+                    }
+                }
+            }).focus(function() {
+                if (this.value === "") {
+                    $(this).autocomplete("search", "");
+                }
+            });
+        }
+
         /*Add New Row*/
         $(document).on('click','#addNewItemBtn', (e) => {
             if(!checkBasicFilledDetail()) {
@@ -958,106 +1056,6 @@
                     icon: 'error',
                 });
                 return false;
-            }
-            function initializeAutocomplete2(selector, type) {
-                $(selector).autocomplete({
-                    source: function(request, response) {
-                        let selectedAllItemIds = [];
-                        $("#itemTable tbody [id*='row_']").each(function(index,item) {
-                            if(Number($(item).find('[name*="item_id"]').val())) {
-                                selectedAllItemIds.push(Number($(item).find('[name*="item_id"]').val()));
-                            }
-                        });
-                        $.ajax({
-                            url: '/search',
-                            method: 'GET',
-                            dataType: 'json',
-                            data: {
-                                q: request.term,
-                                type:'goods_item_list',
-                                selectedAllItemIds : JSON.stringify(selectedAllItemIds)
-                            },
-                            success: function(data) {
-                                response($.map(data, function(item) {
-                                    return {
-                                        id: item.id,
-                                        label: `${item.item_name} (${item.item_code})`,
-                                        code: item.item_code || '',
-                                        item_id: item.id,
-                                        item_name:item.item_name,
-                                        is_inspection:item.is_inspection,
-                                        uom_name:item.uom?.name,
-                                        uom_id:item.uom_id,
-                                        hsn_id:item.hsn?.id,
-                                        hsn_code:item.hsn?.code,
-                                        alternate_u_o_ms:item.alternate_u_o_ms,
-                                    };
-                                }));
-                            },
-                            error: function(xhr) {
-                                console.error('Error fetching customer data:', xhr.responseText);
-                            }
-                        });
-                    },
-                    minLength: 0,
-                    select: function(event, ui) {
-                        let $input = $(this);
-                        let itemCode = ui.item.code;
-                        let itemName = ui.item.value;
-                        let itemN = ui.item.item_name;
-                        let itemId = ui.item.item_id;
-                        let uomId = ui.item.uom_id;
-                        let uomName = ui.item.uom_name;
-                        let hsnId = ui.item.hsn_id;
-                        let hsnCode = ui.item.hsn_code;
-                        let isInspection = ui.item.is_inspection;
-                        $input.attr('data-name', itemName);
-                        $input.attr('data-code', itemCode);
-                        $input.attr('data-id', itemId);
-
-                        let closestTr = $input.closest('tr');
-                        closestTr.find('[name*=item_id]').val(itemId);
-                        closestTr.find('[name*=item_code]').val(itemCode);
-                        closestTr.find('[name*=item_name]').val(itemN);
-                        closestTr.find('[name*=hsn_id]').val(hsnId);
-                        closestTr.find('[name*=hsn_code]').val(hsnCode);
-                        closestTr.find('[name*=is_inspection]').val(isInspection);
-                        closestTr.find("td[id*='itemAttribute_']").html(defautAttrBtn);
-                        $input.val(itemCode);
-                        let uomOption = `<option value=${uomId}>${uomName}</option>`;
-                        if(ui.item?.alternate_u_o_ms) {
-                            for(let alterItem of ui.item.alternate_u_o_ms) {
-                            uomOption += `<option value="${alterItem.uom_id}" ${alterItem.is_purchasing ? 'selected' : ''}>${alterItem.uom?.name}</option>`;
-                            }
-                        }
-                        closestTr.find('[name*=uom_id]').append(uomOption);
-                        closestTr.find('.attributeBtn').trigger('click');
-                        setTimeout(() => {
-                            if(ui.item.is_attr) {
-                                $input.closest('tr').find('.attributeBtn').trigger('click');
-                            } else {
-                                $input.closest('tr').find('.attributeBtn').trigger('click');
-                                $input.closest('tr').find('[name*="[order_qty]"]').val('').focus();
-                            }
-                        }, 100);
-
-                        getItemDetail(closestTr);
-                        getItemCostPrice($input.closest('tr'));
-                        return false;
-                    },
-                    change: function(event, ui) {
-                        if (!ui.item) {
-                            $(this).val("");
-                                // $('#itemId').val('');
-                            $(this).attr('data-name', '');
-                            $(this).attr('data-code', '');
-                        }
-                    }
-                }).focus(function() {
-                    if (this.value === "") {
-                        $(this).autocomplete("search", "");
-                    }
-                });
             }
             let rowsLength = $("#itemTable > tbody > tr").length;
             /*Check last tr data shoud be required*/
@@ -1106,6 +1104,7 @@
                             $("#itemTable > tbody").html(data.data.html);
                         }
                         initializeAutocomplete2(".comp_item_code");
+                        focusAndScrollToLastRowInput();
                         $(".poSelect").prop('disabled',true);
                         $("#vendor_name").prop('readonly',true);
                         $(".editAddressBtn").addClass('d-none');
@@ -1209,6 +1208,7 @@
                             $(".select2").select2();
                         }
                         qtyEnabledDisabled();
+                        initAttributeAutocomplete();
                     }
                 });
             });
@@ -2453,6 +2453,8 @@
                             $("#summaryExpTable tbody").find('.display_summary_exp_row').remove();
                             $("#summaryExpTable tbody").find('#expSummaryFooter').before(rows);
                         }
+                        initializeAutocomplete2(".comp_item_code");
+                        focusAndScrollToLastRowInput();
                         setTimeout(() => {
                             setTableCalculation();
                             $("#itemTable .mrntableselectexcel tr").each(function(index, item) {

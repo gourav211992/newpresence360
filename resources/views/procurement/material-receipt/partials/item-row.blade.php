@@ -25,7 +25,7 @@
         </select>
     </td>
     <td>
-        <input type="number" step="any"  class="form-control mw-100 po_qty text-end checkNegativeVal" />
+        <input type="number" step="any"  class="form-control mw-100 po_qty text-end checkNegativeVal" readonly />
     </td>
     <td>
         <input type="number" step="any"  class="form-control mw-100 order_qty text-end checkNegativeVal"  name="components[{{$rowCount}}][order_qty]" />
@@ -57,8 +57,7 @@
     </td>
     <td>
         <div class="d-flex">
-            <input type="hidden" id="components_storage_points_{{ $rowCount }}" name="components[{{$rowCount}}][storage_points]" value=""/>
-            <input type="hidden" id="components_storage_points_{{ $rowCount }}" name="components[{{$rowCount}}][storage_points_data]" value=""/>
+            <input type="hidden" id="components_storage_packets_{{ $rowCount }}" name="components[{{$rowCount}}][storage_packets]" value=""/>
             <div class="me-50 cursor-pointer addStoragePointBtn" data-bs-toggle="modal" data-row-count="{{$rowCount}}" data-bs-target="#storage-point-modal">
                 <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary"
                 data-bs-original-title="Store Location" aria-label="Store Location">

@@ -126,6 +126,7 @@
                                             <th class='no-wrap text-end'>Issue Quantity</th>
                                             <th class='no-wrap text-end'>Receipt Value</th>
                                             <th class='no-wrap text-end'>Issue Value</th>
+                                            <th class='no-wrap text-end'>Hold Stock</th>
                                             <th class="no-wrap">Status</th>
                                         </thead>
                                         <tbody id="inventory-tbody">
@@ -402,6 +403,9 @@
                         `<td class='no-wrap text-end'>
                             ${report?.transaction_type === 'issue' ? report?.issue_org_currency_cost ?? 0.00 : 0.00}
                         </td>`,
+                        `<td class='no-wrap text-end'>
+                            ${report?.hold_qty ?? 0.00}
+                        </td>`,
                         `<td class="no-wrap">
                             ${documentStatusCssList[report?.document_status ?? ""] ?
                                 `<span class='badge ${documentStatusCssList[report?.document_status ?? ""]}'>
@@ -437,6 +441,7 @@
                 <td class="fw-bolder text-end ${getBalanceColor(totalIssueQty)}" style="width: 100%;">Total: ${totalIssueQty}</td>
                 <td class="fw-bolder text-end ${getBalanceColor(totalReceiptValue)}" style="width: 100%;">Total: ${totalReceiptValue}</td>
                 <td class="fw-bolder text-end ${getBalanceColor(totalIssueValue)}" style="width: 100%;">Total: ${totalIssueValue}</td>
+                <td></td>
                 <td></td>
                 `;
                 tbody.appendChild(totalQtyRow);

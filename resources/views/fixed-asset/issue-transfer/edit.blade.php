@@ -234,20 +234,41 @@
 
                                         <!-- Location -->
                                        
-                                        <div id="transferLocation">
-                                        <!-- Transfer Location -->
-                                        <div class="row align-items-center mb-1">
-                                            <div class="col-md-3">
-                                                <label for="transfer_location" class="form-label">Transfer Location <span class="text-danger">*</span></label>
-                                            </div>
-                                            <div class="col-md-5">
-                                                <select name="transfer_location" id="transfer_location" class="form-select select2">
-                                                    <option value="" {{ $data->transfer_location == '' ? 'selected' : '' }}>Select</option>
-                                                    <option value="2100" {{ $data->transfer_location == '2100' ? 'selected' : '' }}>2100, Noida</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
+                                                                                   <div id="transferLocation">
+                                                    <!-- Transfer Location -->
+                                                    <div class="row align-items-center mb-1">
+                                                        <div class="col-md-3">
+                                                            <label for="transfer_location" class="form-label">Transfer
+                                                                Location <span class="text-danger">*</span></label>
+                                                        </div>
+                                                        <div class="col-md-5">
+                                                            <select name="transfer_location" id="transfer_location"
+                                                                class="form-select select2">
+                                                            @foreach($locations as $loc)
+                                                                <option value="{{ $loc->id }}"
+                                                                    {{ $data->transfer_location == $loc->id ? 'selected' : '' }}>
+                                                                    {{ $loc->store_name }}
+                                                                </option>
+
+                                                            @endforeach
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                      <div class="row align-items-center mb-1 transfer_cost_center">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Transfer Cost Center <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+
+                                                    <div class="col-md-5">
+                                                        <select id="transfer_cost_center" class="form-select"
+                                                            name="transfer_cost_center" required>
+                                                        </select>
+                                                    </div>
+
+                                                </div>
+                                                </div>
+
 
                                         <!-- Authorized Person -->
                                         <div class="row align-items-center mb-1">
@@ -428,23 +449,27 @@
     }
 
     const statusRadios = document.querySelectorAll('input[name="status"]');
-    const transferLocationField = document.getElementById('transferLocation');
-    const transferLocationSelect = document.getElementById('transfer_location');
+ const transferLocationField = document.getElementById('transferLocation');
+        const transferLocationSelect = document.getElementById('transfer_location');
+         const transferCostSelect = document.getElementById('transfer_cost_center');
 
-    // Function to handle showing/hiding the transfer location field and making it required
-    function handleStatusChange() {
-        const selectedStatus = document.querySelector('input[name="status"]:checked').value;
+        // Function to handle showing/hiding the transfer location field and making it required
+        function handleStatusChange() {
+            const selectedStatus = document.querySelector('input[name="status"]:checked').value;
 
-        if (selectedStatus === 'transfer') {
-            // Show transfer location and make it required
-            transferLocationField.style.display = 'block';
-            transferLocationSelect.setAttribute('required', true);
-        } else {
-            // Hide transfer location and remove the required attribute
-            transferLocationField.style.display = 'none';
-            transferLocationSelect.removeAttribute('required');
+            if (selectedStatus === 'transfer') {
+                // Show transfer location and make it required
+                transferLocationField.style.display = 'block';
+                transferCostSelect.setAttribute('required', true);
+                
+                transferLocationSelect.setAttribute('required', true);
+            } else {
+                // Hide transfer location and remove the required attribute
+                transferLocationField.style.display = 'none';
+                  transferCostSelect.removeAttribute('required');
+                transferLocationSelect.removeAttribute('required');
+            }
         }
-    }
 
     // Add event listeners to all radio buttons
     statusRadios.forEach(radio => {
@@ -525,6 +550,43 @@ function showToast(icon, title) {
                 $('#cost_center').empty();
             }
         }
+        $('#transfer_location').on('change', function () {
+    var locationId = $(this).val();
+    var selectedCostCenterId = '{{ old("transfer_cost_center", $transfer_cost_center?? "") }}'; // Adjust as needed
+
+    if (locationId) {
+        var url = '{{ route("cost-center.get-cost-center", ":id") }}'.replace(':id', locationId);
+
+        $.ajax({
+            url: url,
+            type: 'GET',
+            dataType: 'json',
+            success: function (data) {
+                $('#transfer_cost_center').empty();
+
+                if (data.length === 0) {
+                    $('#transfer_cost_center').prop('required', false);
+                    $('.transfer_cost_center').hide();
+                } else {
+                    $('.transfer_cost_center').show();
+                    $('#transfer_cost_center').prop('required', true);
+
+                    $.each(data, function (key, value) {
+                        var selected = value.id == selectedCostCenterId ? 'selected' : '';
+                        $('#transfer_cost_center').append('<option value="' + value.id + '" ' + selected + '>' + value.name + '</option>');
+                    });
+                }
+            },
+            error: function () {
+                $('#transfer_cost_center').empty();
+            }
+        });
+    } else {
+        $('#transfer_cost_center').empty();
+    }
+});
+$('#transfer_location').trigger('change');
+
     </script>
         <script src="{{ asset('assets/js/subasset.js') }}"></script>
 

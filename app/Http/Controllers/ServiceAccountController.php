@@ -318,7 +318,7 @@ class ServiceAccountController extends Controller
         $query = Ledger::withDefaultGroupCompanyOrg()
                     ->where('status', '1');
 
-        $validGroupNames = ['Income', 'Expense'];
+        $validGroupNames = ['Incomes', 'Expenses'];
         $groupExists = false;
 
         $query->where(function($q) use ($validGroupNames, &$groupExists) {

@@ -165,4 +165,8 @@ class ErpSaleOrder extends Model
     {
         return $this -> hasMany(ErpSoDynamicField::class, 'header_id');
     }
+    public function getDisplayDocumentNumberAttribute()
+    {
+        return $this -> book_code . ' - ' . $this -> document_number;
+    }
 }

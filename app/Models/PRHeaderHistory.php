@@ -279,7 +279,7 @@ class PRHeaderHistory extends Model
 
     public function media()
     {
-        return $this->morphMany(GateEntryMedia::class, 'model');
+        return $this->morphMany(PRMedia::class, 'model');
     }
 
     public function getDisplayStatusAttribute()

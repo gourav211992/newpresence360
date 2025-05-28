@@ -2,6 +2,7 @@
 
 namespace App\Helpers;
 
+use App\Helpers\PackingList\Constants as PackingListConstants;
 use App\Models\Legal;
 
 class ConstantHelper
@@ -461,6 +462,7 @@ class ConstantHelper
     const EXPENSE_SERVICE_ALIAS = 'expense';
     const PURCHASE_RETURN_SERVICE_ALIAS = 'purchase-return';
     const INSPECTION_SERVICE_ALIAS = 'insp';
+    const PUTAWAY_SERVICE_ALIAS = 'ptw';
     const MATERIAL_REQUEST_SERVICE_ALIAS = 'material-request';
     const MATERIAL_ISSUE_SERVICE_ALIAS = 'material-issue';
     const MATERIAL_ISSUE_SERVICE_ALIAS_NAME = 'mi';
@@ -640,6 +642,7 @@ class ConstantHelper
         self::PI_SERVICE_ALIAS => 'PurchaseIndent',
         self::MRN_SERVICE_ALIAS => 'MrnHeader',
         self::INSPECTION_SERVICE_ALIAS => 'InspectionHeader',
+        self::PUTAWAY_SERVICE_ALIAS => 'PutAwayHeader',
         self::GATE_ENTRY_SERVICE_ALIAS => 'GateEntryHeader',
         self::EXPENSE_SERVICE_ALIAS => 'ExpenseHeader',
         self::EXPENSE_ADVISE_SERVICE_ALIAS => 'ExpenseHeader',
@@ -736,6 +739,7 @@ class ConstantHelper
         self::RC_SERVICE_ALIAS => 'ErpRateContract',
         self::PSV_SERVICE_ALIAS => 'ErpPsvHeader',
         self::PL_SERVICE_ALIAS => 'ErpPlHeader',
+        PackingListConstants::SERVICE_ALIAS => 'PackingList'
 
     ];
     const CV_ALLOWED_GROUPS=['Cash-in-Hand', 'Bank Accounts', 'Bank OD A/c', 'Bank OCC A/c'];

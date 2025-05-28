@@ -30,7 +30,9 @@ class PwoSoMapping extends Model
         'inventory_uom_id',
         'inventory_uom_code',
         'inventory_uom_qty',
-        'mo_product_qty'
+        'mo_product_qty',
+        'store_id',
+        'main_so_item'
     ];
 
     protected $appends = [
@@ -193,5 +195,10 @@ class PwoSoMapping extends Model
             $stockBalanceQty = $stocks['confirmedStocks'];
         }
         return min($stockBalanceQty, $this -> qty);
+    }
+
+    public function store()
+    {
+        return $this->belongsTo(ErpStore::class, 'store_id');
     }
 }

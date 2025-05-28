@@ -1339,56 +1339,6 @@ $(document).on('change', 'select[name*="[uom_id]"]',(e) => {
     setTableCalculation();
 });
 
-// 1. Attach change event
-$(document).on('change', '.header_store_id', function () {
-    const selectedStoreId = $(this).val();
-    if (selectedStoreId) {
-        getSubStores(selectedStoreId);
-        getCostCenters(selectedStoreId);
-    }
-});
-
-// 2. On page load: trigger if already selected
-const selectedStoreId = $('.header_store_id').val();
-if (selectedStoreId) {
-    getSubStores(selectedStoreId);
-    getCostCenters(selectedStoreId);
-}
-
-// Get SUb Stores
-function getSubStores(storeLocationId)
-{
-    const storeId = storeLocationId;
-    $.ajax({
-        url: "/sub-stores/store-wise",
-        method: 'GET',
-        dataType: 'json',
-        data: {
-            store_id : storeId,
-        },
-        success: function(data) {
-
-            if((data.status == 200) && data.data.length) {
-                let options = '';
-                data.data.forEach(function(location) {
-                    options+= `<option value="${location.id}">${location.name}</option>`;
-                });
-                $(".sub_store").html(options);
-            } else {
-                // No data found, hide subStore header and cell
-                $(".sub_store").empty();
-            }
-        },
-        error: function(xhr) {
-            Swal.fire({
-                title: 'Error!',
-                text: xhr?.responseJSON?.message,
-                icon: 'error',
-            });
-        }
-    });
-}
-
 // Get Cost Centers
 function getCostCenters(storeLocationId) {
     $("#cost_center_div").hide(); // Hide by default
@@ -1426,9 +1376,151 @@ function getCostCenters(storeLocationId) {
     });
 }
 
+// 1. Handle location change
+$(document).on('change', '.header_store_id', function () {
+    const selectedStoreId = $(this).val();
+    if (selectedStoreId) {
+        getSubStores(selectedStoreId, true); // pass true to check on substore load
+        getCostCenters(selectedStoreId);
+    }
+});
+
+// 2. Handle sub-store change
+$(document).on('change', '.sub_store', function () {
+    console.log("🔁 Sub-store changed");
+    const selectedStoreId = $('.header_store_id').val();
+    const selectedSubStoreId = $(this).val();
+    const isRequired = $(this).find(':selected').data('warehouse-required');
+
+
+    if (selectedStoreId && selectedSubStoreId && isRequired) {
+        checkWarehouseSetup(selectedStoreId, selectedSubStoreId);
+    }
+});
+
+// 3. On page load trigger if values already present
+const selectedStoreId = $(".header_store_id").val();
+const $selectedSubStore = $(".sub_store").find("option:selected");
+const selectedSubStoreId = $(".sub_store").val();
+const isSubStoreRequired = Number($selectedSubStore.data("warehouse-required")) === 1;
+
+if (selectedStoreId) {
+    getSubStores(selectedStoreId, false); // avoid double-check
+    getCostCenters(selectedStoreId);
+}
+
+if (selectedStoreId && selectedSubStoreId && isSubStoreRequired) {
+    checkWarehouseSetup(selectedStoreId, selectedSubStoreId);
+}
+// 4. Get Sub Stores
+function getSubStores(storeLocationId, selectedSubStoreId = null)
+{
+    const storeId = storeLocationId;
+
+    $.ajax({
+        url: "/sub-stores/store-wise",
+        method: 'GET',
+        dataType: 'json',
+        data: {
+            store_id: storeId,
+        },
+        success: function(response) {
+            if (response.status === 200 && Array.isArray(response.data) && response.data.length) {
+                let options = '';
+
+                response.data.forEach(function(location) {
+                    const isSelected = selectedSubStoreId && location.id == selectedSubStoreId ? 'selected' : '';
+                    options += `<option value="${location.id}" data-warehouse-required="${location.is_warehouse_required}" ${isSelected}>${location.name}</option>`;
+                });
+
+                $(".sub_store").html(options);
+
+                // Set selected value and trigger change
+                if (selectedSubStoreId) {
+                    $(".sub_store").val(selectedSubStoreId).trigger('change');
+                }
+
+                // ✅ Trigger change manually after population to check warehouse setup
+                const $selectedOption = $(".sub_store option:selected");
+                const subStoreId = $selectedOption.val();
+                const isWarehouseRequired = Number($selectedOption.data("warehouse-required"));
+
+                if (subStoreId && isWarehouseRequired) {
+                    checkWarehouseSetup(storeId, subStoreId);
+                }
+            } else {
+                $(".sub_store").empty();
+            }
+        },
+        error: function(xhr) {
+            Swal.fire({
+                title: 'Error!',
+                text: xhr?.responseJSON?.message || 'Something went wrong!',
+                icon: 'error',
+            });
+        }
+    });
+}
+
+// 5. Warehouse Setup Validation
+function checkWarehouseSetup(storeId, subStoreId) {
+    $.ajax({
+        url: "/material-receipts/warehouse/check-setup",
+        method: 'GET',
+        dataType: 'json',
+        data: { store_id: storeId, sub_store_id: subStoreId },
+        success: function (data) {
+            console.log(data);
+
+            if (data.status === 204 && !data.is_setup) {
+                Swal.fire({
+                    title: 'Warehouse Setup Missing',
+                    text: data.message,
+                    icon: 'error',
+                });
+                disableWarehouseActions();
+            } else if (data.status === 200 && data.is_setup) {
+                enableWarehouseActions();
+            } else {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Something went wrong while checking warehouse setup.',
+                    icon: 'error',
+                });
+                disableWarehouseActions();
+            }
+        },
+        error: function (xhr) {
+            Swal.fire({
+                title: 'Error!',
+                text: xhr?.responseJSON?.message || 'Warehouse check failed:',
+                icon: 'error',
+            });
+            disableWarehouseActions();
+        }
+    });
+}
+
+// Utility: Enable or Disable UI elements
+function enableWarehouseActions() {
+    $(".vendor_name").prop("disabled", false).trigger("change.select2");
+    $(".addNewItemBtn").css({ "pointer-events": "auto", "opacity": "1" }).removeClass("disabled");
+    $(".addStoragePointBtn").css({ "pointer-events": "auto", "opacity": "1" }).removeClass("disabled");
+    $(".is_warehouse_required").val(1);
+}
+
+function disableWarehouseActions() {
+    $(".vendor_name").prop("disabled", true).trigger("change.select2");
+    $(".addNewItemBtn").css({ "pointer-events": "none", "opacity": "0.6" }).addClass("disabled");
+    $(".addStoragePointBtn").css({ "pointer-events": "none", "opacity": "0.6" }).addClass("disabled");
+    $(".is_warehouse_required").val(0);
+}
+
+// GLOBALS
 let itemStorageMap = {};  // Key = item ID or code, Value = array of storage points
 let allStoragePointsList = [];
 let activeRowIndex = null;
+let expectedInvQty = 0;
 
 // Open modal on icon/button click
 $(document).on('click', '.addStoragePointBtn', function () {
@@ -1443,217 +1535,396 @@ $(document).on('click', '.addStoragePointBtn', function () {
         return false;
     }
 
-    const $row = $(`#row_${activeRowIndex}`);
-    const storagePointsInput = $row.find(`input[name="components[${activeRowIndex}][storage_points]"]`);
-    const storageData = JSON.parse(storagePointsInput.val() || '[]');
+    let itemId = $("#itemTable #row_" + activeRowIndex).find("[name*='[item_id]']").val();
 
-    if (storageData.length === 0) {
-        storageData.push({ id: '', quantity: qty });
-    }
+    // Only extract packets if no storage_packets exists yet
+    const existingValue = $(`#itemTable #row_${activeRowIndex} input[name*='[storage_packets]']`).val();
 
-    populateStoragePointsTable(storageData);
-    $('#storagePointsRowIndex').val(activeRowIndex);
-    $('#storagePointsModal').modal('show');
-});
-
-// Populate the table initially
-function populateStoragePointsTable(data) {
-    const tbody = $('#storagePointsTable tbody');
-    const acceptedQty = Number($("#itemTable #row_" + activeRowIndex).find("[name*='[accepted_qty]']").val()) || 0;
-
-    const html = generateStorageRow(0, data[0]?.id || '', data[0]?.quantity || acceptedQty, []);
-    if (data.length === 0) {
-        html = `<tr><td colspan="3" class="text-muted text-center">No storage points available.</td></tr>`;
+    let parsed = null;
+    if(existingValue && existingValue.length) {
+        parsed = JSON.parse(existingValue);
     } else {
-        data.forEach((point, i) => {
-            html += `
-                <tr data-index="${i}">
-                    <td>${point.name || '-'}</td>
-                    <td>${point.parents || '-'}</td>
-                    <td>
-                        <input type="number" step="any" class="form-control form-control-sm quantity-input"
-                            data-index="${i}" value="${point.quantity || ''}" />
-                    </td>
-                </tr>`;
-        });
+        // If no existing value, initialize with empty array
+        console.log('3', existingValue);
+        getOldPackets(activeRowIndex);
+        const $storageInput = $(`#itemTable #row_${activeRowIndex} input[name*='[storage_packets]']`).val();
+        if($storageInput) {
+            parsed = JSON.parse($storageInput); // re-parse after rebuild
+        }
     }
 
-    tbody.html(html);
+    console.log(`Parsed storage packets for row ${activeRowIndex}:`, parsed);
 
-    $('#storageQtySummary').remove();
-    $('#storagePointsTable').after(`
-        <div class="mt-2 text-end" id="storageQtySummary">
-            <small><b>Total Quantity:</b> <span id="storageQtyTotal">0</span> / ${acceptedQty}</small>
-        </div>
-    `);
-
-    updateQtyTotal();
-    refreshDropdownDisabling();
-}
-
-// Generate a new row
-function generateStorageRow(index, selectedId = '', qty = '', usedIds = []) {
-    let options = `<option value="">Select</option>`;
-    allStoragePointsList.forEach(point => {
-        const disabled = usedIds.includes(point.id) && point.id !== selectedId ? 'disabled' : '';
-        const selected = point.id === selectedId ? 'selected' : '';
-        const availableWeight = (point.max_weight || 0) - (point.current_weight || 0);
-        const availableVolume = (point.max_volume || 0) - (point.current_volume || 0);
-
-        const label = `${point.name} (${point.parents || '-'}) (W: ${availableWeight}/${point.max_weight}, V: ${availableVolume}/${point.max_volume})`;
-        options += `<option value="${point.id}" ${disabled} ${selected}>${label}</option>`;
-    });
-
-    const selectedPoint = allStoragePointsList.find(p => p.id === selectedId);
-    const parents = selectedPoint?.parents || '-';
-    const availableWeight = (selectedPoint?.max_weight || 0) - (selectedPoint?.current_weight || 0);
-    const availableVolume = (selectedPoint?.max_volume || 0) - (selectedPoint?.current_volume || 0);
-
-    return `
-        <tr data-index="${index}">
-            <td>${index + 1}</td>
-            <td>
-                <select class="form-select form-select-sm storage-point-dropdown" data-index="${index}">
-                    ${options}
-                </select>
-            </td>
-            <td class="weight-display">${availableWeight} / ${selectedPoint?.max_weight || 0}</td>
-            <td class="volume-display">${availableVolume} / ${selectedPoint?.max_volume || 0}</td>
-            <td class="parents-display">${parents}</td>
-            <td>
-                <input type="number" step="any" class="form-control form-control-sm quantity-input"
-                       data-index="${index}" value="${qty}" />
-            </td>
-        </tr>`;
-}
-
-// Add row from header
-$(document).on('click', '.add-storage-row-header', function () {
-    const index = $('#storagePointsTable tbody tr').length;
-    const acceptedQty = Number($("#itemTable #row_" + activeRowIndex).find("[name*='[accepted_qty]']").val()) || 0;
-    let currentTotal = 0;
-
-    $('.quantity-input').each(function () {
-        currentTotal += parseFloat($(this).val()) || 0;
-    });
-
-    if (currentTotal >= acceptedQty) {
-        Swal.fire('Notice', 'Total quantity already equals accepted quantity.', 'info');
+    if (Array.isArray(parsed) && parsed.length > 0) {
+        // console.log('123');
+        populatePacketTable(parsed);
+        updateAddButtonState();
+        $('#storagePointsRowIndex').val(activeRowIndex);
+        $('#storagePointsModal').modal('show');
         return;
     }
 
-    const remainingQty = acceptedQty - currentTotal;
+    // Call backend API to get item conversion & storage details
+    $.ajax({
+        url: `/material-receipts/warehouse/item-uom-info`,
+        method: 'GET',
+        dataType: 'json',
+        data: {
+            item_id: itemId,
+            qty: qty,
+        },
+        success: function(response) {
+            if (response.status === 200 && response.data) {
+                const invQty = response.data.inventory_qty;
+                const storageUom = response.data.item.storage_uom_id;
+                let totalPackets = Math.ceil(invQty);
+                let perPktQty = totalPackets;
+                if(storageUom){
+                    perPktQty = response.data.item.storage_uom_conversion;
+                }
+                totalPackets = Math.ceil(invQty / perPktQty);
+                const packetUom = response.data.storage_uom_name || 'PKT';
+                const baseUom = response.data.inventory_uom_name || 'PCS';
+                expectedInvQty = invQty;
 
-    const usedIds = $('#storagePointsTable tbody select.storage-point-dropdown')
-        .map(function () { return $(this).val(); })
-        .get()
-        .filter(val => val)
-        .map(Number);
+                $('.packet_item_name').text(response.data.item.item_name);
+                $('.packet_inv_uom_qty').text(invQty);
 
-    const newRow = generateStorageRow(index, '', remainingQty, usedIds);
-    $('#storagePointsTable tbody').append(newRow);
-    updateQtyTotal();
-    refreshDropdownDisabling();
-});
+                let rows = '';
+                for (let i = 0; i < totalPackets; i++) {
+                    let defaultQty = (i < totalPackets - 1) ? perPktQty : invQty - (perPktQty * (totalPackets - 1));
+                    rows += `
+                        <tr data-index="${i}">
+                            <td>
+                                <input type="checkbox" class="form-check-input packet-row-check" data-index="${i}" />
+                            </td>
+                            <td>
+                                <input type="number" step="any" value="${defaultQty}" class="form-control storage-packet-qty mw-100" name="components[${activeRowIndex}][packets][${i}][quantity]" data-index="${i}" />
+                            </td>
+                            <td>
+                                <input type="text" step="any" class="form-control storage-packet-number mw-100" name="components[${activeRowIndex}][packets][${i}][packet_number]" data-index="${i}" />
+                            </td>
+                            <td>${baseUom}</td>
+                            <td>
+                                <a href="#" class="text-primary add-storage-row-header" data-index="${i}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus-circle">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <line x1="12" y1="8" x2="12" y2="16"></line>
+                                        <line x1="8" y1="12" x2="16" y2="12"></line>
+                                    </svg>
+                                </a>
+                                <a href="#" class="text-danger remove-storage-row" data-index="${i}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <line x1="15" y1="9" x2="9" y2="15"></line>
+                                        <line x1="9" y1="9" x2="15" y2="15"></line>
+                                    </svg>
+                                </a>
+                            </td>
+                        </tr>`;
+                }
 
-// Add new row (from row-level + button)
-$(document).on('click', '.add-storage-row', function () {
-    $('.add-storage-row-header').click();
-});
+                $('#storagePacketTable tbody').html(rows);
+                $('#storagePacketTable tfoot').remove();
+                $('#storagePacketTable').append(`
+                    <tfoot>
+                        <tr>
+                            <td class="text-end fw-bold">Total</td>
+                            <td><span id="storagePacketTotal">${invQty}</span></td>
+                            <td colspan="3"></td>
+                        </tr>
+                    </tfoot>
+                `);
 
-// Change parent label on dropdown change
-$(document).on('change', '.storage-point-dropdown', function () {
-    const selectedId = Number($(this).val());
-    const index = $(this).data('index');
-    const point = allStoragePointsList.find(p => p.id === selectedId);
-
-    const parents = point?.parents || '-';
-    const availableWeight = (point?.max_weight || 0) - (point?.current_weight || 0);
-    const availableVolume = (point?.max_volume || 0) - (point?.current_volume || 0);
-
-    const $row = $(`#storagePointsTable tbody tr[data-index="${index}"]`);
-    $row.find('.parents-display').text(parents);
-    $row.find('.weight-display').text(`${availableWeight} / ${point?.max_weight || 0}`);
-    $row.find('.volume-display').text(`${availableVolume} / ${point?.max_volume || 0}`);
-
-    updateQtyTotal();
-    refreshDropdownDisabling();
-});
-
-// Update total quantity
-$(document).on('input', '.quantity-input', function () {
-    updateQtyTotal();
-});
-
-function updateQtyTotal() {
-    let total = 0;
-    $('.quantity-input').each(function () {
-        total += parseFloat($(this).val()) || 0;
+                $('#storagePointsRowIndex').val(activeRowIndex);
+                $('#storagePointsModal').modal('show');
+                updateAddButtonState();
+            } else {
+                Swal.fire('Error', 'Could not fetch item storage conversion info.', 'error');
+            }
+        },
+        error: function(xhr) {
+            Swal.fire('Error', xhr?.responseJSON?.message || 'API call failed', 'error');
+        }
     });
-    $('#storageQtyTotal').text(total);
 
-    const acceptedQty = Number($("#itemTable #row_" + activeRowIndex).find("[name*='[accepted_qty]']").val()) || 0;
-    const btn = $('.add-storage-row-header');
-    btn.prop('disabled', total >= acceptedQty);
+    const packets = [];
+    $('#storagePacketTable tbody tr').each(function () {
+        const id = $(this).find('.id').val() || null;
+        const qty = parseFloat($(this).find('.storage-packet-qty').val()) || 0;
+        const packet_number = $(this).find('.packet_number').val() || null;
+        const unit = $(this).find('td:nth-child(4)').text().trim();
+        packets.push({ id: id, quantity: qty, packet_number: packet_number, unit: unit });
+    });
+
+    $(`#itemTable #row_${activeRowIndex} input[name*='[storage_packets]']`).val(JSON.stringify(packets));
+});
+
+// Utility: Extract and save old packets into hidden input
+function getOldPackets(rowCount) {
+    const packets = [];
+    console.log(`Extracting old packets for row: ${rowCount}`);
+
+    $(`[id="row_${rowCount}"]`).find("[name*='[packet_number]']").each(function(index,item) {
+        let key = index +1;
+        const id = $(item).closest('tr').find(`[name*='[${key}][id]']`).val();
+        const packet_number = $(item).closest('tr').find(`[name*='[${key}][packet_number]']`).val();
+        const quantity = $(item).closest('tr').find(`[name*='[${key}][quantity]']`).val();
+        const unit = $(item).closest('tr').find(`[name*='[${key}][unit]']`).val();
+        if (quantity || packet_number) {
+            packets.push({ id: id, quantity: quantity, packet_number: packet_number, unit: unit });
+            expectedInvQty += Number(quantity);
+        }
+    });
+    console.log(packets);
+
+    if (packets.length) {
+        $(`#itemTable #row_${rowCount} input[name*='[storage_packets]']`).val(JSON.stringify(packets));
+    }
 }
 
-// Prevent duplicates across rows
-function refreshDropdownDisabling() {
-    const selectedValues = $('#storagePointsTable select.storage-point-dropdown')
-        .map(function () { return $(this).val(); })
-        .get()
-        .filter(val => val);
+// Populate the packet table with data
+function populatePacketTable(data) {
+    const activeRowIndex = $('#storagePointsRowIndex').val();
+    let rows = '';
+    data.forEach((row, i) => {
+        rows += `
+            <tr data-index="${i}">
+                <td><input type="checkbox" class="form-check-input packet-row-check" data-index="${i}" /></td>
+                <td>
+                    <input type="number" step="any" value="${row.quantity}" class="form-control storage-packet-qty mw-100" name="components[${activeRowIndex}][packets][${i}][quantity]" data-index="${i}" />
+                </td>
+                <td>
+                    <input type="text" step="any" value="${row.packet_number}" class="form-control storage-packet-number mw-100" name="components[${activeRowIndex}][packets][${i}][packet_number]" data-index="${i}" />
+                </td>
+                <td>${row.unit}</td>
+                <td>
+                    <a href="#" class="text-primary add-storage-row-header" data-index="${i}">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus-circle">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="16"></line>
+                            <line x1="8" y1="12" x2="16" y2="12"></line>
+                        </svg>
+                    </a>
+                    <a href="#" class="text-danger remove-storage-row" data-index="${i}">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="15" y1="9" x2="9" y2="15"></line>
+                            <line x1="9" y1="9" x2="15" y2="15"></line>
+                        </svg>
+                    </a>
+                </td>
+            </tr>`;
+    });
 
-    $('#storagePointsTable select.storage-point-dropdown').each(function () {
-        const currentSelect = $(this);
-        const currentValue = currentSelect.val();
+    $('#storagePacketTable tbody').html(rows);
 
-        currentSelect.find('option').each(function () {
-            const val = $(this).val();
-            if (!val) return;
-            if (val !== currentValue && selectedValues.includes(val)) {
-                $(this).prop('disabled', true);
-            } else {
-                $(this).prop('disabled', false);
+    $('#storagePacketTable tfoot').remove();
+    $('#storagePacketTable').append(`
+        <tfoot>
+            <tr>
+                <td class="text-end fw-bold">Total</td>
+                <td><span id="storagePacketTotal">0</span></td>
+                <td colspan="2"></td>
+            </tr>
+        </tfoot>
+    `);
+    updatePacketTotal();
+    updateAddButtonState();
+}
+
+// Recalculate total
+$(document).on('input', '.storage-packet-qty', function () {
+    updatePacketTotal();
+    updateAddButtonState();
+});
+
+// Delete row
+$(document).on('click', '.remove-storage-row', function () {
+    $(this).closest('tr').remove();
+    updatePacketTotal();
+    updateAddButtonState();
+});
+
+// Add new row
+$(document).on('click', '.add-storage-row-header', function () {
+    const activeRowIndex = $('#storagePointsRowIndex').val();
+    let total = 0;
+    $('.storage-packet-qty').each(function () {
+        total += parseFloat($(this).val()) || 0;
+    });
+    if (total >= expectedInvQty) return;
+
+    const remaining = expectedInvQty - total;
+    const index = $('#storagePacketTable tbody tr').length;
+    const baseUom = $('#storagePacketTable tbody tr:first-child td:nth-child(4)').text() || 'PCS';
+
+    const row = `
+        <tr data-index="${index}">
+            <td><input type="checkbox" class="form-check-input packet-row-check" data-index="${index}" /></td>
+            <td>
+                <input type="number" step="any" value="${remaining}" class="form-control storage-packet-qty mw-100" name="components[${activeRowIndex}][packets][${index}][quantity]" data-index="${index}" />
+            </td>
+            <td>
+                <input type="text" step="any" class="form-control storage-packet-number mw-100" name="components[${activeRowIndex}][packets][${index}][packet_number]" data-index="${index}" />
+            </td>
+            <td>${baseUom}</td>
+            <td>
+                <a href="#" class="text-primary add-storage-row-header" data-index="${index}">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus-circle">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="16"></line>
+                        <line x1="8" y1="12" x2="16" y2="12"></line>
+                    </svg>
+                </a>
+                <a href="#" class="text-danger remove-storage-row" data-index="${index}">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="15" y1="9" x2="9" y2="15"></line>
+                        <line x1="9" y1="9" x2="15" y2="15"></line>
+                    </svg>
+                </a>
+            </td>
+        </tr>`;
+
+    $('#storagePacketTable tbody').append(row);
+    updatePacketTotal();
+    updateAddButtonState();
+});
+
+// Multi-delete selected
+$(document).on('click', '.delete-storage-row-header', function () {
+    $('.packet-row-check:checked').each(function () {
+        $(this).closest('tr').remove();
+    });
+    updatePacketTotal();
+    updateAddButtonState();
+});
+
+function updatePacketTotal() {
+    let total = 0;
+    $('.storage-packet-qty').each(function () {
+        total += parseFloat($(this).val()) || 0;
+    });
+    $('#storagePacketTotal').text(total);
+}
+
+function updateAddButtonState() {
+    const total = Number($('#storagePacketTotal').text());
+    console.log(`Total packets: ${total}, Expected inventory quantity: ${expectedInvQty}`);
+
+    $('.add-storage-row-header').prop('disabled', total >= expectedInvQty);
+}
+
+// Save button validation
+$(document).on('click', '#saveStoragePointsBtn', function () {
+    const totalQty = Number($('#storagePacketTotal').text());
+    if (totalQty !== expectedInvQty) {
+        Swal.fire('Error', `Total quantity (${totalQty}) must equal inventory quantity (${expectedInvQty}).`, 'error');
+        return;
+    }
+
+    // const packets = [];
+    // $('#storagePacketTable tbody tr').each(function () {
+    //     const id = $(this).find('.id').val() || null;
+    //     const qty = parseFloat($(this).find('.storage-packet-qty').val()) || 0;
+    //     const packet_number = $(this).find('.packet_number').val() || null;
+    //     const unit = $(this).find('td:nth-child(4)').text().trim();
+    //     packets.push({ id: id, quantity: qty, packet_number: packet_number, unit: unit });
+    // });
+
+    // $(`#itemTable #row_${activeRowIndex} input[name*='[storage_packets]']`).val(JSON.stringify(packets));
+    $('#storagePointsModal').modal('hide');
+});
+
+function initAttributeAutocomplete(context = document) {
+    $(context).find('.attr-autocomplete').each(function () {
+        let $input = $(this);
+        $input.autocomplete({
+            minLength: 0,
+            source: function (request, response) {
+                let itemId = $input.closest('tr').find("input[name*='item_id']").val() || '';
+                let attrGroupId = $input.data('attr-group-id');
+                $.ajax({
+                    url: '/search',
+                    method: 'GET',
+                    dataType: 'json',
+                    data: {
+                        q: request.term,
+                        type: "item_attr_value",
+                        item_id: itemId,
+                        attr_group_id: attrGroupId,
+                    },
+                    success: function (data) {
+                        response($.map(data, function (item) {
+                            return {
+                                id: item.id,
+                                label: item.value,
+                                value: item.value
+                            };
+                        }));
+                    },
+                    error: function (xhr) {
+                        console.error('Error fetching attribute values:', xhr.responseText);
+                    }
+                });
+            },
+            select: function (event, ui) {
+                const row = $input.closest('tr');
+                const rowCount = row.find('[name*="row_count"]').val();
+                const attrGroupId = $input.data('attr-group-id');
+                $input.val(ui.item.label);
+                $(`[name="components[${rowCount}][attr_group_id][${attrGroupId}][attr_name]"]`).val(ui.item.id);
+                qtyEnabledDisabled();
+                setSelectedAttribute(rowCount);
+                const itemId = $("#attribute tbody tr").find('[name*="[item_id]"]').val();
+                const itemAttributes = [];
+                $("#attribute tbody tr").each(function () {
+                    const attr_id = $(this).find('[name*="[attribute_id]"]').val();
+                    const attr_value = $(this).find('[name*="[attribute_value]"]').val();
+                    itemAttributes.push({
+                        attr_id: attr_id,
+                        attr_value: attr_value
+                    });
+                });
+                return false;
+            },
+            focus: function (event, ui) {
+                event.preventDefault();
+            }
+        });
+        $input.on('focus', function () {
+            if (!$(this).val()) {
+                $(this).autocomplete("search", "");
+            }
+        });
+        $input.on('input', function () {
+            if (!$(this).val()) {
+                const row = $input.closest('tr');
+                const rowCount = row.find('[name*="row_count"]').val();
+                const attrGroupId = $input.data('attr-group-id');
+                $(`[name="components[${rowCount}][attr_group_id][${attrGroupId}][attr_name]"]`).val('');
+                qtyEnabledDisabled();
             }
         });
     });
 }
 
-// Validate total on save
-$(document).on('click', '#saveStoragePointsBtn', function () {
-    const acceptedQty = Number($("#itemTable #row_" + activeRowIndex).find("[name*='[accepted_qty]']").val()) || 0;
-    let total = 0;
-    $('.quantity-input').each(function () {
-        total += parseFloat($(this).val()) || 0;
-    });
+// Auto scroll when row added
+function focusAndScrollToLastRowInput(inputSelector = '.comp_item_code', tableSelector = '#itemTable') {
+    let $lastRow = $(`${tableSelector} > tbody > tr`).last();
+    let $input = $lastRow.find(inputSelector);
 
-    if (total !== acceptedQty) {
-        Swal.fire({
-            title: 'Error!',
-            text: `Total quantity (${total}) must equal accepted quantity (${acceptedQty})`,
-            icon: 'error'
+    if ($input.length) {
+        $input.focus().autocomplete('search', '');
+        $input[0].scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+            inline: 'nearest'
         });
-        return;
     }
+}
 
-    // 🔽 Prepare and store data
-    const storageData = [];
-    $('#storagePointsTable tbody tr').each(function () {
-        const id = $(this).find('select.storage-point-dropdown').val();
-        const qty = parseFloat($(this).find('.quantity-input').val()) || 0;
-        if (id && qty > 0) {
-            storageData.push({ id: Number(id), quantity: qty });
-        }
-    });
 
-    const $row = $(`#row_${activeRowIndex}`);
-    const targetInput = $row.find(`input[name="components[${activeRowIndex}][storage_points_data]"]`);
-    if (targetInput.length) {
-        targetInput.val(JSON.stringify(storageData));
-    }
 
-    $('#storagePointsModal').modal('hide');
-    // optionally proceed with saving data
-});
 

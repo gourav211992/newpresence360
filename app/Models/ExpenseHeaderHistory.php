@@ -43,6 +43,7 @@ class ExpenseHeaderHistory extends Model
         'revision_date',
         'approval_level',
         'reference_number',
+        'store_id',
         'gate_entry_no',
         'gate_entry_date',
         'supplier_invoice_no',
@@ -256,9 +257,19 @@ class ExpenseHeaderHistory extends Model
         return $this->addresses()->where('type', 'shipping')->latest()->first();
     }
 
+    public function bill_address_details()
+    {
+        return $this->morphOne(ErpAddress::class, 'addressable', 'addressable_type', 'addressable_id') -> where('type', 'billing')->with(['city', 'state', 'country']);
+    }
+
+    public function ship_address_details()
+    {
+        return $this->morphOne(ErpAddress::class, 'addressable', 'addressable_type', 'addressable_id') -> where('type', 'shipping')->with(['city', 'state', 'country']);
+    }
+
     public function media()
     {
-        return $this->morphMany(GateEntryMedia::class, 'model');
+        return $this->morphMany(ExpenseMedia::class, 'model');
     }
 
     public function costCenters()

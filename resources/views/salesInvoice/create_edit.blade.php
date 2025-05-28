@@ -239,22 +239,27 @@
                                                             <label class="form-label">Reference From</label>  
                                                         </div>
                                                             <div class="col-md-2 action-button" id = "sales_order_selection"> 
-                                                                <button onclick = "openHeaderPullModal();" disabled type = "button" id = "select_order_button" data-bs-toggle="modal" data-bs-target="#rescdule" class="btn btn-outline-primary btn-sm mb-0"><i data-feather="plus-square"></i>
+                                                                <button onclick = "openHeaderPullModal();" disabled type = "button" id = "select_order_button" data-bs-toggle="modal" data-bs-target="#pullPopUp" class="btn btn-outline-primary btn-sm mb-0"><i data-feather="plus-square"></i>
                                                                 Sales Order
                                                             </button>
                                                             </div>
+                                                            <div class="col-md-2 action-button" id = "packing_list_selection"> 
+                                                                <button onclick = "openHeaderPullModal('plist');" disabled type = "button" id = "pack_list_button" data-bs-toggle="modal" data-bs-target="#pullPopUpPlist" class="btn btn-outline-primary btn-sm mb-0"><i data-feather="plus-square"></i>
+                                                                Packing List
+                                                            </button>
+                                                            </div>
                                                             <div class="col-md-2 action-button" id = "sales_invoice_selection"> 
-                                                                <button onclick = "openHeaderPullModal('inv');" disabled type = "button" id = "select_si_button" data-bs-toggle="modal" data-bs-target="#rescdule" class="btn btn-outline-primary btn-sm mb-0"><i data-feather="plus-square"></i>
+                                                                <button onclick = "openHeaderPullModal('inv');" disabled type = "button" id = "select_si_button" data-bs-toggle="modal" data-bs-target="#pullPopUp" class="btn btn-outline-primary btn-sm mb-0"><i data-feather="plus-square"></i>
                                                                  Sales Invoice
                                                             </button>
                                                             </div>
                                                             <div class="col-md-2 action-button" id = "delivery_note_selection"> 
-                                                                <button onclick = "openHeaderPullModal('dnote');" disabled type = "button" id = "select_dn_button" data-bs-toggle="modal" data-bs-target="#rescdule" class="btn btn-outline-primary btn-sm mb-0"><i data-feather="plus-square"></i>
+                                                                <button onclick = "openHeaderPullModal('dnote');" disabled type = "button" id = "select_dn_button" data-bs-toggle="modal" data-bs-target="#pullPopUp" class="btn btn-outline-primary btn-sm mb-0"><i data-feather="plus-square"></i>
                                                                  Delivery Note
                                                             </button>
                                                             </div>
                                                             <div class="col-md-2 action-button" id = "land_lease_selection"> 
-                                                                <button onclick = "openHeaderPullModal('land-lease');" disabled type = "button" id = "select_lease_button" data-bs-toggle="modal" data-bs-target="#rescdule2" class="btn btn-outline-primary btn-sm mb-0"><i data-feather="plus-square"></i>
+                                                                <button onclick = "openHeaderPullModal('land-lease');" disabled type = "button" id = "select_lease_button" data-bs-toggle="modal" data-bs-target="#pullPopUp2" class="btn btn-outline-primary btn-sm mb-0"><i data-feather="plus-square"></i>
                                                                 Land Lease
                                                             </button>
                                                             </div>
@@ -695,6 +700,9 @@
                                                                                  @if ($orderItem -> bundles && count($orderItem -> bundles) > 0)
                                                                                  <div class="me-50 cursor-pointer item_bundles" onclick = "getBundles({{$orderItemIndex}}, {{$orderItem -> so_item_id}}, {{$orderItem -> id}}, {{ isset($editBundle) ? !$editBundle : false }})" id = "item_bundles_{{$orderItemIndex}}">    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Package" class="text-primary"><i data-feather="package"></i></span>
                                                                                  @endif
+                                                                                 @if (isset($orderItem -> package) && $orderItem -> package)
+                                                                                    <div class="me-50 cursor-pointer" packet="{{$orderItem -> package}}" qty = "{{$orderItem -> order_qty}}" onclick = "setPackets(this);" >    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Package" class="text-primary"><i data-feather="package"></i></span>
+                                                                                 @endif
                                                                             </div>
                                                                          </td>
                                                                          <input type="hidden" id = "item_remarks_{{$orderItemIndex}}" name = "item_remarks[]" value = "{{$orderItem -> remarks}}"/>
@@ -953,7 +961,7 @@
         </div>
     </div>
 
-    <div class="modal fade text-start" id="rescdule" tabindex="-1" aria-labelledby="header_pull_label" aria-hidden="true">
+    <div class="modal fade text-start" id="pullPopUp" tabindex="-1" aria-labelledby="header_pull_label" aria-hidden="true">
 		<div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 1250px">
 			<div class="modal-content">
 				<div class="modal-header">
@@ -1001,7 +1009,7 @@
                          
                          <div class="col  mb-1">
                               <label class="form-label">&nbsp;</label><br/>
-                             <button onclick = "getOrders();" type = "button" class="btn btn-warning btn-sm"><i data-feather="search"></i> Search</button>
+                             <button onclick = "getOrders(openPullType);" type = "button" class="btn btn-warning btn-sm"><i data-feather="search"></i> Search</button>
                          </div>
 
 						 <div class="col-md-12">
@@ -1048,7 +1056,97 @@
 			</div>
 		</div>
 	</div>
-    <div class="modal fade text-start" id="rescdule2" tabindex="-1" aria-labelledby="header_pull_label" aria-hidden="true">
+    <div class="modal fade text-start" id="pullPopUpPlist" tabindex="-1" aria-labelledby="header_pull_label" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 1250px">
+			<div class="modal-content">
+				<div class="modal-header">
+					<div>
+                        <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="header_pull_label">Select Document</h4>
+                        <p class="mb-0">Select from the below list</p>
+                    </div>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					 <div class="row">
+
+                     <div class="col">
+                        <div class="mb-1">
+                            <label class="form-label">Customer Name <span class="text-danger">*</span></label>
+                                <input type="text" id="customer_code_input_plist" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+                                <input type = "hidden" id = "customer_id_plist_val"></input>
+                            </div>
+                        </div>
+
+                        <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">Series <span class="text-danger">*</span></label>
+                                <input type="text" id="book_code_input_plist" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+                                <input type = "hidden" id = "book_id_plist_val"></input>
+                            </div>
+                        </div>
+                         
+                         
+                         <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">Document No. <span class="text-danger">*</span></label>
+                                <input type="text" id="document_no_input_plist" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+                                <input type = "hidden" id = "document_id_plist_val"></input>
+                            </div>
+                        </div>
+
+                         <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">Item Name <span class="text-danger">*</span></label>
+                                <input type="text" id="item_name_input_plist" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+                                <input type = "hidden" id = "item_id_plist_val"></input>
+                            </div>
+                        </div>
+                         
+                         <div class="col  mb-1">
+                              <label class="form-label">&nbsp;</label><br/>
+                             <button onclick = "getOrders('plist');" type = "button" class="btn btn-warning btn-sm"><i data-feather="search"></i> Search</button>
+                         </div>
+
+						 <div class="col-md-12">
+							<div class="table-responsive">
+								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail"> 
+									<thead>
+										 <tr>
+											<th>
+												<!-- <div class="form-check form-check-inline me-0">
+													<input class="form-check-input" type="checkbox" name="podetail" id="inlineCheckbox1">
+												</div>  -->
+											</th>  
+                                            <th>SO No.</th>
+											<th>So Date</th>
+                                            <th>Customer</th>
+											<th>Packing Series</th>
+											<th>Packing Document No.</th>
+											<th>Package No.</th>
+											<th>Items</th>
+											<th>Total Quantity</th> 
+										  </tr>
+										</thead>
+										<tbody id = "qts_data_table_plist">
+                                            
+									   </tbody>
+
+
+								</table>
+							</div>
+						</div>
+
+
+					 </div>
+				</div>
+				<div class="modal-footer text-end">
+					<button type = "button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"><i data-feather="x-circle"></i> Cancel</button>
+					<button type = "button" class="btn btn-primary btn-sm" onclick = "processOrder('plist');" data-bs-dismiss="modal"><i data-feather="check-circle"></i> Process</button>
+				</div>
+			</div>
+		</div>
+	</div>
+    <div class="modal fade text-start" id="pullPopUp2" tabindex="-1" aria-labelledby="header_pull_label" aria-hidden="true">
 		<div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 1000px">
 			<div class="modal-content">
 				<div class="modal-header">
@@ -2108,6 +2206,37 @@
 				<div class="modal-footer justify-content-center">  
 						<button type="button" class="btn btn-outline-secondary me-1" onclick="closeModal('BundleInfo');">Cancel</button> 
 					<button type="button" class="btn btn-primary" onclick="onBundleSubmit();">Submit</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+    <div class="modal fade" id="PacketInfo" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
+		<div class="modal-dialog  modal-dialog-centered">
+			<div class="modal-content">
+				<div class="modal-header p-0 bg-transparent">
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body px-sm-2 mx-50 pb-2">
+					<h1 class="text-center mb-1" id="shareProjectTitle">Packing Info</h1>                    
+                    
+					<div class="table-responsive-md customernewsection-form">
+								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail"> 
+									<thead>
+										 <tr>
+											<th>Package</th>
+											<th class = "numeric-alignment">Qty</th>
+										  </tr>
+										</thead>
+										<tbody id = "packing_info_table" current-item-index = "0">
+                                            
+
+									   </tbody>
+
+
+								</table>
+							</div>
+                    
 				</div>
 			</div>
 		</div>
@@ -4186,6 +4315,10 @@
         if (orderButton) {
             orderButton.disabled = false;
         }
+        let plistButton = document.getElementById('pack_list_button');
+        if (plistButton) {
+            plistButton.disabled = false;
+        }
         document.getElementById('customer_code_input').disabled = false;
     }
 
@@ -4319,6 +4452,10 @@
         var selectionSectionSO = document.getElementById('sales_order_selection');
         if (selectionSectionSO) {
             selectionSectionSO.style.display = "none";
+        }
+        var selectionSectionPlist = document.getElementById('packing_list_selection');
+        if (selectionSectionPlist) {
+            selectionSectionPlist.style.display = "none";
         }
         var selectionSectionSI = document.getElementById('sales_invoice_selection');
         if (selectionSectionSI) {
@@ -4482,6 +4619,17 @@
                             selectionPopupElement.style.display = ""
                         }
                     }
+                    if (selectSingleVal == 'plist') {
+                        var selectionSectionElement = document.getElementById('selection_section');
+                        if (selectionSectionElement) {
+                            selectionSectionElement.style.display = "";
+                        }
+                        var selectionPopupElement = document.getElementById('packing_list_selection');
+                        if (selectionPopupElement)
+                        {
+                            selectionPopupElement.style.display = ""
+                        }
+                    }
                     if (selectSingleVal == 'd') {
                         document.getElementById('add_item_section').style.display = "";
                         // document.getElementById('copy_item_section').style.display = "";
@@ -4597,6 +4745,10 @@
             if (orderButton) {
                 orderButton.disabled = false;
             }
+            let plistButton = document.getElementById('pack_list_button');
+            if (plistButton) {
+                plistButton.disabled = false;
+            }
             document.getElementById('customer_code_input').disabled = false;
         } else {
             let siButton = document.getElementById('select_si_button');
@@ -4614,6 +4766,10 @@
             let orderButton = document.getElementById('select_order_button');
             if (orderButton) {
                 orderButton.disabled = true;
+            }
+            let plistButton = document.getElementById('pack_list_button');
+            if (plistButton) {
+                plistButton.disabled = true;
             }
             document.getElementById('customer_code_input').disabled = true;
         }
@@ -5129,7 +5285,7 @@
     {
         element.value = (parseFloat(element.value ? element.value  : 0)).toFixed(2)
     }
-    function processOrder(landLease = '')
+    function processOrder(type = 'so')
     {
         const allCheckBoxes = document.getElementsByClassName('po_checkbox');
         const docType = $("#service_id_input").val();
@@ -5139,6 +5295,7 @@
         let soItemsId = [];
         let qties = [];
         let documentDetails = [];
+        let plistDetailIds = [];
         for (let index = 0; index < allCheckBoxes.length; index++) {
             if (allCheckBoxes[index].checked) {
                 docId.push(allCheckBoxes[index].getAttribute('document-id'));
@@ -5149,6 +5306,9 @@
                     'quantity' : allCheckBoxes[index].getAttribute('balance_qty'),
                     'item_id' : allCheckBoxes[index].getAttribute('so-item-id')
                 });
+                if (type === 'plist') {
+                    plistDetailIds.push(allCheckBoxes[index].getAttribute('detail-id'))
+                }
             }
         }
         if (docId && soItemsId.length > 0) {
@@ -5162,13 +5322,15 @@
                     items_id: soItemsId,
                     doc_type: openPullType,
                     document_details : JSON.stringify(documentDetails),
-                    store_id : $("#store_id_input").val()
+                    store_id : $("#store_id_input").val(),
+                    plist_detail_ids : plistDetailIds
                 },
                 success: function(data) {
                     const currentOrders = data.data;
                     let currentOrderIndexVal = document.getElementsByClassName('item_header_rows').length;
                     currentOrders.forEach((currentOrder) => {
                         if (currentOrder) { //Set all data
+                            let subStoreId = currentOrder?.sub_store_id ? currentOrder?.sub_store_id : '';
                         //Disable Header
                             disableHeader();
                             //Basic Details
@@ -5198,6 +5360,11 @@
                             $("#current_shipping_address").text(currentOrder.shipping_address_details?.display_address);
                             $("#current_shipping_country_id").val(currentOrder.shipping_address_details?.country_id);
                             $("#current_shipping_state_id").val(currentOrder.shipping_address_details?.state_id);
+                            const locationElement = document.getElementById('store_id_input');
+                            if (locationElement) {
+                                const displayAddress = locationElement.options[locationElement.selectedIndex].getAttribute('display-address');
+                                $("#current_pickup_address").text(displayAddress);
+                            }
                             const mainTableItem = document.getElementById('item_header');
                             //Remove previous items if any
                             // const allRowsCheck = document.getElementsByClassName('item_row_checks');
@@ -5216,8 +5383,11 @@
                                     item.max_qty = avl_qty;
                                     const itemRemarks = item.remarks ? item.remarks : '';
                                     let amountMax = ``;
-                                    if (landLease) {
+                                    if (type == 'land-lease') {
                                         amountMax = `max = '${item.rate}'`;
+                                    }
+                                    if (type == 'plist') {
+                                        item.balance_qty = item.order_qty;
                                     }
 
                                     let agreement_no = '';
@@ -5229,8 +5399,9 @@
                                     let land_plots = '';
 
                                     let landLeasePullHtml = '';
+                                    let plistHTML = '';
 
-                                    if (landLease) {
+                                    if (type == 'land-lease') {
                                         agreement_no = currentOrder?.agreement_no;
                                         lease_end_date = moment(currentOrder?.lease_end_date).format('D/M/Y');
                                         due_date = moment(item?.due_date).format('D/M/Y');
@@ -5278,6 +5449,11 @@
                                     bundleInfoIcon = `<div class="me-50 cursor-pointer item_bundles" onclick = "getBundles(${currentOrderIndexVal}, ${item.id})" id = "item_bundles_${currentOrderIndexVal}">    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Package" class="text-primary"><i data-feather="package"></i></span>`;
                                     disableQty = "readonly";
                                 }
+                                if (openPullType == 'plist') {
+                                    bundleInfoIcon = `<div class="me-50 cursor-pointer" packet="${item.package}" qty = "${item.order_qty}" onclick = "setPackets(this);" >    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Package" class="text-primary"><i data-feather="package"></i></span>`;
+                                    plistHTML = `<input type ='hidden' value = '${JSON.stringify([item.package_id])}' name = 'plist_detail_ids[${currentOrderIndexVal}]' />`;
+                                    disableQty = "readonly";
+                                }
                                 var headerStoreId = $("#store_id_input").val();
                                 var headerStoreCode = $("#store_id_input").attr("data-name");
                                 var stores = @json($stores);
@@ -5293,7 +5469,10 @@
 
                                 let subStoresHTML = ``;
                                 currentSubStoreArray.forEach(subStore => {
-                                    subStoresHTML += `<option value = ${subStore.id} ${subStore.id == item?.sub_store_id ? 'selected' : ''}> ${subStore.name} </option>`;
+                                    if (subStoreId == subStore.id) {
+                                        console.log("THIS IS HEREEE");
+                                    }
+                                    subStoresHTML += `<option value = ${subStore.id} ${subStore.id == subStoreId ? 'selected' : ''}> ${subStore.name} </option>`;
                                 });
 
                                 mainTableItem.innerHTML += `
@@ -5321,6 +5500,7 @@
 
 
                                         ${landLeasePullHtml}
+                                        ${plistHTML}
 
                                     <input type="text" readonly id = "items_dropdown_${currentOrderIndexVal}" name="item_code[${currentOrderIndexVal}]" placeholder="Select" class="form-control mw-100 ledgerselecct comp_item_code ui-autocomplete-input" autocomplete="off" data-name="${item?.item?.item_name}" data-code="${item?.item?.item_code}" data-id="${item?.item?.id}" hsn_code = "${item?.item?.hsn?.code}" item-name = "${item?.item?.item_name}" specs = '${JSON.stringify(item?.item?.specifications)}' attribute-array = '${JSON.stringify(item?.item_attributes_array)}'  value = "${item?.item?.item_code}"  item-locations = "${JSON.stringify([])}">
                                     <input type = "hidden" name = "item_id[]" id = "items_dropdown_${currentOrderIndexVal}_value" value = "${item?.item_id}"></input>
@@ -5571,16 +5751,36 @@
             });
         }
     }
-    function getOrders(landLease = '')
+    function getOrders(type = 'so')
     {
         var qtsHTML = ``;
-        const targetTable = landLease ? document.getElementById('qts_data_table_land') : document.getElementById('qts_data_table');
-        const customer_id = landLease ? $("#customer_id_qt_val_land").val() : $("#customer_id_qt_val").val();
-        const book_id = landLease ? $("#book_id_qt_val_land").val() : $("#book_id_qt_val").val();
-        const document_id = landLease ? $("#document_id_qt_val_land").val() : $("#document_id_qt_val").val();
+        let targetTable = null;
+        let customer_id = null;
+        let book_id = null;
+        let document_id = null;
+        let itemId = null;
+        if (type == 'plist') {
+            targetTable = document.getElementById('qts_data_table_plist');
+            customer_id = $("#customer_id_plist_val").val();
+            book_id = $("#book_id_plist_val").val();
+            item_id = $("#item_id_plist_val").val();
+            document_id = $("#document_id_plist_val").val();
+        } else if (type == 'land-lease') {
+            targetTable = document.getElementById('qts_data_table_land');
+            customer_id = $("#customer_id_qt_val_land").val();
+            book_id = $("#book_id_qt_val_land").val();
+            item_id = $("#item_id_qt_val").val();
+            document_id = $("#document_id_qt_val_land").val();
+        } else {
+            targetTable = document.getElementById('qts_data_table');
+            customer_id = $("#customer_id_qt_val").val();
+            book_id = $("#book_id_qt_val").val();
+            document_id = $("#document_id_qt_val").val();
+            item_id = $("#item_id_qt_val").val();
+        }
+        console.log(customer_id, "CUSTOMER ID");
         const landParcelId = $("#land_parcel_id_qt_val_land").val();
         const landPlotId = $("#land_plot_id_qt_val_land").val();
-        const item_id = $("#item_id_qt_val").val();
         const apiUrl = "{{route('sale.invoice.pull.items')}}";
         var selectedIds = [];
         var headerRows = document.getElementsByClassName("item_header_rows");
@@ -5609,7 +5809,7 @@
             },
             success: function(data) {
                 if (Array.isArray(data.data) && data.data.length > 0) {
-                    if (landLease) {
+                    if (type == 'land-lease') {
                         data.data.forEach((qt, qtIndex) => {
                             let parcelName = qt?.header?.plots?.length > 0 ? qt?.header?.plots[0].land?.name : '';
                             let plots = '';
@@ -5636,6 +5836,27 @@
                                     <td>${moment(qt?.due_date).format('D/M/Y')}</td>
                                 </tr>
                             `
+                        });
+                    } else if (type == 'plist'){
+                        data.data.forEach((qt, qtIndex) => {
+                            var soItemsIds = ``;
+                            qtsHTML += `
+                                <tr>
+                                    <td>
+                                        <div class="form-check form-check-inline me-0">
+                                            <input class="form-check-input po_checkbox" type="checkbox" name="po_check" id="po_checkbox_${qtIndex}" oninput = "checkQuotation(this);" doc-id = "${qt?.sale_order?.id}" current-doc-id = "0" document-id = "${qt?.sale_order?.id}" so-item-id = "${JSON.stringify(qt?.so_item_ids)}" detail-id="${qt?.id}">
+                                        </div> 
+                                    </td>  
+                                    <td>${qt?.sale_order?.book_code + " - " + qt?.sale_order?.document_number}</td>
+                                    <td>${qt?.sale_order?.document_date}</td>
+                                    <td>${qt?.sale_order?.customer_code}</td> 
+                                    <td>${qt?.header?.book_code}</td>
+                                    <td>${qt?.header?.document_number}</td>
+                                    <td>${qt?.packing_number}</td>
+                                    <td>${qt?.items_ui}</td>
+                                    <td>${qt?.total_item_qty}</td>
+                                </tr>
+                            `;
                         });
                     } else { 
                         
@@ -5703,7 +5924,7 @@
                             response($.map(data, function(item) {
                                 return {
                                     id: item.id,
-                                    label: `${item[labelKey1]} (${item[labelKey2] ? item[labelKey2] : ''})`,
+                                    label: `${item[labelKey1]} ${labelKey2 ? (item[labelKey2] ?  '(' +  item[labelKey2] + ')' : '') : ''}`,
                                     code: item[labelKey1] || '', 
                                 };
                             }));
@@ -5746,6 +5967,7 @@
         }
         document.getElementById('qts_data_table').innerHTML = '';
         document.getElementById('qts_data_table_land').innerHTML = '';
+        document.getElementById('qts_data_table_plist').innerHTML = '';
         if (type == "si") {
             openPullType = "so";
             initializeAutocompleteQt("book_code_input_qt", "book_id_qt_val", "book_so", "book_code", "book_name");
@@ -5773,7 +5995,13 @@
             initializeAutocompleteQt("document_no_input_qt_land", "document_id_qt_val_land", "land_lease_document", "document_number", "document_number");
             initializeAutocompleteQt("land_parcel_input_qt_land", "land_parcel_id_qt_val_land", "land_lease_parcel", "name", "name");
             initializeAutocompleteQt("land_plot_input_qt_land", "land_plot_id_qt_val_land", "land_lease_plots", "plot_name", "plot_name");
-        } else {
+        } else if (type === 'plist') {
+            openPullType = "plist";
+            initializeAutocompleteQt("book_code_input_plist", "book_id_plist_val", "book_plist", "book_code", "book_name");
+            initializeAutocompleteQt("document_no_input_plist", "document_id_plist_val", "plist_document", "document_number");
+            initializeAutocompleteQt("customer_code_input_plist", "customer_id_plist_val", "customer", "customer_code", "company_name");
+            initializeAutocompleteQt("item_name_input_plist", "item_id_plist_val", "sale_module_items", "item_code", "item_name");
+        }else {
             openPullType = "so";
             initializeAutocompleteQt("book_code_input_qt", "book_id_qt_val", "book_so", "book_code", "book_name");
             initializeAutocompleteQt("document_no_input_qt", "document_id_qt_val", "sale_order_document", "document_number", "document_number");
@@ -5784,7 +6012,7 @@
         if (type === 'land-lease') {
             getOrders('land-lease');
         } else {
-            getOrders();
+            getOrders(type);
         }
     }
 
@@ -6821,6 +7049,89 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
         });
     }
 
+    function getPackingLists(itemIndex, packingItemId) 
+    {
+        const itemBundleTableId = document.getElementById('bundles_info_table');
+        itemBundleTableId.setAttribute('current-item-index', itemIndex);
+        itemBundleTableId.innerHTML = ``;
+        let newBundleHTML = ``;
+        let initialOpen = true;
+        let currentBundleCheckedArray = [];
+        if (docElement.getAttribute('checked-bundle')) {
+            initialOpen = false;
+            currentBundleCheckedArray = JSON.parse(decodeURIComponent(docElement.getAttribute('checked-bundle')));
+        }
+        if (dnItemId) {
+            initialOpen = false;
+        }
+        let selectedBundleIds = [];
+        let fixedBundleIds = [];
+        currentBundleCheckedArray.forEach((checkedElement) => {
+            if (checkedElement.checked) {
+                selectedBundleIds.push(checkedElement.bundle_id);
+            }
+            fixedBundleIds.push(checkedElement.bundle_id);
+        });
+        let selectedQty = 0;
+        $.ajax({
+            url: "{{route('sale.invoice.get.pslip.bundles.so')}}",
+            method: 'GET',
+            dataType: 'json',
+            data: {
+                so_item_id: soItemId,
+                selected_bundles : selectedBundleIds,
+                initial_open : initialOpen,
+                dn_item_id : dnItemId,
+                bundle_ids : disabled ? fixedBundleIds : []
+            },
+            success: function(data) {
+                if (data.data.bundles && data.data.bundles.length > 0) {
+                    let newBundleCheckedArray = [];
+                    data.data.bundles.forEach((dataBundle, dataBundleIndex) => {
+                        if (dataBundle.checked) {
+                            selectedQty += parseFloat(dataBundle.qty);
+                        }
+                        newBundleHTML += `
+                        <tr>
+                        <td>
+                        <div class="form-check form-check-primary custom-checkbox">
+                            <input ${disabled ? 'disabled' : ''} type="checkbox" class="form-check-input item_bundles_check" id="item_row_check_${dataBundleIndex}" ${dataBundle.checked ? 'checked' : ''} oninput = "updateBundleCheck(this, ${itemIndex}, ${dataBundleIndex}, ${dataBundle.id}, ${dataBundle.qty})">
+                                <label class="form-check-label" for="item_row_bom_${dataBundleIndex}"></label>
+                            </div>
+                        </td>
+                        <td>${dataBundle.bundle_no}</td>
+                        <td class = "numeric-alignment">${dataBundle.qty}</td>
+                        </tr>
+                        `;
+                        newBundleCheckedArray.push({
+                            bundle_id : dataBundle.id,
+                            checked : dataBundle.checked,
+                            qty : dataBundle.qty
+                        });
+                    });
+                    itemBundleTableId.innerHTML = newBundleHTML + `
+                    <tr>
+                    <td colspan = "2" class = "numeric-alignment"><strong>Total</strong></td>
+                    <td class = "numeric-alignment" id = "current_selected_bundle_qty_${itemIndex}">${selectedQty}</td>
+                    </tr>
+                    `;
+                    if (!docElement.getAttribute('checked-bundle')) {
+                        docElement.setAttribute('checked-bundle', encodeURIComponent(JSON.stringify(newBundleCheckedArray)));
+                    }
+                    $('#BundleInfo').modal('show');
+                }
+            },
+            error: function(xhr) {
+                console.error('Error fetching customer data:', xhr.responseText);
+                Swal.fire({
+                    title: 'Error!',
+                    text: "Some internal error occured",
+                    icon: 'error',
+                });
+            }
+        });
+    }
+
     function updateBundleCheck(element, itemIndex, bundleIndex, bundleId, bundleQty)
     {
         const docElement = document.getElementById('item_bundles_' + itemIndex);
@@ -7200,6 +7511,21 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
             `;
         }
         
+    }
+
+    function setPackets(element)
+    {
+
+        let targetHTML = document.getElementById('packing_info_table');
+        let qty = element.getAttribute('qty');
+        let packet = element.getAttribute('packet');
+        targetHTML.innerHTML = `
+        <tr>
+        <td>${packet}</td>
+        <td class = "numeric-alignment">${qty}</td>
+        </tr>
+        `;
+        $('#PacketInfo').modal('show');
     }
 
 </script>

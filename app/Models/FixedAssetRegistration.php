@@ -82,6 +82,7 @@ class FixedAssetRegistration extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+
     // Relation to Vendor
     public function vendor()
     {
@@ -118,6 +119,81 @@ class FixedAssetRegistration extends Model
             "JSON_CONTAINS(assets, ?)", 
             [json_encode((string) $this->id)]
         )->get();
+    }
+    public function getCgstValueAttribute()
+    {
+        $tedRecords = MrnExtraAmount::where('mrn_detail_id', $this->mrn_detail_id)
+            ->where('mrn_header_id', $this->mrn_header_id)
+            ->where('ted_type', '=', 'Tax')
+            ->where('ted_level', '=', 'D')
+            ->where('ted_code', '=', 'CGST')
+            ->sum('ted_amount');
+
+        $tedRecord = MrnExtraAmount::with(['taxDetail'])
+            ->where('mrn_detail_id', $this->mrn_detail_id)
+            ->where('mrn_header_id', $this->mrn_header_id)
+            ->where('ted_type', '=', 'Tax')
+            ->where('ted_level', '=', 'D')
+            ->where('ted_code', '=', 'CGST')
+            ->first();
+
+
+        return [
+            'rate' => @$tedRecord->taxDetail->tax_percentage,
+            'ledger' => @$tedRecord->taxDetail->ledger->id,
+            'ledger_group' => @$tedRecord->taxDetail->ledgerGroup->id,
+            'value' => $tedRecords ?? 0.00
+        ];
+    }
+
+    public function getSgstValueAttribute()
+    {
+        $tedRecords = MrnExtraAmount::where('mrn_detail_id', $this->mrn_detail_id)
+            ->where('ted_type', '=', 'Tax')
+            ->where('ted_level', '=', 'D')
+            ->where('ted_code', '=', 'SGST')
+            ->sum('ted_amount');
+
+            $tedRecord = MrnExtraAmount::with(['taxDetail'])
+            ->where('mrn_detail_id', $this->mrn_detail_id)
+            ->where('mrn_header_id', $this->mrn_header_id)
+            ->where('ted_type', '=', 'Tax')
+            ->where('ted_level', '=', 'D')
+            ->where('ted_code', '=', 'SGST')
+            ->first();
+
+
+        return [
+            'rate' => @$tedRecord->taxDetail->tax_percentage,
+             'ledger' => @$tedRecord->taxDetail->ledger->id,
+            'ledger_group' => @$tedRecord->taxDetail->ledgerGroup->id,
+            'value' => $tedRecords ?? 0.00
+        ];
+    }
+
+    public function getIgstValueAttribute()
+    {
+        $tedRecords = MrnExtraAmount::where('mrn_detail_id', $this->mrn_detail_id)
+            ->where('ted_type', '=', 'Tax')
+            ->where('ted_level', '=', 'D')
+            ->where('ted_code', '=', 'IGST')
+            ->sum('ted_amount');
+
+            $tedRecord = MrnExtraAmount::with(['taxDetail'])
+            ->where('mrn_detail_id', $this->mrn_detail_id)
+            ->where('mrn_header_id', $this->mrn_header_id)
+            ->where('ted_type', '=', 'Tax')
+            ->where('ted_level', '=', 'D')
+            ->where('ted_code', '=', 'IGST')
+            ->first();
+
+
+        return [
+            'rate' => @$tedRecord->taxDetail->tax_percentage,
+            'ledger' => @$tedRecord->taxDetail->ledger->id,
+            'ledger_group' => @$tedRecord->taxDetail->ledgerGroup->id,
+            'value' => $tedRecords ?? 0.00
+        ];
     }
     public function updateTotalDep()
 {

@@ -44,7 +44,7 @@ class GstStatusChecker
                     }
     
                 $deregistrationDate = $gstData['DtDReg'] ?? null;
-                if ($deregistrationDate !== null) {
+               if ($deregistrationDate && $deregistrationDate !== '1900-01-01') {
                     $entity->update(['gst_status' => 'INACT']);
                 }
             } catch (\Exception $e) {

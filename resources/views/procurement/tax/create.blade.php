@@ -467,26 +467,31 @@
         
         handleTaxCategory();
     });
-     function handleTaxCategory() {
+    function handleTaxCategory() {
         var selectedCategory = $('#tax_category').val();
-        var deductionRadio = $('input[value="deduction"].form-check-input');
-        var collectionRadio = $('input[value="collection"].form-check-input');
-        deductionRadio.prop('checked', false).prop('disabled', false);
-        collectionRadio.prop('checked', false).prop('disabled', false);
-        if (selectedCategory === 'TDS') {
-            deductionRadio.prop('checked', true);
-        }
-        else if (selectedCategory === 'TCS') {
-            collectionRadio.prop('checked', true);
-        }
-        else if (selectedCategory === 'GST') {
-            collectionRadio.prop('checked', true).prop('disabled', false);
-            deductionRadio.prop('disabled', false);
-        }
-        else {
-            collectionRadio.prop('checked', true).prop('disabled', false);
-            deductionRadio.prop('disabled', false);
-        }
+        var $rows = $('#tax-details-body tr');
+
+        $rows.each(function() {
+            var $row = $(this);
+            var deductionRadio = $row.find('input[value="deduction"].form-check-input');
+            var collectionRadio = $row.find('input[value="collection"].form-check-input');
+
+            deductionRadio.prop('checked', false).prop('disabled', false);
+            collectionRadio.prop('checked', false).prop('disabled', false);
+
+            if (selectedCategory === 'TDS') {
+                deductionRadio.prop('checked', true).prop('disabled', true);
+                collectionRadio.prop('disabled', true);
+            } else if (selectedCategory === 'TCS') {
+                collectionRadio.prop('checked', true).prop('disabled', true);
+                deductionRadio.prop('disabled', true);
+            } else if (selectedCategory === 'GST') {
+                collectionRadio.prop('checked', true).prop('disabled', true);
+                deductionRadio.prop('disabled', true);
+            } else {
+                collectionRadio.prop('checked', true); 
+            }
+        });
     }
     function validateTaxPercentageConsistency($currentRow) {
         const $rows = $('#tax-details-body tr');
@@ -654,33 +659,6 @@
             return;
         }
     });
-    $(document).on('change', 'input[name^="tax_details"][name$="[applicability_type]"]', function () {
-        var selectedCategory = $('#tax_category').val();
-        var $radio = $(this);
-
-        if (selectedCategory === 'TDS' || selectedCategory === 'TCS') {
-            if (selectedCategory === 'TDS' && $radio.val() === 'collection') {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Invalid Selection',
-                    text: 'For TDS, Deduction is mandatory and cannot be changed.'
-                }).then(() => {
-                    $radio.prop('checked', false);
-                    $radio.closest('tr').find('input[value="deduction"]').prop('checked', true);
-                });
-            } else if (selectedCategory === 'TCS' && $radio.val() === 'deduction') {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Invalid Selection',
-                    text: 'For TCS, Collection is mandatory and cannot be changed.'
-                }).then(() => {
-                    $radio.prop('checked', false);
-                    $radio.closest('tr').find('input[value="collection"]').prop('checked', true);
-                });
-            }
-        }
-    });
-
    $('#tax-details-body').on('input change', '[name*="[tax_type]"], [name*="[tax_percentage]"]', function() {
         var $row = $(this).closest('tr');
         var rowIndex = $row.index();

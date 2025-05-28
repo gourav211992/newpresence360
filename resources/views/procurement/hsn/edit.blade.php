@@ -187,7 +187,7 @@
                                                                     </select>
                                                                 </td>
                                                                 <td>
-                                                                    <input type="date" name="tax_patterns[0][from_date]" id="from_date" class="form-control mw-100">
+                                                                    <input type="date" name="tax_patterns[0][from_date]" id="from_date_0" class="form-control mw-100">
                                                                 </td>
                                                                 <td>
                                                                     <a href="#" class="text-primary add-row"><i data-feather="plus-square"></i></a>
@@ -220,6 +220,29 @@ $(document).ready(function() {
         });
     }
     initializeSelect2();
+    function filterTaxGroups(codeType) {
+        let filteredTaxGroups = [];
+        if (codeType === 'Hsn') {
+            filteredTaxGroups = @json($taxGroups->where('tax_category', 'GST')->values());
+        } else if (codeType === 'Sac') {
+            filteredTaxGroups = @json($taxGroups->whereIn('tax_category', ['TDS', 'TCS'])->values());
+        }
+        return filteredTaxGroups;
+    }
+    function updateTaxGroupDropdowns(codeType, targetRow) {
+        let filteredTaxGroups = filterTaxGroups(codeType);
+        let $select = targetRow.find('select[name*="[tax_group_id]"]');
+        let currentVal = $select.val();
+        $select.empty();
+        $select.append('<option value="">Select</option>');
+        $.each(filteredTaxGroups, function(key, taxGroup) {
+            $select.append(`<option value="${taxGroup.id}">${taxGroup.tax_group}</option>`);
+        });
+        if (currentVal) {
+            $select.val(currentVal);
+        }
+        $select.trigger('change');
+    }
     function addRow() {
         const rowCount = $('#taxPatternsTable tbody tr').length;
         const rowIndex = rowCount;
@@ -247,7 +270,10 @@ $(document).ready(function() {
         `;
         $('#taxPatternsTable tbody').append(rowHtml);
         feather.replace();
-        initializeSelect2(); 
+        initializeSelect2();
+        let selectedCodeType = $('input[name="type"]:checked').val();
+        const $lastRow = $('#taxPatternsTable tbody tr').last(); 
+        updateTaxGroupDropdowns(selectedCodeType, $lastRow);
         updateRowIndexes(); 
         const today = new Date().toISOString().split('T')[0]; 
         const dateField = document.getElementById(`from_date_${rowIndex}`);
@@ -274,7 +300,7 @@ $(document).ready(function() {
                 $(this).attr('min', today); 
               
             });
-            if ($rows.length === 1) {
+            if ($rows.length == 1) {
                 $(this).find('.remove-row').hide(); 
                 $(this).find('.add-row').show(); 
             } else {
@@ -302,52 +328,68 @@ $(document).ready(function() {
         e.preventDefault();
         addRow(); 
     });
-
-  $('#taxPatternsTable').on('click', '.remove-row', function(e) {
-    e.preventDefault();
-    var $row = $(this).closest('tr');
-    var hsnDetailId = $row.data('id'); 
-        if (hsnDetailId) {
-            Swal.fire({
-                title: 'Are you sure?',
-                text: 'Are you sure you want to delete this record?',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, delete it!',
-                cancelButtonText: 'No, keep it'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        url: '/hsn/hsn-detail/' + hsnDetailId,  
-                        type: 'DELETE',
-                        data: {
-                            _token: $('meta[name="csrf-token"]').attr('content'), 
-                        },
-                        success: function(response) {
-                            if (response.status) {
-                                $row.remove();
-                                Swal.fire('Deleted!', response.message, 'success');
-                                updateRowIndexes();
-                            } else {
-                                Swal.fire('Error!', response.message || 'Could not delete record detail.', 'error');
+    $(document).on('change', 'input[name="type"]', function() {
+        let condition = $(this).val();
+        $('#taxPatternsTable tbody tr').each(function() {
+            updateTaxGroupDropdowns(condition, $(this));
+        });
+    });
+    $('#taxPatternsTable').on('click', '.remove-row', function(e) {
+        e.preventDefault();
+        var $row = $(this).closest('tr');
+        var hsnDetailId = $row.data('id'); 
+            if (hsnDetailId) {
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: 'Are you sure you want to delete this record?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, delete it!',
+                    cancelButtonText: 'No, keep it'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: '/hsn/hsn-detail/' + hsnDetailId,  
+                            type: 'DELETE',
+                            data: {
+                                _token: $('meta[name="csrf-token"]').attr('content'), 
+                            },
+                            success: function(response) {
+                                if (response.status) {
+                                    $row.remove();
+                                    Swal.fire('Deleted!', response.message, 'success');
+                                    updateRowIndexes();
+                                } else {
+                                    Swal.fire('Error!', response.message || 'Could not delete record detail.', 'error');
+                                }
+                            },
+                            error: function(xhr) {
+                                Swal.fire('Error!', xhr.responseJSON.message || 'An error occurred while deleting the record.', 'error');
                             }
-                        },
-                        error: function(xhr) {
-                            Swal.fire('Error!', xhr.responseJSON.message || 'An error occurred while deleting the record.', 'error');
-                        }
-                    });
-                }
-            });
-        } else {
-            $row.remove();
-            updateRowIndexes();
-        }
-  });
+                        });
+                    }
+                });
+            } else {
+                $row.remove();
+                updateRowIndexes();
+            }
+    });
+    function initialTaxGroupDropdown() {
+        let condition = $('input[name="type"]:checked').val();
+        $('#taxPatternsTable tbody tr').each(function() {
+            updateTaxGroupDropdowns(condition, $(this));
+        });
+    } 
     feather.replace(); 
     updateRowIndexes();
+    initialTaxGroupDropdown();
     const today = new Date().toISOString().split('T')[0];
-    document.getElementById('from_date').setAttribute('min', today);
-    document.getElementById('from_date').value = today;
+    document.querySelectorAll('input[id^="from_date_"]').forEach(function(input) {
+        input.setAttribute('min', today);
+        if (!input.value) {
+            input.value = today;
+        }
+    });
 });
 </script>
 <script>

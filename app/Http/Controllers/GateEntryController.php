@@ -126,13 +126,16 @@ class GateEntryController extends Controller
                 ->editColumn('document_date', function ($row) {
                     return date('d/m/Y', strtotime($row->document_date)) ?? 'N/A';
                 })
-                ->editColumn('location', function ($row) {
+                ->addColumn('location', function ($row) {
                     return strval($row->erpStore?->store_name) ?? 'N/A';
                 })
-                ->editColumn('currency', function ($row) {
+                ->addColumn('lot_no', function ($row) {
+                    return strval($row->lot_no) ?? 'N/A';
+                })
+                ->addColumn('currency', function ($row) {
                     return strval($row->currency?->short_name) ?? 'N/A';
                 })
-                ->editColumn('revision_number', function ($row) {
+                ->addColumn('revision_number', function ($row) {
                     return strval($row->revision_number);
                 })
                 ->addColumn('vendor_name', function ($row) {
@@ -834,7 +837,7 @@ class GateEntryController extends Controller
         if($request->has('revisionNumber') && $request->revisionNumber != $mrn->revision_number) {
             $mrn = $mrn->source;
             $mrn = GateEntryHeaderHistory::where('revision_number', $request->revisionNumber)
-                ->where('source_id', $mrn->id)
+                ->where('source_id', $mrn->source_id)
                 ->first();
             $view = 'procurement.gate-entry.view';
         }
@@ -1121,7 +1124,7 @@ class GateEntryController extends Controller
                     $headerDiscount = 0;
                     $headerDiscount = ($mrnItem['taxable_amount'] / $totalValueAfterDiscount) * $totalHeaderDiscount;
                     $valueAfterHeaderDiscount = $mrnItem['taxable_amount'] - $headerDiscount; // after both discount
-                    $poItem['header_discount_amount'] = $headerDiscount;
+                    $mrnItem['header_discount_amount'] = $headerDiscount;
                     $itemTotalHeaderDiscount += $headerDiscount;
                     if($isTax) {
                         //Tax
@@ -1974,6 +1977,46 @@ class GateEntryController extends Controller
             $GateEntryHeaderData['source_id'] = $GateEntryHeader->id;
             $headerHistory = GateEntryHeaderHistory::create($GateEntryHeaderData);
             $headerHistoryId = $headerHistory->id;
+
+            $vendorBillingAddress = $GateEntryHeader->billingAddress ?? null;
+            $vendorShippingAddress = $GateEntryHeader->shippingAddress ?? null;
+
+            if ($vendorBillingAddress) {
+                $billingAddress = $headerHistory->bill_address_details()->firstOrNew([
+                    'type' => 'billing',
+                ]);
+                $billingAddress->fill([
+                    'address' => $vendorBillingAddress->address,
+                    'country_id' => $vendorBillingAddress->country_id,
+                    'state_id' => $vendorBillingAddress->state_id,
+                    'city_id' => $vendorBillingAddress->city_id,
+                    'pincode' => $vendorBillingAddress->pincode,
+                    'phone' => $vendorBillingAddress->phone,
+                    'fax_number' => $vendorBillingAddress->fax_number,
+                ]);
+                $billingAddress->save();
+            }
+
+            if ($vendorShippingAddress) {
+                $shippingAddress = $headerHistory->ship_address_details()->firstOrNew([
+                    'type' => 'shipping',
+                ]);
+                $shippingAddress->fill([
+                    'address' => $vendorShippingAddress->address,
+                    'country_id' => $vendorShippingAddress->country_id,
+                    'state_id' => $vendorShippingAddress->state_id,
+                    'city_id' => $vendorShippingAddress->city_id,
+                    'pincode' => $vendorShippingAddress->pincode,
+                    'phone' => $vendorShippingAddress->phone,
+                    'fax_number' => $vendorShippingAddress->fax_number,
+                ]);
+                $shippingAddress->save();
+            }
+
+            if ($request->hasFile('amend_attachment')) {
+                $mediaFiles = $headerHistory->uploadDocuments($request->file('amend_attachment'), 'ge', false);
+            }
+            $headerHistory->save();
 
             // Detail History
             $GateEntryDetails = GateEntryDetail::where('header_id', $GateEntryHeader->id)->get();

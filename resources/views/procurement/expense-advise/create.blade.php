@@ -335,7 +335,7 @@
                                                         </tbody>
                                                         <tfoot>
                                                             <tr class="totalsubheadpodetail">
-                                                                <td colspan="6"></td>
+                                                                <td colspan="7"></td>
                                                                 <td class="text-end" id="totalItemValue">0.00</td>
                                                                 <td class="text-end" id="totalItemDiscount">0.00</td>
                                                                 <td class="text-end" id="TotalEachRowAmount">0.00</td>
@@ -840,19 +840,7 @@
         }
         initializeAutocomplete1("#vendor_name");
 
-        /*Add New Row*/
-        $(document).on('click','#addNewItemBtn', (e) => {
-            // for component item code
-            var supplierName = $('#vendor_name').val();
-            if(!supplierName){
-                Swal.fire(
-                    "Warning!",
-                    "Please select vendor first!",
-                    "warning"
-                );
-                return false;
-            } else{
-                function initializeAutocomplete2(selector, type) {
+        function initializeAutocomplete2(selector, type) {
                     $(selector).autocomplete({
                         source: function(request, response) {
                             let selectedAllItemIds = [];
@@ -947,6 +935,21 @@
                         }
                     });
                 }
+
+        /*Add New Row*/
+        $(document).on('click','#addNewItemBtn', (e) => {
+            // for component item code
+            var supplierName = $('#vendor_name').val();
+            if(!supplierName){
+                Swal.fire(
+                    "Warning!",
+                    "Please select vendor first!",
+                    "warning"
+                );
+                return false;
+            }
+            else{
+                initializeAutocomplete2()
             }
             let rowsLength = $("#itemTable > tbody > tr").length;
             /*Check last tr data shoud be required*/
@@ -998,6 +1001,7 @@
                         $("#editBillingAddressBtn").hide();
                         $("#editShippingAddressBtn").hide();
                         initializeAutocomplete2(".comp_item_code");
+                        focusAndScrollToLastRowInput();
                     } else if(data.status == 422) {
                         $('#vendor_name').prop('readonly',false);
                         $("#editBillingAddressBtn").show();
@@ -1138,6 +1142,7 @@
                             $(".select2").select2();
                         }
                         qtyEnabledDisabled();
+                        initAttributeAutocomplete();
                     }
                 });
             });
@@ -1617,7 +1622,7 @@
                             $('[name="payment_term_id"]').empty().append(termOption).prop('readonly',true);
                             $("#shipping_id").val(vendor.shipping.id);
                             $("#billing_id").val(vendor.billing.id);
-                            $(".shipping_detail").text(vendor.shipping.display_address);
+                            $(".shipping_detail").text(vendor.org_address);
                             $(".billing_detail").text(vendor.billing.display_address);
                             $("#hidden_state_id").val(vendor.shipping.state.id);
                             $("#hidden_country_id").val(vendor.shipping.country.id);
@@ -1691,6 +1696,8 @@
                             $("#summaryExpTable tbody").find('#expSummaryFooter').before(rows);
                         }
                         setTableCalculation();
+                        initializeAutocomplete2(".comp_item_code");
+                        focusAndScrollToLastRowInput();
                         setTimeout(() => {
                             $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
                                 let currentIndex = index + 1;

@@ -87,38 +87,62 @@ $(document).ready(function() {
                             text: feather.icons['printer'].toSvg({ class: 'font-small-4 mr-50' }) + ' Print',
                             className: 'dropdown-item',
                             title: 'HSN/SAC Master',
-                            exportOptions: { columns: [0, 1, 2, 3,4] } 
+                            exportOptions: { 
+                                columns: [0, 1, 2, 3, 4],
+                                modifier: {
+                                    search: 'applied'
+                                }
+                            } 
                         },
                         {
                             extend: 'csv',
                             text: feather.icons['file-text'].toSvg({ class: 'font-small-4 mr-50' }) + ' CSV',
                             className: 'dropdown-item',
                             title: 'HSN/SAC Master',
-                            exportOptions: { columns: [0, 1, 2, 3,4] } 
+                            exportOptions: { 
+                                columns: [0, 1, 2, 3, 4],
+                                modifier: {
+                                    search: 'applied'
+                                }
+                            } 
                         },
                         {
                             extend: 'excel',
                             text: feather.icons['file'].toSvg({ class: 'font-small-4 mr-50' }) + ' Excel',
                             className: 'dropdown-item',
                             title: 'HSN/SAC Master',
-                            exportOptions: { columns: [0, 1, 2, 3,4] } 
+                            exportOptions: { 
+                                columns: [0, 1, 2, 3, 4],
+                                modifier: {
+                                    search: 'applied'
+                                }
+                            } 
                         },
                         {
                             extend: 'pdf',
                             text: feather.icons['clipboard'].toSvg({ class: 'font-small-4 mr-50' }) + ' PDF',
                             className: 'dropdown-item',
                             title: 'HSN/SAC Master',
-                            exportOptions: { columns: [0, 1, 2, 3,4] } 
+                            exportOptions: { 
+                                columns: [0, 1, 2, 3, 4],
+                                modifier: {
+                                    search: 'applied'
+                                }
+                            } 
                         },
                         {
                             extend: 'copy',
                             text: feather.icons['copy'].toSvg({ class: 'font-small-4 mr-50' }) + ' Copy',
                             className: 'dropdown-item',
                             title: 'HSN/SAC Master',
-                            exportOptions: { columns: [0, 1, 2, 3,4] } 
+                            exportOptions: { 
+                                columns: [0, 1, 2, 3, 4],
+                                modifier: {
+                                    search: 'applied'
+                                }
+                            } 
                         }
-                    ],
-                   
+                    ]
                 }
             ],
             drawCallback: function() {

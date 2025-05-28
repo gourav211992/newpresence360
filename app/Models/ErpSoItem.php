@@ -150,6 +150,29 @@ class ErpSoItem extends Model
         return $processedData;
     }
 
+    # only get selected attribute for view purpose
+    public function selected_item_attributes_array()
+    {
+        return $this->item_attributes_array()
+            ->map(function ($group) {
+                $selected = collect($group['values_data'])
+                    ->first(function ($attr) {
+                        return $attr->selected === true;
+                    });
+                if ($selected) {
+                    return [
+                        'attribute_group_id' => $group['attribute_group_id'],
+                        'attribute_group_name' => $group['group_name'],
+                        'attribute_id' => $selected->id,
+                        'attribute_value' => $selected->value,
+                    ];
+                }
+                return null;
+            })
+            ->filter()
+            ->values();
+    }
+    
     public function discount_ted()
     {
         return $this -> hasMany(ErpSaleOrderTed::class, 'so_item_id', 'id') -> where('ted_level', 'D') -> where('ted_type', 'Discount');
@@ -295,11 +318,8 @@ class ErpSoItem extends Model
         if (isset($stocks) && isset($stocks['confirmedStocks'])) {
             $stockBalanceQty = $stocks['confirmedStocks'];
         }
-        // dd($stockBalanceQty)
-        // $stockBalanceQty = $this -> getAttribute('inventory_uom_qty');
         $stockBalanceQty = ItemHelper::convertToAltUom($this -> getAttribute(('item_id')), $this -> getAttribute('uom_id'), (float)$stockBalanceQty);
         return $stockBalanceQty;
-        // return $this -> getAttribute('order_qty');
     }
 
     public function hsn()
@@ -349,5 +369,25 @@ class ErpSoItem extends Model
         $invoiceQty = $this -> invoice_qty;
         $returnQty = $this -> srn_qty;
         return ((($orderQty - $shortCloseQty) - $invoiceQty) + $returnQty);
+    }
+
+    public function getAvailableStocks($storeId, $subStoreId)
+    {
+        $itemId = $this -> getAttribute('item_id');
+        $selectedAttributeIds = [];
+        $itemAttributes = $this -> item_attributes_array();
+        foreach ($itemAttributes as $itemAttr) {
+            foreach ($itemAttr['values_data'] as $valueData) {
+                if ($valueData['selected']) {
+                    array_push($selectedAttributeIds, $valueData['id']);
+                }
+            }
+        }
+        $stocks = InventoryHelper::totalInventoryAndStock($itemId, $selectedAttributeIds, $this -> getAttribute('uom_id'), $storeId, $subStoreId);
+        $stockBalanceQty = 0;
+        if (isset($stocks) && isset($stocks['confirmedStocks'])) {
+            $stockBalanceQty = $stocks['confirmedStocks'];
+        }
+        return $stockBalanceQty;
     }
 }

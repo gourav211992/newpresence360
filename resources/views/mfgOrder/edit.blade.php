@@ -475,6 +475,7 @@
 
 @include('mfgOrder.partials.pwo-modal')
 @include('mfgOrder.partials.post-voucher')
+@include('mfgOrder.partials.approve-modal', ['id' => $bom->id])
 
 {{-- Delete component modal --}}
 <div class="modal fade text-start alertbackdropdisabled" id="deleteComponentModal" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
@@ -1199,12 +1200,13 @@ function getPwo()
     selectedPiIds = JSON.parse(selectedPiIds);
     selectedPiIds = encodeURIComponent(JSON.stringify(selectedPiIds));
     let header_book_id = $("#book_id").val() || '';
+    let store_id = $("#store").val() || '';
     let series_id = $("#book_id_qt_val").val() || '';
     let stationId = $("#station_id").val() || '';
     let document_number = $("#document_no_input_qt").val() || '';
     let actionUrl = '{{ route("mo.get.pwo") }}';
     let customerId = $("#customer_id_qt_val").val() || '';
-    let fullUrl = `${actionUrl}?series_id=${encodeURIComponent(series_id)}&document_number=${encodeURIComponent(document_number)}&header_book_id=${encodeURIComponent(header_book_id)}&customer_id=${customerId}&selected_pwo_ids=${selectedPiIds}&station_id=${stationId}&item_id=${itemId}`;
+    let fullUrl = `${actionUrl}?series_id=${encodeURIComponent(series_id)}&document_number=${encodeURIComponent(document_number)}&header_book_id=${encodeURIComponent(header_book_id)}&customer_id=${customerId}&selected_pwo_ids=${selectedPiIds}&station_id=${stationId}&item_id=${itemId}&store_id=${store_id}`;
     fetch(fullUrl).then(response => {
         return response.json().then(data => {
             $(".po-order-detail #soDataTable").empty().append(data.data.pis);
@@ -1472,5 +1474,27 @@ setTimeout(() => {
     });
 },100);
 
+// Revoke Document
+$(document).on('click', '#revokeButton', (e) => {
+    let actionUrl = '{{ route("mo.revoke.document") }}'+ '?id='+'{{$bom->id}}';
+    fetch(actionUrl).then(response => {
+        return response.json().then(data => {
+            if(data.status == 'error') {
+                Swal.fire({
+                    title: 'Error!',
+                    text: data.message,
+                    icon: 'error',
+                });
+            } else {
+                Swal.fire({
+                    title: 'Success!',
+                    text: data.message,
+                    icon: 'success',
+                });
+            }
+            location.reload();
+        });
+    }); 
+});
 </script>
 @endsection

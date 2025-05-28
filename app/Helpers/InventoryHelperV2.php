@@ -46,7 +46,6 @@ class InventoryHelperV2
             $documentDetails = $documentHeader->items->where('is_inspection', 1);
             foreach($documentDetails as $detail) {
                 $approvedStockLedger = StockLedger::withDefaultGroupCompanyOrg()
-                    ->whereIn('document_status', ['hold'])
                     ->where('document_header_id', $detail->mrn_header_id)
                     ->where('document_detail_id', $detail->id)
                     ->where('item_id', $detail->item_id)
@@ -58,7 +57,7 @@ class InventoryHelperV2
                     ->orderBy('document_date', 'ASC')
                     ->first();
                 
-                if($approvedStockLedger && ($approvedStockLedger->hold_qty > $detail->inventory_uom_qty)) {
+                if($approvedStockLedger && ($approvedStockLedger->hold_qty > 0)) {
                     $approvedStockLedger->hold_qty = ($approvedStockLedger->hold_qty - $detail->inventory_uom_qty);
                     $approvedStockLedger->receipt_qty += $detail->inventory_uom_qty;
                     $approvedStockLedger->save();

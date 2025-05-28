@@ -10,10 +10,12 @@ use App\Models\ErpRateContract;
 use App\Models\ErpSaleInvoice;
 use App\Models\ErpTransporterRequest;
 use App\Models\ErpTransporterRequestBid;
+use App\Models\PackingList;
 use App\Models\Vendor;
 use DB;
 use App\Helpers\Helper;
 use App\Helpers\InventoryHelper;
+use App\Helpers\InspectionHelper;
 
 use App\Models\Bom;
 use App\Models\ErpSaleOrder;
@@ -28,6 +30,9 @@ use App\Models\PbHeader;
 use App\Models\PRHeader;
 use App\Models\PurchaseIndent;
 use App\Models\PurchaseOrder;
+use App\Models\InspectionHeader;
+use App\Models\InspectionDetail;
+
 use Exception;
 use Illuminate\Http\Request;
 class DocumentApprovalController extends Controller
@@ -218,6 +223,44 @@ class DocumentApprovalController extends Controller
             ], 500);
         }
     }
+
+    public function packingList(Request $request)
+    {
+        $request->validate([
+            'remarks' => 'nullable|string|max:255',
+            'attachment' => 'nullable'
+        ]);
+        DB::beginTransaction();
+        try {
+            $packingList = PackingList::find($request->id);
+            $bookId = $packingList->book_id;
+            $docId = $packingList->id;
+            $docValue = 0;
+            $remarks = $request->remarks;
+            $attachments = $request->file('attachments');
+            $currentLevel = $packingList->approval_level;
+            $revisionNumber = $packingList->revision_number ?? 0;
+            $actionType = $request->action_type; // Approve or reject
+            $modelName = get_class($packingList);
+            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
+            $packingList->approval_level = $approveDocument['nextLevel'];
+            $packingList->document_status = $approveDocument['approvalStatus'];
+            $packingList->save();
+
+            DB::commit();
+            return response()->json([
+                'message' => "Document $actionType successfully!",
+                'data' => $packingList,
+            ]);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => "Error occurred while $actionType Sale Order document.",
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
 
     //Sale Return Apporval
     public function saleReturn(Request $request)
@@ -749,6 +792,49 @@ class DocumentApprovalController extends Controller
             //     'data' => $mrn,
             // ]);
             return redirect()->route('purchase-return.index');
+        } catch (Exception $e) {
+            dd($e);
+            DB::rollBack();
+            return response()->json([
+                'message' => "Error occurred while $actionType mrn document.",
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // MRN Document Approval
+    public function inspection(Request $request)
+    {
+        $request->validate([
+            'remarks' => 'nullable',
+            'attachment' => 'nullable'
+        ]);
+        DB::beginTransaction();
+        try {
+            $inspection = InspectionHeader::find($request->id);
+            $bookId = $inspection->series_id;
+            $docId = $inspection->id;
+            $docValue = $inspection->total_amount;
+            $remarks = $request->remarks;
+            $attachments = $request->file('attachment');
+            $currentLevel = $inspection->approval_level;
+            $revisionNumber = $inspection->revision_number ?? 0;
+            $actionType = $request->action_type; // Approve or reject
+            $modelName = get_class($inspection);
+            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
+            $inspection->approval_level = $approveDocument['nextLevel'];
+            $inspection->document_status = $approveDocument['approvalStatus'];
+            $inspection->save();
+
+            if($inspection->document_status == ConstantHelper::APPROVED) {
+                $updateMrn = InspectionHelper::updateMrnDetail($inspection);
+            }
+
+            DB::commit();
+            return response()->json([
+                'message' => "Document $actionType successfully!",
+                'data' => $inspection,
+            ]);
         } catch (Exception $e) {
             dd($e);
             DB::rollBack();

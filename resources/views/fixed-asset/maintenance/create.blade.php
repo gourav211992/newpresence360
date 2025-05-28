@@ -112,7 +112,7 @@
                                                                 class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <select class="form-select select2" name="old_category_id"
+                                                        <select class="form-select select2" name="category_id"
                                                             id="old_category" required>
                                                             @foreach ($categories as $category)
                                                                 <option value="{{ $category->id }}"

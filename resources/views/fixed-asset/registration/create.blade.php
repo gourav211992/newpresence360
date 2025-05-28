@@ -303,7 +303,7 @@
                                                             <label class="form-label">Asset Code <span
                                                                     class="text-danger">*</span></label>
                                                             <input type="text" class="form-control" name="asset_code"
-                                                                id="asset_code" value="{{ old('asset_code') }}"
+                                                                id="asset_code" value="{{ old('asset_code') }}"  oninput="this.value = this.value.toUpperCase();"
                                                                 required />
                                                         </div>
                                                     </div>
@@ -350,11 +350,10 @@
 
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Capitalize Date <span
-                                                                    class="text-danger">*</span></label>
+                                                            <label class="form-label">Capitalize Date </label>
                                                             <input type="date" class="form-control"
                                                                 name="capitalize_date" id="capitalize_date"
-                                                                value="{{ old('capitalize_date') }}" min="{{$financialStartDate}}" max="{{$financialEndDate}}" required />
+                                                                value="{{ old('capitalize_date') }}" min="{{$financialStartDate}}" max="{{$financialEndDate}}"/>
                                                         </div>
                                                     </div>
 
@@ -478,22 +477,20 @@
 
                                                                      </div>
                                                     </div>
-                                                    <div class="col-md-3">
-                                                        <div class="mb-1">
-                                                            <label class="form-label">Supplier Invoice No. <span
-                                                                    class="text-danger">*</span></label>
+                                                    <div class="col-md-3 d-none">
+                                                        <div class="mb-1" >
+                                                            <label class="form-label">Supplier Invoice No. </label>
                                                             <input type="text" class="form-control"
                                                                 name="supplier_invoice_no" id="supplier_invoice_no"
-                                                                value="" required readonly />
+                                                                value="" readonly />
                                                         </div>
                                                     </div>
-                                                    <div class="col-md-3">
+                                                    <div class="col-md-3 d-none">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Supplier Invoice Date <span
-                                                                    class="text-danger">*</span></label>
+                                                            <label class="form-label">Supplier Invoice Date </label>
                                                             <input type="date" class="form-control"
                                                                 name="supplier_invoice_date" id="supplier_invoice_date"
-                                                                required readonly />
+                                                                 readonly />
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
@@ -1136,7 +1133,7 @@
                                     <th>Tax Value</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="extraAmountsTable">
                                 <tr>
                                     <td>1</td>
                                     <td>IGST</td>
@@ -1462,12 +1459,30 @@ document.addEventListener('DOMContentLoaded', function () {
                 const createdAt = parsedGrnData?.created_at || '';
                 const formattedCreatedAt = createdAt && createdAt !== '0000-00-00' ? createdAt.split('T')[0] : '';
                 $('#book_date').val(formattedCreatedAt);
-                $('#igst_per').html(parsedGrnData?.igst_percentage || 0);
-                $('#cgst_per').html(parsedGrnData?.cgst_percentage || 0);
-                $('#sgst_per').html(parsedGrnData?.sgst_percentage || 0);
-                $('#sgst_tax').html(((parsedGrnData?.sgst_percentage || 0)*(parsedGrnData?.basic_value || 0)||0));
-                $('#cgst_tax').html(((parsedGrnData?.cgst_percentage || 0)*(parsedGrnData?.basic_value || 0)||0));
-                $('#igst_tax').html(((parsedGrnData?.igst_percentage || 0)*(parsedGrnData?.basic_value || 0)||0));
+                let igstData = parsedGrnData?.igst_value;
+                let cgstData = parsedGrnData?.cgst_value;
+                let sgstData = parsedGrnData?.sgst_value;
+                $('#igst_per').html(parseFloat((igstData['value']/parsedGrnData?.basic_value)*100).toFixed(2) || 0);
+                $('#cgst_per').html(parseFloat((cgstData['value']/parsedGrnData?.basic_value)*100).toFixed(2) || 0);
+                $('#sgst_per').html(parseFloat((sgstData['value']/parsedGrnData?.basic_value)*100).toFixed(2) || 0);
+                $('#sgst_tax').html(sgstData['value']||0);
+                $('#cgst_tax').html(cgstData['value']||0);
+                $('#igst_tax').html(igstData['value']||0);
+                let snno = 1; // Start serial number from 1
+
+                parsedGrnData?.taxes?.forEach(item => {
+                $('#extraAmountsTable').empty().append(`
+                    <tr>
+                        <td>${snno}</td>
+                        <td>${item.ted_name}</td>
+                        <td>${parsedGrnData?.basic_value}</td>
+                        <td>${item.ted_percentage}%</td>
+                        <td>${item.ted_amount}</td>
+                    </tr>
+                `);
+                    snno++;
+
+            });
                 updateDepreciationValues();
               
 

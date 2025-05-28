@@ -223,6 +223,7 @@ class VendorController extends Controller
             $categories = Category::where('status', ConstantHelper::ACTIVE)->whereNull('parent_id')->withDefaultGroupCompanyOrg()->get();
             $currencies = Currency::where('status', ConstantHelper::ACTIVE)->get();
             $paymentTerms = PaymentTerm::where('status', ConstantHelper::ACTIVE)->withDefaultGroupCompanyOrg()->get();
+            $relatedVendors = Vendor::where('status', ConstantHelper::ACTIVE)->withDefaultGroupCompanyOrg()->get();
             $titles = ConstantHelper::TITLES;
             $status = ConstantHelper::STATUS;
             $options = ConstantHelper::STOP_OPTIONS;
@@ -238,7 +239,9 @@ class VendorController extends Controller
             $user = Helper::getAuthenticatedUser();
             $organization = $user->organization;
             $groupOrganizationIds = $user->groupOrganizationsIds(); 
-            $groupOrganizations = Organization::whereIn('id', $groupOrganizationIds)->get();
+            $groupOrganizations = Organization::where('status', 'active')
+            ->where('id', '!=', $groupOrganizationIds)
+            ->get();
             $stores = StoreHelper::getAvailableStoresForVendor();
             $vendorCodeType = 'Manual';
             if ($services && $services['current_book']) {
@@ -273,7 +276,8 @@ class VendorController extends Controller
                 'vendorCodeType' => $vendorCodeType, 
                 'organization'=>$organization,
                 'groupOrganizations'=>$groupOrganizations,
-                'stores' => $stores
+                'stores' => $stores,
+                'relatedVendors'=>$relatedVendors,
             ]);
         }
 
@@ -468,6 +472,7 @@ class VendorController extends Controller
             $subcategories = Category::where('status', ConstantHelper::ACTIVE)->whereNotNull('parent_id')->withDefaultGroupCompanyOrg()->get();
             $currencies = Currency::where('status', ConstantHelper::ACTIVE)->get();
             $paymentTerms = PaymentTerm::where('status', ConstantHelper::ACTIVE)->withDefaultGroupCompanyOrg()->get();
+            $relatedVendors = Vendor::where('status', ConstantHelper::ACTIVE)->withDefaultGroupCompanyOrg()->get();
             $titles = ConstantHelper::TITLES;
             $notificationData = $vendor? $vendor->notification : [];
             $notifications = is_array($notificationData) ? $notificationData : json_decode($notificationData, true);
@@ -489,7 +494,9 @@ class VendorController extends Controller
             $user = Helper::getAuthenticatedUser();
             $organization = $user->organization;
             $groupOrganizationIds = $user->groupOrganizationsIds(); 
-            $groupOrganizations = Organization::whereIn('id', $groupOrganizationIds)->get();
+            $groupOrganizations = Organization::where('status', 'active')
+            ->where('id', '!=', $groupOrganizationIds)
+            ->get();
             $selectedStoreIds = $vendor ?-> locations() -> pluck('store_id') -> toArray();
             $stores = StoreHelper::getAvailableStoresForVendor($selectedStoreIds, $vendor -> id);
             $vendorCodeType = 'Manual';
@@ -533,6 +540,7 @@ class VendorController extends Controller
                 'groupOrganizations'=>$groupOrganizations,
                 'gstState' => $state,
                 'gstCountry' => $country,
+                'relatedVendors'=>$relatedVendors
             ]);
         }
 

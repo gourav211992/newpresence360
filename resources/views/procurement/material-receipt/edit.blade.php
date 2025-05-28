@@ -64,7 +64,7 @@
                                     <button type="button" class="btn btn-primary btn-sm" id="approved-button" name="action" value="approved"><i data-feather="check-circle"></i> Approve</button>
                                     <button type="button" id="reject-button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg> Reject</button>
                                 @endif
-                                @if(($mrn->is_inspection_required === 0) && $buttons['post'])
+                                @if(($mrn->is_inspection_completion === 1) && $buttons['post'])
                                     <button id="postButton" onclick="onPostVoucherOpen();" type="button" class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Post</button>
                                 @endif
                                 @if($buttons['voucher'])
@@ -153,20 +153,13 @@
                                                     </div>
                                                     <div class="col-md-5">
                                                         <select class="form-select sub_store" id="sub_store_id" name="sub_store_id">
-                                                            <option value="{{$mrn->sub_store_id}}">
-                                                                    {{ ucfirst($mrn?->erpSubStore?->store_name) }}
-                                                                </option>
+                                                            <option value="{{$mrn->sub_store_id}}" data-warehouse-required="{{$mrn?->is_warehouse_required}}">
+                                                                {{ ucfirst($mrn?->erpSubStore?->name) }}
+                                                            </option>
                                                         </select>
                                                     </div>
+                                                    <input type="hidden" class="is_warehouse_required" name="is_warehouse_required" id="is_warehouse_required" value="{{$mrn?->is_warehouse_required}}">
                                                 </div>
-                                                <!-- <div class="row align-items-center mb-1">
-                                                    <div class="col-md-3">
-                                                        <label class="form-label">Reference No </label>
-                                                    </div>
-                                                    <div class="col-md-5">
-                                                        <input type="text" name="reference_number" value="{{@$mrn->reference_number}}" class="form-control">
-                                                    </div>
-                                                </div> -->
                                             </div>
                                             {{-- Approval History Section --}}
                                             @include('partials.approval-history', ['document_status' => $mrn->document_status, 'revision_number' => $revision_number])
@@ -186,7 +179,7 @@
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Vendor <span class="text-danger">*</span></label>
-                                                            <input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct" id="vendor_name" name="vendor_name" {{(count(($mrn->items)) > 0 ? 'readonly' : '')}} value="{{@$mrn->vendor->company_name}}" />
+                                                            <input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct vendor_name" id="vendor_name" name="vendor_name" {{(count(($mrn->items)) > 0 ? 'readonly' : '')}} value="{{@$mrn->vendor->company_name}}" />
                                                             <input type="hidden" value="{{@$mrn->vendor_id}}" id="vendor_id" name="vendor_id" />
                                                             <input type="hidden" value="{{@$mrn->vendor_code}}" id="vendor_code" name="vendor_code" />
                                                             @if($mrn->latestShippingAddress() || $mrn->latestBillingAddress())
@@ -228,9 +221,9 @@
                                                                     <label class="form-label w-100">Vendor Address <span class="text-danger">*</span> <a href="javascript:;" class="float-end font-small-2 editAddressBtn d-none" data-type="billing"><i data-feather='edit-3'></i> Edit</a></label>
                                                                     <div class="mrnaddedd-prim billing_detail">
                                                                         @if($mrn->latestBillingAddress())
-                                                                        {{$mrn->latestBillingAddress()->display_address}}
+                                                                            {{$mrn->latestBillingAddress()->display_address}}
                                                                         @else
-                                                                        {{$mrn->bill_address?->display_address}}
+                                                                            {{$mrn->bill_address?->display_address}}
                                                                         @endif
                                                                     </div>
                                                                 </div>
@@ -410,7 +403,7 @@
                                                     <a href="javascript:;" id="deleteBtn" class="btn btn-sm btn-outline-danger me-50">
                                                         <i data-feather="x-circle"></i> Delete
                                                     </a>
-                                                    <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary">
+                                                    <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary addNewItemBtn">
                                                         <i data-feather="plus"></i> Add New Item
                                                     </a>
                                                 </div>
@@ -888,7 +881,8 @@
 			</div>
 		</div>
 	</div>
-
+    {{-- Storage Points --}}
+    @include('procurement.material-receipt.partials.storage-point-modal')
 @endsection
 @section('scripts')
     <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
@@ -946,16 +940,16 @@
                         $(e.target).find(':input').prop('readonly', false);
                         $(e.target).find('select').prop('readonly', false);
                     }
-                    $('.add-contactpeontxt').remove();
-                    let text = $(e.target).find('thead tr:first th:last').text();
-                    if(text.includes("Action")){
-                        $(e.target).find('thead tr').each(function() {
-                            $(this).find('th:last').remove();
-                        });
-                        $(e.target).find('tbody tr').each(function() {
-                            $(this).find('td:last').remove();
-                        });
-                    }
+                    // $('.add-contactpeontxt').remove();
+                    // let text = $(e.target).find('thead tr:first th:last').text();
+                    // if(text.includes("Action")){
+                    //     $(e.target).find('thead tr').each(function() {
+                    //         $(this).find('th:last').remove();
+                    //     });
+                    //     $(e.target).find('tbody tr').each(function() {
+                    //         $(this).find('td:last').remove();
+                    //     });
+                    // }
                 });
             @endif
         @endif
@@ -974,6 +968,8 @@
 
         function getDocNumberByBookId(bookId) {
             let document_date = $("[name='document_date']").val();
+            let storeId = $("[name='header_store_id']").val();
+            let subStoreId = $("[name='sub_store_id']").val();
             let actionUrl = '{{route("book.get.doc_no_and_parameters")}}'+'?book_id='+bookId+'&document_date='+document_date;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
@@ -987,6 +983,7 @@
                             $("#tax_required").val("");
                         }
                         setTableCalculation();
+                        // checkWarehouseSetup(storeId, subStoreId);
                     }
                     if(data.status == 404) {
                         $("#book_code").val('');
@@ -1334,6 +1331,7 @@
                             $("#itemTable > tbody").html(data.data.html);
                         }
                         initializeAutocomplete2(".comp_item_code");
+                        focusAndScrollToLastRowInput();
                     } else if(data.status == 422) {
                         Swal.fire({
                             title: 'Error!',
@@ -1449,6 +1447,7 @@
                             $("#attribute").modal('show');
                             $(".select2").select2();
                         }
+                        initAttributeAutocomplete();
                     }
                 });
             });
@@ -1504,27 +1503,8 @@
                 fetch(actionUrl).then(response => {
                     return response.json().then(data => {
                         if (data.status == 200) {
-                            const storagePoints = data.storagePoints?.data || [];
-
-                            if(storagePoints.length) {
-                                // ✅ Show storage point button
-                                $('.addStoragePointBtn').css('display', 'block');
-                            } else{
-                                // ✅ Hide storage point button
-                                $('.addStoragePointBtn').css('display', 'none');
-                            }
-
-                            // ✅ Store globally for dropdown population
-                            allStoragePointsList = storagePoints;
-
                             // Update the modal or display section
                             $("#itemDetailDisplay").html(data.data.html);
-
-                            // ✅ Fill storage_points hidden input
-                            const hiddenInput = $row.find("input[name*='[storage_points]']");
-                            if (hiddenInput.length) {
-                                hiddenInput.val(JSON.stringify(storagePoints));
-                            }
 
                             var approvedStockLedger = data.data.checkApprovedQuantity;
                             if(approvedStockLedger)

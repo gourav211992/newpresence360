@@ -24,6 +24,8 @@
             <input type="hidden" name="components[{{$rowCount}}][item_name]" value="{{@$item->item->name}}" />
             <input type="hidden" name="components[{{$rowCount}}][hsn_id]" value="{{@$item->hsn_id}}" />
             <input type="hidden" name="components[{{$rowCount}}][hsn_code]" value="{{$item?->item?->hsn?->code}}" />
+            <input type="hidden" name="components[{{$rowCount}}][so_id]" value="{{$item?->so_id}}">
+
             @php
                 $selectedAttr = @$item->attributes ? @$item->attributes()->whereNotNull('attribute_value')->pluck('attribute_value')->all() : [];
             @endphp

@@ -122,7 +122,7 @@ class MoController extends Controller
         $stations = Station::withDefaultGroupCompanyOrg()
         ->where('status', ConstantHelper::ACTIVE)
         ->get();
-        $locations = InventoryHelper::getAccessibleLocations([ConstantHelper::STOCKK, ConstantHelper::SHOP_FLOOR]);
+        $locations = InventoryHelper::getAccessibleLocations();
         return view('mfgOrder.create', [
             'wasteTypes' => $wasteTypes,
             'books' => $books,
@@ -652,7 +652,7 @@ class MoController extends Controller
         $stations = Station::withDefaultGroupCompanyOrg()
         ->where('status', ConstantHelper::ACTIVE)
         ->get();
-        $locations = InventoryHelper::getAccessibleLocations([ConstantHelper::STOCKK, ConstantHelper::SHOP_FLOOR]);
+        $locations = InventoryHelper::getAccessibleLocations();
         $isEdit = $buttons['submit'];
         if(!$isEdit) {
             $isEdit = $buttons['amend'] && intval(request('amendment') ?? 0) ? true: false;
@@ -1062,9 +1062,9 @@ class MoController extends Controller
     {
         DB::beginTransaction();
         try {
-            $bom = Bom::find($request->id);
+            $bom = MfgOrder::find($request->id);
             if (isset($bom)) {
-                $revoke = Helper::approveDocument($bom->book_id, $bom->id, $bom->revision_number, '', [], 0, ConstantHelper::REVOKE, $bom->total_value, get_class($bom));
+                $revoke = Helper::approveDocument($bom->book_id, $bom->id, $bom->revision_number, '', [], 0, ConstantHelper::REVOKE, 0, get_class($bom));
                 if ($revoke['message']) {
                     DB::rollBack();
                     return response() -> json([
@@ -1388,6 +1388,7 @@ class MoController extends Controller
        $headerBookId = $request->header_book_id ?? null;
        $stationId = $request->station_id ?? null;
         //$itemSearch = $request->item_search ?? null;
+       $storeId = $request->store_id ?? null;
        $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
        $pwoItems = PwoSoMapping::whereHas('pwo', function ($subQuery) use ($request, $applicableBookIds, $docNumber, $stationId) {
                 $subQuery->withDefaultGroupCompanyOrg()
@@ -1417,7 +1418,8 @@ class MoController extends Controller
                     }
                   });
        })
-       ->where(function ($query) use ($selectedPwoIds,$customerId, $itemId) {
+       ->where(function ($query) use ($selectedPwoIds, $customerId, $itemId, $storeId) {
+            $query->where('store_id', $storeId);
             if($itemId) {
                 $query->where('item_id', $itemId);
             }
@@ -1457,13 +1459,10 @@ class MoController extends Controller
        $customerId = $request->customer_id ?? null;
        $headerBookId = $request->header_book_id ?? null;
        $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
-       $pwoItems = PwoSoMapping::whereHas('pwo', function ($subQuery) use ($request, $applicableBookIds, $docNumber, $seriesId, $storeId) {
+       $pwoItems = PwoSoMapping::whereHas('pwo', function ($subQuery) use ($applicableBookIds, $docNumber, $seriesId) {
                 $subQuery->withDefaultGroupCompanyOrg()
                ->whereIn('book_id', $applicableBookIds)
                ->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
-               ->when($storeId, function ($bookQuery) use ($storeId) {
-                   $bookQuery->where('location_id', $storeId);
-               })
                ->when($seriesId, function ($bookQuery) use ($seriesId) {
                    $bookQuery->where('book_id', $seriesId);
                })
@@ -1472,8 +1471,9 @@ class MoController extends Controller
                });
        })
        ->whereColumn('qty', '>', 'mo_product_qty')
-       ->where(function ($query) use ($customerId, $itemId, $soSeriesId, $soSocNumber) {
-            $query->where('item_id', $itemId);
+       ->where(function ($query) use ($customerId, $itemId, $soSeriesId, $soSocNumber, $storeId) {
+            $query->where('item_id', $itemId)
+            ->where('store_id', $storeId);
             if($soSeriesId) {
                 $query->whereHas('so', function ($soQuery) use ($soSeriesId) {
                     $soQuery->where('book_id', $soSeriesId);
