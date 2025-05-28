@@ -2,6 +2,7 @@
 namespace App\Http\Controllers;
 
 use DB;
+use Str;
 use PDF;
 use Auth;
 use View;
@@ -33,6 +34,8 @@ use App\Models\AuthUser;
 use App\Models\Category;
 use App\Models\Employee;
 use App\Models\ErpVendor;
+use App\Models\WhStructure;
+use App\Models\WhItemMapping;
 
 use App\Models\Hsn;
 use App\Models\Tax;
@@ -95,6 +98,9 @@ use App\Models\ErpMrnDynamicField;
 class MaterialReceiptController extends Controller
 {
     protected $mrnService;
+
+    protected $organization_id;
+    protected $group_id;
 
     public function __construct(MrnService $mrnService)
     {
@@ -159,22 +165,22 @@ class MaterialReceiptController extends Controller
                 ->editColumn('document_date', function ($row) {
                     return date('d/m/Y', strtotime($row->document_date)) ?? 'N/A';
                 })
-                ->editColumn('location', function ($row) {
+                ->addColumn('location', function ($row) {
                     return strval($row->erpStore?->store_name) ?? 'N/A';
                 })
-                ->editColumn('store', function ($row) {
+                ->addColumn('store', function ($row) {
                     return strval($row->erpSubStore?->name) ?? 'N/A';
                 })
-                ->editColumn('cost_center', function ($row) {
+                ->addColumn('cost_center', function ($row) {
                     return strval($row->costCenters?->name) ?? 'N/A';
                 })
-                ->editColumn('lot_no', function ($row) {
+                ->addColumn('lot_no', function ($row) {
                     return strval($row->lot_number) ?? 'N/A';
                 })
-                ->editColumn('currency', function ($row) {
+                ->addColumn('currency', function ($row) {
                     return strval($row->currency->short_name) ?? 'N/A';
                 })
-                ->editColumn('revision_number', function ($row) {
+                ->addColumn('revision_number', function ($row) {
                     return strval($row->revision_number);
                 })
                 ->addColumn('vendor_name', function ($row) {
@@ -288,6 +294,7 @@ class MaterialReceiptController extends Controller
             $mrn->sub_store_id = $request->sub_store_id;
             $mrn->organization_id = $organization->id;
             $mrn->bill_to_follow = $request->bill_to_follow;
+            $mrn->is_warehouse_required = $request->is_warehouse_required ?? 0;
             $mrn->group_id = $organization->group_id;
             $mrn->book_code = $request->book_code;
             $mrn->series_id = $request->book_id;
@@ -699,13 +706,13 @@ class MaterialReceiptController extends Controller
                         }
                     }
 
-                    #Save item storage points
+                    #Save item packets
                     $inventoryUomQuantity = 0.00;
-                    if (!empty($component['storage_points_data'])) {
-                        $storagePoints = is_string($component['storage_points_data'])
-                            ? json_decode($component['storage_points_data'], true)
-                            : $component['storage_points_data'];
-
+                    if (!empty($component['storage_packets'])) {
+                        $storagePoints = is_string($component['storage_packets'])
+                            ? json_decode($component['storage_packets'], true)
+                            : $component['storage_packets'];
+                        
                         if (is_array($storagePoints)) {
                             foreach ($storagePoints as $i => $val) {
                                 $storagePoint = new MrnItemLocation();
@@ -714,17 +721,19 @@ class MaterialReceiptController extends Controller
                                 $storagePoint->item_id = $mrnDetail->item_id;
                                 $storagePoint->store_id = $mrnDetail->store_id;
                                 $storagePoint->sub_store_id = $mrnDetail->sub_store_id;
-                                $storagePoint->wh_detail_id = $val['id'] ?? null;
                                 $storagePoint->quantity = $val['quantity'] ?? 0.00;
+                                $storagePoint->inventory_uom_qty = $val['quantity'] ?? 0.00;
                                 $storagePoint->status = 'draft';
                                 $storagePoint->save();
-
-                                $altUomQty = ItemHelper::convertToBaseUom($storagePoint->item_id, $mrnDetail->uom_id, $storagePoint->quantity);
-                                $storagePoint->inventory_uom_qty = $altUomQty;
+                                
+                                // ✅ Generate packet number if not present
+                                $packetNumber = $mrn->book_code . '-' . $mrn->document_number . '-' . $mrnDetail->item_code . '-' . $mrnDetail->id . '-' . ($storagePoint->id ?? $i + 1);
+                                // $storagePoint->packet_number = $val['packet_number'] ?? strtoupper(Str::random(rand(8, 10)));
+                                $storagePoint->packet_number = $packetNumber;
                                 $storagePoint->save();
                             }
                         } else {
-                            \Log::warning("Invalid JSON for storage_points_data: " . print_r($component['storage_points_data'], true));
+                            \Log::warning("Invalid JSON for storage_points_data: " . print_r($component['storage_packets'], true));
                         }
                     }
                 }
@@ -1266,7 +1275,7 @@ class MaterialReceiptController extends Controller
                     $headerDiscount = 0;
                     $headerDiscount = ($mrnItem['taxable_amount'] / $totalValueAfterDiscount) * $totalHeaderDiscount;
                     $valueAfterHeaderDiscount = $mrnItem['taxable_amount'] - $headerDiscount; // after both discount
-                    $poItem['header_discount_amount'] = $headerDiscount;
+                    $mrnItem['header_discount_amount'] = $headerDiscount;
                     $itemTotalHeaderDiscount += $headerDiscount;
                     if($isTax) {
                         //Tax
@@ -1404,67 +1413,67 @@ class MaterialReceiptController extends Controller
                     }
 
                     #Save item store locations
-                    if (isset($component['erp_store']) && $component['erp_store']) {
-                        foreach($component['erp_store'] as $val) {
-                            if(isset($val['store_qty']) && $val['store_qty'])
-                            {
-                                $storeLocation = MrnItemLocation::find(@$val['id']) ?? new MrnItemLocation;
-                                $storeLocation->mrn_header_id = $mrn->id;
-                                $storeLocation->mrn_detail_id = $mrnDetail->id;
-                                $storeLocation->item_id = $mrnDetail->item_id;
-                                $storeLocation->store_id = $val['erp_store_id'] ?? null;
-                                $storeLocation->rack_id = $val['erp_rack_id'] ?? null;
-                                $storeLocation->shelf_id = $val['erp_shelf_id'] ?? null;
-                                $storeLocation->bin_id = $val['erp_bin_id'] ?? null;
-                                $storeLocation->quantity = $val['store_qty'] ?? 0.00;
-                                $storeLocation->inventory_uom_qty = $mrnDetail->inventory_uom_qty;
-                                // if(@$component['uom_id'] == @$item->uom_id) {
-                                //     $storeLocation->inventory_uom_qty = $val['store_qty'] ?? 0.00;
-                                // } else {
-                                //     $alUom = AlternateUOM::where('item_id', $component['item_id'])->where('uom_id', $component['uom_id'])->first();
-                                //     if($alUom) {
-                                //         $storeLocation->inventory_uom_qty = intval($val['store_qty']) * $alUom->conversion_to_inventory;
-                                //     }
-                                // }
-                                $storeLocation->save();
-                                if (is_null($storeLocation->inventory_uom_qty) || ($storeLocation->inventory_uom_qty) <= 0) {
-                                    DB::rollBack();
-                                    return response()->json([
-                                        'message' => 'Inventory UOM Quantity should not be null or less than or equal to zero'
-                                    ], 422);
-                                }
-                            }
-                        }
-                    } else{
-                        $storeLocation = MrnItemLocation::where('mrn_header_id', $mrn->id)
-                            ->where('mrn_detail_id', $mrnDetail->id)
-                            ->where('store_id', $mrnDetail->store_id)
-                            ->first();
-                        if(!$storeLocation){
-                            $storeLocation = new MrnItemLocation;
-                        }
-                        $storeLocation->mrn_header_id = $mrn->id;
-                        $storeLocation->mrn_detail_id = $mrnDetail->id;
-                        $storeLocation->item_id = $mrnDetail->item_id;
-                        $storeLocation->store_id = $mrnDetail->store_id;
-                        $storeLocation->quantity = $mrnDetail->accepted_qty ?? 0.00;
-                        $storeLocation->inventory_uom_qty = $mrnDetail->inventory_uom_qty;
-                        // if($component['uom_id'] == $item->uom_id) {
-                        //     $storeLocation->inventory_uom_qty = $mrnDetail->accepted_qty ?? 0.00;
-                        // } else {
-                        //     $alUom = AlternateUOM::where('item_id', $component['item_id'])->where('uom_id', $component['uom_id'])->first();
-                        //     if($alUom) {
-                        //         $storeLocation->inventory_uom_qty = intval($mrnDetail->accepted_qty) * $alUom->conversion_to_inventory;
-                        //     }
-                        // }
-                        $storeLocation->save();
-                        if (is_null($storeLocation->inventory_uom_qty) || ($storeLocation->inventory_uom_qty) <= 0) {
-                            DB::rollBack();
-                            return response()->json([
-                                'message' => 'Inventory UOM Quantity should not be null or less than or equal to zero'
-                            ], 422);
-                        }
-                    }
+                    // if (isset($component['erp_store']) && $component['erp_store']) {
+                    //     foreach($component['erp_store'] as $val) {
+                    //         if(isset($val['store_qty']) && $val['store_qty'])
+                    //         {
+                    //             $storeLocation = MrnItemLocation::find(@$val['id']) ?? new MrnItemLocation;
+                    //             $storeLocation->mrn_header_id = $mrn->id;
+                    //             $storeLocation->mrn_detail_id = $mrnDetail->id;
+                    //             $storeLocation->item_id = $mrnDetail->item_id;
+                    //             $storeLocation->store_id = $val['erp_store_id'] ?? null;
+                    //             $storeLocation->rack_id = $val['erp_rack_id'] ?? null;
+                    //             $storeLocation->shelf_id = $val['erp_shelf_id'] ?? null;
+                    //             $storeLocation->bin_id = $val['erp_bin_id'] ?? null;
+                    //             $storeLocation->quantity = $val['store_qty'] ?? 0.00;
+                    //             $storeLocation->inventory_uom_qty = $mrnDetail->inventory_uom_qty;
+                    //             // if(@$component['uom_id'] == @$item->uom_id) {
+                    //             //     $storeLocation->inventory_uom_qty = $val['store_qty'] ?? 0.00;
+                    //             // } else {
+                    //             //     $alUom = AlternateUOM::where('item_id', $component['item_id'])->where('uom_id', $component['uom_id'])->first();
+                    //             //     if($alUom) {
+                    //             //         $storeLocation->inventory_uom_qty = intval($val['store_qty']) * $alUom->conversion_to_inventory;
+                    //             //     }
+                    //             // }
+                    //             $storeLocation->save();
+                    //             if (is_null($storeLocation->inventory_uom_qty) || ($storeLocation->inventory_uom_qty) <= 0) {
+                    //                 DB::rollBack();
+                    //                 return response()->json([
+                    //                     'message' => 'Inventory UOM Quantity should not be null or less than or equal to zero'
+                    //                 ], 422);
+                    //             }
+                    //         }
+                    //     }
+                    // } else{
+                    //     $storeLocation = MrnItemLocation::where('mrn_header_id', $mrn->id)
+                    //         ->where('mrn_detail_id', $mrnDetail->id)
+                    //         ->where('store_id', $mrnDetail->store_id)
+                    //         ->first();
+                    //     if(!$storeLocation){
+                    //         $storeLocation = new MrnItemLocation;
+                    //     }
+                    //     $storeLocation->mrn_header_id = $mrn->id;
+                    //     $storeLocation->mrn_detail_id = $mrnDetail->id;
+                    //     $storeLocation->item_id = $mrnDetail->item_id;
+                    //     $storeLocation->store_id = $mrnDetail->store_id;
+                    //     $storeLocation->quantity = $mrnDetail->accepted_qty ?? 0.00;
+                    //     $storeLocation->inventory_uom_qty = $mrnDetail->inventory_uom_qty;
+                    //     // if($component['uom_id'] == $item->uom_id) {
+                    //     //     $storeLocation->inventory_uom_qty = $mrnDetail->accepted_qty ?? 0.00;
+                    //     // } else {
+                    //     //     $alUom = AlternateUOM::where('item_id', $component['item_id'])->where('uom_id', $component['uom_id'])->first();
+                    //     //     if($alUom) {
+                    //     //         $storeLocation->inventory_uom_qty = intval($mrnDetail->accepted_qty) * $alUom->conversion_to_inventory;
+                    //     //     }
+                    //     // }
+                    //     $storeLocation->save();
+                    //     if (is_null($storeLocation->inventory_uom_qty) || ($storeLocation->inventory_uom_qty) <= 0) {
+                    //         DB::rollBack();
+                    //         return response()->json([
+                    //             'message' => 'Inventory UOM Quantity should not be null or less than or equal to zero'
+                    //         ], 422);
+                    //     }
+                    // }
                 }
 
                 /*Header level save discount*/
@@ -2202,6 +2211,47 @@ class MaterialReceiptController extends Controller
             $headerHistory = MrnHeaderHistory::create($mrnHeaderData);
             $headerHistoryId = $headerHistory->id;
 
+
+            $vendorBillingAddress = $mrnHeader->billingAddress ?? null;
+            $vendorShippingAddress = $mrnHeader->shippingAddress ?? null;
+
+            if ($vendorBillingAddress) {
+                $billingAddress = $headerHistory->bill_address_details()->firstOrNew([
+                    'type' => 'billing',
+                ]);
+                $billingAddress->fill([
+                    'address' => $vendorBillingAddress->address,
+                    'country_id' => $vendorBillingAddress->country_id,
+                    'state_id' => $vendorBillingAddress->state_id,
+                    'city_id' => $vendorBillingAddress->city_id,
+                    'pincode' => $vendorBillingAddress->pincode,
+                    'phone' => $vendorBillingAddress->phone,
+                    'fax_number' => $vendorBillingAddress->fax_number,
+                ]);
+                $billingAddress->save();
+            }
+
+            if ($vendorShippingAddress) {
+                $shippingAddress = $headerHistory->ship_address_details()->firstOrNew([
+                    'type' => 'shipping',
+                ]);
+                $shippingAddress->fill([
+                    'address' => $vendorShippingAddress->address,
+                    'country_id' => $vendorShippingAddress->country_id,
+                    'state_id' => $vendorShippingAddress->state_id,
+                    'city_id' => $vendorShippingAddress->city_id,
+                    'pincode' => $vendorShippingAddress->pincode,
+                    'phone' => $vendorShippingAddress->phone,
+                    'fax_number' => $vendorShippingAddress->fax_number,
+                ]);
+                $shippingAddress->save();
+            }
+
+            if ($request->hasFile('amend_attachment')) {
+                $mediaFiles = $headerHistory->uploadDocuments($request->file('amend_attachment'), 'mrn', false);
+            }
+            $headerHistory->save();
+
             // Detail History
             $mrnDetails = MrnDetail::where('mrn_header_id', $mrnHeader->id)->get();
             if(!empty($mrnDetails)){
@@ -2744,7 +2794,6 @@ class MaterialReceiptController extends Controller
         ]);
     }
 
-    # Submit PI Item list
     public function processPoItem2(Request $request)
     {
         $user = Helper::getAuthenticatedUser();
@@ -2815,12 +2864,12 @@ class MaterialReceiptController extends Controller
         $groupedDiscounts = $discounts
             ->groupBy('ted_id')
             ->map(function ($group) {
-                return $group->sortByDesc('ted_perc')->first(); // Select the record with max `ted_perc`
+                return $group->sortByDesc('ted_perc')->first(); // Select the record with max ted_perc
             });
         $groupedExpenses = $expenses
             ->groupBy('ted_id')
             ->map(function ($group) {
-                return $group->sortByDesc('ted_perc')->first(); // Select the record with max `ted_perc`
+                return $group->sortByDesc('ted_perc')->first(); // Select the record with max ted_perc
             });
         $finalDiscounts = $groupedDiscounts->values()->toArray();
         $finalExpenses = $groupedExpenses->values()->toArray();
@@ -3682,6 +3731,80 @@ class MaterialReceiptController extends Controller
             })
             ->rawColumns(['item_attributes', 'status'])
             ->make(true);
+    }
+
+    # Check Warehouse Setup
+    public function checkWarehouseSetup(Request $request)
+    {
+        $user = Helper::getAuthenticatedUser();
+
+        $whStructure = WhStructure::withDefaultGroupCompanyOrg()
+                ->where('store_id', $request->store_id)
+                ->where('sub_store_id', $request->sub_store_id)
+                ->first();
+        if (!$whStructure) {
+            return response()->json([
+                'status' => 204,
+                "is_setup" => false,
+                'message' => 'Please setup warehouse structure first.',
+            ], 422);
+        }
+        $mapping = WhItemMapping::where('store_id', $request->store_id)
+                ->where('sub_store_id', $request->sub_store_id)
+                ->first();
+        if (!$mapping) {
+            return response()->json([
+                'status' => 204,
+                "is_setup" => false,
+                'message' => 'Please setup item mapping first.',
+            ], 422);
+        }
+
+        return response()->json([
+            'status' => 200,
+            "is_setup" => true,
+            'message' => "fetched!"
+        ]);
+    }
+
+    # Check Warehouse Item Uom Info
+    public function warehouseItemUomInfo(Request $request)
+    {
+        $user = Helper::getAuthenticatedUser();
+
+        $item = Item::find($request->item_id);
+        if (!$item) {
+            return response()->json([
+                'status' => 204,
+                "is_setup" => false,
+                'message' => 'Item not found.',
+            ], 422);
+        }
+        $inventoryUom = Unit::find($item->uom_id ?? null);
+        $storageUom = Unit::find($item->storage_uom_id ?? null);
+        $inventoryQty = ItemHelper::convertToBaseUom($item->id, $item->uom_id, $request->qty);
+
+        if (!$inventoryQty) {
+            return response()->json([
+                'status' => 204,
+                "is_setup" => false,
+                'message' => 'Inventory Qty not exist.',
+            ], 422);
+        }
+
+        $data = [
+            'item' => $item,
+            'qty' => $request->qty,
+            'inventory_qty' => $inventoryQty,
+            'inventory_uom_name' => @$inventoryUom->name,
+            'storage_uom_name' => @$storageUom->name
+        ];
+
+        return response()->json([
+            'status' => 200,
+            "data" => $data,
+            'message' => "fetched!"
+        ]);
     }
 
 }

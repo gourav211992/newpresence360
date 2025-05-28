@@ -7,9 +7,11 @@ use App\Models\FixedAssetRegistration;
 use Illuminate\Http\Request;
 use App\Helpers\Helper;
 use App\Models\Employee;
+use App\Models\ErpAssetCategory;
 use App\Models\ErpStore;
 use App\Models\FixedAssetIssueTransfer;
 use Carbon\Carbon;
+use App\Models\FixedAssetSub;
 
 class IssueTransferController extends Controller
 {
@@ -80,7 +82,8 @@ class IssueTransferController extends Controller
         ->whereNotNull('asset_name')
         ->get();
         $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
-        return view('fixed-asset.issue-transfer.create',compact('assets','employees','locations'));
+        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
+        return view('fixed-asset.issue-transfer.create',compact('assets','employees','locations','categories'));
     }
 
     /**
@@ -102,6 +105,18 @@ class IssueTransferController extends Controller
         // Store the asset
         try {
             $asset = FixedAssetIssueTransfer::create($data);
+            if($asset->status=="transfer"){
+                $sub_assets = json_decode($asset->sub_asset);
+                foreach ($sub_assets as $sub_asset) {
+                    $sub = FixedAssetSub::find($sub_asset);
+                    if ($sub) {
+                        $sub->location_id = $request->transfer_location??null;
+                        $sub->cost_center_id = $request->transfer_cost_center??null;
+                        $sub->save();
+                    }
+                }
+
+            }
             return redirect()->route("finance.fixed-asset.issue-transfer.index")->with('success', 'Issue/Transfer created successfully!');
         } catch (\Exception $e) {
             // Set error message
@@ -125,7 +140,8 @@ class IssueTransferController extends Controller
         ->whereNotNull('asset_name')
         ->get();
         $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
-        return view('fixed-asset.issue-transfer.show',compact('assets','employees','data','locations'));
+        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
+        return view('fixed-asset.issue-transfer.show',compact('assets','employees','data','locations','categories'));
     }
 
     /**
@@ -145,7 +161,8 @@ class IssueTransferController extends Controller
         ->whereNotNull('asset_name')
         ->get();
         $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
-        return view('fixed-asset.issue-transfer.edit',compact('assets','employees','data','locations'));
+        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
+        return view('fixed-asset.issue-transfer.edit',compact('assets','employees','data','locations','categories'));
     }
 
     /**
@@ -166,6 +183,18 @@ class IssueTransferController extends Controller
     // Update the asset
     try {
         $asset->update($data);
+        if($asset->status=="transfer"){
+                $sub_assets = json_decode($asset->sub_asset);
+                foreach ($sub_assets as $sub_asset) {
+                    $sub = FixedAssetSub::find($sub_asset);
+                    if ($sub) {
+                        $sub->location_id = $request->transfer_location??null;
+                        $sub->cost_center_id = $request->transfer_cost_center??null;
+                        $sub->save();
+                    }
+                }
+
+            }
         return redirect()->route("finance.fixed-asset.issue-transfer.index")->with('success', 'Issue/Transfer updated successfully!');
     } catch (\Exception $e) {
         // Handle any exceptions

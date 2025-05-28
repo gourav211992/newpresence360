@@ -122,7 +122,7 @@
 
                     <div class="mb-1">
                         <label class="form-label">Organization</label>
-                        <select name="organization_filter" class="form-select select2">
+                        <select name="organization_filter" id="organization_filter" class="form-select select2">
                             <option value="">Select</option>
                             @foreach ($mappings as $organization)
                         <option value="{{ $organization->organization->id }}"
@@ -131,6 +131,17 @@
                         </option>
                     @endforeach
 
+                        </select>
+                    </div>
+                     <div class="mb-1">
+                        <label class="form-label">Location</label>
+                        <select id="location_id" name="location_id" class="form-select select2">
+                        </select>
+                    </div>
+                    <div class="mb-1">
+                        <label class="form-label">Cost Center</label>
+                        <select id="cost_center_id" class="form-select select2"
+                            name="cost_center_id">
                         </select>
                     </div>
 
@@ -169,6 +180,10 @@
 
 @section('scripts')
 <script>
+    const locations = @json($locations);
+    const costCenters = @json($cost_centers);
+</script>
+<script>
     $(window).on('load', function() {
         if (feather) {
             feather.replace({
@@ -181,8 +196,88 @@
     $(function() {
         $(".sortable").sortable();
     });
+ function updateLocationsDropdown(selectedOrgIds) {
+        const filteredLocations = locations.filter(loc =>
+            selectedOrgIds.includes(String(loc.organization_id))
+        );
+
+        const $locationDropdown = $('#location_id');
+        $locationDropdown.empty().append('<option value="">Select</option>');
+        const selectedLocationId = "{{ $location_id }}";
 
 
+        filteredLocations.forEach(loc => {
+        // const isSelected = String(loc.id) === String(selectedLocationId) ? 'selected' : '';
+        $locationDropdown.append(`<option value="${loc.id}" >${loc.store_name}</option>`);
+        });
+
+        $locationDropdown.trigger('change');
+    }
+    function loadCostCenters(locationId) {
+            if (locationId) {
+               const filteredCenters = costCenters.filter(center => {
+                    if (!center.location) return false;
+
+                    const locationArray = Array.isArray(center.location)
+                        ? center.location.flatMap(loc => loc.split(','))
+                        : [];
+
+                    return locationArray.includes(String(locationId));
+                });
+            // console.log(filteredCenters,costCenters,locationId);
+
+            const $costCenter = $('#cost_center_id');
+            $costCenter.empty();
+
+            if (filteredCenters.length === 0) {
+                // $costCenter.prop('required', false);
+                $('.cost_center').hide();
+            } else {
+                $costCenter.append('<option value="">Select Cost Center</option>');
+                $('.cost_center').show();
+
+                const selectetedCostId = "{{ $cost_center_id }}";
+
+
+                filteredCenters.forEach(center => {
+                    // const isCostSelected = String(center.id) === String(selectetedCostId) ? 'selected' : '';
+                    $costCenter.append(`<option value="${center.id}">${center.name}</option>`);
+                });
+            }
+
+            $costCenter.trigger('change');
+        }
+    }
+
+    $(document).ready(function() {
+    // On change of organization
+        $('#organization_filter').on('change', function () {
+            const selectedOrgIds = $(this).val() || [];
+            updateLocationsDropdown(selectedOrgIds);
+        });
+
+        // On page load, check for preselected orgs
+        console.log('selectedOrgIds',$('#organization_filter').val())
+        const preselectedOrgIds = $('#organization_filter').val() || [];
+        if (preselectedOrgIds.length > 0) {
+            updateLocationsDropdown(preselectedOrgIds);
+        }
+        // On location change, load cost centers
+        $('#location_id').on('change', function () {
+            const locationId = $(this).val();
+          if (!locationId) {
+        $('#cost_center_id').empty().append('<option value="">Select Cost Center</option>');
+            // $('.cost_center').hide(); // Optional: hide the section if needed
+                return;
+            }
+            loadCostCenters(locationId);
+        });
+            $(".open-job-sectab").click(function() {
+                $(this).parent().parent().next('tr').show();
+                $(this).parent().find('.close-job-sectab').show();
+                $(this).parent().find('.open-job-sectab').hide();
+            });
+    });
     $(function() {
     var dt_basic_table = $('.datatables-basic'),
         assetPath = '../../../app-assets/';

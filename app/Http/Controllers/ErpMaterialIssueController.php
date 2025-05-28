@@ -875,10 +875,19 @@ class ErpMaterialIssueController extends Controller
                     ], 422);
                 }
                 DB::commit();
+                $printOption = 'Material Issue';
+                if ($materialIssue -> issue_type == "Location Transfer")
+                {
+                    $printOption = 'Delivery Challan';
+                }
+                $redirect_url = route('material.issue.index');
+                if(in_array($materialIssue->document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED] )) {
+                    $redirect_url = route('material.issue.generate-pdf', ['id' => $materialIssue -> id, 'pattern' => $printOption]);
+                }
                 $module = ConstantHelper::MATERIAL_ISSUE_SERVICE_NAME;
                 return response() -> json([
                     'message' => $module .  " created successfully",
-                    'redirect_url' => route('material.issue.index')
+                    'redirect_url' => $redirect_url
                 ]);
         } catch(Exception $ex) {
             DB::rollBack();

@@ -21,10 +21,9 @@ trait DefaultGroupCompanyOrg
         if (isset($this -> attributes['company_id'])) {
             return $this -> attributes['company_id'];
         } else {
-            // $authUser = Helper::getAuthenticatedUser();
-            // $organization = Organization::find($authUser -> organization_id);
-            // return $organization ?-> company_id;
-            return null;
+            $authUser = Helper::getAuthenticatedUser();
+            $organization = Organization::find($authUser -> organization_id);
+            return $organization ?-> company_id;
         }
     }
 
@@ -33,10 +32,9 @@ trait DefaultGroupCompanyOrg
         if (isset($this -> attributes['organization_id'])) {
             return $this -> attributes['organization_id'];
         } else {
-            // $authUser = Helper::getAuthenticatedUser();
-            // $organization = Organization::find($authUser -> organization_id);
-            // return $organization ?-> id;
-            return null;
+            $authUser = Helper::getAuthenticatedUser();
+            $organization = Organization::find($authUser -> organization_id);
+            return $organization ?-> id;
         }
     }
 

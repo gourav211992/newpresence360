@@ -1999,7 +1999,7 @@ class InventoryHelper
     {
         $subStoreIds = ErpSubStoreParent::withDefaultGroupCompanyOrg()->where('store_id', $storeId)
             -> get() -> pluck('sub_store_id') -> toArray();
-        $subStores = ErpSubStore::select('id', 'name', 'code','station_wise_consumption') -> whereIn('id', $subStoreIds) -> when($locationType, function ($typeQuery) use($locationType) {
+        $subStores = ErpSubStore::select('id', 'name', 'code','station_wise_consumption','is_warehouse_required') -> whereIn('id', $subStoreIds) -> when($locationType, function ($typeQuery) use($locationType) {
             if (is_string($locationType)) {
                 $typeQuery = $typeQuery -> where('type', $locationType);
             } else if (is_array($locationType)) {

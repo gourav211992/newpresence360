@@ -35,7 +35,7 @@ class DebitorCreditoExcelExport implements FromView, WithStyles, WithColumnForma
             // Apply borders to all
             // 'A1:I100' => ['borders' => ['allBorders' => ['borderStyle' => 'thin']]],
             // Grey background for A5 to AI5
-            'A5:I5' => [
+            'A5:J5' => [
                 'fill' => [
                     'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
                     'startColor' => ['rgb' => 'D9D9D9'], // light grey

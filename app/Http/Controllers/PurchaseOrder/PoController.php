@@ -1026,9 +1026,9 @@ class PoController extends Controller
                 $revisionData = [
                     ['model_type' => 'header', 'model_name' => 'PurchaseOrder', 'relation_column' => ''],
                     ['model_type' => 'detail', 'model_name' => 'PoItem', 'relation_column' => 'purchase_order_id'],
+                    ['model_type' => 'detail', 'model_name' => 'PoTerm', 'relation_column' => 'purchase_order_id'],
                     ['model_type' => 'sub_detail', 'model_name' => 'PoItemAttribute', 'relation_column' => 'po_item_id'],
                     ['model_type' => 'sub_detail', 'model_name' => 'PoItemDelivery', 'relation_column' => 'po_item_id'],
-                    ['model_type' => 'sub_detail', 'model_name' => 'PoTerm', 'relation_column' => 'purchase_order_id'],
                     ['model_type' => 'sub_detail', 'model_name' => 'PurchaseOrderTed', 'relation_column' => 'po_item_id']
                 ];
 

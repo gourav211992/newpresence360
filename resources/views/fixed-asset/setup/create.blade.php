@@ -232,15 +232,14 @@
 
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Rev. Ledger <span
-                                                                class="text-danger">*</span></label>
+                                                        <label class="form-label">Rev. Ledger </label>
                                                     </div>
                                                     <div class="col-md-5">
                                                         <select class="form-select select2" name="rev_ledger_id"
-                                                            id="rev_ledger" required>
+                                                            id="rev_ledger">
                                                             <option value=""
                                                                 {{ old('rev_ledger') ? '' : 'selected' }}>Select</option>
-                                                            @foreach ($sales_exp_ledgers as $rev)
+                                                            @foreach ($sur_ledgers as $rev)
                                                                 <option value="{{ $rev->id }}">
                                                                     {{ $rev->name }}
                                                                 </option>
@@ -249,28 +248,27 @@
                                                     </div>
                                                 </div>
 
-                                                <div class="row align-items-center mb-1">
+                                                <div class="row align-items-center mb-1 d-none">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Rev. Ledger Group <span
                                                                 class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
                                                         <select class="form-select" name="rev_ledger_group_id"
-                                                            id="rev_ledger_group" required>
+                                                            id="rev_ledger_group">
                                                         </select>
 
                                                     </div>
                                                 </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Imp. Ledger <span
-                                                                class="text-danger">*</span></label>
+                                                        <label class="form-label">Imp. Ledger </label>
                                                     </div>
                                                     <div class="col-md-5">
                                                         <select class="form-select select2" name="imp_ledger_id"
-                                                            id="imp_ledger" required>
+                                                            id="imp_ledger">
                                                             <option value="">Select</option>
-                                                            @foreach ($sur_ledgers as $imp)
+                                                            @foreach ($sales_exp_ledgers as $imp)
                                                                 <option value="{{ $imp->id }}">
                                                                     {{ $imp->name }}
                                                                 </option>
@@ -279,26 +277,25 @@
                                                     </div>
                                                 </div>
 
-                                                <div class="row align-items-center mb-1">
+                                                <div class="row align-items-center mb-1 d-none">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Imp. Ledger Group <span
                                                                 class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
                                                         <select class="form-select" name="imp_ledger_group_id"
-                                                            id="imp_ledger_group" required>
+                                                            id="imp_ledger_group">
                                                         </select>
 
                                                     </div>
                                                 </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Sales Ledger <span
-                                                                class="text-danger">*</span></label>
+                                                        <label class="form-label">Sales Ledger </label>
                                                     </div>
                                                     <div class="col-md-5">
                                                         <select class="form-select select2" name="sales_ledger_id"
-                                                            id="sales_ledger" required>
+                                                            id="sales_ledger">
                                                             <option value="">Select</option>
                                                             @foreach ($sales_exp_ledgers as $sales)
                                                                 <option value="{{ $sales->id }}">
@@ -309,14 +306,14 @@
                                                     </div>
                                                 </div>
 
-                                                <div class="row align-items-center mb-1">
+                                                <div class="row align-items-center mb-1 d-none">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Sales Ledger Group <span
                                                                 class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
                                                         <select class="form-select" name="sales_ledger_group_id"
-                                                            id="sales_ledger_group" required>
+                                                            id="sales_ledger_group">
                                                         </select>
 
                                                     </div>

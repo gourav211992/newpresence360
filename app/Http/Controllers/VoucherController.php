@@ -44,9 +44,9 @@ class VoucherController extends Controller
     public function getLedgerVouchers(Request $request)
     {
         $type = $request->type == ConstantHelper::RECEIPTS_SERVICE_ALIAS ? 'customer' : 'vendor';
-      
-      
-      
+
+
+
         if ($request->partyID && $request->ledgerGroup) {
             $ledger = (int) $request->partyID;
             $ledger_group = (int)$request->ledgerGroup;
@@ -69,13 +69,13 @@ class VoucherController extends Controller
 
                 if ($request->filled('date')) {
                     [$startDate, $endDate] = explode(' to ', $request->date);
-                
+
                     $start = Carbon::parse(trim($startDate))->format('Y-m-d');
                     $end = Carbon::parse(trim($endDate))->format('Y-m-d');
-                
+
                     $data->whereBetween('document_date', [$start, $end]);
                 }
-                
+
 
             if ($request->book_code) {
                 $data = $data->whereHas('series', function ($q) use ($request) {
@@ -91,7 +91,7 @@ class VoucherController extends Controller
 
 
             if (!$request->payment_voucher_id) {
-               
+
                 $data = $data->with(['series' => function ($s) {
                     $s->select('id', 'book_code');
                 }])->select('id', 'amount', 'book_id', 'document_date as date','created_at', 'voucher_name', 'voucher_no')
@@ -103,17 +103,17 @@ class VoucherController extends Controller
                                 $query->where('organization_id', Helper::getAuthenticatedUser()->organization_id);
                                 $query->whereNotIn('document_status', ConstantHelper::DOCUMENT_STATUS_REJECTED);
                             })->where('party_id', $ledger);
-               
+
                         $balance = $balance->sum('amount');
                         $voucher->set = $balance;
                         $voucher->balance = $voucher->amount - $balance;
-                       
-                        
+
+
 
                         return $voucher;
                     });
-                   
-                
+
+
                     $advanceSum = PaymentVoucherDetails::where('type', $type)
                     ->whereIn('reference', ['On Account'])
                     ->withWhereHas('voucher', function ($query) {
@@ -127,15 +127,15 @@ class VoucherController extends Controller
                             return $adv->ledger_id == $ledger && $adv->ledger_group_id == $ledger_group;
                         }
                     })->sum('orgAmount');
-                  
-                   
+
+
 
                 foreach ($data as $v) {
                     if ($advanceSum > 0 && isset($v->id)) {
                         $deductAmount = min($advanceSum, $v->balance);
                         $v->balance -= $deductAmount;
                         $advanceSum -= $deductAmount;
-                    
+
                     } else {
                         break; // Stop if advance is fully utilized
                     }
@@ -156,7 +156,7 @@ class VoucherController extends Controller
                     foreach ($advanceItems as $advanceItem) {
                         $bucketTotalDeducted = 0;
                         $remainingAdvanceAmount = $advanceItem->orgAmount;
-                    
+
                         // Loop through each customer in the result set
                         foreach ($data as $res) {
                             $documentDate = $advanceItem->voucher->document_date; // e.g. '2025-04-10'
@@ -168,17 +168,17 @@ class VoucherController extends Controller
                             $vendorDateTimestamp = $combinedDateTime ? $combinedDateTime->getTimestamp() : null;
                             $resDate = $res->date; // e.g. '10/04/2025'
                             $resCreatedAt = $res->created_at; // e.g. '2025-04-10 14:45:00'
-                            
+
                             // Extract the time from created_at
                             $resTime = date('H:i:s', strtotime($resCreatedAt));
-                            
+
                             // Combine date (converted to Y-m-d) with time
                             $parsedDate = \DateTime::createFromFormat('d/m/Y H:i:s', $resDate . ' ' . $resTime);
-                            
+
                             $resDateTimestamp = $parsedDate ? $parsedDate->getTimestamp() : null;
 
-                         
-        
+
+
                             if ($vendorDateTimestamp < $resDateTimestamp) {
                                 $bucketTotalDeducted = 0; // Track total amount deducted from all aging buckets
                                 if ($remainingAdvanceAmount > 0) {
@@ -188,12 +188,12 @@ class VoucherController extends Controller
                                             $bucketTotalDeducted += $deductAmount; // Track total deducted
                                         }
                             }
-        
+
                         }
-                        
-                        
-                    } 
-                    
+
+
+                    }
+
 
             } else {
                 if ($request->details_id != null && $request->page=="view") {
@@ -206,7 +206,7 @@ class VoucherController extends Controller
                                 ->where('payment_voucher_id', (int)$request->payment_voucher_id)
                                 ->where('voucher_details_id', (int)$request->details_id)
                                 ->where('party_id', $ledger)->sum('amount');
-                            
+
                                 $balance = VoucherReference::where('payment_voucher_id','<',(int)$request->payment_voucher_id)
                                 ->where('voucher_id', $voucher->id)
                                 ->withWhereHas('voucherPayRec', function ($query) {
@@ -216,7 +216,7 @@ class VoucherController extends Controller
 
                                 $voucher->settle = $settle;
                                 $voucher->balance = $voucher->amount -$balance;
-                            
+
                             return $voucher;
                         });
                         $advanceSum = PaymentVoucherDetails::where('type', $type)
@@ -233,14 +233,14 @@ class VoucherController extends Controller
                                 return $adv->ledger_id == $ledger && $adv->ledger_group_id == $ledger_group;
                             }
                         })->sum('orgAmount');
-    
-    
+
+
                     foreach ($data as $v) {
                         if ($advanceSum > 0 && isset($v->id)) {
                             $deductAmount = min($advanceSum, $v->balance);
                             $v->balance -= $deductAmount;
                             $advanceSum -= $deductAmount;
-                        
+
                         } else {
                             break; // Stop if advance is fully utilized
                         }
@@ -262,7 +262,7 @@ class VoucherController extends Controller
                     foreach ($advanceItems as $advanceItem) {
                         $bucketTotalDeducted = 0;
                         $remainingAdvanceAmount = $advanceItem->orgAmount;
-                    
+
                         // Loop through each customer in the result set
                         foreach ($data as $res) {
                          $documentDate = $advanceItem->voucher->document_date; // e.g. '2025-04-10'
@@ -274,16 +274,16 @@ class VoucherController extends Controller
                             $vendorDateTimestamp = $combinedDateTime ? $combinedDateTime->getTimestamp() : null;
                             $resDate = $res->date; // e.g. '10/04/2025'
                             $resCreatedAt = $res->created_at; // e.g. '2025-04-10 14:45:00'
-                            
+
                             // Extract the time from created_at
                             $resTime = date('H:i:s', strtotime($resCreatedAt));
-                            
+
                             // Combine date (converted to Y-m-d) with time
                             $parsedDate = \DateTime::createFromFormat('d/m/Y H:i:s', $resDate . ' ' . $resTime);
-                            
+
                             $resDateTimestamp = $parsedDate ? $parsedDate->getTimestamp() : null;
-                            
-        
+
+
                             if ($vendorDateTimestamp < $resDateTimestamp) {
                                 $bucketTotalDeducted = 0; // Track total amount deducted from all aging buckets
                                 if ($remainingAdvanceAmount > 0) {
@@ -293,13 +293,13 @@ class VoucherController extends Controller
                                             $bucketTotalDeducted += $deductAmount; // Track total deducted
                                         }
                             }
-        
+
                         }
-                        
-                        
+
+
                     }
 
-                   
+
                 } else {
                     $data = $data->with(['series' => function ($s) {
                         $s->select('id', 'book_code');
@@ -312,7 +312,7 @@ class VoucherController extends Controller
                                     $query->where('organization_id', Helper::getAuthenticatedUser()->organization_id);
                                     $query->whereNotIn('document_status', ConstantHelper::DOCUMENT_STATUS_REJECTED);
                                 })->where('party_id', $ledger)->sum('amount');
-                            
+
                                 $settle = VoucherReference::where('voucher_id', $voucher->id)
                                 ->where('payment_voucher_id', (int)$request->payment_voucher_id)
                                 ->where('voucher_details_id', (int)$request->details_id)
@@ -320,11 +320,11 @@ class VoucherController extends Controller
 
                             $voucher->balance = (int)$voucher->amount-(int)$balance;
                             $voucher->settle = $settle;
-                       
-    
+
+
                             return $voucher;
                         });
-                    
+
 
                         $advanceSum = PaymentVoucherDetails::where('type', $type)
                         ->whereIn('reference', ['On Account'])
@@ -339,18 +339,18 @@ class VoucherController extends Controller
                                 return $adv->ledger_id == $ledger && $adv->ledger_group_id == $ledger_group;
                             }
                         })->sum('orgAmount');
-                      
-                     
 
-                     
-    
-                        
+
+
+
+
+
                     foreach ($data as $v) {
                         if ($advanceSum > 0 && isset($v->id)) {
                             $deductAmount = min($advanceSum, $v->balance);
                             $v->balance -= $deductAmount;
                             $advanceSum -= $deductAmount;
-                        
+
                         } else {
                             break; // Stop if advance is fully utilized
                         }
@@ -371,7 +371,7 @@ class VoucherController extends Controller
                     foreach ($advanceItems as $advanceItem) {
                         $bucketTotalDeducted = 0;
                         $remainingAdvanceAmount = $advanceItem->orgAmount;
-                    
+
                         // Loop through each customer in the result set
                         foreach ($data as $res) {
                             $documentDate = $advanceItem->voucher->document_date; // e.g. '2025-04-10'
@@ -383,16 +383,16 @@ class VoucherController extends Controller
                             $vendorDateTimestamp = $combinedDateTime ? $combinedDateTime->getTimestamp() : null;
                             $resDate = $res->date; // e.g. '10/04/2025'
                             $resCreatedAt = $res->created_at; // e.g. '2025-04-10 14:45:00'
-                            
+
                             // Extract the time from created_at
                             $resTime = date('H:i:s', strtotime($resCreatedAt));
-                            
+
                             // Combine date (converted to Y-m-d) with time
                             $parsedDate = \DateTime::createFromFormat('d/m/Y H:i:s', $resDate . ' ' . $resTime);
-                            
+
                             $resDateTimestamp = $parsedDate ? $parsedDate->getTimestamp() : null;
-                            
-        
+
+
                             if ($vendorDateTimestamp < $resDateTimestamp) {
                                 $bucketTotalDeducted = 0; // Track total amount deducted from all aging buckets
                                 if ($remainingAdvanceAmount > 0) {
@@ -402,17 +402,17 @@ class VoucherController extends Controller
                                             $bucketTotalDeducted += $deductAmount; // Track total deducted
                                         }
                             }
-        
+
                         }
-                        
-                        
+
+
                     }
 
-                    
+
                 }
-                
+
             }
-        
+
             return response()->json(['data' => $data, 'ledgerId' => $ledger,'sum'=>$advanceSum]);
         } else {
             return response()->json(['data' => [], 'ledgerId' => null]);
@@ -501,7 +501,7 @@ class VoucherController extends Controller
         if ($book == ConstantHelper::CONTRA_VOUCHER) {
             $allowedNames = ConstantHelper::CV_ALLOWED_GROUPS;
             $allChildIds = Helper::getChildLedgerGroupsByNameArray($allowedNames);
-        
+
             $data = Ledger::withDefaultGroupCompanyOrg()
                 ->where('status', 1)
                 ->where('name', 'like', '%' . $r->keyword . '%')
@@ -512,7 +512,7 @@ class VoucherController extends Controller
                             // Then: check each allowed ID against JSON array type
                             $i = 0;
                             $count = count($allChildIds);
-        
+
                             while ($i < $count) {
                                 $child = (string)$allChildIds[$i];
                                 if ($i === 0) {
@@ -525,11 +525,11 @@ class VoucherController extends Controller
                         });
                 });
         }
-        
+
         else if ($book == ConstantHelper::JOURNAL_VOUCHER) {
             $excludeNames = ConstantHelper::JV_EXCLUDE_GROUPS;
             $allChildIds = Helper::getChildLedgerGroupsByNameArray($excludeNames);
-        
+
             $data = Ledger::withDefaultGroupCompanyOrg()
                 ->where('status', 1)
                 ->where('name', 'like', '%' . $r->keyword . '%')
@@ -539,22 +539,22 @@ class VoucherController extends Controller
                 ->where(function ($query) use ($allChildIds) {
                     $i = 0;
                     $count = count($allChildIds);
-        
+
                     while ($i < $count) {
                         $child = (string)$allChildIds[$i];
-            
+
                         $query->whereJsonDoesntContain('ledger_group_id', $child);
                         $i++;
                     }
                 });
         }
-        
+
         else {
             $data = Ledger::withDefaultGroupCompanyOrg()
                 ->where('status', 1)
                 ->where('name', 'like', '%' . $r->keyword . '%');
         }
-        
+
         $data = $data->select('id as value', 'name as label', 'cost_center_id')->get()->toArray();
         return response()->json($data);
      }
@@ -574,7 +574,7 @@ class VoucherController extends Controller
         }
 
 
-        
+
         $user = Helper::getAuthenticatedUser();
         $userId = $user->id;
         $organizationId = $user->organization_id;
@@ -591,7 +591,7 @@ class VoucherController extends Controller
         if (count($organizations) == 0) {
             $organizations[] = $organizationId;
         }
-        
+
         $fyear = Helper::getFinancialYear(date('Y-m-d'));
 
         // Retrieve vouchers based on organization_id and include series with levels
@@ -605,10 +605,13 @@ class VoucherController extends Controller
             }
         })
         ->where('approvalStatus', '!=', 'cancel');
-
         // Apply filters based on the request
         if ($request->book_type) {
             $data = $data->where('book_type_id', $request->book_type);
+        }
+
+        if ($request->location_id) {
+            $data = $data->where('location', $request->location_id);
         }
 
         if ($request->voucher_no) {
@@ -627,17 +630,17 @@ class VoucherController extends Controller
                 ->whereDate('document_date', '<=', $end);
         }
         else{
-           
+
             $data = $data->whereDate('document_date', '>=',$fyear['start_date'])
                 ->whereDate('document_date', '<=',$fyear['end_date']);
                 $start = $fyear['start_date'];
                 $end = $fyear['end_date'];
-            
-        
-        }
-        
 
-        $data = $data->orderBy('document_date', 'desc')->paginate(20);
+
+        }
+
+
+        $data = $data->orderBy('document_date', 'desc')->get();
 
         $parentUrl = request()->segments()[0];
 
@@ -656,23 +659,18 @@ class VoucherController extends Controller
 
         $voucher_no = $request->voucher_no;
         $voucher_name = $request->voucher_name;
-        $cost_centers = CostCenterOrgLocations::where('organization_id', Helper::getAuthenticatedUser()->organization_id)
-        ->with(['costCenter' => function ($query) {
-            $query->where('status', 'active');
-        }])
-        ->get()
-        ->filter(function ($item) {
-            return $item->costCenter !== null;
-        })
-        ->map(function ($item) {
+        $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
+            $item->withDefaultGroupCompanyOrg()->where('status', 'active');
+
             return [
                 'id' => $item->costCenter->id,
                 'name' => $item->costCenter->name,
+                'location' => $item->costCenter->locations,
             ];
-        })
-        ->toArray();
+        })->toArray();
          $fyearLocked = $fyear['authorized'];
-        return view('voucher.view_vouchers', compact('cost_centers','bookTypes', 'mappings', 'organizationId', 'data', 'book_type', 'date', 'voucher_no', 'voucher_name','date2','fyearLocked'));
+        $locations = ErpStore::where('status','active')->get();
+        return view('voucher.view_vouchers', compact('cost_centers','bookTypes', 'mappings', 'organizationId', 'data', 'book_type', 'date', 'voucher_no', 'voucher_name','date2','fyearLocked','locations'));
     }
 
     public function create()
@@ -818,8 +816,8 @@ class VoucherController extends Controller
                         'error' => "",
                     ], 422);
                 }
-        
-        
+
+
         $voucherExists = Voucher::withDefaultGroupCompanyOrg()->where('voucher_no', $numberPatternData['document_number'])
         ->where('book_id',$request -> book_id)->exists();
 
@@ -828,7 +826,7 @@ class VoucherController extends Controller
                 ->route('vouchers.create')
                 ->withErrors(['voucher_no' => $request->voucher_no . ' Voucher No. Already Exist!']);
         }
-        
+
 
         $validator = Validator::make($request->all(), [
             'voucher_name' => 'required|string',
@@ -1157,7 +1155,7 @@ class VoucherController extends Controller
         $debitAmtsGroup = $request->input('group_debit_amt');
         $creditAmtsGroup = $request->input('group_credit_amt');
         $costCenters = $request->input('cost_center_id');
-        
+
         $parentLedger = $request->input('parent_ledger_id');
 
         foreach ($debitAmts as $index => $debitAmount) {
@@ -1196,7 +1194,7 @@ class VoucherController extends Controller
                     'date' => $request->date,
                 ]);
             }
-        
+
 
         }
 

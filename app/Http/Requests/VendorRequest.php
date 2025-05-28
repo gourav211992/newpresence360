@@ -101,6 +101,7 @@ class VendorRequest extends FormRequest
             'ledger_id' => 'nullable|exists:erp_ledgers,id', 
             'ledger_group_id' => 'nullable|exists:erp_groups,id', 
             'related_party' => 'nullable|string|max:255',
+            'reld_vendor_id' => 'nullable|exists:erp_vendors,id',
             'enter_company_org_id' => [
                 'nullable',
                 'max:255',
@@ -414,7 +415,7 @@ class VendorRequest extends FormRequest
         $gstData = json_decode($gstValidation['checkGstIn'], true);
         $deregistrationDate = $gstData['DtDReg'] ?? null;
 
-        if ($deregistrationDate !== null) {
+        if ($deregistrationDate && $deregistrationDate !== '1900-01-01') {
             return 'The provided GSTIN is deregistered as of ' . $deregistrationDate . '. It is no longer valid for use.';
         }
         return true;

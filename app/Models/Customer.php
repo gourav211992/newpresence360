@@ -39,6 +39,7 @@ class Customer  extends Model
         'currency_id',
         'payment_terms_id',
         'related_party',
+        'reld_customer_id',
         'email',
         'phone',
         'mobile',

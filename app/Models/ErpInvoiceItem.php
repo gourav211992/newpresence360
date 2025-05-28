@@ -85,6 +85,9 @@ class ErpInvoiceItem extends Model
     public function bundles(){
         return $this->hasMany(ErpPslipItemDetail::class,'dn_item_id');
     }
+    public function packets(){
+        return $this->hasMany(ErpInvoiceItemPacket::class,'invoice_item_id');
+    }
     public function uom()
     {
         return $this->belongsTo(Unit::class, 'uom_id');

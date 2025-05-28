@@ -23,24 +23,25 @@
          <input type="hidden" name="components[{{$rowCount}}][hsn_id]" value="{{@$item->hsn_id}}" />
          <input type="hidden" name="components[{{$rowCount}}][hsn_code]" value="{{@$item->hsn_code}}" />
          <input type="hidden" name="components[{{$rowCount}}][is_inspection]" value="{{$item?->is_inspection}}" />
+         <input type="hidden" name="components[{{$rowCount}}][so_id]" value="{{$item?->so_id}}">
          @php
             $selectedAttr = $item->attributes ? $item->attributes()->whereNotNull('attr_value')->pluck('attr_value')->all() : [];
          @endphp
          @foreach($item->attributes as $attributeHidden)
-            <input type="hidden" name="components[{{$rowCount}}][attr_group_id][{{$attributeHidden->attribute_name}}][attr_id]" value="{{$attributeHidden->id}}">
+            <input type="hidden" name="components[{{$rowCount}}][attr_group_id][{{$attributeHidden->attr_name}}][attr_id]" value="{{$attributeHidden->id}}">
          @endforeach
          @if(isset($item->item->itemAttributes) && ($item->item->itemAttributes))
-         @foreach($item->item->itemAttributes as $itemAttribute)
-            @if(count($selectedAttr))
-               @foreach ($itemAttribute->attributes() as $value)
-                  @if(in_array($value->id, $selectedAttr))
-                     <input type="hidden" name="components[{{$rowCount}}][attr_group_id][{{$itemAttribute->attribute_group_id}}][attr_name]" value="{{$value->id}}">
-                  @endif
-               @endforeach
-            @else
-               <input type="hidden" name="components[{{$rowCount}}][attr_group_id][{{$itemAttribute->attribute_group_id}}][attr_name]" value="">
-            @endif
-         @endforeach
+            @foreach($item->item->itemAttributes as $itemAttribute)
+               @if(count($selectedAttr))
+                  @foreach ($itemAttribute->attributes() as $value)
+                     @if(in_array($value->id, $selectedAttr))
+                        <input type="hidden" name="components[{{$rowCount}}][attr_group_id][{{$itemAttribute->attribute_group_id}}][attr_name]" value="{{$value->id}}">
+                     @endif
+                  @endforeach
+               @else
+                  <input type="hidden" name="components[{{$rowCount}}][attr_group_id][{{$itemAttribute->attribute_group_id}}][attr_name]" value="">
+               @endif
+            @endforeach
          @endif
       </td>
       <td>
@@ -60,11 +61,11 @@
          <input type="number" class="form-control mw-100 text-end order_qty" name="components[{{$rowCount}}][order_qty]" value="{{$item->order_qty}}" step="any" @readonly(true)/>
       </td>
       <td>
-         <input type="number" class="form-control mw-100 text-end accepted_qty checkNegativeVal" name="components[{{$rowCount}}][accepted_qty]" value="{{$item->accepted_qty}}" step="any" 
+         <input type="number" class="form-control mw-100 text-end accepted_qty checkNegativeVal" name="components[{{$rowCount}}][accepted_qty]" value="{{$item->accepted_qty}}" step="any"
          {{ ($item?->is_inspection == 1) ? 'readonly' : '' }} @readonly(true) />
       </td>
       <td>
-         <input type="number" class="form-control mw-100 text-end rejected_qty" readonly name="components[{{$rowCount}}][rejected_qty]" value="{{$item->rejected_qty}}" step="any" 
+         <input type="number" class="form-control mw-100 text-end rejected_qty" readonly name="components[{{$rowCount}}][rejected_qty]" value="{{$item->rejected_qty}}" step="any"
          {{ ($item?->is_inspection == 1) ? 'readonly' : '' }} @readonly(true)/>
       </td>
       <td><input type="number" name="components[{{$rowCount}}][rate]" value="{{$item->rate}}" class="form-control mw-100 text-end rate checkNegativeVal" /></td>
@@ -101,8 +102,13 @@
       </td>
       <td>
          <div class="d-flex">
-            <input type="hidden" id="components_storage_points_{{ $rowCount }}" name="components[{{$rowCount}}][storage_points]" value=""/>
-            <input type="hidden" id="components_storage_points_{{ $rowCount }}" name="components[{{$rowCount}}][storage_points_data]" value=""/>
+            @foreach($item->mrnItemLocations()->get() as $over_key => $overhead)
+               <input type="hidden" name="components[{{$rowCount}}][hidden_packets][{{$over_key+1}}][id]" value="{{$overhead->id}}">
+               <input type="hidden" name="components[{{$rowCount}}][hidden_packets][{{$over_key+1}}][quantity]" value="{{@$overhead->quantity}}">
+               <input type="hidden" name="components[{{$rowCount}}][hidden_packets][{{$over_key+1}}][packet_number]" value="{{@$overhead->packet_number}}">
+               <input type="hidden" name="components[{{$rowCount}}][hidden_packets][{{$over_key+1}}][unit]" value="{{@$item->inventory_uom_code}}">
+            @endforeach
+            <input type="hidden" id="components_storage_packets_{{ $rowCount }}" name="components[{{$rowCount}}][storage_packets]" value=""/>
             <div class="me-50 cursor-pointer addStoragePointBtn" data-bs-toggle="modal" data-row-count="{{$rowCount}}" data-bs-target="#storage-point-modal">
                <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary"
                 data-bs-original-title="Storage Point" aria-label="Storage Point">
@@ -111,24 +117,6 @@
                 class="feather feather-map-pin">
                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></span>
             </div>
-            <!-- <input type="hidden" id="components_stores_data_{{ $rowCount }}" name="components[{{$rowCount}}][store_data]" value=""/>
-            @foreach($item->mrnItemLocations()->get() as $over_key => $overhead)
-               <input type="hidden" name="components[{{$rowCount}}][erp_store][{{$over_key+1}}][id]" value="{{$overhead->id}}">
-               <input type="hidden" name="components[{{$rowCount}}][erp_store][{{$over_key+1}}][erp_store_id]" value="{{@$overhead->store_id}}">
-               <input type="hidden" name="components[{{$rowCount}}][erp_store][{{$over_key+1}}][erp_rack_id]" value="{{@$overhead->rack_id}}">
-               <input type="hidden" name="components[{{$rowCount}}][erp_store][{{$over_key+1}}][erp_shelf_id]" value="{{@$overhead->shelf_id}}">
-               <input type="hidden" name="components[{{$rowCount}}][erp_store][{{$over_key+1}}][erp_bin_id]" value="{{@$overhead->bin_id}}">
-               <input type="hidden" name="components[{{$rowCount}}][erp_store][{{$over_key+1}}][store_qty]" value="{{@$overhead->quantity}}">
-            @endforeach
-            <div class="me-50 cursor-pointer addDeliveryScheduleBtn" data-bs-toggle="modal" data-row-count="{{$rowCount}}" data-bs-target="#store-modal">
-               <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary"
-                  data-bs-original-title="Store Location" aria-label="Store Location">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                  class="feather feather-map-pin">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-               </span>
-            </div> -->
             <div class="me-50 cursor-pointer addRemarkBtn" data-row-count="{{$rowCount}}" {{-- data-bs-toggle="modal" data-bs-target="#Remarks" --}}>
                <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary" data-bs-original-title="Remarks" aria-label="Remarks">
                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text">

@@ -48,7 +48,7 @@ $attrValue = \App\Models\Attribute::where('id', @$attribute->attribute_value)->f
                 @else
                     <option value=""></option>
                     @foreach($vendors as $vendor)
-                    <option value="{{$vendor?->id}}" {{$piItem?->vendor_id == $vendor?->id ? 'selected' : '' }}>{{$vendor?->company_name}}</option>
+                    <option value="{{$vendor?->id}}" {{$vendor?->id == $piItem?->vendor_id  ? 'selected' : '' }}>{{$vendor?->company_name}}</option>
                     @endforeach
                 @endif
             </select>

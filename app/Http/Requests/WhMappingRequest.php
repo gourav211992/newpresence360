@@ -70,7 +70,8 @@ class WhMappingRequest extends FormRequest
                 })
                 ->where(function ($query) use ($subStoreId) {
                     return $query->where('sub_store_id', $subStoreId);
-                });
+                })
+                ->whereNull('deleted_at');
 
             if (!empty($detail['detail_id'])) {
                 $rule->ignore($detail['detail_id']);

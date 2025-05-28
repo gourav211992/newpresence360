@@ -79,6 +79,7 @@ class CustomerRequest extends FormRequest
             'ledger_id' => 'nullable|exists:erp_ledgers,id',
             'ledger_group_id' => 'nullable|exists:erp_groups,id',
             'related_party' => 'nullable|string|max:255',
+            'reld_customer_id' => 'nullable|exists:erp_customers,id',
             'on_account_required' => 'nullable',
             'enter_company_org_id' => [
                 'nullable',
@@ -380,7 +381,7 @@ class CustomerRequest extends FormRequest
         $gstData = json_decode($gstValidation['checkGstIn'], true);
         $deregistrationDate = $gstData['DtDReg'] ?? null;
 
-        if ($deregistrationDate !== null) {
+        if ($deregistrationDate && $deregistrationDate !== '1900-01-01') {
             return 'The provided GSTIN is deregistered as of ' . $deregistrationDate . '. It is no longer valid for use.';
         }
         return true;

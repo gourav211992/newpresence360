@@ -84,6 +84,7 @@ function updateTable(inventory_reports = [], columnVisibility = []) {
     if (!visibleColumnIndices.includes(13)) visibleColumnIndices.push(13); // Unconfirmed Stock columns
     if (!visibleColumnIndices.includes(14)) visibleColumnIndices.push(14);
     if (!visibleColumnIndices.includes(15)) visibleColumnIndices.push(15);
+    if (!visibleColumnIndices.includes(16)) visibleColumnIndices.push(16);
 
     // Define table headers corresponding to the columns
     const day_1 = $('#day1').val();
@@ -102,12 +103,13 @@ function updateTable(inventory_reports = [], columnVisibility = []) {
         `<th>Store</th>`,
         `<th>Station</th>`, // Shelf
         `<th>Stock Type</th>`, // Bin
-        `<th class='text-end'>Confirmed Stock Qty</th> `, // Confirmed Stock Quantity
+        `<th class='text-end'>Confirmed<br> Stock</th> `, // Confirmed Stock Quantity
         `<th class='text-end'>Cost</th>`, // Confirmed Stock Cost
         `<th class='text-end'>Value</th>`, // Confirmed Stock Value
-        `<th class='text-end'>Unconfirmed Stock Qty</th>`, // Unconfirmed Stock Quantity
+        `<th class='text-end'>Unconfirmed<br> Stock</th>`, // Unconfirmed Stock Quantity
         `<th class='text-end'>Cost</th>`, // Unconfirmed Stock Cost
         `<th class='text-end'>Value</th>`, // Unconfirmed Stock Value
+        `<th class='text-end'>Hold<br> Stock</th>`, // Hold Quantity
         `<th>0-${day_1} Days</th>`,
         `<th>${day_1}-${day_2} Days</th>`,
         `<th>${day_2}-${day_3} Days</th>`,
@@ -200,7 +202,11 @@ function updateTable(inventory_reports = [], columnVisibility = []) {
             </form>
             </td>`,// Item Name
             `<td class='no-wrap'>${report?.item?.item_code ?? ""}</td>`, // Item Code
-            `<td class='no-wrap'>${attributesHTML}</td>`, // Attributes
+            `<td class='no-wrap'>
+                <div style="white-space: normal;">
+                    ${attributesHTML}
+                </div>
+            </td>`,// Attributes
             `<td class='no-wrap'>${report?.location?.store_name ?? ""}</td>`, // Store
             `<td class='no-wrap'>${report?.store?.name ?? ""}</td>`, // Rack
             `<td class='no-wrap'>${report?.station?.name ?? ""}</td>`, // Station
@@ -213,6 +219,7 @@ function updateTable(inventory_reports = [], columnVisibility = []) {
             `<td class='text-end'>${report?.unconfirmed_stock ?? 0.00}</td>`, // Unconfirmed Stock Quantity
             `<td class='text-end'>${unconfirmedStockCost ?? '0.00'}</td>`, // Unconfirmed Stock Cost
             `<td class='text-end'>${report?.unconfirmed_stock_value ?? 0.00}</td>`, // Unconfirmed Stock Value
+            `<td class='text-end'>${report?.hold_qty ?? 0.00}</td>`, // Unconfirmed Stock Value
             `<td class='text-end'>${report?.confirmed_stock_day1_days ?? 0.00}</td>`, // 10 Days Ago
             `<td class='text-end'>${report?.confirmed_stock_day2_days ?? 0.00}</td>`, // 15 Days Ago
             `<td class='text-end'>${report?.confirmed_stock_day3_days ?? 0.00}</td>`, // 20 Days Ago
@@ -412,12 +419,13 @@ function getColumnIndexById(columnId) {
         "unconfirmed-stock-qty": 13,
         "unconfirmed-stock-cost": 14,
         "unconfirmed-stock-value": 15,
-        "day1_visibility": 16,
-        "day2_visibility": 17,
-        "day3_visibility": 18,
-        "day4_visibility": 19,
-        "day5_visibility": 20,
-        "day6_visibility": 21,
+        "hold_qty": 16,
+        "day1_visibility": 17,
+        "day2_visibility": 18,
+        "day3_visibility": 19,
+        "day4_visibility": 20,
+        "day5_visibility": 21,
+        "day6_visibility": 22,
     };
     // console.clear();
 

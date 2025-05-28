@@ -11,14 +11,14 @@
                     <div class="row breadcrumbs-top">
                         <div class="col-12">
                             <h2 class="content-header-title float-start mb-0">
-                                {{$servicesBooks['services'][0]->name ?? "Inspection"}}
+                                {{$servicesBooks['services'][0]->name ?? "Put Away"}}
                             </h2>
                             <div class="breadcrumb-wrapper">
                                 <ol class="breadcrumb">
                                     <li class="breadcrumb-item">
                                         <a href="{{ url('/') }}">Home</a>
                                     </li>
-                                    <li class="breadcrumb-item active">Inspection List</li>
+                                    <li class="breadcrumb-item active">Put Away List</li>
                                 </ol>
                             </div>
                         </div>
@@ -27,7 +27,7 @@
                 <div class="content-header-right text-sm-end col-md-7 mb-50 mb-sm-0">
                     <div class="form-group breadcrumb-right">
                         @if(count($servicesBooks['services']) > 0)
-                            <a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{ route('inspection.create') }}">
+                            <a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{ route('put-away.create') }}">
                                 <i data-feather="plus-circle"></i> Create
                             </a>
                             <a class="btn btn-dark btn-sm mb-50 mb-sm-0" href="{{ route('transactions.report', ['serviceAlias' => request() -> type]) }}">
@@ -53,12 +53,6 @@
                                                 <th>Rev. No</th>
                                                 <th>Vendor</th>
                                                 <th>Item</th>
-                                                <th>Item Value</th>
-                                                <th>Discount</th>
-                                                <th>Taxable</th>
-                                                <th>Tax</th>
-                                                <th>Expenses</th>
-                                                <th>Total Amt</th>
                                                 <th>Status</th>
                                             </tr>
                                         </thead>
@@ -160,30 +154,6 @@
                     { data: 'revision_number', name: 'revision_number', render: renderData },
                     { data: 'vendor_name', name: 'vendor_name', render: renderData},
                     { data: 'total_items', name: 'total_items', render: renderData },
-                    { data: 'total_item_amount', name: 'total_item_amount', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-                        $(td).addClass('text-end');
-                        }
-                    },
-                    { data: 'total_discount', name: 'total_discount', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-                        $(td).addClass('text-end');
-                        }
-                    },
-                    { data: 'taxable_amount', name: 'taxable_amount', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-                        $(td).addClass('text-end');
-                        }
-                    },
-                    { data: 'total_taxes', name: 'total_taxes', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-                        $(td).addClass('text-end');
-                        }
-                    },
-                    { data: 'expense_amount', name: 'expense_amount', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-                        $(td).addClass('text-end');
-                        }
-                    },
-                    { data: 'total_amount', name: 'total_amount', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-                        $(td).addClass('text-end');
-                        }
-                    },
                     { data: 'document_status', name: 'document_status', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('no-wrap');
                         }
@@ -197,7 +167,7 @@
                 };
                 var exportColumns = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]; // Columns to export
                 initializeDataTable('.datatables-basic',
-                    "{{ route('inspection.index') }}",
+                    "{{ route('put-away.index') }}",
                     columns,
                     filters,  // Apply filters
                     'Material Receipt',  // Export title

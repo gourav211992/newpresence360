@@ -235,5 +235,15 @@ class GateEntryHeaderHistory extends Model
     {
         return $this -> hasMany(ErpGeDynamicField::class, 'header_id');
     }
+
+    public function bill_address_details()
+    {
+        return $this->morphOne(ErpAddress::class, 'addressable', 'addressable_type', 'addressable_id') -> where('type', 'billing')->with(['city', 'state', 'country']);
+    }
+
+    public function ship_address_details()
+    {
+        return $this->morphOne(ErpAddress::class, 'addressable', 'addressable_type', 'addressable_id') -> where('type', 'shipping')->with(['city', 'state', 'country']);
+    }
 }
 

@@ -22,6 +22,8 @@
             <input type="hidden" name="components[{{$rowCount}}][hsn_id]" value="{{@$item->hsn_id}}" />
             <input type="hidden" name="components[{{$rowCount}}][hsn_code]" value="{{$item?->item?->hsn?->code}}" />
             <input type="hidden" name="components[{{$rowCount}}][is_inspection]" value="{{$item?->item?->is_inspection}}" />
+            <input type="hidden" name="components[{{$rowCount}}][so_id]" value="{{$item?->so_id}}">
+
             @php
                 $selectedAttr = @$item->attributes ? @$item->attributes()->whereNotNull('attr_value')->pluck('attr_value')->all() : [];
             @endphp
@@ -57,7 +59,7 @@
             </select>
         </td>
         <td>
-            <input type="number" class="form-control mw-100 po_qty text-end checkNegativeVal" value="{{$item->order_qty}}" step="any" readonly />
+            <input type="number" class="form-control mw-100 po_qty text-end checkNegativeVal" value="{{$item?->poItem?->order_qty}}" step="any" readonly />
         </td>
         <td>
             <input type="hidden" name="module-type" id="module-type" value="{{ $moduleType }}">
@@ -69,7 +71,7 @@
             value="{{($item?->item?->is_inspection == 0) ? $balanceQty : 0.00}}" step="any"  {{ ($item?->item?->is_inspection == 1) ? 'readonly' : '' }} />
         </td>
         <td>
-            <input type="number" class="form-control mw-100 text-end rejected_qty" name="components[{{$rowCount}}][rejected_qty]" step="any" 
+            <input type="number" class="form-control mw-100 text-end rejected_qty" name="components[{{$rowCount}}][rejected_qty]" step="any"
             {{ ($item?->item?->is_inspection == 1) ? 'readonly' : '' }} />
         </td>
         <td><input type="number" name="components[{{$rowCount}}][rate]" value="{{$item->rate}}" readonly class="form-control mw-100 text-end rate" /></td>
@@ -116,8 +118,7 @@
         </td>
         <td>
             <div class="d-flex">
-                <input type="hidden" id="components_storage_points_{{ $rowCount }}" name="components[{{$rowCount}}][storage_points]" value=""/>
-                <input type="hidden" id="components_storage_points_{{ $rowCount }}" name="components[{{$rowCount}}][storage_points_data]" value=""/>
+                <input type="hidden" id="components_storage_packets_{{ $rowCount }}" name="components[{{$rowCount}}][storage_packets]" value=""/>
                 <div class="me-50 cursor-pointer addStoragePointBtn" data-bs-toggle="modal" data-row-count="{{$rowCount}}" data-bs-target="#storage-point-modal">
                     <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary"
                         data-bs-original-title="Storage Point" aria-label="Storage Point">
@@ -126,15 +127,6 @@
                         class="feather feather-map-pin">
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></span>
                 </div>
-                <!-- <input type="hidden" id="components_stores_data_{{ $rowCount }}" name="components[{{$rowCount}}][store_data]" value=""/>
-                <div class="me-50 cursor-pointer addDeliveryScheduleBtn" data-bs-toggle="modal" data-row-count="{{$rowCount}}" data-bs-target="#store-modal">
-                    <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary"
-                    data-bs-original-title="Store Location" aria-label="Store Location">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                    class="feather feather-map-pin">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></span>
-                </div> -->
                 <input type="hidden" id="components_remark_{{ $rowCount }}" name="components[{{$rowCount}}][remark]" value="{{$item->remarks}}"/>
                 <div class="me-50 cursor-pointer addRemarkBtn" data-row-count="{{$rowCount}}" {{-- data-bs-toggle="modal" data-bs-target="#Remarks" --}}>        <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary" data-bs-original-title="Remarks" aria-label="Remarks"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg></span></div>
             </div>

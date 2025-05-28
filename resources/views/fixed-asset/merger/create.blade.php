@@ -354,9 +354,10 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Asset Code <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" name="asset_code"
+                                                            <input type="text" class="form-control" name="asset_code" oninput="this.value = this.value.toUpperCase();"
                                                                 id="asset_code" value="{{ old('asset_code') }}"
                                                                 required />
+                                                                 <span class="text-danger code_error"></span>
                                                         </div>
                                                     </div>
 
@@ -682,7 +683,8 @@
             });
         });
         $('#book_id').trigger('change');
-        document.getElementById('save-draft-btn').addEventListener('click', function() {
+        document.getElementById('save-draft-btn').addEventListener('click', function(e) {
+            e.preventDefault(); // Prevent default form submission
             document.getElementById('document_status').value = 'draft';
             const allRows = [];
 
@@ -706,8 +708,15 @@
 
                 allRows.push(rowData);
             });
+        
 
             $('#asset_details').val(JSON.stringify(allRows));
+   if($('#asset_code').hasClass('is-invalid'))
+                    {
+                showToast('error', 'Code already exist.');
+                         return false;
+               
+                    }
 
             document.getElementById('fixed-asset-merger-form').submit();
         });
@@ -741,6 +750,12 @@
             });
 
             $('#asset_details').val(JSON.stringify(allRows));
+              if($('#asset_code').hasClass('is-invalid'))
+                    {
+                showToast('error', 'Code already exist.');
+                         return false;
+               
+                    }
 
 
             this.submit();
@@ -780,6 +795,8 @@
         $('#old_category').on('change', function() {
             $('.mrntableselectexcel').empty();
             $('#addNewRowBtn').trigger('click');
+            $('#category').val($(this).val()).trigger('change');
+            
             loadLocation();
         
         });
@@ -909,7 +926,7 @@
                         data: {
                             q: request.term,
                             ids: getAllAssetIds(),
-                            category: $('#category').val(),
+                            category: $('#old_category').val(),
                             location: $('#location').val(),
                             cost_center: $('#cost_center').val(),
                         },
@@ -1226,6 +1243,7 @@
                     dataType: 'json',
                     success: function(data) {
                         if (data.length == 0) {
+
                             $('#cost_center').empty();
                             $('#cost_center').prop('required', false);
                             $('.cost_center').hide();
@@ -1302,6 +1320,29 @@
             });
         }
         loadLocation();
+        $('#asset_code').on('input', function() {
+        const assetCode = $('#asset_code').val();
+                 $.ajax({
+                url: '{{ route("finance.fixed-asset.check-code") }}',
+                method: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    code: assetCode
+                },
+                success: function (response) {
+                    const $input = $('#asset_code');
+                    const $errorEl = $('.code_error'); // Use class instead of ID
+
+                    if (response.exists) {
+                        $errorEl.text('Code already exists.');
+                        $input.addClass('is-invalid');
+                    } else {
+                        $errorEl.text('');
+                        $input.removeClass('is-invalid');
+                    }
+                }
+            });
+        });
     </script>
     <!-- END: Content-->
 @endsection

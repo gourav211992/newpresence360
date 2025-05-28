@@ -47,7 +47,7 @@
                                         <thead>
                                             <tr>
                                                 <th>#</th>
-                                                <th>Asset NAme</th>
+                                                <th>Asset Name</th>
                                                 <th>Asset Code</th>
                                                 <th>Location</th>
                                                 <th>Cost Center</th>
@@ -79,14 +79,11 @@
                                                             <i data-feather="more-vertical"></i>
                                                         </button>
                                                         <div class="dropdown-menu dropdown-menu-end">
-                                                            <a class="dropdown-item" href="{{ route('finance.fixed-asset.issue-transfer.show', $item->id) }}">
-                                                                <i data-feather="edit" class="me-50"></i>
-                                                                <span>View Detail</span>
-                                                            </a>
                                                             <a class="dropdown-item" href="{{ route('finance.fixed-asset.issue-transfer.edit', $item->id) }}">
-                                                                <i data-feather="edit-3" class="me-50"></i>
-                                                                <span>Edit</span>
+                                                                <i data-feather="edit" class="me-50"></i>
+                                                                <span>View</span>
                                                             </a>
+                                                           
 
                                                         </div>
                                                     </div>

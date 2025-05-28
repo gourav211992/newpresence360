@@ -874,14 +874,14 @@
 
                                                                 <tr>
                                                                     <td>
-                                                                        <div class="form-check form-check-inline me-0">
+                                                                        {{-- <div class="form-check form-check-inline me-0">
                                                                             <input class="form-check-input" type="checkbox" name="podetail" id="inlineCheckbox1" data-marks="0">
-                                                                        </div>
+                                                                        </div> --}}
                                                                     </td>
-                                                                    <td>Income proof - choose one</td>
-                                                                    <td>-</td>
-                                                                    <td>Evaluates repayment capacity</td>
-                                                                    <td>-</td>
+                                                                    <td><strong>Income proof - choose one</strong></td>
+                                                                    <td><strong>-<strong></td>
+                                                                    <td><strong>Evaluates repayment capacity<strong></td>
+                                                                    <td class="head-td"><strong>-<strong></td>
                                                                 </tr>
 
                                                                 <tr>
@@ -923,17 +923,17 @@
 
                                                                 <tr>
                                                                     <td>
-                                                                        <div class="form-check form-check-inline me-0">
+                                                                        {{-- <div class="form-check form-check-inline me-0">
                                                                             <input class="form-check-input" type="checkbox" name="podetail" id="inlineCheckbox1" data-marks="0">
-                                                                        </div>
+                                                                        </div> --}}
                                                                     </td>
-                                                                    <td>Debt to income Ratio</td>
-                                                                    <td>-</td>
-                                                                    <td>Ratio determines repayment ability</td>
-                                                                    <td>-</td>
+                                                                    <td><strong>Debt to income Ratio</strong></td>
+                                                                    <td><strong>-</strong></td>
+                                                                    <td><strong>Ratio determines repayment ability</strong></td>
+                                                                    <td><strong>-</strong></td>
                                                                 </tr>
 
-                                                                <tr>
+                                                                <tr class="radio1">
                                                                     <td>
                                                                         <div class="form-check form-check-inline me-0">
                                                                             <input class="form-check-input" type="checkbox" name="podetail" id="inlineCheckbox1" data-marks="10">
@@ -945,7 +945,7 @@
                                                                     <td>10 Marks</td>
                                                                 </tr>
 
-                                                                <tr>
+                                                                <tr class="radio1">
                                                                     <td>
                                                                         <div class="form-check form-check-inline me-0">
                                                                             <input class="form-check-input" type="checkbox" name="podetail" id="inlineCheckbox1" data-marks="5">
@@ -957,7 +957,7 @@
                                                                     <td>5 Marks</td>
                                                                 </tr>
 
-                                                                <tr>
+                                                                <tr class="radio1">
                                                                     <td>
                                                                         <div class="form-check form-check-inline me-0">
                                                                             <input class="form-check-input" type="checkbox" name="podetail" id="inlineCheckbox1" data-marks="0">
@@ -1010,18 +1010,18 @@
                                                                 <tbody>
                                                                 <tr>
                                                                     <td>
-                                                                        <div class="form-check form-check-inline me-0">
+                                                                        {{-- <div class="form-check form-check-inline me-0">
                                                                             <input class="form-check-input" type="checkbox" name="podetail" id="inlineCheckbox1" data-marks="0">
-                                                                        </div>
+                                                                        </div> --}}
                                                                     </td>
-                                                                    <td>Property Valuation</td>
-                                                                    <td>-</td>
-                                                                    <td>Loan to value (LTV) ratio:</td>
+                                                                    <td><strong>Property Valuation</strong></td>
+                                                                    <td><strong>-</strong></td>
+                                                                    <td><strong>Loan to value (LTV) ratio:</strong></td>
                                                                     <td></td>
                                                                 </tr>
 
 
-                                                                <tr>
+                                                                <tr class="radio2"> 
                                                                     <td>
                                                                         <div class="form-check form-check-inline me-0">
                                                                             <input class="form-check-input" type="checkbox" name="podetail" id="inlineCheckbox1" data-marks="10">
@@ -1033,7 +1033,7 @@
                                                                     <td>10 Marks</td>
                                                                 </tr>
 
-                                                                <tr>
+                                                                <tr class="radio2">
                                                                     <td>
                                                                         <div class="form-check form-check-inline me-0">
                                                                             <input class="form-check-input" type="checkbox" name="podetail" id="inlineCheckbox1" data-marks="5">
@@ -1045,7 +1045,7 @@
                                                                     <td>5 Marks</td>
                                                                 </tr>
 
-                                                                <tr>
+                                                                <tr class="radio2">
                                                                     <td>
                                                                         <div class="form-check form-check-inline me-0">
                                                                             <input class="form-check-input" type="checkbox" name="podetail" id="inlineCheckbox1" data-marks="0">
@@ -1107,7 +1107,7 @@
                                                                 </tr>
                                                                 </thead>
                                                                 <tbody>
-                                                                <tr>
+                                                                <tr class="radio3">
                                                                     <td>
                                                                         <div class="form-check form-check-inline me-0">
                                                                             <input class="form-check-input" type="checkbox" name="podetail" id="inlineCheckbox1" data-marks="30">
@@ -1120,7 +1120,7 @@
                                                                 </tr>
 
 
-                                                                <tr>
+                                                                <tr class="radio3">
                                                                     <td>
                                                                         <div class="form-check form-check-inline me-0">
                                                                             <input class="form-check-input" type="checkbox" name="podetail" id="inlineCheckbox1" data-marks="25">
@@ -1132,7 +1132,7 @@
                                                                     <td>25 Marks</td>
                                                                 </tr>
 
-                                                                <tr>
+                                                                <tr class="radio3">
                                                                     <td>
                                                                         <div class="form-check form-check-inline me-0">
                                                                             <input class="form-check-input" type="checkbox" name="podetail" id="inlineCheckbox1" data-marks="15">
@@ -1144,7 +1144,7 @@
                                                                     <td>15 Marks</td>
                                                                 </tr>
 
-                                                                <tr>
+                                                                <tr class="radio3">
                                                                     <td>
                                                                         <div class="form-check form-check-inline me-0">
                                                                             <input class="form-check-input" type="checkbox" name="podetail" id="inlineCheckbox1" data-marks="10">
@@ -1156,7 +1156,7 @@
                                                                     <td>10 Marks</td>
                                                                 </tr>
 
-                                                                <tr>
+                                                                <tr class="radio3">
                                                                     <td>
                                                                         <div class="form-check form-check-inline me-0">
                                                                             <input class="form-check-input" type="checkbox" name="podetail" id="inlineCheckbox1" data-marks="5">
@@ -1362,6 +1362,19 @@
 
 @section('scripts')
     <script>
+
+        //   document.addEventListener('DOMContentLoaded', function () {
+        //     document.querySelectorAll('td.head-td .form-check').forEach(el => {
+        //         el.style.display = 'none';
+        //     });
+        // });
+        function showToast(icon, title) {
+            Swal.fire({
+                title: 'Alert!',
+                text: title,
+                icon: icon
+            });
+        }
         document.addEventListener('DOMContentLoaded', function () {
             function calculateTotalMarksAndPercentage(tableId, totalMarksId, totalPercentageId) {
                 const table = document.getElementById(tableId);
@@ -1380,38 +1393,71 @@
                 }
 
                 checkboxes.forEach(checkbox => {
-                    checkbox.addEventListener('change', () => {
-                        let totalMarks = 0;
-                        let totalWeightage = 0;
+    checkbox.addEventListener('change', () => {
+        const row = checkbox.closest('tr');
+        if (!row) {
+            console.error('Row not found for checkbox:', checkbox);
+            return;
+        }
 
-                        checkboxes.forEach(cb => {
-                            const row = cb.closest('tr');
-                            if (!row) {
-                                console.error('Row not found for checkbox:', cb);
-                                return;
-                            }
+        // Get the class (like radio1, radio2, radio3) from the tr
+        const groupClass = Array.from(row.classList).find(cls => cls.startsWith('radio'));
 
-                            const weightageCell = row.querySelector('td:nth-child(3)'); // Select the "Weightage %" column
-                            if (!weightageCell) {
-                                console.error('Weightage cell not found for checkbox:', cb);
-                                return;
-                            }
+        if (groupClass) {
+            // Find all checkboxes in this group
+            const groupCheckboxes = table.querySelectorAll('tr.' + groupClass + ' .form-check-input');
 
-                            const marks = parseInt(cb.getAttribute('data-marks') || 0);
+            // Check if there is another selected checkbox in the group
+            groupCheckboxes.forEach(cb => {
+                if (cb !== checkbox && cb.checked) {
+                    cb.checked = false;
 
-                            if (cb.checked) {
-                                totalMarks += marks;
-                                totalWeightage += marks;
-                                weightageCell.textContent = marks + '%'; // Update the weightage percentage
-                            } else {
-                                weightageCell.textContent = '-'; // Reset to "-" if unchecked
-                            }
-                        });
+                    const otherRow = cb.closest('tr');
+                    if (otherRow) {
+                        const weightageCell = otherRow.querySelector('td:nth-child(3)');
+                        if (weightageCell) {
+                            weightageCell.textContent = '-';
+                        }
+                    }
 
-                        totalMarksSpan.textContent = totalMarks;
-                        totalPercentageSpan.textContent = totalWeightage + '%';
-                    });
-                });
+                    showToast('error', 'Only one ratio should be selected in this group.');
+                }
+            });
+        }
+
+        // Proceed with normal calculation
+        let totalMarks = 0;
+        let totalWeightage = 0;
+
+        checkboxes.forEach(cb => {
+            const row = cb.closest('tr');
+            if (!row) {
+                console.error('Row not found for checkbox:', cb);
+                return;
+            }
+
+            const weightageCell = row.querySelector('td:nth-child(3)');
+            if (!weightageCell) {
+                console.error('Weightage cell not found for checkbox:', cb);
+                return;
+            }
+
+            const marks = parseInt(cb.getAttribute('data-marks') || 0);
+
+            if (cb.checked) {
+                totalMarks += marks;
+                totalWeightage += marks;
+                weightageCell.textContent = marks + '%';
+            } else {
+                weightageCell.textContent = '-';
+            }
+        });
+
+        totalMarksSpan.textContent = totalMarks;
+        totalPercentageSpan.textContent = totalWeightage + '%';
+    });
+});
+
             }
 
             calculateTotalMarksAndPercentage('table1', 'totalMarksTable1', 'totalPercentageTable1');

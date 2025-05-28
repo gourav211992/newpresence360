@@ -320,7 +320,8 @@
                                                                 </td>
                                                                 <td class="poprod-decpt">
                                                                     <input type="text" required placeholder="Enter"
-                                                                        class="form-control mw-100 mb-25 asset-code-input" />
+                                                                        class="form-control mw-100 mb-25 asset-code-input" oninput="this.value = this.value.toUpperCase();"/>
+                                                                           <span class="text-danger code_error"></span>
                                                                 </td>
                                                                 <td class="poprod-decpt">
                                                                     <input type="text" required placeholder="Enter"
@@ -629,7 +630,8 @@
                     </div>
                 </td>
                 <td class="poprod-decpt">
-                    <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-code-input" />
+                    <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-code-input" oninput="this.value = this.value.toUpperCase();"/>
+                      <span class="text-danger code_error"></span>
                 </td>
                 <td class="poprod-decpt">
                     <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-name-input" />
@@ -784,6 +786,19 @@
                 showToast('error', 'Total Current Value must be greater than 0.');
                 return false;
             }
+           let isValid=true;
+            $('.asset-code-input').each(function(index) {
+                    if($(this).hasClass('is-invalid'))
+                    {
+                        isValid=false;
+                    }
+            });
+            if(isValid==false)
+            {
+                showToast('error', 'Code Already Exist.');
+                return false;
+            }
+
 
             document.getElementById('fixed-asset-split-form').submit();
         });
@@ -792,6 +807,7 @@
             e.preventDefault(); // Always prevent default first
 
             collectSubAssetDataToJson();
+            let isValid=true;
             document.getElementById('document_status').value = 'submitted';
 
             let currentValueAsset = parseFloat($('#current_value_asset').val()) || 0;
@@ -802,6 +818,17 @@
                 return false;
             } else if (totalCurrentValue <= 0) {
                 showToast('error', 'Total Current Value must be greater than 0.');
+                return false;
+            }
+             $('.asset-code-input').each(function(index) {
+                    if($(this).hasClass('is-invalid'))
+                    {
+                        isValid=false;
+                    }
+            });
+            if(isValid==false)
+            {
+                showToast('error', 'Code Already Exist.');
                 return false;
             }
 
@@ -1019,6 +1046,26 @@
                 const $row = $(this);
 
                 const assetCode = $row.find('.asset-code-input').val().trim();
+                 $.ajax({
+                url: '{{ route("finance.fixed-asset.check-code") }}',
+                method: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    code: assetCode
+                },
+                success: function (response) {
+                    const $input = $row.find('.asset-code-input');
+                    const $errorEl = $row.find('.code_error'); // Use class instead of ID
+
+                    if (response.exists) {
+                        $errorEl.text('Code already exists.');
+                        $input.addClass('is-invalid');
+                    } else {
+                        $errorEl.text('');
+                        $input.removeClass('is-invalid');
+                    }
+                }
+            });
                 const $assetNameInput = $row.find('.asset-name-input');
                 const $subAssetInput = $row.find('.sub-asset-code-input');
                 const $salvageValueInput = $row.find('.salvage-value-input');
@@ -1107,6 +1154,7 @@
             $('#sub_asset_id').val('');
             $('#last_dep_date').val('');
             $('#current_value_asset').val('');
+            $('#category').val($(this).val()).trigger('change');
             loadLocation();
         
         });
@@ -1273,8 +1321,9 @@
                                                                     </div>
                                                                 </td>
                                                                 <td class="poprod-decpt">
-                                                                    <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-code-input" />
-                                                                </td>
+                                                                    <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-code-input" oninput="this.value = this.value.toUpperCase();"/>
+                                                                  <span class="text-danger code_error"></span>
+                                                                    </td>
                                                                 <td class="poprod-decpt">
                                                                     <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-name-input" />
                                                                 </td>
@@ -1327,6 +1376,10 @@
             });
         }
         loadLocation();
+
+
+
+
      
     </script>
     <!-- END: Content-->

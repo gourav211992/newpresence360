@@ -60,13 +60,14 @@
 										<th>Series</th>
 										<th>Doc No.</th>
 										<th>Doc Date</th>
+										<th>Customer</th>
 										<th>Item Code</th>
 										<th>Item Name</th>
 										<th id="soHeaderAttribute" class="d-none">Attributes</th>
 										<th>UOM</th>
 										<th>Quantity</th> 
-										<th>PQty</th> 
-										<th>Customer</th>
+										{{-- <th>PQty</th>  --}}
+										<th>Location</th> 
 									</tr>
 								</thead>
 								<tbody id="soDataTable">
@@ -77,8 +78,13 @@
 				</div>
 			</div>
 			<div class="modal-footer text-end">
-				<button type = "button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"><i data-feather="x-circle"></i> Cancel</button>
-				<button type = "button" class="btn btn-primary btn-sm soProcess"><i data-feather="check-circle"></i> Process</button>
+				<button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
+					<i data-feather="x-circle"></i> Cancel
+				</button>
+				<button type="button" class="btn btn-primary btn-sm analyzeButton">
+					<i data-feather="check-circle"></i> Analyze
+				</button>
+				{{-- <button type = "button" class="btn btn-primary btn-sm soProcess"><i data-feather="check-circle"></i> Process</button> --}}
 			</div>
 		</div>
 	</div>

@@ -38,20 +38,20 @@ class DepreciationController extends Controller
             return redirect()->route('/');
         }
         $data = FixedAssetDepreciation::withDefaultGroupCompanyOrg()->orderBy('id', 'desc');
-        // if ($request->date) {
-        //     $dates = explode(' to ', $request->date);
-        //     $start = date('Y-m-d', strtotime($dates[0]));
-        //     $end = date('Y-m-d', strtotime($dates[1]));
-        //     $data = $data->whereDate('document_date', '>=', $start)
-        //         ->whereDate('document_date', '<=', $end);
-        // } else {
-        //     $fyear = Helper::getFinancialYear(date('Y-m-d'));
+        if ($request->date) {
+            $dates = explode(' to ', $request->date);
+            $start = date('Y-m-d', strtotime($dates[0]));
+            $end = date('Y-m-d', strtotime($dates[1]));
+            $data = $data->whereDate('document_date', '>=', $start)
+                ->whereDate('document_date', '<=', $end);
+        } else {
+            $fyear = Helper::getFinancialYear(date('Y-m-d'));
 
-        //     $data = $data->whereDate('document_date', '>=', $fyear['start_date'])
-        //         ->whereDate('document_date', '<=', $fyear['end_date']);
-        //     $start = $fyear['start_date'];
-        //     $end = $fyear['end_date'];
-        // }
+            $data = $data->whereDate('document_date', '>=', $fyear['start_date'])
+                ->whereDate('document_date', '<=', $fyear['end_date']);
+            $start = $fyear['start_date'];
+            $end = $fyear['end_date'];
+        }
         $data = $data->get();
         return view('fixed-asset.depreciation.index', compact('data'));
     }
@@ -138,8 +138,8 @@ class DepreciationController extends Controller
             foreach ($sub_assets as $sub_asset) {
                 $subAsset = FixedAssetSub::find($sub_asset['sub_asset_id']);
                 if ($subAsset) {
-                    $subAsset->total_depreciation += $sub_asset['dep_amount'] ?? 0;
-                    $subAsset->current_value_after_dep = $sub_asset['after_dep_value'] ?? null;
+                    $subAsset->total_depreciation += Helper::removeCommas($sub_asset['dep_amount']) ?? 0;
+                    $subAsset->current_value_after_dep = Helper::removeCommas($sub_asset['after_dep_value']) ?? ($subAsset->current_value_after_dep - Helper::removeCommas($sub_asset['dep_amount']));
                     $subAsset->save();
                 }
             }
@@ -150,7 +150,7 @@ class DepreciationController extends Controller
                 $assetReg = FixedAssetRegistration::find($asset['asset_id']);
                 $assetReg->updateTotalDep();
             }
-                 DB::commit();
+            DB::commit();
 
             return redirect()->route("finance.fixed-asset.depreciation.index")
                 ->with('success', 'Depreciation created successfully!');
@@ -280,11 +280,17 @@ class DepreciationController extends Controller
         }
         $asset_details = [];
         $asset_details = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-            ->withWhereHas('subAsset')
+            ->withWhereHas('subAsset', function ($query) {
+                $query->where('current_value_after_dep', '>', 0);
+            })
             ->whereNotNull('depreciation_percentage')
             ->whereNotNull('depreciation_percentage_year')
             ->withWhereHas('ledger')
-            ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
+            ->whereNotNull('capitalize_date')
+            ->where(function ($query) {
+                    $query->where('document_status', ConstantHelper::POSTED)
+                        ->orWhereNotNull('reference_doc_id');
+            })
             ->withWhereHas('category')
             ->get()
             ->where('last_dep_date', '<', $endDate)
@@ -504,5 +510,66 @@ class DepreciationController extends Controller
                 "status" => 500,
             ]);
         }
+    }
+    public function getAssetsDepreciationNew(Request $request)
+    {
+        $id = $request->id;
+        $fromDate = $request->from_date;
+        $toDate = $request->to_date;
+        $sub = FixedAssetSub::find($id);
+        $fy              = session('fy');
+        $finStart        = session('financial_start_date');
+        $finEnd          = session('financial_end_date');
+
+        $rows = [];
+        $asset = $sub->asset;
+        // adjust our “to” date if asset has expired
+        $days = $fromDate->diffInDays($toDate) + 1;
+
+        // pick base value
+        if ($asset->depreciation_method === 'SLM') {
+            $baseValue = $sub->current_value;
+        } else {
+            $inFinYear = Carbon::parse($asset->capitalize_date)
+                ->between(Carbon::parse($finStart), Carbon::parse($finEnd));
+            $baseValue = $inFinYear
+                ? $sub->current_value
+                : $sub->current_value_after_dep;
+        }
+
+        // prorated depreciation
+        $annualRate  = $asset->depreciation_percentage_year / 100;
+        $depAmount   = round($annualRate * $baseValue * ($days / 365), 4);
+        $afterValue  = $sub->current_value_after_dep - $depAmount;
+
+        // ensure we never drop below salvage for WDV
+        if (
+            $asset->depreciation_method === 'WDV'
+            && $afterValue > $sub->salvage_value
+        ) {
+            $excess     = $afterValue - $sub->salvage_value;
+            $depAmount += $excess;
+            $afterValue -= $excess;
+        }
+
+        $rows[] = [
+            'asset_id'                   => $asset->id,
+            'category'                   => $asset->category->name,
+            'asset_code'                 => $asset->asset_code,
+            'sub_asset_id'               => $sub->id,
+            'sub_asset_code'             => $sub->sub_asset_code,
+            'asset_name'                 => $asset->asset_name,
+            'ledger_name'                => $asset->ledger->name,
+            'fy'                         => $fy,
+            'from_date'                  => $fromDate->format('d-m-Y'),
+            'to_date'                    => $toDate->format('d-m-Y'),
+            'days'                       => $days,
+            'current_value'              => $sub->current_value,
+            'current_value_after_dep'    => $sub->current_value_after_dep,
+            'dep_amount'                 => $depAmount,
+            'after_dep_value'            => $afterValue,
+        ];
+
+        return response()->json($rows);
     }
 }

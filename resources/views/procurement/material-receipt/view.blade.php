@@ -103,7 +103,7 @@
                                                     <div class="col-md-5">
                                                         <select class="form-select sub_store" id="sub_store_id" name="sub_store_id">
                                                             <option value="{{$mrn->sub_store_id}}">
-                                                                    {{ ucfirst($mrn?->erpSubStore->store_name) }}
+                                                                    {{ ucfirst($mrn?->erpSubStore->name) }}
                                                                 </option>
                                                         </select>
                                                     </div>

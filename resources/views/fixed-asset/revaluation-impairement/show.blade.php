@@ -155,6 +155,22 @@
                                                             name="document_date" value="{{ $data->document_date }}" readonly required>
                                                     </div>
                                                 </div>
+                                                  <div class="row align-items-center mb-1">
+                                                     <div class="col-md-3">
+                                                      
+                                                            <label class="form-label">Category <span
+                                                                    class="text-danger">*</span></label>
+                                                        </div>
+                                                        <div class="col-md-5">
+                                                             <select class="form-select select2" name="category_id"
+                                                                id="category" required disabled>
+                                                                    <option value="{{ $data->category_id }}">
+                                                                        {{ $data?->category?->name }}
+                                                                    </option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Location <span
@@ -184,22 +200,8 @@
                                                         </select>
                                                     </div>
 
-                                                </div><div class="row align-items-center mb-1">
-                                                     <div class="col-md-3">
-                                                      
-                                                            <label class="form-label">Category <span
-                                                                    class="text-danger">*</span></label>
-                                                        </div>
-                                                        <div class="col-md-5">
-                                                             <select class="form-select select2" name="category_id"
-                                                                id="category" required disabled>
-                                                                    <option value="{{ $data->category_id }}">
-                                                                        {{ $data?->category?->name }}
-                                                                    </option>
-                                                            </select>
-                                                        </div>
-                                                    </div>
-
+                                                </div>
+                                              
                                             </div>
 
 

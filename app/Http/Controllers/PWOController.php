@@ -44,10 +44,12 @@ use App\Models\PwoBomMapping;
 use App\Models\PwoStationConsumption;
 use App\Models\SubType;
 use App\Models\Unit;
+use App\Services\BomService;
 use Yajra\DataTables\DataTables;
 use DB;
 use PDF;
 use Illuminate\Support\Facades\Storage;
+use NumberToWords\Legacy\Numbers\Words\Locale\Es;
 
 class PWOController extends Controller
 {
@@ -113,7 +115,7 @@ class PWOController extends Controller
              return redirect()->back();
          }
          $books = Helper::getBookSeriesNew($servicesAliasParam, $parentUrl, true)->get();
-         $locations = InventoryHelper::getAccessibleLocations([ConstantHelper::STOCKK, ConstantHelper::SHOP_FLOOR]);
+         $locations = InventoryHelper::getAccessibleLocations();
          return view('pwo.create', [
              'books' => $books,
              'servicesBooks' => $servicesBooks,
@@ -191,6 +193,12 @@ class PWOController extends Controller
                     $pwoSoMapping->pwo_id = $mo->id;
                     $pwoSoMapping->so_id = $component['so_id'] ?? null;
                     $pwoSoMapping->so_item_id = $component['so_item_id'] ?? null;
+                    $pwoSoMapping->store_id = $component['store_id'] ?? null;
+                    if(intval($component['main_so_item'])) {
+                        $pwoSoMapping->main_so_item = true;
+                    } else {
+                        $pwoSoMapping->main_so_item = false;
+                    }
                     $pwoSoMapping->item_id = $component['item_id'] ?? null;
                     $pwoSoMapping->item_code = $component['item_code'] ?? null;
                     $attributes = [];
@@ -235,7 +243,7 @@ class PWOController extends Controller
                         $pwoSoMapping->save();
                     }
 
-                    if(isset($pwoSoMapping->soItem) && $pwoSoMapping->soItem) {
+                    if(isset($pwoSoMapping->soItem) && $pwoSoMapping->soItem && $pwoSoMapping->main_so_item) {
                         $pwoSoMapping->soItem->pwo_qty += $component['qty'];
                         $pwoSoMapping->soItem->save();
                     }
@@ -534,6 +542,7 @@ class PWOController extends Controller
              $itemAttributes = $item?->itemAttributes;
              $itemAttributeArray = $item->item_attributes_array();
          }
+         $pwo_so_mapping_id = $pwo_so_mapping_id ?? $request->pwo_so_mapping_id ?? null;
          $html = view('pwo.partials.comp-attribute',compact('item','rowCount','selectedAttr','itemAttributes','pwo_so_mapping_id'))->render();
          $hiddenHtml = '';
          foreach ($itemAttributes as $attribute) {
@@ -630,7 +639,7 @@ class PWOController extends Controller
              $view = 'pwo.view';
          }
 
-         $locations = InventoryHelper::getAccessibleLocations([ConstantHelper::STOCKK, ConstantHelper::SHOP_FLOOR]);
+         $locations = InventoryHelper::getAccessibleLocations();
          $isEdit = $buttons['submit'];
         if(!$isEdit) {
             $isEdit = $buttons['amend'] && intval(request('amendment') ?? 0) ? true: false;
@@ -786,6 +795,12 @@ class PWOController extends Controller
                     $pwoSoMapping->so_item_id = $component['so_item_id'] ?? null;
                     $pwoSoMapping->item_id = $component['item_id'] ?? null;
                     $pwoSoMapping->item_code = $component['item_code'] ?? null;
+                    $pwoSoMapping->store_id = $component['store_id'] ?? null;
+                    if(intval($component['main_so_item'])) {
+                        $pwoSoMapping->main_so_item = true;
+                    } else {
+                        $pwoSoMapping->main_so_item = false;
+                    }
                     foreach($item?->itemAttributes as $itemAttribute) {
                         if (isset($component['attr_group_id'][$itemAttribute->attribute_group_id])) {
                             $attribute = Attribute::find(@$component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_name']);
@@ -1135,9 +1150,9 @@ class PWOController extends Controller
      {
          DB::beginTransaction();
          try {
-             $bom = Bom::find($request->id);
+             $bom = ErpProductionWorkOrder::find($request->id);
              if (isset($bom)) {
-                 $revoke = Helper::approveDocument($bom->book_id, $bom->id, $bom->revision_number, '', [], 0, ConstantHelper::REVOKE, $bom->total_value, get_class($bom));
+                 $revoke = Helper::approveDocument($bom->book_id, $bom->id, $bom->revision_number, '', [], 0, ConstantHelper::REVOKE, 0, get_class($bom));
                  if ($revoke['message']) {
                      DB::rollBack();
                      return response() -> json([
@@ -1298,6 +1313,7 @@ class PWOController extends Controller
         $customerId = $request->customer_id ?? null;
         $headerBookId = $request->header_book_id ?? null;
         $itemSearch = $request->item_search ?? null;
+        $storeId = $request->store_id ?? null;
         $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
         $soItems = ErpSoItem::whereExists(function ($query) {
             $query->select(DB::raw(1))
@@ -1306,12 +1322,15 @@ class PWOController extends Controller
                   ->whereColumn('erp_boms.item_id', 'erp_so_items.item_id')
                   ->whereIn('erp_boms.document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]);
         })
-        ->whereHas('header', function ($subQuery) use ($request, $applicableBookIds, $docNumber,$customerId) {
+        ->whereHas('header', function ($subQuery) use ($request, $applicableBookIds, $docNumber, $customerId, $storeId) {
                  $subQuery->withDefaultGroupCompanyOrg()
                 ->whereIn('book_id', $applicableBookIds)
                 ->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
                 ->when($request->book_id, function ($bookQuery) use ($request) {
                     $bookQuery->where('book_id', $request->book_id);
+                })
+                ->when($storeId, function ($query) use ($storeId) {
+                    $query->where('store_id', $storeId);
                 })
                 ->when($docNumber, function ($query) use ($docNumber) {
                     $query->where('document_number', 'LIKE', "%{$docNumber}%");
@@ -1354,12 +1373,71 @@ class PWOController extends Controller
      # Submit PWO Item list
      public function processSoItem(Request $request)
      {
-         $ids = json_decode($request->ids,true) ?? [];
-         $ids = array_values(array_unique($ids));
-         $isAttribute = intval($request->is_attribute) ?? 0;
-         if(!$isAttribute) {
-             $selectedData = json_decode($request->selected_items,true); 
-             $ids = ErpSoItem::where(function ($query) use ($selectedData) {
+        //  $ids = json_decode($request->ids,true) ?? [];
+        //  $ids = array_values(array_unique($ids));
+        //  if(!$isAttribute) {
+        //      $selectedData = json_decode($request->selected_items,true); 
+        //      $ids = ErpSoItem::where(function ($query) use ($selectedData) {
+        //         foreach ($selectedData as $selectedItem) {
+        //             $query->orWhere(function ($q) use ($selectedItem) {
+        //                 $q->where('sale_order_id', $selectedItem['sale_order_id'])
+        //                   ->where('item_id', $selectedItem['item_id']);
+        //             });
+        //         }
+        //     })->pluck('id')->toArray();
+        // } 
+        //  $pwoItems = ErpSoItem::whereIn('id', $ids)->get();
+        $isAttribute = intval($request->is_attribute) ?? 0;
+        $selectedItems = $request->selected_items;
+        $pwoItems = is_array($selectedItems) 
+        ? $selectedItems 
+        : (is_string($selectedItems) && is_array(json_decode($selectedItems, true)) 
+            ? json_decode($selectedItems, true) 
+            : []);
+        
+        $extendedPwoItems = $pwoItems;
+        if(!$isAttribute) {
+            foreach ($pwoItems as $index => $item) {
+                if ($item['main_so_item'] && !empty($item['so_item_ids'])) {
+                    $soItems = ErpSoItem::where('sale_order_id', $item['so_id'])
+                        ->whereIn('id', $item['so_item_ids'])
+                        ->get();
+                    $newItems = [];
+                    unset($item['so_item_ids']);
+                    foreach ($soItems as $soItem) {
+                        $newItem = $item;
+                        $newItem['item_id']      = $soItem->item_id;
+                        $newItem['item_name']    = $soItem->item_name;
+                        $newItem['item_code']    = $soItem->item_code;
+                        $newItem['uom_id']       = $soItem->uom_id;
+                        $newItem['uom_name']     = $soItem->uom->name;
+                        $newItem['total_qty']    = $soItem->order_qty;
+                        $newItem['so_item_id']   = $soItem->id;
+                        $newItem['attribute']    = $soItem->item_attributes_array();
+                        $newItems[] = $newItem;
+                    }
+                    array_splice($extendedPwoItems, $index, 1, $newItems);
+                }
+            }
+        }
+        $rowCount = intval($request->rowCount) ? intval($request->rowCount) + 1  : 1;
+        $html = view('pwo.partials.mo-item-pull', [
+             'pwoItems' => $extendedPwoItems,
+             'is_pull' => true,
+             'rowCount' => $rowCount
+        ])->render();
+ 
+         return response()->json(['data' => ['pos' => $html], 'status' => 200, 'message' => "fetched!"]);
+     }
+     
+    public function analyzeSoItem(Request $request)
+    {
+        $ids = json_decode($request->ids,true) ?? [];
+        $ids = array_values(array_unique($ids));
+        $isAttribute = intval($request->is_attribute) ?? 0;
+        if(!$isAttribute) {
+            $selectedData = json_decode($request->selected_items,true); 
+            $ids = ErpSoItem::where(function ($query) use ($selectedData) {
                 foreach ($selectedData as $selectedItem) {
                     $query->orWhere(function ($q) use ($selectedItem) {
                         $q->where('sale_order_id', $selectedItem['sale_order_id'])
@@ -1368,17 +1446,64 @@ class PWOController extends Controller
                 }
             })->pluck('id')->toArray();
         } 
-         $pwoItems = ErpSoItem::whereIn('id', $ids)->get(); 
-         $rowCount = intval($request->rowCount) ? intval($request->rowCount) + 1  : 1;
-         $html = view('pwo.partials.mo-item-pull', [
-             'pwoItems' => $pwoItems,
-             'is_pull' => true,
-             'rowCount' => $rowCount
+        $pwoItems = ErpSoItem::whereIn('id', $ids)->get();
+        $soItemIds = $pwoItems->pluck('id')->toArray();
+        $bomService = new BomService;
+        $femifishedItems = $bomService->getRawMaterialBreakdown($soItemIds, 'semi');
+        if(!$isAttribute) {
+            $temp = [];
+            foreach ($femifishedItems as $soItemId => $item) {
+                $fg = $item['semi_finished_goods']['fg'];
+                $key = $fg['so_id'] . '_' . $fg['bom_id'];
+                $temp[$key][] = [
+                    'so_item_id' => $soItemId,
+                    'fg' => $fg
+                ];
+            }
+            $grouped = [];
+            foreach ($temp as $key => $items) {
+                if (count($items) > 0) {
+                    $soId = $items[0]['fg']['so_id'];
+                    $bomId = $items[0]['fg']['bom_id'];
+                    $fg = $items[0]['fg'];
+                    $fg['so_item_ids'] = [$items[0]['so_item_id']];
+                    for ($i = 1; $i < count($items); $i++) {
+                        $fg['total_qty'] += (float) $items[$i]['fg']['total_qty'];
+                        $fg['so_item_ids'][] = $items[$i]['so_item_id'];
+                    }
+                    $fg['so_item_ids'] = implode(',', $fg['so_item_ids']);
+                    if(count($items) > 1) {
+                        $fg['attribute'] = [];
+                    }
+                    $grouped[$soId] = [
+                        'semi_finished_goods' => [
+                            'fg' => $fg
+                        ]
+                    ];
+                }
+            }
+            $femifishedItems = $grouped;
+        } else {
+            $newGrouped = [];
+            foreach($femifishedItems as $soItemId => $femifishedItem) {
+                $fg = $femifishedItem['semi_finished_goods']['fg'];
+                $fg['so_item_id'] = $soItemId;
+                $newGrouped[$soItemId] = [
+                    'semi_finished_goods' => [
+                        'fg' => $fg
+                    ]
+                ];
+            } 
+            $femifishedItems = $newGrouped;
+        }
+        $html = view('pwo.partials.analyze-item', [
+             'femifishedItems' => $femifishedItems,
+             'isAttribute' => $isAttribute
+            //  'rowCount' => $rowCount
              ])->render();
- 
-         return response()->json(['data' => ['pos' => $html], 'status' => 200, 'message' => "fetched!"]);
-     }
- 
+        return response()->json(['data' => ['pos' => $html], 'status' => 200, 'message' => "fetched!"]);
+    }
+
      public function destroy($id)
      {
          try {
@@ -1465,4 +1590,26 @@ class PWOController extends Controller
              ]);
          }
      }
+
+    # Get Stock
+    public function getStock(Request $request)
+    {
+        $explodeAttributes = explode(',', $request->selected_attributes ?? '');
+        $selectedAttributes = array_map('intval', $explodeAttributes);
+        $itemId = $request->item_id ?? null;
+        $uomId = $request->uom_id ?? null;
+        $storeId = $request->store_id ?? null;
+        $stocks = InventoryHelper::totalInventoryAndStock($itemId, $selectedAttributes, $uomId, $storeId);
+        $stockBalanceQty = 0;
+        if (isset($stocks) && isset($stocks['confirmedStocks'])) {
+            $stockBalanceQty = $stocks['confirmedStocks'];
+        }
+        $stockBalanceQty = ItemHelper::convertToAltUom($itemId, $uomId, (float)$stockBalanceQty);
+        return response()->json([
+            'status' => 200,
+            'data' => [
+                'avl_stock' => $stockBalanceQty
+            ]
+        ]);
+    }
 }

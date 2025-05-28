@@ -7,7 +7,7 @@
             <div class="modal-body px-sm-2 mx-50 pb-2">
                 <h1 class="text-center mb-1" id="headerDisc">Discount</h1>
                 <div class="text-end"></div>
-                <table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail"> 
+                <!-- <table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail"> 
                     <thead>
                         <tr>
                             <td>#</td>
@@ -32,7 +32,7 @@
                             </td>
                         </tr>
                     </thead>
-                </table>
+                </table> -->
                 <div class="table-responsive-md customernewsection-form">
                     <table id="summaryDiscountTable" class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail"> 
                         <thead>
@@ -41,7 +41,7 @@
                                 <th width="150px">Discount Name</th>
                                 <th>Discount %</th>
                                 <th>Discount Value</th>
-                                <th>Action</th>
+                                <!-- <th>Action</th> -->
                             </tr>
                         </thead>
                         <tbody>
@@ -60,11 +60,11 @@
                                         <td class="text-end">{{floatval($headerDiscount->ted_amount) ?? ''}}
                                             <input type="hidden"  value="{{$headerDiscount->ted_amount ?? ''}}" name="disc_summary[{{$hd_key+1}}][d_amnt]" />
                                         </td>
-                                        <td>
+                                        <!-- <td>
                                             <a href="javascript:;" class="text-danger deleteSummaryDiscountRow">
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                                             </a>
-                                        </td>
+                                        </td> -->
                                     </tr>   
                                 @endforeach
                             @endif
@@ -72,7 +72,7 @@
                                 <td colspan="2"></td>
                                 <td class="text-dark"><strong>Total</strong></td>
                                 <td class="text-dark text-end"><strong id="total" amount="{{@$mrn->total_header_disc_amount}}">{{number_format(@$mrn->total_header_disc_amount,2)}}</strong></td>
-                                <td></td>
+                                <!-- <td></td> -->
                             </tr>
                         </tbody>
                     </table>

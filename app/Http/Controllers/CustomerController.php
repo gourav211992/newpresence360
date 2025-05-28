@@ -229,6 +229,7 @@ class CustomerController extends Controller
         $categories = Category::where('status', ConstantHelper::ACTIVE)->whereNull('parent_id')->withDefaultGroupCompanyOrg()->get();
         $currencies = Currency::where('status', ConstantHelper::ACTIVE)->get();
         $paymentTerms = PaymentTerm::where('status', ConstantHelper::ACTIVE)->withDefaultGroupCompanyOrg()->get();
+        $relatedCustomers = Customer::where('status', ConstantHelper::ACTIVE)->withDefaultGroupCompanyOrg()->get();
         $titles = ConstantHelper::TITLES;
         $status = ConstantHelper::STATUS;
         $options = ConstantHelper::STOP_OPTIONS;
@@ -240,7 +241,9 @@ class CustomerController extends Controller
         $user = Helper::getAuthenticatedUser();
         $organization = $user->organization;
         $groupOrganizationIds = $user->groupOrganizationsIds(); 
-        $groupOrganizations = Organization::whereIn('id', $groupOrganizationIds)->get();
+        $groupOrganizations = Organization::where('status', 'active')
+            ->where('id', '!=', $groupOrganizationIds)
+            ->get();
         $customerCodeType = 'Manual';
         if ($services && $services['current_book']) {
             if (isset($services['current_book'])) {
@@ -270,7 +273,8 @@ class CustomerController extends Controller
             'addressTypes' => $addressTypes,
             'customerCodeType'=>$customerCodeType,
             'organization'=>$organization,
-            'groupOrganizations'=>$groupOrganizations
+            'groupOrganizations'=>$groupOrganizations,
+            'relatedCustomers'=>$relatedCustomers,
         ]);
     }
 
@@ -420,6 +424,7 @@ class CustomerController extends Controller
         $subcategories = Category::where('status', ConstantHelper::ACTIVE)->whereNotNull('parent_id')->withDefaultGroupCompanyOrg()->get();
         $currencies = Currency::where('status', ConstantHelper::ACTIVE)->get();
         $paymentTerms = PaymentTerm::where('status', ConstantHelper::ACTIVE)->withDefaultGroupCompanyOrg()->get();
+        $relatedCustomers = Customer::where('status', ConstantHelper::ACTIVE)->withDefaultGroupCompanyOrg()->get();
         $titles = ConstantHelper::TITLES;
         $notificationData = $customer? $customer->notification : [];
         $notifications = is_array($notificationData) ? $notificationData : json_decode($notificationData, true);
@@ -437,7 +442,9 @@ class CustomerController extends Controller
         $user = Helper::getAuthenticatedUser();
         $organization = $user->organization;
         $groupOrganizationIds = $user->groupOrganizationsIds(); 
-        $groupOrganizations = Organization::whereIn('id', $groupOrganizationIds)->get();
+        $groupOrganizations = Organization::where('status', 'active')
+        ->where('id', '!=', $groupOrganizationIds)
+        ->get();
         $customerCodeType ='Manual';
         if ($services && $services['current_book']) {
             if (isset($services['current_book'])) {
@@ -474,6 +481,7 @@ class CustomerController extends Controller
             'groupOrganizations'=>$groupOrganizations,
             'gstState' => $state,
             'gstCountry' => $country,
+            'relatedCustomers'=>$relatedCustomers,
         ]);
     }
 

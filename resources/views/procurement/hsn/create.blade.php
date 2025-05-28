@@ -178,6 +178,26 @@ $(document).ready(function() {
         });  
     }
     initializeSelect2();
+    function filterTaxGroups(codeType) {
+        let filteredTaxGroups = [];
+
+        if (codeType === 'Hsn') {
+            filteredTaxGroups = @json($taxGroups->where('tax_category', 'GST'));
+        } else if (codeType === 'Sac') {
+            filteredTaxGroups = @json($taxGroups->whereIn('tax_category', ['TDS', 'TCS']));
+        }
+
+        return filteredTaxGroups;
+    }
+    function updateTaxGroupDropdowns(codeType, targetRow) {
+        let filteredTaxGroups = filterTaxGroups(codeType);
+        let $select = targetRow.find('select[name*="[tax_group_id]"]');
+        $select.empty().append('<option value="">Select</option>');
+        $.each(filteredTaxGroups, function(key, taxGroup) {
+            $select.append(`<option value="${taxGroup.id}">${taxGroup.tax_group}</option>`);
+        });
+        $select.trigger('change');
+    }
     function addRow() {
         rowIndex++;
         const rowHtml = `
@@ -205,6 +225,9 @@ $(document).ready(function() {
         $('#taxPatternsTable tbody').append(rowHtml);
         feather.replace();
         initializeSelect2();
+        let selectedCodeType = $('input[name="type"]:checked').val();
+        const $lastRow = $('#taxPatternsTable tbody tr').last(); 
+        updateTaxGroupDropdowns(selectedCodeType, $lastRow);
         const today = new Date().toISOString().split('T')[0]; 
         const dateField = document.getElementById(`from_date_${rowIndex}`);
         dateField.setAttribute('min', today);
@@ -252,14 +275,26 @@ $(document).ready(function() {
         updateRowIndexes(); 
         feather.replace();
     });
-
+    $(document).on('change', 'input[name="type"]', function() {
+        let condition = $(this).val();
+        $('#taxPatternsTable tbody tr').each(function() {
+            updateTaxGroupDropdowns(condition, $(this));
+        });
+    });
     $('#taxPatternsTable').on('click', '.remove-row', function(e) {
         e.preventDefault();
         removeRow($(this).closest('tr'));
         updateRowIndexes();
     });
+    function initialTaxGroupDropdown() {
+        let condition = $('input[name="type"]:checked').val();
+        $('#taxPatternsTable tbody tr').each(function() {
+            updateTaxGroupDropdowns(condition, $(this));
+        });
+    } 
     feather.replace();
     updateRowIndexes();
+    initialTaxGroupDropdown();
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('from_date').setAttribute('min', today);
     document.getElementById('from_date').value = today;

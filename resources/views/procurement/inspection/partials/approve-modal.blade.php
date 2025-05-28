@@ -1,7 +1,7 @@
 <div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
    <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <form class="ajax-input-form" method="POST" action="{{ route('document.approval.material-receipt') }}" data-redirect="{{ route('material-receipt.index') }}" enctype='multipart/form-data'>
+        <form class="ajax-input-form" method="POST" action="{{ route('document.approval.inspection') }}" data-redirect="{{ route('inspection.index') }}" enctype='multipart/form-data'>
           @csrf
           <input type="hidden" name="action_type" id="action_type">
           <input type="hidden" name="id" value="{{$id ?? ''}}">
@@ -30,8 +30,8 @@
                </div>
             </div>
          </div>
-         <div class="modal-footer justify-content-center">  
-            <button type="reset" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button> 
+         <div class="modal-footer justify-content-center">
+            <button type="reset" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button>
             <button type="submit" class="btn btn-primary">Submit</button>
          </div>
        </form>

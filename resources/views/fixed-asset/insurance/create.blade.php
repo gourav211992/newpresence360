@@ -105,7 +105,23 @@
                                             </div>
 
                                             <div class="col-md-9">
-                                                {{-- location --}}
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Category <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <select class="form-select select2" name="category_id"
+                                                            id="old_category" required>
+                                                            @foreach ($categories as $category)
+                                                                <option value="{{ $category->id }}"
+                                                                    {{ old('category') == $category->id ? 'selected' : '' }}>
+                                                                    {{ $category->name }}
+                                                                </option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+                                                </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Location <span
@@ -113,18 +129,13 @@
                                                     </div>
 
                                                     <div class="col-md-5">
-                                                        <select id="location" class="form-select"
-                                                            name="location_id" required>
-                                                             <option value="">Select</option>
-                                                            @foreach ($locations as $location)
-                                                                <option value="{{ $location->id }}">
-                                                                    {{ $location->store_name }}</option>
-                                                            @endforeach
+                                                        <select id="location" class="form-select" name="location_id"
+                                                            required>
+                                                          
                                                         </select>
                                                     </div>
 
                                                 </div>
-                                                {{-- costcenter & categories --}}
                                                 <div class="row align-items-center mb-1 cost_center">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Cost Center <span
@@ -138,18 +149,6 @@
                                                     </div>
 
                                                 </div>
-                                                <div class="row align-items-center mb-1">
-                                                     <div class="col-md-3">
-
-                                                            <label class="form-label">Category <span
-                                                                    class="text-danger">*</span></label>
-                                                        </div>
-                                                        <div class="col-md-5">
-                                                            <select class="form-select select2" required name="category_id"
-                                                                id="category" required>
-                                                               </select>
-                                                        </div>
-                                                    </div>
                                                 <!-- Asset Code & Name -->
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
@@ -393,101 +392,99 @@
                 "@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach"
             );
         @endif
-        // location ,cost center, categories
-        $('#location').on('change', function () {
-            $('#category').empty();
+        //
 
-            const locationId = $(this).val();
-
-            if (locationId) {
-                const costCenterUrl = '{{ route("cost-center.get-cost-center", ":id") }}'.replace(':id', locationId);
-
-                $.ajax({
-                    url: costCenterUrl,
-                    type: 'GET',
-                    dataType: 'json',
-                    success: function (data) {
-                        const $costCenter = $('#cost_center');
-                        $costCenter.empty();
-
-                        if (data.length === 0) {
-                            $costCenter.prop('required', false);
-                            $('.cost_center').hide();
-
-                            loadCategories({ locationId });
-                        } else {
-                            $('.cost_center').show();
-                            $costCenter.prop('required', true);
-                            $costCenter.append('<option value="">Select Cost Center</option>');
-
-                            $.each(data, function (key, value) {
-                                $costCenter.append('<option value="' + value.id + '">' + value.name + '</option>');
-                            });
-
-                            $costCenter.trigger('change'); // 🔹 This will handle the rest
-                        }
-                    },
-                    error: function () {
-                        $('#cost_center').empty();
-                    }
-                });
-            } else {
-                $('#cost_center').empty();
-                $('#category').empty();
-            }
+         $('#old_category').on('change', function() {
+            loadLocation();  
+            updateAssetOptions();    
         });
-
-        // When cost center is changed
-        $('#cost_center').on('change', function () {
-            const costCenterId = $(this).val();
-            const locationId = $('#location').val();
-
-            if (locationId) {
-                if (costCenterId) {
-                    loadCategories({ locationId, costCenterId });
-                } else {
-                    loadCategories({ locationId });
-                }
+        function loadLocation(selectlocation = null) {
+            $('#cost_center').empty();
+            $('#cost_center').prop('required', false);
+            $('.cost_center').hide();
+            if(!$('#old_category').val()) {
+                return;
             }
-        });
-
-        // Centralized function to load categories
-        function loadCategories({ locationId, costCenterId = null }) {
-            const url = '{{ route("finance.fixed-asset.get-categories") }}';
+            const url = '{{ route('finance.fixed-asset.get-locations') }}';
 
             $.ajax({
                 url: url,
                 type: 'GET',
                 data: {
-                    location_id: locationId,
-                    cost_center_id: costCenterId
+                    category_id: $('#old_category').val(),
                 },
                 dataType: 'json',
-                success: function (data) {
-                    const $category = $('#category');
-                    $category.empty().append('<option value="">Select Category</option>');
+                success: function(data) {
+                    const $category = $('#location');
+                    $category.empty();
 
-                    $.each(data, function (key, value) {
-                        $category.append('<option value="' + value.id + '">' + value.name + '</option>');
+                    $.each(data, function(key, value) {
+                        const isSelected = selectlocation == value.id ? ' selected' : '';
+                        $category.append('<option value="' + value.id + '"' + isSelected + '>' + value
+                            .name + '</option>');
                     });
+                    $('#location').trigger('change');
                 },
-                error: function () {
-                    $('#category').empty();
+                error: function() {
+                    $('#location').empty();
                 }
             });
         }
+        loadLocation();
+        
+        // location ,cost center, categories
+        $('#location').on('change', function() {
+            var locationId = $(this).val();
+             var selectedCostCenterId = '{{ $data->cost_center_id ?? '' }}'; 
 
+            if (locationId) {
+                // Build the route manually
+                var url = '{{ route('finance.fixed-asset.get-cost-centers') }}';
 
-        $('#location').trigger('change');
+                $.ajax({
+                    url: url,
+                    type: 'GET',
+                    data: {
+                        location_id: locationId,
+                        category_id: $('#old_category').val(),
+                    },
+                    dataType: 'json',
+                    success: function(data) {
+                        if (data.length == 0) {
+                            $('#cost_center').empty();
+                            $('#cost_center').prop('required', false);
+                            $('.cost_center').hide();
+                           // loadCategories();
+                        } else {
+                            $('.cost_center').show();
+                            $('#cost_center').prop('required', true);
+                            $('#cost_center').empty(); // Clear previous options
+                              $.each(data, function (key, value) {
+                                let selected = (value.id == selectedCostCenterId) ? 'selected' : '';
+                                $('#cost_center').append('<option value="' + value.id + '" ' + selected + '>' + value.name + '</option>');
+                            });
+                            $('#cost_center').trigger('change');
+                            // updateAssetOptions();
+                        }
+                    },
+                    error: function() {
+                        $('#cost_center').empty();
+                    }
+                });
+            } else {
+                $('#cost_center').empty();
+            }
+            updateAssetOptions();
+        });
 
-        $('#category').on('change', function () {
+        $('#cost_center').on('change', function () {
             updateAssetOptions();
         });
 
         function getAllAssetIds() {
             let assetIds = [];
 
-            $('.asset_id').each(function () {
+            $('#asset_id').each(function () {
                 let val = $(this).val();
                 if (val) {
                     assetIds.push(parseFloat(val));
@@ -497,7 +494,7 @@
             return assetIds;
         }
         function updateAssetOptions() {
-            const category = $('#category').val();
+            const category = $('#old_category').val();
 
             $.ajax({
                 headers: {
@@ -511,7 +508,8 @@
                     ids: getAllAssetIds(), // your existing helper
                     category: category,
                     location: $('#location').val(),
-                    cost_center: $('#cost_center').val()
+                    cost_center: $('#cost_center').val(),
+                    category_id: $('#old_category').val(),
                 },
                 success: function (data) {
                     const $assetSelect = $('#asset_id');

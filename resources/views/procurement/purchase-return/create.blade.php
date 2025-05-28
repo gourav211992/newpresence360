@@ -904,6 +904,103 @@
             });
         }
 
+        function initializeAutocomplete2(selector, type) {
+            $(selector).autocomplete({
+                source: function(request, response) {
+                    let selectedAllItemIds = [];
+                    $("#itemTable tbody [id*='row_']").each(function(index,item) {
+                        if(Number($(item).find('[name*="item_id"]').val())) {
+                            selectedAllItemIds.push(Number($(item).find('[name*="item_id"]').val()));
+                        }
+                    });
+                    $.ajax({
+                        url: '/search',
+                        method: 'GET',
+                        dataType: 'json',
+                        data: {
+                            q: request.term,
+                            type:'goods_item_list',
+                            selectedAllItemIds : JSON.stringify(selectedAllItemIds)
+                        },
+                        success: function(data) {
+                            response($.map(data, function(item) {
+                                return {
+                                    id: item.id,
+                                    label: `${item.item_name} (${item.item_code})`,
+                                    code: item.item_code || '',
+                                    item_id: item.id,
+                                    item_name:item.item_name,
+                                    uom_name:item.uom?.name,
+                                    uom_id:item.uom_id,
+                                    hsn_id:item.hsn?.id,
+                                    hsn_code:item.hsn?.code,
+                                    alternate_u_o_ms:item.alternate_u_o_ms,
+                                };
+                            }));
+                        },
+                        error: function(xhr) {
+                            console.error('Error fetching customer data:', xhr.responseText);
+                        }
+                    });
+                },
+                minLength: 0,
+                select: function(event, ui) {
+                    let $input = $(this);
+                    let itemCode = ui.item.code;
+                    let itemName = ui.item.value;
+                    let itemN = ui.item.item_name;
+                    let itemId = ui.item.item_id;
+                    let uomId = ui.item.uom_id;
+                    let uomName = ui.item.uom_name;
+                    let hsnId = ui.item.hsn_id;
+                    let hsnCode = ui.item.hsn_code;
+                    $input.attr('data-name', itemName);
+                    $input.attr('data-code', itemCode);
+                    $input.attr('data-id', itemId);
+                    let closestTr = $input.closest('tr');
+                    closestTr.find('[name*=item_id]').val(itemId);
+                    closestTr.find('[name*=item_code]').val(itemCode);
+                    closestTr.find('[name*=item_name]').val(itemN);
+                    closestTr.find('[name*=hsn_id]').val(hsnId);
+                    closestTr.find('[name*=hsn_code]').val(hsnCode);
+                    closestTr.find("td[id*='itemAttribute_']").html(defautAttrBtn);
+                    $input.val(itemCode);
+                    let uomOption = `<option value=${uomId}>${uomName}</option>`;
+                    if(ui.item?.alternate_u_o_ms) {
+                        for(let alterItem of ui.item.alternate_u_o_ms) {
+                        uomOption += `<option value="${alterItem.uom_id}" ${alterItem.is_purchasing ? 'selected' : ''}>${alterItem.uom?.name}</option>`;
+                        }
+                    }
+                    closestTr.find('[name*=uom_id]').append(uomOption);
+                    closestTr.find('.attributeBtn').trigger('click');
+                    setTimeout(() => {
+                        if(ui.item.is_attr) {
+                            $input.closest('tr').find('.attributeBtn').trigger('click');
+                        } else {
+                            $input.closest('tr').find('.attributeBtn').trigger('click');
+                            $input.closest('tr').find('[name*="[accepted_qty]"]').val('').focus();
+                        }
+                    }, 100);
+                    getItemDetail(closestTr);
+                    getItemCostPrice($input.closest('tr'));
+                    let storeLocation = $('.header_store_id').val();
+                    return false;
+                },
+                change: function(event, ui) {
+                    if (!ui.item) {
+                        $(this).val("");
+                            // $('#itemId').val('');
+                        $(this).attr('data-name', '');
+                        $(this).attr('data-code', '');
+                    }
+                }
+            }).focus(function() {
+                if (this.value === "") {
+                    $(this).autocomplete("search", "");
+                }
+            });
+        }
+
         /*Add New Row*/
         $(document).on('click','#addNewItemBtn', (e) => {
             // for component item code
@@ -934,102 +1031,6 @@
                     icon: 'error',
                 });
                 return false;
-            }
-            function initializeAutocomplete2(selector, type) {
-                $(selector).autocomplete({
-                    source: function(request, response) {
-                        let selectedAllItemIds = [];
-                        $("#itemTable tbody [id*='row_']").each(function(index,item) {
-                            if(Number($(item).find('[name*="item_id"]').val())) {
-                                selectedAllItemIds.push(Number($(item).find('[name*="item_id"]').val()));
-                            }
-                        });
-                        $.ajax({
-                            url: '/search',
-                            method: 'GET',
-                            dataType: 'json',
-                            data: {
-                                q: request.term,
-                                type:'goods_item_list',
-                                selectedAllItemIds : JSON.stringify(selectedAllItemIds)
-                            },
-                            success: function(data) {
-                                response($.map(data, function(item) {
-                                    return {
-                                        id: item.id,
-                                        label: `${item.item_name} (${item.item_code})`,
-                                        code: item.item_code || '',
-                                        item_id: item.id,
-                                        item_name:item.item_name,
-                                        uom_name:item.uom?.name,
-                                        uom_id:item.uom_id,
-                                        hsn_id:item.hsn?.id,
-                                        hsn_code:item.hsn?.code,
-                                        alternate_u_o_ms:item.alternate_u_o_ms,
-                                    };
-                                }));
-                            },
-                            error: function(xhr) {
-                                console.error('Error fetching customer data:', xhr.responseText);
-                            }
-                        });
-                    },
-                    minLength: 0,
-                    select: function(event, ui) {
-                        let $input = $(this);
-                        let itemCode = ui.item.code;
-                        let itemName = ui.item.value;
-                        let itemN = ui.item.item_name;
-                        let itemId = ui.item.item_id;
-                        let uomId = ui.item.uom_id;
-                        let uomName = ui.item.uom_name;
-                        let hsnId = ui.item.hsn_id;
-                        let hsnCode = ui.item.hsn_code;
-                        $input.attr('data-name', itemName);
-                        $input.attr('data-code', itemCode);
-                        $input.attr('data-id', itemId);
-                        let closestTr = $input.closest('tr');
-                        closestTr.find('[name*=item_id]').val(itemId);
-                        closestTr.find('[name*=item_code]').val(itemCode);
-                        closestTr.find('[name*=item_name]').val(itemN);
-                        closestTr.find('[name*=hsn_id]').val(hsnId);
-                        closestTr.find('[name*=hsn_code]').val(hsnCode);
-                        closestTr.find("td[id*='itemAttribute_']").html(defautAttrBtn);
-                        $input.val(itemCode);
-                        let uomOption = `<option value=${uomId}>${uomName}</option>`;
-                        if(ui.item?.alternate_u_o_ms) {
-                            for(let alterItem of ui.item.alternate_u_o_ms) {
-                            uomOption += `<option value="${alterItem.uom_id}" ${alterItem.is_purchasing ? 'selected' : ''}>${alterItem.uom?.name}</option>`;
-                            }
-                        }
-                        closestTr.find('[name*=uom_id]').append(uomOption);
-                        closestTr.find('.attributeBtn').trigger('click');
-                        setTimeout(() => {
-                            if(ui.item.is_attr) {
-                                $input.closest('tr').find('.attributeBtn').trigger('click');
-                            } else {
-                                $input.closest('tr').find('.attributeBtn').trigger('click');
-                                $input.closest('tr').find('[name*="[accepted_qty]"]').val('').focus();
-                            }
-                        }, 100);
-                        getItemDetail(closestTr);
-                        getItemCostPrice($input.closest('tr'));
-                        let storeLocation = $('.header_store_id').val();
-                        return false;
-                    },
-                    change: function(event, ui) {
-                        if (!ui.item) {
-                            $(this).val("");
-                                // $('#itemId').val('');
-                            $(this).attr('data-name', '');
-                            $(this).attr('data-code', '');
-                        }
-                    }
-                }).focus(function() {
-                    if (this.value === "") {
-                        $(this).autocomplete("search", "");
-                    }
-                });
             }
             let rowsLength = $("#itemTable > tbody > tr").length;
             /*Check last tr data shoud be required*/
@@ -1078,6 +1079,7 @@
                             $("#itemTable > tbody").html(data.data.html);
                         }
                         initializeAutocomplete2(".comp_item_code");
+                        focusAndScrollToLastRowInput();
                         $(".poSelect").prop('disabled',true);
                         $("#vendor_name").prop('readonly',true);
                         $(".editAddressBtn").addClass('d-none');
@@ -1166,6 +1168,7 @@
                             $(".select2").select2();
                         }
                         qtyEnabledDisabled();
+                        initAttributeAutocomplete();
                     }
                 });
             });
@@ -1289,6 +1292,7 @@
             let mrnHeaderId = $(currentTr).find("[name*='mrn_header_id']").val() || '';
             let mrnDetailId = $(currentTr).find("[name*='mrn_detail_id']").val() || '';
             let remark = '';
+            let returnType = $('#return_type').val();
             if($(currentTr).find("[name*='remark']")) {
                 remark = $(currentTr).find("[name*='remark']").val() || '';
             }
@@ -1309,73 +1313,73 @@
                     return response.json().then(data => {
                         if(data.status == 200) {
                             $("#itemDetailDisplay").html(data.data.html);
-                            let detailedStocks = data?.data?.detailedStocks;
-                            var rowId = $(currentTr).attr('data-index');
+                        //     let detailedStocks = data?.data?.detailedStocks;
+                        //     var rowId = $(currentTr).attr('data-index');
 
-                            let total_qty = 0;
-                            if(detailedStocks.status == 'success') {
-                                let rows = '';
-                                let hiddenDis = '';
-                                let hiddenLocation = '';
-                                detailedStocks['records'].forEach(function(item,index) {
-                                    index = index + 1;
-                                    total_qty+=item.allocated_quantity_alt_uom;
-                                    rows+= `<tr class="display_summary_item_location_row">
-                                            <td>${index}</td>
-                                            <td>${item.rack}
-                                                <input type="hidden" value="${item.store_id}" name="location_store_id_${index}">
-                                                <input type="hidden" value="${item.store}" name="location_store_code_${index}">
-                                                <input type="hidden" value="${item.rack_id}" name="location_rack_id_${index}">
-                                            </td>
-                                            <td>${item.shelf}
-                                                <input type="hidden" value="${item.shelf_id}" name="location_shelf_id_${index}">
-                                            </td>
-                                            <td>${item.bin}
-                                                <input type="hidden" value="${item.bin_id}" name="location_bin_id_${index}">
-                                            </td>
-                                            <td class="text-end">${item.allocated_quantity_alt_uom}
-                                                <input type="hidden" value="${item.allocated_quantity_alt_uom}" name="location_store_qty_${index}">
-                                            </td>
-                                        </tr>`;
+                        //     let total_qty = 0;
+                        //     if(detailedStocks.status == 'success') {
+                        //         let rows = '';
+                        //         let hiddenDis = '';
+                        //         let hiddenLocation = '';
+                        //         detailedStocks['records'].forEach(function(item,index) {
+                        //             index = index + 1;
+                        //             total_qty+=item.allocated_quantity_alt_uom;
+                        //             rows+= `<tr class="display_summary_item_location_row">
+                        //                     <td>${index}</td>
+                        //                     <td>${item.rack}
+                        //                         <input type="hidden" value="${item.store_id}" name="location_store_id_${index}">
+                        //                         <input type="hidden" value="${item.store}" name="location_store_code_${index}">
+                        //                         <input type="hidden" value="${item.rack_id}" name="location_rack_id_${index}">
+                        //                     </td>
+                        //                     <td>${item.shelf}
+                        //                         <input type="hidden" value="${item.shelf_id}" name="location_shelf_id_${index}">
+                        //                     </td>
+                        //                     <td>${item.bin}
+                        //                         <input type="hidden" value="${item.bin_id}" name="location_bin_id_${index}">
+                        //                     </td>
+                        //                     <td class="text-end">${item.allocated_quantity_alt_uom}
+                        //                         <input type="hidden" value="${item.allocated_quantity_alt_uom}" name="location_store_qty_${index}">
+                        //                     </td>
+                        //                 </tr>`;
 
-                                    hiddenLocation+= `<input type="hidden" value="${item.store_id}" name="components[${rowId}][erp_store][${index}][erp_store_id]">
-                                        <input type="hidden" value="${item.rack_id}" name="components[${rowId}][erp_store][${index}][erp_rack_id]">
-                                        <input type="hidden" value="${item.shelf_id}" name="components[${rowId}][erp_store][${index}][erp_shelf_id]">
-                                        <input type="hidden" value="${item.bin_id}" name="components[${rowId}][erp_store][${index}][erp_bin_id]">
-                                        <input type="hidden" value="${item.allocated_quantity_alt_uom}" name="components[${rowId}][erp_store][${index}][erp_store_qty]">`;
+                        //             hiddenLocation+= `<input type="hidden" value="${item.store_id}" name="components[${rowId}][erp_store][${index}][erp_store_id]">
+                        //                 <input type="hidden" value="${item.rack_id}" name="components[${rowId}][erp_store][${index}][erp_rack_id]">
+                        //                 <input type="hidden" value="${item.shelf_id}" name="components[${rowId}][erp_store][${index}][erp_shelf_id]">
+                        //                 <input type="hidden" value="${item.bin_id}" name="components[${rowId}][erp_store][${index}][erp_bin_id]">
+                        //                 <input type="hidden" value="${item.allocated_quantity_alt_uom}" name="components[${rowId}][erp_store][${index}][erp_store_qty]">`;
 
-                                });
+                        //         });
 
-                                $("#deliveryScheduleTable tbody").find('.display_summary_item_location_row').remove();
-                                $("#deliveryScheduleTable tbody").find('#itemLocationFooter').before(rows);
-                                $("#deliveryScheduleTable tbody #itemLocationFooter").find('#total').attr('amount',total_qty.toFixed(2));
-                                $("#deliveryScheduleTable tbody #itemLocationFooter").find('#total').text(total_qty.toFixed(2));
-                                $('.store_data_'+rowId).html(hiddenLocation);
-                                // $(`[name*="components[${rowId}][store_data]"]`).before(hiddenLocation);
+                        //         $("#deliveryScheduleTable tbody").find('.display_summary_item_location_row').remove();
+                        //         $("#deliveryScheduleTable tbody").find('#itemLocationFooter').before(rows);
+                        //         $("#deliveryScheduleTable tbody #itemLocationFooter").find('#total').attr('amount',total_qty.toFixed(2));
+                        //         $("#deliveryScheduleTable tbody #itemLocationFooter").find('#total').text(total_qty.toFixed(2));
+                        //         $('.store_data_'+rowId).html(hiddenLocation);
+                        //         // $(`[name*="components[${rowId}][store_data]"]`).before(hiddenLocation);
 
-                            } else{
-                                $("#deliveryScheduleTable tbody").find('.display_summary_item_location_row').remove();
-                                $("#deliveryScheduleTable tbody #itemLocationFooter").find('#total').attr('amount',total_qty);
-                                $("#deliveryScheduleTable tbody #itemLocationFooter").find('#total').text(total_qty);
-                                $(currentTr).find("[name*='[accepted_qty]']").val(detailedStocks.availStock);
-                                if(detailedStocks.availStock < detailedStocks.inputStock){
-                                    // $(currentTr).find("[name*='[item_name]']").after().addClass('error-qty').css('color','red').text(detailedStocks.message);
-                                    Swal.fire({
-                                        title: 'Error!',
-                                        text: detailedStocks.message,
-                                        icon: 'error',
-                                    });
-                                    return false;
-                                } else{
-                                    // $(currentTr).find("[name*='[item_name]']").after().addClass('d-none');
-                                }
-                            }
-                        } else{
-                            Swal.fire({
-                                title: 'Error!',
-                                text: detailedStocks.message,
-                                icon: 'error',
-                            });
+                        //     } else{
+                        //         $("#deliveryScheduleTable tbody").find('.display_summary_item_location_row').remove();
+                        //         $("#deliveryScheduleTable tbody #itemLocationFooter").find('#total').attr('amount',total_qty);
+                        //         $("#deliveryScheduleTable tbody #itemLocationFooter").find('#total').text(total_qty);
+                        //         $(currentTr).find("[name*='[accepted_qty]']").val(detailedStocks.availStock);
+                        //         if(detailedStocks.availStock < detailedStocks.inputStock){
+                        //             // $(currentTr).find("[name*='[item_name]']").after().addClass('error-qty').css('color','red').text(detailedStocks.message);
+                        //             Swal.fire({
+                        //                 title: 'Error!',
+                        //                 text: detailedStocks.message,
+                        //                 icon: 'error',
+                        //             });
+                        //             return false;
+                        //         } else{
+                        //             // $(currentTr).find("[name*='[item_name]']").after().addClass('d-none');
+                        //         }
+                        //     }
+                        // } else{
+                        //     Swal.fire({
+                        //         title: 'Error!',
+                        //         text: detailedStocks.message,
+                        //         icon: 'error',
+                        //     });
                         }
                     });
                 });
@@ -1790,6 +1794,8 @@
                             $("#summaryExpTable tbody").find('.display_summary_exp_row').remove();
                             $("#summaryExpTable tbody").find('#expSummaryFooter').before(rows);
                         }
+                        initializeAutocomplete2(".comp_item_code");
+                        focusAndScrollToLastRowInput();
                         setTimeout(() => {
                             setTableCalculation();
                             $("#itemTable .mrntableselectexcel tr").each(function(index, item) {

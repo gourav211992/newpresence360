@@ -27,6 +27,7 @@ class PbHeaderHistory extends Model
         'company_id',
         'series_id',
         'header_id',
+        'store_id',
         'book_code',
         'vendor_id',
         'vendor_code',
@@ -272,7 +273,7 @@ class PbHeaderHistory extends Model
 
     public function media()
     {
-        return $this->morphMany(GateEntryMedia::class, 'model');
+        return $this->morphMany(PbMedia::class, 'model');
     }
 
     public function getDisplayStatusAttribute()

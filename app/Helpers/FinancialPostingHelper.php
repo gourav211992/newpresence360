@@ -69,16 +69,17 @@ class FinancialPostingHelper
     const CREDIT = "Credit";
     const COGS_ACCOUNT = 'COGS';
     const SALES_ACCOUNT = 'Sales';
-    const STOCK_ACCOUNT = 'Stock';
+    const STOCK_ACCOUNT = 'Service';
     const PHYSICAL_STOCK_VARIANCE_ACCOUNT = 'PSVA';
     const WIP_ACCOUNT = 'FG/WIP';
     const RM_ACCOUNT = 'RM';
     const CUSTOMER_ACCOUNT = 'Customer';
+    const VENDOR = 'Vendor';
     const OLD_ASSET = 'Old Asset';
     const NEW_ASSET = 'New Asset';
     const PAYMENT_ACCOUNT = 'Payment';
     const VENDOR_ACCOUNT = 'Party';
-
+    const FIXEDASSET_ACCOUNT = 'Fixed Asset';
     const WRITE_OFF_ACCOUNT = 'Writeoff';
     const Loan_Customer_Receivable_ACCOUNT = 'Loan Customer Receivable';
 
@@ -91,6 +92,9 @@ class FinancialPostingHelper
     const DEPRECIATION = 'Depreciation';
     const SUPPLIER_ACCOUNT = 'Supplier';
     const TAX_ACCOUNT = 'Tax';
+    const CGST_TAX_ACCOUNT = 'CGST Tax';
+    const IGST_TAX_ACCOUNT = 'IGST Tax';
+    const SGST_TAX_ACCOUNT = 'SGST Tax';
     const EXPENSE_ACCOUNT = 'Expense';
     const SURPLUS_ACCOUNT = 'Surplus';
     const DISCOUNT_ACCOUNT = 'Discount';
@@ -138,6 +142,11 @@ class FinancialPostingHelper
     const FIXED_ASSET_SPLIT_MERGER_POSTING_ACCOUNT = [
         self::NEW_ASSET => self::DEBIT,
         self::OLD_ASSET => self::CREDIT,
+    ];
+    const FIXED_ASSET_POSTING_ACCOUNT = [
+        self::VENDOR_ACCOUNT => self::CREDIT,
+        self::TAX_ACCOUNT => self::DEBIT,
+        self::FIXEDASSET_ACCOUNT=>self::DEBIT,
     ];
 
     const LOAN_SETTLE_POSTING_ACCOUNT = [
@@ -453,6 +462,15 @@ class FinancialPostingHelper
             }
         
             $entries = self::fixedAssetMergerVoucherDetails($documentId, $type);
+            if (!$entries['status']) {
+                return array(
+                    'status' => false,
+                    'message' => $entries['message'],
+                    'data' => []
+                );
+            }
+        }else if ($serviceAlias === ConstantHelper::FIXEDASSET) {
+            $entries = self::fixedAssetVoucherDetails($documentId, $type);
             if (!$entries['status']) {
                 return array(
                     'status' => false,
@@ -3303,7 +3321,7 @@ class FinancialPostingHelper
             $itemValue = 0;
             $orgCurrencyCost = 0;
             $asset = FixedAssetRegistration::find($docItem->asset_id);
-            $asset->updateTotalDep();
+            //$asset->updateTotalDep();
             $docValue = $docItem->dep_amount;
             $assetsCreditAmount = $docValue;
             $assetsLedgerId = $asset->ledger_id;
@@ -3466,6 +3484,238 @@ class FinancialPostingHelper
             ]
         );
     }
+    public static function fixedAssetVoucherDetails(int $documentId, string $type)
+    {
+        $document = FixedAssetRegistration::find($documentId);
+        if (!isset($document)) {
+            return array(
+                'status' => false,
+                'message' => 'Document not found',
+                'data' => []
+            );
+        }
+
+
+        //Invoice to follow
+        $postingArray = array(
+            self::ASSET => [],
+            self::IGST_TAX_ACCOUNT => [],
+            self::CGST_TAX_ACCOUNT => [],
+            self::SGST_TAX_ACCOUNT => [],
+            self::VENDOR_ACCOUNT=> []
+        );
+
+        //Status to check if all ledger entries were properly set
+        $ledgerErrorStatus = null;
+        $assetValue  = $document->current_value;
+        $igstValue = $document?->igst_value['value']??0;
+        $cgstValue = $document?->cgst_value['value']??0;
+        $sgstValue = $document?->sgst_value['value']??0;
+        $totalValue = $assetValue + $igstValue + $cgstValue + $sgstValue;
+
+
+
+        $assetLedgerId = $document->ledger_id;
+        $assetLedgerGroupId = $document->ledger_group_id;
+        $assetLedger = Ledger::find($assetLedgerId);
+        $assetLedgerGroup = Group::find($assetLedgerGroupId);
+        if (!isset($assetLedger) || !isset($assetLedgerGroup)) {
+            $ledgerErrorStatus = self::ERROR_PREFIX . 'Asset Account not setup';
+        }
+
+        $postingArray[self::ASSET][] = [
+            'ledger_id' => $assetLedgerId,
+            'ledger_group_id' => $assetLedgerGroupId,
+            'ledger_code' => $assetLedger?->code,
+            'ledger_name' => $assetLedger?->name,
+            'ledger_group_code' => $assetLedgerGroup?->name,
+            'credit_amount' => 0,
+            'credit_amount_org' => 0,
+            'debit_amount' => $assetValue,
+            'debit_amount_org' => $assetValue,
+        ];
+        if($igstValue > 0) {
+
+
+        $igstLedgerId = $document?->igst_value['ledger']??null;
+        $igstLedgerGroupId = $document?->igst_value['ledger_group']??null;
+        $igstLedger = Ledger::find($igstLedgerId);
+        $igstLedgerGroup = Group::find($igstLedgerGroupId);
+        if (!isset($igstLedger) || !isset($igstLedgerGroup)) {
+            $ledgerErrorStatus = self::ERROR_PREFIX . 'IGST Tax Account not setup';
+        }
+
+        $postingArray[self::IGST_TAX_ACCOUNT][] = [
+            'ledger_id' => $igstLedgerId,
+            'ledger_group_id' => $igstLedgerGroupId,
+            'ledger_code' => $igstLedger?->code,
+            'ledger_name' => $igstLedger?->name,
+            'ledger_group_code' => $igstLedgerGroup?->name,
+            'credit_amount' => 0,
+            'credit_amount_org' => 0,
+            'debit_amount' => $igstValue,
+            'debit_amount_org' => $igstValue,
+        ];
+    }
+    
+    if($cgstValue>0){
+
+        $cgstLedgerId = $document?->cgst_value['ledger']??null;
+        $cgstLedgerGroupId = $document?->cgst_value['ledger_group']??null;;
+        $cgstLedger = Ledger::find($cgstLedgerId);
+        $cgstLedgerGroup = Group::find($cgstLedgerGroupId);
+        if (!isset($cgstLedger) || !isset($cgstLedgerGroup)) {
+            $ledgerErrorStatus = self::ERROR_PREFIX . 'CGST Tax Account not setup';
+        }
+
+        $postingArray[self::CGST_TAX_ACCOUNT][] = [
+            'ledger_id' => $cgstLedgerId,
+            'ledger_group_id' => $cgstLedgerGroupId,
+            'ledger_code' => $cgstLedger?->code,
+            'ledger_name' => $cgstLedger?->name,
+            'ledger_group_code' => $cgstLedgerGroup?->name,
+            'credit_amount' => 0,
+            'credit_amount_org' => 0,
+            'debit_amount' => $cgstValue,
+            'debit_amount_org' => $cgstValue,
+        ];
+    }
+     if($sgstValue>0){
+        $sgstLedgerId =  $document?->sgst_value['ledger']??null;
+        $sgstLedgerGroupId =  $document?->sgst_value['ledger_group']??null;
+        $sgstLedger = Ledger::find($sgstLedgerId);
+        $sgstLedgerGroup = Group::find($sgstLedgerGroupId);
+        if (!isset($sgstLedger) || !isset($sgstLedgerGroup)) {
+            $ledgerErrorStatus = self::ERROR_PREFIX . 'SGST Tax Account not setup';
+        }
+
+        $postingArray[self::SGST_TAX_ACCOUNT][] = [
+            'ledger_id' => $sgstLedgerId,
+            'ledger_group_id' => $sgstLedgerGroupId,
+            'ledger_code' => $sgstLedger?->code,
+            'ledger_name' => $sgstLedger?->name,
+            'ledger_group_code' => $sgstLedgerGroup?->name,
+            'credit_amount' => 0,
+            'credit_amount_org' => 0,
+            'debit_amount' => $sgstValue,
+            'debit_amount_org' => $sgstValue,
+        ];
+    }
+        
+        $vendorLedgerId = $document?->vendor?->ledger_id;
+        $vendorLedgerGroupId = $document?->vendor?->ledger_group_id;
+        $vendorLedger = Ledger::find($vendorLedgerId);
+        $vendorLedgerGroup = Group::find($vendorLedgerGroupId);
+        if (!isset($vendorLedger) || !isset($vendorLedgerGroup)) {
+            $ledgerErrorStatus = self::ERROR_PREFIX . 'Vendor Account not setup';
+        }
+
+        $postingArray[self::VENDOR_ACCOUNT][] = [
+            'ledger_id' => $vendorLedgerId,
+            'ledger_group_id' => $vendorLedgerGroupId,
+            'ledger_code' => $vendorLedger?->code,
+            'ledger_name' => $vendorLedger?->name,
+            'ledger_group_code' => $vendorLedgerGroup?->name,
+            'credit_amount' => $totalValue,
+            'credit_amount_org' => $totalValue,
+            'debit_amount' => 0,
+            'debit_amount_org' => 0,
+        ];
+
+
+
+
+
+
+        if ($ledgerErrorStatus) {
+            return array(
+                'status' => false,
+                'message' => $ledgerErrorStatus,
+                'data' => []
+            );
+        }
+        $totalCreditAmount = 0;
+        $totalDebitAmount = 0;
+
+
+        //Check debit and credit tally
+        foreach ($postingArray as $postAccount) {
+            foreach ($postAccount as $postingValue) {
+                $totalCreditAmount += $postingValue['credit_amount'];
+                $totalDebitAmount += $postingValue['debit_amount'];
+            }
+        }
+        // Balance does not match
+        if (trim((string)$totalDebitAmount) != trim((string)$totalCreditAmount)) {
+            return array(
+                'status' => false,
+                'message' => self::ERROR_PREFIX . 'Credit Amount does not match Debit Amount',
+                'data' => []
+            );
+        }
+
+        //Get Header Details
+        $book = Book::find($document->book_id);
+        $glPostingBookParam = OrganizationBookParameter::where('book_id', $book->id)->where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM)->first();
+        if (isset($glPostingBookParam) && isset($glPostingBookParam->parameter_value[0])) {
+            $glPostingBookId = $glPostingBookParam->parameter_value[0];
+        } else {
+            return array(
+                'status' => false,
+                'message' => self::ERROR_PREFIX . 'Financial Book Code is not specified',
+                'data' => []
+            );
+        }
+        $currency = Currency::find($document->currency_id);
+        $currencyExc = CurrencyHelper::getCurrencyExchangeRates($document->currency_id, $document->document_date);
+        $currencyExc = $currencyExc['data'];
+        $userData = Helper::userCheck();
+        $voucherHeader = [
+            'voucher_no' => $document->document_number,
+            'document_date' => $document->document_date,
+            'book_id' => $glPostingBookId,
+            'date' => $document->document_date,
+            'amount' => $totalCreditAmount,
+            'location' => $document->location_id ?? null,
+            'currency_id' => $document->currency_id,
+            'currency_code' => $currencyExc['party_currency_code'],
+            'org_currency_id' => $currencyExc['org_currency_id'],
+            'org_currency_code' => $currencyExc['org_currency_code'],
+            'org_currency_exg_rate' => $currencyExc['org_currency_exg_rate'],
+            'comp_currency_id' => $currencyExc['comp_currency_id'],
+            'comp_currency_code' => $currencyExc['comp_currency_code'],
+            'comp_currency_exg_rate' => $currencyExc['comp_currency_exg_rate'],
+            'group_currency_id' => $currencyExc['group_currency_id'],
+            'group_currency_code' => $currencyExc['group_currency_code'],
+            'group_currency_exg_rate' => $currencyExc['group_currency_exg_rate'],
+            'reference_service' => $book?->service?->alias,
+            'reference_doc_id' => $document->id,
+            'group_id' => $document->group_id,
+            'company_id' => $document->company_id,
+            'organization_id' => $document->organization_id,
+            'voucherable_type' => $userData['user_type'],
+            'voucherable_id' => $userData['user_id'],
+            'document_status' => ConstantHelper::APPROVED,
+            'approvalLevel' => $document->approval_level
+        ];
+        $voucherDetails = self::generateVoucherDetailsArray($postingArray, $voucherHeader, $document, 'currency_id', 'document_date', true);
+        return array(
+            'status' => true,
+            'message' => 'Posting Details found',
+            'data' => [
+                'voucher_header' => $voucherHeader,
+                'voucher_details' => $voucherDetails,
+                'document_date' => $document->document_date,
+                'ledgers' => $postingArray,
+                'total_debit' => $totalDebitAmount,
+                'total_credit' => $totalCreditAmount,
+                'book_code' => $book?->book_code,
+                'document_number' => $document->document_number,
+                'currency_code' => $currency?->short_name
+            ]
+        );
+    }
+
     public static function revVoucherDetails(int $documentId, string $type)
     {
         $document = FixedAssetRevImp::find($documentId);
@@ -5562,7 +5812,7 @@ class FinancialPostingHelper
             $itemValueAfterDiscount = $itemValue - $itemTotalDiscount;
             $stockDebitAmount = $discountSeperatePosting ? $itemValue : $itemValueAfterDiscount;
 
-            $stockLedgerDetails = AccountHelper::getStockLedgerGroupAndLedgerId($document->organization_id, $docItem->item_id, $document->book_id);
+            $stockLedgerDetails = AccountHelper::getServiceLedgerGroupAndLedgerId($document -> organization_id, $docItem -> item_id, $document -> book_id);
             // $stockLedgerId = $stockLedgerDetails -> first()['ledger_id'] ?? null;
             // $stockLedgerGroupId = $stockLedgerDetails-> first()['ledger_group'] ?? null;
             $stockLedgerId = is_a($stockLedgerDetails, Collection::class) ? $stockLedgerDetails->first()['ledger_id'] : null;
@@ -5631,16 +5881,33 @@ class FinancialPostingHelper
             });
             //Ledger found
             if (count($existingTaxLedger) > 0) {
-                $postingArray[self::TAX_ACCOUNT][0]['debit_amount'] += $tax->ted_amount;
+                if(trim(strtolower($taxDetail->applicability_type)) === ConstantHelper::DEDUCTION)
+                {
+                    $postingArray[self::TAX_ACCOUNT][0]['credit_amount'] += $tax -> ted_amount;
+                }
+                else
+                {
+                    $postingArray[self::TAX_ACCOUNT][0]['debit_amount'] += $tax -> ted_amount;
+                }
             } else { //Assign a new ledger
+                if(trim(strtolower($taxDetail->applicability_type)) === ConstantHelper::DEDUCTION)
+                    {
+                        $creditAmount = $tax -> ted_amount;
+                        $debitAmount = 0;
+                    }
+                else
+                    {
+                        $creditAmount = 0;
+                        $debitAmount = $tax -> ted_amount;
+                    }
                 array_push($postingArray[self::TAX_ACCOUNT], [
                     'ledger_id' => $taxLedgerId,
                     'ledger_group_id' => $taxLedgerGroupId,
-                    'ledger_code' => $taxLedger?->code,
-                    'ledger_name' => $taxLedger?->name,
-                    'ledger_group_code' => $taxLedgerGroup?->name,
-                    'credit_amount' => 0,
-                    'debit_amount' => $tax->ted_amount,
+                    'ledger_code' => $taxLedger ?-> code,
+                    'ledger_name' => $taxLedger ?-> name,
+                    'ledger_group_code' => $taxLedgerGroup ?-> name,
+                    'credit_amount' => $creditAmount,
+                    'debit_amount' => $debitAmount,
                 ]);
             }
             //Tax for SUPPLIER ACCOUNT
@@ -5649,7 +5916,14 @@ class FinancialPostingHelper
             });
             //Ledger found
             if (count($existingVendorLedger) > 0) {
-                $postingArray[self::SUPPLIER_ACCOUNT][0]['credit_amount'] += $tax->ted_amount;
+                if(trim(strtolower($taxDetail->applicability_type)) === ConstantHelper::DEDUCTION)
+                    {
+                        $postingArray[self::SUPPLIER_ACCOUNT][0]['credit_amount'] -= $tax -> ted_amount;
+                    }
+                    else
+                    {
+                        $postingArray[self::SUPPLIER_ACCOUNT][0]['credit_amount'] += $tax -> ted_amount;
+                    }
             } else { //Assign new ledger
                 array_push($postingArray[self::SUPPLIER_ACCOUNT], [
                     'ledger_id' => $vendorLedgerId,

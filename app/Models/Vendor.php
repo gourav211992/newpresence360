@@ -33,6 +33,7 @@ class Vendor extends Model
         'currency_id',
         'payment_terms_id',
         'related_party',
+        'reld_vendor_id',
         'email',
         'phone',
         'mobile',

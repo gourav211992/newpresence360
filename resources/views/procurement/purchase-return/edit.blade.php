@@ -1438,6 +1438,7 @@
                             $("#itemTable > tbody").html(data.data.html);
                         }
                         initializeAutocomplete2(".comp_item_code");
+                        focusAndScrollToLastRowInput();
                     } else if(data.status == 422) {
                         Swal.fire({
                             title: 'Error!',
@@ -1553,6 +1554,7 @@
                             $("#attribute").modal('show');
                             $(".select2").select2();
                         }
+                        initAttributeAutocomplete();
                     }
                 });
             });

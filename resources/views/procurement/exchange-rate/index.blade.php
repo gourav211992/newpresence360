@@ -154,7 +154,7 @@ $(document).ready(function() {
     if (dt_basic_table.length) {
         var dt_exchange_rate = dt_basic_table.DataTable({ 
             processing: true,
-            serverSide: true,
+            serverSide: false,
             ajax: '{{ route('exchange-rates.index') }}',
 
             columns: [

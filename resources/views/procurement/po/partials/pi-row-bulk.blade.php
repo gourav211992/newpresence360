@@ -85,7 +85,7 @@ if($pi_item?->item?->approvedVendors->count()) {
         @else
             <option value=""></option>
             @foreach($vendors as $vendor)
-                <option value="{{$vendor?->id}}">{{$vendor?->company_name}}</option>
+                <option value="{{$vendor?->id}}" {{$vendor?->id == $pi_item->vendor_id ? 'selected' : '' }}>{{$vendor?->company_name}}</option>
             @endforeach
         @endif
       </select>
