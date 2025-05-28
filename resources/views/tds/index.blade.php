@@ -122,7 +122,7 @@
 
                     <div class="mb-1">
                         <label class="form-label">Organization</label>
-                        <select name="organization_filter" class="form-select select2">
+                        <select name="organization_filter" id="organization_filter" class="form-select select2">
                             <option value="">Select</option>
                             @foreach ($mappings as $organization)
                         <option value="{{ $organization->organization->id }}"
@@ -251,13 +251,14 @@
 
     $(document).ready(function() {
     // On change of organization
-        $('#organization').on('change', function () {
+        $('#organization_filter').on('change', function () {
             const selectedOrgIds = $(this).val() || [];
             updateLocationsDropdown(selectedOrgIds);
         });
 
         // On page load, check for preselected orgs
-        const preselectedOrgIds = $('#organization').val() || [];
+        console.log('selectedOrgIds',$('#organization_filter').val())
+        const preselectedOrgIds = $('#organization_filter').val() || [];
         if (preselectedOrgIds.length > 0) {
             updateLocationsDropdown(preselectedOrgIds);
         }

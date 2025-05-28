@@ -640,7 +640,7 @@ class VoucherController extends Controller
         }
 
 
-        $data = $data->orderBy('document_date', 'desc')->paginate(20);
+        $data = $data->orderBy('document_date', 'desc')->get();
 
         $parentUrl = request()->segments()[0];
 
