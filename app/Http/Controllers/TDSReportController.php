@@ -37,13 +37,8 @@ class TDSReportController extends Controller
         $cost_center_id = $request->location_id;
         if ($request->vendor_filter)
             $vendor_id = $request->vendor_filter;
-
-        $startDate = date('d-m-Y', strtotime($startDate));
-        $endDate = date('d-m-Y', strtotime($endDate));
-        $range = $startDate . ' to ' . $endDate;
         $mappings = Helper::getAuthenticatedUser()->access_rights_org;
         $vendors = Vendor::where('organization_id', $organization_id)->get();
-        $fy = self::formatWithOrdinal($startDate) . ' to ' . self::formatWithOrdinal($endDate);
         $vouchers = Voucher::where('organization_id', $organization_id)
             ->where('reference_service', ConstantHelper::EXPENSE_ADVISE_SERVICE_ALIAS)
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
@@ -82,7 +77,10 @@ class TDSReportController extends Controller
                     'location' => $item->costCenter->locations,
                 ];
             })->toArray();
-
+        $startDate = date('d-m-Y', strtotime($startDate));
+        $endDate = date('d-m-Y', strtotime($endDate));
+        $range = $startDate . ' to ' . $endDate;
+        $fy = self::formatWithOrdinal($startDate) . ' to ' . self::formatWithOrdinal($endDate);
         $locations = ErpStore::where('status','active')->get();
 
         return view('tds.index', compact('fy', 'mappings', 'organization_id', 'range', 'vendors', 'vendor_id','records','taxTypes','cost_centers','locations','cost_center_id', 'location_id'));
