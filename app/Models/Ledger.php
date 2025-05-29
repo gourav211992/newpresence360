@@ -37,6 +37,15 @@ class Ledger extends Model
     {
         return $this->belongsTo(CostCenter::class);
     }
+    public function vendor()
+    {
+        return $this->hasOne(Vendor::class);
+    }
+    
+    public function customer()
+    {
+        return $this->hasOne(Customer::class);
+    }
     public function deleteWithReferences($referenceTables)
     {
         $referencedTables = [];
