@@ -2665,7 +2665,7 @@ document.addEventListener('input', function (e) {
         const orderId = "{{isset($slip) ? $slip -> id : null}}";
         if (orderId) {
             $.ajax({
-            url: "{{route('material.issue.revoke')}}",
+            url: "{{route('production.slip.revoke')}}",
             method: 'POST',
             dataType: 'json',
             data: {

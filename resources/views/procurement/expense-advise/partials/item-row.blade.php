@@ -24,7 +24,7 @@
         </select>
     </td>
     <td>
-        <input type="number" step="any" class="form-control mw-100 accepted_qty checkNegativeVal"  name="components[{{$rowCount}}][accepted_qty]" />
+        <input type="number" step="any" class="form-control mw-100 text-end accepted_qty checkNegativeVal"  name="components[{{$rowCount}}][accepted_qty]" />
     </td>
     <td>
         <input type="number" step="any" name="components[{{$rowCount}}][rate]" class="form-control mw-100 text-end checkNegativeVal" />

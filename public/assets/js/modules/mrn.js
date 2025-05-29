@@ -1405,7 +1405,7 @@ const selectedSubStoreId = $(".sub_store").val();
 const isSubStoreRequired = Number($selectedSubStore.data("warehouse-required")) === 1;
 
 if (selectedStoreId) {
-    getSubStores(selectedStoreId, false); // avoid double-check
+    getSubStores(selectedStoreId, selectedSubStoreId); // avoid double-check
     getCostCenters(selectedStoreId);
 }
 
@@ -1429,16 +1429,17 @@ function getSubStores(storeLocationId, selectedSubStoreId = null)
                 let options = '';
 
                 response.data.forEach(function(location) {
-                    const isSelected = selectedSubStoreId && location.id == selectedSubStoreId ? 'selected' : '';
+                    const isSelected = (selectedSubStoreId && location.id == selectedSubStoreId) ||
+                        (!selectedSubStoreId && location.id == 1)
+                        ? 'selected' : '';
                     options += `<option value="${location.id}" data-warehouse-required="${location.is_warehouse_required}" ${isSelected}>${location.name}</option>`;
                 });
 
                 $(".sub_store").html(options);
 
                 // Set selected value and trigger change
-                if (selectedSubStoreId) {
-                    $(".sub_store").val(selectedSubStoreId).trigger('change');
-                }
+                let finalSelectedId = selectedSubStoreId ?? 1;
+                $(".sub_store").val(finalSelectedId).trigger('change');
 
                 // ✅ Trigger change manually after population to check warehouse setup
                 const $selectedOption = $(".sub_store option:selected");

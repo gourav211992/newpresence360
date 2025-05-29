@@ -411,7 +411,7 @@
                                                      <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Total Dep. <span class="text-danger">*</span></label>
-                                                            <input type="number" id="total_depreciation" name="total_depreciation" class="form-control" value="{{$data->total_depreciation}}" readonly /> 
+                                                            <input type="text" id="total_depreciation" name="total_depreciation" class="form-control" value="{{$data->total_depreciation}}" readonly /> 
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1474,7 +1474,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 // $('#sgst_tax').html(sgstData['value']||0);
                 // $('#cgst_tax').html(cgstData['value']||0);
                 // $('#igst_tax').html(igstData['value']||0);
-                let snno = 1; // Start serial number from 1
 
                 $('#extraAmountsTable').empty();
 

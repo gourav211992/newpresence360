@@ -435,7 +435,7 @@
                                                      <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Total Dep. <span class="text-danger">*</span></label>
-                                                            <input type="number" readonly id="total_depreciation" name="total_depreciation" 
+                                                            <input type="text" readonly id="total_depreciation" name="total_depreciation" 
                                                             class="form-control indian-number" value="{{ $data->subAsset?->sum('total_depreciation')}}" /> 
                                                         </div>
                                                     </div>
