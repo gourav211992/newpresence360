@@ -3252,10 +3252,10 @@ class PoController extends Controller
                 return $row -> po -> book -> book_code;
             })
             ->addColumn('indent', function ($row) {
-                return $row ?-> pi_item ?-> pi ?-> book ?-> book_code."-".$row ?-> pi_item ?-> pi ?-> document_number;
+                return $row ?-> pi_item ?-> pi ?-> book_code."-".$row ?-> pi_item ?-> pi ?-> document_number;
             })
             ->addColumn('order', function ($row) {
-                return $row ?-> so ?-> book ?-> book_code."-".$row ?-> so ?-> document_number;
+                return $row ?-> so ?-> book_code."-".$row ?-> so ?-> document_number;
             })
             ->addColumn('item_name', function ($row) {
                 return $row -> item -> item_name;

@@ -230,7 +230,7 @@ class CommonService
     {
         $data['msme_registered'] = isset($data['msme_registered']) ? 1 : 0;
         $data['tds_applicable'] = isset($data['tds_applicable']) ? 1 : 0;
-        if (!empty($data['gst_applicable'])) {
+        if (isset($data['gst_applicable'])) {
         $compliance = $morphable->compliances()->create($data);
 
         $fileConfigs = [
