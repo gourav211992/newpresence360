@@ -548,7 +548,7 @@
         let baseUrl = currentHref.split('?')[0]; // remove old query params if any
 
         // Append new query parameters
-        let updatedUrl = `${baseUrl}?date=${encodeURIComponent($('#fp-range').val())}&cost_center_id=${encodeURIComponent($('#cost_center_id').val())}`;
+        let updatedUrl = `${baseUrl}`;
         $(this).attr('href', updatedUrl);
 
     });
@@ -691,7 +691,7 @@
         let baseUrl = currentHref.split('?')[0]; // remove old query params if any
 
         // Append new query parameters
-        let updatedUrl = `${baseUrl}?date=${encodeURIComponent($('#fp-range').val())}&cost_center_id=${encodeURIComponent($('#cost_center_id').val())}`;
+        let updatedUrl = `${baseUrl}`;
         $(this).attr('href', updatedUrl);
 
     });
@@ -851,7 +851,6 @@
                                                     closingText=closing > 0 ? 'Dr' : 'Cr';
                                                 }
                                                 const ledgerUrl="{{ url('trailLedger') }}/"+data['data'][i].id+"/"+data['data'][i].group_id;
-
                                                 html += `
                                                     <tr class="trail-sub-list-open parent-${data['id']}">
                                                         <td style="padding-left: ${padding}px"><a class="urls" href='${ledgerUrl}'>
