@@ -56,7 +56,7 @@ class VoucherController extends Controller
                     $i->where('ledger_id', $ledger)
                     ->where('ledger_parent_id', $ledger_group);
 
-                    if ($request->type == "payments") {
+                    if ($request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS) {
                         $i->where('credit_amt_org', '>', 0);
                     } else {
                         $i->where('debit_amt_org', '>', 0);
@@ -103,7 +103,12 @@ class VoucherController extends Controller
                                 $query->where('organization_id', Helper::getAuthenticatedUser()->organization_id);
                                 $query->whereNotIn('document_status', ConstantHelper::DOCUMENT_STATUS_REJECTED);
                             })->where('party_id', $ledger);
-
+                        $amount = 0;
+                        foreach ($voucher->items as $item) {
+                            $amount += $request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS ? $item->credit_amt_org : $item->debit_amt_org;
+                        }
+                        $voucher->amount = $amount;
+               
                         $balance = $balance->sum('amount');
                         $voucher->set = $balance;
                         $voucher->balance = $voucher->amount - $balance;
@@ -213,6 +218,11 @@ class VoucherController extends Controller
                                     $query->where('organization_id', Helper::getAuthenticatedUser()->organization_id);
                                     $query->whereNotIn('document_status', ConstantHelper::DOCUMENT_STATUS_REJECTED);
                                 })->where('party_id', $ledger)->sum('amount');
+                                $amount = 0;
+                                foreach ($voucher->items as $item) {
+                                    $amount += $request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS ? $item->credit_amt_org : $item->debit_amt_org;
+                                }
+                                $voucher->amount = $amount;
 
                                 $voucher->settle = $settle;
                                 $voucher->balance = $voucher->amount -$balance;
@@ -306,6 +316,11 @@ class VoucherController extends Controller
                     }])->select('id', 'amount', 'book_id', 'document_date as date','created_at', 'voucher_name', 'voucher_no')
                         ->orderBy('id', 'desc')->get()->map(function ($voucher) use ($request, $ledger) {
                             $voucher->date = date('d/m/Y', strtotime($voucher->date));
+                             $amount = 0;
+                                foreach ($voucher->items as $item) {
+                                    $amount += $request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS ? $item->credit_amt_org : $item->debit_amt_org;
+                                }
+                                $voucher->amount = $amount;
                             $balance = VoucherReference::where('voucher_id', $voucher->id)
                                 ->withWhereHas('voucherPayRec', function ($query) use ($request) {
                                     $query->where('payment_voucher_id','!=',(int)$request->payment_voucher_id);

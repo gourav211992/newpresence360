@@ -620,18 +620,14 @@ class ItemImportExportService
     
         // GST Validation
         $gstinNo = $data['compliance']['gstin_no'] ?? null;
-        $companyName = $data['company_name'] ?? null;
+        $gstinApplicable = $data['compliance']['gst_applicable'] ?? null;
         $gstinRegistrationDate = $data['compliance']['gstin_registration_date'] ?? null;
         $gstinLegalName = $data['compliance']['gst_registered_name'] ?? null;
     
-        if ($gstinNo) {
+        if ($gstinNo and $gstinApplicable == 1) {
             $gstValidation = EInvoiceHelper::validateGstNumber($gstinNo);
             if ($gstValidation['Status'] == 1) {
                 $gstData = json_decode($gstValidation['checkGstIn'], true);
-    
-                if ($companyName && $companyName !== ($gstData['TradeName'] ?? '')) {
-                    $errors['company_name'] = 'Company name does not match GSTIN record.';
-                }
     
                 if ($gstinLegalName && $gstinLegalName !== ($gstData['LegalName'] ?? '')) {
                     $errors['compliance.gst_registered_name'] = 'Legal name does not match GSTIN record.';
@@ -640,8 +636,7 @@ class ItemImportExportService
                 if (($gstData['DtReg'] ?? null) && $gstinRegistrationDate !== $gstData['DtReg']) {
                     $errors['compliance.gstin_registration_date'] = 'GSTIN registration date does not match GSTIN records.';
                 }
-    
-                $this->addAddressValidationErrors($addresses, $gstData, $errors);
+
             } else {
                 $errors['compliance.gstin_no'] = 'The provided GSTIN number is invalid. Please verify and try again.';
             }
@@ -649,22 +644,5 @@ class ItemImportExportService
     
         return $errors;
     }
-
-    private function addAddressValidationErrors($addresses, $gstData, &$errors)
-    {
-        $gstnHelper = new GstnHelper();
-        foreach ($addresses as $index => $address) {
-            if (!empty($address['state_id'])) {
-                $stateValidation = $gstnHelper->validateStateCode(
-                    $address['state_id'],
-                    $gstData['StateCode'] ?? null
-                );
-                if (!$stateValidation['valid']) {
-                    $errors["addresses.{$index}.state_id"] = $stateValidation['message'] ?? 'State does not match GSTIN records';
-                }
-            }
-        }
-    }
-    
 
 }

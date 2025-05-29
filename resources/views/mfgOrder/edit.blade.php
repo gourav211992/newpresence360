@@ -110,7 +110,7 @@
                                     </div>  
 
                                     <div class="col-md-5"> 
-                                        <input disabled type="text" value="{{$bom->document_number}}" name="document_number" class="form-control" id="document_number">
+                                        <input type="text" value="{{$bom->document_number}}" name="document_number" class="form-control" id="document_number">
                                     </div> 
                                  </div>
                                  <div class="row align-items-center mb-1">

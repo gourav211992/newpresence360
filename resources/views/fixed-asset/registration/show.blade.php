@@ -435,7 +435,8 @@
                                                      <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Total Dep. <span class="text-danger">*</span></label>
-                                                            <input type="number" readonly id="total_depreciation" name="total_depreciation" class="form-control indian-number" value="{{ $data->subAsset?->sum('total_depreciation')}}" disabled /> 
+                                                            <input type="text" readonly id="total_depreciation" name="total_depreciation" 
+                                                            class="form-control indian-number" value="{{ $data->subAsset?->sum('total_depreciation')}}" /> 
                                                         </div>
                                                     </div>
                                                     @php
@@ -1193,7 +1194,7 @@
                                 </tr>
                             </thead>
                             <tbody id="extraAmountsTable">
-                                @foreach($data?->mrnDetail?->taxes as $index => $tax)
+                                @forelse($data?->mrnDetail?->taxes as $index => $tax)
                                 <tr>
                                 <td>{{$index+1}}</td>
                                 <td>{{$tax->ted_code}}</td>
@@ -1201,7 +1202,11 @@
                                 <td>{{$tax->ted_percentage}}</td>
                                 <td>{{$tax->ted_amount}}</td>
                                 </tr>
-                                @endforeach
+                                @empty
+                                    <tr>
+                                    <td colspan="5" class="text-center">No data available</td>
+                                    </tr>
+                                @endforelse
                                 
                             </tbody>
                         </table>

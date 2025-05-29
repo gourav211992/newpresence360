@@ -405,7 +405,7 @@ class FinancialPostingHelper
             }
 
         } else if ($serviceAlias === ConstantHelper::FIXED_ASSET_REV_IMP) {
-            
+
             $document = FixedAssetRevImp::find($documentId);
             if (!isset($document)) {
                 return array(
@@ -417,7 +417,7 @@ class FinancialPostingHelper
 
             if ($document->document_type == 'impairement') {
                 if($type=="post"){
-               
+
                 $register = FixedAssetRevImp::updateRegistration($documentId);
                 if (!$register['status']) {
                     return array(
@@ -435,10 +435,10 @@ class FinancialPostingHelper
                         'data' => []
                     );
                 }
-            
-            
 
-                
+
+
+
             } else {
                 $entries = self::revVoucherDetails($documentId, $type);
                 if (!$entries['status']) {
@@ -460,7 +460,7 @@ class FinancialPostingHelper
                     );
                 }
             }
-        
+
             $entries = self::fixedAssetMergerVoucherDetails($documentId, $type);
             if (!$entries['status']) {
                 return array(
@@ -3557,7 +3557,7 @@ class FinancialPostingHelper
             'debit_amount_org' => $igstValue,
         ];
     }
-    
+
     if($cgstValue>0){
 
         $cgstLedgerId = $document?->cgst_value['ledger']??null;
@@ -3601,7 +3601,7 @@ class FinancialPostingHelper
             'debit_amount_org' => $sgstValue,
         ];
     }
-        
+
         $vendorLedgerId = $document?->vendor?->ledger_id;
         $vendorLedgerGroupId = $document?->vendor?->ledger_group_id;
         $vendorLedger = Ledger::find($vendorLedgerId);
@@ -5821,7 +5821,7 @@ class FinancialPostingHelper
             $stockLedgerGroup = Group::find($stockLedgerGroupId);
             //LEDGER NOT FOUND
             if (!isset($stockLedger) || !isset($stockLedgerGroup)) {
-                $ledgerErrorStatus = self::ERROR_PREFIX . 'Stock Account not setup';
+                $ledgerErrorStatus = self::ERROR_PREFIX . 'Service Account not setup';
                 break;
             }
 

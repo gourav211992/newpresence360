@@ -32,6 +32,7 @@ use App\Models\VoucherReference;
 use App\Models\PaymentVoucherDetails;
 use App\Models\PaymentVoucherHistory;
 use Illuminate\Support\Facades\Response;
+
 use App\Models\User;
 use PDF;
 use App\Models\Employee;
@@ -288,8 +289,8 @@ class PaymentVoucherController extends Controller
             $query->whereJsonContains('ledger_group_id', (string) $groupId)
                 ->orWhere('ledger_group_id', $groupId);
         })->select('id', 'name')->get();
-        $date = $request->date ?? \Carbon\Carbon::parse($fyear['start_date'])->format('d-m-Y') . " to " . \Carbon\Carbon::parse($fyear['end_date'])->format('d-m-Y');
-        $date2 = \Carbon\Carbon::parse($start)->format('jS-F-Y') . ' to ' . \Carbon\Carbon::parse($end)->format('jS-F-Y');
+        $date = $request->date ?? Carbon::parse($fyear['start_date'])->format('d-m-Y') . " to " . Carbon::parse($fyear['end_date'])->format('d-m-Y');
+        $date2 = Carbon::parse($start)->format('jS-F-Y') . ' to ' . Carbon::parse($end)->format('jS-F-Y');
 
         $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
             $item->withDefaultGroupCompanyOrg()->where('status', 'active');
@@ -542,7 +543,7 @@ if ($ref) {
             } else {
                 return redirect()->route("receipts.index")->with('success', __('message.created', ['module' => 'Payment Voucher']));
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Rollback transaction if any error occurs
             DB::rollback();
 
@@ -826,7 +827,7 @@ if ($ref) {
                 $voucher->document_type === ConstantHelper::PAYMENTS_SERVICE_ALIAS ? "payments.index" : "receipts.index"
             )->with('success', __('message.created', ['module' => 'Payment Voucher']));
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             return back()->withErrors('Something went wrong: ' . $e->getMessage());
         }
@@ -1065,15 +1066,15 @@ if ($ref) {
         $document = PaymentVoucher::find($id);
 
         if (!$document) {
-            throw new \Exception("Payment voucher not found.");
+            throw new Exception("Payment voucher not found.");
         }
 
         $type = $document->document_type === "receipts" ? "debit" : "credit";
         $ledger_group = $group;
         $organization_id = Helper::getAuthenticatedUser()->organization_id;
 
-        $ledger_name = Ledger::find($ledger)?->name ?? throw new \Exception("Ledger not found.");
-        $group_name = Group::find($group)?->name ?? throw new \Exception("Group not found.");
+        $ledger_name = Ledger::find($ledger)?->name ?? throw new Exception("Ledger not found.");
+        $group_name = Group::find($group)?->name ?? throw new Exception("Group not found.");
 
         $model = $type == 'debit' ? Customer::class : Vendor::class;
 
@@ -1155,14 +1156,14 @@ if ($ref) {
             ->first();
 
         if (!$party) {
-            throw new \Exception("Party (" . ($type == 'debit' ? 'customer' : 'vendor') . ") not found for the selected group and ledger");
+            throw new Exception("Party (" . ($type == 'debit' ? 'customer' : 'vendor') . ") not found for the selected group and ledger");
         }
 
         $user = Helper::getAuthenticatedUser();
         $organization = Organization::find($organization_id);
 
         if (!$organization) {
-            throw new \Exception("Organization not found.");
+            throw new Exception("Organization not found.");
         }
 
         $organizationAddress = Address::with(['city', 'state', 'country'])
@@ -1171,7 +1172,7 @@ if ($ref) {
             ->first();
 
         if (!$organizationAddress) {
-            throw new \Exception("Organization address not found.");
+            throw new Exception("Organization address not found.");
         }
 
         $party_address = ErpAddress::with(['city', 'state', 'country'])
@@ -1300,7 +1301,7 @@ if ($ref) {
 
                     // Check if file exists before sending email
                     if (!Storage::disk('public')->exists($filePath)) {
-                        throw new \Exception('File does not exist at path: ' . $filePath);
+                        throw new Exception('File does not exist at path: ' . $filePath);
                     }
 
                     // Log email building
@@ -1333,7 +1334,7 @@ if ($ref) {
 
                     // Log successful sending
                     Log::info('Email sent successfully.');
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     Log::error('Error in generating or sending the report.', [
                         'error' => $e->getMessage(),
                         'stack' => $e->getTraceAsString(),
@@ -1360,7 +1361,7 @@ if ($ref) {
                     $i->where('ledger_id', $ledger)
                     ->where('ledger_parent_id', $ledger_group);
 
-                    if ($doc_type == "payments") {
+                    if ($doc_type == ConstantHelper::PAYMENTS_SERVICE_ALIAS) {
                         $i->where('credit_amt_org', '>', 0);
                     } else {
                         $i->where('debit_amt_org', '>', 0);
