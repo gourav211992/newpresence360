@@ -11,6 +11,7 @@ use App\Models\Service;
 use App\Models\ServiceParameter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use App\Helpers\PackingList\Constants as PackingListConstants;
 /**
  * Helper Class containing all logics related to Parameters Functionality in the project.
  */
@@ -512,8 +513,8 @@ class ServiceParametersHelper
     const DN_SERVICE_PARAMETERS = [
         [
             "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
-            "applicable_values" => ["0", ConstantHelper::SO_SERVICE_ALIAS], //All possible values
-            "default_value" => ["0", ConstantHelper::SO_SERVICE_ALIAS], //Default selected value(s)
+            "applicable_values" => ["0", ConstantHelper::SO_SERVICE_ALIAS, PackingListConstants::SERVICE_ALIAS], //All possible values
+            "default_value" => ["0", ConstantHelper::SO_SERVICE_ALIAS, PackingListConstants::SERVICE_ALIAS], //Default selected value(s)
             'is_multiple' => true, // Whether or not to allow multiple selection
             'service_level_visibility' => true
         ],
@@ -1795,36 +1796,42 @@ class ServiceParametersHelper
             'service_level_visibility' => true
         ],
         [
-            "name" => self::GL_POSTING_REQUIRED_PARAM,
-            "applicable_values" => self::GL_POSTING_REQUIRED_PARAM_VALUES,
-            "default_value" => ['no'],
+            "name" => self::TAX_REQUIRED_PARAM,
+            "applicable_values" => self::TAX_REQUIRED_PARAM_VALUES,
+            "default_value" => ['yes'],
             'is_multiple' => false,
-            'service_level_visibility' => true,
-            'type' => self::GL_PARAMETERS
+            'service_level_visibility' => true
+        ]
+    ];
+
+    const PUTAWAY_SERVICE_PARAMETERS = [
+        [
+            "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
+            "applicable_values" => [ConstantHelper::MRN_SERVICE_ALIAS], //All possible values
+            "default_value" => [ConstantHelper::MRN_SERVICE_ALIAS], //Default selected value(s)
+            'is_multiple' => true, // Whether or not to allow multiple selection
+            'service_level_visibility' => true
         ],
         [
-            "name" => self::GL_POSTING_SERIES_PARAM,
+            "name" => self::REFERENCE_FROM_SERIES_PARAM,
             "applicable_values" => [],
             "default_value" => [],
             'is_multiple' => true,
-            'service_level_visibility' => false,
-            'type' => self::GL_PARAMETERS
+            'service_level_visibility' => false
         ],
         [
-            "name" => self::POST_ON_ARROVE_PARAM,
-            "applicable_values" => self::POST_ON_ARROVE_PARAM_VALUES,
-            "default_value" => ['no'],
+            "name" => self::BACK_DATE_ALLOW_PARAM,
+            "applicable_values" => self::BACK_DATE_ALLOW_PARAM_VALUES,
+            "default_value" => ['yes'],
             'is_multiple' => false,
-            'service_level_visibility' => true,
-            'type' => self::GL_PARAMETERS
+            'service_level_visibility' => true
         ],
         [
-            "name" => self::GL_SEPERATE_DISCOUNT_PARAM,
-            "applicable_values" => self::GL_SEPERATE_DISCOUNT_PARAM_VALUE,
-            "default_value" => ['no'],
+            "name" => self::FUTURE_DATE_ALLOW_PARAM,
+            "applicable_values" => self::FUTURE_DATE_ALLOW_PARAM_VALUES,
+            "default_value" => ['yes'],
             'is_multiple' => false,
-            'service_level_visibility' => true,
-            'type' => self::GL_PARAMETERS
+            'service_level_visibility' => true
         ],
         [
             "name" => self::TAX_REQUIRED_PARAM,
@@ -2286,6 +2293,7 @@ class ServiceParametersHelper
         ConstantHelper::MRN_SERVICE_ALIAS => self::MRN_SERVICE_PARAMETERS,
         ConstantHelper::PB_SERVICE_ALIAS => self::PB_SERVICE_PARAMETERS,
         ConstantHelper::INSPECTION_SERVICE_ALIAS => self::INSPECTION_SERVICE_PARAMETERS,
+        ConstantHelper::PUTAWAY_SERVICE_ALIAS => self::PUTAWAY_SERVICE_PARAMETERS,
         ConstantHelper::EXPENSE_ADVISE_SERVICE_ALIAS => self::EXPENSE_ADVISE_SERVICE_PARAMETERS,
         ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS => self::PURCHASE_RETURN_SERVICE_PARAMETERS,
         ConstantHelper::MATERIAL_REQUEST_SERVICE_ALIAS => self::MATERIAL_REQUEST_SERVICE_PARAMETERS,
@@ -2315,6 +2323,7 @@ class ServiceParametersHelper
         ConstantHelper::VENDOR_SERVICE_ALIAS=>self::VENDOR_SERVICE_PARAMETERS,
         ConstantHelper::CUSTOMER_SERVICE_ALIAS=>self::CUSTOMER_SERVICE_PARAMETERS,
         ConstantHelper::MATERIAL_RETURN_SERVICE_ALIAS_NAME=>self::MR_SERVICE_PARAMETERS,
+        PackingListConstants::SERVICE_ALIAS => PackingListConstants::PARAMETERS
     ];
     /* Parameter Types*/
     const COMMON_PARAMETERS = 'co';
@@ -2481,17 +2490,19 @@ class ServiceParametersHelper
                 'message' => 'Organization Not Found'
             ];
         }
+        //Array to keep track of newly created or updated parameters
+        $insertedOrgServiceParamIds = [];
         //Create or Update Organization Service Parameter
         foreach ($serviceParameters as $serviceParam) {
-            $existingService = OrganizationServiceParameter::where([
+            $orgServiceParameter = OrganizationServiceParameter::where([
                 ['group_id', $organization -> group_id],
                 ['service_id', $service -> id],
                 ['service_param_id', $serviceParam -> id],
                 ['parameter_name', $serviceParam -> name]
             ]) -> first();
             //Create
-            if (!isset($existingService)) {
-                OrganizationServiceParameter::create([
+            if (!isset($orgServiceParameter)) {
+                $orgServiceParameter = OrganizationServiceParameter::create([
                     'group_id' => $organization -> group_id,
                     'company_id' => null, // Need to change later
                     'organization_id' => null, // Need to change later
@@ -2503,12 +2514,18 @@ class ServiceParametersHelper
                     'status' => ConstantHelper::ACTIVE,
                 ]);
             } else { // Update only parameter value and type
-                $existingService -> parameter_value = $serviceParam -> default_value;
-                $existingService -> type = $serviceParam -> type;
-                $existingService -> service_param_id = $serviceParam -> id;
-                $existingService -> save();
+                $orgServiceParameter -> parameter_value = $serviceParam -> default_value;
+                $orgServiceParameter -> type = $serviceParam -> type;
+                $orgServiceParameter -> service_param_id = $serviceParam -> id;
+                $orgServiceParameter -> save();
             }
+            array_push($insertedOrgServiceParamIds, $orgServiceParameter -> id);
         }
+        //Delete the records which are not required
+        OrganizationServiceParameter::where([
+            ['group_id', $organization -> group_id],
+            ['service_id', $service -> id],
+        ]) -> whereNotIn('id', $insertedOrgServiceParamIds) -> delete();
         //Retrieve organization service if exists else create it
         $orgService = OrganizationService::where('group_id', $organization -> group_id) -> where('service_id', $serviceId) -> first();
         if (!isset($orgService)) {
@@ -2523,6 +2540,7 @@ class ServiceParametersHelper
         }
         else{
             $orgService->name=$service->name;
+            $orgService->alias=$service->alias;
             $orgService->save();
         }
         //Check for any existing book in Group/ Organization
@@ -2531,7 +2549,7 @@ class ServiceParametersHelper
             ['org_service_id', $orgService -> id]
         ]) -> first();
         if (!isset($existingBook)) {
-            //Assign a default Book with parameters and manual doc creation
+            //Assign a default Book with parameters and auto doc creation
             $book = Book::create([
                 'org_service_id' => $orgService -> id,
                 'service_id' => $orgService ?-> service ?-> id,
@@ -2590,14 +2608,47 @@ class ServiceParametersHelper
                     'status' => ConstantHelper::ACTIVE,
                 ]);
             }
+            //Financial Service Book Setup (If Required)
+            if ($service -> financial_service_alias) {
+                //Check if the Financial Service Alias is setup or not 
+                $financialService = Service::where('alias', $service -> financial_service_alias) -> first();
+                if (!isset($financialService)) {
+                    return [
+                        'status' => false,
+                        'message' => 'Financial Service not setup'
+                    ];
+                }
+                //Check if the financial service is assigned to the organization
+                $orgFinancialService = OrganizationService::where('alias', $service -> financial_service_alias) 
+                -> where('group_id', $organization -> group_id) -> first();
+                if (!isset($orgFinancialService)) {
+                    return [
+                        'status' => false,
+                        'message' => 'Financial Service not setup for this Group'
+                    ];
+                }
+                //Create Financial Book
+                Book::create([
+                    'org_service_id' => $orgFinancialService -> id,
+                    'service_id' => $financialService -> id,
+                    'book_code' => strtoupper($service -> alias), // CHECK AGAIN
+                    'book_name' => $service -> name, // CHECK AGAIN
+                    'status' => ConstantHelper::ACTIVE,
+                    'group_id' => $organization -> group_id,
+                    'company_id' => null,
+                    'organization_id' => null,
+                    'manual_entry' => 0
+                ]);
+            }
         } else {
             //Update all existing books with new parameters (if addded)
             $books = Book::withDefaultGroupCompanyOrg() -> where('org_service_id', $orgService -> id) -> get();
             foreach ($books as $book) {
                 $referenceFrom = $serviceParameters -> firstWhere('name', self::REFERENCE_FROM_SERVICE_PARAM) ?-> default_value;
+                $insertedBookParameterIds = [];
                 foreach ($serviceParameters as $serviceParam) {
-                    $existingBookParam = OrganizationBookParameter::where('book_id', $book -> id) -> where('parameter_name', $serviceParam -> name) -> first();
-                    if (!isset($existingBookParam))
+                    $bookParam = OrganizationBookParameter::where('book_id', $book -> id) -> where('parameter_name', $serviceParam -> name) -> first();
+                    if (!isset($bookParam))
                     {
                         $defaultValue = $serviceParam -> default_value;
                         if (isset($referenceFrom))
@@ -2615,7 +2666,7 @@ class ServiceParametersHelper
                                 }
                             }
                         }
-                        OrganizationBookParameter::create([
+                        $bookParam = OrganizationBookParameter::create([
                             'group_id' => $organization -> group_id,
                             'company_id' => null,
                             'organization_id' => null,
@@ -2627,8 +2678,17 @@ class ServiceParametersHelper
                             'type' => $serviceParam -> type,
                             'status' => ConstantHelper::ACTIVE,
                         ]);
+                    } else {
+                        // Update only parameter value and type
+                        $bookParam -> type = $serviceParam -> type;
+                        $bookParam -> parameter_name = $serviceParam -> name;
+                        $bookParam -> save();
                     }
+                    //Push the inserted or updated book param id
+                    array_push($insertedBookParameterIds, $bookParam -> id);
                 }
+                //Delete the records which are not required now
+                OrganizationBookParameter::where('book_id', $book -> id) -> whereNotIn('id', $insertedBookParameterIds) -> delete();
             }
         }
         return [

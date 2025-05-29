@@ -647,6 +647,16 @@
                                                                     <label class="form-label">No of Pack</label>
                                                                     <input type="number" name="storage_uom_count" class="form-control" placeholder="Enter No of Pack" value="{{ $item->storage_uom_count ?? '' }}">
                                                                 </div>
+
+                                                                <div class="col-md-3 mb-1">
+                                                                    <label class="form-label">Storage Weight</label>
+                                                                    <input type="number" step="0.0001" name="storage_weight" class="form-control" placeholder="Enter Storage Weight in KG" value="{{ $item->storage_weight ?? '' }}">
+                                                                </div>
+
+                                                                <div class="col-md-3 mb-1">
+                                                                    <label class="form-label">Storage Volume</label>
+                                                                    <input type="number"  step="0.0001" name="storage_volume" class="form-control" placeholder="Enter Storage Volume in CUM" value="{{ $item->storage_volume ?? '' }}">
+                                                                </div>
                                                             </div>
 
                                                             <div class="row mt-1">
@@ -1952,11 +1962,12 @@
                 itemCounter++;
                 $input.val('').attr('data-code', '').attr('data-name', '');
                 $('#itemId').val(''); 
+                feather.replace();
+                updateRowNumbers();
             } else {
                 alert('Please select an item from the list.');
             }
-            feather.replace();
-            updateRowNumbers();
+           
         });
         $('#itemTable').on('click', '.remove-item', function(e) {
             e.preventDefault();
@@ -2304,35 +2315,28 @@
     });
 </script>
 <script>
-   $(document).ready(function() {
+    $(document).ready(function () {
         function syncStorageFields() {
-            var uomName = $('select[name="uom_id"] option:selected').text().trim();
-            var storageUomName = $('select[name="storage_uom_id"] option:selected').text().trim();
-            var isMeter = (uomName === 'MTR');
-            var storageIsMeter = (storageUomName === 'MTR')
-            if (storageUomName) {
-                // if (isMeter && storageIsMeter) {
-                if (storageUomName && uomName) {
-                    $('input[name="storage_uom_conversion"]')
-                        .val(1)
-                        .prop('readonly', true);
-                    $('input[name="storage_uom_count"]')
-                        .val(1)
-                } else {
-                    $('input[name="storage_uom_conversion"]')
-                    .val(1)
-                    .prop('readonly', false);
-                    $('input[name="storage_uom_count"]')
-                    .val(1)
-                }
+            const uomName = $('select[name="uom_id"] option:selected').text().trim().toUpperCase();
+            const storageUomName = $('select[name="storage_uom_id"] option:selected').text().trim().toUpperCase();
+            const storageUomValue = $('select[name="storage_uom_id"]').val();
+            const $conversionInput = $('input[name="storage_uom_conversion"]');
+            const $countInput = $('input[name="storage_uom_count"]');
+            if (storageUomValue) {
+                $conversionInput.val(1);
+                $countInput.val(1);
+            } else {
+                $conversionInput.val('');
+                $countInput.val('');
+            }
+            if (uomName == storageUomName) {
+                $conversionInput.prop('readonly', true);
+            } else {
+                $conversionInput.prop('readonly', false);
             }
         }
-        $('select[name="uom_id"]').on('change', function() {
-            syncStorageFields();
-        });
-        $('select[name="storage_uom_id"]').on('change', function() {
-            syncStorageFields();
-        });
+        syncStorageFields();
+        $('select[name="uom_id"], select[name="storage_uom_id"]').on('change', syncStorageFields);
     });
 </script>
 <script>

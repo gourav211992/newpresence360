@@ -56,9 +56,9 @@ class InspectionHelper
                 foreach($inspection->items as $item) {
                     $mrn_item = MrnDetail::find($item->mrn_detail_id);
                     if ($mrn_item) {
-                        $mrn_item->accepted_qty = $item->accepted_qty;
-                        $mrn_item->rejected_qty = $item->rejected_qty;
-                        $mrn_item->inventory_uom_qty = $item->inventory_uom_qty;
+                        $mrn_item->accepted_qty += $item->accepted_qty;
+                        $mrn_item->rejected_qty += $item->rejected_qty;
+                        $mrn_item->inventory_uom_qty += $item->inventory_uom_qty;
                         $mrn_item->save();
 
                         $mrn_item->basic_value = $mrn_item->accepted_qty*$mrn_item->rate;
@@ -92,7 +92,7 @@ class InspectionHelper
 
                 foreach($mrn->items as $mrn_item) { 
                     $inspectionQty = $mrn_item->accepted_qty + $mrn_item->rejected_qty;
-                    if(($mrn_item->order_qty == $inspectionQty) && ($mrn_item->order_qty  == $mrn_item->inspection_qty)) {
+                    if(($mrn_item->order_qty == $inspectionQty)) {
                         $mrn_item->is_inspection = 0;
                     } else {
                         $mrn_item->is_inspection = 1;

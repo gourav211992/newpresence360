@@ -138,6 +138,7 @@
                                             <th class='no-wrap text-end'>Issue Quantity</th>
                                             <th class='no-wrap text-end'>Receipt Value</th>
                                             <th class='no-wrap text-end'>Issue Value</th>
+                                            <th class='no-wrap text-end'>Hold Stock</th>
                                             <th class="no-wrap">Status</th>
                                         </thead>
                                         <tbody id="inventory-tbody">
@@ -478,6 +479,7 @@
                 <td class="fw-bolder no-wrap text-end ${getBalanceColor(openingValue)}" style="width: 100%;">Value: ${openingValue}</td>
                 <td></td>
                 <td></td>
+                <td></td>
                 `;
                 tbody.appendChild(openingBalanceRow); // Append the opening balance row
 
@@ -547,6 +549,9 @@
                         `<td class='no-wrap text-end'>
                         ${report?.transaction_type === 'issue' ? report?.issue_org_currency_cost ?? 0.00 : 0.00}
                         </td>`,
+                        `<td class='no-wrap text-end'>
+                        ${report?.hold_qty ?? 0.00}
+                        </td>`,
                         `<td class="no-wrap">
                             ${documentStatusCssList[report?.document_status ?? ""] ?
                                 `<span class='badge ${documentStatusCssList[report?.document_status ?? ""]}'>
@@ -583,6 +588,7 @@
                 <td class="fw-bolder text-end ${getBalanceColor(totalReceiptValue)}" style="width: 100%;">Total: ${totalReceiptValue}</td>
                 <td class="fw-bolder text-end ${getBalanceColor(totalIssueValue)}" style="width: 100%;">Total: ${totalIssueValue}</td>
                 <td></td>
+                <td></td>
                 `;
                 tbody.appendChild(totalQtyRow);
                 // Add the closing balance row below the total issue quantity row
@@ -606,6 +612,7 @@
                 <td class="fw-bolder no-wrap text-end ${getBalanceColor(closingBalance)}" style="width: 100%;">Quantity: ${closingBalance}</td>
                 <td></td>
                 <td class="fw-bolder no-wrap text-end ${getBalanceColor(closingValue)}" style="width: 100%;">Value: ${closingValue}</td>
+                <td></td>
                 <td></td>
                 <td></td>
                 `;
@@ -935,7 +942,6 @@
                 }
             });
 
-            // $('#send-mail').on('submit', function(e) {
             $(document).on('submit', '#send-mail', function(e) {
 
                 e.preventDefault();

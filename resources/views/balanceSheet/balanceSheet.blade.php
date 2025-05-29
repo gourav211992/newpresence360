@@ -766,11 +766,11 @@
     // });
 
     let r_date = "{{ request('date')}}";
-    if(r_date!=""){
+    /* f(r_date!=""){
         console.log("date"+r_date);
     
         $("#fp-range").val(r_date);
-    }
+    } */
 
 });
 function formatValue(value){

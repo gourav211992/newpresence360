@@ -217,71 +217,60 @@
             </tr>
             @php $index=0; $runningBalTotal = 0; $runningOverDueTotal = 0; @endphp
             @foreach($data as $key => $row)
-            @if($bill_type=="outstanding")
-            @if($row->total_outstanding > 0)
-            @php $index++;
-               $currentOutstanding = $row->total_outstanding < 0 ? 0 : $row->total_outstanding;
+            @php
+                // Safely parse values to float for numeric comparison
+                $invoiceAmount = floatval($row->invoice_amount ?? 0);
+                $totalOutstanding = floatval($row->total_outstanding ?? 0);
+                $overdue = floatval($row->overdue ?? 0);
+            @endphp
+            @if($bill_type == "outstanding")
+            @if(($invoiceAmount != 0 || $totalOutstanding != 0) && $totalOutstanding > 0)
+            @php 
+                $index++;
+                $currentOutstanding = $totalOutstanding < 0 ? 0 : $totalOutstanding;
                 $runningBalTotal += $currentOutstanding;
-            @endphp
-            <tr>
-                <td
-                    style="padding: 2px; border: 1px solid #000; border-top: none; text-align: center; font-weight: bold;">{{@$index}}</td>
-                <td
-                    style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
-                    {{@$row->document_date}}</td>
-                <td
-                    style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;text-align: center;">
-                    {{@$row->bill_no}}</td>
-                <td
-                    style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none;  text-align: center;">
-                    {{@$row->overdue_days}}</td>
-
-                    <td
-                    style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;padding-right:30px">
-                    {{$row->invoice_amount!=""?App\Helpers\Helper::formatIndianNumber($row->invoice_amount):""}}</td>
-                <td
-                    style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;padding-right:30px">
-                    {{App\Helpers\Helper::formatIndianNumber($row->total_outstanding)}}</td>
-                <td
-                    style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;padding-right:30px">
-                    {{App\Helpers\Helper::formatIndianNumber($runningBalTotal)}}</td>
-            </tr>
+                @endphp
+                <tr>
+                    <td style="padding: 2px; border: 1px solid #000; border-top: none; text-align: center; font-weight: bold;">{{ @$index }}</td>
+                    <td style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">{{ @$row->document_date }}</td>
+                    <td style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">{{ @$row->bill_no }}</td>
+                    <td style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">{{ @$row->overdue_days }}</td>
+                    <td style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: right; padding-right:30px;">
+                        {{ $invoiceAmount != 0 ? App\Helpers\Helper::formatIndianNumber($invoiceAmount) : "" }}
+                    </td>
+                    <td style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: right; padding-right:30px;">
+                        {{ App\Helpers\Helper::formatIndianNumber($totalOutstanding) }}
+                    </td>
+                    <td style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: right; padding-right:30px;">
+                        {{ App\Helpers\Helper::formatIndianNumber($runningBalTotal) }}
+                    </td>
+                </tr>
             @endif
-            @else
-
-            @if($row->overdue > 0)
-            @php $index++; 
-            $currentOverdue = $row->overdue < 0 ? 0 : $row->overdue;
-                $runningOverDueTotal += $currentOverdue;
-            @endphp
-            <tr>
-                <td
-                    style="padding: 2px; border: 1px solid #000; border-top: none; text-align: center; font-weight: bold;">{{@$index}}</td>
-                <td
-                    style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
-                    {{@$row->document_date}}</td>
-                <td
-                    style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;text-align: center;">
-                    {{@$row->bill_no}}</td>
-                <td
-                    style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none;  text-align: center;">
-                    {{@$row->overdue_days}}</td>
-                    <td
-                    style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;padding-right:30px">
-                    {{$row->invoice_amount!=""?App\Helpers\Helper::formatIndianNumber($row->invoice_amount):""}}</td>
-
-
-                <td
-                    style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;padding-right:30px">
-                    {{App\Helpers\Helper::formatIndianNumber($row->overdue)}}</td>
-                <td
-                    style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;padding-right:30px">
-                    {{App\Helpers\Helper::formatIndianNumber($runningOverDueTotal)}}</td>
-            </tr>
+        @else
+            @if(($invoiceAmount != 0 || $overdue != 0) && $overdue > 0)
+                @php 
+                    $index++; 
+                    $currentOverdue = $overdue < 0 ? 0 : $overdue;
+                    $runningOverDueTotal += $currentOverdue;
+                @endphp
+                <tr>
+                    <td style="padding: 2px; border: 1px solid #000; border-top: none; text-align: center; font-weight: bold;">{{ @$index }}</td>
+                    <td style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">{{ @$row->document_date }}</td>
+                    <td style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">{{ @$row->bill_no }}</td>
+                    <td style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">{{ @$row->overdue_days }}</td>
+                    <td style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: right; padding-right:30px;">
+                        {{ $invoiceAmount != 0 ? App\Helpers\Helper::formatIndianNumber($invoiceAmount) : "" }}
+                    </td>
+                    <td style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: right; padding-right:30px;">
+                        {{ App\Helpers\Helper::formatIndianNumber($overdue) }}
+                    </td>
+                    <td style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; text-align: right; padding-right:30px;">
+                        {{ App\Helpers\Helper::formatIndianNumber($runningOverDueTotal) }}
+                            </td>
+                        </tr>
+                @endif
             @endif
-
-            @endif
-            @endforeach
+        @endforeach
 
         </table>
 

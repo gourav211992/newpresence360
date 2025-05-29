@@ -175,7 +175,7 @@
                                                             @foreach ($books as $book)
                                                                 <option value="{{ $book->id }}"
                                                                     @if ($data->book_id == $book->id) selected @endif>
-                                                                    {{ $book->book_code }}</option>
+                                                                    {{ $book->book_name }}</option>
                                                             @endforeach
                                                         </select>
                                                     </div>
@@ -1158,8 +1158,8 @@ $('.settleInput').each(function () {
                                             <td>${val['date']}</td>
                                             <td class="fw-bolder text-dark">${val['series']['book_code'].toUpperCase()}</td>
                                             <td>${val['voucher_no']}</td>
-                                            <td class="text-end">${val['amount'].toLocaleString('en-IN')}</td>
-                                            <td class="text-end balanceInput">${parseFloat(val['balance']).toFixed(2).toLocaleString('en-IN')}</td>
+                                            <td class="text-end">${formatIndianNumber(val['amount'])}</td>
+                                            <td class="text-end balanceInput">${formatIndianNumber(val['balance'])}</td>
                                             <td class="text-end">
                                                 <input type="number" class="form-control mw-100 settleInput settleAmount${val['id']}" data-id="${val['id']}" value="${val['settle']}"/>
                                             </td>
@@ -1175,8 +1175,8 @@ $('.settleInput').each(function () {
                                             <td>${val['date']}</td>
                                             <td class="fw-bolder text-dark">${val['series']['book_code']}</td>
                                             <td>${val['voucher_no']}</td>
-                                            <td class="text-end">${val['amount'].toLocaleString('en-IN')}</td>
-                                            <td class="text-end balanceInput">${parseFloat(val['balance']).toFixed(2).toLocaleString('en-IN')}</td>
+                                            <td class="text-end">${formatIndianNumber(val['amount'])}</td>
+                                            <td class="text-end balanceInput">${formatIndianNumber(val['balance'])}</td>
                                             <td class="text-end">
                                                 <input type="number" class="form-control mw-100 settleInput settleAmount${val['id']}" data-id="${val['id']}" value="${amount}"/>
                                             </td>

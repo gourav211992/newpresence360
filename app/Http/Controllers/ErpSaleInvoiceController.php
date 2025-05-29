@@ -5,12 +5,14 @@ use App\Helpers\GstInvoiceHelper;
 use App\Jobs\SendEmailJob;
 use App\Models\AuthUser;
 use App\Models\Customer;
+use App\Models\ErpInvoiceItemPacket;
 use App\Models\EwayBillMaster;
+use App\Models\PackingListDetail;
+use App\Models\PackingListItem;
 use Dompdf\Dompdf;
+use App\Helpers\PackingList\Constants as PackingListConstants;
 use App\Helpers\DynamicFieldHelper;
 use App\Models\ErpSiDynamicField;
-
-
 use App\Exceptions\ApiGenericException;
 use App\Helpers\ConstantHelper;
 use App\Helpers\CurrencyHelper;
@@ -321,6 +323,10 @@ class ErpSaleInvoiceController extends Controller
                             $siItem -> max_attribute = 999999;
                             $siItem -> is_editable = true;
                         // }
+                    }
+                    $packingListDetail = $siItem -> packets;
+                    if (isset($packingListDetail) && count($packingListDetail) > 0) {
+                        $siItem -> package = $packingListDetail -> first() -> package_number;
                     }
                 }
             }
@@ -993,7 +999,7 @@ class ErpSaleInvoiceController extends Controller
                         //Order Pulling condition
                         if (isset($request -> quotation_item_type[$itemDataKey])) {
                             $pullType = $request -> quotation_item_type[$itemDataKey];
-                            if ($pullType === ConstantHelper::SO_SERVICE_ALIAS) {
+                            if ($pullType === ConstantHelper::SO_SERVICE_ALIAS || $pullType === PackingListConstants::SERVICE_ALIAS) {
                                 $qtItem = ErpSoItem::find($request -> quotation_item_ids[$itemDataKey]);
                                 if (isset($qtItem)) {
                                     //If Order is pulled inside DN
@@ -1011,6 +1017,20 @@ class ErpSaleInvoiceController extends Controller
                                     $soItem -> so_item_id = $qtItem ?-> id;
                                     $soItem -> save();
                                 }
+                                if (isset($request -> plist_detail_ids[$itemDataKey])) {
+                                    $plistIds = json_decode($request -> plist_detail_ids[$itemDataKey]);
+                                    $plistDetails = PackingListDetail::whereIn('id', $plistIds) -> get();
+                                    foreach ($plistDetails as $plistDetail) {
+                                        ErpInvoiceItemPacket::create([
+                                            'invoice_item_id' => $soItem -> id,
+                                            'plist_detail_id' => $plistDetail -> id,
+                                            'package_number' => $plistDetail -> packing_number
+                                        ]);
+                                        $plistDetail -> dn_item_id = $soItem -> id;
+                                        $plistDetail -> save();
+                                    }
+                                }
+                                
                                 // $itemQty = isset($oldSoItem) ? $soItem -> order_qty - $oldSoItem -> order_qty : $soItem -> order_qty;
                                 // $referenceFromIds = json_decode($request -> reference_from[$itemDataKey]);
                                 // if ($itemQty > 0) {
@@ -1572,29 +1592,88 @@ class ErpSaleInvoiceController extends Controller
                 }) -> with('header', function ($headerQuery) use($request) {
                     $headerQuery -> with(['address', 'series', 'customer', 'plots.land', 'plots.plot']);
                 }) -> where('due_date', '<=', Carbon::now()) -> whereColumn('installment_cost', '>', 'invoice_amount');
+            } else if ($request -> doc_type === PackingListConstants::SERVICE_ALIAS) {
+                $order = PackingListDetail::withWhereHas('header', function ($subQuery) use($request, $applicableBookIds) {
+                    $subQuery -> withDefaultGroupCompanyOrg() -> whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]) -> whereIn('book_id', $applicableBookIds) 
+                    -> when($request -> book_id, function ($bookQuery) use($request) {
+                        $bookQuery -> where('book_id', $request -> book_id);
+                    }) -> when($request -> document_id, function ($docQuery) use($request) {
+                        $docQuery -> where('id', $request -> document_id);
+                    });
+                }) -> when($request -> customer_id, function ($docQuery) use($request) {
+                    $docQuery -> whereHas('sale_order', function ($nestedQuery) use($request) {
+                        $nestedQuery -> where('customer_id', $request -> customer_id);
+                    });
+                }) -> when($request -> item_id, function ($custQuery) use($request) {
+                    $custQuery -> whereHas('items', function ($nestedQuery) use($request) {
+                        $nestedQuery -> where('item_id', $request -> item_id);
+                    });
+                }) ->with('sale_order')-> whereNull('dn_item_id');
             }
             else {
                 $order = null;
             }
-            if ($request -> item_id && isset($order) && $request -> doc_type !== ConstantHelper::LAND_LEASE) {
+            if ($request -> item_id && isset($order) && $request -> doc_type !== ConstantHelper::LAND_LEASE && $request -> doc_type != PackingListConstants::SERVICE_ALIAS) {
                 $order = $order -> where('item_id', $request -> item_id);
             }
             $order = isset($order) ? $order -> get() : new Collection();
+            if ($request -> doc_type === PackingListConstants::SERVICE_ALIAS) {
+                foreach ($order as $docDetail) {
+                    $totalQty = 0;
+                    $itemsHTML = "";
+                    $extraItemsCount = 0;
+                    $soItemIds = [];
+                    foreach ($docDetail -> items as $detailItemIndex => $detailItem) {
+                        array_push($soItemIds, $detailItem -> so_item_id);
+                        if ($detailItemIndex == 0) {
+                            $totalQty += $detailItem -> qty;
+                            //Build Items UI
+                            $maxChar = 70;
+                            $itemName = $detailItem -> item_name;
+                            $totalChar = strlen($itemName);
+                            $attributesHTML = "";
+                            foreach($detailItem -> attributes as $itemAttr) {
+                                $attributeName = $itemAttr -> attribute_name;
+                                $attributeValue = $itemAttr -> attribute_value;
+                                $totalChar += (strlen($attributeName) + strlen($attributeValue));
+                                if ($totalChar <= $maxChar) {
+                                    $attributesHTML .= "<span class='badge rounded-pill badge-light-primary' > $attributeName : $attributeValue</span>";
+                                } else {
+                                    $attributesHTML .= "..";
+                                }
+                            }
+                            $itemsHTML .= "<span class='badge rounded-pill badge-light-primary' > $itemName</span> $attributesHTML";
+                        } else {
+                            $extraItemsCount += 1;
+                        }                    
+                    }
+                    if ($extraItemsCount > 0) {
+                        $itemsHTML .= "<span class='badge rounded-pill badge-light-primary' > + $extraItemsCount</span>";
+                    }
+                    $docDetail -> items_ui = $itemsHTML;
+                    $docDetail -> total_item_qty = $totalQty;
+                    $docDetail -> so_item_ids = $soItemIds;
+                }
+            }
             if ($request -> doc_type !== ConstantHelper::LAND_LEASE) {
                 $order = $order -> filter(function ($singleOrder) use($request) {
                     // if ($request -> doc_type === ConstantHelper::SO_SERVICE_ALIAS) {
                     //     return $singleOrder -> balance_qty > 0 && $singleOrder -> balance_bundle_qty > 0;
                     // }
-                    return $singleOrder -> balance_qty > 0;
+                    if ($request -> doc_type != PackingListConstants::SERVICE_ALIAS) {
+                        return $singleOrder -> balance_qty > 0;
+                    } else {
+                        return true;
+                    }
                 });
                 foreach ($order as &$itemVal) {
                     if ($request -> doc_type === ConstantHelper::SO_SERVICE_ALIAS) {
                         $itemVal -> stock_qty = $itemVal -> getStockBalanceQty($request -> store_id ?? 0);
-                    } else {
-                        $itemVal -> stock_qty = $itemVal -> balance_qty;
-                    }
-                    if ($request -> doc_type == ConstantHelper::SO_SERVICE_ALIAS) {
                         $itemVal -> pslips = SaleModuleHelper::getPendingPackingSlipsOfOrder($itemVal -> id);
+                    } else {
+                        if ($request -> doc_type != PackingListConstants::SERVICE_ALIAS) {
+                            $itemVal -> stock_qty = $itemVal -> balance_qty;
+                        }
                     }
                 }                
             } else {
@@ -1691,7 +1770,6 @@ class ErpSaleInvoiceController extends Controller
     public function processPulledItems(Request $request)
     {
         try {
-            // $processedCollection = new Collection();
             $itemIds = $request -> items_id;
             $modelName = null;
             $headers = [];
@@ -1703,146 +1781,6 @@ class ErpSaleInvoiceController extends Controller
                 $modelName = null;
             }
             if (isset($modelName)) {
-
-                // if ($request -> doc_type === ConstantHelper::SO_SERVICE_ALIAS) {
-                //     $soItemGrouped = DB::table(function ($query) use ($itemIds) {
-                //         $query->from('erp_so_items')
-                //             ->join('erp_so_item_attributes', 'erp_so_items.id', '=', 'erp_so_item_attributes.so_item_id')
-                //             ->select(
-                //                 'erp_so_items.id as so_item_id',
-                //                 'erp_so_items.item_id',
-                //                 'erp_so_items.rate',
-                //                 'erp_so_items.uom_id',
-                //                 DB::raw("GROUP_CONCAT(CONCAT(erp_so_item_attributes.item_attribute_id, ':', erp_so_item_attributes.attribute_value) ORDER BY erp_so_item_attributes.item_attribute_id SEPARATOR ', ') as attributes"),
-                //                 'erp_so_items.dnote_qty',
-                //                 'erp_so_items.order_qty'
-                //             )
-                //             ->whereIn('erp_so_items.id',$itemIds)
-                //             ->groupBy('erp_so_items.id', 'erp_so_items.item_id','erp_so_items.uom_id', 'erp_so_items.rate');
-                //     })
-                //     ->select(
-                //         'item_id',
-                //         'uom_id',
-                //         'attributes',
-                //         'rate',
-                //         DB::raw("SUM(order_qty-dnote_qty) as total_qty")
-                //     )
-                //     ->groupBy('item_id', 'uom_id', 'attributes', 'rate')
-                //     ->get();
-
-                //     foreach ($soItemGrouped as $itemKey => &$item) {
-                //         $totalDiscountArray = [];
-                //         $totalDiscountAmount = 0;
-                //         $soItems = ErpSoItem::whereIn('id', $itemIds) -> with('header') -> where([
-                //             ['item_id', $item -> item_id],
-                //             ['uom_id', $item -> uom_id],
-                //             ['rate', $item -> rate]
-                //         ]) -> get();
-                //         $soItems = $soItems -> filter(function ($soItem) use($item) {
-                //             return $soItem -> attributes_array() ?-> first() ?-> attributes == $item -> attributes;
-                //         });
-                //         $firstSoItem = $soItems ?-> first();
-                //         $soDetails = [];
-                //         foreach ($soItems as $soItem) {
-                //             array_push($soDetails, [
-                //                 'id' => $soItem -> id,
-                //                 'balance_qty' => $soItem -> balance_qty,
-                //                 'sale_order_id' => $soItem -> sale_order_id,
-                //                 'book_code' => $soItem ?-> header ?-> book_code,
-                //                 'document_number' => $soItem ?-> header ?-> document_number,
-                //                 'document_date' => $soItem ?-> header ?-> document_date,
-                //             ]);
-                //             //Add a header row
-                //             $headerDiscountArray = $soItem -> header_discounts ?? [];
-                //             //header discount
-                //             foreach ($headerDiscountArray as $headerDiscount) {
-                //                 $existingIndex = null;
-                //                 foreach ($totalDiscountArray as $existingDiscountIndex => $existingDiscount) {
-                //                     if ($existingDiscount['ted_id'] == $headerDiscount['id']) {
-                //                         $existingIndex = $existingDiscountIndex;
-                //                         break;
-                //                     }
-                //                 }
-                //                 if (isset($existingIndex)) {
-                //                     $totalDiscountArray[$existingDiscountIndex]['ted_amountamount'] += $headerDiscount['amount'];
-                //                     $totalDiscountAmount += $headerDiscount['amount'];
-                //                 } else {
-                //                     $discount = DiscountMaster::find($headerDiscount['id']);
-                //                     array_push($totalDiscountArray, [
-                //                         'ted_id' => $headerDiscount['id'],
-                //                         'ted_amount' => $headerDiscount['amount'],
-                //                         'ted_name' => $discount ?-> name
-                //                     ]);
-                //                     $totalDiscountAmount += $headerDiscount['amount'];
-                //                 }
-                //             }
-                //             //item discount -> ted
-                //             foreach ($soItem -> discount_ted as $itemDiscount) {
-                //                 $existingDiscountIndex = null;
-                //                 foreach ($totalDiscountArray as $headerDiscountIndex => $headerDiscount) {
-                //                     if ($headerDiscount['ted_id'] == $itemDiscount['ted_id']) {
-                //                         $existingDiscountIndex = $headerDiscountIndex;
-                //                         break;
-                //                     }
-                //                 }
-                //                 if (isset($existingDiscountIndex)) {
-                //                     $totalDiscountArray[$existingDiscountIndex]['ted_amount'] += $itemDiscount -> ted_amount;
-                //                     $totalDiscountAmount += $itemDiscount -> ted_amount;
-
-                //                 } else {
-                //                     $discount = DiscountMaster::find($itemDiscount -> ted_id);
-                //                     array_push($totalDiscountArray, [
-                //                         'ted_id' => $itemDiscount -> ted_id,
-                //                         'ted_amount' => $itemDiscount -> ted_amount,
-                //                         'ted_name' => $discount ?-> name
-                //                     ]);
-                //                     $totalDiscountAmount += $itemDiscount -> ted_amount;
-                //                 }
-                //             }
-                //         }
-                //         if (isset($firstSoItem)) {
-                //             $firstSoItem->load([
-                //                 'header.customer.currency',
-                //                 'header.customer.payment_terms',
-                //                 'item.specifications',
-                //                 'item.alternateUoms.uom',
-                //                 'item.uom',
-                //                 'item.hsn'
-                //             ]);
-                //             $item -> discount_ted = $totalDiscountArray;
-                //             $item -> item = $firstSoItem -> item;
-                //             $item -> item_attributes_array = $firstSoItem -> item_attributes_array();
-                //             $item -> balance_qty = $item -> total_qty;
-                //             $item -> stock_qty = $item -> total_qty;
-                //             $item -> actual_qty = $item -> total_qty;
-                //             $item -> item_discount_amount = $totalDiscountAmount;
-                //             $item -> header_discount_amount = 0;
-                //             $item -> tax_amount = 0;
-                //             $item -> so_details = $soDetails;
-                //             if ($itemKey == 0) {
-                               
-                //                 $processedCollection -> push([
-                //                     'id' => 1,
-                //                     'customer_code' => $firstSoItem ?-> header ?-> customer_code,
-                //                     'customer_id' => $firstSoItem ?-> header ?-> customer_id,
-                //                     'consignee_name' => $firstSoItem ?-> header ?-> consignee_name,
-                //                     'customer' => $firstSoItem ?-> header ?-> customer,
-                //                     'billing_address_details' => $firstSoItem ?-> header ?-> billing_address_details,
-                //                     'shipping_address_details' => $firstSoItem ?-> header ?-> shipping_address_details,
-                //                     'payment_term_id' => $firstSoItem ?-> header ?-> payment_term_id,
-                //                     'currency_id' => $firstSoItem ?-> header ?-> currency_id,
-                //                     'document_type' => $firstSoItem ?-> header ?-> document_type,
-                //                     'items' => collect([]),
-                //                     'discount_ted' => collect([]),
-                //                     'expense_ted' => collect([])
-                //                 ]);
-                //             }
-                //             $processedCollection -> first()['items'] -> push($item);
-                //         }
-                       
-                //     }
-                // }
-
                 $headers = $modelName::with(['discount_ted', 'expense_ted', 'billing_address_details', 'shipping_address_details']) -> with('customer', function ($sQuery) {
                     $sQuery -> with(['currency', 'payment_terms']);
                 }) -> with('items', function ($itemQuery) use($request) {
@@ -2025,6 +1963,38 @@ class ErpSaleInvoiceController extends Controller
                             }
                             $header -> items = $items;
                            
+                        }
+                    }
+                } else if ($request -> doc_type === PackingListConstants::SERVICE_ALIAS) {
+                    $soItems =$request -> items_id;
+                    $actualSoItemIds = [];
+                    foreach ($soItems as $key => $value) {
+                        $currentIds = json_decode($value);
+                        foreach ($currentIds as $soItemId) {
+                            array_push($actualSoItemIds, $soItemId);
+                        }
+                    }
+                    $saleOrderIds = $request -> order_id;
+                    $packingListDetailIds = $request -> plist_detail_ids;
+                    // $packingListDetail = PackingListDetail::whereIn('id', $packingListDetailIds) -> with('items') -> get();
+                    $headers = ErpSaleOrder::with(['discount_ted', 'expense_ted', 'billing_address_details', 'shipping_address_details']) -> with('customer', function ($sQuery) {
+                        $sQuery -> with(['currency', 'payment_terms']);
+                    }) -> with('items', function ($itemQuery) use($request, $actualSoItemIds) {
+                        $itemQuery -> whereIn('id', $actualSoItemIds) -> with(['discount_ted', 'tax_ted']) -> with(['item' => function ($itemQuery) {
+                            $itemQuery -> with(['specifications', 'alternateUoms.uom', 'uom', 'hsn']);
+                        }]);
+                    }) -> whereIn('id', $saleOrderIds) -> get();
+                    foreach ($headers as $header) {
+                        foreach ($header -> items as $orderItemKey => &$orderItem) {
+                            $orderItem -> stock_qty = $orderItem -> getStockBalanceQty($request -> store_id ?? 0);
+                            $orderItem -> item_attributes_array = $orderItem -> item_attributes_array();
+                            $plistItem = PackingListItem::find($orderItem -> plist_item_id);
+                            if (isset($plistItem)) {
+                                $orderItem -> order_qty = $plistItem -> qty;
+                                $orderItem -> package = $plistItem -> detail ?-> packing_number;
+                                $orderItem -> package_id = $plistItem -> detail ?-> id;
+                            }
+
                         }
                     }
                 }

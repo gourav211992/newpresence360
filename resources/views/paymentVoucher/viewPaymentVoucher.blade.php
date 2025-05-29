@@ -1238,8 +1238,8 @@ document.addEventListener("click", function (e) {
                                             <td>${val['date']}</td>
                                             <td class="fw-bolder text-dark">${val['series']['book_code'].toUpperCase()}</td>
                                             <td>${val['voucher_no']}</td>
-                                            <td class="text-end">${val['amount'].toLocaleString('en-IN')}</td>
-                                            <td class="text-end">${parseFloat(val['balance']).toFixed(2).toLocaleString('en-IN')}</td>
+                                            <td class="text-end">${formatIndianNumber(val['amount'])}</td>
+                                            <td class="text-end">${formatIndianNumber(val['balance'])}</td>
                                             <td class="text-end">
                                                 <input type="number" class="form-control mw-100 settleInput settleAmount${val['id']}" readonly data-id="${val['id']}" value="${val['settle']}"/>
                                             </td>

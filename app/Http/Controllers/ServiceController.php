@@ -56,16 +56,22 @@ class ServiceController extends Controller
             $service -> save();
             //Get parameters from Constant Array
             $parameters = ServiceParametersHelper::getDefinedServiceLevelParameters($serviceAlias);
+            //Ids array to keep track of inserted parameters
+            $insertedServiceParamIds = [];
             foreach ($parameters as $paramIndex => $paramValue) {
                 //Set Default value if present else, default it to constant default value
                 $defaultVal = (isset($request -> params) && isset($request -> params[$paramIndex])) 
                 ? $request -> params[$paramIndex] : $paramValue['default_value'];
                 //Create or Update the Parameters (UPDATE ONLY DEFAULT VALUE / STATUS)
-                ServiceParameter::updateOrCreate(
+                $serviceParam = ServiceParameter::updateOrCreate(
                     ['service_id' => $service -> id, 'name' => $paramValue['name']],
                     ['applicable_values' => $paramValue['applicable_values_database'], 'default_value' => $defaultVal, 'type' => $paramValue['type'], 'status' => ConstantHelper::ACTIVE],
                 );
+                //Push the newly created or updated service parameters ID
+                array_push($insertedServiceParamIds, $serviceParam -> id);
             }
+            //Delete the parameters which are not required now
+            ServiceParameter::where('service_id', $service -> id) -> whereNotIn('id', $insertedServiceParamIds) -> delete();
             //Assign Service Parameters to each organization with registered service
             $assignedOrgForServices = OrganizationService::select('organization_id', 'service_id') -> where('service_id', $service -> id) -> get();
             if ($assignedOrgForServices -> count() == 0) {
@@ -75,14 +81,12 @@ class ServiceController extends Controller
                     ServiceParametersHelper::enableServiceParametersForOrganization($assignedOrgService -> service_id, $assignedOrgService -> organization_id);
                 }
             }
-            
             DB::commit();
             return response() -> json([
                 'status' => 'success',
                 'message' => 'Service Updated successfully'
             ]);
         } catch(Exception $ex) {
-            dd($ex->getMessage(),$ex->getLine());
             DB::rollBack();
             return response() -> json([
                 'message' => 'Some internal error occured',

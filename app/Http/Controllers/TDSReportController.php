@@ -6,6 +6,8 @@ use App\Helpers\ConstantHelper;
 use App\Models\ExpenseHeader;
 use Illuminate\Http\Request;
 use App\Helpers\Helper;
+use App\Models\CostCenterOrgLocations;
+use App\Models\ErpStore;
 use App\Models\Tax;
 use App\Models\Organization;
 use Carbon\Carbon;
@@ -16,6 +18,7 @@ class TDSReportController extends Controller
 {
     public function index(Request $request, $page = null)
     {
+        // dd($request->all());
         $fy = Helper::getFinancialYear(date('Y-m-d'));
         $startDate = date('Y-m-d', strtotime($fy['start_date']));
         $endDate = date('Y-m-d', strtotime($fy['end_date']));
@@ -30,9 +33,10 @@ class TDSReportController extends Controller
         else
             $organization_id = Helper::getAuthenticatedUser()->organization_id;
         $vendor_id = null;
+        $location_id = $request->location_id;
+        $cost_center_id = $request->location_id;
         if ($request->vendor_filter)
             $vendor_id = $request->vendor_filter;
-
 
         $startDate = date('d-m-Y', strtotime($startDate));
         $endDate = date('d-m-Y', strtotime($endDate));
@@ -44,6 +48,14 @@ class TDSReportController extends Controller
             ->where('reference_service', ConstantHelper::EXPENSE_ADVISE_SERVICE_ALIAS)
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
             ->whereBetween('document_date',[$startDate,$endDate])
+            ->when($location_id, function ($query) use ($location_id) {
+                    $query->where('location', $location_id);
+                })
+            ->when($cost_center_id, function ($query,$cost_center_id) {
+               $query->whereHas('items', function ($query) use ($cost_center_id) {
+                        $query->where('cost_center_id', $cost_center_id);
+                    });
+                })
             ->pluck('reference_doc_id');
             $records = ExpenseHeader::with([
                 'items.hsn.tax', // Eager load tax data
@@ -51,6 +63,7 @@ class TDSReportController extends Controller
             ])
             ->where('organization_id', $organization_id)
             ->whereIn('id', $vouchers)
+            
             ->when(request('tax_filter'), function($query) {
                 $query->whereHas('items.hsn.tax', function($query) {
                     $query->where('id', request('tax')); // Assuming 'tax_group' is the field you want to filter by
@@ -59,10 +72,20 @@ class TDSReportController extends Controller
             ->latest()
             ->get();
         
-        $taxTypes = Tax::all();
+            $taxTypes = Tax::all();
+            $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
+                $item->withDefaultGroupCompanyOrg()->where('status', 'active');
 
+                return [
+                    'id' => $item->costCenter->id,
+                    'name' => $item->costCenter->name,
+                    'location' => $item->costCenter->locations,
+                ];
+            })->toArray();
 
-        return view('tds.index', compact('fy', 'mappings', 'organization_id', 'range', 'vendors', 'vendor_id','records','taxTypes'));
+        $locations = ErpStore::where('status','active')->get();
+
+        return view('tds.index', compact('fy', 'mappings', 'organization_id', 'range', 'vendors', 'vendor_id','records','taxTypes','cost_centers','locations','cost_center_id', 'location_id'));
     }
     static function formatWithOrdinal($date)
     {

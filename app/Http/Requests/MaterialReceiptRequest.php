@@ -13,6 +13,8 @@ use App\Models\PoItem;
 use App\Models\MrnDetail;
 use App\Models\NumberPattern;
 use App\Models\ItemAttribute;
+use Illuminate\Validation\Rule;
+
 
 class MaterialReceiptRequest extends FormRequest
 {
@@ -29,6 +31,17 @@ class MaterialReceiptRequest extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
+
+    protected $organization_id;
+    protected $group_id; 
+
+     protected function prepareForValidation()
+     {
+         $user = Helper::getAuthenticatedUser();
+         $organization = $user->organization;
+         $this->organization_id = $organization ? $organization->id : null;
+         $this->group_id = $organization ? $organization->group_id : null;
+     } 
 
     public function rules(): array
     {
@@ -47,11 +60,33 @@ class MaterialReceiptRequest extends FormRequest
             'vendor_id' => 'required',
             'currency_id' => 'required',
             'payment_term_id' => 'required',
-            'gate_entry_no' => 'nullable|max:50',
+            'gate_entry_no' => [
+                'nullable',
+                'max:50',
+                Rule::unique('erp_mrn_headers')
+                    ->where(function ($query) {
+                        return $query
+                            ->where('group_id', $this->group_id)
+                            ->where('organization_id', $this->organization_id)
+                            ->whereNull('deleted_at');
+                    })
+                    ->ignore($mrnId), // ignore when updating
+            ],
             'gate_entry_date' => 'nullable|date',
             'eway_bill_no' => 'nullable|max:50',
             'consignment_no' => 'nullable|max:50',
-            'supplier_invoice_no' => 'nullable|max:50',
+            'supplier_invoice_no' => [
+                'nullable',
+                'max:50',
+                Rule::unique('erp_mrn_headers')
+                    ->where(function ($query) {
+                        return $query
+                            ->where('group_id', $this->group_id)
+                            ->where('organization_id', $this->organization_id)
+                            ->whereNull('deleted_at');
+                    })
+                    ->ignore($mrnId), // ignore when updating
+            ],
             'supplier_invoice_date' => 'nullable|date',
             'transporter_name' => 'nullable|max:50',
             'vehicle_no' => [
@@ -141,10 +176,12 @@ class MaterialReceiptRequest extends FormRequest
             'header_store_id.required' => 'Location is required',
             'sub_store_id.required' => 'Store is required',
             'gate_entry_no.required' => 'Gate Entry No is required.',
+            'gate_entry_no.unique' => 'Gate Entry No is unique.',
             'gate_entry_date.required' => 'Gate Entry Date is required.',
             'eway_bill_no.required' => 'Eway Bill No is required.',
             'consignment_no.required' => 'Consignment No is required.',
             'supplier_invoice_no.required' => 'Supplier Invoice No is required.',
+            'supplier_invoice_no.unique' => 'Supplier Invoice No is unique.',
             'supplier_invoice_date.required' => 'Supplier Invoice Date is required.',
             'transporter_name.required' => 'Transporter Name is required.',
             'vehicle_no.required' => 'Vehicle number is required.',

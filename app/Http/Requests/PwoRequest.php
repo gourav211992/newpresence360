@@ -136,24 +136,57 @@ class PwoRequest extends FormRequest
                     }
 
                     # So Item Qty Check
-                    // if(isset($attribute['so_item_id']) && $attribute['so_item_id']) {
+                    if(isset($attribute['so_item_id']) && $attribute['so_item_id']) {
+                        $pwoMappingId = $attribute['pwo_so_mapping_id'] ?? null;
+                        $soItemId = $attribute['so_item_id'] ?? null;
+                        $soItem = ErpSoItem::find($soItemId);
+                        $inputQty = floatval($attribute['qty']);
+                        $mainSoItem = intval($attribute['main_so_item']) && $attribute['main_so_item'] ? true : false;
+                        if($mainSoItem) {
+                            if($moId) {
+                                $pwoSoMapping = PwoSoMapping::find($pwoMappingId); 
+                                $existingQty = $pwoSoMapping ? floatval($pwoSoMapping->inventory_uom_qty) : 0;
+                                $availableQty = floatval($soItem->inventory_uom_qty) - floatval($soItem->pwo_qty) + $existingQty;
+                                if ($inputQty > $availableQty) {
+                                    $validator->errors()->add("components.$k.qty", "Quantity can't be greater than Order Qty.");
+                                }
+                            } else {
+                                if(floatval($inputQty) > (floatval($soItem->inventory_uom_qty) - floatval($soItem->pwo_qty))) {
+                                    $validator->errors()->add("components.$k.qty", "Quantity can't be greater than Order Qty.");
+                                } 
+                            }
+                        }
+                    }
+
+                    // if (isset($attribute['so_item_id']) && $attribute['so_item_id']) {
                     //     $pwoMappingId = $attribute['pwo_so_mapping_id'] ?? null;
                     //     $soItemId = $attribute['so_item_id'] ?? null;
                     //     $soItem = ErpSoItem::find($soItemId);
                     //     $inputQty = floatval($attribute['qty']);
-                    //     if($moId) {
-                    //         $pwoSoMapping = PwoSoMapping::find($pwoMappingId); 
-                    //         $existingQty = $pwoSoMapping ? floatval($pwoSoMapping->inventory_uom_qty) : 0;
-                    //         $availableQty = floatval($soItem->inventory_uom_qty) - floatval($soItem->pwo_qty) + $existingQty;
+                    //     if ($soItem) {
+                    //         $orderQty = floatval($soItem->inventory_uom_qty);
+                    //         $usedQty = floatval($soItem->pwo_qty);
+                    //         $bufferPerc = 0;
+                    //         if ($soItem->bom_id) {
+                    //             $bufferPerc = ItemHelper::getBomSafetyBufferPerc($soItem->bom_id);
+                    //         }
+                    //         $totalAllowedQty = $orderQty + ($orderQty * $bufferPerc / 100);
+                    //         $totalAllowedQty = ceil($totalAllowedQty);
+                    //         if ($moId) {
+                    //             $pwoSoMapping = PwoSoMapping::find($pwoMappingId);
+                    //             $existingQty = $pwoSoMapping ? floatval($pwoSoMapping->inventory_uom_qty) : 0;
+                    //             $adjustedUsedQty = $usedQty - $existingQty;
+                    //             $availableQty = $totalAllowedQty - $adjustedUsedQty;
+                    //         } else {
+                    //             $availableQty = $totalAllowedQty - $usedQty;
+                    //         }
                     //         if ($inputQty > $availableQty) {
                     //             $validator->errors()->add("components.$k.qty", "Quantity can't be greater than Order Qty.");
+                    //             // $validator->errors()->add("components.$k.qty", "Quantity can't be greater than available production quantity.");
                     //         }
-                    //     } else {
-                    //         if(floatval($inputQty) > (floatval($soItem->inventory_uom_qty) - floatval($soItem->pwo_qty))) {
-                    //             $validator->errors()->add("components.$k.qty", "Quantity can't be greater than Order Qty.");
-                    //         } 
                     //     }
                     // }
+                                     
                 }
             }
         });

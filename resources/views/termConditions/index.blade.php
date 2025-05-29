@@ -61,7 +61,7 @@
         if (dt_basic_table.length) {
             var dt_basic = dt_basic_table.DataTable({
                 processing: true,
-                serverSide: true,
+                serverSide: false,
                 ajax: "{{ route('terms.index') }}",
                 columns: [
                     { data: 'DT_RowIndex', orderable: false, searchable: false },

@@ -169,31 +169,31 @@
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-check form-check-secondary">
-                                            <input type="checkbox" class="form-check-input" id="attributes">
+                                            <input type="checkbox" class="form-check-input" id="attributes" checked="">
                                             <label class="form-check-label" for="attributes">Attributes</label>
                                         </div>
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-check form-check-secondary">
-                                            <input type="checkbox" class="form-check-input" id="store">
+                                            <input type="checkbox" class="form-check-input" id="store" checked="">
                                             <label class="form-check-label" for="store">Location</label>
                                         </div>
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-check form-check-secondary">
-                                            <input type="checkbox" class="form-check-input" id="sub_location">
+                                            <input type="checkbox" class="form-check-input" id="sub_location" checked="">
                                             <label class="form-check-label" for="sub_location">Store</label>
                                         </div>
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-check form-check-secondary">
-                                            <input type="checkbox" class="form-check-input" id="station">
+                                            <input type="checkbox" class="form-check-input" id="station" checked="">
                                             <label class="form-check-label" for="station">Station</label>
                                         </div>
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-check form-check-secondary">
-                                            <input type="checkbox" class="form-check-input" id="stock_types">
+                                            <input type="checkbox" class="form-check-input" id="stock_types" checked="">
                                             <label class="form-check-label" for="stock_types">Stock Type</label>
                                         </div>
                                     </div>
@@ -878,33 +878,8 @@
                 // Call updateFilterAndFetch once
                 updateFilterAndFetch();
 
-                if (formData.email_to && formData.email_to.length > 0) {
-                    // if (dateValue < today) {
-                    //     var inputField = $('[name="date"]');
-
-                    //     // For normal inputs, remove previous error and append new one
-                    //     inputField.removeClass('is-invalid').addClass(
-                    //         'is-invalid');
-                    //     inputField.next('.invalid-feedback')
-                    //         .remove(); // Remove any previous error
-                    //     inputField.after(
-                    //         '<div class="invalid-feedback">Please select a future date.</div>');
-                    //     return; // Stop form submission
-                    // }
-
-                    // AJAX request
-                    // const fields = ['to', 'type', 'date']
-                    // fields.forEach(field => {
-                    //     var inputField = $('[name="' + field + '"]');
-
-                    //     if (inputField.hasClass('select2')) {
-                    //         // Remove any previous error messages
-                    //         inputField.closest('.select2-wrapper').find(
-                    //             '.invalid-feedback').remove();
-                    //     } else {
-                    //         inputField.removeClass('is-invalid')
-                    //     }
-                    // })
+                let activeTab = $('#addcoulmn .nav-tabs .nav-link.active').attr('href');
+                if (activeTab == "#Location") {
                     let dataTableSelector = ".datatables-basic";
                     const table = $(dataTableSelector).DataTable();
                     // Get the current filtered data in the DataTable

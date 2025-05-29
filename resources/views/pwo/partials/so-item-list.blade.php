@@ -3,12 +3,12 @@
         $attributes = json_decode($soItem->attributes, TRUE);
         $html = '';
         $orderQty = $soItem->inventory_uom_qty - $soItem->pwo_qty;
-        $prodQty = $orderQty; 
-        if($soItem?->bom) {
-            $safetyBufferperc = \App\Helpers\ItemHelper::getBomSafetyBufferPerc($soItem?->bom_id);
-            $prodQty = $orderQty + ($orderQty * $safetyBufferperc / 100);
-            $prodQty = ceil($prodQty);
-        }
+        // $prodQty = $orderQty; 
+        // if($soItem?->bom) {
+        //     $safetyBufferperc = \App\Helpers\ItemHelper::getBomSafetyBufferPerc($soItem?->bom_id);
+        //     $prodQty = $orderQty + ($orderQty * $safetyBufferperc / 100);
+        //     $prodQty = ceil($prodQty);
+        // }
         foreach($attributes as $attribute) {
             $attN =  $attribute['attribute_name'] ?? '';
             $attV =  $attribute['attribute_value'] ?? '';
@@ -28,6 +28,7 @@
         <td>{{$soItem->header->book_code ?? ''}}</td>
         <td>{{$soItem->header->document_number ?? ''}}</td>
         <td>{{$soItem->header->getFormattedDate('document_date')}}</td>
+        <td class="fw-bolder text-dark">{{$soItem?->header?->customer?->company_name ?? ''}}</td>
         <td>{{$soItem?->item?->item_code ?? ''}}</td>
         <td>{{$soItem?->item?->item_name ?? ''}}</td>
         @if($isAttribute)
@@ -35,8 +36,8 @@
         @endif
         <td>{{$soItem?->inventory_uom_code ?? ''}}</td>
         <td class="text-end">{{number_format($orderQty, 2)}}</td>
-        <td class="text-end">{{number_format($prodQty, 2)}}</td>
-        <td class="fw-bolder text-dark">{{$soItem?->header?->customer?->company_name ?? ''}}</td>
+        {{-- <td class="text-end">{{number_format($prodQty, 2)}}</td> --}}
+        <td class="text-end">{{$soItem?->header?->store?->store_name ?? ''}}</td>
     </tr>
 @empty
     <tr>

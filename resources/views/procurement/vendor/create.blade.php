@@ -297,13 +297,27 @@
                                                           <!-- Group Organizations -->
                                                             <div class="row align-items-center mb-1" id="groupOrganizationsDropdown" style="display: none;">
                                                                 <div class="col-md-2">
-                                                                    <label class="form-label">Group Organizations</label>
+                                                                    <label class="form-label">Related Organizations</label>
                                                                 </div>
                                                                 <div class="col-md-3">
                                                                     <select class="form-select select2" name="enter_company_org_id" id="enter_company_org_id">
                                                                         <option value="">Select</option>
                                                                         @foreach ($groupOrganizations as $organization)
                                                                             <option value="{{ $organization->id }}">{{ $organization->name }}</option>
+                                                                        @endforeach
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="row align-items-center mb-1" id="reldVendorDropdown">
+                                                                <div class="col-md-2">
+                                                                    <label class="form-label">Related Vendors</label>
+                                                                </div>
+                                                                <div class="col-md-3">
+                                                                    <select class="form-select select2" name="reld_vendor_id" id="reld_vendor_id">
+                                                                        <option value="">Select</option>
+                                                                        @foreach ($relatedVendors as $relatedVendor)
+                                                                            <option value="{{ $relatedVendor->id }}">{{ $relatedVendor->company_name }}</option>
                                                                         @endforeach
                                                                     </select>
                                                                 </div>

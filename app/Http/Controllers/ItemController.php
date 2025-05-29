@@ -265,6 +265,9 @@ class ItemController extends Controller
         $user = Helper::getAuthenticatedUser();
         $organization = $user->organization;
         $validatedData = $request->validated();
+        if ($validatedData['uom_id'] == $validatedData['storage_uom_id']) {
+            $validatedData['storage_uom_conversion'] = 1; 
+        }
         $validatedData['created_by'] = $user->auth_user_id; 
         $parentUrl = ConstantHelper::ITEM_SERVICE_ALIAS;
         $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
@@ -632,6 +635,9 @@ class ItemController extends Controller
             return response()->json(['error' => 'Item not found'], 404);
         }
         $validatedData = $request->validated();
+        if ($validatedData['uom_id'] == $validatedData['storage_uom_id']) {
+            $validatedData['storage_uom_conversion'] = 1;
+        }
         $validatedData['created_by'] = $item->created_by ?? $user->auth_user_id;
         $parentUrl = ConstantHelper::ITEM_SERVICE_ALIAS;
         $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);

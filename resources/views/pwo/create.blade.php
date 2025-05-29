@@ -1,4 +1,31 @@
 @extends('layouts.app')
+@section('styles')
+<style>
+#analyzeModal .table-responsive {
+    overflow-y: auto;
+    max-height: 380px;
+    position: relative;
+}
+#analyzeModal .po-order-detail {
+    width: 100%;
+    border-collapse: collapse;
+}
+#analyzeModal .po-order-detail thead {
+    position: sticky;
+    top: 0;
+    background-color: white;
+    z-index: 1;
+}
+#analyzeModal .po-order-detail th {
+    background-color: #f8f9fa;
+    text-align: left;
+    padding: 8px;
+}
+#analyzeModal .po-order-detail td {
+    padding: 8px;
+}
+</style>
+@endsection
 @section('content')
 <form class="ajax-input-form" method="POST" action="{{ route('pwo.store') }}" data-redirect="{{ route('pwo.index') }}" enctype='multipart/form-data'>
     @csrf
@@ -140,15 +167,12 @@
                                 <th class="text-end">Quantity</th>
                                 <th width="200px">Customer</th>
                                 <th width="150px">SO No.</th>
-                                {{-- <th width="50px">Action</th> --}}
+                                <th width="150px">Location</th>
                              </tr>
                           </thead>
                           <tbody class="mrntableselectexcel">
                           </tbody>
                           <tfoot>
-                             {{-- <tr class="totalsubheadpodetail">
-                                <td colspan="7"></td>
-                             </tr> --}}
                              <tr valign="top">
                                 <td colspan="10">
                                    <table class="table border" id="itemDetailTable">
@@ -165,41 +189,6 @@
                                       </tr>
                                    </table>
                                 </td>
-                                {{-- <td colspan="4">
-                                   <table class="table border mrnsummarynewsty">
-                                      <tr>
-                                         <td colspan="2" class="p-0">
-                                            <h6 class="text-dark mb-0 bg-light-primary py-1 px-50 d-flex justify-content-between">
-                                               <strong>BOM Summary</strong>
-                                               <div class="addmendisexpbtn">
-                                                  <button type="button" class="btn p-25 btn-sm btn-outline-secondary addOverHeadSummaryBtn"><i data-feather="plus"></i> Overhead</button> 
-                                                  <button type="button" class="btn p-25 btn-sm btn-outline-secondary wasteSummaryBtn" style="font-size: 10px"><i data-feather="plus"></i> Wastage</button>
-                                               </div>
-                                            </h6>
-                                         </td>
-                                      </tr>
-                                      <tr class="totalsubheadpodetail">
-                                         <td width="55%"><strong>Total Item Cost</strong></td>
-                                         <td class="text-end" id="footerSubTotal">0.00</td>
-                                      </tr>
-                                      <tr>
-                                         <td><strong>Overheads</strong></td>
-                                         <td class="text-end" id="footerOverhead">0.00</td>
-                                      </tr>
-                                      <tr>
-                                         <td><strong>Wastage</strong></td>
-                                         <td class="text-end" id="footerWasteAmount">0.00</td>
-                                      </tr>
-                                      <tr class="voucher-tab-foot">
-                                         <td class="text-primary"><strong>Total Cost</strong></td>
-                                         <td>
-                                            <div class="quottotal-bg justify-content-end">
-                                               <h5 id="footerTotalCost">0.00</h5>
-                                            </div>
-                                         </td>
-                                      </tr>
-                                   </table>
-                                </td> --}}
                              </tr>
                           </tfoot>
                        </table>
@@ -213,7 +202,6 @@
                       <div class="col-md-6">
                          <div class="newheader ">
                             <h4 class="card-title text-theme">Remarks</h4>
-                            {{-- <p class="card-text">Fill the details</p> --}}
                          </div>
                       </div>
                    </div>
@@ -277,41 +265,21 @@
          </div>
          <div class="modal-footer justify-content-center">  
             <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button> 
-            <button type="button" {{-- data-bs-dismiss="modal" --}} class="btn btn-primary submit_attribute">Select</button>
+            <button type="button" class="btn btn-primary submit_attribute">Select</button>
          </div>
       </div>
    </div>
 </div>
 
-{{-- Item Remark Modal --}}
-<div class="modal fade" id="itemRemarkModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
-    <div class="modal-dialog  modal-dialog-centered" >
-        <div class="modal-content">
-            <div class="modal-header p-0 bg-transparent">
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body px-sm-2 mx-50 pb-2">
-                <h1 class="text-center mb-1" id="shareProjectTitle">Remarks</h1>
-                {{-- <p class="text-center">Enter the details below.</p> --}}
-                <div class="row mt-2">
-                    <div class="col-md-12 mb-1">
-                        <label class="form-label">Remarks <span class="text-danger">*</span></label>
-                        <input type="hidden" name="row_count" id="row_count">
-                        <textarea class="form-control" placeholder="Enter Remarks"></textarea>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer justify-content-center">
-                <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button>
-                <button type="button" class="btn btn-primary itemRemarkSubmit">Submit</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 @include('pwo.partials.so-modal')
+@include('pwo.partials.analyze-modal')
 @endsection
 @section('scripts')
+<script type="text/javascript">
+    var getStockUrl = '{{route("pwo.get.stock")}}';
+    var analyzeSoItemUrl = '{{ route("pwo.analyze.so-item") }}';
+    var processSoItemUrl = '{{ route("pwo.process.so-item") }}';
+</script>
 <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
 <script type="text/javascript" src="{{asset('assets/js/modules/pwo.js')}}"></script>
 <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
@@ -320,7 +288,6 @@ $(function(){
    setTimeout(() => {
         $("#book_id").trigger('change');
    },0);
-
     $(document).on('change','#book_id',(e) => {
       let bookId = e.target.value;
       if (bookId) {
@@ -592,6 +559,7 @@ $(document).on('click','#addNewItemBtn', (e) => {
                 updateRowIndex(false);
                 initializeAutocomplete2(".comp_item_code");
                 initializeAutocompleteCustomer("[name*='[customer_code]']");
+                initStoreAutocomplete("#itemTable");
                // $(".prSelect").prop('disabled',true);
             } else if(data.status == 422) {
                Swal.fire({
@@ -865,7 +833,8 @@ function getPwo()
     let actionUrl = '{{ route("pwo.get.so.item") }}';
     let customerId = $("#customer_id_qt_val").val() || '';
     let item_search = $("#item_name_search").val() || '';
-    let fullUrl = `${actionUrl}?series_id=${encodeURIComponent(series_id)}&document_number=${encodeURIComponent(document_number)}&item_id=${encodeURIComponent(item_id)}&header_book_id=${encodeURIComponent(header_book_id)}&customer_id=${customerId}&item_search=${item_search}+&selected_so_item_ids=${selectedPiIds}&is_attribute=${isAttribute}`;
+    let storeId = $("#store_id").val() || '';
+    let fullUrl = `${actionUrl}?series_id=${encodeURIComponent(series_id)}&document_number=${encodeURIComponent(document_number)}&item_id=${encodeURIComponent(item_id)}&header_book_id=${encodeURIComponent(header_book_id)}&customer_id=${customerId}&item_search=${item_search}+&selected_so_item_ids=${selectedPiIds}&is_attribute=${isAttribute}&store_id=${storeId}`;
     fetch(fullUrl).then(response => {
         return response.json().then(data => {
             $(".po-order-detail #soDataTable").empty().append(data.data.pis);
@@ -896,82 +865,6 @@ $(document).on('change','.po-order-detail > tbody .form-check-input',(e) => {
   } else {
       $('.po-order-detail > thead .form-check-input').prop('checked', false);
   }
-});
-
-function getSelectedPiIDS()
-{
-    let ids = [];
-    $('.pi_item_checkbox:checked').each(function() {
-        ids.push($(this).val());
-    });
-    return ids;
-}
-
-$(document).on('click', '.soProcess', (e) => {
-    let ids = getSelectedPiIDS();
-    if (!ids.length) {
-        $("#prModal").modal('hide');
-        Swal.fire({
-            title: 'Error!',
-            text: 'Please select at least one line item',
-            icon: 'error',
-        });
-        return false;
-    }
-
-    ids = JSON.stringify(ids);
-    let d_date = $("input[name='document_date']").val() || '';
-    let book_id = $("#book_id").val() || '';
-    let rowCount = $("#itemTable tbody tr[id*='row_']").length;
-    let isAttribute = 0;
-    if($("#attributeCheck").is(':checked')) {
-        isAttribute = 1;
-    } else {
-        isAttribute = 0;
-    }
-    let selectedItems = [];
-    if(!isAttribute) {
-        $("#prModal .pi_item_checkbox:checked").each(function () {
-            selectedItems.push({
-                "sale_order_id": Number($(this).val()),
-                "item_id": Number($(this).data("item-id"))
-            });
-        });
-    }
-    let selectedItemsParam = encodeURIComponent(JSON.stringify(selectedItems));
-    let actionUrl = '{{ route("pwo.process.so-item") }}'+'?ids=' + ids+'&d_date='+d_date+'&book_id='+book_id+'&rowCount='+rowCount+`&is_attribute=${isAttribute}&selected_items=${selectedItemsParam}`;
-    fetch(actionUrl).then(response => {
-        return response.json().then(data => {
-            if(data.status == 200) {
-                if ($("#itemTable > tbody tr").length) {
-                    $("#itemTable > tbody > tr:last").after(data.data.pos);
-                } else {
-                    $("#itemTable > tbody").empty().append(data.data.pos);
-                }
-                updateRowIndex(true);
-                $("#prModal").modal('hide');
-                initializeAutocomplete2(".comp_item_code");
-                initializeAutocompleteCustomer("[name*='[customer_code]']");
-                let newIds = getSelectedPiIDS();
-                let existingIds = localStorage.getItem('selectedSoItemIds');
-                if (existingIds) {
-                    existingIds = JSON.parse(existingIds);
-                    const mergedIds = Array.from(new Set([...existingIds, ...newIds]));
-                    localStorage.setItem('selectedSoItemIds', JSON.stringify(mergedIds));
-                } else {
-                    localStorage.setItem('selectedSoItemIds', JSON.stringify(newIds));
-                }
-            }
-            if(data.status == 422) {
-                Swal.fire({
-                    title: 'Error!',
-                    text: data.message,
-                    icon: 'error',
-                });
-                return false;
-            }
-        });
-    });
 });
 </script>
 @endsection

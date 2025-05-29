@@ -50,6 +50,7 @@ class BomController extends Controller
             $canView = request()->user()?->hasPermission('production_bom.item_cost_view');
         }
         if (request()->ajax()) {
+            $search = $request->get('search')['value'] ?? '';
             $type = $request->type == ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
             $boms = Bom::withDefaultGroupCompanyOrg()
                     ->where('type',$type)
@@ -131,6 +132,16 @@ class BomController extends Controller
                     return "";
                 })
                 ->rawColumns(['document_status', 'attributes'])
+                ->filter(function ($query) use ($request) {
+                    if ($search = $request->get('search')['value']) {
+                        $query->where(function ($q) use ($search) {
+                            $q->where('book_code', 'like', "%{$search}%")
+                              ->orWhere('item_code', 'like', "%{$search}%")
+                              ->orWhere('item_name', 'like', "%{$search}%")
+                              ->orWhere('document_number', 'like', "%{$search}%");
+                        });
+                    }
+                })
                 ->make(true);
         }
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl, $servicesAliasParam);

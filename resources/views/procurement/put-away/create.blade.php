@@ -31,12 +31,7 @@
     </style>
 @endsection
 @section('content')
-    @php
-        $routeName = $servicesBooks['services'][0]->alias ??  "material-receipt";
-        $routeAlias = ($routeName && ($routeName == 'mrn')) ? 'material-receipt' : $routeName;
-        $routeRedirect = ($routeAlias && ($routeAlias == 'material-receipt')) ? 'material-receipts' : $routeAlias;
-    @endphp
-    <form class="ajax-input-form" method="POST" action="{{ route('material-receipt.store') }}" data-redirect="/{{$routeRedirect}}" enctype="multipart/form-data">
+    <form class="ajax-input-form" method="POST" action="{{ route('put-away.store') }}" data-redirect="/put-away" enctype="multipart/form-data">
         <input type="hidden" name="tax_required" id="tax_required" value="">
         <input type="hidden" name="bill_to_follow" id="bill_to_follow" value="">
         @csrf
@@ -148,6 +143,7 @@
                                                         <select class="form-select sub_store" id="sub_store_id" name="sub_store_id">
                                                         </select>
                                                     </div>
+                                                    <input type="hidden" class="is_warehouse_required" name="is_warehouse_required" id="is_warehouse_required">
                                                 </div>
                                                 <!-- <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
@@ -272,7 +268,7 @@
                                                                 <!-- <span class="text-danger">*</span> -->
                                                             </label>
                                                             <input type="text" name="gate_entry_no" id="gate_entry_no"
-                                                                class="form-control bg-white gate_entry_no"
+                                                                class="form-control  gate_entry_no"
                                                                 placeholder="Enter Gate Entry no">
                                                         </div>
                                                     </div>
@@ -283,7 +279,7 @@
                                                                 <!-- <span class="text-danger">*</span> -->
                                                             </label>
                                                             <input type="date" name="gate_entry_date"
-                                                                class="form-control bg-white gate-entry gate_entry_date" id="datepicker2"
+                                                                class="form-control  gate-entry gate_entry_date" id="datepicker2"
                                                                 placeholder="Enter Gate Entry Date">
                                                         </div>
                                                     </div>
@@ -294,7 +290,7 @@
                                                                 <!-- <span class="text-danger">*</span> -->
                                                             </label>
                                                             <input type="text" name="eway_bill_no"
-                                                                class="form-control bg-white eway_bill_no"
+                                                                class="form-control  eway_bill_no"
                                                                 placeholder="Enter Eway Bill No.">
                                                         </div>
                                                     </div>
@@ -305,7 +301,7 @@
                                                                 <!-- <span class="text-danger">*</span> -->
                                                             </label>
                                                             <input type="text" name="consignment_no"
-                                                                class="form-control bg-white consignment_no"
+                                                                class="form-control  consignment_no"
                                                                 placeholder="Enter Consignment No.">
                                                         </div>
                                                     </div>
@@ -315,7 +311,7 @@
                                                             Supplier Invoice No.
                                                             </label>
                                                             <input type="text" name="supplier_invoice_no"
-                                                                class="form-control bg-white supplier_invoice_no"
+                                                                class="form-control  supplier_invoice_no"
                                                                 placeholder="Enter Supplier Invoice No.">
                                                         </div>
                                                     </div>
@@ -326,7 +322,7 @@
                                                                 <!-- <span class="text-danger">*</span> -->
                                                             </label>
                                                             <input type="date" name="supplier_invoice_date"
-                                                                class="form-control bg-white gate-entry supplier_invoice_date" id="datepicker3"
+                                                                class="form-control  gate-entry supplier_invoice_date" id="datepicker3"
                                                                 placeholder="Enter Supplier Invoice Date">
                                                         </div>
                                                     </div>
@@ -336,7 +332,7 @@
                                                             Transporter Name
                                                             </label>
                                                             <input type="text" name="transporter_name"
-                                                                class="form-control bg-white transporter_name"
+                                                                class="form-control  transporter_name"
                                                                 placeholder="Enter Transporter Name">
                                                         </div>
                                                     </div>
@@ -370,14 +366,8 @@
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6 text-sm-end">
-                                                    <!-- <button type="button" id="importItem" class="btn btn-sm btn-outline-primary importItem" onclick="openImportItemModal('create', '')">
-                                                        <i data-feather="upload"></i> Import Item
-                                                    </button> -->
-                                                    <a href="javascript:;" id="deleteBtn" class="btn btn-sm btn-outline-danger me-50">
+                                                    <!-- <a href="javascript:;" id="deleteBtn" class="btn btn-sm btn-outline-danger me-50">
                                                         <i data-feather="x-circle"></i> Delete
-                                                    </a>
-                                                    <!-- <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary">
-                                                        <i data-feather="plus"></i> Add New Item
                                                     </a> -->
                                                 </div>
                                             </div>
@@ -398,28 +388,20 @@
                                                                 <th width="240px">Item Name</th>
                                                                 <th>Attributes</th>
                                                                 <th>UOM</th>
-                                                                <th class="text-end">Recpt Qty</th>
+                                                                <th class="text-end">MRN Qty</th>
                                                                 <th class="text-end">Acpt. Qty</th>
-                                                                <th class="text-end">Rej. Qty</th>
-                                                                <th class="text-end">Rate</th>
-                                                                <th class="text-end">Value</th>
-                                                                <th>Discount</th>
-                                                                <th class="text-end">Total</th>
                                                                 <th width="50px">Action</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody class="mrntableselectexcel">
                                                         </tbody>
                                                         <tfoot>
-                                                            <tr class="totalsubheadpodetail">
-                                                                <td colspan="9"></td>
+                                                            <!-- <tr class="totalsubheadpodetail">
+                                                                <td colspan="5"></td>
                                                                 <td class="text-end" id="totalItemValue">0.00</td>
                                                                 <td class="text-end" id="totalItemDiscount">0.00</td>
-                                                                {{--
-                                                                <td class="text-end" id="TotalEachRowTax">0.00</td>
-                                                                --}}
                                                                 <td class="text-end" id="TotalEachRowAmount">0.00</td>
-                                                            </tr>
+                                                            </tr> -->
                                                             <tr valign="top">
                                                                 <td rowspan="10" colspan="8">
                                                                     <table class="table border" id="itemDetailDisplay">
@@ -459,7 +441,7 @@
                                                                         </tr>
                                                                     </table>
                                                                 </td>
-                                                                <td colspan="5">
+                                                                <!-- <td colspan="4">
                                                                     <table class="table border mrnsummarynewsty">
                                                                         <tr>
                                                                             <td colspan="2" class="p-0">
@@ -511,12 +493,12 @@
                                                                             </td>
                                                                         </tr>
                                                                     </table>
-                                                                </td>
+                                                                </td> -->
                                                             </tr>
                                                         </tfoot>
                                                     </table>
                                                 </div>
-                                                <div class="row mt-2">
+                                                <!-- <div class="row mt-2">
                                                     <div class="col-md-12">
                                                         <div class="col-md-4">
                                                             <div class="mb-1">
@@ -529,7 +511,7 @@
                                                             <div class = "row" id = "main_mrn_file_preview">
                                                             </div>
                                                         </div>
-                                                    </div>
+                                                    </div> -->
                                                     <div class="col-md-12">
                                                         <div class="mb-1">
                                                             <label class="form-label">Final Remarks</label>
@@ -548,20 +530,14 @@
                 </div>
             </div>
         </div>
-        {{-- Discount summary modal --}}
-        @include('procurement.material-receipt.partials.summary-disc-modal')
-        {{-- Add expenses modal--}}
-        @include('procurement.material-receipt.partials.summary-exp-modal')
         {{-- Add Outstanding PO modal--}}
-        @include('procurement.material-receipt.partials.outstanding-po-modal')
+        @include('procurement.put-away.partials.outstanding-mrn-modal')
         {{-- Edit Address --}}
         <div class="modal fade" id="edit-address" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
             <div class="modal-dialog  modal-dialog-centered" style="max-width: 700px">
             </div>
         </div>
     </form>
-    {{-- Item upload modal --}}
-    @include('partials.import-item-modal')
     {{-- Attribute popup --}}
     <div class="modal fade" id="attribute" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
         <div class="modal-dialog  modal-dialog-centered">
@@ -593,73 +569,6 @@
             </div>
         </div>
     </div>
-    {{-- Add each row discount popup --}}
-    <div class="modal fade" id="itemRowDiscountModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
-        <div class="modal-dialog  modal-dialog-centered" style="max-width: 700px">
-            <div class="modal-content">
-                <div class="modal-header p-0 bg-transparent">
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body px-sm-2 mx-50 pb-2">
-                    <h1 class="text-center mb-1" id="shareProjectTitle">Discount</h1>
-                    <div class="text-end">
-                    </div>
-                    <table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail">
-                        <thead>
-                            <tr>
-                                <td>#</td>
-                                <td>
-                                    <label class="form-label">Type<span class="text-danger">*</span></label>
-                                    <input type="text" id="new_item_dis_name_select" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
-                                    <input type = "hidden" id = "new_item_discount_id" />
-                                    <input type = "hidden" id = "new_item_dis_name" />
-                                </td>
-                                <td>
-                                    <label class="form-label">Percentage <span class="text-danger">*</span></label>
-                                    <input step="any" type="number" id="new_item_dis_perc" class="form-control mw-100" />
-                                </td>
-                                <td>
-                                    <label class="form-label">Value <span class="text-danger">*</span></label>
-                                    <input step="any" type="number" id="new_item_dis_value" class="form-control mw-100" />
-                                </td>
-                                <td>
-                                    <a href="javascript:;" id="add_new_item_dis" class="text-primary can_hide">
-                                        <i data-feather="plus-square"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                        </thead>
-                    </table>
-                    <div class="table-responsive-md customernewsection-form">
-                        <table id="eachRowDiscountTable" class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail">
-                            <thead>
-                                <tr>
-                                    <th>S.No</th>
-                                    <th width="150px">Discount Name</th>
-                                    <th>Discount %</th>
-                                    <th>Discount Value</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr id="disItemFooter">
-                                    <input type="hidden" name="row_count" id="row_count" value="1">
-                                    <td colspan="2"></td>
-                                    <td class="text-dark"><strong>Total</strong></td>
-                                    <td class="text-dark text-end"><strong id="total">0.00</strong></td>
-                                    <td></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="modal-footer justify-content-center">
-                    <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button>
-                    <button type="button" class="btn btn-primary itemDiscountSubmit">Submit</button>
-                </div>
-            </div>
-        </div>
-    </div>
     {{-- Item Remark Modal --}}
     <div class="modal fade" id="itemRemarkModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
         <div class="modal-dialog  modal-dialog-centered" >
@@ -687,18 +596,16 @@
             </div>
         </div>
     </div>
-    {{-- Storage Points --}}
-    @include('procurement.material-receipt.partials.storage-point-modal')
     {{-- Taxes --}}
-    @include('procurement.material-receipt.partials.tax-detail-modal')
+    @include('procurement.put-away.partials.tax-detail-modal')
+    {{-- Add Storage Point modal--}}
+    @include('procurement.put-away.partials.storage-point-modal')
 @endsection
 @section('scripts')
     <script type="text/javascript">
-        let actionUrlTax = '{{route("material-receipt.tax.calculation")}}';
+        let actionUrlTax = '{{route("put-away.tax.calculation")}}';
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script type="text/javascript" src="{{asset('assets/js/modules/mrn.js')}}"></script>
-    <!-- <script type="text/javascript" src="{{asset('assets/js/modules/import-item.js')}}"></script> -->
+    <script type="text/javascript" src="{{asset('assets/js/modules/putaway.js')}}"></script>
     <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
     <script>
         $(document).on('change','#book_id',(e) => {
@@ -714,6 +621,8 @@
 
         function getDocNumberByBookId(bookId) {
             let document_date = $("[name='document_date']").val();
+            let storeId = $("[name='header_store_id']").val();
+            let subStoreId = $("[name='sub_store_id']").val();
             let actionUrl = '{{route("book.get.doc_no_and_parameters")}}'+'?book_id='+bookId+'&document_date='+document_date;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
@@ -736,8 +645,8 @@
                         } else {
                             $("#tax_required").val("");
                         }
-                        setTableCalculation();
-                        $("#bill_to_follow").val(parameters?.bill_to_follow[0]);
+                        
+                        getSubStores(storeId);
                     }
                     if(data.status == 404) {
                         $("#book_code").val('');
@@ -814,7 +723,7 @@
                     icon: 'error',
                 });
                 setTimeout(() => {
-                    location.href = '{{route("material-receipt.index")}}';
+                    location.href = '{{route("put-away.index")}}';
                 },1500);
             }
         }
@@ -876,7 +785,7 @@
 
         function vendorOnChange(vendorId) {
             let store_id = $("[name='header_store_id']").val() || '';
-            let actionUrl = "{{route('material-receipt.get.address')}}"+'?id='+vendorId+'&store_id='+store_id;
+            let actionUrl = "{{route('put-away.get.address')}}"+'?id='+vendorId+'&store_id='+store_id;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if(data.data?.currency_exchange?.status == false) {
@@ -1034,7 +943,6 @@
                         }, 100);
 
                         getItemDetail(closestTr);
-                        getItemCostPrice($input.closest('tr'));
                         return false;
                     },
                     change: function(event, ui) {
@@ -1087,7 +995,7 @@
                 }
             }
 
-            let actionUrl = '{{route("material-receipt.item.row")}}'+'?count='+rowsLength+'&component_item='+JSON.stringify(lastTrObj);
+            let actionUrl = '{{route("put-away.item.row")}}'+'?count='+rowsLength+'&component_item='+JSON.stringify(lastTrObj);
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if (data.status == 200) {
@@ -1157,7 +1065,7 @@
                 $(".header_store_id").prop('disabled', false);
                 getLocation();
             }
-            setTableCalculation();
+            
         });
 
         /*Check attrubute*/
@@ -1185,7 +1093,7 @@
 
         /*For comp attr*/
         function getItemAttribute(itemId, rowCount, selectedAttr, tr){
-            let actionUrl = '{{route("material-receipt.item.attr")}}'+'?item_id='+itemId+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
+            let actionUrl = '{{route("put-away.item.attr")}}'+'?item_id='+itemId+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if (data.status == 200) {
@@ -1209,7 +1117,7 @@
             let vendorId = $("#vendor_id").val();
             let onChange = 0;
             let addressId = addressType === 'shipping' ? $("#shipping_id").val() : $("#billing_id").val();
-            let actionUrl = `{{route("material-receipt.edit.address")}}?type=${addressType}&vendor_id=${vendorId}&address_id=${addressId}&onChange=${onChange}`;
+            let actionUrl = `{{route("put-away.edit.address")}}?type=${addressType}&vendor_id=${vendorId}&address_id=${addressId}&onChange=${onChange}`;
             fetch(actionUrl)
                 .then(response => response.json())
                 .then(data => {
@@ -1239,7 +1147,7 @@
                 return false;
             }
             let onChange = 1;
-            let actionUrl = `{{route("material-receipt.edit.address")}}?type=${addressType}&vendor_id=${vendorId}&address_id=${addressId}&onChange=${onChange}`;
+            let actionUrl = `{{route("put-away.edit.address")}}?type=${addressType}&vendor_id=${vendorId}&address_id=${addressId}&onChange=${onChange}`;
             fetch(actionUrl)
                 .then(response => response.json())
                 .then(data => {
@@ -1319,10 +1227,11 @@
             const $row = $(currentTr);
             let pName = $row.find("[name*='component_item_name']").val() || '';
             let itemId = $row.find("[name*='item_id']").val() || '';
-            let poHeaderId = $row.find("[name*='purchase_order_id']").val() || '';
-            let poDetailId = $row.find("[name*='po_detail_id']").val() || '';
-            let storeId = $row.find("[name*='header_store_id']").val() || '';
-            let subStoreId = $row.find("[name*='sub_store_id']").val() || '';
+            let mrnHeaderId = $(currentTr).find("[name*='mrn_header_id']").val() || '';
+            let mrnDetailId = $(currentTr).find("[name*='mrn_detail_id']").val() || '';
+            let storeId = $(".header_store_id").val() || '';
+            let $selectedSubStore = $(".sub_store").find("option:selected");
+            let subStoreId = $selectedSubStore.val();
             let remark = '';
             if($row.find("[name*='remark']")) {
                 remark = $row.find("[name*='remark']").val() || '';
@@ -1337,11 +1246,11 @@
                 });
                 let uomId = $row.find("[name*='[uom_id]']").val() || '';
                 let qty = $row.find("[name*='[accepted_qty]']").val() || '';
-                let headerId = $row.find("[name*='mrn_header_id']").val() ?? '';
-                let detailId = $row.find("[name*='mrn_detail_id']").val() ?? '';
-                let actionUrl = '{{route("material-receipt.get.itemdetail")}}'+'?item_id='+itemId+
-                    '&purchase_order_id='+poHeaderId+
-                    '&po_detail_id='+poDetailId+
+                let headerId = $row.find("[name*='inspection_header_id']").val() ?? '';
+                let detailId = $row.find("[name*='inspection_item_id']").val() ?? '';
+                let actionUrl = '{{route("put-away.get.itemdetail")}}'+'?item_id='+itemId+
+                    '&mrn_header_id='+mrnHeaderId+
+                    '&mrn_detail_id='+mrnDetailId+
                     '&selectedAttr='+JSON.stringify(selectedAttr)+
                     '&remark='+remark+
                     '&uom_id='+uomId+
@@ -1353,41 +1262,31 @@
 
                 fetch(actionUrl).then(response => {
                     return response.json().then(data => {
+                        console.log('storagePoints', data);
                         if(data.status == 200) {
-                            const storagePoints = data.storagePoints?.data || [];
 
-                            if(storagePoints.length) {
-                                // ✅ Show storage point button
-                                $('.addStoragePointBtn').css('display', 'block');
-                            } else{
-                                // ✅ Hide storage point button
-                                $('.addStoragePointBtn').css('display', 'none');
-                            }
+                            const storagePoints = data.storagePoints?.data || [];
+                            console.log('storagePoints', storagePoints);
+                            // Store in global map (if needed for other logic)
+                            itemStorageMap[itemId] = storagePoints;
 
                             // ✅ Store globally for dropdown population
                             allStoragePointsList = storagePoints;
-
+                            console.log('allStoragePointsList', allStoragePointsList);
                             // Update the modal or display section
                             $("#itemDetailDisplay").html(data.data.html);
-                            
+
                             // ✅ Fill storage_points hidden input
                             const hiddenInput = $row.find("input[name*='[storage_points]']");
                             if (hiddenInput.length) {
                                 hiddenInput.val(JSON.stringify(storagePoints));
                             }
-
-                            // ✅ Fill modal after qty check
-                            // const acceptedQty = parseFloat($row.find("[name*='[accepted_qty]']").val()) || 0;
-                            // populateStoragePointsTable([{ id: storagePoints[0]?.id, quantity: acceptedQty }]);
-
-                            // $("#storagePointsRowIndex").val(rowIndex);
-                            // $("#storagePointsModal").modal("show");
                         }
                     });
                 });
             }
         }
-
+        
         /*Tbl row highlight*/
         $(document).on('click', '.mrntableselectexcel tr', (e) => {
             $(e.target.closest('tr')).addClass('trselected').siblings().removeClass('trselected');
@@ -1414,7 +1313,7 @@
                 innerFormData.append($(this).attr('name'), $(this).val());
             });
             var method = "POST" ;
-            var url = '{{route("material-receipt.address.save")}}';
+            var url = '{{route("put-away.address.save")}}';
             fetch(url, {
                 method: method,
                 body: innerFormData,
@@ -1449,574 +1348,6 @@
                 console.error('Form submission error:', error);
             });
 
-        });
-
-        // addDeliveryScheduleBtn
-        // $(document).on('click', '.addDeliveryScheduleBtn', (e) => {
-        //     let rowCount = e.target.closest('div').getAttribute('data-row-count');
-        //     $('#store-row-id').val(rowCount);
-        //     let qty = Number($("#itemTable #row_"+rowCount).find("[name*='[accepted_qty]']").val());
-        //     if(!qty) {
-        //         Swal.fire({
-        //             title: 'Error!',
-        //             text: 'Please enter quanity then you can add store location.',
-        //             icon: 'error',
-        //         });
-        //         return false;
-        //     }
-        //     let store_id = Number($("#itemTable #row_"+rowCount).find("[name*='[store_id]']").val());
-        //     let store_code = $("#itemTable #row_"+rowCount).find("[name*='[erp_store_code]']").val();
-        //     $("#deliveryScheduleModal").find("#row_count").val(rowCount);
-        //     let rowHtml = '';
-        //     let curDate = new Date().toISOString().split('T')[0];
-        //     if(!$("#itemTable #row_"+rowCount).find("[name*='[store_qty]']").length) {
-        //         let rowHtml = `<tr class="display_delivery_row">
-        //                             <td>1</td>
-        //                             <td>
-        //                                 <input type="hidden" name="row_count" value="${rowCount}" id="row_count">
-        //                                 <select class="form-select mw-100 select2 item_store_code" id="erp_store_id_1" name="components[${rowCount}][erp_store][1][erp_store_id]" data-id="1">
-        //                                     <option value="${store_id}">${store_code}</option>
-        //                                 </select>
-        //                             </td>
-        //                             <td>
-        //                                 <select class="form-select mw-100 select2 item_rack_code" id="erp_rack_id_1" name="components[${rowCount}][erp_store][1][erp_rack_id]" data-id="1">
-        //                                 <option value="">Select</option>
-        //                                 </select>
-        //                             </td>
-        //                             <td>
-        //                                 <select class="form-select mw-100 select2 item_shelf_code" id="erp_shelf_id_1" name="components[${rowCount}][erp_store][1][erp_shelf_id]" data-id="1">
-        //                                 <option value="">Select</option>
-        //                                 </select>
-        //                             </td>
-        //                             <td>
-        //                                 <select class="form-select mw-100 select2 item_bin_code" id="erp_bin_id_1" name="components[${rowCount}][erp_store][1][erp_bin_id]" data-id="1">
-        //                                 <option value="">Select</option>
-        //                                 </select>
-        //                             </td>
-        //                             <td>
-        //                                 <input type="number" name="components[${rowCount}][erp_store][1][store_qty]" id="store_qty_1" class="form-control mw-100" value="${qty}"  data-id="1" />
-        //                             <td>
-        //                             <a data-row-count="${rowCount}" data-index="1" href="javascript:;" class="text-danger deleteItemDeliveryRow"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></a>
-        //                         </td>
-        //                         </tr>`;
-        //         $("#deliveryScheduleModal").find('.display_delivery_row').remove();
-        //         $("#deliveryScheduleModal").find('#deliveryFooter').before(rowHtml);
-        //         $('[name="components[1][erp_store][1][erp_store_id]"').trigger('change');
-        //     } else {
-        //         console.log('afsfsfs gdgdgdgd');
-        //         if($("#itemTable #row_"+rowCount).find("[name*=store_qty]").length) {
-        //             $(".display_delivery_row").remove(); // Remove all rows if present
-        //         } else {
-        //             // Remove all rows except the first one, and reset the quantity
-        //             $('.display_delivery_row').not(':first').remove();
-        //             $(".display_delivery_row").find("[name*=store_qty]").val('');
-        //         }
-
-        //         // Iterate over each store_qty field to build dynamic rows
-        //         $("#itemTable #row_" + rowCount).find("[name*=store_qty]").each(function(index, item) {
-        //             let storeVal = $(item).closest('td').find(`[name="components[${rowCount}][erp_store][${index+1}][erp_store_id]"]`).val();
-        //             let rackVal = $(item).closest('td').find(`[name="components[${rowCount}][erp_store][${index+1}][erp_rack_id]"]`).val();
-        //             let shelfVal = $(item).closest('td').find(`[name="components[${rowCount}][erp_store][${index+1}][erp_shelf_id]"]`).val();
-        //             let binVal = $(item).closest('td').find(`[name="components[${rowCount}][erp_store][${index+1}][erp_bin_id]"]`).val();
-        //             let storeQty = $(item).closest('td').find(`[name="components[${rowCount}][erp_store][${index+1}][store_qty]"]`).val();
-        //             // console.log('store rack shelf', storeVal, rackVal, shelfVal, binVal);
-        //             // Trigger the change event after setting values to ensure racks, shelves, etc. are updated
-        //             $(`#erp_store_id_${index+1}`).val(storeVal).trigger('change');
-        //             $(`#erp_rack_id_${index+1}`).val(rackVal);
-        //             $(`#erp_shelf_id_${index+1}`).val(shelfVal);
-        //             $(`#erp_bin_id_${index+1}`).val(binVal);
-
-        //             // Generate HTML for the new row with dynamic data
-        //             rowHtml += `<tr class="display_delivery_row">
-        //                             <td>${index + 1}</td>
-        //                             <td>
-        //                                 <input type="hidden" name="row_count" value="${rowCount}" id="row_count">
-        //                                 <select class="form-select mw-100 select2 item_store_code" id="erp_store_id_${index+1}" name="components[${rowCount}][erp_store][${index+1}][erp_store_id]" data-id="${index+1}">
-        //                                     <option value="${store_id}">${store_code}</option>
-        //                                 </select>
-        //                             </td>
-        //                             <td>
-        //                                 <select class="form-select mw-100 select2 item_rack_code" id="erp_rack_id_${index+1}" name="components[${rowCount}][erp_store][${index+1}][erp_rack_id]" data-id="${index+1}">
-        //                                     <!-- Dynamically populated racks -->
-        //                                 </select>
-        //                             </td>
-        //                             <td>
-        //                                 <select class="form-select mw-100 select2 item_shelf_code" id="erp_shelf_id_${index+1}" name="components[${rowCount}][erp_store][${index+1}][erp_shelf_id]" data-id="${index+1}">
-        //                                     <!-- Dynamically populated shelves -->
-        //                                 </select>
-        //                             </td>
-        //                             <td>
-        //                                 <select class="form-select mw-100 select2 item_bin_code" id="erp_bin_id_${index+1}" name="components[${rowCount}][erp_store][${index+1}][erp_bin_id]" data-id="${index+1}">
-        //                                     <!-- Dynamically populated bins -->
-        //                                 </select>
-        //                             </td>
-        //                             <td>
-        //                                 <input type="number" name="components[${rowCount}][erp_store][${index+1}][store_qty]" id="store_qty_${index+1}" class="form-control mw-100" value="${storeQty}" data-id="${index+1}" />
-        //                             </td>
-        //                             <td>
-        //                                 <a data-row-count="${rowCount}" data-index="${index+1}" href="javascript:;" class="text-danger deleteItemDeliveryRow">
-        //                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2">
-        //                                         <polyline points="3 6 5 6 21 6"></polyline>
-        //                                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-        //                                         <line x1="10" y1="11" x2="10" y2="17"></line>
-        //                                         <line x1="14" y1="11" x2="14" y2="17"></line>
-        //                                     </svg>
-        //                                 </a>
-        //                             </td>
-        //                         </tr>`;
-        //         });
-
-        //         // Append the dynamically created rows
-        //         $("#deliveryScheduleTable").find('#deliveryFooter').before(rowHtml);
-
-        //         // Trigger change event to re-populate dependent dropdowns after the rows are added
-        //         $("#itemTable #row_" + rowCount).find("[name*=store_qty]").each(function(index, item) {
-        //             $(`#erp_store_id_${index+1}`).trigger('change');
-        //         });
-        //     }
-        //     $("#deliveryScheduleTable").find('#deliveryFooter #total').attr('qty',qty);
-        //     $("#deliveryScheduleModal").modal('show');
-        //     totalScheduleQty();
-        // });
-
-        $(document).on('click', '.addDeliveryScheduleBtn', (e) => {
-            let rowCount = e.target.closest('div').getAttribute('data-row-count');
-            $('#store-row-id').val(rowCount);
-            let qty = Number($("#itemTable #row_" + rowCount).find("[name*='[accepted_qty]']").val());
-            if(!qty) {
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'Please enter quantity then you can add store location.',
-                    icon: 'error',
-                });
-                return false;
-            }
-            let store_id = Number($("#itemTable #row_" + rowCount).find("[name*='[store_id]']").val());
-            $("#deliveryScheduleModal").find("#row_count").val(rowCount);
-            let rowHtml = '';
-            let curDate = new Date().toISOString().split('T')[0];
-            if (!$("#itemTable #row_" + rowCount).find("[name*='[store_qty]']").length) {
-                rowHtml = `<tr class="display_delivery_row">
-                                <td>1</td>
-                                <td>
-                                    <input type="hidden" name="row_count" value="${rowCount}" id="row_count">
-                                    <input type="hidden" value="${store_id}" name="components[${rowCount}][erp_store][1][erp_store_id]" data-id="1"/>
-                                    <select class="form-select mw-100 select2 item_rack_code" id="erp_rack_id_1" name="components[${rowCount}][erp_store][1][erp_rack_id]" data-id="1">
-                                    <option value="">Select</option>
-                                    </select>
-                                </td>
-                                <td>
-                                    <select class="form-select mw-100 select2 item_shelf_code" id="erp_shelf_id_1" name="components[${rowCount}][erp_store][1][erp_shelf_id]" data-id="1">
-                                    <option value="">Select</option>
-                                    </select>
-                                </td>
-                                <td>
-                                    <select class="form-select mw-100 select2 item_bin_code" id="erp_bin_id_1" name="components[${rowCount}][erp_store][1][erp_bin_id]" data-id="1">
-                                    <option value="">Select</option>
-                                    </select>
-                                </td>
-                                <td>
-                                    <input type="number" name="components[${rowCount}][erp_store][1][store_qty]" id="store_qty_1" class="form-control mw-100" value="${qty}" data-id="1" />
-                                </td>
-                                <td>
-                                    <a data-row-count="${rowCount}" data-index="1" href="javascript:;" class="text-danger deleteItemDeliveryRow">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2">
-                                            <polyline points="3 6 5 6 21 6"></polyline>
-                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                            <line x1="10" y1="11" x2="10" y2="17"></line>
-                                            <line x1="14" y1="11" x2="14" y2="17"></line>
-                                        </svg>
-                                    </a>
-                                </td>
-                            </tr>`;
-                $("#deliveryScheduleModal").find('.display_delivery_row').remove();
-                $("#deliveryScheduleModal").find('#deliveryFooter').before(rowHtml);
-                loadStoreDropdowns(store_id, rowCount);
-                // $('[name="components[1][erp_store][1][erp_store_id]"').trigger('change');
-            } else {
-                // console.log('afsfsfs gdgdgdgd');
-                if ($("#itemTable #row_" + rowCount).find("[name*=store_qty]").length) {
-
-                    $(".display_delivery_row").remove(); // Remove all rows if present
-                } else {
-                    // Remove all rows except the first one, and reset the quantity
-                    $('.display_delivery_row').not(':first').remove();
-                    $(".display_delivery_row").find("[name*=store_qty]").val('');
-                }
-                let rackVal = '';
-                let shelfVal = '';
-                let binVal = '';
-                // Iterate over each store_qty field to build dynamic rows
-                $("#itemTable #row_" + rowCount).find("[name*=store_qty]").each(function(index, item) {
-                    let rackVal = $(item).closest('td').find(
-                        `[name="components[${rowCount}][erp_store][${index+1}][erp_rack_id]"]`).val();
-                    let shelfVal = $(item).closest('td').find(
-                        `[name="components[${rowCount}][erp_store][${index+1}][erp_shelf_id]"]`).val();
-                    let binVal = $(item).closest('td').find(
-                        `[name="components[${rowCount}][erp_store][${index+1}][erp_bin_id]"]`).val();
-                    let storeQty = $(item).closest('td').find(
-                        `[name="components[${rowCount}][erp_store][${index+1}][store_qty]"]`).val();
-                    // console.log('bvalues---->>', index, rackVal, shelfVal, binVal, storeQty);
-
-                    $(`#erp_rack_id_${index+1}`).val(rackVal);
-                    $(`#erp_shelf_id_${index+1}`).val(shelfVal);
-                    $(`#erp_bin_id_${index+1}`).val(binVal);
-                    // Generate HTML for the new row with dynamic data
-                    rowHtml += `<tr class="display_delivery_row">
-                                    <td>${index + 1}</td>
-                                    <td>
-                                        <input type="hidden" name="row_count" value="${rowCount}" id="row_count">
-                                        <input type="hidden" value="${store_id}" name="components[${rowCount}][erp_store][${index+1}][erp_store_id]" data-id="${index+1}"/>
-                                        <select class="form-select mw-100 select2 item_rack_code" id="erp_rack_id_${index+1}" name="components[${rowCount}][erp_store][${index+1}][erp_rack_id]" data-id="${index+1}">
-                                            <!-- Dynamically populated racks -->
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <select class="form-select mw-100 select2 item_shelf_code" id="erp_shelf_id_${index+1}" name="components[${rowCount}][erp_store][${index+1}][erp_shelf_id]" data-id="${index+1}">
-                                            <!-- Dynamically populated shelves -->
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <select class="form-select mw-100 select2 item_bin_code" id="erp_bin_id_${index+1}" name="components[${rowCount}][erp_store][${index+1}][erp_bin_id]" data-id="${index+1}">
-                                            <!-- Dynamically populated bins -->
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <input type="number" name="components[${rowCount}][erp_store][${index+1}][store_qty]" id="store_qty_${index+1}" class="form-control mw-100" value="${storeQty}" data-id="${index+1}" />
-                                    </td>
-                                    <td>
-                                        <a data-row-count="${rowCount}" data-index="${index+1}" href="javascript:;" class="text-danger deleteItemDeliveryRow">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2">
-                                                <polyline points="3 6 5 6 21 6"></polyline>
-                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                                <line x1="10" y1="11" x2="10" y2="17"></line>
-                                                <line x1="14" y1="11" x2="14" y2="17"></line>
-                                            </svg>
-                                        </a>
-                                    </td>
-                                </tr>`;
-                });
-
-                // Append the dynamically created rows
-                $("#deliveryScheduleTable").find('#deliveryFooter').before(rowHtml);
-
-
-                // Trigger change event to re-populate dependent dropdowns after the rows are added
-                $("#itemTable #row_" + rowCount).find("[name*=store_qty]").each(function(index, item) {
-                    count = index + 1;
-                    loadStoreDropdowns(store_id, count, rackVal, shelfVal, binVal);
-                    // $(`#erp_rack_id_${index+1}`).trigger('change');
-                    // $(`#erp_shelf_id_${index+1}`).trigger('change');
-                });
-            }
-
-            $("#deliveryScheduleTable").find('#deliveryFooter #total').attr('qty', qty);
-            $("#deliveryScheduleModal").modal('show');
-            totalScheduleQty();
-        });
-
-        function loadStoreDropdowns(store_id, rowCount, rackVal, shelfVal, binVal) {
-            if (store_id) {
-                let erp_rack_id = rackVal || $(`#erp_rack_id_${rowCount}`)
-            .val();
-                let erp_shelf_id = shelfVal || $(`#erp_shelf_id_${rowCount}`)
-            .val();
-                let erp_bin_id = binVal || $(`#erp_bin_id_${rowCount}`)
-            .val();
-                // console.log('erp_rack_id---->>', erp_rack_id, erp_shelf_id, erp_bin_id);
-
-                var data = {
-                    store_code_id: store_id
-                };
-
-                $.ajax({
-                    type: 'POST',
-                    data: data,
-                    url: '/material-receipts/get-store-racks',
-                    success: function(data) {
-                        $('#erp_rack_id_' + rowCount).empty();
-                        $.each(data.storeRacks, function(key, value) {
-                            $('#erp_rack_id_' + rowCount).append('<option value="' + key + '">' +
-                                value + '</option>');
-                            if (erp_rack_id && key == erp_rack_id) {
-                                $(`#erp_rack_id_${rowCount}`).val(
-                                erp_rack_id); // Set the selected rack value
-                            } else {
-                                erp_rack_id = key;
-                            }
-                        });
-
-                        // Empty and populate the bins dropdown
-                        $('#erp_bin_id_' + rowCount).empty();
-                        $.each(data.storeBins, function(key, value) {
-                            // Append bin options and maintain the selected value if it matches the provided or default value
-                            $('#erp_bin_id_' + rowCount).append('<option value="' + key + '">' + value +
-                                '</option>');
-                            if (erp_bin_id && key == erp_bin_id) {
-                                $(`#erp_bin_id_${rowCount}`).val(
-                                erp_bin_id); // Set the selected bin value
-                            }
-                        });
-
-                        // If a rack is selected, load shelves for the selected rack
-                        if (erp_rack_id) {
-                            loadShelvesForRack(rowCount, erp_rack_id, rackVal, shelfVal, binVal);
-                        }
-                    }
-                });
-            }
-        }
-
-        function loadShelvesForRack(rowKey, rack_code_id, rackVal, shelfVal, binVal) {
-            let erp_shelf_id = shelfVal || $(`#erp_shelf_id_${rowKey}`).val(); // Use shelfVal if provided, else fallback to form value
-            let erp_bin_id = binVal || $(`#erp_bin_id_${rowKey}`).val(); // Maintain the bin value as well
-
-            var data = {
-                rack_code_id: rack_code_id
-            };
-
-            $.ajax({
-                type: 'POST',
-                data: data,
-                url: '/material-receipts/get-rack-shelfs',
-                success: function(data) {
-                    // Clear the shelf dropdown and populate it with new options
-                    $('#erp_shelf_id_' + rowKey).empty();
-                    $.each(data.storeShelfs, function(key, value) {
-                        $('#erp_shelf_id_' + rowKey).append('<option value="' + key + '">' + value +
-                            '</option>');
-                        if (erp_shelf_id && key == erp_shelf_id) {
-                            $(`#erp_shelf_id_${rowKey}`).val(
-                            erp_shelf_id); // Set the selected shelf value
-                        }
-                    });
-
-                    // Trigger change event for shelf dropdown after population
-                    $('#erp_shelf_id_' + rowKey).trigger('change');
-
-                    // After shelves are loaded, set the selected bin value as well
-                    if (erp_bin_id) {
-                        $(`#erp_bin_id_${rowKey}`).val(erp_bin_id); // Set the selected bin value correctly
-                    }
-                }
-            });
-        }
-
-        /*Total delivery schedule qty*/
-        function totalScheduleQty()
-        {
-            let total = 0.00;
-            $("#deliveryScheduleTable [name*='[store_qty]']").each(function(index, item) {
-                total = total + Number($(item).val());
-            });
-            $("#deliveryFooter #total").text(total.toFixed(2));
-        }
-
-        // addTaxItemRow add row
-        $(document).on('click', '.addTaxItemRow', (e) => {
-            let rowCount = $('#deliveryScheduleModal .display_delivery_row').find('#row_count').val();
-            let store_id = Number($("#itemTable #row_" + rowCount).find("[name*='[store_id]']").val());
-            let store_code = $("#itemTable #row_" + rowCount).find("[name*='[erp_store_code]']").val();
-            let qty = 0.00;
-            $("#deliveryScheduleTable [name*='[store_qty]']").each(function(index, item) {
-                qty = qty + Number($(item).val());
-            });
-            if (!qty) {
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'Please enter quanity then you can add new row.',
-                    icon: 'error',
-                });
-                return false;
-            }
-
-            if (!$("#deliveryScheduleTable [name*='[store_qty]']:last").val()) {
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'Please enter quanity then you can add new row.',
-                    icon: 'error',
-                });
-                return false;
-            }
-
-            let itemQty = Number($('#deliveryScheduleModal #deliveryFooter #total').attr('qty'));
-
-            if (qty > itemQty) {
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'You cannot add more than the available item quantity.',
-                    icon: 'error',
-                });
-                return false;
-            }
-            if (qty != itemQty) {
-                let tblRowCount = $('#deliveryScheduleModal .display_delivery_row').length + 1;
-                let rowHtml = `<tr class="display_delivery_row">
-                                    <td>${tblRowCount}</td>
-                                    <td>
-                                        <input type="hidden" value="${store_id}" name="components[${rowCount}][erp_store][${tblRowCount}][erp_store_id]" data-id="${tblRowCount}"/>
-                                        <select class="form-select mw-100 select2 item_rack_code" id="erp_rack_id_${tblRowCount}" name="components[${rowCount}][erp_store][${tblRowCount}][erp_rack_id]"  data-id="${tblRowCount}">
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <select class="form-select mw-100 select2 item_shelf_code" id="erp_shelf_id_${tblRowCount}" name="components[${rowCount}][erp_store][${tblRowCount}][erp_shelf_id]"  data-id="${tblRowCount}">
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <select class="form-select mw-100 select2 item_bin_code" id="erp_bin_id_${tblRowCount}" name="components[${rowCount}][erp_store][${tblRowCount}][erp_bin_id]"  data-id="${tblRowCount}">
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <input type="number" name="components[${rowCount}][erp_store][${tblRowCount}][store_qty]" id="store_qty_${tblRowCount}" class="form-control mw-100" data-id="${tblRowCount}" />
-                                    <td>
-                                    <a data-row-count="${rowCount}" data-index="${tblRowCount}" href="javascript:;" class="text-danger deleteItemDeliveryRow"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></a>
-                                </td>
-                                </tr>`;
-                $("#deliveryScheduleModal").find('.display_delivery_row:last').after(rowHtml);
-                loadStoreDropdowns(store_id, tblRowCount);
-                // $('#erp_store_id_' + tblRowCount).trigger('change');
-            } else {
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'Qunatity not available.',
-                    icon: 'error',
-                });
-                return false;
-            }
-            totalScheduleQty();
-        });
-        /*itemDeliveryScheduleSubmit */
-        $(document).on('click', '.itemDeliveryScheduleSubmit', (e) => {
-            let rowCount = $('#deliveryScheduleModal .display_delivery_row').find('#row_count').val();
-            let qty = 0.00;
-            $("#deliveryScheduleTable [name*='[store_qty]']").each(function(index, item) {
-                qty = qty + Number($(item).val());
-            });
-            let itemQty = Number($('#deliveryScheduleModal #deliveryFooter #total').attr('qty'));
-            // console.log('itemQty------>>',rowCount, qty, itemQty);
-            if (qty < itemQty) {
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'Store quantity can not be less than accepted quantity.',
-                    icon: 'error',
-                });
-                return false;
-            }
-            let hiddenHtml = '';
-            $("#deliveryScheduleTable .display_delivery_row").each(function(index,item){
-                let storeId = $(item).find("[name*='erp_store_id']").val();
-                let rackId = $(item).find("[name*='erp_rack_id']").val();
-                let shelfId = $(item).find("[name*='erp_shelf_id']").val();
-                let binId = $(item).find("[name*='erp_bin_id']").val();
-                let dQty =  $(item).find("[name*='store_qty']").val();
-                hiddenHtml +=   `<input type="hidden" value="${storeId}" name="components[${rowCount}][erp_store][${index+1}][erp_store_id]"/>
-                                <input type="hidden" value="${rackId}" name="components[${rowCount}][erp_store][${index+1}][erp_rack_id]"/>
-                                <input type="hidden" value="${shelfId}" name="components[${rowCount}][erp_store][${index+1}][erp_shelf_id]"/>
-                                <input type="hidden" value="${binId}" name="components[${rowCount}][erp_store][${index+1}][erp_bin_id]"/>
-                                <input type="hidden" value="${dQty}" name="components[${rowCount}][erp_store][${index+1}][store_qty]"/>`;
-
-            });
-            $("#itemTable #row_"+rowCount).find("[name*='erp_store_id']").remove();
-            $("#itemTable #row_"+rowCount).find("[name*='erp_rack_id']").remove();
-            $("#itemTable #row_"+rowCount).find("[name*='erp_shelf_id']").remove();
-            $("#itemTable #row_"+rowCount).find("[name*='erp_bin_id']").remove();
-            $("#itemTable #row_"+rowCount).find("[name*='store_qty']").remove();
-            $("#itemTable #row_"+rowCount).find(".addDeliveryScheduleBtn").before(hiddenHtml);
-            $("#deliveryScheduleModal").modal('hide');
-        });
-
-        /*Remove delivery row*/
-        $(document).on('click', '.deleteItemDeliveryRow', (e) => {
-            if($(e.target).closest('tbody').find('.display_delivery_row').length ==1) {
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'You cannot first row.',
-                    icon: 'error',
-                });
-                return false;
-            }
-            $(e.target).closest('tr').remove();
-            totalScheduleQty();
-        });
-
-        /*Delivery qty on input*/
-        $(document).on('change input', '.display_delivery_row [name*="store_qty"]', (e) => {
-            let itemQty = Number($('#deliveryScheduleModal #deliveryFooter #total').attr('qty'));
-            let inputQty = 0;
-            let remainingQty = itemQty;
-            $('.display_delivery_row [name*="store_qty"]').each(function(index, item) {
-                inputQty = inputQty + Number($(item).val());
-                if (inputQty > itemQty) {
-                    Swal.fire({
-                        title: 'Error!',
-                        text: 'You cannot add more than the available item quantity.',
-                        icon: 'error',
-                    });
-                    $(item).val(remainingQty);
-                    return false;
-                }
-                remainingQty = remainingQty - Number($(item).val());
-            });
-            totalScheduleQty();
-        });
-
-        $(document).on('change', '.item_store_code', function() {
-            var rowKey = $(this).data('id');
-            var store_code_id = $(this).val();
-            // console.log('rowKey', rowKey);
-            $('#erp_store_id_'+rowKey).val(store_code_id).select2();
-            let erp_rack_id = $(`#erp_rack_id_${rowKey}`).val();
-            let erp_shelf_id = $(`#erp_shelf_id_${rowKey}`).val();
-            let erp_bin_id = $(`#erp_bin_id_${rowKey}`).val();
-
-            var data = {
-                store_code_id: store_code_id
-            };
-
-            $.ajax({
-                type: 'POST',
-                data: data,
-                url: '/material-receipts/get-store-racks',
-                success: function(data) {
-                    $('#erp_rack_id_'+rowKey).empty();
-                    // $('#erp_rack_id_'+rowKey).append('<option value="">Select</option>');
-                    $.each(data.storeRacks, function(key, value) {
-                        $('#erp_rack_id_'+rowKey).append('<option value="'+ key +'">'+ value +'</option>');
-                    });
-                    $('#erp_rack_id_'+rowKey).trigger('change');
-
-                    $('#erp_bin_id_'+rowKey).empty();
-                    // $('#erp_bin_id_'+rowKey).append('<option value="">Select</option>');
-                    $.each(data.storeBins, function(key, value) {
-                        $('#erp_bin_id_'+rowKey).append('<option value="'+ key +'">'+ value +'</option>');
-                    });
-                }
-            });
-        });
-
-        $(document).on('change', '.item_rack_code', function() {
-            var rowKey = $(this).data('id');
-            var rack_code_id = $(this).val();
-            $('#erp_rack_id_' + rowKey).val(rack_code_id).select2();
-
-            var data = {
-                rack_code_id: rack_code_id
-            };
-
-            $.ajax({
-                type: 'POST',
-                data: data,
-                url: '/material-receipts/get-rack-shelfs',
-                success: function(data) {
-                    $('#erp_shelf_id_'+rowKey).empty();
-                    // $('#erp_shelf_id_'+rowKey).append('<option value="">Select</option>');
-                    $.each(data.storeShelfs, function(key, value) {
-                        $('#erp_shelf_id_'+rowKey).append('<option value="'+ key +'">'+ value +'</option>');
-                    });
-
-                    $('#erp_shelf_id_'+rowKey).trigger('change');
-                }
-            });
         });
 
         /*submit attribute*/
@@ -2114,18 +1445,16 @@
             let vendor_id = $("#vendor_id_qt_val").val() || '';
             let type = '{{ request()->route("type") }}';
             let item_search = $("#item_name_search").val();
-            let module_type = $(".module_type").val() || '';
-            let actionUrl = '{{ route("material-receipt.get.po", ["type" => ":type"]) }}'.replace(':type', type);
+            let actionUrl = '{{ route("put-away.get.mrn", ["type" => ":type"]) }}'.replace(':type', type);
             let fullUrl = `${actionUrl}?series_id=${encodeURIComponent(series_id)}
             &document_number=${encodeURIComponent(document_number)}
             &store_id=${encodeURIComponent(store_id)}
             &item_id=${encodeURIComponent(item_id)}
             &vendor_id=${encodeURIComponent(vendor_id)}
             &header_book_id=${encodeURIComponent(header_book_id)}
-            &selected_po_ids=${selectedPoIds}
+            &selected_mrn_ids=${selectedPoIds}
             &document_date=${document_date}
-            &item_search=${item_search}
-            &module_type=${module_type}`;
+            &item_search=${item_search}`;
             fetch(fullUrl).then(response => {
                 return response.json().then(data => {
                     $(".po-order-detail #poDataTable").empty().append(data.data.pis);
@@ -2149,14 +1478,6 @@
             }
         });
 
-        // $(document).on('change','.po-order-detail > tbody .form-check-input',(e) => {
-        //     if(!$(".po-order-detail > tbody .form-check-input:not(:checked)").length) {
-        //         $('.po-order-detail > thead .form-check-input').prop('checked', true);
-        //     } else {
-        //         $('.po-order-detail > thead .form-check-input').prop('checked', false);
-        //     }
-        // });
-
         function getSelectedPoIDS()
         {
             let ids = [];
@@ -2164,15 +1485,6 @@
                 ids.push($(this).val());
             });
             return ids;
-        }
-
-        function getSelectedPoTypes()
-        {
-            let moduleTypes = [];
-            $('.po_item_checkbox:checked').each(function() {
-                moduleTypes.push($(this).attr('data-module')); // Corrected: Get attribute value instead of setting it
-            });
-            return moduleTypes;
         }
 
         $(document).on('click', '.poProcess', (e) => {
@@ -2186,8 +1498,6 @@
                 });
                 return false;
             }
-
-            let moduleTypes = getSelectedPoTypes();
 
             $("[name='po_item_ids']").val(ids);
 
@@ -2268,7 +1578,6 @@
                                 $input.closest('tr').find('[name*="[qty]"]').val('').focus();
                             }
                         }, 100);
-                        getItemCostPrice($input.closest('tr'));
                         return false;
                     },
                     change: function(event, ui) {
@@ -2296,12 +1605,10 @@
 
             groupItems = JSON.stringify(groupItems);
             ids = JSON.stringify(ids);
-            moduleTypes = JSON.stringify(moduleTypes);
             let type = '{{ request()->route("type") }}'; // Dynamically fetch the `type` from the current route
-            let actionUrl = '{{ route("material-receipt.process.po-item") }}'
+            let actionUrl = '{{ route("put-away.process.mrn-item") }}'
             .replace(':type', type)
             + '?ids=' + encodeURIComponent(ids)
-            + '&moduleTypes=' + moduleTypes
             + '&currency_id=' + encodeURIComponent(currencyId)
             + '&d_date=' + encodeURIComponent(transactionDate)
             + '&groupItems=' + encodeURIComponent(groupItems);
@@ -2310,7 +1617,6 @@
                 return response.json().then(data => {
                     if(data.status == 200) {
                         vendorOnChange(data?.data?.vendor?.id);
-                        $(".header_store_id").prop('disabled', true);
                         let newIds = getSelectedPoIDS();
                         let existingIds = localStorage.getItem('selectedPoIds');
                         if (existingIds) {
@@ -2323,60 +1629,31 @@
 
                         let existingIdsUpdate = JSON.parse(localStorage.getItem('selectedPoIds'));
                         $("[name='po_item_ids']").val(existingIdsUpdate.join(','));
-
-                        let module_type = data?.data?.moduleType || '';
+                        $(".header_store_id").prop('disabled', true);
+                        
                         let vendor = data?.data?.vendor || '';
                         let finalDiscounts = data?.data?.finalDiscounts;
                         let finalExpenses = data?.data?.finalExpenses;
                         let subStoreCount = data?.data?.subStoreCount;
-                        let poOrder = data?.data?.purchaseOrder;
-                        let gateEntry = data?.data?.gateEntry;
-                        let purchaseOrder = data?.data?.purchaseOrder;
-                        let supplier_invoice_no = '';
-                        let supplier_invoice_date = '';
-                        let gate_entry_no = '';
-                        let gate_entry_date = '';
-                        if(gateEntry && (purchaseOrder.gate_entry_required == 'yes')){
-                            gate_entry_no = gateEntry.document_number;
-                            gate_entry_date = gateEntry.document_date;
-                            eway_bill_no = gateEntry.eway_bill_no;
-                            consignment_no = gateEntry.consignment_no;
-                            supplier_invoice_no = gateEntry.supplier_invoice_no;
-                            supplier_invoice_date = gateEntry.supplier_invoice_date;
-                            transporter_name = gateEntry.transporter_name;
-                            vehicle_no = gateEntry.vehicle_no;
-                            $('.gate_entry_no').val(gate_entry_no);
-                            $('.gate_entry_date').val(gate_entry_date);
-                            $('.eway_bill_no').val(eway_bill_no);
-                            $('.consignment_no').val(consignment_no);
-                            $('.supplier_invoice_no').val(supplier_invoice_no);
-                            $('.supplier_invoice_date').val(supplier_invoice_date);
-                            $('.transporter_name').val(transporter_name);
-                            $('.vehicle_no').val(vehicle_no);
-                        } else if(purchaseOrder.type == 'supplier-invoice'){
-                            supplier_invoice_no = purchaseOrder.document_number;
-                            supplier_invoice_date = purchaseOrder.document_date;
-                            $('.gate_entry_no').val();
-                            $('.gate_entry_date').val();
-                            $('.supplier_invoice_no').val(supplier_invoice_no);
-                            $('.supplier_invoice_date').val(supplier_invoice_date);
-                        } else{
-                            $('.gate_entry_no').val();
-                            $('.gate_entry_date').val();
-                            $('.supplier_invoice_no').val();
-                            $('.supplier_invoice_date').val();
-                        }
+                        let mrnHeader = data?.data?.mrnHeader;
+
                         if ($("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length) {
                             $("#itemTable .mrntableselectexcel tr[id*='row_']:last").after(data.data.pos);
                         } else {
                             $("#itemTable .mrntableselectexcel").empty().append(data.data.pos);
                         }
-                        $(".module_type").val(module_type);
-
                         initializeAutocomplete2(".comp_item_code");
                         $("#poModal").modal('hide');
                         // $(".poSelect").prop('disabled',true);
-                        $(".importItem").prop('disabled',true);
+                        
+                        $('.gate_entry_no').val(mrnHeader.gate_entry_no).prop('disabled', true);
+                        $('.gate_entry_date').val(mrnHeader.gate_entry_date).prop('disabled', true);
+                        $('.eway_bill_no').val(mrnHeader.eway_bill_no).prop('disabled', true);
+                        $('.consignment_no').val(mrnHeader.consignment_no).prop('disabled', true);
+                        $('.supplier_invoice_no').val(mrnHeader.supplier_invoice_no).prop('disabled', true);
+                        $('.supplier_invoice_date').val(mrnHeader.supplier_invoice_date).prop('disabled', true);
+                        $('.transporter_name').val(mrnHeader.transporter_name).prop('disabled', true);
+                        $('.vehicle_no').val(mrnHeader.vehicle_no).prop('disabled', true);
                         $("select[name='currency_id']").prop('disabled', true);
                         $("select[name='payment_term_id']").prop('disabled', true);
                         $("#vendor_name").prop('readonly',true);
@@ -2395,17 +1672,12 @@
                                             <input type="hidden" value="" name="disc_summary[${index}][d_id]">
                                             <input type="hidden" value="${item.ted_name}" name="disc_summary[${index}][d_name]">
                                         </td>
-                                        <td class="text-end">${typeof item.ted_perc === "number" ? '0' : item.ted_perc}
-                                            <input type="hidden" value="${typeof item.ted_perc === "number" ? '0' : item.ted_perc}" name="disc_summary[${index}][d_perc]">
-                                            <input type="hidden" value="${item.ted_perc}" name="disc_summary[${index}][hidden_d_perc]">
+                                        <td class="text-end">${typeof item.ted_percentage === "number" ? '0' : item.ted_percentage}
+                                            <input type="hidden" value="${typeof item.ted_percentage === "number" ? '0' : item.ted_percentage}" name="disc_summary[${index}][d_perc]">
+                                            <input type="hidden" value="${item.ted_percentage}" name="disc_summary[${index}][hidden_d_perc]">
                                         </td>
                                         <td class="text-end">
                                         <input type="hidden" value="" name="disc_summary[${index}][d_amnt]">
-                                        </td>
-                                        <td>
-                                            <a href="javascript:;" class="text-danger deleteSummaryDiscountRow">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                                            </a>
                                         </td>
                                     </tr>`
                             });
@@ -2428,26 +1700,20 @@
                                             <input type="hidden" value="" name="exp_summary[${index}][e_id]">
                                             <input type="hidden" value="${item.ted_name}" name="exp_summary[${index}][e_name]">
                                         </td>
-                                        <td class="text-end">${typeof item.ted_perc === "number" ? '0' : item.ted_perc}
-                                            <input type="hidden" value="${typeof item.ted_perc === "number" ? '0' : item.ted_perc}" name="exp_summary[${index}][e_perc]">
-                                            <input type="hidden" value="${item.ted_perc}" name="exp_summary[${index}][hidden_e_perc]">
+                                        <td class="text-end">${typeof item.ted_percentage === "number" ? '0' : item.ted_percentage}
+                                            <input type="hidden" value="${typeof item.ted_percentage === "number" ? '0' : item.ted_percentage}" name="exp_summary[${index}][e_perc]">
+                                            <input type="hidden" value="${item.ted_percentage}" name="exp_summary[${index}][hidden_e_perc]">
                                         </td>
                                         <td class="text-end">
-                                        <input type="hidden" value="" name="exp_summary[${index}][e_amnt]">
-                                        </td>
-                                        <td>
-                                            <a href="javascript:;" class="text-danger deleteExpRow">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                                            </a>
+                                            <input type="hidden" value="" name="exp_summary[${index}][e_amnt]">
                                         </td>
                                     </tr>`;
-
                             });
                             $("#summaryExpTable tbody").find('.display_summary_exp_row').remove();
                             $("#summaryExpTable tbody").find('#expSummaryFooter').before(rows);
                         }
                         setTimeout(() => {
-                            setTableCalculation();
+                            
                         },500);
                     }
                     if(data.status == 422) {
@@ -2524,35 +1790,6 @@
             });
         }
 
-        // Get Item Rate
-        function getItemCostPrice(currentTr)
-        {
-            let vendorId = $("#vendor_id").val();
-            let currencyId = $("select[name='currency_id']").val();
-            let transactionDate = $("input[name='document_date']").val();
-            let itemId = $(currentTr).find("input[name*='[item_id]']").val();
-            let attributes = '';
-            let uomId = $(currentTr).find("select[name*='[uom_id]']").val();
-            let queryParams = new URLSearchParams({
-                vendor_id: vendorId,
-                currency_id: currencyId,
-                transaction_date: transactionDate,
-                item_id: itemId,
-                attributes: attributes,
-                uom_id: uomId
-            });
-            let actionUrl = '{{ route("items.get.cost") }}'+'?'+queryParams.toString();
-            fetch(actionUrl).then(response => {
-                return response.json().then(data => {
-                    if(data.status == 200) {
-                        let cost = data?.data?.cost || 0;
-                        $(currentTr).find("input[name*='[rate]']").val(cost);
-                        setTableCalculation();
-                    }
-                });
-            });
-        }
-
         function getLocation(locationId = '')
         {
             let actionUrl = '{{ route("store.get") }}'+'?location_id='+locationId;
@@ -2580,154 +1817,5 @@
             $("td.dynamic-colspan").attr("colspan", 11);
             $("td.dynamic-summary-colspan").attr("colspan", 10);
         })
-
-        $(document).on('click', '.processImportedBtn', (e) => {
-            function initializeAutocomplete2(selector, type) {
-                $(selector).autocomplete({
-                    minLength: 0,
-                    source: function(request, response) {
-                        let selectedAllItemIds = [];
-                        $("#itemTable tbody [id*='row_']").each(function(index,item) {
-                            if(Number($(item).find('[name*="[item_id]"]').val())) {
-                                selectedAllItemIds.push(Number($(item).find('[name*="[item_id]"]').val()));
-                            }
-                        });
-                        $.ajax({
-                            url: '/search',
-                            method: 'GET',
-                            dataType: 'json',
-                            data: {
-                                q: request.term,
-                                type:'goods_item_list',
-                                selectedAllItemIds : JSON.stringify(selectedAllItemIds)
-                            },
-                            success: function(data) {
-                                response($.map(data, function(item) {
-                                    return {
-                                        id: item.id,
-                                        label: `${item.item_name} (${item.item_code})`,
-                                        code: item.item_code || '',
-                                        item_id: item.id,
-                                        item_name:item.item_name,
-                                        uom_name:item.uom?.name,
-                                        uom_id:item.uom_id,
-                                        hsn_id:item.hsn?.id,
-                                        hsn_code:item.hsn?.code,
-                                        alternate_u_o_ms:item.alternate_u_o_ms,
-                                        is_attr:item.item_attributes_count,
-                                    };
-                                }));
-                            },
-                            error: function(xhr) {
-                                console.error('Error fetching customer data:', xhr.responseText);
-                            }
-                        });
-                    },
-                    select: function(event, ui) {
-                        let $input = $(this);
-                        let itemCode = ui.item.code;
-                        let itemName = ui.item.value;
-                        let itemN = ui.item.item_name;
-                        let itemId = ui.item.item_id;
-                        let uomId = ui.item.uom_id;
-                        let uomName = ui.item.uom_name;
-                        let hsnId = ui.item.hsn_id;
-                        let hsnCode = ui.item.hsn_code;
-                        $input.attr('data-name', itemName);
-                        $input.attr('data-code', itemCode);
-                        $input.attr('data-id', itemId);
-                        $input.closest('tr').find('[name*="[item_id]"]').val(itemId);
-                        $input.closest('tr').find('[name*=item_code]').val(itemCode);
-                        $input.closest('tr').find('[name*=item_name]').val(itemN);
-                        $input.closest('tr').find('[name*=hsn_id]').val(hsnId);
-                        $input.closest('tr').find('[name*=hsn_code]').val(hsnCode);
-                        $input.val(itemCode);
-                        let uomOption = `<option value=${uomId}>${uomName}</option>`;
-                        if(ui.item?.alternate_u_o_ms) {
-                            for(let alterItem of ui.item.alternate_u_o_ms) {
-                            uomOption += `<option value="${alterItem.uom_id}" ${alterItem.is_purchasing ? 'selected' : ''}>${alterItem.uom?.name}</option>`;
-                            }
-                        }
-                        $input.closest('tr').find('[name*=uom_id]').append(uomOption);
-                        $input.closest('tr').find("input[name*='attr_group_id']").remove();
-                        setTimeout(() => {
-                            if(ui.item.is_attr) {
-                                $input.closest('tr').find('.attributeBtn').trigger('click');
-                            } else {
-                                $input.closest('tr').find('.attributeBtn').trigger('click');
-                                $input.closest('tr').find('[name*="[qty]"]').val('').focus();
-                            }
-                        }, 100);
-                        getItemCostPrice($input.closest('tr'));
-                        return false;
-                    },
-                    change: function(event, ui) {
-                        if (!ui.item) {
-                            $(this).val("");
-                                // $('#itemId').val('');
-                            $(this).attr('data-name', '');
-                            $(this).attr('data-code', '');
-                        }
-                    }
-                }).focus(function() {
-                    if (this.value === "") {
-                        $(this).autocomplete("search", "");
-                    }
-                });
-            }
-
-            let currencyId = $("select[name='currency_id']").val();
-            let transactionDate = $("input[name='document_date']").val() || '';
-            let actionUrl = '{{ route("material-receipt.process.import-item") }}';
-
-            fetch(actionUrl).then(response => {
-                return response.json().then(data => {
-                    console.log(actionUrl, data);
-                    
-                    if(data.status == 200) {
-                        $(".header_store_id").prop('disabled', true);
-                        initializeAutocomplete2(".comp_item_code");
-                        $("#importItemModal").modal('hide');
-                        $(".importItem").prop('disabled',true);
-                        $(".poSelect").prop('disabled',true);
-                        $("select[name='currency_id']").prop('disabled', true);
-                        $("select[name='payment_term_id']").prop('disabled', true);
-                        $("#vendor_name").prop('readonly',true);
-                        $(".editAddressBtn").addClass('d-none');
-                        if ($("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length) {
-                            $("#itemTable .mrntableselectexcel tr[id*='row_']:last").after(data.data.pos);
-                        } else {
-                            $("#itemTable .mrntableselectexcel").empty().append(data.data.pos);
-                        }
-                        let locationId = $("[name='header_store_id']").val();
-                        getLocation(locationId);
-                        updateImportItemData(data.status);
-                        setTimeout(() => {
-                            setTableCalculation();
-                        },500);
-
-                    }
-                    if(data.status == 422) {
-                        updateImportItemData(data.status);
-                        $(".editAddressBtn").removeClass('d-none');
-                        $("#vendor_name").val('').prop('readonly',false);
-                        $("#vendor_id").val('');
-                        $("#vendor_code").val('');
-                        $("#hidden_state_id").val('');
-                        $("#hidden_country_id").val('');
-                        $("select[name='currency_id']").empty().append('<option value="">Select</option>').prop('readonly',false);
-                        $("select[name='payment_term_id']").empty().append('<option value="">Select</option>').prop('readonly',false);
-                        $(".shipping_detail").text('-');
-                        $(".billing_detail").text('-');
-                        Swal.fire({
-                            title: 'Error!',
-                            text: data.message,
-                            icon: 'error',
-                        });
-                        return false;
-                    }
-                });
-            });
-        });
     </script>
 @endsection

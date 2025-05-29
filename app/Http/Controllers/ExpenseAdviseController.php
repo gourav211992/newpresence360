@@ -142,16 +142,16 @@ class ExpenseAdviseController extends Controller
                 ->editColumn('document_date', function ($row) {
                     return date('d/m/Y', strtotime($row->document_date)) ?? 'N/A';
                 })
-                ->editColumn('location', function ($row) {
+                ->addColumn('location', function ($row) {
                     return strval($row->erpStore?->store_name) ?? 'N/A';
                 })
-                ->editColumn('cost_center', function ($row) {
+                ->addColumn('cost_center', function ($row) {
                     return strval($row->costCenters?->name) ?? 'N/A';
                 })
-                ->editColumn('currency', function ($row) {
+                ->addColumn('currency', function ($row) {
                     return strval($row->currency?->short_name) ?? 'N/A';
                 })
-                ->editColumn('revision_number', function ($row) {
+                ->addColumn('revision_number', function ($row) {
                     return strval($row->revision_number);
                 })
                 ->addColumn('vendor_name', function ($row) {
@@ -241,6 +241,7 @@ class ExpenseAdviseController extends Controller
             $firstAddress = $organization->addresses->first();
             $companyCountryId = null;
             $companyStateId = null;
+            $applicabilityType = '';
             if ($firstAddress) {
                 $companyCountryId = $firstAddress->country_id;
                 $companyStateId = $firstAddress->state_id;
@@ -379,6 +380,7 @@ class ExpenseAdviseController extends Controller
             $totalExpValue = 0.00;
             $totalItemLevelDiscValue = 0.00;
             $totalTax = 0;
+            $finaltotalTax = 0;
 
             $totalHeaderDiscount = 0;
             if (isset($request->all()['disc_summary']) && count($request->all()['disc_summary']) > 0)
@@ -495,6 +497,7 @@ class ExpenseAdviseController extends Controller
 
                         $taxDetails = TaxHelper::calculateTax($expenseItem['hsn_id'], $itemPrice, $companyCountryId, $companyStateId, $partyCountryId ?? $request -> shipping_country_id, $partyStateId ?? $request -> shipping_state_id, 'collection');
 
+                        $applicabilityType = $taxDetails[0]['applicability_type'];
                         if (isset($taxDetails) && count($taxDetails) > 0) {
                             foreach ($taxDetails as $taxDetail) {
                                 $itemTax += ((double)$taxDetail['tax_percentage'] / 100 * $valueAfterHeaderDiscount);
@@ -502,13 +505,22 @@ class ExpenseAdviseController extends Controller
                         }
                         $expenseItem['tax_value'] = $itemTax;
                         $totalTax += $itemTax;
+                        if ($applicabilityType === ConstantHelper::COLLECTION) {
+                            $finaltotalTax += $itemTax;
+                        } else {
+                            $finaltotalTax -= $itemTax;
+                        }
                     }
                 }
                 unset($expenseItem);
 
                 foreach($expenseItemArr as $_key => $expenseItem) {
                     $itemPriceAterBothDis =  $expenseItem['basic_value'] - $expenseItem['discount_amount'] - $expenseItem['header_discount_amount'];
-                    $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $totalTax;
+                    if($applicabilityType === ConstantHelper::COLLECTION) {
+                        $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $finaltotalTax;
+                    } else {
+                        $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount - $finaltotalTax;
+                    }
                     $itemHeaderExp =  $itemPriceAterBothDis / $totalAfterTax * $totalHeaderExpense;
 
                     $expenseDetail = new ExpenseDetail;
@@ -625,7 +637,11 @@ class ExpenseAdviseController extends Controller
                 if(isset($request->all()['exp_summary'])) {
                     foreach($request->all()['exp_summary'] as $dis) {
                         if(isset($dis['e_amnt']) && $dis['e_amnt']) {
-                            $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $totalTax;
+                            if ($applicabilityType === ConstantHelper::COLLECTION) {
+                                $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $finaltotalTax;
+                            } else {
+                                $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount - $finaltotalTax;
+                            }
                             $ted = new ExpenseTed;
                             $ted->expense_header_id = $expense->id;
                             $ted->expense_detail_id = null;
@@ -655,9 +671,17 @@ class ExpenseAdviseController extends Controller
                 $expense->total_discount = $totalDiscValue ?? 0.00;
                 $expense->taxable_amount = ($itemTotalValue - $totalDiscValue) ?? 0.00;
                 $expense->total_taxes = $totalTax ?? 0.00;
-                $expense->total_after_tax_amount = (($itemTotalValue - $totalDiscValue) + $totalTax) ?? 0.00;
+                if ($applicabilityType === ConstantHelper::COLLECTION) {
+                    $expense->total_after_tax_amount = (($itemTotalValue - $totalDiscValue) + $finaltotalTax) ?? 0.00;
+                } else {
+                    $expense->total_after_tax_amount = (($itemTotalValue - $totalDiscValue) - $finaltotalTax) ?? 0.00;
+                }
                 $expense->expense_amount = $totalHeaderExpense ?? 0.00;
-                $totalAmount = (($itemTotalValue - $totalDiscValue) + ($totalTax + $totalHeaderExpense)) ?? 0.00;
+                if ($applicabilityType === ConstantHelper::COLLECTION) {
+                    $totalAmount = (($itemTotalValue - $totalDiscValue) + ($finaltotalTax + $totalHeaderExpense)) ?? 0.00;
+                } else {
+                    $totalAmount = (($itemTotalValue - $totalDiscValue) - $finaltotalTax + $totalHeaderExpense) ?? 0.00;
+                }
                 $expense->total_amount = $totalAmount ?? 0.00;
                 $expense->save();
 
@@ -844,6 +868,7 @@ class ExpenseAdviseController extends Controller
         $firstAddress = $organization->addresses->first();
         $companyCountryId = null;
         $companyStateId = null;
+        $applicabilityType = '';
         if ($firstAddress) {
             $companyCountryId = $firstAddress->country_id;
             $companyStateId = $firstAddress->state_id;
@@ -975,6 +1000,7 @@ class ExpenseAdviseController extends Controller
             $totalExpValue = 0.00;
             $totalItemLevelDiscValue = 0.00;
             $totalTax = 0;
+            $finaltotalTax = 0;
 
             $totalHeaderDiscount = 0;
             if (isset($request->all()['disc_summary']) && count($request->all()['disc_summary']) > 0)
@@ -1073,7 +1099,7 @@ class ExpenseAdviseController extends Controller
                     $headerDiscount = 0;
                     $headerDiscount = ($expenseItem['taxable_amount'] / $totalValueAfterDiscount) * $totalHeaderDiscount;
                     $valueAfterHeaderDiscount = $expenseItem['taxable_amount'] - $headerDiscount; // after both discount
-                    $poItem['header_discount_amount'] = $headerDiscount;
+                    $expenseItem['header_discount_amount'] = $headerDiscount;
                     $itemTotalHeaderDiscount += $headerDiscount;
                     if($isTax) {
                         //Tax
@@ -1084,7 +1110,7 @@ class ExpenseAdviseController extends Controller
                         $partyCountryId = isset($shippingAddress) ? $shippingAddress -> country_id : null;
                         $partyStateId = isset($shippingAddress) ? $shippingAddress -> state_id : null;
                         $taxDetails = TaxHelper::calculateTax($expenseItem['hsn_id'], $itemPrice, $companyCountryId, $companyStateId, $partyCountryId ?? $request->shipping_country_id, $partyStateId ?? $request->shipping_state_id, 'collection');
-
+                        $applicabilityType = $taxDetails[0]['applicability_type'];
                         if (isset($taxDetails) && count($taxDetails) > 0) {
                             foreach ($taxDetails as $taxDetail) {
                                 $itemTax += ((double)$taxDetail['tax_percentage'] / 100 * $valueAfterHeaderDiscount);
@@ -1092,6 +1118,11 @@ class ExpenseAdviseController extends Controller
                         }
                         $expenseItem['tax_value'] = $itemTax;
                         $totalTax += $itemTax;
+                        if ($applicabilityType === ConstantHelper::COLLECTION) {
+                            $finaltotalTax += $itemTax;
+                        } else {
+                            $finaltotalTax -= $itemTax;
+                        }
                     }
                 }
                 unset($expenseItem);
@@ -1100,7 +1131,11 @@ class ExpenseAdviseController extends Controller
                     $_key = $_key + 1;
                     $component = $request->all()['components'][$_key] ?? [];
                     $itemPriceAterBothDis =  $expenseItem['basic_value'] - $expenseItem['discount_amount'] - $expenseItem['header_discount_amount'];
-                    $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $totalTax;
+                    if ($applicabilityType === ConstantHelper::COLLECTION) {
+                        $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $finaltotalTax;
+                    } else {
+                        $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount - $finaltotalTax;
+                    }
                     $itemHeaderExp =  $itemPriceAterBothDis / $totalAfterTax * $totalHeaderExpense;
 
                     # Expense Detail Save
@@ -1233,7 +1268,11 @@ class ExpenseAdviseController extends Controller
                 if(isset($request->all()['exp_summary'])) {
                     foreach($request->all()['exp_summary'] as $dis) {
                         if(isset($dis['e_amnt']) && $dis['e_amnt']) {
-                            $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $totalTax;
+                            if($applicabilityType === ConstantHelper::COLLECTION) {
+                                $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $finaltotalTax;
+                            } else {
+                                $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount - $finaltotalTax;
+                            }
                             $expenseAmountId = @$dis['e_id'] ?? null;
                             $ted = ExpenseTed::find($expenseAmountId) ?? new ExpenseTed;
                             $ted->expense_header_id = $expense->id;
@@ -1264,9 +1303,17 @@ class ExpenseAdviseController extends Controller
                 $expense->total_discount = $totalDiscValue ?? 0.00;
                 $expense->taxable_amount = ($itemTotalValue - $totalDiscValue) ?? 0.00;
                 $expense->total_taxes = $totalTax ?? 0.00;
-                $expense->total_after_tax_amount = (($itemTotalValue - $totalDiscValue) + $totalTax) ?? 0.00;
+                if($applicabilityType === ConstantHelper::COLLECTION) {
+                    $expense->total_after_tax_amount = (($itemTotalValue - $totalDiscValue) + $finaltotalTax) ?? 0.00;
+                } else {
+                    $expense->total_after_tax_amount = (($itemTotalValue - $totalDiscValue) - $finaltotalTax) ?? 0.00;
+                }
                 $expense->expense_amount = $totalHeaderExpense ?? 0.00;
-                $totalAmount = (($itemTotalValue - $totalDiscValue) + ($totalTax + $totalHeaderExpense)) ?? 0.00;
+                if ($applicabilityType === ConstantHelper::COLLECTION) {
+                    $totalAmount = (($itemTotalValue - $totalDiscValue) + ($finaltotalTax + $totalHeaderExpense)) ?? 0.00;
+                } else {
+                    $totalAmount = (($itemTotalValue - $totalDiscValue) - $finaltotalTax + $totalHeaderExpense) ?? 0.00;
+                }
                 $expense->total_amount = $totalAmount ?? 0.00;
                 $expense->save();
             } else {
@@ -1587,6 +1634,14 @@ class ExpenseAdviseController extends Controller
         $documentDate = $request->document_date;
         $billingAddresses = ErpAddress::where('addressable_id', $vendorId) -> where('addressable_type', Vendor::class) -> whereIn('type', ['billing', 'both'])-> get();
         $shippingAddresses = ErpAddress::where('addressable_id', $vendorId) -> where('addressable_type', Vendor::class) -> whereIn('type', ['shipping','both'])-> get();
+
+        $user = Helper::getAuthenticatedUser();
+        $organizationAddress = Address::with(['city', 'state', 'country'])
+            ->where('addressable_id', $user->organization_id)
+            ->where('addressable_type', Organization::class)
+            ->first();
+        $orgAddress = $organizationAddress?->display_address;
+
         foreach ($billingAddresses as $billingAddress) {
             $billingAddress -> value = $billingAddress -> id;
             $billingAddress -> label = $billingAddress -> display_address;
@@ -1625,7 +1680,7 @@ class ExpenseAdviseController extends Controller
         }
         $currencyData = CurrencyHelper::getCurrencyExchangeRates($vendor->currency_id ?? 0, $documentDate ?? '');
 
-        return response()->json(['data' => ['shipping' => $shipping,'billing' => $billing, 'paymentTerm' => $paymentTerm, 'currency' => $currency, 'currency_exchange' => $currencyData], 'status' => 200, 'message' => 'fetched']);
+        return response()->json(['data' => ['shipping' => $shipping,'billing' => $billing, 'paymentTerm' => $paymentTerm, 'currency' => $currency, 'currency_exchange' => $currencyData, 'org_address' => $orgAddress], 'status' => 200, 'message' => 'fetched']);
     }
 
     # Get edit address modal
@@ -2042,6 +2097,46 @@ class ExpenseAdviseController extends Controller
             $headerHistory = ExpenseHeaderHistory::create($expenseHeaderData);
             $headerHistoryId = $headerHistory->id;
 
+            $vendorBillingAddress = $expenseHeader->billingAddress ?? null;
+            $vendorShippingAddress = $GateEntryHeader->shippingAddress ?? null;
+
+            if ($vendorBillingAddress) {
+                $billingAddress = $headerHistory->bill_address_details()->firstOrNew([
+                    'type' => 'billing',
+                ]);
+                $billingAddress->fill([
+                    'address' => $vendorBillingAddress->address,
+                    'country_id' => $vendorBillingAddress->country_id,
+                    'state_id' => $vendorBillingAddress->state_id,
+                    'city_id' => $vendorBillingAddress->city_id,
+                    'pincode' => $vendorBillingAddress->pincode,
+                    'phone' => $vendorBillingAddress->phone,
+                    'fax_number' => $vendorBillingAddress->fax_number,
+                ]);
+                $billingAddress->save();
+            }
+
+            if ($vendorShippingAddress) {
+                $shippingAddress = $headerHistory->ship_address_details()->firstOrNew([
+                    'type' => 'shipping',
+                ]);
+                $shippingAddress->fill([
+                    'address' => $vendorShippingAddress->address,
+                    'country_id' => $vendorShippingAddress->country_id,
+                    'state_id' => $vendorShippingAddress->state_id,
+                    'city_id' => $vendorShippingAddress->city_id,
+                    'pincode' => $vendorShippingAddress->pincode,
+                    'phone' => $vendorShippingAddress->phone,
+                    'fax_number' => $vendorShippingAddress->fax_number,
+                ]);
+                $shippingAddress->save();
+            }
+
+            if ($request->hasFile('amend_attachment')) {
+                $mediaFiles = $headerHistory->uploadDocuments($request->file('amend_attachment'), 'exp-adv', false);
+            }
+            $headerHistory->save();
+
             // Detail History
             $expenseDetails = ExpenseDetail::where('expense_header_id', $expenseHeader->id)->get();
             if(!empty($expenseDetails)){
@@ -2255,7 +2350,11 @@ class ExpenseAdviseController extends Controller
         $pos = PurchaseOrder::whereIn('id', $uniquePoIds)->get();
         $discounts = collect();
         $expenses = collect();
-
+        $organizationAddress = Address::with(['city', 'state', 'country'])
+            ->where('addressable_id', $user->organization_id)
+            ->where('addressable_type', Organization::class)
+            ->first();
+        $orgAddress = $organizationAddress?->display_address;
         foreach ($pos as $po) {
             foreach ($po->headerDiscount as $headerDiscount) {
                 if (!intval($headerDiscount->ted_perc)) {
@@ -2310,7 +2409,7 @@ class ExpenseAdviseController extends Controller
             }
         }
         $html = view('procurement.expense-advise.partials.po-item-row', ['poItems' => $poItems, 'costCenters' => $costCenters])->render();
-        return response()->json(['data' => ['pos' => $html, 'vendor' => $vendor,'finalDiscounts' => $finalDiscounts,'finalExpenses' => $finalExpenses], 'status' => 200, 'message' => "fetched!"]);
+        return response()->json(['data' => ['pos' => $html, 'vendor' => $vendor,'finalDiscounts' => $finalDiscounts,'finalExpenses' => $finalExpenses, 'org_address' => $orgAddress], 'status' => 200, 'message' => "fetched!"]);
     }
 
     # Get SO Item List

@@ -21,7 +21,7 @@
 @if($specifications->count())
     <tr class="item_detail_row">
         <td class="poprod-decpt item_detail_attributes">
-            <span class="mw-100" style="padding: 0%;">
+            <span class="poitemtxt mw-100">
                 <strong>Specifications:</strong>
             </span>
             @foreach($specifications as $specification)
@@ -58,8 +58,12 @@
 @endif
 <tr>
     <td class="poprod-decpt">
-        <span class="badge rounded-pill badge-light-primary"><strong>Inv. UOM</strong>:  {{$uomName}}</span>
-        <span class="badge rounded-pill badge-light-primary"><strong>Qty.</strong>: {{$qty}}</span>
+        <span class="badge rounded-pill badge-light-primary">
+            <strong>Inv. UOM</strong>:  {{$uomName}}
+        </span>
+        <span class="badge rounded-pill badge-light-primary">
+            <strong>Qty.</strong>: {{$qty}}
+        </span>
     </td>
 </tr>
 @if($totalStockData)
@@ -74,106 +78,61 @@
         </td>
     </tr>
 @endif
-@if($purchaseOrder)
+@if($mrn)
     <tr>
         <td class="poprod-decpt">
             <span class="mw-100" style="padding: 0%;">
-                <strong style="font-size:11px; color : #6a6a6a;">Purchase Order</strong>
+                <strong style="font-size:11px; color : #6a6a6a;">MRN</strong>
             </span>
             <span class="badge rounded-pill badge-light-primary">
-                {{$purchaseOrder->book_code}}-{{$purchaseOrder->document_number}}
+                {{$mrn->book_code}}-{{$mrn->document_number}}
             </span>
             <span class="badge rounded-pill badge-light-primary">
-                <strong>Date</strong>:
-                {{ $purchaseOrder?->getFormattedDate('document_date') }}
-            </span>
-            <span class="badge rounded-pill badge-light-primary">
-                <strong>Order Qty.</strong>: {{number_format($poDetail->order_qty, 2)}}
-            </span>
-            @if($poDetail->grn_qty && ($poDetail->grn_qty > 0))
-                <span class="badge rounded-pill badge-light-primary">
-                    <strong>Received Qty.</strong>: {{number_format($poDetail->grn_qty, 2)}}
-                </span>
-            @endif
-            @if($poDetail->grn_qty && ($poDetail->short_close_qty > 0))
-                <span class="badge rounded-pill badge-light-primary">
-                    <strong>Cloased Qty.</strong>: {{number_format($poDetail->short_close_qty, 2)}}
-                </span>
-            @endif
-            <span class="badge rounded-pill badge-light-primary">
-                <strong>Balance Qty.</strong>: {{number_format(((($poDetail->order_qty ?? 0.00) - ($poDetail->short_close_qty ?? 0.00)) - (($poDetail->grn_qty ?? 0.00))), 2)}}
+                <strong>Date.</strong>:
+                {{ $mrn->getFormattedDate('document_date') }}
             </span>
         </td>
     </tr>
-    @if($gateEntry)
-        <tr>
-            <td class="poprod-decpt">
-                <span class="mw-100" style="padding: 0%;">
-                    <strong style="font-size:11px; color : #6a6a6a;">Gate Entry</strong>
-                </span>
-                <span class="badge rounded-pill badge-light-primary">
-                    {{$gateEntry->book_code}}-{{$gateEntry->document_number}}
-                </span>
-                <span class="badge rounded-pill badge-light-primary">
-                    <strong>Date</strong>:
-                    {{ $gateEntry?->getFormattedDate('document_date') }}
-                </span>
-                <span class="badge rounded-pill badge-light-primary">
-                    <strong>Qty.</strong>: {{number_format($poDetail->ge_qty, 2)}}
-                </span>
-            </td>
-        </tr>
-    @endif
 @endif
-@if($poDetail && $poDetail->so)
+@if($poItem)
+    <tr>
+        <td class="poprod-decpt">
+            <span class="mw-100" style="padding: 0%;">
+                <strong style="font-size:11px; color : #6a6a6a;">
+                    Purchase Order
+                </strong>
+            </span>
+            <span class="badge rounded-pill badge-light-primary">
+                {{$poItem?->po?->book_code}}-{{$poItem?->po?->document_number}}
+            </span>
+            <span class="badge rounded-pill badge-light-primary">
+                <strong>PO Date.</strong>:
+                {{ $poItem?->po->getFormattedDate('document_date') }}
+            </span>
+        </td>
+    </tr>
+@endif
+@if($poItem && $poItem->so)
     <tr>
         <td class="poprod-decpt">
             <span class="mw-100" style="padding: 0%;">
                 <strong style="font-size:11px; color : #6a6a6a;">Sales Order </strong>
             </span>
             <span class="badge rounded-pill badge-light-primary">
-                {{$poDetail?->so?->book_code}} - {{$poDetail?->so?->document_number}}
+                {{$poItem?->so?->book_code}} - {{$poItem?->so?->document_number}}
             </span>
             <span class="badge rounded-pill badge-light-primary">
-                <strong>Date</strong>: {{ $poDetail?->so?->getFormattedDate('document_date') }}
+                <strong>Date</strong>: {{ $poItem?->so?->getFormattedDate('document_date') }}
             </span>
         </td>
     </tr>
 @endif
-<!-- @if(isset($storagePoints['data']) && !empty($storagePoints['data']))
-    <tr>
-        <td class="poprod-decpt">
-            <span class="mw-100" style="padding: 0%;">
-                <strong style="font-size:11px; color : #6a6a6a;">Storage Points</strong>
-            </span>
-        </td>
-    </tr>
-    @foreach($storagePoints['data'] as $index => $value)
-        <tr>
-            <td class="poprod-decpt">
-                <span class="badge rounded-pill badge-light-primary">
-                    <strong>
-                        Name
-                    </strong>: {{ucFirst($value->name)}}
-                </span>
-                <span class="badge rounded-pill badge-light-primary">
-                    <strong>
-                        Available Weight
-                    </strong>: {{(($value->max_weight ?? 0.00) - ($value->current_weight ?? 0.00))}}
-                </span>
-                <span class="badge rounded-pill badge-light-primary">
-                    <strong>
-                        Available Volume
-                    </strong>: {{(($value->max_volume ?? 0.00) - ($value->current_volume ?? 0.00))}}
-                </span>
-            </td>
-        </tr>
-    @endforeach
-@endif -->
 @if(isset($remark) && $remark)
     <tr>
         <td class="poprod-decpt">
-            <span class="badge rounded-pill badge-light-secondary text-wrap"><strong>Remarks</strong>:{{@$remark ?? ''}}</span>
+            <span class="badge rounded-pill badge-light-secondary text-wrap">
+                <strong>Remarks</strong>:{{@$remark ?? ''}}
+            </span>
         </td>
     </tr>
 @endif

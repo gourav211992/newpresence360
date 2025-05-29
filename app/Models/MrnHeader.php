@@ -73,6 +73,7 @@ class MrnHeader extends Model
         'expense_amount',
         'total_amount',
         'is_warehouse_required',
+        'is_inspection_completion',
         'item_remark',
         'final_remarks',
         'status'

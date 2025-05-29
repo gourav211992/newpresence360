@@ -143,22 +143,22 @@ class PurchaseReturnController extends Controller
                 ->editColumn('document_date', function ($row) {
                     return date('d/m/Y', strtotime($row->document_date)) ?? 'N/A';
                 })
-                ->editColumn('location', function ($row) {
+                ->addColumn('location', function ($row) {
                     return strval($row->erpStore?->store_name) ?? 'N/A';
                 })
-                ->editColumn('store', function ($row) {
+                ->addColumn('store', function ($row) {
                     return strval($row->erpSubStore?->name) ?? 'N/A';
                 })
-                ->editColumn('cost_center', function ($row) {
+                ->addColumn('cost_center', function ($row) {
                     return strval($row->costCenters?->name) ?? 'N/A';
                 })
-                ->editColumn('return_type', function ($row) {
+                ->addColumn('return_type', function ($row) {
                     return strval($row->qty_return_type) ?? 'N/A';
                 })
-                ->editColumn('currency', function ($row) {
+                ->addColumn('currency', function ($row) {
                     return strval($row->currency?->short_name) ?? 'N/A';
                 })
-                ->editColumn('revision_number', function ($row) {
+                ->addColumn('revision_number', function ($row) {
                     return strval($row->revision_number);
                 })
                 ->addColumn('vendor_name', function ($row) {
@@ -2305,6 +2305,46 @@ class PurchaseReturnController extends Controller
             $headerHistory = PRHeaderHistory::create($pbHeaderData);
             $headerHistoryId = $headerHistory->id;
 
+            $vendorBillingAddress = $pbHeader->billingAddress ?? null;
+            $vendorShippingAddress = $pbHeader->shippingAddress ?? null;
+
+            if ($vendorBillingAddress) {
+                $billingAddress = $headerHistory->bill_address_details()->firstOrNew([
+                    'type' => 'billing',
+                ]);
+                $billingAddress->fill([
+                    'address' => $vendorBillingAddress->address,
+                    'country_id' => $vendorBillingAddress->country_id,
+                    'state_id' => $vendorBillingAddress->state_id,
+                    'city_id' => $vendorBillingAddress->city_id,
+                    'pincode' => $vendorBillingAddress->pincode,
+                    'phone' => $vendorBillingAddress->phone,
+                    'fax_number' => $vendorBillingAddress->fax_number,
+                ]);
+                $billingAddress->save();
+            }
+
+            if ($vendorShippingAddress) {
+                $shippingAddress = $headerHistory->ship_address_details()->firstOrNew([
+                    'type' => 'shipping',
+                ]);
+                $shippingAddress->fill([
+                    'address' => $vendorShippingAddress->address,
+                    'country_id' => $vendorShippingAddress->country_id,
+                    'state_id' => $vendorShippingAddress->state_id,
+                    'city_id' => $vendorShippingAddress->city_id,
+                    'pincode' => $vendorShippingAddress->pincode,
+                    'phone' => $vendorShippingAddress->phone,
+                    'fax_number' => $vendorShippingAddress->fax_number,
+                ]);
+                $shippingAddress->save();
+            }
+
+            if ($request->hasFile('amend_attachment')) {
+                $mediaFiles = $headerHistory->uploadDocuments($request->file('amend_attachment'), 'pr', false);
+            }
+            $headerHistory->save();
+
             // Detail History
             $pbDetails = PRDetail::where('header_id', $pbHeader->id)->get();
             if (!empty($pbDetails)) {
@@ -2466,14 +2506,16 @@ class PurchaseReturnController extends Controller
                 'stock_ledger.utilized_id as utilized_id',
                 'stock_ledger.book_type as book_type',
                 'stock_ledger.document_number as document_number',
+                'stock_ledger.document_status as stock_ledger_status',
             )
             ->join('stock_ledger', function ($join) {
-                $join->on('stock_ledger.document_header_id', '=', 'erp_mrn_details.mrn_header_id')
+                $join->on('stock_ledger.document_detail_id', '=', 'erp_mrn_details.id')
                     ->where('stock_ledger.book_type', '=', ConstantHelper::MRN_SERVICE_ALIAS)
                     ->whereColumn('stock_ledger.document_detail_id', '=', 'erp_mrn_details.id')
                     ->whereRaw('stock_ledger.receipt_qty > 0')
                     ->whereNull('stock_ledger.utilized_id');
             })
+            ->whereIn('stock_ledger.document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::POSTED])
             ->whereRaw('erp_mrn_details.accepted_qty > erp_mrn_details.pr_qty');
         }
         $mrnItems = $mrnItems->where(function ($query) use ($seriesId, $applicableBookIds, $docNumber, $itemId, $vendorId, $qtyTypeRequired, $storeId) {
@@ -2509,6 +2551,7 @@ class PurchaseReturnController extends Controller
             //     $query->whereRaw('accepted_qty > pr_qty');
             // }
         })->get();
+
 
         $html = view('procurement.purchase-return.partials.mrn-item-list', ['mrnItems' => $mrnItems, 'qtyTypeRequired' => $qtyTypeRequired])->render();
         return response()->json(['data' => ['pis' => $html], 'status' => 200, 'message' => "fetched!"]);

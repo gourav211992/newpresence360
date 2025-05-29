@@ -275,7 +275,7 @@
                                                               <!-- Group Organizations -->
                                                               <div class="row align-items-center mb-1" id="groupOrganizationsDropdown">
                                                                 <div class="col-md-2">
-                                                                    <label class="form-label">Group Organizations<span class="text-danger">*</span></label>
+                                                                    <label class="form-label">Related Organizations<span class="text-danger">*</span></label>
                                                                 </div>
                                                                 <div class="col-md-3">
                                                                     <select class="form-select select2" name="enter_company_org_id" id="enter_company_org_id">
@@ -284,6 +284,23 @@
                                                                             <option value="{{ $organization->id }}" 
                                                                                 {{ $customer->enter_company_org_id == $organization->id ? 'selected' : '' }}>
                                                                                 {{ $organization->name }}
+                                                                            </option>
+                                                                        @endforeach
+                                                                    </select>
+                                                                </div>
+                                                             </div>
+
+                                                             <div class="row align-items-center mb-1" id="reldCustomerDropdown">
+                                                                <div class="col-md-2">
+                                                                    <label class="form-label">Related Customers</label>
+                                                                </div>
+                                                                <div class="col-md-3">
+                                                                    <select class="form-select select2" name="reld_customer_id" id="reld_customer_id">
+                                                                       <option value="">Select</option>
+                                                                        @foreach ($relatedCustomers as $relatedCustomer)
+                                                                            <option value="{{ $relatedCustomer->id }}" 
+                                                                                {{ $customer->reld_customer_id == $relatedCustomer->id ? 'selected' : '' }}>
+                                                                                {{ $relatedCustomer->company_name }}
                                                                             </option>
                                                                         @endforeach
                                                                     </select>
@@ -2077,8 +2094,7 @@
     if ($('#Related').is(':checked')) {
         $('#groupOrganizationsDropdown').show();
     } else {
-        $('#groupOrganizationsDropdown').hide();
-        
+        $('#groupOrganizationsDropdown').hide();  
     }
     $('#Related').change(function() {
         if ($(this).is(':checked')) {

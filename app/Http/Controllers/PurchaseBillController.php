@@ -135,19 +135,19 @@ class PurchaseBillController extends Controller
                 ->editColumn('document_date', function ($row) {
                     return date('d/m/Y', strtotime($row->document_date)) ?? 'N/A';
                 })
-                ->editColumn('location', function ($row) {
+                ->addColumn('location', function ($row) {
                     return strval($row->erpStore?->store_name) ?? 'N/A';
                 })
-                ->editColumn('cost_center', function ($row) {
+                ->addColumn('cost_center', function ($row) {
                     return strval($row->costCenters?->name) ?? 'N/A';
                 })
-                ->editColumn('revision_number', function ($row) {
+                ->addColumn('revision_number', function ($row) {
                     return strval($row->revision_number);
                 })
                 ->addColumn('vendor_name', function ($row) {
                     return $row->vendor ? $row->vendor?->company_name : 'N/A';
                 })
-                ->editColumn('currency', function ($row) {
+                ->addColumn('currency', function ($row) {
                     return strval($row->currency?->short_name) ?? 'N/A';
                 })
                 ->addColumn('total_items', function ($row) {
@@ -1070,7 +1070,7 @@ class PurchaseBillController extends Controller
                     $headerDiscount = 0;
                     $headerDiscount = ($pbItem['taxable_amount'] / $totalValueAfterDiscount) * $totalHeaderDiscount;
                     $valueAfterHeaderDiscount = $pbItem['taxable_amount'] - $headerDiscount; // after both discount
-                    $poItem['header_discount_amount'] = $headerDiscount;
+                    $pbItem['header_discount_amount'] = $headerDiscount;
                     $itemTotalHeaderDiscount += $headerDiscount;
                     if ($isTax) {
                         //Tax
@@ -2181,6 +2181,46 @@ class PurchaseBillController extends Controller
             $pbHeaderData['header_id'] = $pbHeader->id;
             $headerHistory = PbHeaderHistory::create($pbHeaderData);
             $headerHistoryId = $headerHistory->id;
+
+            $vendorBillingAddress = $pbHeader->billingAddress ?? null;
+            $vendorShippingAddress = $pbHeader->shippingAddress ?? null;
+
+            if ($vendorBillingAddress) {
+                $billingAddress = $headerHistory->bill_address_details()->firstOrNew([
+                    'type' => 'billing',
+                ]);
+                $billingAddress->fill([
+                    'address' => $vendorBillingAddress->address,
+                    'country_id' => $vendorBillingAddress->country_id,
+                    'state_id' => $vendorBillingAddress->state_id,
+                    'city_id' => $vendorBillingAddress->city_id,
+                    'pincode' => $vendorBillingAddress->pincode,
+                    'phone' => $vendorBillingAddress->phone,
+                    'fax_number' => $vendorBillingAddress->fax_number,
+                ]);
+                $billingAddress->save();
+            }
+
+            if ($vendorShippingAddress) {
+                $shippingAddress = $headerHistory->ship_address_details()->firstOrNew([
+                    'type' => 'shipping',
+                ]);
+                $shippingAddress->fill([
+                    'address' => $vendorShippingAddress->address,
+                    'country_id' => $vendorShippingAddress->country_id,
+                    'state_id' => $vendorShippingAddress->state_id,
+                    'city_id' => $vendorShippingAddress->city_id,
+                    'pincode' => $vendorShippingAddress->pincode,
+                    'phone' => $vendorShippingAddress->phone,
+                    'fax_number' => $vendorShippingAddress->fax_number,
+                ]);
+                $shippingAddress->save();
+            }
+
+            if ($request->hasFile('amend_attachment')) {
+                $mediaFiles = $headerHistory->uploadDocuments($request->file('amend_attachment'), 'pb', false);
+            }
+            $headerHistory->save();
 
             // Detail History
             $pbDetails = PbDetail::where('header_id', $pbHeader->id)->get();

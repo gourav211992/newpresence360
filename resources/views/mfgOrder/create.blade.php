@@ -183,7 +183,7 @@
                                         <input type = "hidden" id = "customer_id_qt_val"></input>
                                     </div>
                                 </div>
-                                <div class="col">
+                                {{-- <div class="col">
                                     <div class="mb-1">
                                         <label class="form-label">Location</label>
                                         <select class="form-select" id="filter_store_id" name="filter_store_id">
@@ -193,7 +193,7 @@
                                             @endforeach 
                                         </select> 
                                     </div>
-                                </div>
+                                </div> --}}
                                 <div class="col mb-1">
                                     <label class="form-label">&nbsp;</label><br/>
                                     {{-- <button type="button" class="btn btn-primary btn-sm searchPiBtn"><i data-feather="search"></i> Search</button> --}}
@@ -711,7 +711,8 @@ function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1,
 function getPwo() 
 {
     let itemId = $("#item_id").val() || '';
-    let storeId = $("#filter_store_id").val() || '';
+    // let storeId = $("#filter_store_id").val() || '';
+    let storeId = $("#store_id").val() || '';
     let header_book_id = $("#book_id").val() || '';
     let stationId = $("#station_id").val() || '';
     let series_id = $("#pwo_book_id_qt_val").val() || ''; // pwo
@@ -781,7 +782,7 @@ function locationOnChange(storeId = '') {
                     data.data.forEach(element => {
                         subStore += `<option value="${element.id}" data-station-wise-consumption="${element.station_wise_consumption}">${element.name}</option>`;
                     });
-                    $("#sub_store_id").empty().append(subStore);
+                    $("#sub_store_id").prop('disabled', false).empty().append(subStore);
                     const stationWise = getStationWiseConsBySubStoreId();
                     if(stationWise.includes('yes')) {
                         $("#station_column").removeClass('d-none');
@@ -790,6 +791,7 @@ function locationOnChange(storeId = '') {
                     }
                     // $("#sub_store_div").removeClass('d-none');
                 } else {
+                    $("#sub_store_id").prop('disabled', true).empty().append(`<option value="">No Sub Store</option>`);
                     // $("#sub_store_div").addClass('d-none');
                 }
                 // $("#sub_store_id").empty().append(data.data.html);

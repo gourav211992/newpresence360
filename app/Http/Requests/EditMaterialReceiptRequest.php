@@ -11,6 +11,7 @@ use App\Models\PoItem;
 use App\Models\MrnDetail;
 use App\Models\NumberPattern;
 use App\Models\ItemAttribute;
+use Illuminate\Validation\Rule;
 
 class EditMaterialReceiptRequest extends FormRequest
 {
@@ -31,6 +32,7 @@ class EditMaterialReceiptRequest extends FormRequest
     public function rules(): array
     {
         // $bomId = $this->route('id');
+        $mrnId = $this->route('id');
         $rules = [
             'book_id' => 'required',
             'document_number' => 'nullable|max:50', // Default rule for document_number
@@ -39,11 +41,33 @@ class EditMaterialReceiptRequest extends FormRequest
             'vendor_id' => 'nullable',
             'currency_id' => 'nullable',
             'payment_term_id' => 'nullable',
-            'gate_entry_no' => 'nullable|max:50',
+            'gate_entry_no' => [
+                'nullable',
+                'max:50',
+                Rule::unique('erp_mrn_headers')
+                    ->where(function ($query) {
+                        return $query
+                            ->where('group_id', $this->group_id)
+                            ->where('organization_id', $this->organization_id)
+                            ->whereNull('deleted_at');
+                    })
+                    ->ignore($mrnId), // ignore when updating
+            ],
             'gate_entry_date' => 'nullable|date',
             'eway_bill_no' => 'nullable|max:50',
             'consignment_no' => 'nullable|max:50',
-            'supplier_invoice_no' => 'nullable|max:50',
+            'supplier_invoice_no' => [
+                'nullable',
+                'max:50',
+                Rule::unique('erp_mrn_headers')
+                    ->where(function ($query) {
+                        return $query
+                            ->where('group_id', $this->group_id)
+                            ->where('organization_id', $this->organization_id)
+                            ->whereNull('deleted_at');
+                    })
+                    ->ignore($mrnId), // ignore when updating
+            ],
             'supplier_invoice_date' => 'nullable|date',
             'transporter_name' => 'nullable|max:50',
             'remarks' => 'nullable|max:500',
@@ -70,7 +94,6 @@ class EditMaterialReceiptRequest extends FormRequest
         $rules['components.*.attr_group_id.*.attr_name'] = 'required';
         $rules['component_item_name.*'] = 'required';
         $rules['components.*.order_qty'] = 'required|numeric|min:0.01';
-        $rules['components.*.accepted_qty'] = 'required|numeric|min:0.01';
         if ($this->input('components.*.is_inspection') === 0) {
             $rules['components.*.accepted_qty'] = 'required|numeric|min:0.01';
         }

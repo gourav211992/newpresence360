@@ -3398,6 +3398,10 @@ color: #fff; }
   100% { transform: rotate(360deg); }
 }
 
+.disable_pointer {
+  cursor: not-allowed;
+}
+
 /* Make css class for disabled input*/
 .disabled-input {background-color: #f0f0f0;color: #999;pointer-events: none;cursor: not-allowed;}
 table.DTCR_clonedTable.dataTable{position:absolute !important;background-color:rgba(255, 255, 255, 0.7);z-index:202}div.DTCR_pointer{width:1px;background-color:#0259c4;z-index:201}

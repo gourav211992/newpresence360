@@ -271,6 +271,7 @@ $(document).on('click', '.addNewItemBtn', (e) => {
 
 $(document).on('change', '.parent-dropdown', function() {
     let selectedId = $(this).val();
+    let $row = $(this).closest('tr');
     console.log('selectedId', selectedId);
     
     if (selectedId) {
@@ -282,15 +283,20 @@ $(document).on('change', '.parent-dropdown', function() {
                     let options = response.data;
                     // 🚀 Auto-select first option if available and trigger change
                     if (response.data.length > 0) {
-                        $('.parent-hierarchy').html(response.data);
+                        // $('.parent-hierarchy').html(response.data);
+                        $row.find('.parent-hierarchy').html(response.data);
+                        // Its changing all the parent hierarchy
+                        
                     } else{
-                        $('.parent-hierarchy').empty();
+                        // $('.parent-hierarchy').empty();
+                        $row.find('.parent-hierarchy').empty();
                     }
                 }
             }
         });
     } else{
-        $('.parent-hierarchy').empty();
+        // $('.parent-hierarchy').empty();
+        $row.find('.parent-hierarchy').empty();
     }
 });
 

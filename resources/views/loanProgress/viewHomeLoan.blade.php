@@ -5733,7 +5733,7 @@
                                     <p class="font-small-3 mb-1">30% (Evaluates borrower’s income, loan type requirements, and personal criteria)</p>
 
                                     <div class="table-responsive">
-                                        <table class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border">
+                                        <table class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border" id="checkTable">
                                             <thead>
                                             <tr>
                                                 <th class="20px">
@@ -5780,17 +5780,33 @@
                                                     // If no credit scoring exists, all checkboxes are unchecked by default
                                                     $isChecked = isset($credit_scoring) ? in_array($param['parameter'], array_column($basicEligibility, 'parameter')) : false;
                                                     $marks = (int)filter_var($param['marks'], FILTER_SANITIZE_NUMBER_INT); // Extract marks as integer
+                                                    $isNoMarks = trim($param['marks']) === '-';
+                                                    $radioClass = in_array($param['parameter'], ['Below 30%', '30-50%', 'Above 50%']) ? 'radio1' : '';
                                                 @endphp
-                                                <tr>
+                                                <tr class="{{ $radioClass }}">
                                                     <td>
+                                                        @unless($isNoMarks)
                                                         <div class="form-check form-check-inline me-0">
                                                             <input class="form-check-input eligibility-checkbox" type="checkbox" name="basic_eligibility[]" value="{{ json_encode($param) }}" data-marks="{{ $marks }}" {{ $isChecked ? 'checked' : '' }}>
                                                         </div>
+                                                        @endunless
                                                     </td>
-                                                    <td>{{ $param['parameter'] }}</td>
-                                                    <td class="weightage">{{ $isChecked ? $marks . '%' : '-' }}</td>
-                                                    <td>{{ $param['sub_criteria'] }}</td>
-                                                    <td>{{ $param['marks'] }}</td>
+                                                    @foreach(['parameter', 'sub_criteria', 'marks'] as $field)
+                                                        <td>
+                                                            @if($isNoMarks)
+                                                                <strong>{{ $param[$field] }}</strong>
+                                                            @else
+                                                                {{ $param[$field] }}
+                                                            @endif
+                                                        </td>
+                                                    @endforeach
+                                                    <td class="weightage">
+                                                        @if($isNoMarks)
+                                                            <strong>{{ $isChecked ? $marks . '%' : '-' }}</strong>
+                                                        @else
+                                                            {{ $isChecked ? $marks . '%' : '-' }}
+                                                        @endif
+                                                    </td>
                                                 </tr>
                                             @endforeach
                                             <tr>
@@ -5911,12 +5927,52 @@
         var getvoucherUrl = "{{ url('/get_voucher_no') }}".trim();
     </script>
     <script>
+            function showToast(icon, title) {
+                Swal.fire({
+                    title: 'Alert!',
+                    text: title,
+                    icon: icon
+                });
+            }
             document.addEventListener('DOMContentLoaded', function() {
             const checkboxes = document.querySelectorAll('.eligibility-checkbox');
             const totalMarksSpan = document.getElementById('totalMarks');
             const totalWeightageSpan = document.getElementById('totalWeightage');
+            const table = document.getElementById('checkTable');
 
-            function updateTotals() {
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const row = checkbox.closest('tr');
+
+                    if (row && row.classList.contains('radio1') && checkbox.checked) {
+                        const groupCheckboxes = table.querySelectorAll('tr.radio1 .form-check-input');
+                        console.log(groupCheckboxes,'check')
+
+                        groupCheckboxes.forEach(cb => {
+                            if (cb !== checkbox && cb.checked) {
+                                // Uncheck the previous checkbox
+                                cb.checked = false;
+
+                                // Reset weightage in the previous row
+                                const otherRow = cb.closest('tr');
+                                if (otherRow) {
+                                    const weightageCell = otherRow.querySelector('.weightage');
+                                    if (weightageCell) {
+                                        weightageCell.textContent = '-';
+                                    }
+                                }
+
+                                // Show toast
+                                showToast('error', 'Only one ratio should be selected in this group.');
+                            }
+                        });
+                    }
+
+                    updateTotals();
+                });
+            });
+
+             function updateTotals() {
                 let totalMarks = 0;
                 let totalWeightage = 0;
 
@@ -5932,20 +5988,18 @@
                 totalWeightageSpan.textContent = totalWeightage;
 
                 // Update weightage percentage in the table
-                document.querySelectorAll('.eligibility-checkbox').forEach((checkbox, index) => {
+                checkboxes.forEach(checkbox => {
                     const weightageCell = checkbox.closest('tr').querySelector('.weightage');
-                    if (checkbox.checked) {
-                        const marks = parseInt(checkbox.getAttribute('data-marks'));
-                        weightageCell.textContent = marks + '%';
-                    } else {
-                        weightageCell.textContent = '-';
+                    if (weightageCell) {
+                        if (checkbox.checked) {
+                            const marks = parseInt(checkbox.getAttribute('data-marks'));
+                            weightageCell.textContent = marks + '%';
+                        } else {
+                            weightageCell.textContent = '-';
+                        }
                     }
                 });
             }
-
-            checkboxes.forEach(checkbox => {
-                checkbox.addEventListener('change', updateTotals);
-            });
 
             // Initialize totals on page load
             updateTotals();

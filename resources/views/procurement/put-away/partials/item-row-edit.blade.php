@@ -3,12 +3,10 @@
       $rowCount = $key + 1;
    @endphp
    <tr id="row_{{$rowCount}}" data-index="{{$rowCount}}" @if($rowCount < 2 ) class="trselected" @endif>
-      <input type="hidden" name="components[{{$rowCount}}][mrn_header_id]" value="{{$item->mrn_header_id}}">
-      <input type="hidden" name="components[{{$rowCount}}][mrn_detail_id]" value="{{$item->id}}">
-      <input type="hidden" name="components[{{$rowCount}}][gate_entry_header_id]" value="{{$item->mrnHeader?->gate_entry_header_id}}">
-      <input type="hidden" name="components[{{$rowCount}}][gate_entry_detail_id]" value="{{@$item->gate_entry_detail_id}}">
-      <input type="hidden" name="components[{{$rowCount}}][po_detail_id]" value="{{@$item->purchase_order_item_id}}">
-      <input type="hidden" name="components[{{$rowCount}}][purchase_order_id]" value="{{$item->mrnHeader?->purchase_order_id}}">
+      <input type="hidden" name="components[{{$rowCount}}][mrn_header_id]" value="{{$item->header->mrn_header_id}}">
+      <input type="hidden" name="components[{{$rowCount}}][mrn_detail_id]" value="{{$item->mrn_detail_id}}">
+      <input type="hidden" name="components[{{$rowCount}}][inspection_item_id]" value="{{$item->id}}">
+      <input type="hidden" name="components[{{$rowCount}}][inspection_header_id]" value="{{$item->id}}">
       <td class="customernewsection-form">
          <div class="form-check form-check-primary custom-checkbox">
             <input type="checkbox" class="form-check-input" id="Email_{{$rowCount}}" data-id="{{$item->id}}" value="{{$rowCount}}">
@@ -26,7 +24,7 @@
             $selectedAttr = $item->attributes ? $item->attributes()->whereNotNull('attr_value')->pluck('attr_value')->all() : [];
          @endphp
          @foreach($item->attributes as $attributeHidden)
-            <input type="hidden" name="components[{{$rowCount}}][attr_group_id][{{$attributeHidden->attribute_name}}][attr_id]" value="{{$attributeHidden->id}}">
+            <input type="hidden" name="components[{{$rowCount}}][attr_group_id][{{$attributeHidden->attr_name}}][attr_id]" value="{{$attributeHidden->id}}">
          @endforeach
          @if(isset($item->item->itemAttributes) && ($item->item->itemAttributes))
          @foreach($item->item->itemAttributes as $itemAttribute)
@@ -54,10 +52,13 @@
          </select>
       </td>
       <td>
-         <input type="number" class="form-control mw-100 text-end order_qty" name="components[{{$rowCount}}][order_qty]" value="{{$item->order_qty}}" step="any" @readonly(true)/>
+         <input type="number" class="form-control mw-100 mrn_qty text-end checkNegativeVal" name="components[{{$rowCount}}][mrn_qty]" value="{{$item?->mrnDetail?->order_qty}}" readonly step="any"/>
       </td>
       <td>
-         <input type="number" class="form-control mw-100 text-end accepted_qty checkNegativeVal" name="components[{{$rowCount}}][accepted_qty]" value="{{$item->accepted_qty}}" step="any" @readonly(true) />
+         <input type="number" class="form-control mw-100 text-end order_qty" name="components[{{$rowCount}}][order_qty]" value="{{$item->order_qty}}" step="any" />
+      </td>
+      <td>
+         <input type="number" class="form-control mw-100 text-end accepted_qty checkNegativeVal" name="components[{{$rowCount}}][accepted_qty]" value="{{$item->accepted_qty}}" step="any" />
       </td>
       <td>
          <input type="number" class="form-control mw-100 text-end rejected_qty" readonly name="components[{{$rowCount}}][rejected_qty]" value="{{$item->rejected_qty}}" step="any" @readonly(true)/>
@@ -78,7 +79,7 @@
             <input type="hidden" name="components[{{$rowCount}}][discount_amount_header]" value="{{$item->header_discount_amount}}"/>
             <input type="hidden" name="components[{{$rowCount}}][exp_amount_header]" value="{{$item->header_exp_amount}}" />
             <div class="ms-50">
-               <button type="button" data-row-count="{{$rowCount}}" class="btn p-25 btn-sm btn-outline-secondary addDiscountBtn" style="font-size: 10px">Add</button>
+               <button type="button" data-row-count="{{$rowCount}}" class="btn p-25 btn-sm btn-outline-secondary addDiscountBtn" style="font-size: 10px">Discount</button>
             </div>
          </div>
       </td>
@@ -96,34 +97,6 @@
       </td>
       <td>
          <div class="d-flex">
-            <input type="hidden" id="components_storage_points_{{ $rowCount }}" name="components[{{$rowCount}}][storage_points]" value=""/>
-            <input type="hidden" id="components_storage_points_{{ $rowCount }}" name="components[{{$rowCount}}][storage_points_data]" value=""/>
-            <div class="me-50 cursor-pointer addStoragePointBtn" data-bs-toggle="modal" data-row-count="{{$rowCount}}" data-bs-target="#storage-point-modal">
-               <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary"
-                data-bs-original-title="Storage Point" aria-label="Storage Point">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                class="feather feather-map-pin">
-               <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></span>
-            </div>
-            <!-- <input type="hidden" id="components_stores_data_{{ $rowCount }}" name="components[{{$rowCount}}][store_data]" value=""/>
-            @foreach($item->mrnItemLocations()->get() as $over_key => $overhead)
-               <input type="hidden" name="components[{{$rowCount}}][erp_store][{{$over_key+1}}][id]" value="{{$overhead->id}}">
-               <input type="hidden" name="components[{{$rowCount}}][erp_store][{{$over_key+1}}][erp_store_id]" value="{{@$overhead->store_id}}">
-               <input type="hidden" name="components[{{$rowCount}}][erp_store][{{$over_key+1}}][erp_rack_id]" value="{{@$overhead->rack_id}}">
-               <input type="hidden" name="components[{{$rowCount}}][erp_store][{{$over_key+1}}][erp_shelf_id]" value="{{@$overhead->shelf_id}}">
-               <input type="hidden" name="components[{{$rowCount}}][erp_store][{{$over_key+1}}][erp_bin_id]" value="{{@$overhead->bin_id}}">
-               <input type="hidden" name="components[{{$rowCount}}][erp_store][{{$over_key+1}}][store_qty]" value="{{@$overhead->quantity}}">
-            @endforeach
-            <div class="me-50 cursor-pointer addDeliveryScheduleBtn" data-bs-toggle="modal" data-row-count="{{$rowCount}}" data-bs-target="#store-modal">
-               <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary"
-                  data-bs-original-title="Store Location" aria-label="Store Location">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                  class="feather feather-map-pin">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-               </span>
-            </div> -->
             <div class="me-50 cursor-pointer addRemarkBtn" data-row-count="{{$rowCount}}" {{-- data-bs-toggle="modal" data-bs-target="#Remarks" --}}>
                <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary" data-bs-original-title="Remarks" aria-label="Remarks">
                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text">

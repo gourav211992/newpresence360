@@ -204,7 +204,7 @@
             }
         },
         { data: 'reference_number', name: 'reference_number', render: renderData},
-        { data: 'customer_name', name: 'vendor_name', render: renderData },
+        { data: 'customer_name', name: 'customer_name', render: renderData },
         { data: 'items_count', name: 'items_count', render: renderData },
         { data: 'curr_name', name: 'curr_name', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('no-wrap');

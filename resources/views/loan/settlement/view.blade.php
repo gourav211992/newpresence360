@@ -472,7 +472,7 @@
                                                                                 class="form-control mw-100 past-date"></td>
                                                                         <td><input type="text"
                                                                                 required name="Settlement[schedule_amnt][]"
-                                                                                value="{{ $val->schedule_amnt ?? '' }}"
+                                                                                value="{{ \App\Helpers\Helper::formatIndianNumber(\App\Helpers\Helper::removeCommas($val->schedule_amnt)) ?? '' }}"
                                                                                 class="form-control mw-100"></td>
 
                                                                     </tr>

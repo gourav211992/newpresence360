@@ -191,13 +191,13 @@
             }
         },
         { data: 'reference_number', name: 'reference_number', render: renderData},
-        { data: 'customer_name', name: 'vendor_name', render: renderData },
+        { data: 'customer_name', name: 'customer_name', render: renderData },
         { data: 'items_count', name: 'items_count', render: renderData },
         { data: 'curr_name', name: 'curr_name', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('no-wrap');
             } 
         },
-        { data: 'total_item_value', name: 'total_item_value', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+        { data: 'total_return_value', name: 'total_return_value', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('text-end');
             }
          },
