@@ -34,8 +34,8 @@ class CashflowReportController extends Controller
             $startDate = date('Y-m-d', strtotime($dates[0]));
             $endDate = date('Y-m-d', strtotime($dates[1]));
         }
-        if ($request->organization)
-            $organization_id = $request->organization;
+        if ($request->organization_id)
+            $organization_id = $request->organization_id;
         else
             $organization_id = Helper::getAuthenticatedUser()->organization_id;
         $cost_center_id = $request->cost_center_id;
