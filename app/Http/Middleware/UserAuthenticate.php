@@ -8,7 +8,7 @@ use App\Models\User;
 use App\Models\AuthUser;
 use App\Models\Employee;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminatse\Support\Facades\DB;
 use PeterPetrus\Auth\PassportToken;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;

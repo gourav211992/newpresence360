@@ -548,7 +548,7 @@
         let baseUrl = currentHref.split('?')[0]; // remove old query params if any
 
         // Append new query parameters
-        let updatedUrl = `${baseUrl}`;
+        let updatedUrl = `${baseUrl}?date=${encodeURIComponent($('#fp-range').val())}`;
         $(this).attr('href', updatedUrl);
 
     });
@@ -691,7 +691,7 @@
         let baseUrl = currentHref.split('?')[0]; // remove old query params if any
 
         // Append new query parameters
-        let updatedUrl = `${baseUrl}`;
+        let updatedUrl = `${baseUrl}?date=${encodeURIComponent($('#fp-range').val())}`;
         $(this).attr('href', updatedUrl);
 
     });
