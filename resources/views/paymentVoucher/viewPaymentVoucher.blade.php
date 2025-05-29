@@ -1,6 +1,7 @@
 @php
     $type = $data->document_type ==='receipts'?'debit':'credit';
 @endphp
+@php use App\Helpers\ConstantHelper; @endphp
 @extends('layouts.app')
 
 @section('styles')
@@ -796,7 +797,7 @@
                                 <select class="form-select select2" id="book_code">
                                     <option value="">Select Type</option>
                                     @foreach ($books_t->unique('alias') as $book)
-                                        <option>{{ $book->alias }}</option>
+                                        <option>{{ $book->name }}</option>
                                     @endforeach
                                 </select>
                                 </div>
@@ -1452,6 +1453,39 @@ $('#revisionNumber').prop('disabled', false);
                     },
                     minLength: 0,
                     select: function(event, ui) {
+                        const documentType = $("#document_type").val();
+                        const isReceipts = (documentType === '{{ ConstantHelper::RECEIPTS_SERVICE_ALIAS }}');
+
+                        let relation = null;
+                        let relationLabel = '';
+
+                        if (isReceipts) {
+                            relation = ui.item.customer;
+                            relationLabel = 'Customer';
+                        } else {
+                            relation = ui.item.vendor;
+                            relationLabel = 'Vendor';
+                        }
+
+                        // Check if relation exists
+                        if (!relation) {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: `${relationLabel} Missing`,
+                                text: `${relationLabel} does not exist for this ledger.`
+                            });
+                            return false; // Block selection
+                        }
+
+                        // Check credit_days
+                        if (!relation.credit_days || relation.credit_days == 0) {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: `${relationLabel} Credit Days Missing`,
+                                text: `This ${relationLabel.toLowerCase()} does not have credit days set.`
+                            });
+                            return false; // Block selection
+                        }
                         $(this).val(ui.item.code);
 
                         const id = $(this).attr("data-id");

@@ -129,12 +129,21 @@ class PaymentVoucherController extends Controller
         $ledger_account = $r->type == ConstantHelper::RECEIPTS_SERVICE_ALIAS ? ConstantHelper::RECEIVABLE : ConstantHelper::PAYABLE;
         $ledger_group = Helper::getGroupsQuery()->where('name', $ledger_account)->first();
 
-
         $ids = [];
         $group_id = $ledger_group->getAllChildIds();
         $group_id[] = $ledger_group->id;
+        // dd($group_id);
 
-        $data = Ledger::withDefaultGroupCompanyOrg()
+       // Determine relation and alias
+        $relation = $r->type == ConstantHelper::RECEIPTS_SERVICE_ALIAS ? 'customer' : 'vendor';
+        
+        $data = Ledger::withDefaultGroupCompanyOrg()->with($relation)
+        // ->whereHas($relation, function ($query) use ($group_id) {
+        //     $query->whereNotNull('credit_days')
+        //         ->where('credit_days', '!=', 0)
+        //         ->where('credit_days', '!=', '')
+        //         ->whereIn('ledger_group_id', $group_id);
+        // })
         ->where(function ($query) use ($group_id) {
             $query->where(function ($q) use ($group_id) {
                 foreach ($group_id as $id) {
@@ -150,7 +159,6 @@ class PaymentVoucherController extends Controller
 
 
 
-
         if ($r->keyword) {
             $data = $data->where('code', 'LIKE', "%{$r->keyword}%");
         }
@@ -162,15 +170,17 @@ class PaymentVoucherController extends Controller
         if ($r->ids) {
             $ids = array_map('intval', $r->ids);
         }
+        // dd($data->get());
         $data = $data->get()
             ->reject(fn($customer) => in_array($customer->id, $ids))
             ->map(fn($customer) => [
                 'value' => $customer->id,
                 'label' => $customer->name,
-                'code' => $customer->code
+                'code' => $customer->code,
+                'customer' => $customer->customer,
+                'vendor' => $customer->vendor,
             ])
             ->toArray();
-
 
 
         return response()->json($data);
