@@ -12,8 +12,8 @@
                             <h2 class="content-header-title float-start mb-0">Depreciation</h2>
                             <div class="breadcrumb-wrapper">
                                 <ol class="breadcrumb">
-                                    <li class="breadcrumb-item"><a href="file:///C|/Users/NGARG/AppData/Local/Temp/Adobe/Dreamweaver 2021/index.html">Home</a></li> 
-                                    <li class="breadcrumb-item active"><a href="file:///C|/Users/NGARG/AppData/Local/Temp/Adobe/Dreamweaver 2021/index.html">Fixed Assets</a></li> 
+                                    <li class="breadcrumb-item"><a href="{{route('/')}}">Home</a></li> 
+                                    <li class="breadcrumb-item active"><a href="{{route('finance.fixed-asset.registration.index')}}">Fixed Assets</a></li> 
                                 </ol>
                             </div>
                         </div>
@@ -373,6 +373,21 @@
     
     @section('scripts')
         <script>
+            function isDateInRange(dateToCheck, startDate, endDate) {
+    // Convert all dates to Date objects
+    var check = new Date(dateToCheck);
+    var start = new Date(startDate);
+    var end = new Date(endDate);
+
+    // Normalize time (optional, ensures dates are compared by day only)
+    check.setHours(0,0,0,0);
+    start.setHours(0,0,0,0);
+    end.setHours(0,0,0,0);
+
+    // Check if date is in range
+    return check >= start && check <= end;
+}
+
     $('#period').on('change', function () {
         let selectedRange = $(this).val(); // "01-04-2025 to 31-03-2026"
 
@@ -480,6 +495,7 @@ document.getElementById("process_btn").addEventListener("click", function () {
                    
 
             data.forEach((asset, index) => {
+                let expire = false;
                 asset.sub_asset.forEach((sub_asset, index) => {
                 let to_date = $('#to_date_param').val(); // e.g., "30-04-2025"
                 let inputDate = asset.last_dep_date;   // e.g., "2025-04-25"
@@ -519,10 +535,11 @@ document.getElementById("process_btn").addEventListener("click", function () {
                         let m = (toDateObj.getMonth() + 1).toString().padStart(2, '0');
                         let y = toDateObj.getFullYear();
                         to_date = `${d}-${m}-${y}`;
+                        expire = true;
 
                         // Optional debug log
                         // console.log("Adjusted To Date:", to_date);
-                    }
+                }
                 // Calculate difference in milliseconds
                 let diffTime = toDateObj - fromDateObj;
                 
@@ -542,14 +559,26 @@ document.getElementById("process_btn").addEventListener("click", function () {
                             value = sub_asset.current_value;
                             //console.log("selected_method SLM");
                         } else {
+                            let isCurrent = isDateInRange(asset.capitalize_date,"{{$financialStartDate}}","{{$financialEndDate}}");
+                            if(isCurrent)
+                                value = sub_asset.current_value;
+                            else
                             value = sub_asset.current_value_after_dep;
-                            //console.log("selected_method WDV");
-                       
+                        
                         } 
                     //console.log("DepRate:"+asset.depreciation_percentage_year);
                     //console.log("DiffDays:"+diffDays);
                     let totalDepreciation = ((parseFloat(asset.depreciation_percentage_year/100)*parseFloat(value)) * diffDays / 365).toFixed(4);
                     let after_dep_value = sub_asset.current_value_after_dep - totalDepreciation;
+                    
+                    if(expire && (sub_asset.salvage_value<after_dep_value) && (depType === "WDV"))
+                    {
+                        let diff = after_dep_value - sub_asset.salvage_value;
+                        totalDepreciation = totalDepreciation + diff;  
+                        after_dep_value = after_dep_value - diff;
+                    }
+                    
+                    
                     let posted_days = 0;
                     
                     if(asset.dep_type!=null && asset.dep_type!="{{$dep_type}}"){
@@ -803,6 +832,8 @@ document.getElementById("process_btn").addEventListener("click", function () {
         $('#cost_center').empty();
     }
 });
+
+
 
 $('#location').trigger('change');
 

@@ -292,7 +292,7 @@
                                                             <label class="form-label">Asset Code <span
                                                                     class="text-danger">*</span></label>
                                                             <input type="text" class="form-control" name="asset_code"
-                                                                id="asset_code" value="{{ $data->asset_code }}" readonly
+                                                                id="asset_code" value="{{ $data->asset_code }}" readonly  oninput="this.value = this.value.toUpperCase();"
                                                                 required />
                                                         </div>
                                                     </div>
@@ -490,7 +490,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label w-100">Tax <span
                                                                     class="text-danger">*</span>
-                                                                <a href="#taxdetail" class="float-end"
+                                                                <a href="#taxdetail" id="infoBtn" class="float-end"
                                                                     data-bs-toggle="modal">
                                                                     <i data-feather="info"></i>
                                                                 </a>
@@ -1117,7 +1117,7 @@
                                     <th>Tax Value</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="extraAmountsTable">
                                 <tr>
                                     <td>1</td>
                                     <td>IGST</td>
@@ -1418,6 +1418,7 @@
             }
         });
     });
+    $('#infoBtn').hide();
 document.addEventListener('DOMContentLoaded', function () {
     const processButton = document.querySelector('#submit_grns');
     const radioButtons = document.querySelectorAll('input[name="grn_id"]');
@@ -1449,11 +1450,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 $('#supplier_invoice_no').val(parsedGrnData?.header?.supplier_invoice_no || '');
                 $('#quantity').val(parsedGrnData?.accepted_qty || 0); // Log the parsed data
                 $('#vendor').val(parsedGrnData?.header?.vendor?.id || '').select2();
-                $('#currency').val(parsedGrnData?.header?.vendor?.currency_id || '').select2();
+                $('#currency').val(parsedGrnData?.header?.vendor?.currency_id || '');
                 $('#vendor_id').val(parsedGrnData?.header?.vendor?.id || '');
                 $('#currency_id').val(parsedGrnData?.header?.vendor?.currency_id || '');
                 $('#sub_total').val(parsedGrnData?.basic_value || 0);
-                $('.sub_total').html(parsedGrnData?.basic_value || 0);
+                //$('.sub_total').html(parsedGrnData?.basic_value || 0);
                 $('#tax').val(parsedGrnData?.tax_value || 0);
                 $('#purchase_amount').val(parsedGrnData?.net_value || 0);
                 $('#current_value').val(parsedGrnData?.basic_value || 0);
@@ -1467,12 +1468,38 @@ document.addEventListener('DOMContentLoaded', function () {
                 let cgstData = parsedGrnData?.cgst_value;
                 let sgstData = parsedGrnData?.sgst_value;
                 
-                $('#igst_per').html(parseFloat((igstData['value']/parsedGrnData?.basic_value)*100).toFixed(2) || 0);
-                $('#cgst_per').html(parseFloat((cgstData['value']/parsedGrnData?.basic_value)*100).toFixed(2) || 0);
-                $('#sgst_per').html(parseFloat((sgstData['value']/parsedGrnData?.basic_value)*100).toFixed(2) || 0);
-                $('#sgst_tax').html(sgstData['value']||0);
-                $('#cgst_tax').html(cgstData['value']||0);
-                $('#igst_tax').html(igstData['value']||0);
+                // $('#igst_per').html(parseFloat((igstData['value']/parsedGrnData?.basic_value)*100).toFixed(2) || 0);
+                // $('#cgst_per').html(parseFloat((cgstData['value']/parsedGrnData?.basic_value)*100).toFixed(2) || 0);
+                // $('#sgst_per').html(parseFloat((sgstData['value']/parsedGrnData?.basic_value)*100).toFixed(2) || 0);
+                // $('#sgst_tax').html(sgstData['value']||0);
+                // $('#cgst_tax').html(cgstData['value']||0);
+                // $('#igst_tax').html(igstData['value']||0);
+                let snno = 1; // Start serial number from 1
+
+                $('#extraAmountsTable').empty();
+
+// Check if taxes exist and are not empty
+            if (parsedGrnData?.taxes?.length > 0) {
+                let snno = 1;
+                parsedGrnData.taxes.forEach(item => {
+                    $('#extraAmountsTable').append(`
+                        <tr>
+                            <td>${snno}</td>
+                            <td>${item.ted_name}</td>
+                            <td>${parsedGrnData?.basic_value}</td>
+                            <td>${item.ted_percentage}%</td>
+                            <td>${item.ted_amount}</td>
+                        </tr>
+                    `);
+                    snno++;
+                });
+
+                // Show info button
+                $('#infoBtn').show();
+            } else {
+                // Hide info button if no taxes
+                $('#infoBtn').hide();
+            }
                 updateDepreciationValues();
 
 

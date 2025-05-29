@@ -320,7 +320,7 @@
                                                                 </td>
                                                                 <td class="poprod-decpt">
                                                                     <input type="text" required placeholder="Enter"
-                                                                        class="form-control mw-100 mb-25 asset-code-input" />
+                                                                        class="form-control mw-100 mb-25 asset-code-input" oninput="this.value = this.value.toUpperCase();"/>
                                                                            <span class="text-danger code_error"></span>
                                                                 </td>
                                                                 <td class="poprod-decpt">
@@ -630,7 +630,7 @@
                     </div>
                 </td>
                 <td class="poprod-decpt">
-                    <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-code-input" />
+                    <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-code-input" oninput="this.value = this.value.toUpperCase();"/>
                       <span class="text-danger code_error"></span>
                 </td>
                 <td class="poprod-decpt">
@@ -1154,6 +1154,7 @@
             $('#sub_asset_id').val('');
             $('#last_dep_date').val('');
             $('#current_value_asset').val('');
+            $('#category').val($(this).val()).trigger('change');
             loadLocation();
         
         });
@@ -1320,7 +1321,7 @@
                                                                     </div>
                                                                 </td>
                                                                 <td class="poprod-decpt">
-                                                                    <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-code-input" />
+                                                                    <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-code-input" oninput="this.value = this.value.toUpperCase();"/>
                                                                   <span class="text-danger code_error"></span>
                                                                     </td>
                                                                 <td class="poprod-decpt">

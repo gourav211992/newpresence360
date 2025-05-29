@@ -354,7 +354,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Asset Code <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" name="asset_code"
+                                                            <input type="text" class="form-control" name="asset_code" oninput="this.value = this.value.toUpperCase();"
                                                                 id="asset_code" value="{{ old('asset_code') }}"
                                                                 required />
                                                                  <span class="text-danger code_error"></span>
@@ -795,6 +795,8 @@
         $('#old_category').on('change', function() {
             $('.mrntableselectexcel').empty();
             $('#addNewRowBtn').trigger('click');
+            $('#category').val($(this).val()).trigger('change');
+            
             loadLocation();
         
         });

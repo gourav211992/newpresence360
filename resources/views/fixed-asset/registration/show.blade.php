@@ -397,7 +397,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Est. Useful Life (yrs) <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control indian-number" name="useful_life"
+                                                            <input type="text" class="form-control" name="useful_life"
                                                                 id="useful_life" value="{{ $data->useful_life }}"
                                                                 required />
                                                         </div>
@@ -435,7 +435,8 @@
                                                      <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Total Dep. <span class="text-danger">*</span></label>
-                                                            <input type="number" readonly id="total_depreciation" name="total_depreciation" class="form-control indian-number" value="{{ $data->subAsset?->sum('total_depreciation')}}" disabled /> 
+                                                            <input type="number" readonly id="total_depreciation" name="total_depreciation" 
+                                                            class="form-control indian-number" value="{{ $data->subAsset?->sum('total_depreciation')}}" /> 
                                                         </div>
                                                     </div>
                                                     @php
@@ -1192,29 +1193,22 @@
                                     <th>Tax Value</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="extraAmountsTable">
+                                @forelse($data?->mrnDetail?->taxes as $index => $tax)
                                 <tr>
-                                    <td>1</td>
-                                    <td>IGST</td>
-                                    <td class="sub_total">{{$data->mrnDetail->basic_value??0}}</td>
-                                    <td id="igst_per">{{$data?->igst_value['rate']??0}}</td>
-                                    <td id="igst_tax" class="indian-number">{{$data?->igst_value['value']??0}}</td>
+                                <td>{{$index+1}}</td>
+                                <td>{{$tax->ted_code}}</td>
+                                <td>{{$data->current_value}}</td>
+                                <td>{{$tax->ted_percentage}}</td>
+                                <td>{{$tax->ted_amount}}</td>
                                 </tr>
-                                <tr>
-                                    <td>2</td>
-                                    <td>CGST</td>
-                                    <td class="sub_total">{{$data->mrnDetail->basic_value??0}}</td>
-                                    <td id="cgst_per">{{$data->cgst_value['rate']??0}}</td>
-                                    <td id="cgst_tax" class="indian-number">{{$data->cgst_value['value']??0}}</td>
-                                </tr>
-                                <tr>
-                                    <td>3</td>
-                                    <td>SGST</td>
-                                    <td class="sub_total">{{$data->mrnDetail->basic_value??0}}</td>
-                                    <td id="sgst_per">{{$data->sgst_value['rate']??0}}</td>
-                                    <td id="sgst_tax" class="indian-number" >{{$data->sgst_value['value']??0}}</td>
-                                 </tr>
-                             </tbody>
+                                @empty
+                                    <tr>
+                                    <td colspan="5" class="text-center">No data available</td>
+                                    </tr>
+                                @endforelse
+                                
+                            </tbody>
                         </table>
                     </div>
                 </div>
@@ -1514,47 +1508,47 @@
     });
     $('#searchButton').trigger('click');
 });
-document.addEventListener('DOMContentLoaded', function () {
-    const processButton = document.querySelector('#submit_grns');
-    const radioButtons = document.querySelectorAll('input[name="grn_id"]');
+// document.addEventListener('DOMContentLoaded', function () {
+//     const processButton = document.querySelector('#submit_grns');
+//     const radioButtons = document.querySelectorAll('input[name="grn_id"]');
 
-    processButton.addEventListener('click', function (event) {
-        // Check if any radio button is selected
-        const selectedRadio = Array.from(radioButtons).find(radio => radio.checked);
+//     processButton.addEventListener('click', function (event) {
+//         // Check if any radio button is selected
+//         const selectedRadio = Array.from(radioButtons).find(radio => radio.checked);
 
-        if (!selectedRadio) {
-            event.preventDefault(); // Prevent further processing
-            alert('Please select a GRN before proceeding.');
-        } else {
-            // Retrieve and log the data-grn attribute of the selected radio button
-            const grnData = selectedRadio.dataset.grn; // Access the data-grn attribute
+//         if (!selectedRadio) {
+//             event.preventDefault(); // Prevent further processing
+//             alert('Please select a GRN before proceeding.');
+//         } else {
+//             // Retrieve and log the data-grn attribute of the selected radio button
+//             const grnData = selectedRadio.dataset.grn; // Access the data-grn attribute
 
-            // Make sure grnData is available
-            if (grnData) {
-                $('#mrn_detail_id').val(selectedRadio.value);
-                const parsedGrnData = JSON.parse(grnData); // Parse the JSON data
-                console.log(parsedGrnData);
-                $('#mrn_header_id').val(parsedGrnData['header']['id']);
-                $('#quantity').val(parsedGrnData['accepted_qty']); // Log the parsed data
-                $('#vendor').val(parsedGrnData['header']['vendor']['id']).select2();
-                $('#currency').val(parsedGrnData['header']['vendor']['currency_id']).select2();
-                $('#vendor_id').val(parsedGrnData['header']['vendor']['id']);
-                $('#currency_id').val(parsedGrnData['header']['vendor']['currency_id']);
-                $('#sub_total').val(parsedGrnData['sub_total']);
-                $('#tax').val(parsedGrnData['tax_value']);
-              // Parse the date from the ISO 8601 string
-const createdAt = parsedGrnData['created_at'];
-const formattedDate = createdAt.split('T')[0]; // Extract the date part (yyyy-MM-dd)
+//             // Make sure grnData is available
+//             if (grnData) {
+//                 $('#mrn_detail_id').val(selectedRadio.value);
+//                 const parsedGrnData = JSON.parse(grnData); // Parse the JSON data
+//                 console.log(parsedGrnData);
+//                 $('#mrn_header_id').val(parsedGrnData['header']['id']);
+//                 $('#quantity').val(parsedGrnData['accepted_qty']); // Log the parsed data
+//                 $('#vendor').val(parsedGrnData['header']['vendor']['id']).select2();
+//                 $('#currency').val(parsedGrnData['header']['vendor']['currency_id']).select2();
+//                 $('#vendor_id').val(parsedGrnData['header']['vendor']['id']);
+//                 $('#currency_id').val(parsedGrnData['header']['vendor']['currency_id']);
+//                 $('#sub_total').val(parsedGrnData['sub_total']);
+//                 $('#tax').val(parsedGrnData['tax_value']);
+//               // Parse the date from the ISO 8601 string
+// const createdAt = parsedGrnData['created_at'];
+// const formattedDate = createdAt.split('T')[0]; // Extract the date part (yyyy-MM-dd)
 
-// Set the formatted date to the input field
-            $('#book_date').val(formattedDate);
+// // Set the formatted date to the input field
+//             $('#book_date').val(formattedDate);
 
-            } else {
-                console.error('data-grn attribute not found on the selected radio button');
-            }
-        }
-    });
-});
+//             } else {
+//                 console.error('data-grn attribute not found on the selected radio button');
+//             }
+//         }
+//     });
+// });
 
 function showToast(icon, title) {
             const Toast = Swal.mixin({

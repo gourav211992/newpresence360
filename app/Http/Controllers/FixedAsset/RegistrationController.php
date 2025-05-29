@@ -267,9 +267,10 @@ class RegistrationController extends Controller
             if ($model != null) {
                 $referenceDoc = $model::find($data->reference_doc_id);
                 if ($referenceDoc != null) {
-                    $history = Helper::getApprovalHistory($referenceDoc->book_id, $referenceDoc->id, $referenceDoc->revision_number);
+                    //$history = Helper::getApprovalHistory($referenceDoc->book_id, $referenceDoc->id, $referenceDoc->revision_number);
                     $ref_view_route = Helper::getRouteNameFromServiceAlias($data->reference_series, $data->reference_doc_id);
                     $buttons['reference'] = true;
+                    $buttons['post']=false;
                 }
             }
         }
@@ -445,7 +446,8 @@ class RegistrationController extends Controller
     {
         $query = MrnDetail::with([
             'header.vendor',
-            'item'
+            'item',
+            'taxes'
         ])->whereHas('header', function ($q) {
             $q->where('organization_id', Helper::getAuthenticatedUser()->organization_id);
         })->whereHas('item.subTypes.subType', function ($q) {
@@ -481,13 +483,13 @@ class RegistrationController extends Controller
         if ($request->grn_id) {
             $grn_details[] = MrnDetail::with([
                 'header.vendor',
-                'item'
+                'item',
+                'taxes'
             ])->whereHas('header', function ($q) {
                 $q->where('organization_id', Helper::getAuthenticatedUser()->organization_id);
             })->where('basic_value', '>',0)->find($request->grn_id);
         }
         $selected_grn_id = $request->grn_id ?? null;
-
         $html = view('fixed-asset.registration.grn_rows', compact('grn_details', 'selected_grn_id'))->render();
 
         return response()->json(['html' => $html]);
@@ -609,7 +611,7 @@ class RegistrationController extends Controller
         }
 
         $query = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-            ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
+            ->where('document_status', ConstantHelper::POSTED)
             ->whereNotNull('capitalize_date')
             ->where('asset_code', 'like', "%$q%")
             ->whereHas('subAsset', function ($query) use ($oldAssets) {
@@ -667,7 +669,7 @@ class RegistrationController extends Controller
     public function getCategories(Request $request)
     {
         $query = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-            ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED);
+            ->where('document_status', ConstantHelper::POSTED);
 
         if ($request->location_id) {
             $query->where('location_id', $request->location_id);
@@ -695,7 +697,7 @@ class RegistrationController extends Controller
     public function getLocations(Request $request)
     {
         $categoryId = $request->input('category_id');
-        $locationIds = FixedAssetRegistration::withDefaultGroupCompanyOrg()->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)->where('category_id', $categoryId)->pluck('location_id')->unique()->toArray();
+        $locationIds = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('document_status', ConstantHelper::POSTED)->where('category_id', $categoryId)->pluck('location_id')->unique()->toArray();
         $locations = ErpStore::withDefaultGroupCompanyOrg()->whereIn('id',$locationIds)
             ->where('status', 'active')
             ->get(['id', 'store_name as name']);
@@ -706,7 +708,7 @@ class RegistrationController extends Controller
     {
         $categoryId = $request->input('category_id');
         $locationId =  $request->input('location_id');
-        $locationIds = FixedAssetRegistration::withDefaultGroupCompanyOrg()->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
+        $locationIds = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('document_status', ConstantHelper::POSTED)
         ->where('category_id', $categoryId)
         ->where('location_id',$locationId)
         ->pluck('cost_center_id')->unique()->toArray();

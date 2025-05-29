@@ -100,7 +100,7 @@
                                                     <td>{{ $asset?->location?->store_name ??"-" }}</td>
                                                     <td>{{ $asset?->cost_center?->name ??"-" }}</td>
                                                     <td>{{ $asset->quantity ??"-" }}</td>
-                                                    <td>{{ \Carbon\Carbon::parse($asset->capitalize_date)->format('d-m-Y') ??"-"}}</td>
+                                                    <td>{{ $asset->capitalize_date!=null?\Carbon\Carbon::parse($asset->capitalize_date)->format('d-m-Y'):"-"}}</td>
                                                    
                                                     <td>
                                                         @php $statusClasss = App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$asset->document_status??"draft"];  @endphp

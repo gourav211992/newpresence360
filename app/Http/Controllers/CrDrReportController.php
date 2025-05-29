@@ -212,7 +212,10 @@ class CrDrReportController extends Controller
                     ->toArray();
 
 
-                $l_ledger = ItemDetail::whereIn('voucher_id', $vouchers)->where($type . '_amt_org', '>', 0)->get()
+                $l_ledger = ItemDetail::
+                whereIn('ledger_id', $ledgers)
+                ->whereIn('voucher_id', $vouchers)
+                ->where($type . '_amt_org', '>', 0)->get()
                     ->groupBy('ledger_id')
                     ->map(function ($items) use ($ages0, $ages1, $ages2, $ages3, $ages4, $amount) {
                         $totals = (object)[
@@ -256,6 +259,7 @@ class CrDrReportController extends Controller
                         return $totals;
                     })->values();
 
+                 
                 foreach ($l_ledger as $customer) {
                     $ledger = $customer->ledger_id;
                     $voucher = Voucher::withDefaultGroupCompanyOrg()->withWhereHas('items', function ($query) use ($ledger, $group, $type) {
@@ -535,6 +539,7 @@ class CrDrReportController extends Controller
         $ages4 = $ages_all[4];
 
         $vendors = ItemDetail::whereIn('voucher_id', $vouchers)
+        ->where('ledger_id', $ledger)
             ->where($amount, '>', 0)
             ->withWhereHas('voucher', function ($query) {
                 $query->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED);
