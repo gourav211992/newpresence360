@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Carbon\Carbon;
 
 class FixedAssetSub extends Model
 {
@@ -42,6 +43,13 @@ class FixedAssetSub extends Model
                 'salvage_value' => $salvageValueUnit,
                 'location_id' => $locationId, // Assuming location_id is nullable
                 'cost_center_id' => $cost_centerId, // Assuming cost_center_id is nullable
+                'capitalize_date' => $asset->capitalize_date??null, // Copying capitalize_date from parent asset
+                'last_dep_date' => $asset->capitalize_date??null, // Copying last_dep_date from parent asset
+                'expiry_date' => $asset->capitalize_date && $asset->useful_life
+                ? Carbon::parse($asset->capitalize_date)
+                    ->addYears($asset->useful_life)
+                    ->subDay()
+                : null
             ]);
         }
         

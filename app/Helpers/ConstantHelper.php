@@ -794,7 +794,7 @@ class ConstantHelper
         self::FIXED_ASSET_REV_IMP=>'finance.fixed-asset.revaluation-impairement.show',
         self::RECEIPT_VOUCHER => 'receipts.edit',
         self::PAYMENT_VOUCHER => 'payments.edit',
-        self::FIXEDASSET => 'finance.fixed-asset.registration.edit',
+        self::FIXEDASSET => 'finance.fixed-asset.registration.show',
         self::SALES_VOUCHER => 'vouchers.edit',
         self::CONTRA_VOUCHER => 'vouchers.edit',
         self::JOURNAL_VOUCHER => 'vouchers.edit',

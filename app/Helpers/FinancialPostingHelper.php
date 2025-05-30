@@ -405,7 +405,7 @@ class FinancialPostingHelper
             }
 
         } else if ($serviceAlias === ConstantHelper::FIXED_ASSET_REV_IMP) {
-            
+
             $document = FixedAssetRevImp::find($documentId);
             if (!isset($document)) {
                 return array(
@@ -417,7 +417,7 @@ class FinancialPostingHelper
 
             if ($document->document_type == 'impairement') {
                 if($type=="post"){
-               
+
                 $register = FixedAssetRevImp::updateRegistration($documentId);
                 if (!$register['status']) {
                     return array(
@@ -435,10 +435,10 @@ class FinancialPostingHelper
                         'data' => []
                     );
                 }
-            
-            
 
-                
+
+
+
             } else {
                 $entries = self::revVoucherDetails($documentId, $type);
                 if (!$entries['status']) {
@@ -460,7 +460,7 @@ class FinancialPostingHelper
                     );
                 }
             }
-        
+
             $entries = self::fixedAssetMergerVoucherDetails($documentId, $type);
             if (!$entries['status']) {
                 return array(
@@ -3495,23 +3495,24 @@ class FinancialPostingHelper
             );
         }
 
-
+        $codes = isset($document->mrnDetail->taxes)?$document->mrnDetail->taxes->pluck('ted_code')->toArray():[];
+        $totaltaxes = isset($document->mrnDetail->taxes)?$document->mrnDetail->taxes->sum('ted_amount'):0;
+        $taxes = isset($document->mrnDetail->taxes)?$document->mrnDetail->taxes:[];
         //Invoice to follow
         $postingArray = array(
             self::ASSET => [],
-            self::IGST_TAX_ACCOUNT => [],
-            self::CGST_TAX_ACCOUNT => [],
-            self::SGST_TAX_ACCOUNT => [],
             self::VENDOR_ACCOUNT=> []
         );
+       if (!empty($codes)) {
+            foreach ($codes as $code) {
+                $postingArray[$code] = [];
+            }
+        }
 
         //Status to check if all ledger entries were properly set
         $ledgerErrorStatus = null;
         $assetValue  = $document->current_value;
-        $igstValue = $document?->igst_value['value']??0;
-        $cgstValue = $document?->cgst_value['value']??0;
-        $sgstValue = $document?->sgst_value['value']??0;
-        $totalValue = $assetValue + $igstValue + $cgstValue + $sgstValue;
+        $totalValue = $assetValue + $totaltaxes;
 
 
 
@@ -3534,73 +3535,31 @@ class FinancialPostingHelper
             'debit_amount' => $assetValue,
             'debit_amount_org' => $assetValue,
         ];
-        if($igstValue > 0) {
 
+        if (!empty($taxes)) {
+            foreach ($taxes as $tax) {
+                $taxLedgerId = $tax->taxDetail->ledger_id??null;
+                $taxLedgerGroupId = $tax->taxDetail->ledger_group_id??null;
+                $taxLedger = Ledger::find($taxLedgerId);
+                $taxLedgerGroup = Group::find($taxLedgerGroupId);
+                if (!isset($taxLedger) || !isset($taxLedgerGroup)) {
+                    $ledgerErrorStatus = self::ERROR_PREFIX . $tax->ted_code.' Tax Account not setup';
+                }
 
-        $igstLedgerId = $document?->igst_value['ledger']??null;
-        $igstLedgerGroupId = $document?->igst_value['ledger_group']??null;
-        $igstLedger = Ledger::find($igstLedgerId);
-        $igstLedgerGroup = Group::find($igstLedgerGroupId);
-        if (!isset($igstLedger) || !isset($igstLedgerGroup)) {
-            $ledgerErrorStatus = self::ERROR_PREFIX . 'IGST Tax Account not setup';
+                $postingArray[$tax->ted_code][] = [
+                    'ledger_id' => $taxLedgerId,
+                    'ledger_group_id' => $taxLedgerGroupId,
+                    'ledger_code' => $taxLedger?->code,
+                    'ledger_name' => $taxLedger?->name,
+                    'ledger_group_code' => $taxLedgerGroup?->name,
+                    'credit_amount' => 0,
+                    'credit_amount_org' => 0,
+                    'debit_amount' => $tax->ted_amount,
+                    'debit_amount_org' => $tax->ted_amount,
+                ];
+            }
         }
 
-        $postingArray[self::IGST_TAX_ACCOUNT][] = [
-            'ledger_id' => $igstLedgerId,
-            'ledger_group_id' => $igstLedgerGroupId,
-            'ledger_code' => $igstLedger?->code,
-            'ledger_name' => $igstLedger?->name,
-            'ledger_group_code' => $igstLedgerGroup?->name,
-            'credit_amount' => 0,
-            'credit_amount_org' => 0,
-            'debit_amount' => $igstValue,
-            'debit_amount_org' => $igstValue,
-        ];
-    }
-    
-    if($cgstValue>0){
-
-        $cgstLedgerId = $document?->cgst_value['ledger']??null;
-        $cgstLedgerGroupId = $document?->cgst_value['ledger_group']??null;;
-        $cgstLedger = Ledger::find($cgstLedgerId);
-        $cgstLedgerGroup = Group::find($cgstLedgerGroupId);
-        if (!isset($cgstLedger) || !isset($cgstLedgerGroup)) {
-            $ledgerErrorStatus = self::ERROR_PREFIX . 'CGST Tax Account not setup';
-        }
-
-        $postingArray[self::CGST_TAX_ACCOUNT][] = [
-            'ledger_id' => $cgstLedgerId,
-            'ledger_group_id' => $cgstLedgerGroupId,
-            'ledger_code' => $cgstLedger?->code,
-            'ledger_name' => $cgstLedger?->name,
-            'ledger_group_code' => $cgstLedgerGroup?->name,
-            'credit_amount' => 0,
-            'credit_amount_org' => 0,
-            'debit_amount' => $cgstValue,
-            'debit_amount_org' => $cgstValue,
-        ];
-    }
-     if($sgstValue>0){
-        $sgstLedgerId =  $document?->sgst_value['ledger']??null;
-        $sgstLedgerGroupId =  $document?->sgst_value['ledger_group']??null;
-        $sgstLedger = Ledger::find($sgstLedgerId);
-        $sgstLedgerGroup = Group::find($sgstLedgerGroupId);
-        if (!isset($sgstLedger) || !isset($sgstLedgerGroup)) {
-            $ledgerErrorStatus = self::ERROR_PREFIX . 'SGST Tax Account not setup';
-        }
-
-        $postingArray[self::SGST_TAX_ACCOUNT][] = [
-            'ledger_id' => $sgstLedgerId,
-            'ledger_group_id' => $sgstLedgerGroupId,
-            'ledger_code' => $sgstLedger?->code,
-            'ledger_name' => $sgstLedger?->name,
-            'ledger_group_code' => $sgstLedgerGroup?->name,
-            'credit_amount' => 0,
-            'credit_amount_org' => 0,
-            'debit_amount' => $sgstValue,
-            'debit_amount_org' => $sgstValue,
-        ];
-    }
         
         $vendorLedgerId = $document?->vendor?->ledger_id;
         $vendorLedgerGroupId = $document?->vendor?->ledger_group_id;
@@ -5821,7 +5780,7 @@ class FinancialPostingHelper
             $stockLedgerGroup = Group::find($stockLedgerGroupId);
             //LEDGER NOT FOUND
             if (!isset($stockLedger) || !isset($stockLedgerGroup)) {
-                $ledgerErrorStatus = self::ERROR_PREFIX . 'Stock Account not setup';
+                $ledgerErrorStatus = self::ERROR_PREFIX . 'Service Account not setup';
                 break;
             }
 

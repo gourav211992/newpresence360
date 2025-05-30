@@ -235,9 +235,15 @@
                                                         <div class="mb-1">
                                                             <label class="form-label" for="last_dep_date">Last Date of
                                                                 Dep. </label>
-                                                            <input type="date" id="last_dep_date" value="{{$data->asset->capitalize_date!=$data->asset->last_dep_date?$data->asset->last_dep_date:""}}" 
-                                                            name="last_dep_date"
-                                                                class="form-control" readonly/>
+                                                                 @php
+                                                                $lastDate = $data?->capitalize_date;
+                                                                $isValid = $data->subAsset->capitalize_date!=$data->subAsset->last_dep_date;
+                                                                $adjustedDate = $lastDate ? \Carbon\Carbon::parse($lastDate)->subDay()->format('Y-m-d') : '';
+                                                                 $maxDate = $data->subAsset->last_dep_date ? \Carbon\Carbon::parse($data->subAsset->last_dep_date)->subDay()->format('Y-m-d') : '';
+                                                            @endphp
+
+                                                            <input type="date" id="last_dep_date" @if(!$isValid) disabled @else max="{{date('Y-m-d')}}" min="{{$maxDate}}" @endif value="{{$isValid?$adjustedDate:""}}" name="last_dep_date" 
+                                                                class="form-control indian-number"/>
                                                         </div>
                                                     </div>
 
@@ -855,8 +861,14 @@ let isValid=true;
                         $('#asset_id').val(ui.item.value);
                          $('#subasset_search_input').val('');
                         $('#sub_asset_id').val('');
-                            $('#last_dep_date').val('');
-                            $('#current_value_asset').val('');
+                        $('#last_dep_date')
+                        .val('')
+                        .removeAttr('min')
+                        .removeAttr('max')
+                        .prop('readonly', true);
+                         $('#capitalize_date').attr('min','{{$financialStartDate}}').attr('max','{{$financialEndDate}}').prop('readonly', false);
+                       
+                          $('#current_value_asset').val('');
                            
                         add_blank();
 
@@ -868,7 +880,13 @@ let isValid=true;
                             $('#asset_id').val('');
                             $('#subasset_search_input').val('');
                             $('#sub_asset_id').val('');
-                            $('#last_dep_date').val('');
+                            $('#last_dep_date')
+                        .val('')
+                        .removeAttr('min')
+                        .removeAttr('max')
+                        .prop('readonly', true);
+                         $('#capitalize_date').attr('min','{{$financialStartDate}}').attr('max','{{$financialEndDate}}').prop('readonly', false);
+                       
                             $('#current_value_asset').val('');
                             add_blank();
 
@@ -925,18 +943,32 @@ let isValid=true;
                         $('#category').val(asset.category_id).trigger('change');
                         $('#ledger').val(asset.ledger_id).trigger('change');
                         $('#ledger_group').val(asset.ledger_group_id).trigger('change');
-                        $('#last_dep_date').val("");
+                        $('#last_dep_date')
+                        .val('')
+                        .removeAttr('min')
+                        .removeAttr('max')
+                        .prop('readonly', true);
+                         $('#capitalize_date').attr('min','{{$financialStartDate}}').attr('max','{{$financialEndDate}}').prop('readonly', false);
+                       
 
-                        // Handle depreciation date
-                        if (asset.last_dep_date !== asset.capitalize_date) {
-                            let lastDepDate = new Date(asset.last_dep_date);
-                            lastDepDate.setDate(lastDepDate.getDate() - 1);
-                            let formattedDate = lastDepDate.toISOString().split('T')[0];
-                            $('#last_dep_date').val(formattedDate);
-                        }
+                    // Handle depreciation date
+                    if (sub_asset.last_dep_date !== sub_asset.capitalize_date) {
+                        let lastDepDate = new Date(asset.last_dep_date);
+                        lastDepDate.setDate(lastDepDate.getDate() - 1);
+                        let formattedDate = lastDepDate.toISOString().split('T')[0];
+                        let today = new Date().toISOString().split('T')[0];
+                        $('#last_dep_date')
+                            .val(formattedDate)
+                            .attr('min', formattedDate)
+                            .attr('max', today)
+                            .prop('readonly', false);
+                             $('#capitalize_date')
+                            .removeAttr('min')
+                            .removeAttr('max').prop('readonly', true);
+                    }
 
-                        $('#capitalize_date').val(asset.last_dep_date);
-                        $('#depreciation_rate').val(asset.depreciation_percentage);
+                    $('#capitalize_date').val(sub_asset.last_dep_date);
+                    $('#depreciation_rate').val(asset.depreciation_percentage);
                         $('#depreciation_rate_year').val(asset.depreciation_percentage_year);
                         $('#useful_life').val(asset.useful_life);
                         $('#maintenance_schedule').val(asset.maintenance_schedule);
@@ -950,8 +982,14 @@ let isValid=true;
                         if (!ui.item) {
                             $(this).val('');
                             $('#current_value_asset').val("");
-                            $('#last_dep_date').val("");
-                            $('#sub_asset_id').val('');
+                            $('#last_dep_date')
+                        .val('')
+                        .removeAttr('min')
+                        .removeAttr('max')
+                        .prop('readonly', true);
+                         $('#capitalize_date').attr('min','{{$financialStartDate}}').attr('max','{{$financialEndDate}}').prop('readonly', false);
+                       
+                        $('#sub_asset_id').val('');
                             $('#category').val("");
                             $('#ledger').val("");
                             $('#ledger_group').val("");
@@ -1132,8 +1170,14 @@ let isValid=true;
             $('#asset_id').val('');
             $('#subasset_search_input').val('');
             $('#sub_asset_id').val('');
-            $('#last_dep_date').val('');
-            $('#current_value_asset').val('');
+            $('#last_dep_date')
+                        .val('')
+                        .removeAttr('min')
+                        .removeAttr('max')
+                        .prop('readonly', true);
+                         $('#capitalize_date').attr('min','{{$financialStartDate}}').attr('max','{{$financialEndDate}}').prop('readonly', false);
+                       
+                        $('#current_value_asset').val('');
             loadLocation();
             $('#category').val($(this).val()).trigger('change');
             
@@ -1356,6 +1400,14 @@ function loadLocation(selectlocation = null) {
             });
         }
         loadLocation('{{$data->location_id ?? ''}}');
+         $('#last_dep_date').on('change', function() {
+            let selectedDate = new Date($(this).val());
+            if (!isNaN(selectedDate)) {
+                selectedDate.setDate(selectedDate.getDate() + 1);
+                let nextDate = selectedDate.toISOString().split('T')[0];
+                $('#capitalize_date').val(nextDate);
+            }
+        });
      
     </script>
     <!-- END: Content-->

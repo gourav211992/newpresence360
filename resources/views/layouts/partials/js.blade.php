@@ -247,4 +247,15 @@
             }
         });
     });
+    $('.modal').on('shown.bs.modal', function () {
+    $('.indian-number').each(function () {
+        let $el = $(this);
+        let value = $el.is('input') ? $el.val() : $el.text();
+
+        if ($.isNumeric(value)) {
+            let formatted = formatIndianNumber(value);
+            $el.is('input') ? $el.val(formatted) : $el.text(formatted);
+        }
+    });
+});
     </script>

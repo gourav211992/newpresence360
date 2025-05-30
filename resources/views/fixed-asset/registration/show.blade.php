@@ -435,7 +435,7 @@
                                                      <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Total Dep. <span class="text-danger">*</span></label>
-                                                            <input type="number" readonly id="total_depreciation" name="total_depreciation" 
+                                                            <input type="text" readonly id="total_depreciation" name="total_depreciation" 
                                                             class="form-control indian-number" value="{{ $data->subAsset?->sum('total_depreciation')}}" /> 
                                                         </div>
                                                     </div>
@@ -1194,19 +1194,21 @@
                                 </tr>
                             </thead>
                             <tbody id="extraAmountsTable">
+                                @isset($data?->mrnDetail?->taxes)
                                 @forelse($data?->mrnDetail?->taxes as $index => $tax)
                                 <tr>
                                 <td>{{$index+1}}</td>
                                 <td>{{$tax->ted_code}}</td>
-                                <td>{{$data->current_value}}</td>
+                                <td class="indian-number">{{$data->current_value}}</td>
                                 <td>{{$tax->ted_percentage}}</td>
-                                <td>{{$tax->ted_amount}}</td>
+                                <td class="indian-number">{{$tax->ted_amount}}</td>
                                 </tr>
                                 @empty
                                     <tr>
                                     <td colspan="5" class="text-center">No data available</td>
                                     </tr>
                                 @endforelse
+                                @endisset
                                 
                             </tbody>
                         </table>
@@ -1711,15 +1713,15 @@ $('#location').on('change', function () {
                     } else {
                         document.getElementById('posting_button').style.removeProperty('display');
                     }
-                    $('.indian-number').each(function () {
-            let $el = $(this);
-            let value = $el.is('input') ? $el.val() : $el.text();
+        // $('.indian-number').each(function () {
+        //     let $el = $(this);
+        //     let value = $el.is('input') ? $el.val() : $el.text();
 
-            if ($.isNumeric(value)) {
-                let formatted = formatIndianNumber(value);
-                $el.is('input') ? $el.val(formatted) : $el.text(formatted);
-            }
-        });
+        //     if ($.isNumeric(value)) {
+        //         let formatted = formatIndianNumber(value);
+        //         $el.is('input') ? $el.val(formatted) : $el.text(formatted);
+        //     }
+        // });
 
                     $('#postvoucher').modal('show');
                 }

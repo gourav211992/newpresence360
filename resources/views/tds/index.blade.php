@@ -307,21 +307,8 @@
                             class: 'font-small-4 me-50'
                         }) + 'Excel',
                         className: 'dropdown-item',
-                        exportOptions: {
-                            columns: [3, 4, 5, 6, 7]
-                        }
                     },
-                    // {
-                    //     extend: 'pdf',
-                    //     text: feather.icons['clipboard'].toSvg({
-                    //         class: 'font-small-4 me-50'
-                    //     }) + 'PDF',
-                    //     className: 'dropdown-item',
-                    //     exportOptions: {
-                    //         columns: [3, 4, 5, 6, 7]
-                    //     }
-                    // }
-                ],
+                    ],
                 init: function(api, node, config) {
                     $(node).removeClass('btn-secondary');
                     $(node).parent().removeClass('btn-group');

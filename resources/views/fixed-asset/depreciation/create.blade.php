@@ -498,14 +498,14 @@ document.getElementById("process_btn").addEventListener("click", function () {
                 let expire = false;
                 asset.sub_asset.forEach((sub_asset, index) => {
                 let to_date = $('#to_date_param').val(); // e.g., "30-04-2025"
-                let inputDate = asset.last_dep_date;   // e.g., "2025-04-25"
+                let inputDate = sub_asset.last_dep_date;   // e.g., "2025-04-25"
 
                 // Convert inputDate (Y-m-d) to d-m-Y
                 let parts = inputDate.split("-"); // ["2025", "04", "25"]
                 let from_date = `${parts[2]}-${parts[1]}-${parts[0]}`;
                 
                 
-                let partsc = asset.capitalize_date.split("-"); // ["2025", "04", "25"]
+                let partsc = sub_asset.capitalize_date.split("-"); // ["2025", "04", "25"]
                 let from_date_cap = `${partsc[2]}-${partsc[1]}-${partsc[0]}`;
 
                 // Convert both dates to Date objects
@@ -518,9 +518,7 @@ document.getElementById("process_btn").addEventListener("click", function () {
                 let toDateObj = parseDMY(to_date);
                 let fromDateObjCap = parseDMY(from_date_cap);
 
-                    // Calculate expiry date: fromDate + useful_life in days
-                let daysToAdd = asset.useful_life * 365; // You can adjust for leap years if needed
-                let expiryDate = new Date(fromDateObjCap.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
+                let expiryDate = new Date(sub_asset.expiry_date);
                 
 
                
@@ -559,7 +557,7 @@ document.getElementById("process_btn").addEventListener("click", function () {
                             value = sub_asset.current_value;
                             //console.log("selected_method SLM");
                         } else {
-                            let isCurrent = isDateInRange(asset.capitalize_date,"{{$financialStartDate}}","{{$financialEndDate}}");
+                            let isCurrent = isDateInRange(sub_asset.capitalize_date,"{{$financialStartDate}}","{{$financialEndDate}}");
                             if(isCurrent)
                                 value = sub_asset.current_value;
                             else
@@ -580,10 +578,18 @@ document.getElementById("process_btn").addEventListener("click", function () {
                     
                     
                     let posted_days = 0;
-                    
-                    if(asset.dep_type!=null && asset.dep_type!="{{$dep_type}}"){
-                        posted_days = asset.posted_days;
-                    }
+
+                        if (asset.dep_type !== null && asset.dep_type !== "{{$dep_type}}") {
+                            // Calculate difference between capitalize_date and last_dep_date
+                            let capitalizeDate = new Date(sub_asset.capitalize_date);
+                            let lastDepDate = new Date(sub_asset.last_dep_date);
+
+                            // Make sure both dates are valid
+                            if (!isNaN(capitalizeDate) && !isNaN(lastDepDate)) {
+                                let timeDiff = lastDepDate - capitalizeDate; // In milliseconds
+                                posted_days = Math.floor(timeDiff / (1000 * 60 * 60 * 24)); // Convert to days
+                            } 
+                        }
                    
 
                     let assetData = {

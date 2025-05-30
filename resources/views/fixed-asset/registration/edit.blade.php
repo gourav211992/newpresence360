@@ -411,7 +411,7 @@
                                                      <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Total Dep. <span class="text-danger">*</span></label>
-                                                            <input type="number" id="total_depreciation" name="total_depreciation" class="form-control" value="{{$data->total_depreciation}}" readonly /> 
+                                                            <input type="text" id="total_depreciation" name="total_depreciation" class="form-control" value="{{$data->total_depreciation}}" readonly /> 
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1456,7 +1456,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 $('#sub_total').val(parsedGrnData?.basic_value || 0);
                 //$('.sub_total').html(parsedGrnData?.basic_value || 0);
                 $('#tax').val(parsedGrnData?.tax_value || 0);
-                $('#purchase_amount').val(parsedGrnData?.net_value || 0);
+                $('#purchase_amount').val(
+                    (parseFloat(parsedGrnData?.tax_value || 0) + parseFloat(parsedGrnData?.basic_value || 0)).toFixed(2)
+                );
                 $('#current_value').val(parsedGrnData?.basic_value || 0);
                 const invoiceDate = parsedGrnData?.header?.supplier_invoice_date || '';
                 const formattedInvoiceDate = invoiceDate && invoiceDate !== '0000-00-00' ? invoiceDate.split('T')[0] : '';
@@ -1474,7 +1476,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 // $('#sgst_tax').html(sgstData['value']||0);
                 // $('#cgst_tax').html(cgstData['value']||0);
                 // $('#igst_tax').html(igstData['value']||0);
-                let snno = 1; // Start serial number from 1
 
                 $('#extraAmountsTable').empty();
 
@@ -1486,9 +1487,9 @@ document.addEventListener('DOMContentLoaded', function () {
                         <tr>
                             <td>${snno}</td>
                             <td>${item.ted_name}</td>
-                            <td>${parsedGrnData?.basic_value}</td>
+                            <td class="indian-number">${parsedGrnData?.basic_value}</td>
                             <td>${item.ted_percentage}%</td>
-                            <td>${item.ted_amount}</td>
+                            <td class="indian-number">${item.ted_amount}</td>
                         </tr>
                     `);
                     snno++;
