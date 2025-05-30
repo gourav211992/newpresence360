@@ -20,7 +20,9 @@ class MoProduct extends Model
         'pwo_mapping_id',
         'so_id',
         'so_item_id',
-        'pslip_qty'
+        'pslip_qty',
+        'machine_id',
+        'number_of_sheet'
     ]; 
     
     protected $appends = [
@@ -49,6 +51,11 @@ class MoProduct extends Model
     public function mo()
     {
         return $this->belongsTo(MfgOrder::class, 'mo_id');
+    }
+
+    public function machine()
+    {
+        return $this->belongsTo(ErpMachine::class, 'machine_id');
     }
 
     public function so()

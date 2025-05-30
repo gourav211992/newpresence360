@@ -76,6 +76,11 @@ class ProductionRoute extends Model
         return $this->hasMany(ProductionLevel::class,'production_route_id');
     }
 
+    public function machines()
+    {
+        return $this->hasMany(ErpMachine::class,'production_route_id');
+    }
+
     public function details()
     {
         return $this->hasMany(ProductionRouteDetail::class,'production_route_id');

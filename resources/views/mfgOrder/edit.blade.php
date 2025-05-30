@@ -166,6 +166,19 @@
                                     </select> 
                                     </div> 
                                 </div>
+                                <div class="row align-items-center mb-1 d-none" id="machineDiv">
+                                    <div class="col-md-3"> 
+                                        <label class="form-label">Machine</label>  
+                                    </div>  
+                                    <div class="col-md-5"> 
+                                        <select class="form-select" id="main_machine_id" name="main_machine_id">
+                                            <option value="">Select Machine</option>
+                                            @foreach($machines as $machine)
+                                                <option value="{{$machine->id}}" {{$bom->machine_id == $machine->id ? 'selected' : ''}}>{{ $machine?->name }}</option>
+                                            @endforeach
+                                        </select> 
+                                    </div> 
+                                </div>
                                 <div class="row align-items-center mb-1 d-none" id="reference_from"> 
                                     <div class="col-md-3"> 
                                         <label class="form-label">Reference from</label>  
@@ -235,15 +248,21 @@
                                                     <label class="form-check-label" for="Email"></label>
                                                 </div>
                                                 </th>
+                                                <th width="200px">Series</th>
+                                                <th width="150px">Doc No.</th>
+                                                <th width="100px">Doc Date</th>
+                                                <th width="100px">Location</th>
                                                 <th width="150px">Product Code</th>
                                                 <th width="300px">Product Name</th>
                                                 <th max-width="180px">Attributes</th>
                                                 <th >UOM</th>
-                                                <th class="text-end">Quantity</th>
+                                                <th class="text-end">Qty</th>
                                                 <th width="200px">Customer</th>
                                                 <th width="150px">Order No.</th>
+                                                <th width="150px" id="machine_name" class="d-none">Machine</th>
+                                                <th width="150px" id="sheets" class="d-none">Sheets</th>
                                                 {{-- <th>Order Date</th> --}}
-                                                <th width="50px">Action</th>
+                                        <th width="50px">Action</th>
                                             </tr>
                                         </thead>
                                         <tbody class="mrntableselectexcel">
@@ -251,7 +270,7 @@
                                         </tbody>
                                         <tfoot>
                                             <tr valign="top">
-                                                <td colspan="10">
+                                                <td colspan="13" id="detailTableFooter">
                                                 <table class="table border" id="itemDetailTable">
                                                     <tr>
                                                         <td class="p-0">
@@ -341,25 +360,6 @@
                                         <tbody class="mrntableselectexcel">
                                             @include('mfgOrder.partials.instruction-row')
                                         </tbody>
-                                        {{-- <tfoot>
-                                            <tr valign="top">
-                                                <td colspan="10">
-                                                <table class="table border" id="itemDetailTable">
-                                                    <tr>
-                                                        <td class="p-0">
-                                                            <h6 class="text-dark mb-0 bg-light-primary py-1 px-50"><strong>Item Details</strong></h6>
-                                                        </td>
-                                                    </tr>
-                                                    <tr class="item_detail_row">
-                                                        
-                                                    </tr>
-                                                    <tr class="item_detail_row">
-                                                        
-                                                    </tr>
-                                                </table>
-                                                </td>
-                                            </tr>
-                                        </tfoot> --}}
                                     </table>
                                     </div>
                                 </div>
@@ -497,6 +497,21 @@
 
 @endsection
 @section('scripts')
+<script>
+    let getMachineDetailUrl = "{{route('mo.get.machine.detail')}}";
+    @if($bom->machine_id)
+        $("#machine_name").removeClass('d-none');
+        $("#sheets").removeClass('d-none');
+        $("#detailTableFooter").attr("colspan", "15");
+        $("#machineDiv").removeClass('d-none');
+        $
+    @else 
+        $("#detailTableFooter").attr("colspan", "13");
+        $("#machine_name").addClass('d-none');
+        $("#sheets").addClass('d-none');
+        $("#machineDiv").addClass('d-none');
+    @endif
+</script>
 <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
 <script type="text/javascript" src="{{asset('assets/js/modules/mo.js')}}"></script>
 <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>

@@ -208,3 +208,53 @@ $(document).on('change', '#item_code', (e) => {
         $('.prSelect').prop('disabled',true);
     }
 });
+
+// get selected machine get number of sheet
+function fetchMachineDetailsForRow($row, machineId = null) {
+    let qty = $row.find("input[name*='qty']").val() || 0;
+    let $attributeTd = $row.find("td[id*='itemAttribute_']");
+    let selectedAttrValIds = [];
+    let selectedAttrGroupValIds = [];
+    if ($attributeTd.length) {
+        let attributes = $attributeTd.attr('attribute-array');
+        attributes = JSON.parse(attributes || '[]');
+        attributes.forEach(group => {
+            if (Array.isArray(group.values_data)) {
+                group.values_data.forEach(val => {
+                    if (val.selected === true) {
+                        selectedAttrValIds.push(val.id);
+                        selectedAttrGroupValIds.push(group.attribute_group_id);
+                    }
+                });
+            }
+        });
+    }
+    let attrValueIds = [...new Set(selectedAttrValIds)];
+    let attrGroupIds = [...new Set(selectedAttrGroupValIds)];
+    fetch(`${getMachineDetailUrl}?machine_id=${machineId}&attr_value_ids=${attrValueIds.join(',')}&attr_ids=${attrGroupIds.join(',')}&qty=${qty}`)
+    .then(response => response.json())
+    .then(data => {
+        console.log(data);
+        if (data.status === 200) {
+            $row.find("[name*='[sheet]']").val(data.data.sheet);
+        } else {
+            $row.find("[name*='[sheet]']").val('');
+        }
+    })
+    .catch(() => {
+        $row.find("[name*='[sheet]']").val('');
+    });
+}
+
+$(document).on("change", "select[name*='[machine_id]']", (e) => {
+    const $row = $(e.target).closest('tr');
+    let machineId = $row.find("select[name*='[machine_id]']").val() || '';
+    fetchMachineDetailsForRow($row, machineId);
+});
+
+$(document).on('change', "#main_machine_id", (e) => {
+    let machineId = e.target.value || '';
+    $("select[name*='][machine_id]']").each(function(index, item) {
+        $(item).val(machineId).trigger('change');
+    });
+});

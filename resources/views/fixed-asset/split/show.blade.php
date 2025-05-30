@@ -236,8 +236,13 @@
                                                         <div class="mb-1">
                                                             <label class="form-label" for="last_dep_date">Last Date of
                                                                 Dep. <span class="text-danger">*</span></label>
-                                                            <input type="date" id="last_dep_date" disabled value="{{$data?->asset?->last_dep_date}}" name="last_dep_date"
-                                                                class="form-control indian-number " required />
+                                                           @php
+                                                                $lastDate = $data?->capitalize_date;
+                                                                $adjustedDate = $lastDate ? \Carbon\Carbon::parse($lastDate)->subDay()->format('Y-m-d') : '';
+                                                            @endphp
+
+                                                            <input type="date" id="last_dep_date" disabled value="{{($data->subAsset->capitalize_date!=$data->subAsset->last_dep_date)?$adjustedDate:""}}" name="last_dep_date"
+                                                                class="form-control indian-number"/>
                                                         </div>
                                                     </div>
 

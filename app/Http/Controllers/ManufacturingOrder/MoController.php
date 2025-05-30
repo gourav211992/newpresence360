@@ -37,6 +37,7 @@ use App\Models\PwoStationConsumption;
 use App\Models\Station;
 use App\Models\StockLedger;
 use App\Models\Attribute;
+use App\Models\ErpMachineDetail;
 use App\Models\ErpSubStore;
 use App\Models\PwoBomMapping;
 use Yajra\DataTables\DataTables;
@@ -183,6 +184,8 @@ class MoController extends Controller
                 $mo->store_id = $request->store_id;
                 $mo->sub_store_id = $request?->sub_store_id ?? null;
                 $mo->item_id = $request->item_id;
+                $mo->machine_id = $request?->main_machine_id ?? null;
+
                 
                 $mo->station_id = $stationId;
                 $mo->is_last_station = $isLastStation;
@@ -256,6 +259,8 @@ class MoController extends Controller
                         $moProdDetail->so_item_id = $component['so_item_id'] ?? null; 
                         $moProdDetail->pwo_mapping_id = $component['pwo_mapping_id'] ?? null; 
                         $moProdDetail->remark = $component['remark'] ?? null; 
+                        $moProdDetail->machine_id = $component['machine_id'] ?? null; 
+                        $moProdDetail->number_of_sheet = $component['sheet'] ?? 0; 
                         $moProdDetail->save();
                         #Save MoProductDetailAttr component Attr
                         $attributes = [];
@@ -670,7 +675,14 @@ class MoController extends Controller
                                     ->bomInstructions()
                                     ->where('station_id', $bom->station_id)
                                     ->get() ?? collect();
- 
+        
+        $machines = collect();
+        if($productionBom) {
+            $machines = $productionBom?->productionRoute?->machines()
+            ->withDefaultGroupCompanyOrg()
+            ->where('status', ConstantHelper::ACTIVE)
+            ->get(); 
+        }
         return view($view, [
             'isEdit' => $isEdit,
             'wasteTypes' => $wasteTypes,
@@ -687,7 +699,8 @@ class MoController extends Controller
             'locations' => $locations,
             'productionBomInstructions' => $productionBomInstructions,
             'sectionRequired' => $sectionRequired,
-            'subSectionRequired' => $subSectionRequired
+            'subSectionRequired' => $subSectionRequired,
+            'machines' => $machines
         ]); 
     }
 
@@ -780,7 +793,9 @@ class MoController extends Controller
                     $moProdDetail->so_id = $component['so_id'] ?? null; 
                     $moProdDetail->so_item_id = $component['so_item_id'] ?? null; 
                     $moProdDetail->pwo_mapping_id = $component['pwo_mapping_id'] ?? null; 
-                    $moProdDetail->remark = $component['remark'] ?? null; 
+                    $moProdDetail->remark = $component['remark'] ?? null;
+                    $moProdDetail->machine_id = $component['machine_id'] ?? null; 
+                    $moProdDetail->number_of_sheet = $component['sheet'] ?? 0;  
                     $moProdDetail->save();
                     #Save MoProductDetailAttr component Attr
                     $attributes = [];
@@ -1026,35 +1041,48 @@ class MoController extends Controller
             ->where('addressable_id', $user->organization_id)
             ->where('addressable_type', Organization::class)
             ->first();
-        $bom = MfgOrder::findOrFail($id);
-
+        $mo = MfgOrder::findOrFail($id);
         $specifications = collect();
-        if(isset($bom->item) && $bom->item) {
-            $specifications = $bom->item->specifications()->whereNotNull('value')->get();
+        $products = collect();
+        $items = collect();
+        if(isset($mo->moProducts) && $mo->moProducts)
+        {
+            $products = $mo -> moProducts;            
         }
 
-        $totalAmount = $bom->total_value;
+        if(isset($mo->moItems) && $mo->moItems) {
+            $items = $mo->moItems;
+        }
+
+        $totalAmount = $mo->total_value;
         $amountInWords = NumberHelper::convertAmountToWords($totalAmount);
         // Path to your image (ensure the file exists and is accessible)
         $imagePath = public_path('assets/css/midc-logo.jpg'); // Store the image in the public directory
-        $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$bom->document_status] ?? '';
+        $approvedBy = "";
+        $approvedBy = Helper::getDocStatusUser(get_class($mo), $mo -> id, $mo -> document_status);
+        $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$mo->document_status] ?? '';
+        $dynamicFields = $mo -> dynamic_fields;
         $pdf = PDF::loadView(
-
-            // return view(
-            'pdf.mo',
-            [
-                'bom'=> $bom,
-                'organization' => $organization,
-                'organizationAddress' => $organizationAddress,
-                'totalAmount'=>$totalAmount,
-                'amountInWords'=>$amountInWords,
-                'imagePath' => $imagePath,
-                'specifications' => $specifications,
-                'docStatusClass' => $docStatusClass
-            ]
+        // return view(
+        'pdf.mo',
+        [
+            'order'=> $mo,
+            'items' => $items,
+            'user'=>$user,
+            'products' => $products,
+            'organization' => $organization,
+            'organizationAddress' => $organizationAddress,
+            'totalAmount'=>$totalAmount,
+            'amountInWords'=>$amountInWords,
+            'approvedBy' => $approvedBy,
+            'imagePath' => $imagePath,
+            'specifications' => $specifications,
+            'docStatusClass' => $docStatusClass,
+            'dynamicFields' => $dynamicFields
+        ]
         );
-
-        $pdf->setOption('isHtml5ParserEnabled', true);
+        // $pdf->setPaper('a4', 'landscape');
+        // $pdf->setOption('isHtml5ParserEnabled', true);
         return $pdf->stream('MfgOrder-' . date('Y-m-d') . '.pdf');
     }
 
@@ -1441,7 +1469,6 @@ class MoController extends Controller
                     ->where('erp_pwo_station_consumptions.station_id', $stationId);
             });
         }
-
         $pwoItems = $pwoItems->with(['pwo', 'item'])->get();
         $html = view('mfgOrder.partials.pwo-item-list', ['pwoItems' => $pwoItems, 'station_id' => $stationId])->render();
         return response()->json(['data' => ['pis' => $html], 'status' => 200, 'message' => "fetched!"]);
@@ -1498,9 +1525,21 @@ class MoController extends Controller
         });
 
         $pwoItems = $pwoItems->with(['pwo', 'item'])->get();
+        $bom = Bom::withDefaultGroupCompanyOrg()
+            ->where('item_id', $itemId)
+            ->where('type', ConstantHelper::BOM_SERVICE_ALIAS)
+            ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
+            ->first();
+        $machines = collect();
+        if($bom) {
+            $machines = $bom?->productionRoute?->machines()
+            ->withDefaultGroupCompanyOrg()
+            ->where('status', ConstantHelper::ACTIVE)
+            ->get(); 
+        }
         $rowCount = 1;
-        $html = view('mfgOrder.partials.mo-item-pull', ['pwoItems' => $pwoItems, 'rowCount' => $rowCount])->render();
-        return response()->json(['data' => ['pis' => $html], 'status' => 200, 'message' => "fetched!"]);
+        $html = view('mfgOrder.partials.mo-item-pull', ['pwoItems' => $pwoItems, 'rowCount' => $rowCount, 'machines' => $machines])->render();
+        return response()->json(['data' => ['pis' => $html, 'is_machine' => $machines->count() > 0, 'machines' => $machines], 'status' => 200, 'message' => "fetched!"]);
     }
 
     # Submit PWO Item list
@@ -1583,5 +1622,24 @@ class MoController extends Controller
         $storeId = $request->store_id;
         $results = InventoryHelper::getAccesibleSubLocations($storeId ?? 0,null, [ConstantHelper::SHOP_FLOOR]);
         return response()->json(['data' => $results, 'status' => 200, 'message' => "fetched!"]);
+    }
+
+    public function getMachineDetail(Request $request)
+    {
+        $machineId = $request->machine_id;
+        $attrGroupIds = explode(',', $request->attr_ids ?? '');
+        $attrValueIds = explode(',', $request->attr_value_ids ?? '');
+        
+        $machineDetail = ErpMachineDetail::where('machine_id', $machineId)
+                            ->whereIn('attribute_group_id', $attrGroupIds)
+                            ->whereIn('attribute_id', $attrValueIds)
+                            ->first();
+        if(!$machineDetail) {
+            return response()->json(['data' => [], 'status' => 404, 'message' => "Machine detail not found!"]);
+        }
+        $moQty = floatval($request->qty)  ?? 0;
+        $sheet = $moQty / $machineDetail->no_of_pairs;
+        $sheet = ceil($sheet);
+        return response()->json(['data' => ['sheet' => $sheet], 'status' => 200, 'message' => "fetched!"]);
     }
 }

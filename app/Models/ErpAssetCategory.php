@@ -32,6 +32,10 @@ class ErpAssetCategory extends Model
     {
         return $this->hasOne(FixedAssetSetup::class, 'asset_category_id');
     }
+    public function assets()
+    {
+        return $this->hasMany(FixedAssetRegistration::class, 'category_id');
+    }
     
 
 }

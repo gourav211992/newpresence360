@@ -1485,9 +1485,9 @@ document.addEventListener('DOMContentLoaded', function () {
                         <tr>
                             <td>${snno}</td>
                             <td>${item.ted_name}</td>
-                            <td>${parsedGrnData?.basic_value}</td>
+                            <td class="indian-number">${parsedGrnData?.basic_value}</td>
                             <td>${item.ted_percentage}%</td>
-                            <td>${item.ted_amount}</td>
+                            <td class="indian-number">${item.ted_amount}</td>
                         </tr>
                     `);
                     snno++;

@@ -617,6 +617,8 @@ class RegistrationController extends Controller
             ->whereHas('subAsset', function ($query) use ($oldAssets) {
                 $query->whereNotIn('id', $oldAssets);
                 $query->where('current_value_after_dep', '>', 0);
+                $query->whereNotNull('expiry_date');
+                $query->where('expiry_date','>','last_dep_date');
             });
 
         if (!empty($ids)) {
@@ -663,6 +665,8 @@ class RegistrationController extends Controller
             ->whereNotIn('id', $oldAssets)->with('asset')
             ->where('current_value_after_dep', '>', 0)
             ->where('sub_asset_code', 'like', "%$q%")
+             ->whereNotNull('expiry_date')
+             ->where('expiry_date','>','last_dep_date')
             ->limit(20)
             ->get();
     }
@@ -697,7 +701,9 @@ class RegistrationController extends Controller
     public function getLocations(Request $request)
     {
         $categoryId = $request->input('category_id');
-        $locationIds = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('document_status', ConstantHelper::POSTED)->where('category_id', $categoryId)->pluck('location_id')->unique()->toArray();
+        $locationIds = FixedAssetRegistration::withDefaultGroupCompanyOrg()
+        ->where('document_status', ConstantHelper::POSTED)
+        ->where('category_id', $categoryId)->pluck('location_id')->unique()->toArray();
         $locations = ErpStore::withDefaultGroupCompanyOrg()->whereIn('id',$locationIds)
             ->where('status', 'active')
             ->get(['id', 'store_name as name']);

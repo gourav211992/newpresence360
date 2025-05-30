@@ -1,6 +1,7 @@
 <?php
 
 use App\Helpers\Helper;
+use App\Http\Controllers\ErpMachineController;
 use App\Http\Controllers\ErpDriverController;
 use App\Http\Controllers\ErpPlController;
 use App\Http\Controllers\ErpPSVController;
@@ -520,7 +521,11 @@ Route::middleware(['user.auth'])->group(function () {
             Route::get('get-pwo-create', 'getPwoCreate')->name('get.pwo.create');
             Route::get('process-pwo-item', 'processPwoItem')->name('process.pwo-item');
             Route::get('get-sub-store', 'getSubStore')->name('get.sub.store');
+            Route::get('get-machine-detail', 'getMachineDetail')->name('get.machine.detail');
     });
+
+    
+    
 
     Route::prefix('transporter-requests')
         ->name('transporter.')
@@ -574,6 +579,15 @@ Route::middleware(['user.auth'])->group(function () {
     // })->name('po.report');
 
 
+    Route::prefix('machine')->controller(ErpMachineController::class)->group(function () {
+        Route::get('/', 'index')->name('machine.index');
+        Route::get('/create','create')->name('machine.create');
+        Route::get('/edit/{id}','edit')->name('machine.edit');
+        Route::post('/store', 'store')->name('machine.store');
+        Route::put('/{id}', 'update')->name('machine.update');
+        Route::get('/attribute/values','attributeValues')->name('machine.attribute.values');
+    });
+    
     Route::prefix('items')->controller(ItemController::class)->group(function () {
         Route::get('get-cost','getItemCost')->name('items.get.cost');
         Route::get('/', 'index')->name('item.index');
@@ -2624,3 +2638,5 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
 
 
 Route::post('/validate-gst', [GstValidationController::class, 'validateGstNumber']);
+
+

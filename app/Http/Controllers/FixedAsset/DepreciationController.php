@@ -140,6 +140,7 @@ class DepreciationController extends Controller
                 if ($subAsset) {
                     $subAsset->total_depreciation += Helper::removeCommas($sub_asset['dep_amount']) ?? 0;
                     $subAsset->current_value_after_dep = Helper::removeCommas($sub_asset['after_dep_value']) ?? ($subAsset->current_value_after_dep - Helper::removeCommas($sub_asset['dep_amount']));
+                    $subAsset->last_dep_date = Carbon::createFromFormat('d-m-Y', $sub_asset['to_date'])->addDay()->format('Y-m-d');
                     $subAsset->save();
                 }
             }
@@ -282,6 +283,8 @@ class DepreciationController extends Controller
         $asset_details = FixedAssetRegistration::withDefaultGroupCompanyOrg()
             ->withWhereHas('subAsset', function ($query) {
                 $query->where('current_value_after_dep', '>', 0);
+                $query->whereNotNull('expiry_date');
+                $query->where('expiry_date','>','last_dep_date');
             })
             ->whereNotNull('depreciation_percentage')
             ->whereNotNull('depreciation_percentage_year')
@@ -293,17 +296,7 @@ class DepreciationController extends Controller
             })
             ->withWhereHas('category')
             ->get()
-            ->where('last_dep_date', '<', $endDate)
-            ->filter(function ($asset) {
-                $usefulLifeInYears = $asset->useful_life;
-                $postedDays = (int) $asset->posted_days; // Assuming this field exists and is in days
-
-                // Convert useful life in years to days
-                $usefulLifeInDays = $usefulLifeInYears * 365;
-
-                // Keep asset if posted days are less than useful life in days
-                return $postedDays < $usefulLifeInDays;
-            })->values();
+            ->where('last_dep_date', '<', $endDate);
 
 
         return response()->json($asset_details);

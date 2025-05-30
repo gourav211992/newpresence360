@@ -127,7 +127,7 @@
                                                             name="document_date" value="{{ date('Y-m-d') }}" required>
                                                     </div>
                                                 </div>
-                                                 <div class="row align-items-center mb-1">
+                                                <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Category <span
                                                                 class="text-danger">*</span></label>
@@ -154,7 +154,7 @@
                                                     <div class="col-md-5">
                                                         <select id="location" class="form-select" name="location_id"
                                                             required>
-                                                          
+
                                                         </select>
                                                     </div>
 
@@ -172,7 +172,7 @@
                                                     </div>
 
                                                 </div>
-                                               
+
                                             </div>
 
 
@@ -320,8 +320,9 @@
                                                                 </td>
                                                                 <td class="poprod-decpt">
                                                                     <input type="text" required placeholder="Enter"
-                                                                        class="form-control mw-100 mb-25 asset-code-input" oninput="this.value = this.value.toUpperCase();"/>
-                                                                           <span class="text-danger code_error"></span>
+                                                                        class="form-control mw-100 mb-25 asset-code-input"
+                                                                        oninput="this.value = this.value.toUpperCase();" />
+                                                                    <span class="text-danger code_error"></span>
                                                                 </td>
                                                                 <td class="poprod-decpt">
                                                                     <input type="text" required placeholder="Enter"
@@ -371,26 +372,27 @@
                                                 </div>
                                             </div>
                                             <div class="card-body">
-                                             
+
                                                 <div class="row">
-                                                        <div class="col-md-3">
+                                                    <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Category <span
                                                                     class="text-danger">*</span></label>
-                                                             <select class="form-select select2" name="category_id"
-                                                            id="category" required>
-                                                            <option value="" {{ old('category') ? '' : 'selected' }}>
-                                                                Select</option>
-                                                            @foreach ($categories as $category)
-                                                                <option value="{{ $category->id }}"
-                                                                    {{ old('category') == $category->id ? 'selected' : '' }}>
-                                                                    {{ $category->name }}
-                                                                </option>
-                                                            @endforeach
-                                                        </select>
+                                                            <select class="form-select select2" name="category_id"
+                                                                id="category" required>
+                                                                <option value=""
+                                                                    {{ old('category') ? '' : 'selected' }}>
+                                                                    Select</option>
+                                                                @foreach ($new_categories as $category)
+                                                                    <option value="{{ $category->id }}"
+                                                                        {{ old('category') == $category->id ? 'selected' : '' }}>
+                                                                        {{ $category->name }}
+                                                                    </option>
+                                                                @endforeach
+                                                            </select>
                                                         </div>
                                                     </div>
-                                                
+
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Quantity <span
@@ -434,7 +436,7 @@
                                                             <label class="form-label">Capitalize Date <span
                                                                     class="text-danger">*</span></label>
                                                             <input type="date" class="form-control"
-                                                                name="capitalize_date" id="capitalize_date" readonly
+                                                                name="capitalize_date" id="capitalize_date"
                                                                 value="{{ old('capitalize_date') }}" required />
                                                         </div>
                                                     </div>
@@ -786,15 +788,13 @@
                 showToast('error', 'Total Current Value must be greater than 0.');
                 return false;
             }
-           let isValid=true;
+            let isValid = true;
             $('.asset-code-input').each(function(index) {
-                    if($(this).hasClass('is-invalid'))
-                    {
-                        isValid=false;
-                    }
+                if ($(this).hasClass('is-invalid')) {
+                    isValid = false;
+                }
             });
-            if(isValid==false)
-            {
+            if (isValid == false) {
                 showToast('error', 'Code Already Exist.');
                 return false;
             }
@@ -807,7 +807,7 @@
             e.preventDefault(); // Always prevent default first
 
             collectSubAssetDataToJson();
-            let isValid=true;
+            let isValid = true;
             document.getElementById('document_status').value = 'submitted';
 
             let currentValueAsset = parseFloat($('#current_value_asset').val()) || 0;
@@ -820,14 +820,12 @@
                 showToast('error', 'Total Current Value must be greater than 0.');
                 return false;
             }
-             $('.asset-code-input').each(function(index) {
-                    if($(this).hasClass('is-invalid'))
-                    {
-                        isValid=false;
-                    }
+            $('.asset-code-input').each(function(index) {
+                if ($(this).hasClass('is-invalid')) {
+                    isValid = false;
+                }
             });
-            if(isValid==false)
-            {
+            if (isValid == false) {
                 showToast('error', 'Code Already Exist.');
                 return false;
             }
@@ -838,6 +836,7 @@
 
 
         $(document).ready(function() {
+            $('#category').val($('#old_category').val()).trigger('change');
 
             $("#asset_search_input").autocomplete({
                 source: function(request, response) {
@@ -877,7 +876,12 @@
                     $('#asset_id').val(ui.item.value);
                     $('#subasset_search_input').val('');
                     $('#sub_asset_id').val('');
-                    $('#last_dep_date').val('');
+                    $('#last_dep_date')
+                        .val('')
+                        .removeAttr('min')
+                        .removeAttr('max')
+                        .prop('readonly', true);
+                        $('#capitalize_date').attr('min','{{$financialStartDate}}').attr('max','{{$financialEndDate}}').prop('readonly', false);
                     $('#current_value_asset').val('');
                     add_blank();
 
@@ -889,7 +893,12 @@
                         $('#asset_id').val('');
                         $('#subasset_search_input').val('');
                         $('#sub_asset_id').val('');
-                        $('#last_dep_date').val('');
+                        $('#last_dep_date')
+                        .val('')
+                        .removeAttr('min')
+                        .removeAttr('max')
+                        .prop('readonly', true);
+                        $('#capitalize_date').attr('min','{{$financialStartDate}}').attr('max','{{$financialEndDate}}').prop('readonly', false);
                         $('#current_value_asset').val('');
                         add_blank();
 
@@ -945,17 +954,30 @@
                     //$('#category').val(asset.category_id).trigger('change');
                     $('#ledger').val(asset.ledger_id).trigger('change');
                     $('#ledger_group').val(asset.ledger_group_id).trigger('change');
-                    $('#last_dep_date').val("");
+                    $('#last_dep_date')
+                        .val('')
+                        .removeAttr('min')
+                        .removeAttr('max')
+                        .prop('readonly', true);
+                        $('#capitalize_date').attr('min','{{$financialStartDate}}').attr('max','{{$financialEndDate}}').prop('readonly', false);
 
                     // Handle depreciation date
-                    if (asset.last_dep_date !== asset.capitalize_date) {
+                    if (sub_asset.last_dep_date !== sub_asset.capitalize_date) {
                         let lastDepDate = new Date(asset.last_dep_date);
                         lastDepDate.setDate(lastDepDate.getDate() - 1);
                         let formattedDate = lastDepDate.toISOString().split('T')[0];
-                        $('#last_dep_date').val(formattedDate);
+                        let today = new Date().toISOString().split('T')[0];
+                        $('#last_dep_date')
+                            .val(formattedDate)
+                            .attr('min', formattedDate)
+                            .attr('max', today)
+                            .prop('readonly', false);
+                            $('#capitalize_date')
+                            .removeAttr('min')
+                            .removeAttr('max').prop('readonly', true);
                     }
 
-                    $('#capitalize_date').val(asset.last_dep_date);
+                    $('#capitalize_date').val(sub_asset.last_dep_date);
                     $('#depreciation_rate').val(asset.depreciation_percentage);
                     $('#depreciation_rate_year').val(asset.depreciation_percentage_year);
                     $('#useful_life').val(asset.useful_life);
@@ -971,6 +993,7 @@
                         $(this).val('');
                         $('#current_value_asset').val("");
                         $('#last_dep_date').val("");
+                        $('#capitalize_date').attr('min','{{$financialStartDate}}').attr('max','{{$financialEndDate}}').prop('readonly', false);
                         $('#sub_asset_id').val('');
                         //$('#category').val("");
                         $('#ledger').val("");
@@ -1046,26 +1069,26 @@
                 const $row = $(this);
 
                 const assetCode = $row.find('.asset-code-input').val().trim();
-                 $.ajax({
-                url: '{{ route("finance.fixed-asset.check-code") }}',
-                method: 'POST',
-                data: {
-                    _token: '{{ csrf_token() }}',
-                    code: assetCode
-                },
-                success: function (response) {
-                    const $input = $row.find('.asset-code-input');
-                    const $errorEl = $row.find('.code_error'); // Use class instead of ID
+                $.ajax({
+                    url: '{{ route('finance.fixed-asset.check-code') }}',
+                    method: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}',
+                        code: assetCode
+                    },
+                    success: function(response) {
+                        const $input = $row.find('.asset-code-input');
+                        const $errorEl = $row.find('.code_error'); // Use class instead of ID
 
-                    if (response.exists) {
-                        $errorEl.text('Code already exists.');
-                        $input.addClass('is-invalid');
-                    } else {
-                        $errorEl.text('');
-                        $input.removeClass('is-invalid');
+                        if (response.exists) {
+                            $errorEl.text('Code already exists.');
+                            $input.addClass('is-invalid');
+                        } else {
+                            $errorEl.text('');
+                            $input.removeClass('is-invalid');
+                        }
                     }
-                }
-            });
+                });
                 const $assetNameInput = $row.find('.asset-name-input');
                 const $subAssetInput = $row.find('.sub-asset-code-input');
                 const $salvageValueInput = $row.find('.salvage-value-input');
@@ -1119,7 +1142,7 @@
             if ($(this).val() == "") {
                 return;
             }
-            
+
             let groupDropdown = $('#ledger_group');
             $.ajax({
                 url: '{{ route('finance.fixed-asset.getLedgerGroups') }}',
@@ -1146,17 +1169,22 @@
 
         });
         $('#old_category').on('change', function() {
-        $('.mrntableselectexcel').empty();
+            $('.mrntableselectexcel').empty();
             add_blank();
             $('#asset_search_input').val('');
             $('#asset_id').val('');
             $('#subasset_search_input').val('');
             $('#sub_asset_id').val('');
-            $('#last_dep_date').val('');
+            $('#last_dep_date')
+                        .val('')
+                        .removeAttr('min')
+                        .removeAttr('max')
+                        .prop('readonly', true);
+                        $('#capitalize_date').attr('min','{{$financialStartDate}}').attr('max','{{$financialEndDate}}').prop('readonly', false);
             $('#current_value_asset').val('');
             $('#category').val($(this).val()).trigger('change');
             loadLocation();
-        
+
         });
         $('#category').on('change', function() {
             $('#ledger').val("").select2();
@@ -1271,7 +1299,7 @@
             updateSubAssetCodes);
         $('#location').on('change', function() {
             var locationId = $(this).val();
-             var selectedCostCenterId = '{{ $data->cost_center_id ?? '' }}'; 
+            var selectedCostCenterId = '{{ $data->cost_center_id ?? '' }}';
 
             if (locationId) {
                 // Build the route manually
@@ -1290,14 +1318,16 @@
                             $('#cost_center').empty();
                             $('#cost_center').prop('required', false);
                             $('.cost_center').hide();
-                           // loadCategories();
+                            // loadCategories();
                         } else {
                             $('.cost_center').show();
                             $('#cost_center').prop('required', true);
                             $('#cost_center').empty(); // Clear previous options
-                              $.each(data, function (key, value) {
-                                let selected = (value.id == selectedCostCenterId) ? 'selected' : '';
-                                $('#cost_center').append('<option value="' + value.id + '" ' + selected + '>' + value.name + '</option>');
+                            $.each(data, function(key, value) {
+                                let selected = (value.id == selectedCostCenterId) ? 'selected' :
+                                    '';
+                                $('#cost_center').append('<option value="' + value.id + '" ' +
+                                    selected + '>' + value.name + '</option>');
                             });
                             $('#cost_center').trigger('change');
                         }
@@ -1343,11 +1373,12 @@
             $('.mrntableselectexcel').append(blank_row);
 
         }
+
         function loadLocation(selectlocation = null) {
             $('#cost_center').empty();
             $('#cost_center').prop('required', false);
             $('.cost_center').hide();
-            if(!$('#old_category').val()) {
+            if (!$('#old_category').val()) {
                 return;
             }
             const url = '{{ route('finance.fixed-asset.get-locations') }}';
@@ -1376,11 +1407,14 @@
             });
         }
         loadLocation();
-
-
-
-
-     
+        $('#last_dep_date').on('change', function() {
+            let selectedDate = new Date($(this).val());
+            if (!isNaN(selectedDate)) {
+                selectedDate.setDate(selectedDate.getDate() + 1);
+                let nextDate = selectedDate.toISOString().split('T')[0];
+                $('#capitalize_date').val(nextDate);
+            }
+        });
     </script>
     <!-- END: Content-->
 @endsection
