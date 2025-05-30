@@ -120,7 +120,16 @@
                                     <div class="col-md-5"> 
                                         <input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct" id="item_code" name="item_code" />
                                         <input type="hidden" placeholder="Select" class="form-control mw-100 ledgerselecct" id="item_id" name="item_id" />
-                                    </select> 
+                                    </div> 
+                                </div>
+                                <div class="row align-items-center mb-1 d-none" id="machineDiv">
+                                    <div class="col-md-3"> 
+                                        <label class="form-label">Machine</label>  
+                                    </div>  
+                                    <div class="col-md-5"> 
+                                        <select class="form-select" id="main_machine_id" name="main_machine_id">
+
+                                        </select> 
                                     </div> 
                                 </div>
                               </div>
@@ -219,9 +228,11 @@
                                         <th width="300px">Product Name</th>
                                         <th max-width="180px">Attributes</th>
                                         <th >UOM</th>
-                                        <th class="text-end">Quantity</th>
+                                        <th class="text-end">Qty</th>
                                         <th width="200px">Customer</th>
                                         <th width="150px">Order No.</th>
+                                        <th width="150px" id="machine_name" class="d-none">Machine</th>
+                                        <th width="150px" id="sheets" class="d-none">Sheets</th>
                                         {{-- <th>Order Date</th> --}}
                                         <th width="50px">Action</th>
                                     </tr>
@@ -229,11 +240,8 @@
                                 <tbody class="mrntableselectexcel">
                                 </tbody>
                                 <tfoot>
-                                    {{-- <tr class="totalsubheadpodetail">
-                                        <td colspan="7"></td>
-                                    </tr> --}}
                                     <tr valign="top">
-                                        <td colspan="13">
+                                        <td colspan="13" id="detailTableFooter">
                                         <table class="table border" id="itemDetailTable">
                                             <tr>
                                                 <td class="p-0">
@@ -248,41 +256,6 @@
                                             </tr>
                                         </table>
                                         </td>
-                                        {{-- <td colspan="4">
-                                        <table class="table border mrnsummarynewsty">
-                                            <tr>
-                                                <td colspan="2" class="p-0">
-                                                    <h6 class="text-dark mb-0 bg-light-primary py-1 px-50 d-flex justify-content-between">
-                                                    <strong>BOM Summary</strong>
-                                                    <div class="addmendisexpbtn">
-                                                        <button type="button" class="btn p-25 btn-sm btn-outline-secondary addOverHeadSummaryBtn"><i data-feather="plus"></i> Overhead</button> 
-                                                        <button type="button" class="btn p-25 btn-sm btn-outline-secondary wasteSummaryBtn" style="font-size: 10px"><i data-feather="plus"></i> Wastage</button>
-                                                    </div>
-                                                    </h6>
-                                                </td>
-                                            </tr>
-                                            <tr class="totalsubheadpodetail">
-                                                <td width="55%"><strong>Total Item Cost</strong></td>
-                                                <td class="text-end" id="footerSubTotal">0.00</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Overheads</strong></td>
-                                                <td class="text-end" id="footerOverhead">0.00</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Wastage</strong></td>
-                                                <td class="text-end" id="footerWasteAmount">0.00</td>
-                                            </tr>
-                                            <tr class="voucher-tab-foot">
-                                                <td class="text-primary"><strong>Total Cost</strong></td>
-                                                <td>
-                                                    <div class="quottotal-bg justify-content-end">
-                                                    <h5 id="footerTotalCost">0.00</h5>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                        </td> --}}
                                     </tr>
                                 </tfoot>
                             </table>
@@ -395,6 +368,9 @@
 @include('mfgOrder.partials.pwo-modal')
 @endsection
 @section('scripts')
+<script>
+    let getMachineDetailUrl = "{{route('mo.get.machine.detail')}}";
+</script>
 <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
 <script type="text/javascript" src="{{asset('assets/js/modules/mo.js')}}"></script>
 <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
@@ -731,6 +707,23 @@ function getPwo()
                     setAttributesUIHelper(currentIndex,"#itemTable");
                 });
             },100);
+            if(data.data.is_machine) {
+                $("#machineDiv").removeClass('d-none');
+                let option = '<option value="">Select Machine</option>';
+                data.data.machines.forEach((element) => {
+                    option += `<option value="${element.id}">${element.name}</option>`;
+                });
+                $("#main_machine_id").empty().append(option);
+                $("#machine_name").removeClass('d-none');
+                $("#sheets").removeClass('d-none');
+                $("#detailTableFooter").attr("colspan", "15");
+            } else {
+                $("#detailTableFooter").attr("colspan", "13");
+                $("#machine_name").addClass('d-none');
+                $("#sheets").addClass('d-none');
+                $("#machineDiv").addClass('d-none');
+                $("#main_machine_id").empty();
+            }
         });
     });
 }

@@ -792,7 +792,7 @@
                                                                             <label class="form-label">GSTIN No.</label>
                                                                         </div>
                                                                         <div class="col-md-6">
-                                                                            <input type="text" name="compliance[gstin_no]" id="gstinNo" class="form-control numberonly">
+                                                                            <input type="text" name="compliance[gstin_no]" id="gstinNo" class="form-control">
                                                                         </div>
                                                                     </div>
                                                                     

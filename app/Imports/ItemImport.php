@@ -373,7 +373,7 @@ class ItemImport implements ToModel, WithHeadingRow, WithChunkReading
                 'item_name' => [
                     'required',
                     'string',
-                    'max:100',
+                    'max:200',
                     Rule::unique('erp_items', 'item_name')
                     ->where('group_id', $uploadedItem->group_id) 
                     ->whereNull('deleted_at')

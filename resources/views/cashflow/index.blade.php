@@ -363,7 +363,7 @@
                                 </div>
                                 <div class="mb-1">
                                     <label class="form-label" for="organization">Organization</label>
-                              <select id="organization" name="organization" class="form-select select2" required>
+                              <select id="organization_id" name="organization_id" class="form-select select2" required>
                                     <option value="" disabled>Select</option>
 
                                     @foreach ($mappings as $organization)
@@ -665,9 +665,10 @@
             });
         }
     });
-     function updateLocationsDropdown(selectedOrgIds) {
+     function updateLocationsDropdown(selectedOrgId) {
+        console.log(selectedOrgId,'selected')
         const filteredLocations = locations.filter(loc =>
-            selectedOrgIds.includes(String(loc.organization_id))
+            String(loc.organization_id) === String(selectedOrgId)
         );
 
         const $locationDropdown = $('#location_id');
@@ -719,15 +720,17 @@
     }
 $(document).ready(function() {
     // On change of organization
-        $('#organization').on('change', function () {
-            const selectedOrgIds = $(this).val() || [];
-            updateLocationsDropdown(selectedOrgIds);
+        $('#organization_id').on('change', function () {
+            const selectedOrgId = $(this).val(); 
+            console.log('change')
+            updateLocationsDropdown(selectedOrgId);
         });
 
         // On page load, check for preselected orgs
-        const preselectedOrgIds = $('#organization').val() || [];
-        if (preselectedOrgIds.length > 0) {
-            updateLocationsDropdown(preselectedOrgIds);
+        console.log('preselectedOrgId',$('#organization_id').val())
+        const preselectedOrgId = $('#organization_id').val();
+        if (preselectedOrgId) {
+            updateLocationsDropdown(preselectedOrgId);
         }
         // On location change, load cost centers
         $('#location_id').on('change', function () {

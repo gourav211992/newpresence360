@@ -301,7 +301,7 @@ class ErpPSVController extends Controller
                     ], 422);
                 }
                 $document_number = $numberPatternData['document_number'] ?? $request->document_no;
-                $regeneratedDocExist = ErpPsvHeader::where('book_id', $request->book_id)
+                $regeneratedDocExist = ErpPsvHeader::withDefaultGroupCompanyOrg()->where('book_id', $request->book_id)
                     ->where('document_number', $document_number)->first();
                 if ($regeneratedDocExist) {
                     return response()->json([

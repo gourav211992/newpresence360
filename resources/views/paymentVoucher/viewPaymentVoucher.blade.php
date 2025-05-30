@@ -796,7 +796,7 @@
                                 <select class="form-select select2" id="book_code">
                                     <option value="">Select Type</option>
                                     @foreach ($books_t->unique('alias') as $book)
-                                        <option>{{ $book->alias }}</option>
+                                        <option>{{ $book->name }}</option>
                                     @endforeach
                                 </select>
                                 </div>

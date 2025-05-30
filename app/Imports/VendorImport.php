@@ -5,7 +5,7 @@ namespace App\Imports;
 use App\Models\Vendor;
 use App\Models\UploadVendorMaster;
 use App\Helpers\Helper;
-use Maatwebsite\Excel\Concerns\ToCollection;
+use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Illuminate\Support\Facades\Log;
@@ -19,7 +19,7 @@ use Exception;
 use stdClass;
 use Illuminate\Support\Collection;
 
-class VendorImport implements ToCollection, WithHeadingRow, WithChunkReading
+class VendorImport implements ToModel, WithHeadingRow, WithChunkReading
 {
     protected $successfulVendors = [];
     protected $failedVendors = [];
@@ -27,7 +27,7 @@ class VendorImport implements ToCollection, WithHeadingRow, WithChunkReading
 
     public function chunkSize(): int
     {
-        return 500;
+        return 500; 
     }
 
     public function __construct(ItemImportExportService $service)
@@ -35,17 +35,17 @@ class VendorImport implements ToCollection, WithHeadingRow, WithChunkReading
         $this->service = $service;
     }
 
-    public function onSuccess($row)
+    public function onSuccess(Vendor $vendor)
     {
         $this->successfulVendors[] = [
-            'vendor_code' => $row->vendor_code,
-            'company_name' => $row->company_name,
-            'vendor_type' => $row->vendor_type,
+            'vendor_code' => $vendor->vendor_code, 
+            'company_name' => $vendor->company_name,
+            'vendor_type' => $vendor->vendor_type,
             'status' => 'success',
             'vendor_remark' => 'Successfully uploaded',
         ];
     }
-
+    
     public function onFailure($uploadedVendor)
     {
         $this->failedVendors[] = [
@@ -67,29 +67,48 @@ class VendorImport implements ToCollection, WithHeadingRow, WithChunkReading
         return $this->failedVendors;
     }
 
-    public function collection(Collection $rows)
+    public function model(array $row)
     {
+      
         $user = Helper::getAuthenticatedUser();
         $organization = $user->organization;
-
-        $parentUrl = ConstantHelper::VENDOR_SERVICE_ALIAS;
-        $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
-
-        $validatedData = $this->getPolicyData($services, $organization);
-
-        $vendorsToInsert = [];
+        $batchNo = $this->service->generateBatchNo($organization->id, $organization->group_id, $organization->company_id, $user->id);
+        $uploadedVendor = null;
+        $validatedData = [];
         $errors = [];
-
-        foreach ($rows as $row) {
-            try {
-                if ($this->isEmptyRow($row)) {
-                    continue; 
+    
+        DB::beginTransaction(); 
+    
+        try {
+            $parentUrl = ConstantHelper::VENDOR_SERVICE_ALIAS;
+            $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
+            $vendorCodeType = 'Manual';
+        
+            if ($services && $services['services'] && $services['services']->isNotEmpty()) {
+                $firstService = $services['services']->first();
+                $serviceId = $firstService->service_id;
+                $policyData = Helper::getPolicyByServiceId($serviceId);
+                if ($policyData && isset($policyData['policyLevelData'])) {
+                    $policyLevelData = $policyData['policyLevelData'];
+                    $validatedData['group_id'] = $policyLevelData['group_id'] ?? $organization->group_id;
+                    $validatedData['company_id'] = $policyLevelData['company_id'] ?? null;
+                    $validatedData['organization_id'] = $policyLevelData['organization_id'] ?? null;
+                } else {
+                    $validatedData['group_id'] = $organization->group_id;
+                    $validatedData['company_id'] = null;
+                    $validatedData['organization_id'] = null;
                 }
-                $vendorCodeType = 'Manual';
-                if ($services && isset($services['current_book'])) {
+            } else {
+                $validatedData['group_id'] = $organization->group_id;
+                $validatedData['company_id'] = null;
+                $validatedData['organization_id'] = null;
+            }
+    
+            if ($services && $services['current_book']) {
+                if (isset($services['current_book'])) {
                     $book = $services['current_book'];
                     if ($book) {
-                        $parameters = new stdClass();
+                        $parameters = new stdClass(); 
                         foreach (ServiceParametersHelper::SERVICE_PARAMETERS as $paramName => $paramNameVal) {
                             $param = ServiceParametersHelper::getBookLevelParameterValue($paramName, $book->id)['data'];
                             $parameters->{$paramName} = $param;
@@ -99,151 +118,113 @@ class VendorImport implements ToCollection, WithHeadingRow, WithChunkReading
                         }
                     }
                 }
-
-                $vendorInitials = strtoupper(substr($row['vendor_name'], 0, 3));
-
-                // Date conversions
-                $gstinRegDate = $row['gstin_reg_date'] ?? null;
-                $gstinRegistrationDate = $this->convertExcelDate($gstinRegDate);
-
-                $tdsWefDate = $row['tds_wef_date'] ?? null;
-                $tdsWefDatee = $this->convertExcelDate($tdsWefDate);
-
-                $vendorsToInsert[] = [
-                    'company_name' => $row['vendor_name'] ?? null,
-                    'vendor_initial' => $vendorInitials ?? null,
-                    'vendor_code' => $row['vendor_code'] ?? null,
-                    'category' => $row['category'] ?? null,
-                    'subcategory' => $row['sub_category'] ?? null,
-                    'currency' => $row['currency'] ?? null,
-                    'payment_term' => $row['payment_term'] ?? null,
-                    'vendor_type' => $row['vendor_type'],
-                    'vendor_sub_type' => $row['sub_type'],
-                    'organization_type' => $row['organization_type'] ?? null,
-                    'vendor_code_type' => $vendorCodeType ?? null,
-                    'country' => $row['country'] ?? null,
-                    'state' => $row['state'] ?? null,
-                    'city' => $row['city'] ?? null,
-                    'address' => $row['address'] ?? null,
-                    'pin_code' => $row['pin_code'] ?? null,
-                    'email' => $row['email_id'] ?? null,
-                    'phone' => $row['phone_no'] ?? null,
-                    'mobile' => $row['mobile_no'] ?? null,
-                    'whatsapp_number' => $row['whatsapp_no'] ?? null,
-                    'notification_mode' => $row['notification_mode'] ?? null,
-                    'pan_number' => $row['pan_no'] ?? null,
-                    'tin_number' => $row['tin_no'] ?? null,
-                    'aadhar_number' => $row['adhaar_no'] ?? null,
-                    'ledger_code' => $row['ledger_code'] ?? null,
-                    'ledger_group' => $row['ledger_group'] ?? null,
-                    'credit_limit' => $row['credit_limit'] ?? null,
-                    'credit_days' => $row['credit_days'] ?? null,
-                    'gst_applicable' => ($row['gst_registered'] ?? 'N') === 'Y' ? 1 : 0,
-                    'gstin_no' => $row['gstin_no'] ?? null,
-                    'gst_registered_name' => $row['gst_registered_name'] ?? null,
-                    'gstin_registration_date' => $gstinRegistrationDate,
-                    'tds_applicable' => ($row['tds_applicable'] ?? 'N') === 'Y' ? 1 : 0,
-                    'wef_date' => $tdsWefDatee,
-                    'tds_certificate_no' => $row['tds_certificate_no'] ?? null,
-                    'tds_tax_percentage' => $row['tds_tax'] ?? null,
-                    'tds_category' => $row['tds_category'] ?? null,
-                    'tds_value_cab' => $row['tds_value_cap'] ?? null,
-                    'tan_number' => $row['tan_no'] ?? null,
-                    'msme_registered' => ($row['msme_registered'] ?? 'N') === 'Y' ? 1 : 0,
-                    'msme_no' => $row['msme_no'] ?? null,
-                    'msme_type' => $row['msme_type'],
-                    'status' => 'Processed',
-                    'group_id' => $validatedData['group_id'],
-                    'company_id' => $validatedData['company_id'],
-                    'organization_id' => $validatedData['organization_id'],
-                    'remarks' => "Processing vendor upload",
-                    'batch_no' => $this->service->generateBatchNo($organization->id, $organization->group_id, $organization->company_id, $user->id),
-                    'user_id' => $user->id,
-                ];
-            } catch (Exception $e) {
-                Log::error("Error importing vendor: " . $e->getMessage(), [
-                    'error' => $e,
-                    'row' => $row
-                ]);
-                $errors[] = "Error importing vendor: " . $e->getMessage();
             }
-        }
+    
+            $vendorInitials = strtoupper(substr($row['vendor_name'], 0, 3)); 
 
-        if (!empty($vendorsToInsert)) {
-            try {
-                DB::beginTransaction();
-                $chunks = array_chunk($vendorsToInsert, 500);
-
-                foreach ($chunks as $chunk) {
-                    foreach ($chunk as $vendorData) {
-                        try {
-                            UploadVendorMaster::insert($chunk);
-                            $insertedVendors = UploadVendorMaster::get();
-                            foreach ($insertedVendors as $insertedVendor) {
-                                $this->processVendorFromUpload($insertedVendor);
-                            }
-                        } catch (Exception $e) {
-                            Log::error("Error inserting vendor: " . $e->getMessage(), [
-                                'error' => $e,
-                                'vendorData' => $vendorData 
-                            ]);
-                            $errors[] = "Error inserting vendor: " . $e->getMessage();
-                        }
-                    }
+            $gstinRegDate = $row['gstin_reg_date'] ?? null;
+            $gstinRegistrationDate = null;
+            
+            if ($gstinRegDate) {
+                if (is_numeric($gstinRegDate)) {
+                    $gstinRegistrationDate = \Carbon\Carbon::createFromFormat('Y-m-d', '1900-01-01')
+                        ->addDays($gstinRegDate - 2) 
+                        ->format('Y-m-d');
+                } else {
+                    $gstinRegistrationDate = $gstinRegDate; 
+                    \Log::warning("Non-numeric GSTIN registration date encountered: " . $gstinRegDate);
                 }
-
-                DB::commit();
-            } catch (Exception $e) {
-                DB::rollBack();
-                Log::error("Batch insert failed: " . $e->getMessage());
-                $errors[] = "Batch processing failed: " . $e->getMessage();
             }
-        }
-
-        if (!empty($errors)) {
-            throw new Exception("Import errors: " . implode("; ", $errors));
-        }
-
-        return count($vendorsToInsert);
-    }
-    private function convertExcelDate($date)
-    {
-        if ($date) {
-            if (is_numeric($date)) {
-                return \Carbon\Carbon::createFromFormat('Y-m-d', '1900-01-01')
-                    ->addDays($date - 2)
-                    ->format('Y-m-d');
-            } else {
-                return $date; 
+            
+            $tdsWefDate = $row['tds_wef_date'] ?? null;
+            $tdsWefDatee = null;
+            
+            if ($tdsWefDate) {
+                if (is_numeric($tdsWefDate)) {
+                    $tdsWefDatee = \Carbon\Carbon::createFromFormat('Y-m-d', '1900-01-01')
+                        ->addDays($tdsWefDate - 2) 
+                        ->format('Y-m-d');
+                } else {
+                    $tdsWefDatee = $tdsWefDate; 
+                    \Log::warning("Non-numeric TDS WEF date encountered: " . $tdsWefDate);
+                }
             }
-        }
-        return null;
-    }
-    private function getPolicyData($services, $organization)
-    {
-        $validatedData = [
-            'group_id' => $organization->group_id,
-            'company_id' => null,
-            'organization_id' => null,
-        ];
 
-        if ($services && isset($services['services']) && $services['services']->isNotEmpty()) {
-            $firstService = $services['services']->first();
-            $serviceId = $firstService->service_id;
-            $policyData = Helper::getPolicyByServiceId($serviceId);
-            if ($policyData && isset($policyData['policyLevelData'])) {
-                $policyLevelData = $policyData['policyLevelData'];
-                $validatedData = [
-                    'group_id' => $policyLevelData['group_id'] ?? $organization->group_id,
-                    'company_id' => $policyLevelData['company_id'] ?? null,
-                    'organization_id' => $policyLevelData['organization_id'] ?? null,
-                ];
+            $uploadedVendor = UploadVendorMaster::create([
+                'company_name' => $row['vendor_name'] ?? null,
+                'vendor_initial'=>  $vendorInitials ?? null,
+                'vendor_code' => $row['vendor_code'] ?? null,
+                'category' => $row['category'] ?? null,
+                'subcategory' => $row['sub_category'] ?? null,
+                'currency' => $row['currency'] ?? null,
+                'payment_term' => $row['payment_term'] ?? null,
+                'vendor_type' => $row['vendor_type'],
+                'vendor_sub_type' =>$row['sub_type'] ,
+                'organization_type' => $row['organization_type'] ?? null,
+                'vendor_code_type' => $vendorCodeType ?? null,
+                'country' => $row['country'] ?? null,
+                'state' => $row['state'] ?? null,
+                'city' => $row['city'] ?? null,
+                'address' => $row['address'] ?? null,
+                'pin_code' => $row['pin_code'] ?? null,
+                'email' => $row['email_id'] ?? null,
+                'phone' => $row['phone_no'] ?? null,
+                'mobile' => $row['mobile_no'] ?? null,
+                'whatsapp_number' => $row['whatsapp_no'] ?? null,
+                'notification_mode' => $row['notification_mode'] ?? null,
+                'pan_number' => $row['pan_no'] ?? null,
+                'tin_number' => $row['tin_no'] ?? null,
+                'aadhar_number' => $row['adhaar_no'] ?? null,
+                'ledger_code' => $row['ledger_code'] ?? null,
+                'ledger_group' => $row['ledger_group'] ?? null,
+                'credit_limit' => $row['credit_limit'] ?? null,
+                'credit_days' => $row['credit_days'] ?? null,
+                'gst_applicable' => ($row['gst_registered'] ?? 'N') === 'Y' ? 1 : 0,
+                'gstin_no' => $row['gstin_no'] ?? null,
+                'gst_registered_name' => $row['gst_registered_name'] ?? null,
+                'gstin_registration_date' => $gstinRegistrationDate,
+                'tds_applicable' => ($row['tds_applicable'] ?? 'N') === 'Y' ? 1 : 0, 
+                'wef_date' =>  $tdsWefDatee, 
+                'tds_certificate_no' => $row['tds_certificate_no'] ?? null,
+                'tds_tax_percentage' => $row['tds_tax'] ?? null,
+                'tds_category' => $row['tds_category'] ?? null,
+                'tds_value_cab' => $row['tds_value_cap'] ?? null,
+                'tan_number' => $row['tan_no'] ?? null,
+                'msme_registered' => ($row['msme_registered'] ?? 'N') === 'Y' ? 1 : 0,
+                'msme_no' => $row['msme_no'] ?? null,
+                'msme_type' =>$row['msme_type'],
+                'status' => 'Processed',
+                'group_id' => $validatedData['group_id'], 
+                'company_id' => $validatedData['company_id'], 
+                'organization_id' => $validatedData['organization_id'], 
+                'remarks' => "Processing vendor upload",
+                'batch_no' => $batchNo,
+                'user_id' => $user->id,
+            ]);
+            DB::commit();
+    
+            $this->processVendorFromUpload($uploadedVendor);
+    
+            return $uploadedVendor;
+        } catch (Exception $e) {
+            DB::rollback();
+    
+            Log::error("Error importing vendor: " . $e->getMessage(), [
+                'error' => $e,
+                'row' => $row
+            ]);
+            
+            if (isset($uploadedVendor)) {
+                $uploadedVendor->update([
+                    'status' => 'Failed',
+                    'remarks' => "Error importing vendor: " . $e->getMessage(),
+                ]);
             }
+    
+            $this->onFailure($uploadedVendor);
+            throw new Exception("Error importing vendor: " . $e->getMessage());
         }
-
-        return $validatedData;
     }
-
     public function processVendorFromUpload(UploadVendorMaster $uploadedVendor)
     {
         $user = Helper::getAuthenticatedUser();
@@ -332,15 +313,6 @@ class VendorImport implements ToCollection, WithHeadingRow, WithChunkReading
             } elseif ($uploadedVendor->msme_type === 'me') {
                 $msmeType = 'Medium';
             }
-        }
-    
-        if (!empty($errors)) {
-            $uploadedVendor->update([
-                'status' => 'Failed',
-                'remarks' => implode(', ', $errors),
-            ]);
-            $this->onFailure($uploadedVendor);
-            return;
         }
     
         try {
@@ -605,13 +577,7 @@ class VendorImport implements ToCollection, WithHeadingRow, WithChunkReading
             $validator = Validator::make($uploadedVendorData, $rules, $customMessages);
 
             if ($validator->fails()) {
-                $errors = $validator->errors()->all();
-                $uploadedVendor->update([
-                    'status' => 'Failed',
-                    'remarks' => implode(', ', $errors),
-                ]);
-                $this->onFailure($uploadedVendor);
-                return; 
+                $errors = array_merge($errors, $validator->errors()->all());
             }
 
             $addressData = [
@@ -628,6 +594,7 @@ class VendorImport implements ToCollection, WithHeadingRow, WithChunkReading
                 'company_name' => $uploadedVendor->company_name ?? null,
                 'addresses' => [$addressData], 
                 'compliance' => [
+                    'gst_applicable' => $uploadedVendor->gst_applicable ?? null,
                     'gstin_no' => $uploadedVendor->gstin_no ?? null,
                     'gstin_registration_date' => $uploadedVendor->gstin_registration_date ?? null,
                     'gst_registered_name' => $uploadedVendor->gst_registered_name ?? null,
@@ -699,14 +666,4 @@ class VendorImport implements ToCollection, WithHeadingRow, WithChunkReading
         }
     }
 
-    private function isEmptyRow(Collection $row): bool
-    {
-        foreach ($row as $value) {
-            if (!empty($value)) { 
-                return false; 
-            }
-        }
-        return true;
-    }
-    
 }

@@ -175,7 +175,7 @@
                                                             @foreach ($books as $book)
                                                                 <option value="{{ $book->id }}"
                                                                     @if ($data->book_id == $book->id) selected @endif>
-                                                                    {{ $book->book_name }}</option>
+                                                                    {{ $book->book_code }}</option>
                                                             @endforeach
                                                         </select>
                                                     </div>
@@ -794,7 +794,7 @@
                                 <select class="form-select select2" id="book_code">
                                     <option value="">Select Type</option>
                                     @foreach ($books_t->unique('alias') as $book)
-                                        <option>{{ strtoupper($book->alias) }}</option>
+                                        <option>{{ strtoupper($book->name) }}</option>
                                     @endforeach
                                 </select>
                                 </div>

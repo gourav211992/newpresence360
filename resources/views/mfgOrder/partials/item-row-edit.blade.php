@@ -9,6 +9,18 @@
          <label class="form-check-label" for="Email_{{$rowCount}}"></label>
       </div>
    </td>
+   <td>
+      <input type="text" name="components[{{$rowCount}}][pwo_book_code]" value="{{$moProduct?->pwoMapping?->pwo?->book_code ?? ''}}" class="form-control mw-100 mb-25" readonly/>
+   </td>
+   <td>
+      <input type="text" name="components[{{$rowCount}}][pwo_doc_no]" value="{{$moProduct?->pwoMapping?->pwo?->document_number ?? ''}}" class="form-control mw-100 mb-25" readonly/>
+   </td>
+   <td>
+      <input type="text" name="components[{{$rowCount}}][pwo_doc_date]" value="{{$moProduct?->pwoMapping?->pwo?->getFormattedDate('document_date')  ?? ''}}" class="form-control mw-100 mb-25" readonly/>
+   </td>
+   <td>
+      <input type="text" name="components[{{$rowCount}}][location_id]" value="{{$moProduct?->pwoMapping?->pwo?->location?->store_name  ?? ''}}" class="form-control mw-100 mb-25" readonly/>
+   </td>
    <td class="poprod-decpt"> 
       <input type="text" readonly value="{{$moProduct->item_code}}" name="component_item_name[{{$rowCount}}]" placeholder="Select" class="form-control mw-100 mb-25 ledgerselecct comp_item_code " />
       <input type="hidden" name="components[{{$rowCount}}][item_id]" value="{{$moProduct->item_id}}"/>
@@ -47,7 +59,22 @@
       <input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct" value="{{$moProduct?->customer?->company_name}}" name="components[{{$rowCount}}][customer_code]" />
    </td>
    {{-- <td></td> --}}
-   <td>{{$moProduct?->pwoMapping?->soItem?->header?->document_number ?? ''}}</td>
+   <td>
+      <input type="text" name="components[{{$rowCount}}][so_code]" value="{{$moProduct?->pwoMapping?->soItem?->header?->full_document_number ?? ''}}" class="form-control mw-100 mb-25" readonly/>
+   </td>
+   @if($moProduct?->mo?->machine_id)
+   <td>
+      <select class="form-select" name="components[{{$rowCount}}][machine_id]">
+         <option value="">Select Machine</option>
+         @foreach($machines as $machine)
+         <option value="{{$machine->id}}" {{$moProduct->machine_id == $machine->id ? 'selected' : ''}}>{{$machine?->name}}</option>
+         @endforeach
+      </select>
+   </td>
+   <td>
+      <input type="number" step="any" class="form-control mw-100 text-end" name="components[{{$rowCount}}][sheet]" value="{{$moProduct->number_of_sheet}}" readonly/>
+   </td>
+   @endif
    <td>
       <div class="d-flex align-items-center justify-content-center">
       <input type="hidden" name="components[{{$rowCount}}][remark]" value="{{$moProduct->remark}}"/>
