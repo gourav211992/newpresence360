@@ -124,6 +124,8 @@ class FailedVendorsExport implements FromCollection, WithHeadings, WithMapping, 
         $styles = [];
         
         $yellowColumns = [1, 5, 6, 10, 11, 12, 13, 14]; 
+        $totalColumns = count($this->headings());
+        $remarksColIndex = $totalColumns; 
         foreach ($yellowColumns as $col) {
             $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col);
             $styles["{$columnLetter}1"] = [
@@ -134,8 +136,23 @@ class FailedVendorsExport implements FromCollection, WithHeadings, WithMapping, 
                 'fill' => [
                     'fillType' => 'solid',
                     'startColor' => ['argb' => 'FFFF00'] 
-                ]
+                ],
+                'alignment' => [
+                    'wrapText' => true, 
+                    'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+                    'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+                ],
+                'borders' => [
+                    'allBorders' => [
+                        'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                        'color' => ['argb' => 'FF000000'],
+                    ],
+                ],
             ];
+            $sheet->getColumnDimension($columnLetter)->setWidth(15);
+            if ($col !== $remarksColIndex) {
+                $sheet->getStyle("{$columnLetter}")->getAlignment()->setWrapText(true);
+            }
         }
     
         $totalColumns = count($this->headings());
@@ -150,8 +167,23 @@ class FailedVendorsExport implements FromCollection, WithHeadings, WithMapping, 
                     'fill' => [
                         'fillType' => 'solid',
                         'startColor' => ['argb' => 'D3D3D3'] 
-                    ]
+                    ],
+                    'alignment' => [
+                        'wrapText' => true, 
+                        'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+                        'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+                    ],
+                    'borders' => [
+                        'allBorders' => [
+                            'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                            'color' => ['argb' => 'FF000000'],
+                        ],
+                    ],
                 ];
+                $sheet->getColumnDimension($columnLetter)->setWidth(15);
+                if ($col !== $remarksColIndex) {
+                    $sheet->getStyle("{$columnLetter}")->getAlignment()->setWrapText(true);
+                }
             }
         }
     

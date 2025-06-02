@@ -97,20 +97,20 @@ class ErpSaleOrderRequest extends FormRequest
                         }
                     }
                 }
-                //Check if Bom exists 
-                if ($itemId) {
-                    $bomExists = ItemHelper::checkItemBomExists($itemId, []);
-                    if ($bomExists['status'] == 'item_not_found' || $bomExists['status'] == 'bom_not_exists') {
-                        $validator->errors()->add("item_code." . $itemKey, $bomExists['message']);
-                    }
-                    if (isset($bomExists['bom_id'])) {
-                        $this->merge([
-                            'item_bom_id' => array_merge($this->input('item_bom_id', []), [$itemKey => $bomExists['bom_id']])
-                        ]);
-                    }
-                }
                 //Qty and delivery schedule check
                 if ($this -> type !== ConstantHelper::SQ_SERVICE_ALIAS) {
+                    //Check if Bom exists 
+                    if ($itemId) {
+                        $bomExists = ItemHelper::checkItemBomExists($itemId, []);
+                        if ($bomExists['status'] == 'item_not_found' || $bomExists['status'] == 'bom_not_exists') {
+                            $validator->errors()->add("item_code." . $itemKey, $bomExists['message']);
+                        }
+                        if (isset($bomExists['bom_id'])) {
+                            $this->merge([
+                                'item_bom_id' => array_merge($this->input('item_bom_id', []), [$itemKey => $bomExists['bom_id']])
+                            ]);
+                        }
+                    }
                     $itemQty = $this -> item_qty[$itemKey];
                     $totalDeliveryQty = 0;
                     $deliverySchedule = isset($this -> item_delivery_schedule_qty[$itemKey]) ? $this -> item_delivery_schedule_qty[$itemKey] : [];

@@ -17,6 +17,7 @@ class Item extends Model
         'type',
         'unit_id',
         'hsn_id',
+        'currency_id',
         'category_id',
         'subcategory_id',
         'item_code',
@@ -103,6 +104,11 @@ class Item extends Model
     public function inventoryDetails()
     {
         return $this->hasOne(InventoryDetail::class);
+    }
+
+    public function currency()
+    {
+        return $this->belongsTo(Currency::class, );
     }
 
     public function approvedCustomers()

@@ -103,10 +103,9 @@
       <td>
          <div class="d-flex">
             @foreach($item->mrnItemLocations()->get() as $over_key => $overhead)
-               <input type="hidden" name="components[{{$rowCount}}][hidden_packets][{{$over_key+1}}][id]" value="{{$overhead->id}}">
+               <input type="hidden" name="components[{{$rowCount}}][hidden_packets][{{$over_key+1}}][packet_id]" value="{{$overhead->id}}">
                <input type="hidden" name="components[{{$rowCount}}][hidden_packets][{{$over_key+1}}][quantity]" value="{{@$overhead->quantity}}">
                <input type="hidden" name="components[{{$rowCount}}][hidden_packets][{{$over_key+1}}][packet_number]" value="{{@$overhead->packet_number}}">
-               <input type="hidden" name="components[{{$rowCount}}][hidden_packets][{{$over_key+1}}][unit]" value="{{@$item->inventory_uom_code}}">
             @endforeach
             <input type="hidden" id="components_storage_packets_{{ $rowCount }}" name="components[{{$rowCount}}][storage_packets]" value=""/>
             <div class="me-50 cursor-pointer addStoragePointBtn" data-bs-toggle="modal" data-row-count="{{$rowCount}}" data-bs-target="#storage-point-modal">

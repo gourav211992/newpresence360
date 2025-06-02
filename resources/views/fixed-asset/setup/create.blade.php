@@ -232,7 +232,7 @@
 
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Rev. Ledger </label>
+                                                        <label class="form-label">Revaluation Ledger </label>
                                                     </div>
                                                     <div class="col-md-5">
                                                         <select class="form-select select2" name="rev_ledger_id"
@@ -262,7 +262,7 @@
                                                 </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Imp. Ledger </label>
+                                                        <label class="form-label">Impairement Ledger </label>
                                                     </div>
                                                     <div class="col-md-5">
                                                         <select class="form-select select2" name="imp_ledger_id"

@@ -127,7 +127,7 @@
                                                                 <span id="item_name_label">Item Name</span><span class="text-danger">*</span>
                                                             </label>
                                                         </div>
-                                                        <div class="col-md-5">
+                                                        <div class="col-md-5 mb-1 mb-sm-0">
                                                             <input type="text" name="item_name" class="form-control" placeholder="Enter Item Name" />
                                                         </div>
                                                         <div class="col-md-2">
@@ -135,7 +135,7 @@
                                                                 <span id="item_initial_label">Item Initial</span><span class="text-danger">*</span>
                                                             </label>
                                                         </div>
-                                                        <div class="col-md-2">
+                                                        <div class="col-md-2 mb-1 mb-sm-0">
                                                             <input type="text" name="item_initial" class="form-control" placeholder="Enter Item Initial" />
                                                         </div>
                                                     </div>
@@ -152,39 +152,53 @@
                                                         <div class="col-md-3">
                                                             <label class="form-label">HSN/SAC<span class="text-danger">*</span></label>
                                                         </div>
-                                                        <div class="col-md-5">
+                                                        <div class="col-md-5 mb-1 mb-sm-0">
                                                             <input type="text" name="hsn_name" id="hsn-autocomplete_1" class="form-control hsn-autocomplete" data-id="1" placeholder="Select HSN/SAC"/>
                                                             <input type="hidden" class="hsn-id" name="hsn_id" />
                                                         </div>
-                                                    </div>
-                                                    <div class="row align-items-center mb-1">
-                                                        <div class="col-md-3"> 
+                                                        <div class="col-md-2">
                                                             <label class="form-label">Inventory UOM <span class="text-danger">*</span></label>  
-                                                        </div>  
+                                                        </div>
                                                         <div class="col-md-2 mb-1 mb-sm-0">
-                                                            <select name="uom_id" class="form-select select2">
+                                                              <select name="uom_id" class="form-select select2">
                                                                 @foreach ($units as $unit)
                                                                     <option value="{{ $unit->id }}">{{ $unit->name }}</option>
                                                                 @endforeach
                                                             </select>
                                                         </div>
-
-                                                        <div class="col-md-1 pe-sm-0"> 
+                                                    </div>
+                                                    <div class="row align-items-center mb-1">
+                                                        <div class="col-md-3"> 
+                                                            <label class="form-label">Currency<span class="text-danger">*</span></label>  
+                                                        </div>  
+                                                        <div class="col-md-2 mb-1 mb-sm-0">
+                                                            <select class="form-select select2" id="currencySelect" name="currency_id" style="height: 40px;">
+                                                                @foreach($currencies as $currency)
+                                                                <option value="{{ $currency->id }}" data-short-name="{{ $currency->short_name }}" 
+                                                                    @if(isset($organization) && $currency->id == $organization->currency_id) selected @endif>
+                                                                    {{ $currency->name }}
+                                                                </option>
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-md-1 pe-sm-0">  
                                                             <label class="form-label">Cost Price</label>  
-                                                       </div>
-
+                                                        </div>  
                                                         <div class="col-md-2 mb-1 mb-sm-0">
                                                             <input type="text" name="cost_price" class="form-control cost-price-input" placeholder="Enter Cost Price">
                                                         </div>
-
-                                                        <div class="col-md-2 pe-sm-0 "> 
+                                                     
+                                                        <div class="col-md-2 pe-sm-0"> 
                                                             <label class="form-label">Selling price</label>  
-                                                        </div>
-
-                                                        <div class="col-md-2">
+                                                       </div>
+                                                       <div class="col-md-2 mb-1 mb-sm-0">
                                                             <input type="text" name="sell_price" class="form-control sell-price-input" placeholder="Enter Sell Price">
                                                         </div>
+                                                   
                                                     </div>
+
+                                                  
+
                                                     <div class="row align-items-center mb-1">
                                                         <div class="col-md-3"> 
                                                             <label class="form-label">Item Remarks</label>  

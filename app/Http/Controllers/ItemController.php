@@ -16,6 +16,7 @@ use App\Models\Organization;
 use Illuminate\Http\Request;
 use App\Helpers\ConstantHelper;
 use App\Models\Attribute;
+use App\Models\Currency;
 use App\Models\AttributeGroup;
 use App\Models\AlternateUOM;
 use App\Models\ProductSpecification;
@@ -164,7 +165,7 @@ class ItemController extends Controller
     {
         $user = Helper::getAuthenticatedUser();
         $organization = Organization::where('id', $user->organization_id)->first();
-        $organizationId = $organization->id;
+        $currencies = Currency::where('status', operator: ConstantHelper::ACTIVE)->get();
         $subTypes = SubType::where('status', ConstantHelper::ACTIVE)->get();
         $hsns = Hsn::where('status', ConstantHelper::ACTIVE)->WithDefaultGroupCompanyOrg()->get();
         $units = Unit::where('status', ConstantHelper::ACTIVE)->WithDefaultGroupCompanyOrg()->get();
@@ -210,12 +211,14 @@ class ItemController extends Controller
             'service'=>$service,
             'options'=>$options,
             'organizations'=>$organizations,
+            'organization'=>$organization,
             'subTypes'=>$subTypes,
             'storageTypes'=>$storageTypes,
             'attributeGroups'=>$attributeGroups,
             'allItems'=>$allItems,
             'specificationGroups'=>$specificationGroups,
-            'itemCodeType' => $itemCodeType, 
+            'itemCodeType' => $itemCodeType,
+            'currencies'=>$currencies, 
 
         ]);
     }
@@ -535,7 +538,7 @@ class ItemController extends Controller
     {
         $user = Helper::getAuthenticatedUser();
         $organization = Organization::where('id', $user->organization_id)->first();
-        $organizationId = $organization->id;
+        $currencies = Currency::where('status', operator: ConstantHelper::ACTIVE)->get();
         $item = Item::findOrFail($id);
         $subTypes = $item->subTypes; 
         $subtypeNames = $subTypes->map(function ($itemSubType) {
@@ -611,6 +614,7 @@ class ItemController extends Controller
             'status' => $status,
             'options'=>$options,
             'organizations'=>$organizations,
+            'organization'=>$organization,
             'subTypes'=>$subTypes,
             'storageTypes'=>$storageTypes,
             'attributeGroups'=>$attributeGroups,
@@ -620,6 +624,7 @@ class ItemController extends Controller
             'itemCodeType' => $itemCodeType, 
             'isItemReferenced' => $isItemReferenced,
             'tablesToCheck'=>$attributeTablesToCheck,
+            'currencies'=>$currencies,
             'isBomExists'=>$isBomExists
         ]);
     }

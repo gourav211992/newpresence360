@@ -112,7 +112,7 @@ class ItemImportExportService
         ->first();
 
         if (!$category) {
-            throw new Exception('Category not found');
+            throw new Exception("Category not found : {$categoryName}");
         }
 
         return $category;
@@ -126,7 +126,7 @@ class ItemImportExportService
             ->first();
 
         if (!$subCategory) {
-            throw new Exception('Subcategory not found under this category');
+            throw new Exception("Subcategory not found under this category: {$subCategoryName}");
         }
 
         return $subCategory;
@@ -140,7 +140,7 @@ class ItemImportExportService
         ->first();
 
         if (!$salesPerson) {
-            throw new Exception('Sales Person not found');
+            throw new Exception("Sales Person not found: {$salesPerson}");
         }
 
         return $salesPerson->id;  
@@ -346,9 +346,8 @@ class ItemImportExportService
     {
         $attributeValues = explode(',', $attribute['value']);
         $attributeValues = array_filter($attributeValues);
-    
         $attributeIds = []; 
-        $allChecked = empty($attributeValues) ? 1 : 0;
+        $allChecked = $attribute['all_checked'] ?? 0;
 
         if (!empty($attributeValues)) {
             foreach ($attributeValues as $value) {
@@ -508,7 +507,7 @@ class ItemImportExportService
     public function createAlternateUomForItem($item, $uomData, &$errors)
     {
         try {
-            $uom = $this->getUomId($uomData['uom'], $errors);
+            $uom = $this->getUomId($uomData['uom']);
             
             if (!$uom) {
                 $errors[] = "UOM not found for item {$item->id} with UOM name {$uomData['uom']}. Skipping alternate UOM creation.";

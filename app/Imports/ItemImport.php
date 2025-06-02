@@ -127,13 +127,13 @@ class ItemImport implements ToModel, WithHeadingRow, WithChunkReading
                     $attributeName = $row["attribute_{$i}_name"];
                     $attributeValue = $row["attribute_{$i}_value"];
                     $requiredBom = $row["attribute_{$i}_bom_required"] ?? null;
-                    $allChecked = $row["attribute_{$i}_all_checked"] ?? null;
+                    $allChecked = ($row["attribute_{$i}_all_checked"] ?? 'N') === 'Y' ? 1 : 0;
                     if ($attributeName) {
                         $attributes[] = [
                             'name' =>$attributeName,
                             'value' =>$attributeValue,
                             'required_bom' =>$requiredBom,
-                            'all_checked' => ($allChecked === 'Y') ? 1 : 0,
+                            'all_checked' => $allChecked,
                         ];
                     }
                 }
@@ -208,6 +208,7 @@ class ItemImport implements ToModel, WithHeadingRow, WithChunkReading
                 'subcategory' => $row['sub_category'] ?? null,
                 'hsn' => $row['hsnsac'] ?? null,
                 'uom' => $row['inventory_uom'] ?? null,
+                'currency' => $row['currency'] ?? null,
                 'cost_price' =>$row['cost_price']?? null,
                 'sell_price' => $row['sale_price']?? null,
                 'type' => ($row['type'] === 'G') ? 'Goods' : (($row['type'] === 'S') ? 'Service' : 'Goods'),
@@ -259,15 +260,13 @@ class ItemImport implements ToModel, WithHeadingRow, WithChunkReading
     private function processItemFromUpload(UploadItemMaster $uploadedItem)
     {
         $user = Helper::getAuthenticatedUser();
-        $organization = $user->organization;
         $errors = [];
         $subTypeId = null;  
         $hsnCodeId = null;  
-        $categoryInitials = null;  
-        $subCategoryInitials = null; 
         $category=null;
         $subCategory = null;  
         $uomId = null;  
+        $currencyId = null;  
         $attributes = [];  
         $specifications = []; 
         $alternateUoms = [];  
@@ -275,10 +274,8 @@ class ItemImport implements ToModel, WithHeadingRow, WithChunkReading
         
             $category = $this->service->getCategory($uploadedItem->category);
             if ($category) {
-                $categoryInitials = $category->cat_initials ?? null;
                 try {
                     $subCategory = $this->service->getSubCategory($uploadedItem->subcategory, $category);
-                    $subCategoryInitials = $subCategory->sub_cat_initials ?? null;
                 } catch (Exception $e) {
                     $errors[] = "Error fetching sub-category: " . $e->getMessage();
                 }
@@ -289,23 +286,37 @@ class ItemImport implements ToModel, WithHeadingRow, WithChunkReading
             $errors[] = "Error fetching category: " . $e->getMessage();
         }
         
-        try {
-            $hsnCodeId = $this->service->getHSNCode($uploadedItem->hsn);
-        } catch (Exception $e) {
-            $errors[] = $e->getMessage();
+        if (!empty($uploadedItem->hsn)) {
+            try {
+                $hsnCodeId = $this->service->getHSNCode($uploadedItem->hsn);
+            } catch (Exception $e) {
+                $errors[] = $e->getMessage();
+            }
         }
     
-        try {
-            $uomId = $this->service->getUomId($uploadedItem->uom);
-        } catch (Exception $e) {
-            $errors[] = $e->getMessage();
+        if (!empty($uploadedItem->uom)) {
+            try {
+                $uomId = $this->service->getUomId($uploadedItem->uom);
+            } catch (Exception $e) {
+                $errors[] = $e->getMessage();
+            }
         }
+
+        if (!empty($uploadedItem->currency)) {
+            try {
+                $currencyId = $this->service->getCurrencyId($uploadedItem->currency);
+            } catch (Exception $e) {
+                $errors[] = $e->getMessage();
+            }
+        } 
     
+        if (!empty($uploadedItem->sub_type)) {
         try {
             $subTypeId = $this->service->getSubTypeId($uploadedItem->sub_type);
         } catch (Exception $e) {
             $errors[] = $e->getMessage();
         }
+       }
     
         if (!empty($uploadedItem->attributes)) {
             $attributes = json_decode($uploadedItem->attributes, true);
@@ -332,6 +343,7 @@ class ItemImport implements ToModel, WithHeadingRow, WithChunkReading
                 'item_code_type' => $uploadedItem->item_code_type ?? null,
                 'hsn_id' => $hsnCodeId ?? null,
                 'uom_id' => $uomId ?? null,
+                'currency_id' => $currencyId ?? null,
                 'storage_uom_id' => $uomId ?? null,
                 'storage_uom_conversion' => 1,
                 'storage_uom_count' =>1,
@@ -358,6 +370,7 @@ class ItemImport implements ToModel, WithHeadingRow, WithChunkReading
                 'hsn_id' => 'required|exists:erp_hsns,id',
                 'category_id' => 'required|exists:erp_categories,id',
                 'subcategory_id' => 'required|exists:erp_categories,id',
+                'currency_id' => 'nullable|exists:mysql_master.currency,id',
                 'group_id' => 'nullable',
                 'company_id' => 'nullable',
                 'organization_id' => 'nullable',

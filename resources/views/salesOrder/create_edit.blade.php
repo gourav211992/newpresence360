@@ -426,7 +426,7 @@
                                                                 <a href="#" onclick = "copyItemRow();" id = "copy_item_section" style = "display:none;" class="btn btn-sm btn-outline-primary">
                                                                 <i data-feather="copy"></i> Copy Item</a>
                                                          </div>
-                                                         @if (isset($order) && isset($shortClose) && $shortClose && $buttons['amend'])
+                                                         @if (isset($order) && isset($shortClose) && $shortClose && $buttons['amend'] && !isset(request() -> revisionNumber))
                                                     <div class="col-md-6 text-sm-end" id = "short_close_section">
                                                     <a href="javascript:;" id="shortCloseBtn" class="btn btn-sm btn-outline-danger me-50">
                                                             <i data-feather="x-circle"></i> Short Close</a>
@@ -534,10 +534,10 @@
                                                                                     <div class="d-flex">
                                                                                        @if (request() -> type === 'so')
                                                                                            <div class="me-50 cursor-pointer" onclick = "openDeliverySchedule('{{$orderItemIndex}}');">    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Delivery Schedule" class="text-primary"><i data-feather="calendar"></i></span>
+                                                                                           <div class="me-50 cursor-pointer dynamic_bom_div" id = "dynamic_bom_div_{{$orderItemIndex}}" style = "display:none;" onclick = "getCustomizableBOM({{$orderItemIndex}}, {{ json_encode(!$orderItem->is_editable) }})"> <span data-bs-toggle="tooltip" data-bs-placement="top" title="BOM" class="text-primary"><i data-feather="table"></i></span></div>
                                                                                        @endif
                                                                                         </div>
                                                                                         <div class="me-50 cursor-pointer" data-bs-toggle="modal" data-bs-target="#Remarks" onclick = "setItemRemarks('item_remarks_{{$orderItemIndex}}');">        <span data-bs-toggle="tooltip" data-bs-placement="top" title="Remarks" class="text-primary"><i data-feather="file-text"></i></span></div>
-                                                                                        <div class="me-50 cursor-pointer dynamic_bom_div" id = "dynamic_bom_div_{{$orderItemIndex}}" style = "display:none;" onclick = "getCustomizableBOM({{$orderItemIndex}}, {{ json_encode(!$orderItem->is_editable) }})"> <span data-bs-toggle="tooltip" data-bs-placement="top" title="BOM" class="text-primary"><i data-feather="table"></i></span></div>
                                                                                    </div>
                                                                                 </td>
                                                                                 <input type="hidden" id = "item_remarks_{{$orderItemIndex}}" name = "item_remarks[]" value = "{{$orderItem -> remarks}}"/>
@@ -2083,10 +2083,10 @@
                     <div class="d-flex">
                         @if(request() -> type === 'so')
                             <div class="me-50 cursor-pointer" onclick = "openDeliverySchedule(${newIndex});">    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Delivery Schedule" class="text-primary"><i data-feather="calendar"></i></span>
+                            <div class="me-50 cursor-pointer dynamic_bom_div" id = "dynamic_bom_div_${newIndex}" onclick = "getCustomizableBOM(${newIndex})" style = "display:none;"> <span data-bs-toggle="tooltip" data-bs-placement="top" title="BOM" class="text-primary"><i data-feather="table"></i></span></div>
                         @endif
                         </div>
                         <div class="me-50 cursor-pointer" data-bs-toggle="modal" data-bs-target="#Remarks" onclick = "setItemRemarks('item_remarks_${newIndex}');">        <span data-bs-toggle="tooltip" data-bs-placement="top" title="Remarks" class="text-primary"><i data-feather="file-text"></i></span></div>
-                        <div class="me-50 cursor-pointer dynamic_bom_div" id = "dynamic_bom_div_${newIndex}" onclick = "getCustomizableBOM(${newIndex})" style = "display:none;"> <span data-bs-toggle="tooltip" data-bs-placement="top" title="BOM" class="text-primary"><i data-feather="table"></i></span></div>
                    </div>
                 </td>
                 <input type="hidden" id = "item_remarks_${newIndex}" name = "item_remarks[]"/>
@@ -3944,7 +3944,8 @@
                             customer_id : $("#customer_id_input").val(),
                             header_book_id : $("#series_id_input").val() ? $("#series_id_input").val() : "{{isset($order) ? $order -> book_id : ''}}",
                             store_id : $("#store_id_input").val(),
-                            document_id : "{{isset($order) ? $order -> id : ''}}"
+                            document_id : "{{isset($order) ? $order -> id : ''}}",
+                            document_type : "{{isset(request() -> revisionNumber) ? 'history' : ''}}"
                         },
                         success: function(data) {
                             const taxInput = document.getElementById('item_tax_' + itemIndex);
@@ -4456,10 +4457,10 @@
                                     <div class="d-flex">
                                         @if(request() -> type === 'so')
                                             <div class="me-50 cursor-pointer" onclick = "openDeliverySchedule('${currentOrderIndexVal}');">    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Delivery Schedule" class="text-primary"><i data-feather="calendar"></i></span>
+                                            <div class="me-50 cursor-pointer dynamic_bom_div" id = "dynamic_bom_div_${currentOrderIndexVal}" onclick = "getCustomizableBOM(${currentOrderIndexVal})" style = "display:none;"> <span data-bs-toggle="tooltip" data-bs-placement="top" title="BOM" class="text-primary"><i data-feather="table"></i></span></div>
                                         @endif
                                         </div>
                                         <div class="me-50 cursor-pointer" data-bs-toggle="modal" data-bs-target="#Remarks" onclick = "setItemRemarks('item_remarks_${currentOrderIndexVal}');">        <span data-bs-toggle="tooltip" data-bs-placement="top" title="Remarks" class="text-primary"><i data-feather="file-text"></i></span></div>
-                                        <div class="me-50 cursor-pointer dynamic_bom_div" id = "dynamic_bom_div_${currentOrderIndexVal}" onclick = "getCustomizableBOM(${currentOrderIndexVal})" style = "display:none;"> <span data-bs-toggle="tooltip" data-bs-placement="top" title="BOM" class="text-primary"><i data-feather="table"></i></span></div>
                                    </div>
                                 </td>
                                 <input type="hidden" id = "item_remarks_${currentOrderIndexVal}" name = "item_remarks[]" value = "${itemRemarks}"/>
@@ -5093,8 +5094,11 @@ document.addEventListener('input', function (e) {
                 //         })
                 //     });
                 // }
-
                 let bomContentDiv = document.getElementById('dynamic_bom_div_' + itemIndex);
+                console.log(bomContentDiv, "BOM DIV");
+                if (!bomContentDiv) {
+                    return;
+                }
                 $.ajax({
                 url: "{{route('sale.order.bom.check')}}",
                 method: 'GET',
@@ -5439,10 +5443,10 @@ document.addEventListener('input', function (e) {
                 <div class="d-flex">
                     @if(request() -> type === 'so')
                         <div class="me-50 cursor-pointer" onclick = "openDeliverySchedule(${newIndex});">    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Delivery Schedule" class="text-primary"><i data-feather="calendar"></i></span>
+                        <div class="me-50 cursor-pointer dynamic_bom_div" id = "dynamic_bom_div_${newIndex}" onclick = "getCustomizableBOM(${newIndex})" style = "display:none;"> <span data-bs-toggle="tooltip" data-bs-placement="top" title="BOM" class="text-primary"><i data-feather="table"></i></span></div>
                     @endif
                     </div>
                     <div class="me-50 cursor-pointer" data-bs-toggle="modal" data-bs-target="#Remarks" onclick = "setItemRemarks('item_remarks_${newIndex}');">        <span data-bs-toggle="tooltip" data-bs-placement="top" title="Remarks" class="text-primary"><i data-feather="file-text"></i></span></div>
-                    <div class="me-50 cursor-pointer dynamic_bom_div" id = "dynamic_bom_div_${newIndex}" onclick = "getCustomizableBOM(${newIndex})" style = "display:none;"> <span data-bs-toggle="tooltip" data-bs-placement="top" title="BOM" class="text-primary"><i data-feather="table"></i></span></div>
                 </div>
             </td>
             <input type="hidden" id = "item_remarks_${newIndex}" name = "item_remarks[]"/>

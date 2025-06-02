@@ -1452,7 +1452,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 $('#sub_total').val(parsedGrnData?.basic_value || 0);
                 //$('.sub_total').html(parsedGrnData?.basic_value || 0);
                 $('#tax').val(parsedGrnData?.tax_value || 0);
-                $('#purchase_amount').val(parsedGrnData?.net_value || 0);
+                $('#purchase_amount').val(
+                    (parseFloat(parsedGrnData?.tax_value || 0) + parseFloat(parsedGrnData?.basic_value || 0)).toFixed(2)
+                );
                 $('#current_value').val(parsedGrnData?.basic_value || 0);
                 const invoiceDate = parsedGrnData?.header?.supplier_invoice_date || '';
                 const formattedInvoiceDate = invoiceDate && invoiceDate !== '0000-00-00' ? invoiceDate.split('T')[0] : '';

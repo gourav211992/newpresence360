@@ -27,47 +27,48 @@ class FailedItemsExport implements FromCollection, WithHeadings, WithMapping,Wit
     public function headings(): array
     {
         $headings = [
-            'item_code',
-            'item_name',
-            'category',
-            'sub_category',
-            'hsnsac',
-            'type',
-            'sub_type',
-            'inventory_uom',
-            'sale_price', 
-            'cost_price', 
-            'status'
+            'Item Code',
+            'Item Name',
+            'Category',
+            'Sub-Category',
+            'HSN/SAC',
+            'Type',
+            'Sub-Type',
+            'Inventory UOM',
+            'Currency',
+            'Cost Price', 
+            'Sale Price', 
+            'Status'
         ];
 
         for ($i = 1; $i <= 10; $i++) {
             array_push($headings,
-                "attribute_{$i}_name",
-                "attribute_{$i}_value",
-                "required_bom_{$i}",
-                "all_checked_{$i}"
+                "Attribute {$i} Name",
+                "Attribute {$i} Value",
+                "Required BOM {$i}",
+                "All Checked {$i}"
             );
         }
 
-        $headings[] = 'product_specification_group';
+        $headings[] = 'Product Specification Group';
 
         for ($i = 1; $i <= 10; $i++) {
             array_push($headings,
-                "specification_{$i}_name",
-                "specification_{$i}_value"
+                  "Specification {$i} Name",
+                "Specification {$i} Value"
             );
         }
 
         for ($i = 1; $i <= 10; $i++) {
             array_push($headings,
-                "alternate_uom_{$i}",
-                "alternate_uom_{$i}_conversion",
-                "alternate_uom_{$i}_cost_price",
-                "alternate_uom_{$i}_default"
+                "Alternate UOM {$i}",
+                "Alternate UOM {$i} Conversion",
+                "Alternate UOM {$i} Cost Price",
+                "Alternate UOM {$i} Default?"
             );
         }
 
-        $headings[] = 'remark';
+        $headings[] = 'Remark';
 
         return $headings;
     }
@@ -83,8 +84,9 @@ class FailedItemsExport implements FromCollection, WithHeadings, WithMapping,Wit
             $item->type ?? 'N/A',
             $item->sub_type ?? 'N/A',
             $item->uom?? 'N/A',
-            $item->sell_price ?? 'N/A',
+            $item->currency?? 'N/A',
             $item->cost_price ?? 'N/A',
+            $item->sell_price ?? 'N/A',
             $item->status ?? 'N/A',
         ];
 
@@ -129,7 +131,9 @@ class FailedItemsExport implements FromCollection, WithHeadings, WithMapping,Wit
     public function styles(Worksheet $sheet)
     {
         $styles = [];
-        $requiredColumns = range(1, 7); 
+        $requiredColumns = range(1, 9); 
+        $totalColumns = count($this->headings());
+        $remarksColIndex = $totalColumns; 
         foreach ($requiredColumns as $col) {
             $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col);
             $styles["{$columnLetter}1"] = [
@@ -140,12 +144,29 @@ class FailedItemsExport implements FromCollection, WithHeadings, WithMapping,Wit
                 'fill' => [
                     'fillType' => 'solid',
                     'startColor' => ['argb' => 'FFFF00'] 
-                ]
+                ],
+                'alignment' => [
+                    'wrapText' => true, 
+                    'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+                    'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+                ],
+                'borders' => [
+                    'allBorders' => [
+                        'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                        'color' => ['argb' => 'FF000000'],
+                    ],
+                ],
+                
             ];
+            $sheet->getColumnDimension($columnLetter)->setWidth(15); 
+            if ($col !== $remarksColIndex) {
+                $sheet->getStyle("{$columnLetter}")->getAlignment()->setWrapText(true);
+            }
         }
+        
     
         $totalColumns = count($this->headings());
-        for ($col = 8; $col <= $totalColumns; $col++) {
+        for ($col = 10; $col <= $totalColumns; $col++) {
             $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col); 
             $sheet->getStyle("{$columnLetter}1")->applyFromArray([
                 'font' => [
@@ -155,8 +176,23 @@ class FailedItemsExport implements FromCollection, WithHeadings, WithMapping,Wit
                 'fill' => [
                     'fillType' => 'solid',
                     'startColor' => ['argb' => 'D3D3D3'] 
-                ]
+                ],
+                'alignment' => [
+                    'wrapText' => true, 
+                    'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+                    'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+                ],
+                'borders' => [
+                    'allBorders' => [
+                        'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                        'color' => ['argb' => 'FF000000'],
+                    ],
+                ],
             ]);
+            $sheet->getColumnDimension($columnLetter)->setWidth(15);
+            if ($col !== $remarksColIndex) {
+                $sheet->getStyle("{$columnLetter}")->getAlignment()->setWrapText(true);
+            }
         }
         return $styles;
     }
