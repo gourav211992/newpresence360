@@ -210,6 +210,11 @@ class MrnHeader extends Model
         return $this->hasMany(MrnDetail::class, 'mrn_header_id');
     }
 
+    public function itemLocations()
+    {
+        return $this->hasMany(MrnItemLocation::class, 'mrn_header_id');
+    }
+
     public function ship_address()
     {
         return $this->belongsTo(ErpAddress::class,'shipping_address');

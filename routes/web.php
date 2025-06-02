@@ -230,7 +230,8 @@ Route::middleware(['user.auth'])->group(function () {
     Route::post('/sales-order/revoke', [ErpSaleOrderController::class, 'revokeSalesOrderOrQuotation'])->name('sale.order.revoke');
     Route::post('/sales-order/get/customizable-bom', [ErpSaleOrderController::class, 'getProductionBomOfItem'])->name('sale.order.get.production.bom');
     Route::post('/sales-order/short-close', [ErpSaleOrderController::class, 'shortCloseSubmit'])->name('sale.order.get.shortClose.submit');
-    Route::get('/sales-order/report', [ErpSaleOrderController::class, 'salesOrderReport'])->name('sale.order.report');
+    Route::post('/sales-order/report', [ErpSaleOrderController::class, 'salesOrderReport'])->name('sale.order.report');
+    Route::post('/sales-order/report/attribute-grouped', [ErpSaleOrderController::class, 'salesOrderReportAttributeGrouped'])->name('sale.order.report.attribute.grouped');
     Route::get('/sales-invoice/amend/{id}', [ErpSaleInvoiceController::class, 'amendmentSubmit'])->name('sale.invoice.amend');
     Route::get('/sales-invoice/posting/get', [ErpSaleInvoiceController::class, 'getPostingDetails'])->name('sale.invoice.posting.get');
     Route::post('/sales-invoice/post', [ErpSaleInvoiceController::class, 'postInvoice'])->name('sale.invoice.post');
@@ -1327,6 +1328,8 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
             Route::get('/order/report', 'materialReceiptReport')->name('order.report');
             Route::get('/warehouse/check-setup', 'checkWarehouseSetup')->name('warehouse-setup');
             Route::get('/warehouse/item-uom-info', 'warehouseItemUomInfo')->name('warehouse-item-uom-info');
+            Route::get('/{id}/print-labels', 'printLabels')->name('print-labels');
+            Route::get('/{id}/print-barcodes', 'printBarcodes')->name('print-barcodes');
 
             /*Remove data*/
             Route::delete('remove-dis-item-level', 'removeDisItemLevel')->name('remove.item.dis');

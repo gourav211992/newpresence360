@@ -127,7 +127,7 @@
                                                             name="document_date" value="{{ date('Y-m-d') }}" required>
                                                     </div>
                                                 </div>
-                                                  <div class="row align-items-center mb-1">
+                                                <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Category <span
                                                                 class="text-danger">*</span></label>
@@ -322,21 +322,22 @@
                                             </div>
                                             <div class="card-body">
                                                 <div class="row">
-                                                       <div class="col-md-3">
+                                                    <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Category <span
                                                                     class="text-danger">*</span></label>
-                                                             <select class="form-select select2" name="category_id"
-                                                            id="category" required>
-                                                            <option value="" {{ old('category') ? '' : 'selected' }}>
-                                                                Select</option>
-                                                            @foreach ($categories as $category)
-                                                                <option value="{{ $category->id }}"
-                                                                    {{ old('category') == $category->id ? 'selected' : '' }}>
-                                                                    {{ $category->name }}
-                                                                </option>
-                                                            @endforeach
-                                                        </select>
+                                                            <select class="form-select select2" name="category_id"
+                                                                id="category" required>
+                                                                <option value=""
+                                                                    {{ old('category') ? '' : 'selected' }}>
+                                                                    Select</option>
+                                                                @foreach ($new_categories as $category)
+                                                                    <option value="{{ $category->id }}"
+                                                                        {{ old('category') == $category->id ? 'selected' : '' }}>
+                                                                        {{ $category->name }}
+                                                                    </option>
+                                                                @endforeach
+                                                            </select>
                                                         </div>
                                                     </div>
 
@@ -354,10 +355,11 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Asset Code <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" name="asset_code" oninput="this.value = this.value.toUpperCase();"
+                                                            <input type="text" class="form-control" name="asset_code"
+                                                                oninput="this.value = this.value.toUpperCase();"
                                                                 id="asset_code" value="{{ old('asset_code') }}"
                                                                 required />
-                                                                 <span class="text-danger code_error"></span>
+                                                            <span class="text-danger code_error"></span>
                                                         </div>
                                                     </div>
 
@@ -558,6 +560,9 @@
 
 @section('scripts')
     <script>
+        $(document).ready(function() {
+            $('#category').val($('#old_category').val()).trigger('change');
+        });
         $(window).on('load', function() {
             if (feather) {
                 feather.replace({
@@ -708,15 +713,14 @@
 
                 allRows.push(rowData);
             });
-        
+
 
             $('#asset_details').val(JSON.stringify(allRows));
-   if($('#asset_code').hasClass('is-invalid'))
-                    {
+            if ($('#asset_code').hasClass('is-invalid')) {
                 showToast('error', 'Code already exist.');
-                         return false;
-               
-                    }
+                return false;
+
+            }
 
             document.getElementById('fixed-asset-merger-form').submit();
         });
@@ -750,12 +754,11 @@
             });
 
             $('#asset_details').val(JSON.stringify(allRows));
-              if($('#asset_code').hasClass('is-invalid'))
-                    {
+            if ($('#asset_code').hasClass('is-invalid')) {
                 showToast('error', 'Code already exist.');
-                         return false;
-               
-                    }
+                return false;
+
+            }
 
 
             this.submit();
@@ -796,9 +799,9 @@
             $('.mrntableselectexcel').empty();
             $('#addNewRowBtn').trigger('click');
             $('#category').val($(this).val()).trigger('change');
-            
+
             loadLocation();
-        
+
         });
         $('#category').on('change', function() {
             $('#ledger').val("").select2();
@@ -976,13 +979,25 @@
                             });
 
                             if (response[0].asset) {
-                                last_dep.val("");
+                                last_dep.val('')
+                                    .removeAttr('min')
+                                    .removeAttr('max')
+                                    .prop('readonly', true);
                                 if (response[0].asset.last_dep_date != response[0].asset
                                     .capitalize_date) {
                                     let lastDepDate = new Date(response[0].asset.last_dep_date);
                                     lastDepDate.setDate(lastDepDate.getDate() - 1);
                                     let formatted = lastDepDate.toISOString().split('T')[0];
-                                    last_dep.val(formatted);
+                                    let today = new Date().toISOString().split('T')[0];
+                                    last_dep.val(formatted)
+                                        .attr('min', formatted)
+                                        .attr('max', today)
+                                        .prop('readonly', false);
+                                } else {
+                                    last_dep.val('')
+                                        .removeAttr('min')
+                                        .removeAttr('max')
+                                        .prop('readonly', true);
                                 }
                             }
                             row.find('.quantity').val('');
@@ -1042,7 +1057,7 @@
                         },
                         success: function(response) {
                             let currentValue = parseFloat(response.current_value_after_dep) ||
-                            0;
+                                0;
                             totalCurrentValue += currentValue;
                             responsesReceived++;
                             if (responsesReceived === subAssetIds.length) {
@@ -1069,6 +1084,9 @@
                 $('#quantity_' + row).val(0);
                 updateSum();
             }
+            let firstNonEmptyDate = null;
+
+           
         });
         $('.select2').select2();
 
@@ -1099,10 +1117,33 @@
             // Example: Update totals in specific HTML elements
             $('#current_value').val(totalValue.toFixed(2));
             $('#salvage_value').val(salvageValue.toFixed(2));
-            //$('#quantity').val(totalQuantity);
+            let allReadonly = true;
+            let lastDepDate = '';
+
+            $('.last_dep_date').each(function() {
+                if (!$(this).prop('readonly') || $(this).val() != '') {
+                    lastDepDate = $(this).val();
+                    allReadonly = false;
+                    return false; // Exit loop early
+                }
+            });
+            
+            if (allReadonly) {
+                $('#capitalize_date').val('').attr('min', '{{ $financialStartDate }}').attr('max',
+                    '{{ $financialEndDate }}').prop('readonly', false);
+            } else {
+                let nextDate = new Date(lastDepDate);
+                nextDate.setDate(nextDate.getDate() + 1); // Add 1 day
+
+                // Format as yyyy-mm-dd
+                let yyyy = nextDate.getFullYear();
+                let mm = String(nextDate.getMonth() + 1).padStart(2, '0');
+                let dd = String(nextDate.getDate()).padStart(2, '0');
+                let formattedDate = `${yyyy}-${mm}-${dd}`;
+
+                $('#capitalize_date').val(formattedDate).removeAttr('min').removeAttr('max').prop('readonly', true);
+            }
             updateDepreciationValues();
-
-
         }
 
         let rowCount = 1;
@@ -1227,7 +1268,7 @@
         }
         $('#location').on('change', function() {
             var locationId = $(this).val();
-             var selectedCostCenterId = '{{ $data->cost_center_id ?? '' }}'; 
+            var selectedCostCenterId = '{{ $data->cost_center_id ?? '' }}';
 
             if (locationId) {
                 // Build the route manually
@@ -1247,14 +1288,16 @@
                             $('#cost_center').empty();
                             $('#cost_center').prop('required', false);
                             $('.cost_center').hide();
-                           // loadCategories();
+                            // loadCategories();
                         } else {
                             $('.cost_center').show();
                             $('#cost_center').prop('required', true);
                             $('#cost_center').empty(); // Clear previous options
-                              $.each(data, function (key, value) {
-                                let selected = (value.id == selectedCostCenterId) ? 'selected' : '';
-                                $('#cost_center').append('<option value="' + value.id + '" ' + selected + '>' + value.name + '</option>');
+                            $.each(data, function(key, value) {
+                                let selected = (value.id == selectedCostCenterId) ? 'selected' :
+                                    '';
+                                $('#cost_center').append('<option value="' + value.id + '" ' +
+                                    selected + '>' + value.name + '</option>');
                             });
                             $('#cost_center').trigger('change');
                         }
@@ -1269,10 +1312,10 @@
         });
 
 
-       
 
-       
-  
+
+
+
 
         function getAllAssetIds() {
             let assetIds = [];
@@ -1286,12 +1329,12 @@
 
             return assetIds;
         }
-        
+
         function loadLocation(selectlocation = null) {
             $('#cost_center').empty();
             $('#cost_center').prop('required', false);
             $('.cost_center').hide();
-            if(!$('#old_category').val()) {
+            if (!$('#old_category').val()) {
                 return;
             }
             const url = '{{ route('finance.fixed-asset.get-locations') }}';
@@ -1321,15 +1364,15 @@
         }
         loadLocation();
         $('#asset_code').on('input', function() {
-        const assetCode = $('#asset_code').val();
-                 $.ajax({
-                url: '{{ route("finance.fixed-asset.check-code") }}',
+            const assetCode = $('#asset_code').val();
+            $.ajax({
+                url: '{{ route('finance.fixed-asset.check-code') }}',
                 method: 'POST',
                 data: {
                     _token: '{{ csrf_token() }}',
                     code: assetCode
                 },
-                success: function (response) {
+                success: function(response) {
                     const $input = $('#asset_code');
                     const $errorEl = $('.code_error'); // Use class instead of ID
 
@@ -1342,6 +1385,27 @@
                     }
                 }
             });
+        });
+        $(document).on('change', '.last_dep_date', function() {
+            var changedValue = $(this).val();
+            $('.last_dep_date').each(function() {
+                var dateValue = $(this).val();
+                if(!$(this).prop('readonly') && $(this).val() != '') {
+                    changedValue = dateValue;
+                     $(this).val(changedValue);
+                }
+               
+            });
+                let nextDate = new Date(changedValue);
+                nextDate.setDate(nextDate.getDate() + 1); // Add 1 day
+
+                // Format as yyyy-mm-dd
+                let yyyy = nextDate.getFullYear();
+                let mm = String(nextDate.getMonth() + 1).padStart(2, '0');
+                let dd = String(nextDate.getDate()).padStart(2, '0');
+                let formattedDate = `${yyyy}-${mm}-${dd}`;
+
+             $('#capitalize_date').val(formattedDate).removeAttr('min').removeAttr('max').prop('readonly', true);
         });
     </script>
     <!-- END: Content-->

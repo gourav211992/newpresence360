@@ -244,10 +244,11 @@
                                                         </thead>
                                                         <tbody class="mrntableselectexcel">
                                                             @foreach(json_decode($data->asset_details) as $i => $assetRow)
-                                                            @php $key = $i+1; 
+                                                            @php $key = $i; 
                                                                          $selectedSubAssets = is_array($assetRow->sub_asset_id) ? $assetRow->sub_asset_id : [];
                                                                         $fixedAsset = App\Models\FixedAssetRegistration::find($assetRow->asset_id);
                                                                         $subAssets = $fixedAsset?->subAsset ?? [];
+                                                                        $adjustedDate = $fixedAsset->last_dep_date ? \Carbon\Carbon::parse($fixedAsset->last_dep_date)->subDay()->format('Y-m-d') : '';
                                                                  @endphp
                                                             <tr>
                                                                 <td class="customernewsection-form">
@@ -280,8 +281,9 @@
                                                                         class="form-control mw-100 text-end salvagevalue" readonly/>
                                                                 </td>
                                                                     </td>
-                                                                <td><input type="date" name="last_dep_date[]" id="last_dep_date_{{$key}}" data-id="{{$key}}"
-                                                                    class="form-control mw-100 last_dep_date" value="{{ $assetRow->last_dep_date }}" readonly/>
+                                                                <td>
+                                                                    <input type="date" name="last_dep_date[]" id="last_dep_date_{{$key}}" data-id="{{$key}}"
+                                                                    class="form-control mw-100 last_dep_date" value="{{ $assetRow->last_dep_date }}" @if($assetRow->last_dep_date!=null) min="{{$adjustedDate}}" max="{{date('Y-m-d')}}" @else readonly @endif/>
                                                                     </td>
                                                             </tr>
                                                             @endforeach
@@ -523,7 +525,12 @@
 
 @section('scripts')
     <script>
+    //      $('.select2').each(function () {
+    //     $(this).select2();
+    // });
         updateSum();
+        $('#capitalize_date').val('{{ $data->capitalize_date }}');
+      
         $(window).on('load', function() {
             if (feather) {
                 feather.replace({
@@ -856,7 +863,7 @@
     document.getElementById("depreciation_rate_year").value = depreciationRate;
     document.getElementById("total_depreciation").value = totalDepreciation;
 }
- $('.select2').select2();
+ //$('.select2').select2();
 
             
  function updateSum() {
@@ -885,6 +892,32 @@
     // Example: Update totals in specific HTML elements
     $('#current_value').val(totalValue.toFixed(2));
     $('#salvage_value').val(salvageValue.toFixed(2));
+    let allReadonly = true;
+            let lastDepDate = '';
+
+            $('.last_dep_date').each(function() {
+                if (!$(this).prop('readonly') || $(this).val() != '') {
+                    lastDepDate = $(this).val();
+                    allReadonly = false;
+                    return false; // Exit loop early
+                }
+            });
+            
+            if (allReadonly) {
+                $('#capitalize_date').val('').attr('min', '{{ $financialStartDate }}').attr('max',
+                    '{{ $financialEndDate }}').prop('readonly', false);
+            } else {
+                let nextDate = new Date(lastDepDate);
+                nextDate.setDate(nextDate.getDate() + 1); // Add 1 day
+
+                // Format as yyyy-mm-dd
+                let yyyy = nextDate.getFullYear();
+                let mm = String(nextDate.getMonth() + 1).padStart(2, '0');
+                let dd = String(nextDate.getDate()).padStart(2, '0');
+                let formattedDate = `${yyyy}-${mm}-${dd}`;
+
+                $('#capitalize_date').val(formattedDate).removeAttr('min').removeAttr('max').prop('readonly', true);
+            }
     //$('#quantity').val(totalQuantity);
     updateDepreciationValues();
 
@@ -894,6 +927,11 @@
 let rowCount = 1;
 
 $('#addNewRowBtn').on('click', function () {
+//    $('.select2').each(function () {
+//         if ($.data(this, 'select2')) {
+//             $(this).select2('destroy');
+//         }
+//     });
     rowCount++;
     let newRow = `
     <tr>
@@ -925,12 +963,15 @@ $('#addNewRowBtn').on('click', function () {
             class="form-control mw-100 last_dep_date" readonly /></td>
     </tr>
     `;
-
+    
     $('.mrntableselectexcel').append(newRow);
-    $(".select2").select2();
+        $('.sub_asset_id').select2();
+    
+    // $('.select2').each(function () {
+    //     $(this).select2();
+    // });
     refreshAssetSelects();
-        initializeAssetAutocomplete('.asset-search-input');
-
+    initializeAssetAutocomplete('.asset-search-input');
 });
 function refreshAssetSelects() {
     let selectedAssets = [];
@@ -1074,15 +1115,29 @@ function initializeAssetAutocomplete(selector) {
                             '<option value="' + subAsset.id + '">' + subAsset.sub_asset_code + '</option>'
                         );
                     });
-                     last_dep.val("");
+                     last_dep.val('')
+                                    .removeAttr('min')
+                                    .removeAttr('max')
+                                    .prop('readonly', true);
 
                     if (response[0].asset) {
+
                         if(response[0].asset.last_dep_date!=response[0].asset.capitalize_date){
                         let lastDepDate = new Date(response[0].asset.last_dep_date);
                         lastDepDate.setDate(lastDepDate.getDate() - 1);
                         let formatted = lastDepDate.toISOString().split('T')[0];
-                        last_dep.val(formatted);
-                    }
+                        let today = new Date().toISOString().split('T')[0];
+                                    last_dep.val(formatted)
+                                        .attr('min', formatted)
+                                        .attr('max', today)
+                                        .prop('readonly', false);
+                                } else {
+                                    last_dep.val('')
+                                        .removeAttr('min')
+                                        .removeAttr('max')
+                                        .prop('readonly', true);
+                                }
+                    
                     }
                 row.find('.quantity').val('');
                 row.find('.currentvalue').val('');
@@ -1282,6 +1337,27 @@ function getAllAssetIds() {
                     }
                 }
             });
+        });
+        $(document).on('change', '.last_dep_date', function() {
+            var changedValue = $(this).val();
+            $('.last_dep_date').each(function() {
+                var dateValue = $(this).val();
+                if(!$(this).prop('readonly') && $(this).val() != '') {
+                    changedValue = dateValue;
+                     $(this).val(changedValue);
+                }
+               
+            });
+                let nextDate = new Date(changedValue);
+                nextDate.setDate(nextDate.getDate() + 1); // Add 1 day
+
+                // Format as yyyy-mm-dd
+                let yyyy = nextDate.getFullYear();
+                let mm = String(nextDate.getMonth() + 1).padStart(2, '0');
+                let dd = String(nextDate.getDate()).padStart(2, '0');
+                let formattedDate = `${yyyy}-${mm}-${dd}`;
+
+             $('#capitalize_date').val(formattedDate).removeAttr('min').removeAttr('max').prop('readonly', true);
         });
 
     </script>

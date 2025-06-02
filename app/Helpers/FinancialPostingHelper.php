@@ -69,7 +69,8 @@ class FinancialPostingHelper
     const CREDIT = "Credit";
     const COGS_ACCOUNT = 'COGS';
     const SALES_ACCOUNT = 'Sales';
-    const STOCK_ACCOUNT = 'Service';
+    const STOCK_ACCOUNT = 'Stock';
+    const SERVICE_ACCOUNT = 'Service';
     const PHYSICAL_STOCK_VARIANCE_ACCOUNT = 'PSVA';
     const WIP_ACCOUNT = 'FG/WIP';
     const RM_ACCOUNT = 'RM';
@@ -5727,7 +5728,7 @@ class FinancialPostingHelper
             );
         }
         $postingArray = array(
-            self::STOCK_ACCOUNT => [],
+            self::SERVICE_ACCOUNT => [],
             self::TAX_ACCOUNT => [],
             self::EXPENSE_ACCOUNT => [],
             self::DISCOUNT_ACCOUNT => [],
@@ -5785,14 +5786,14 @@ class FinancialPostingHelper
             }
 
             //Check for same ledger and group in SALES ACCOUNT
-            $existingstockLedger = array_filter($postingArray[self::STOCK_ACCOUNT], function ($posting) use ($stockLedgerId, $stockLedgerGroupId) {
+            $existingstockLedger = array_filter($postingArray[self::SERVICE_ACCOUNT], function ($posting) use ($stockLedgerId, $stockLedgerGroupId) {
                 return $posting['ledger_id'] == $stockLedgerId && $posting['ledger_group_id'] == $stockLedgerGroupId;
             });
             //Ledger found
             if (count($existingstockLedger) > 0) {
-                $postingArray[self::STOCK_ACCOUNT][0]['debit_amount'] +=  $stockDebitAmount;
+                $postingArray[self::SERVICE_ACCOUNT][0]['debit_amount'] +=  $stockDebitAmount;
             } else { //Assign a new ledger
-                array_push($postingArray[self::STOCK_ACCOUNT], [
+                array_push($postingArray[self::SERVICE_ACCOUNT], [
                     'ledger_id' => $stockLedgerId,
                     'ledger_group_id' => $stockLedgerGroupId,
                     'ledger_code' => $stockLedger?->code,

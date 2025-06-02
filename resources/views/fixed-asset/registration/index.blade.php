@@ -75,6 +75,7 @@
                                                 <th width="100px">Doc. No</th>
                                                 <th>Asset Name</th>
                                                 <th>Asset Code</th>
+                                                <th>Dep. Method</th>
                                                 <th>Ledger Name</th>
                                                 <th>Book Date</th>
                                                 <th>Location</th>
@@ -95,6 +96,7 @@
                                                     <td>{{ $asset->document_number ??"-" }}</td>
                                                     <td class="fw-bolder text-dark">{{ $asset->asset_name??"-" }}</td>
                                                     <td>{{ $asset->asset_code??"-" }}</td>
+                                                    <td>{{ $asset->depreciation_method??"-" }}</td>
                                                     <td>{{ $asset->ledger->name??"-" }}</td>
                                                     <td>{{ $asset->book_date!=null?\Carbon\Carbon::parse($asset->book_date)->format('d-m-Y'):"-" }}</td>
                                                     <td>{{ $asset?->location?->store_name ??"-" }}</td>

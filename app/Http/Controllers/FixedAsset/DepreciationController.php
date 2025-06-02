@@ -297,8 +297,6 @@ class DepreciationController extends Controller
             ->withWhereHas('category')
             ->get()
             ->where('last_dep_date', '<', $endDate);
-
-
         return response()->json($asset_details);
     }
     function getPeriods($startDate, $endDate, $period)

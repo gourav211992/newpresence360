@@ -42,7 +42,7 @@ use App\Helpers\ConstantHelper;
 
 use Illuminate\Http\Request;
 use App\Services\EInvoiceService;
-
+use App\Services\MasterIndiaService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Model;
 
@@ -53,7 +53,7 @@ use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Support\Facades\Storage;
 
 class EInvoiceHelper
-{   
+{
     public function __construct()
 	{
 		// $logFactory = new LoggerFactory();
@@ -66,7 +66,7 @@ class EInvoiceHelper
     const CREDIT_NOTE_INVOICE_TYPE = "CDNR";
     const TRANPORTER_DOC_NO_MAX_LIMIT = 15;
     const EWAY_BILL_MIN_AMOUNT_LIMIT = 50000;
-    
+
     public static function getGstInvoiceType($partyId, $partyCountryId, $sellerCountryId, string $partyType = 'customer') : string|null
     {
         //Retrieve party first
@@ -161,6 +161,37 @@ class EInvoiceHelper
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
+    }
+
+    public static function validateGstinName(Request $request){
+        try{
+            $gstin = $request->gstin;
+            $authCredentials = self::getAuthCredentials();
+            $requestUid = '1';
+            $eInvoiceService = new MasterIndiaService($authCredentials,$requestUid);
+
+            $authToken = $eInvoiceService->getAuthToken();
+            $gstinUrl =  env('GSTIN_BASE_URL', '').$gstin;
+            $clientId = env('GSTIN_CLIENT_ID', '');
+            $requestHeader = array(
+                'client_id:'.$clientId,
+                'Authorization:Bearer '.$authToken,
+                'Content-Type: application/json'
+            );
+            $curl = curl_init();
+
+            curl_setopt($curl, CURLOPT_URL,$gstinUrl);
+            curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "GET");
+            curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($curl, CURLOPT_HTTPHEADER, $requestHeader);
+            $result = curl_exec($curl);
+            return $result;
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+
+        }
+
     }
 
     public function getIrnDetails(Request $request)
@@ -362,7 +393,7 @@ class EInvoiceHelper
 
         $itemList = array();
         $result = array();
-        
+
         $orderQty = 0;
         $totalAmt = 0;
         $itemDiscount = 0;
@@ -737,7 +768,7 @@ class EInvoiceHelper
             $documentHeader = $document;
             $documentDetails = $document ?-> items ?? [];
             $eInvoice = $document?->irnDetail()->first();
-            
+
             $organization = Organization::where('id', $user->organization_id)->first();
             $organizationAddress = Address::with(['city', 'state', 'country'])
                 ->where('addressable_id', $user->organization_id)
@@ -761,11 +792,11 @@ class EInvoiceHelper
         $checkGstIn = EInvoiceHelper::getGstDetail($gstNumber);
         if(!(is_string($checkGstIn))){
             if(!$checkGstIn['Status']){
-                $errorMsg = ""; 
+                $errorMsg = "";
                 if($checkGstIn['ErrorDetails'][0]['ErrorMessage'] == "Requested data is not available"){
-                    $errorMsg = "Error: ". @$checkGstIn['ErrorDetails'][0]['ErrorCode'].' - Invalid GST Number';    
+                    $errorMsg = "Error: ". @$checkGstIn['ErrorDetails'][0]['ErrorCode'].' - Invalid GST Number';
                 } else{
-                    $errorMsg = "Error: ". @$checkGstIn['ErrorDetails'][0]['ErrorCode'].' -'.$checkGstIn['ErrorDetails'][0]['ErrorMessage']; 
+                    $errorMsg = "Error: ". @$checkGstIn['ErrorDetails'][0]['ErrorCode'].' -'.$checkGstIn['ErrorDetails'][0]['ErrorMessage'];
                 }
                 return [
                     'checkGstIn' => $checkGstIn,
@@ -787,8 +818,8 @@ class EInvoiceHelper
     public static function checkIfGstInShouldGenerate(Model $document, $documentType = null)
     {
         $serviceAlias = $document ?-> book ?-> service ?-> alias;
-        if ($serviceAlias === ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS || $serviceAlias === ConstantHelper::SR_SERVICE_ALIAS || 
-        ($serviceAlias === ConstantHelper::SI_SERVICE_ALIAS) || 
+        if ($serviceAlias === ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS || $serviceAlias === ConstantHelper::SR_SERVICE_ALIAS ||
+        ($serviceAlias === ConstantHelper::SI_SERVICE_ALIAS) ||
         ($serviceAlias === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS && !$document -> invoice_required)) {
             return true;
         } else {
@@ -852,7 +883,7 @@ class EInvoiceHelper
         ];
 
         return $ewbDetails;
-        
+
     }
 
     public static function generateEwayBill($documentHeader)
@@ -873,5 +904,5 @@ class EInvoiceHelper
             return $response;
         }
     }
-    
+
 }

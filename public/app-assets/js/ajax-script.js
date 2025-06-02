@@ -569,15 +569,23 @@ let originalGstin = '';
 $(document).ready(function() {
     originalGstin = $('input[name="compliance[gstin_no]"]').val() || '';
     let previousGstApplicable = $('input[name="compliance[gst_applicable]"]:checked').val() === '1' ? 1 : 0;
+    if (previousGstApplicable === 0) {
+        disableGstFields();
+    } else {
+        enableGstFields();
+    }
     $('#gstinNo').on('input blur', function() {
         handleGstInputOrChange();
     });
+
+
     $('input[name="compliance[gst_applicable]"]').on('change', function() {
         const currentGstApplicable = $('input[name="compliance[gst_applicable]"]:checked').val() === '1' ? 1 : 0;
         if (currentGstApplicable === 1 && previousGstApplicable === 0) {
             handleGstApplicableChange(); 
+            enableGstFields();
         }else {
-            resetGstFields(); 
+            disableGstFields(); 
         }
         previousGstApplicable = currentGstApplicable; 
     });
@@ -603,10 +611,17 @@ function handleGstInputOrChange() {
         fetchGstDetailsByGstin(currentGstin);
     }
 }
-function resetGstFields() {
-    $('input[name="compliance[gstin_no]"]').val('');
-    $('input[name="compliance[gstin_registration_date]"]').val('');
-    $('input[name="compliance[gst_registered_name]"]').val('');
+
+function disableGstFields() {
+    $('input[name="compliance[gstin_no]"]').val('').prop('disabled', true);
+    $('input[name="compliance[gstin_registration_date]"]').val('').prop('disabled', true);
+    $('input[name="compliance[gst_registered_name]"]').val('').prop('disabled', true);
+}
+
+function enableGstFields() {
+    $('input[name="compliance[gstin_no]"]').prop('disabled', false);
+    $('input[name="compliance[gstin_registration_date]"]').prop('disabled', false);
+    $('input[name="compliance[gst_registered_name]"]').prop('disabled', false);
 }
 function resetGstDependentFields() {
     $('input[name="compliance[gstin_registration_date]"]').val('');

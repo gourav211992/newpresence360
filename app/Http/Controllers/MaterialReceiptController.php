@@ -74,6 +74,7 @@ use App\Helpers\ItemHelper;
 use App\Helpers\NumberHelper;
 use App\Helpers\ConstantHelper;
 use App\Helpers\CurrencyHelper;
+use App\Helpers\EInvoiceHelper;
 use App\Helpers\InventoryHelper;
 use App\Helpers\StoragePointHelper;
 use App\Helpers\FinancialPostingHelper;
@@ -1034,7 +1035,6 @@ class MaterialReceiptController extends Controller
 
         DB::beginTransaction();
         try {
-
             $parameters = [];
             $response = BookHelper::fetchBookDocNoAndParameters($request->book_id, $request->document_date);
             if ($response['status'] === 200) {
@@ -1412,68 +1412,38 @@ class MaterialReceiptController extends Controller
                         }
                     }
 
-                    #Save item store locations
-                    // if (isset($component['erp_store']) && $component['erp_store']) {
-                    //     foreach($component['erp_store'] as $val) {
-                    //         if(isset($val['store_qty']) && $val['store_qty'])
-                    //         {
-                    //             $storeLocation = MrnItemLocation::find(@$val['id']) ?? new MrnItemLocation;
-                    //             $storeLocation->mrn_header_id = $mrn->id;
-                    //             $storeLocation->mrn_detail_id = $mrnDetail->id;
-                    //             $storeLocation->item_id = $mrnDetail->item_id;
-                    //             $storeLocation->store_id = $val['erp_store_id'] ?? null;
-                    //             $storeLocation->rack_id = $val['erp_rack_id'] ?? null;
-                    //             $storeLocation->shelf_id = $val['erp_shelf_id'] ?? null;
-                    //             $storeLocation->bin_id = $val['erp_bin_id'] ?? null;
-                    //             $storeLocation->quantity = $val['store_qty'] ?? 0.00;
-                    //             $storeLocation->inventory_uom_qty = $mrnDetail->inventory_uom_qty;
-                    //             // if(@$component['uom_id'] == @$item->uom_id) {
-                    //             //     $storeLocation->inventory_uom_qty = $val['store_qty'] ?? 0.00;
-                    //             // } else {
-                    //             //     $alUom = AlternateUOM::where('item_id', $component['item_id'])->where('uom_id', $component['uom_id'])->first();
-                    //             //     if($alUom) {
-                    //             //         $storeLocation->inventory_uom_qty = intval($val['store_qty']) * $alUom->conversion_to_inventory;
-                    //             //     }
-                    //             // }
-                    //             $storeLocation->save();
-                    //             if (is_null($storeLocation->inventory_uom_qty) || ($storeLocation->inventory_uom_qty) <= 0) {
-                    //                 DB::rollBack();
-                    //                 return response()->json([
-                    //                     'message' => 'Inventory UOM Quantity should not be null or less than or equal to zero'
-                    //                 ], 422);
-                    //             }
-                    //         }
-                    //     }
-                    // } else{
-                    //     $storeLocation = MrnItemLocation::where('mrn_header_id', $mrn->id)
-                    //         ->where('mrn_detail_id', $mrnDetail->id)
-                    //         ->where('store_id', $mrnDetail->store_id)
-                    //         ->first();
-                    //     if(!$storeLocation){
-                    //         $storeLocation = new MrnItemLocation;
-                    //     }
-                    //     $storeLocation->mrn_header_id = $mrn->id;
-                    //     $storeLocation->mrn_detail_id = $mrnDetail->id;
-                    //     $storeLocation->item_id = $mrnDetail->item_id;
-                    //     $storeLocation->store_id = $mrnDetail->store_id;
-                    //     $storeLocation->quantity = $mrnDetail->accepted_qty ?? 0.00;
-                    //     $storeLocation->inventory_uom_qty = $mrnDetail->inventory_uom_qty;
-                    //     // if($component['uom_id'] == $item->uom_id) {
-                    //     //     $storeLocation->inventory_uom_qty = $mrnDetail->accepted_qty ?? 0.00;
-                    //     // } else {
-                    //     //     $alUom = AlternateUOM::where('item_id', $component['item_id'])->where('uom_id', $component['uom_id'])->first();
-                    //     //     if($alUom) {
-                    //     //         $storeLocation->inventory_uom_qty = intval($mrnDetail->accepted_qty) * $alUom->conversion_to_inventory;
-                    //     //     }
-                    //     // }
-                    //     $storeLocation->save();
-                    //     if (is_null($storeLocation->inventory_uom_qty) || ($storeLocation->inventory_uom_qty) <= 0) {
-                    //         DB::rollBack();
-                    //         return response()->json([
-                    //             'message' => 'Inventory UOM Quantity should not be null or less than or equal to zero'
-                    //         ], 422);
-                    //     }
-                    // }
+                    #Save item packets
+                    $inventoryUomQuantity = 0.00;
+                    if (!empty($component['storage_packets'])) {
+                        $storagePoints = is_string($component['storage_packets'])
+                            ? json_decode($component['storage_packets'], true)
+                            : $component['storage_packets'];
+                        
+                        if (is_array($storagePoints)) {
+                            foreach ($storagePoints as $i => $val) {
+                                $storagePoint = MrnItemLocation::find(@$val['id']) ?? new MrnItemLocation;
+                                $storagePoint->mrn_header_id = $mrn->id;
+                                $storagePoint->mrn_detail_id = $mrnDetail->id;
+                                $storagePoint->item_id = $mrnDetail->item_id;
+                                $storagePoint->store_id = $mrnDetail->store_id;
+                                $storagePoint->sub_store_id = $mrnDetail->sub_store_id;
+                                $storagePoint->quantity = $val['quantity'] ?? 0.00;
+                                $storagePoint->inventory_uom_qty = $val['quantity'] ?? 0.00;
+                                $storagePoint->status = 'draft';
+                                $storagePoint->save();
+                                
+                                if(empty($val['packet_number'])){
+                                    // ✅ Generate packet number if not present
+                                    $packetNumber = $mrn->book_code . '-' . $mrn->document_number . '-' . $mrnDetail->item_code . '-' . $mrnDetail->id . '-' . ($storagePoint->id ?? $i + 1);
+                                    // $storagePoint->packet_number = $val['packet_number'] ?? strtoupper(Str::random(rand(8, 10)));
+                                    $storagePoint->packet_number = $packetNumber;
+                                    $storagePoint->save();
+                                }
+                            }
+                        } else {
+                            \Log::warning("Invalid JSON for storage_points_data: " . print_r($component['storage_packets'], true));
+                        }
+                    }
                 }
 
                 /*Header level save discount*/
@@ -3782,8 +3752,7 @@ class MaterialReceiptController extends Controller
         }
         $inventoryUom = Unit::find($item->uom_id ?? null);
         $storageUom = Unit::find($item->storage_uom_id ?? null);
-        $inventoryQty = ItemHelper::convertToBaseUom($item->id, $item->uom_id, $request->qty);
-
+        $inventoryQty = ItemHelper::convertToBaseUom($item->id, $request->uom_id, $request->qty);
         if (!$inventoryQty) {
             return response()->json([
                 'status' => 204,
@@ -3804,6 +3773,103 @@ class MaterialReceiptController extends Controller
             'status' => 200,
             "data" => $data,
             'message' => "fetched!"
+        ]);
+    }
+
+    # MRN Get Labels
+    public function printLabels($id)
+    {
+        $parentUrl = request() -> segments()[0];
+        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
+        if (!$servicesBooks) {
+            return response()->json([
+                'status' => 204,
+                "is_setup" => false,
+                'message' => 'You do not have access to this service.',
+            ], 422);
+        }
+
+        $user = Helper::getAuthenticatedUser();
+        $mrnHeader = MrnHeader::withDefaultGroupCompanyOrg()
+            ->where('id', $id)
+            ->first();
+
+        if (!$mrnHeader) {
+            return response()->json([
+                'status' => 204,
+                "is_setup" => false,
+                'message' => 'MRN not found.',
+            ], 422);
+        }
+        $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$mrnHeader->document_status] ?? '';
+        
+        if (request()->ajax()) {
+            $records = $mrnHeader->itemLocations()
+                ->with([
+                    'mrnHeader',
+                    'mrnDetail',
+                    'mrnDetail.item'
+                ])
+                ->latest();
+
+            return DataTables::of($records)
+                ->addIndexColumn()
+                ->editColumn('status', function ($row) {
+                    $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->status];
+                    $displayStatus = $row->status;
+                    return "<div style='text-align:right;'>
+                        <span class='badge rounded-pill $statusClasss badgeborder-radius'>$displayStatus</span>
+                        <div class='dropdown' style='display:inline;'>
+                            <button type='button' class='btn btn-sm dropdown-toggle hide-arrow py-0 p-0' data-bs-toggle='dropdown'>
+                                <i data-feather='more-vertical'></i>
+                            </button>
+                            <div class='dropdown-menu dropdown-menu-end'>
+                                <a class='dropdown-item' href='#'>
+                                    <i data-feather='edit-3' class='me-50'></i>
+                                    <span>Print</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>";
+                })
+                ->addColumn('inventory_uom', function ($row) {
+                    return $row->mrnDetail ? strval($row->mrnDetail?->inventory_uom_code) : 'N/A';
+                })
+                ->editColumn('inventory_uom_quantity', function ($row) {
+                    return number_format($row->inventory_uom_qty, 2) ?? 'N/A';
+                })
+                ->editColumn('packet_number', function ($row) {
+                    return strval($row->packet_number) ?? 'N/A';
+                })
+                ->addColumn('bar_code', function ($row) {
+                    $barCode = EInvoiceHelper::generateQRCodeBase64($row->packet_number);
+                    return "<img class='qr-code' src='{$barCode}' alt='{$row->packet_number}' style='width: 60px; height: 60px;'>";
+                })
+                ->rawColumns(['bar_code', 'status'])
+                ->make(true);
+        }
+        return view('procurement.material-receipt.print-labels', [
+            'mrn' => $mrnHeader,
+            'servicesBooks' => $servicesBooks,
+            'docStatusClass' => $docStatusClass
+        ]);
+    }
+
+    # MRN Print Labels
+    public function printBarcodes($id)
+    {
+        $packets = MrnItemLocation::with([
+            'mrnHeader',
+            'mrnDetail'
+        ])
+        ->where('mrn_header_id', $id)
+        ->get();
+
+        $html = view('procurement.material-receipt.print-barcodes', compact('packets'))->render();
+
+        return response()->json([
+            'status' => 200,
+            'html' => $html
         ]);
     }
 

@@ -127,7 +127,7 @@ class ErpSaleReturnController extends Controller
                 ->addColumn('items_count', function ($row) {
                     return $row->items->count();
                 })
-                ->editColumn('total_item_value', function ($row) {
+                ->editColumn('total_return_value', function ($row) {
                     return number_format($row->total_return_value, 2);
                 })
                 ->editColumn('total_discount_value', function ($row) {

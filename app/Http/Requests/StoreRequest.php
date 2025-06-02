@@ -77,6 +77,7 @@ class StoreRequest extends FormRequest
                     ->whereNull('deleted_at'),
             ],
 
+            'billing_address' => 'nullable',
             'country_id' => 'required|integer|exists:mysql_master.countries,id', 
             'state_id' => 'required|integer|exists:mysql_master.states,id',
             'city_id' => 'required|integer|exists:mysql_master.cities,id',

@@ -30,6 +30,7 @@ class ErpStore extends Model
         'contact_person', 
         'contact_phone_no',
         'contact_email',
+        'billing_address'
     ];
 
     public function organization()

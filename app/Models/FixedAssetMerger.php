@@ -160,7 +160,7 @@ class FixedAssetMerger extends Model
                 $old = FixedAssetSub::find($sub);
                 if ($old) {
                     if ($old->last_dep_date != $old->capitalize_date) {
-                        $old->expiry_date = $item->last_dep_date;
+                        $old->expiry_date = $request->capitalize_date;
                         $old->save();
                     } else {
                         $old->expiry_date = $old->last_dep_date;

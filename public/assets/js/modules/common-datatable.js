@@ -15,7 +15,7 @@ $.fn.dataTable.ext.type.order['formatted-date-pre'] = function(data) {
     return new Date(`${year}-${monthMap[month]}-${day.padStart(2, '0')}`).getTime();
 };
 
-function initializeDataTable(selector, ajaxUrl, columns, filters = {}, exportTitle = 'Data', exportColumns = [], defaultOrder = [], pdfPageOrientation = 'portrait') {
+function initializeDataTable(selector, ajaxUrl, columns, filters = {}, exportTitle = 'Data', exportColumns = [], defaultOrder = [], pdfPageOrientation = 'portrait', ajaxRequestType = 'GET') {
     var table = $(selector);
     if (table.length) {
         let dataTableInstance = table.DataTable({
@@ -25,6 +25,10 @@ function initializeDataTable(selector, ajaxUrl, columns, filters = {}, exportTit
             colReorder: true,
             ajax: {
                 url: ajaxUrl,
+                type: ajaxRequestType,
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
                 data: function(d) {
                     // Loop through each filter key-value pair
                     $.each(filters, function(key, value) {
