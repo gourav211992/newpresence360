@@ -201,4 +201,10 @@ class PwoSoMapping extends Model
     {
         return $this->belongsTo(ErpStore::class, 'store_id');
     }
+
+    # make getter for number of sheet
+    // public function getNumberOfSheetAttribute()
+    // {
+    //     // return $this->pwo_so_mapping_item?->number_of_sheet ?? 0;
+    // }
 }

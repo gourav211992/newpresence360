@@ -1452,7 +1452,7 @@ class PWOController extends Controller
         $femifishedItems = $bomService->getRawMaterialBreakdown($soItemIds, 'semi');
         if(!$isAttribute) {
             $temp = [];
-            foreach ($femifishedItems as $soItemId => $item) {
+        foreach ($femifishedItems as $soItemId => $item) {
                 $fg = $item['semi_finished_goods']['fg'];
                 $key = $fg['so_id'] . '_' . $fg['bom_id'];
                 $temp[$key][] = [
@@ -1496,6 +1496,7 @@ class PWOController extends Controller
             } 
             $femifishedItems = $newGrouped;
         }
+        
         $html = view('pwo.partials.analyze-item', [
              'femifishedItems' => $femifishedItems,
              'isAttribute' => $isAttribute

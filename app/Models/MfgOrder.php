@@ -41,7 +41,8 @@ class MfgOrder extends Model
         'revision_date', 
         'remarks', 
         'approval_level',
-        'is_last_station'
+        'is_last_station',
+        'machine_id'
     ];
 
     protected $appends = [
@@ -108,6 +109,11 @@ class MfgOrder extends Model
     public function station()
     {
         return $this->belongsTo(Station::class, 'station_id', 'id');
+    }
+
+    public function machine()
+    {
+        return $this->belongsTo(ErpMachine::class, 'machine');
     }
 
     public function bom()

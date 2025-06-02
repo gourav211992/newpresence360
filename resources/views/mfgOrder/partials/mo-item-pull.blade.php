@@ -57,6 +57,19 @@
    <td>
       <input type="text" name="components[{{$rowCount}}][so_code]" value="{{ $pwoItem?->so ? strtoupper($pwoItem?->so?->book_code).' - '.$pwoItem?->so?->document_number : ''}}" class="form-control mw-100 mb-25" readonly/>
    </td>
+   @if($machines->count() > 0)
+   <td>
+      <select class="form-select" name="components[{{$rowCount}}][machine_id]">
+         <option value="">Select Machine</option>
+         @foreach($machines as $machine)
+         <option value="{{$machine->id}}">{{$machine?->name}}</option>
+         @endforeach
+      </select>
+   </td>
+   <td>
+      <input type="number" step="any" class="form-control mw-100 text-end" name="components[{{$rowCount}}][sheet]" value="" readonly/>
+   </td>
+   @endif
    <td>
       <div class="d-flex align-items-center justify-content-center">
       <input type="hidden" name="components[{{$rowCount}}][remark]" value="{{$pwoItem->remark}}"/>

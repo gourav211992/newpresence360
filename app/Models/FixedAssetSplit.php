@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Carbon\Carbon;
 use App\Helpers\Helper;
 use App\Traits\DefaultGroupCompanyOrg;
 use App\Traits\Deletable;
@@ -169,18 +170,36 @@ class FixedAssetSplit extends Model
                     'parent_id' => $mainAsset->id,
                     'sub_asset_code' => $subAsset->sub_asset_id,
                     'quantity' => $subAsset->quantity,
+                    'salvage_value' => $subAsset->salvage_value,
                     'current_value' => $subAsset->current_value,
                     'current_value_after_dep' => $subAsset->current_value,
                     'location_id' => $request->location_id,
                     'cost_center_id' => $request->cost_center_id,
+                    'capitalize_date' => $request->capitalize_date,
+                    'last_dep_date' => $request->capitalize_date,
+                    'expiry_date' => $request->capitalize_date && $request->useful_life
+                        ? \Carbon\Carbon::parse($request->capitalize_date)
+                            ->addYears($request->useful_life)
+                            ->subDay()
+                        : null,
                 ]);
             }
         }
 
         //delete_old
         $old = FixedAssetSub::find((int)$request->sub_asset_id);
-        if ($old)
-            FixedAssetSub::find((int)$request->sub_asset_id)->delete();
+        if ($old){
+            if($old->last_dep_date!=$old->capitalize_date){
+                $old->expiry_date = $request->capitalize_date;
+                $old->save();
+            }else{
+                $old->expiry_date = $old->last_dep_date;
+                $old->save();
+
+            }
+        }
+           
+           
         return array(
             'status' => true,
             'message' => "Registration Added",

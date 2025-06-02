@@ -158,8 +158,15 @@ class FixedAssetMerger extends Model
         foreach (json_decode($request->asset_details) as $item) {
             foreach ($item->sub_asset_id as $sub) {
                 $old = FixedAssetSub::find($sub);
-                if ($old)
-                    FixedAssetSub::find($sub)->delete();
+                if ($old) {
+                    if ($old->last_dep_date != $old->capitalize_date) {
+                        $old->expiry_date = $item->last_dep_date;
+                        $old->save();
+                    } else {
+                        $old->expiry_date = $old->last_dep_date;
+                        $old->save();
+                    }
+                }
             }
         }
         return array(
