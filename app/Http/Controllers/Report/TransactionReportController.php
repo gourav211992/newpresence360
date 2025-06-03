@@ -19,7 +19,7 @@ class TransactionReportController extends Controller
 {
     public function index(Request $request, string $serviceAlias)
     {
-        $reportType = $request -> report_type ?? '';
+        $reportType = $request -> reportType ?? '';
         $reportService = new TransactionReport($serviceAlias, $reportType);
         $data = $reportService -> getIndexPageData();
         return view('reports.transaction', $data);

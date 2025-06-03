@@ -36,11 +36,7 @@ use Yajra\DataTables\Facades\DataTables;
 
 class LoanManagementController extends Controller
 {
-    public static $user_id;
-    public function __construct()
-    {
-        self::$user_id = parent::authUserId();
-    }
+   
 
     public function index(Request $request)
     {

@@ -166,7 +166,6 @@
                                     <input type="hidden" id="billing_id" name="billing_id" />
                                     <input type="hidden" id="hidden_state_id" name="hidden_state_id" />
                                     <input type="hidden" id="hidden_country_id" name="hidden_country_id" />
-
                                 </div>
                             </div> 
                             <div class="col-md-3">
@@ -612,6 +611,7 @@
 <script type="text/javascript">
  let type = '{{ request()->route("type") }}';
  let actionUrlTax = '{{route("po.tax.calculation",["type" => ":type"])}}'.replace(':type',type);
+ var getLocationUrl = '{{ route("store.get") }}';
 </script>
 <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
 <script type="text/javascript" src="{{asset('assets/js/modules/po.js')}}"></script>
@@ -792,68 +792,75 @@ function initializeAutocomplete1(selector, type) {
 initializeAutocomplete1("#vendor_name");
 
 function vendorOnChange(vendorId) {
-    let store_id = $("[name='store_id']").val() || '';
-    let type = '{{ request()->route("type") }}';
-    let actionUrl = "{{ route('po.get.address', ['type' => ':type']) }}".replace(':type', type) 
-    + '?id=' + vendorId+'&store_id='+store_id;
-    fetch(actionUrl).then(response => {
-        return response.json().then(data => {
-            if(data.data?.currency_exchange?.status == false) {
-                $("#vendor_name").val('');
-                $("#vendor_id").val('');
-                $("#vendor_code").val('');
-                $("#hidden_state_id").val('');
-                $("#hidden_country_id").val('');
-                // $("#vendor_id").trigger('blur');
-                $("select[name='currency_id']").empty().append('<option value="">Select</option>');
-                $("select[name='payment_term_id']").empty().append('<option value="">Select</option>');
-                // $(".shipping_detail").text('-');
-                $(".billing_detail").text('-');
-                Swal.fire({
-                    title: 'Error!',
-                    text: data.data?.currency_exchange.message,
-                    icon: 'error',
-                });
-                return false;
-            }                    
-            if(data.status == 200) {
-            $("#vendor_name").val(data?.data?.vendor?.company_name);
-            $("#vendor_id").val(data?.data?.vendor?.id);
-            $("#vendor_code").val(data?.data?.vendor.vendor_code);
-            let curOption = `<option value="${data.data.currency.id}">${data.data.currency.name}</option>`;
-            let termOption = `<option value="${data.data.paymentTerm.id}">${data.data.paymentTerm.name}</option>`;
-            $('[name="currency_id"]').empty().append(curOption);
-            $('[name="payment_term_id"]').empty().append(termOption);
-            $("#shipping_id").val(data.data.shipping.id);
-            $("#billing_id").val(data.data.billing.id);
-            $(".billing_detail").text(data.data.billing.display_address);
-            $(".delivery_address").text(data.data.delivery_address);
-            $(".org_address").text(data.data.org_address);
-
-            $("#hidden_state_id").val(data.data.shipping.state.id);
-            $("#hidden_country_id").val(data.data.shipping.country.id);
-            } else {
-                if(data.data.error_message) {
+    if(vendorId) {
+        let store_id = $("[name='store_id']").val() || '';
+        let type = '{{ request()->route("type") }}';
+        let actionUrl = "{{ route('po.get.address', ['type' => ':type']) }}".replace(':type', type) 
+        + '?id=' + vendorId+'&store_id='+store_id;
+        fetch(actionUrl).then(response => {
+            return response.json().then(data => {
+                if(data.data?.currency_exchange?.status == false) {
                     $("#vendor_name").val('');
                     $("#vendor_id").val('');
                     $("#vendor_code").val('');
                     $("#hidden_state_id").val('');
                     $("#hidden_country_id").val('');
-                    // $("#vendor_id").trigger('blur');
                     $("select[name='currency_id']").empty().append('<option value="">Select</option>');
                     $("select[name='payment_term_id']").empty().append('<option value="">Select</option>');
-                    // $(".shipping_detail").text('-');
                     $(".billing_detail").text('-');
                     Swal.fire({
                         title: 'Error!',
-                        text: data.data.error_message,
+                        text: data.data?.currency_exchange.message,
                         icon: 'error',
                     });
                     return false;
+                }                    
+                if(data.status == 200) {
+                    $("#vendor_name").val(data?.data?.vendor?.company_name);
+                    $("#vendor_id").val(data?.data?.vendor?.id);
+                    $("#vendor_code").val(data?.data?.vendor?.vendor_code);
+                    let curOption = `<option value="${data?.data?.currency?.id}">${data?.data?.currency?.name}</option>`;
+                    let termOption = `<option value="${data?.data?.paymentTerm?.id}">${data?.data?.paymentTerm?.name}</option>`;
+                    $('[name="currency_id"]').empty().append(curOption);
+                    $('[name="payment_term_id"]').empty().append(termOption);
+                    $("#shipping_id").val(data?.data?.billing?.id);
+                    let billingId = null;
+                    let displayOrg = '';
+                    if(data?.data?.is_store_billing) {
+                        billingId = data?.data?.delivery_address?.id || '';
+                        displayOrg = data?.data?.delivery_address?.display_address || ''
+                    } else {
+                        billingId = data?.data?.org_address.id || ''
+                        displayOrg = data?.data?.org_address?.display_address || ''
+                    }
+                    $(".org_address").text(displayOrg);
+                    $("#billing_id").val(billingId);
+                    
+                    $(".billing_detail").text(data?.data?.billing?.display_address);
+                    $(".delivery_address").text(data?.data?.delivery_address?.display_address);
+                    $("#hidden_state_id").val(data?.data?.shipping?.state.id);
+                    $("#hidden_country_id").val(data?.data?.shipping?.country?.id);
+                } else {
+                    if(data.data.error_message) {
+                        $("#vendor_name").val('');
+                        $("#vendor_id").val('');
+                        $("#vendor_code").val('');
+                        $("#hidden_state_id").val('');
+                        $("#hidden_country_id").val('');
+                        $("select[name='currency_id']").empty().append('<option value="">Select</option>');
+                        $("select[name='payment_term_id']").empty().append('<option value="">Select</option>');
+                        $(".billing_detail").text('-');
+                        Swal.fire({
+                            title: 'Error!',
+                            text: data?.data?.error_message || '',
+                            icon: 'error',
+                        });
+                        return false;
+                    }
                 }
-            }
+            });
         });
-    });
+    }
 }
 /*Add New Row*/
 $(document).on('click','#addNewItemBtn', (e) => {
@@ -1143,7 +1150,7 @@ $(document).on('click', '.editAddressBtn', (e) => {
     let addressType = $(e.target).closest('a').attr('data-type');
     let vendorId = $("#vendor_id").val();
     let onChange = 0;
-    let addressId = addressType === 'shipping' ? $("#shipping_id").val() : $("#billing_id").val();
+    let addressId =  $("#shipping_id").val();
     let routeType = '{{ request()->route("type") }}';
     let actionUrl = `{{ route("po.edit.address", ["type" => ":type"]) }}`
     .replace(':type', routeType)
@@ -1314,7 +1321,6 @@ $(document).on('input change focus', '#itemTable tr input', (e) => {
    }
 });
 
-
 /* Address Submit */
 $(document).on('click', '.submitAddress', function (e) {
     $('.ajax-validation-error-span').remove();
@@ -1385,14 +1391,10 @@ $(document).on('click', '.searchPiBtn', (e) => {
 function openPurchaseRequest()
 {
     initializeAutocompleteQt("vendor_code_input_qt", "vendor_id_qt_val", "vendor_list", "vendor_code", "company_name");
-    // initializeAutocompleteQt("book_code_input_qt", "book_id_qt_val", "book_pi", "book_code", "");
     initializeAutocompleteQt("document_no_input_qt", "document_id_qt_val", "pi_document_qt", "book_code", "document_number");
     initializeAutocompleteQt("pi_so_no_input_qt", "pi_so_qt_val", "pi_so_qt", "book_code", "document_number");
-    // initializeAutocompleteQt("item_name_input_qt", "item_id_qt_val", "comp_item", "item_code", "item_name");
-    // initializeAutocompleteQt("department_po", "department_id_po", "department", "name", "");
-    // initializeAutocompleteQt("store_po", "store_id_po", "location", "store_name", "");
-
 }
+
 function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "") 
 {
     $("#" + selector).autocomplete({
@@ -1727,7 +1729,7 @@ $(document).on('click', '.prProcess', (e) => {
     groupItems = JSON.stringify(groupItems);
     ids = JSON.stringify(ids);
     let current_row_count = $("tbody tr[id*='row_']").length;
-    let type = '{{ request()->route("type") }}'; // Dynamically fetch the `type` from the current route
+    let type = '{{ request()->route("type") }}';
     let actionUrl = '{{ route("po.process.pi-item", ["type" => ":type"]) }}'
     .replace(':type', type) 
     + '?ids=' + encodeURIComponent(ids)
@@ -1985,7 +1987,6 @@ function getItemCostPrice(currentTr)
 
     let itemQty = $(currentTr).find("input[name*='[qty]']").val() ?? 0;
     let uomId = $(currentTr).find("select[name*='[uom_id]']").val();
-    console.log(vendorId,currencyId,transactionDate,itemId,formattedAttributes,itemQty,uomId);
     let queryParams = new URLSearchParams({
         vendor_id: vendorId,
         currency_id: currencyId,
@@ -1995,7 +1996,6 @@ function getItemCostPrice(currentTr)
         uom_id: uomId,
         item_qty : itemQty
     });
-    console.log(queryParams,'Params');
     let actionUrl = '{{ route("items.get.cost") }}'+'?'+queryParams.toString();
     fetch(actionUrl).then(response => {
         return response.json().then(data => {
@@ -2003,28 +2003,6 @@ function getItemCostPrice(currentTr)
                 let cost = data?.data?.cost || 0;
                 $(currentTr).find("input[name*='[rate]']").val(cost);
                 setTableCalculation();
-            }
-        });
-    });
-}
-
-function getLocation(locationId = '')
-{
-    let actionUrl = '{{ route("store.get") }}'+'?location_id='+locationId;
-    fetch(actionUrl).then(response => {
-        return response.json().then(data => {
-            if(data.status == 200) {
-                let options = '';
-                data.data.locations.forEach(function(location) {
-                    options+= `<option value="${location.id}">${location.store_name}</option>`;
-                });
-                $("[name='store_id']").empty().append(options);
-            } else {
-                Swal.fire({
-                    title: 'Error!',
-                    text: data.message,
-                    icon: 'error',
-                });
             }
         });
     });

@@ -145,26 +145,26 @@ class TransactionReport
     private function appendAdditionalColumns() : array
     {
         $additionalColumns = [];
-        if ($this -> serviceAlias === ConstantHelper::SO_SERVICE_ALIAS && $this -> reportType == "_attribute_grouped") {
+        if ($this -> serviceAlias === ConstantHelper::SO_SERVICE_ALIAS && $this -> reportType == "attributeGrouped") {
             //Shufab Report
-            $subTypeIds = SubType::whereIn('name', [ConstantHelper::FINISHED_GOODS, ConstantHelper::TRADED_ITEM, 
-            ConstantHelper::ASSET,ConstantHelper::WIP_SEMI_FINISHED]) -> get() -> pluck('id') -> toArray();
-            $itemAttributes = ItemAttribute::whereHas('erpItem', function ($erpItem) use($subTypeIds) {
-                $erpItem -> withDefaultGroupCompanyOrg() -> where(function ($typeQuery) use($subTypeIds) {
-                    $typeQuery -> whereHas('subTypes', function ($subTypeQuery) use($subTypeIds) {
-                        $subTypeQuery -> whereIn('sub_type_id', $subTypeIds);
-                    });
-                });
-            }) -> get() -> pluck('attribute_id') -> toArray();
-            $attributeIds = array_merge(...$itemAttributes);
-            $attributes = Attribute::with('attributeGroup') -> whereIn('id', $attributeIds) -> withWhereHas('attributeGroup', function ($attrQuery) {
-                $attrQuery -> whereRaw('LOWER(name) = ?', ['size']);
-            })
-            -> get();
-            foreach ($attributes as $attribute) {
+            // $subTypeIds = SubType::whereIn('name', [ConstantHelper::FINISHED_GOODS, ConstantHelper::TRADED_ITEM, 
+            // ConstantHelper::ASSET,ConstantHelper::WIP_SEMI_FINISHED]) -> get() -> pluck('id') -> toArray();
+            // $itemAttributes = ItemAttribute::whereHas('erpItem', function ($erpItem) use($subTypeIds) {
+            //     $erpItem -> withDefaultGroupCompanyOrg() -> where(function ($typeQuery) use($subTypeIds) {
+            //         $typeQuery -> whereHas('subTypes', function ($subTypeQuery) use($subTypeIds) {
+            //             $subTypeQuery -> whereIn('sub_type_id', $subTypeIds);
+            //         });
+            //     });
+            // }) -> get() -> pluck('attribute_id') -> toArray();
+            // $attributeIds = array_merge(...$itemAttributes);
+            // $attributes = Attribute::with('attributeGroup') -> whereIn('id', $attributeIds) -> withWhereHas('attributeGroup', function ($attrQuery) {
+            //     $attrQuery -> whereRaw('LOWER(name) = ?', ['size']);
+            // })
+            // -> orderByRaw('CAST(value AS UNSIGNED)') -> get();
+            for ($i=1; $i <= 14; $i++) { 
                 array_push($additionalColumns, [
-                    'name' => $attribute -> attributeGroup ?-> name . ":" . " " .$attribute -> value,
-                    'field' => $attribute -> attributeGroup ?-> name . "_" .$attribute -> value . "_CUSTOMATTRCODE",
+                    'name' => "SIZE" . ":" . " " .$i,
+                    'field' => "SIZE" . "_" .$i . "_CUSTOMATTRCODE",
                     'header_class' => '',
                     'column_class' => 'no-wrap',
                     'header_style' => '',

@@ -647,6 +647,11 @@
                     }
                 },
                 error: function () {
+                    Swal.fire({
+                            title: 'Error!',
+                            text: 'Failed to load assets. Please try again.',
+                            icon: 'error',
+                        });
                     $('#asset_id').empty().append(
                         $('<option>', {
                             value: '',
@@ -684,6 +689,11 @@ $('#transfer_location').on('change', function () {
                 }
             },
             error: function () {
+                Swal.fire({
+                            title: 'Error!',
+                            text: 'Failed to load cost centers. Please try again.',
+                            icon: 'error',
+                        });
                 $('#transfer_cost_center').empty();
             }
         });

@@ -155,6 +155,17 @@
 
                                                     </div>
                                                 </div>
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Salvage % <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <input type="number" class="form-control"
+                                                            name="salvage_percentage" required
+                                                            value="{{ $dep_percentage }}" />
+                                                    </div>
+                                                </div>
 
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
@@ -167,6 +178,8 @@
                                                             value="{{ old('expected_life_years') }}" />
                                                     </div>
                                                 </div>
+
+                                                
 
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">

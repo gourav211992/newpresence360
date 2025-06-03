@@ -1236,6 +1236,7 @@
                 $('#grn_table tbody').html(res.html);
             },
             error: function (xhr) {
+                showToast('error',xhr.responseText);
                 console.error(xhr.responseText);
             }
         });
@@ -1385,8 +1386,9 @@
                     });
 
                 },
-                error: function() {
-                    alert('Error fetching group items.');
+                error: function (xhr) {
+                showToast('error',xhr.responseText);
+                //    alert('Error fetching group items.');
                 }
             });
 
@@ -1414,7 +1416,7 @@
                 $('#grn_table tbody').html(res.html);
             },
             error: function (xhr) {
-                console.error(xhr.responseText);
+                showToast('error',xhr.responseText);
             }
         });
     });
@@ -1612,6 +1614,11 @@ function showToast(icon, title) {
                             $('#ledger_group').val(res.ledger_group_id).select2();
                             $('#maintenance_schedule').val(res.maintenance_schedule);
                             $('#useful_life').val(res.expected_life_years);
+                            if(res.salvage_percentage)
+                            $('#depreciation_percentage').val(res.salvage_percentage);
+                        else 
+                            $('#depreciation_percentage').val('{{$dep_percentage}}');
+                            
                             updateDepreciationValues();
                         }
                     }
@@ -1646,8 +1653,9 @@ $('#location').on('change', function () {
                     });
             }
             },
-            error: function () {
-                $('#cost_center').empty();
+            error: function (xhr) {
+                showToast('error',xhr.responseText);
+                    $('#cost_center').empty();
             }
         });
     } else {
