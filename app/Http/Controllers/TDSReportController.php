@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Helpers\Helper;
 use App\Models\CostCenterOrgLocations;
 use App\Models\ErpStore;
+use App\Models\ExpenseTed;
 use App\Models\Tax;
 use App\Models\Organization;
 use Carbon\Carbon;
@@ -49,39 +50,48 @@ class TDSReportController extends Controller
         $mappings = Helper::getAuthenticatedUser()->access_rights_org;
         $vendors = Vendor::withDefaultGroupCompanyOrg()->get();
         
-        $vouchers = Voucher::withDefaultGroupCompanyOrg()
-            ->when($organization_id, function ($query) use ($organization_id) {
-                $query->where('organization_id', $organization_id);
-            })
-            ->when($location_id, function ($query) use ($location_id) {
-                $query->where('location', $location_id);
-            })
-            ->when($cost_center_id, function ($query, $cost_center_id) {
-                $query->whereHas('items', function ($query) use ($cost_center_id) {
-                    $query->where('cost_center_id', $cost_center_id);
-                });
-            })
-            ->where('reference_service',ConstantHelper::EXPENSE_ADVISE_SERVICE_ALIAS)
-            ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
-            //->whereBetween('document_date', [$startDate, $endDate])
-            ->pluck('reference_doc_id');
+      $records = ExpenseTed::where('ted_type', 'Tax')
+        ->whereHas('expenseHeader', function ($query) {
+            $query->whereNotNull('vendor_id'); // Adjust 'vendor_id' to your actual foreign key column
+        })
+        ->with([
+            'expenseHeader' => function ($query) use ($organization_id, $startDate, $endDate) {
+                $query->withDefaultGroupCompanyOrg()
+                    ->with([
+                        'items.hsn.tax',
+                        'vendor',
+                    ])
+                    ->when($organization_id, function ($query) use ($organization_id) {
+                        $query->where('organization_id', $organization_id);
+                    })
+                    ->when(request('tax_filter'), function ($query) {
+                        $query->whereHas('items.hsn.tax', function ($query) {
+                            $query->where('id', request('tax_filter'));
+                        });
+                    })
+                    ->where('document_status', ConstantHelper::POSTED)
+                    ->whereNotNull('vendor_id'); // Adjust 'vendor_id' here as well
+            }
+        ])
+        ->get();
+
 
         
-        $records = ExpenseHeader::withDefaultGroupCompanyOrg()->with([
-            'items.hsn.tax', // Eager load tax data
-            'vendor',
-            ])->when($organization_id, function ($query) use ($organization_id) {
-                $query->where('organization_id', $organization_id);
-            })
-            //->whereIn('id', $vouchers)
-            ->when(request('tax_filter'), function ($query) {
-                $query->whereHas('items.hsn.tax', function ($query) {
-                    $query->where('id', request('tax_filter')); // Assuming 'tax_group' is the field you want to filter by
-                });
-            })->whereBetween('document_date', [$startDate, $endDate])
-            ->where('document_status', ConstantHelper::POSTED)
-            ->latest()
-            ->get();
+        // $records = ExpenseHeader::withDefaultGroupCompanyOrg()->with([
+        //     'items.hsn.tax', // Eager load tax data
+        //     'vendor',
+        //     ])->when($organization_id, function ($query) use ($organization_id) {
+        //         $query->where('organization_id', $organization_id);
+        //     })
+        //     ->whereIn('id', $vouchers)
+        //     ->when(request('tax_filter'), function ($query) {
+        //         $query->whereHas('items.hsn.tax', function ($query) {
+        //             $query->where('id', request('tax_filter')); // Assuming 'tax_group' is the field you want to filter by
+        //         });
+        //     })->whereBetween('document_date', [$startDate, $endDate])
+        //     ->where('document_status', ConstantHelper::POSTED)
+        //     ->latest()
+        //     ->get();
 
         $taxTypes = Tax::all();
          $cost_centers =  CostCenterOrgLocations::with(['costCenter' => function ($query) {
@@ -106,7 +116,7 @@ class TDSReportController extends Controller
         $range = $startDate . ' to ' . $endDate;
         $fy = self::formatWithOrdinal($startDate) . ' to ' . self::formatWithOrdinal($endDate);
         $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
-        return view('tds.index', compact('fy', 'mappings', 'organization_id', 'range', 'vendors', 'vendor_id', 'records', 'taxTypes', 'cost_centers', 'locations', 'cost_center_id', 'location_id'));
+        return view('tds.index', compact('fy', 'mappings', 'organization_id', 'range', 'vendors', 'vendor_id','records', 'taxTypes', 'cost_centers', 'locations', 'cost_center_id', 'location_id'));
     }
     static function formatWithOrdinal($date)
     {
