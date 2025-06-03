@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\DynamicField;
 use App\Models\DynamicFieldDetail;
+use App\Models\DynamicFieldDetailValue;
 use App\Http\Requests\DynamicFieldRequest; 
 use Exception;
 use Illuminate\Http\Request;
@@ -92,9 +93,25 @@ class DynamicFieldController extends Controller
             $dynamicField = DynamicField::create($validatedData);
             if ($request->has('field_details')) {
                 $fieldDetails = $request->input('field_details');
+            
                 foreach ($fieldDetails as $detail) {
                     if (!empty($detail['name'])) {
-                        $dynamicField->details()->create($detail);
+                        $fieldDetail = $dynamicField->details()->create([
+                            'name' => $detail['name'],
+                            'description' => $detail['description'],
+                            'data_type' => $detail['data_type']
+                        ]);
+                        
+                        if (isset($detail['value']) && !empty($detail['value'])) {
+                            $values = explode(',', $detail['value']);
+                            foreach ($values as $value) {
+                                $trimmedValue = trim($value); 
+                                DynamicFieldDetailValue::create([
+                                    'dynamic_field_detail_id' => $fieldDetail->id, 
+                                    'value' => $trimmedValue, 
+                                ]);
+                            }
+                        }
                     }
                 }
             }
@@ -125,7 +142,6 @@ class DynamicFieldController extends Controller
         return view('dynamic-field.edit', compact('dynamicField', 'status','dataTypes'));
     }
 
-    // Use DynamicFieldRequest for validation
     public function update(DynamicFieldRequest $request, $id)
     {
         $user = Helper::getAuthenticatedUser();
@@ -165,19 +181,59 @@ class DynamicFieldController extends Controller
             if ($request->has('field_details')) {
                 $fieldDetails = $request->input('field_details');
                 $newDetailIds = [];
+    
                 foreach ($fieldDetails as $detail) {
                     $detailId = $detail['id'] ?? null;
+    
                     if ($detailId) {
                         $existingDetail = $dynamicField->details()->find($detailId);
                         if ($existingDetail) {
-                            $existingDetail->update($detail);
+                            $existingDetail->update([
+                                'name' => $detail['name'],
+                                'description' => $detail['description'],
+                                'data_type' => $detail['data_type'],
+                            ]);
                             $newDetailIds[] = $detailId;
+
+                            $existingValues = $existingDetail->values()->pluck('value')->toArray();
+
+                            $newValues = isset($detail['value']) && !empty($detail['value']) ? array_map('trim', explode(',', $detail['value'])) : [];
+                          
+                            $valuesToDelete = array_diff($existingValues, $newValues);
+                          
+                            DynamicFieldDetailValue::where('dynamic_field_detail_id', $existingDetail->id)
+                                ->whereIn('value', $valuesToDelete)
+                                ->delete();
+
+                            $valuesToAdd = array_diff($newValues, $existingValues);
+                             foreach ($valuesToAdd as $value) {
+                                    DynamicFieldDetailValue::create([
+                                        'dynamic_field_detail_id' => $existingDetail->id,
+                                        'value' => $value,
+                                    ]);
+                                }
                         }
                     } else {
-                        $newDetail = $dynamicField->details()->create($detail);
+                        $newDetail = $dynamicField->details()->create([
+                            'name' => $detail['name'],
+                            'description' => $detail['description'],
+                            'data_type' => $detail['data_type'],
+                        ]);
                         $newDetailIds[] = $newDetail->id;
+
+                        if (isset($detail['value']) && !empty($detail['value'])) {
+                            $values = explode(',', $detail['value']);
+                            foreach ($values as $value) {
+                                $trimmedValue = trim($value);
+                                DynamicFieldDetailValue::create([
+                                    'dynamic_field_detail_id' => $newDetail->id,
+                                    'value' => $trimmedValue,
+                                ]);
+                            }
+                        }
                     }
                 }
+    
                 $dynamicField->details()->whereNotIn('id', $newDetailIds)->delete();
             } else {
                 $dynamicField->details()->delete();
@@ -234,6 +290,33 @@ class DynamicFieldController extends Controller
                 'erp_dynamic_field_details' => ['header_id'],
             ];
             $result = $dynamicField->deleteWithReferences($referenceTables);
+
+            if (!$result['status']) {
+                return response()->json([
+                    'status' => false,
+                    'message' => $result['message'],
+                    'referenced_tables' => $result['referenced_tables'] ?? []
+                ], 400);
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Record deleted successfully',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'An error occurred while deleting the record: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function dynamicValueDestroy($id)
+    {
+        try {
+            $dynamicFieldValue = DynamicFieldDetailValue::findOrFail($id);
+           
+            $result = $dynamicFieldValue->deleteWithReferences();
 
             if (!$result['status']) {
                 return response()->json([

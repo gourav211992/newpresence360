@@ -271,7 +271,6 @@ class RegistrationController extends Controller
                     $ref_view_route = Helper::getRouteNameFromServiceAlias($data->reference_series, $data->reference_doc_id);
                     $buttons['reference'] = true;
                     $buttons['post']=false;
-                    $buttons['amend']=false;
                 }
             }
         }

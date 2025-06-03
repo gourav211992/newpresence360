@@ -249,8 +249,6 @@ class MrnDetail extends Model
 
         return [
             'rate' => @$tedRecord->taxDetail->tax_percentage,
-            'ledger' => @$tedRecord->taxDetail->ledger->id,
-            'ledger_group' => @$tedRecord->taxDetail->ledgerGroup->id,
             'value' => $tedRecords ?? 0.00
         ];
     }
@@ -274,8 +272,6 @@ class MrnDetail extends Model
 
         return [
             'rate' => @$tedRecord->taxDetail->tax_percentage,
-             'ledger' => @$tedRecord->taxDetail->ledger->id,
-            'ledger_group' => @$tedRecord->taxDetail->ledgerGroup->id,
             'value' => $tedRecords ?? 0.00
         ];
     }
@@ -299,8 +295,6 @@ class MrnDetail extends Model
 
         return [
             'rate' => @$tedRecord->taxDetail->tax_percentage,
-             'ledger' => @$tedRecord->taxDetail->ledger->id,
-            'ledger_group' => @$tedRecord->taxDetail->ledgerGroup->id,
             'value' => $tedRecords ?? 0.00
         ];
     }

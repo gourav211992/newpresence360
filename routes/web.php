@@ -1888,6 +1888,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         Route::get('/{id}/edit', 'edit')->name('dynamic-fields.edit');
         // Route::get('/{id}', 'show')->name('dynamic-fields.show');
         Route::put('/{id}', 'update')->name('dynamic-fields.update');
+        Route::delete('/detail-value/{id}', 'dynamicValueDestroy')->name('dynamic-fields-value.destroy');
         Route::delete('/{id}', 'destroy')->name('dynamic-fields.destroy');
         Route::delete('/field-detail/{id}', 'deleteFieldDetail')->name('field-detail.delete');
         Route::get('/detail', 'getDynamicFieldDetails')->name('dynamic-fields.detail');

@@ -38,9 +38,10 @@ class ItemsExport implements FromCollection, WithHeadings, WithMapping,WithStyle
             'Type',
             'Sub-Type',
             'Inventory UOM',
-            'Currency',
             'Cost Price', 
+            'Cost Price Currency',
             'Sale Price', 
+            'Sell Price Currency',
             'Status',
         ];
 
@@ -85,9 +86,10 @@ class ItemsExport implements FromCollection, WithHeadings, WithMapping,WithStyle
             $item->type ?? 'N/A',
             $item->subTypes->pluck('subType.name')->implode(', ') ?? 'N/A',
             $item->uom->name ?? 'N/A',
-            $item->currency->short_name ??'N/A', 
-            $item->sell_price ?? 'N/A',
             $item->cost_price ?? 'N/A',
+            $item->costCurrency->short_name ?? 'N/A',
+            $item->sell_price ?? 'N/A',
+            $item->sellCurrency->short_name ?? 'N/A',
             $item->status ?? 'N/A',
         ];
 
@@ -151,7 +153,7 @@ class ItemsExport implements FromCollection, WithHeadings, WithMapping,WithStyle
     public function styles(Worksheet $sheet)
     {
         $styles = [];
-        $requiredColumns = range(1, 9);
+        $requiredColumns = range(1, 10);
         foreach ($requiredColumns as $col) {
             $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col);
             $styles["{$columnLetter}1"] = [
@@ -180,7 +182,7 @@ class ItemsExport implements FromCollection, WithHeadings, WithMapping,WithStyle
         }
     
         $totalColumns = count($this->headings());
-        for ($col = 10; $col <= $totalColumns; $col++) {
+        for ($col = 11; $col <= $totalColumns; $col++) {
             $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col); 
             $sheet->getStyle("{$columnLetter}1")->applyFromArray([
                 'font' => [

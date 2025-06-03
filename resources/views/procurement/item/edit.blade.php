@@ -199,31 +199,39 @@
                                                 </div>
                                             
                                                 <div class="row align-items-center mb-1">
-                                                    <div class="col-md-3"> 
-                                                        <label class="form-label">Currency<span class="text-danger">*</span></label>  
+                                                     <div class="col-md-3"> 
+                                                        <label class="form-label">Cost Price</label>  
                                                     </div>
-                                                    <div class="col-md-2 mb-1 mb-sm-0">
-                                                            <select class="form-select select2" id="currencySelect" name="currency_id">
+                                                    <div class="col-md-3 mb-1 mb-sm-0">
+                                                        <div class="input-group">
+                                                            <input type="text" name="cost_price" class="form-control cost-price-input" value="{{ number_format($item->cost_price, 2) }}" placeholder="Enter Cost Price">
+                                                            <select class="form-select select2" id="currencySelect" name="cost_price_currency_id">
                                                                 @foreach($currencies as $currency)
                                                                 <option value="{{ $currency->id }}" data-short-name="{{ $currency->short_name ?? '' }}"
-                                                                    {{ (isset($item) && $item->currency_id == $currency->id) || 
-                                                                    (isset($item) && !isset($item->currency_id) && isset($organization) && $organization->currency_id == $currency->id) ? 'selected' : '' }}>
+                                                                    {{ (isset($item) && $item->cost_price_currency_id == $currency->id) || 
+                                                                    (isset($item) && !isset($item->cost_price_currency_id) && isset($organization) && $organization->currency_id == $currency->id) ? 'selected' : '' }}>
                                                                     {{ $currency->name }}
                                                                 </option>
                                                                 @endforeach
                                                             </select>
+                                                        </div>
                                                     </div>
-                                                    <div class="col-md-1 pe-sm-0"> 
-                                                        <label class="form-label">Cost Price</label>  
+                                                    <div class="col-md-3 text-sm-end mb-1 mb-sm-0">  
+                                                        <label class="form-label fw-bold">Selling Price</label>  
                                                     </div>
-                                                    <div class="col-md-2 mb-1 mb-sm-0">
-                                                        <input type="text" name="cost_price" class="form-control cost-price-input" value="{{ number_format($item->cost_price, 2) }}" placeholder="Enter Cost Price">
-                                                    </div>
-                                                    <div class="col-md-2 pe-sm-0"> 
-                                                        <label class="form-label">Selling price</label>  
-                                                    </div>
-                                                    <div class="col-md-2 mb-1 mb-sm-0">
-                                                        <input type="text" name="sell_price" class="form-control sell-price-input" value="{{ number_format($item->sell_price, 2) }}" placeholder="Enter Sell Price">
+                                                      <div class="col-md-3">
+                                                        <div class="input-group">
+                                                            <input type="text" name="sell_price" class="form-control sell-price-input" value="{{ number_format($item->sell_price, 2) }}" placeholder="Enter Sell Price">
+                                                              <select class="form-select select2" id="currencySelect" name="sell_price_currency_id">
+                                                                @foreach($currencies as $currency)
+                                                                <option value="{{ $currency->id }}" data-short-name="{{ $currency->short_name ?? '' }}"
+                                                                    {{ (isset($item) && $item->sell_price_currency_id == $currency->id) || 
+                                                                    (isset($item) && !isset($item->sell_price_currency_id) && isset($organization) && $organization->currency_id == $currency->id) ? 'selected' : '' }}>
+                                                                    {{ $currency->name }}
+                                                                </option>
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
                                                     </div>
                                                 </div>
 

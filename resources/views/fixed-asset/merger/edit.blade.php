@@ -1090,11 +1090,6 @@ function initializeAssetAutocomplete(selector) {
                     }));
                 },
                 error: function () {
-                    Swal.fire({
-                            title: 'Error!',
-                            text: 'Failed to fetch assets.',
-                            icon: 'error',
-                        });
                     response([]);
                 }
             });
@@ -1156,7 +1151,6 @@ function initializeAssetAutocomplete(selector) {
                     updateSum();
                 },
                 error: function () {
-
                     showToast('error', 'Failed to load sub-assets.');
                 }
             });

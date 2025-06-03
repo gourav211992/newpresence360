@@ -831,11 +831,6 @@ document.getElementById("process_btn").addEventListener("click", function () {
             }
             },
             error: function () {
-            Swal.fire({
-                            title: 'Error!',
-                            text: 'Failed to fetch cost centers. Please try again later.',
-                            icon: 'error',
-                        });
                 $('#cost_center').empty();
             }
         });
