@@ -1190,8 +1190,7 @@ let isValid=true;
             $('#maintenance_schedule').val("");
             $('#useful_life').val("");
 
-            updateSubAssetCodes();
-
+          
             var category_id = $(this).val();
             if (category_id) {
                 $.ajax({
@@ -1204,10 +1203,18 @@ let isValid=true;
                             $('#ledger_group').val(res.ledger_group_id).select2();
                             $('#maintenance_schedule').val(res.maintenance_schedule);
                             $('#useful_life').val(res.expected_life_years);
+                            if(res.salvage_percentage)
+                            $('#depreciation_percentage').val(res.salvage_percentage);
+                            else 
+                            $('#depreciation_percentage').val('{{$dep_percentage}}');
+                        updateSubAssetCodes();
+                            
                         }
                     }
                 });
             }
+              updateSubAssetCodes();
+
         });
 
         function collectSubAssetDataToJson() {

@@ -1775,7 +1775,27 @@ $('#revisionNumber').prop('disabled', false);
     </script>
     <script>
 
-        function onPostVoucherOpen(type = "not_posted") {
+       function onPostVoucherOpen(type = "not_posted") {
+    const isPostButton = {{ $buttons['post'] ? 'true' : 'false' }};
+            if (isPostButton) {
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: 'Do you want to proceed with posting the voucher?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, proceed',
+                    cancelButtonText: 'No, cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        proceedWithVoucher(type);
+                    } 
+                });
+            } else {
+                proceedWithVoucher(type);
+            }
+        }
+
+        function proceedWithVoucher(type = "not_posted") {
             resetPostVoucher();
 
             const apiURL = "{{ route('paymentVouchers.getPostingDetails') }}";

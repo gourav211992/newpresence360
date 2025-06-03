@@ -26,6 +26,7 @@ use App\Models\Address;
 use App\Models\Department;
 use App\Models\ErpAddress;
 use App\Models\ErpAttribute;
+use App\Models\ErpInvoiceItem;
 use App\Models\ErpSaleOrderHistory;
 use App\Models\ErpSoDynamicField;
 use App\Models\ErpSoItemBom;
@@ -43,6 +44,7 @@ use App\Models\ErpSoItem;
 use App\Models\ErpSoItemAttribute;
 use App\Models\ErpSoItemDelivery;
 use App\Models\ErpVendor;
+use App\Models\ItemSpecification;
 use App\Models\NumberPattern;
 use App\Models\Organization;
 use App\Models\ProductionLevel;
@@ -1624,7 +1626,6 @@ class ErpSaleOrderController extends Controller
         $imagePath = public_path('assets/css/midc-logo.jpg'); // Store the image in the public directory
         $approvedBy = Helper::getDocStatusUser(get_class($order), $order -> id, $order -> document_status);
         $dynamicFields = $order -> dynamic_fields;
-        // dd($imagePath);
         $dataArray = [
             'type' => $type,
             'user' => $user,
@@ -2189,6 +2190,9 @@ class ErpSaleOrderController extends Controller
             ->addColumn('uom_name', function ($row) {
                 return $row -> uom ?-> name;
             })
+            ->addColumn('item_category', function ($row) {
+                return $row -> item ?-> category ?-> name;
+            })
             ->addColumn('so_qty', function ($row) {
                 return number_format($row -> order_qty, 2);
             })
@@ -2228,10 +2232,15 @@ class ErpSaleOrderController extends Controller
             ->editColumn('pending_qty', function ($row) {
                 return number_format(((($row -> order_qty - $row -> short_close_qty) - $row -> invoice_qty) + $row -> srn_qty), 2);
             })
+            ->addColumn('doc_remarks', function ($row) {
+                return $row -> header -> remarks;
+            })
             ->addColumn('delivery_schedule', function ($row) {
                 $deliveryHtml = '';
-                if (count($row -> item_deliveries) > 0) {
-                    foreach ($row -> item_deliveries as $itemDelivery) {
+                $soItemIds = explode(',',$row -> so_item_ids);
+                $itemDeliveries = ErpSoItemDelivery::whereIn('so_item_id', $soItemIds) -> get();
+                if (count($itemDeliveries) > 0) {
+                    foreach ($itemDeliveries as $itemDelivery) {
                         $deliveryDate = Carbon::parse($itemDelivery -> delivery_date) -> format('d-m-Y');
                         $deliveryQty = number_format($itemDelivery -> qty, 2);
                         $deliveryHtml .= "<span class='badge rounded-pill badge-light-primary'><strong>$deliveryDate</strong> : $deliveryQty</span>";
@@ -2255,6 +2264,7 @@ class ErpSaleOrderController extends Controller
                 });
             }
             $headers = $request -> columns;
+            $meanArray = [];
             foreach ($headers as $header) {
                 if (str_contains($header['data'], '_CUSTOMATTRCODE')) {
                     //Attributes fields
@@ -2262,20 +2272,63 @@ class ErpSaleOrderController extends Controller
                     if (count($data) == 3) {
                         $attributeName = $data[0];
                         $attributeValue = $data[1];
-                        $datatables->addColumn($header['name'], function ($row) use ($field, $attributeName, $attributeValue) {
+                        $datatables->addColumn($header['name'], function ($row) use ($field, $attributeName, $attributeValue, &$meanArray) {
                             $soItemIds = explode(',',$row -> so_item_ids);
                             $itemAttributes = ErpSoItemAttribute::whereIn('so_item_id', $soItemIds) -> get();
                             foreach ($itemAttributes as $itemAttr) {
                                 if ($itemAttr -> attribute_name == $attributeName && $itemAttr -> attribute_value == $attributeValue) {
+                                    $row -> mean_sizes += (int) $attributeValue;
+                                    $row -> mean_count += 1;
                                     return $itemAttr -> soItem ?-> order_qty;
                                 }
                             }
                         });
                     }
                 }
+                if (str_contains($header['data'], '_CUSTOMSPECCODE')) {
+                    $specData = explode('_', $header['data']);
+                    if (count($specData) == 2) {
+                        $datatables->addColumn($header['name'], function ($row) use ($field, $specData) {
+                            $itemId = $row -> item_id;
+                            $specValue = ItemSpecification::where('item_id', $itemId) -> whereRaw('LOWER(specification_name) = ?', [$specData[0]]) -> first();
+                            if (isset($specValue)) {
+                                return $specValue -> value;
+                            } else {
+                                return '';
+                            }
+                        });
+                    }
+                }
+                if (str_contains($header['data'],'_CUSTOMONLY')) {
+                    $valData = explode('_', $header['data']);
+                    if (count($valData) == 2) {
+                        $datatables->addColumn($header['name'], function ($row) use ($field, $valData) {
+                            if ($valData[0] == 'finalcrd') {
+                                $finalCRDHtml = '';
+                                $soItemIds = explode(',',$row -> so_item_ids);
+                                $invoiceItems = ErpInvoiceItem::whereIn('so_item_id', $soItemIds) -> withWhereHas('header', function ($headerQuery) {
+                                    $headerQuery -> whereIn('document_status', [ConstantHelper::APPROVED, 
+                                    ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::POSTED]);
+                                }) -> get();
+                                foreach ($invoiceItems as $invoiceItem) {
+                                    $docData = Carbon::parse($invoiceItem -> header -> document_date)  -> format('d-m-Y');
+                                    $docQty = number_format($invoiceItem -> order_qty, 2);
+                                    $finalCRDHtml .= "<span class='badge rounded-pill badge-light-primary'><strong>$docData</strong> : $docQty  </span>";
+                                }
+                                return $finalCRDHtml;
+                            }
+                        });
+                        
+                    } 
+                }
             }
+            $datatables->addColumn('mean_size', function ($row) use ($field) {
+                if ($row -> mean_sizes && $row -> mean_count) {
+                    return number_format($row -> mean_sizes / $row -> mean_count, 2);
+                }
+            });
             $datatables = $datatables
-            ->rawColumns(['item_attributes','delivery_schedule','status'])
+            ->rawColumns(['item_attributes','delivery_schedule', 'finalcrd_CUSTOMONLY','status'])
             ->make(true);
             return $datatables;
     }

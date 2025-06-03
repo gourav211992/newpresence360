@@ -629,7 +629,6 @@ $(document).on('click', '.addStoragePointBtn', function () {
         parsed = JSON.parse(existingValue);
     } else {
         // If no existing value, initialize with empty array
-        console.log('3', existingValue);
         getOldPackets(activeRowIndex);
         const $storageInput = $(`#itemTable #row_${activeRowIndex} input[name*='[storage_packets]']`).val();
         if($storageInput) {
@@ -637,10 +636,7 @@ $(document).on('click', '.addStoragePointBtn', function () {
         }
     }
 
-    console.log(`Parsed storage packets for row ${activeRowIndex}:`, parsed);
-
     if (Array.isArray(parsed) && parsed.length > 0) {
-        // console.log('123');
         populatePacketTable(parsed);
         updateAddButtonState();
         $('#storagePointsRowIndex').val(activeRowIndex);
@@ -650,11 +646,22 @@ $(document).on('click', '.addStoragePointBtn', function () {
 
     const packets = [];
     $('#storagePacketTable tbody tr').each(function () {
-        const id = $(this).find('.id').val() || null;
+        const id = $(this).find('.storage-packet-id').val() || null;
+        const item_location_id = $(this).find('.item-location-id').val() || null;
         const qty = parseFloat($(this).find('.storage-packet-qty').val()) || 0;
-        const packet_number = $(this).find('.packet_number').val() || null;
-        const unit = $(this).find('td:nth-child(4)').text().trim();
-        packets.push({ id: id, quantity: qty, packet_number: packet_number, unit: unit });
+        const packet_number = $(this).find('.storage-packet-number').val() || null;
+        const storage_number = $(this).find('.storage-number').val() || null;
+        const wh_detail_id = $(this).find('.wh_detail_id').val() || null;
+        packets.push(
+            { 
+                id: id, 
+                item_location_id: item_location_id, 
+                quantity: qty, 
+                packet_number: packet_number,
+                storage_number: storage_number,
+                wh_detail_id: wh_detail_id 
+            }
+        );
     });
 
     $(`#itemTable #row_${activeRowIndex} input[name*='[storage_packets]']`).val(JSON.stringify(packets));
@@ -663,21 +670,30 @@ $(document).on('click', '.addStoragePointBtn', function () {
 // Utility: Extract and save old packets into hidden input
 function getOldPackets(rowCount) {
     const packets = [];
-    console.log(`Extracting old packets for row: ${rowCount}`);
-
+    
     $(`[id="row_${rowCount}"]`).find("[name*='[packet_number]']").each(function(index,item) {
         let key = index +1;
-        const id = $(item).closest('tr').find(`[name*='[${key}][id]']`).val();
-        const packet_number = $(item).closest('tr').find(`[name*='[${key}][packet_number]']`).val();
-        const quantity = $(item).closest('tr').find(`[name*='[${key}][quantity]']`).val();
-        const unit = $(item).closest('tr').find(`[name*='[${key}][unit]']`).val();
+        const id = $(item).closest('tr').find(`[name*='[${key}][id]']`).val() ?? 0;
+        const item_location_id = $(item).closest('tr').find(`[name*='[${key}][item_location_id]']`).val() ?? null;
+        const packet_number = $(item).closest('tr').find(`[name*='[${key}][packet_number]']`).val() ?? null;
+        const quantity = $(item).closest('tr').find(`[name*='[${key}][quantity]']`).val() ?? null;
+        const storage_number = $(item).closest('tr').find(`[name*='[${key}][storage_number]']`).val() ?? null;
+        const wh_detail_id = $(item).closest('tr').find(`[name*='[${key}][wh_detail_id]']`).val() ?? null;
         if (quantity || packet_number) {
-            packets.push({ id: id, quantity: quantity, packet_number: packet_number, unit: unit });
+            packets.push(
+                { 
+                    id: id, 
+                    item_location_id: item_location_id, 
+                    quantity: quantity, 
+                    packet_number: packet_number,
+                    storage_number: storage_number,
+                    wh_detail_id: wh_detail_id 
+                }
+            );
             expectedInvQty += Number(quantity);
         }
     });
-    console.log(packets);
-
+    
     if (packets.length) {
         $(`#itemTable #row_${rowCount} input[name*='[storage_packets]']`).val(JSON.stringify(packets));
     }
@@ -685,8 +701,6 @@ function getOldPackets(rowCount) {
 
 // Populate the packet table with data
 function populatePacketTable(data) {
-    console.log('Populating packet table with data:', allStoragePointsList);
-    
     const activeRowIndex = $('#storagePointsRowIndex').val();
     let itemId = $("#itemTable #row_" + activeRowIndex).find("[name*='[item_id]']").val();
     let rows = '';
@@ -702,17 +716,21 @@ function populatePacketTable(data) {
         rows += `
             <tr data-index="${i}">
                 <td><input type="checkbox" class="form-check-input packet-row-check" data-index="${i}" /></td>
-                <td>${row.unit}</td>
                 <td>
                     <input type="number" step="any" value="${row.quantity}" class="form-control storage-packet-qty mw-100" name="components[${activeRowIndex}][packets][${i}][quantity]" data-index="${i}" />
+                    <input type="hidden" step="any" value="${row.id}" class="form-control storage-packet-id mw-100" name="components[${activeRowIndex}][packets][${i}][packet_id]" data-index="${i}" />
+                    <input type="hidden" step="any" value="${row.item_location_id}" class="form-control item-location-id mw-100" name="components[${activeRowIndex}][packets][${i}][item_location_id]" data-index="${i}" />
                 </td>
                 <td>
                     <input type="text" step="any" value="${row.packet_number}" class="form-control storage-packet-number mw-100" name="components[${activeRowIndex}][packets][${i}][packet_number]" data-index="${i}" />
                 </td>
                 <td>
-                    <select class="form-select form-select-sm storage-point-dropdown mw-100" data-index="${i}">
+                    <select class="form-select wh_detail_id form-select-sm storage-point-dropdown mw-100" name="components[${activeRowIndex}][packets][${i}][wh_detail_id]" data-index="${i}">
                         ${options}
                     </select>
+                </td>
+                <td>
+                    <input type="text" step="any" value="${row.storage_number}" class="form-control storage-number mw-100" name="components[${activeRowIndex}][packets][${i}][storage_number]" data-index="${i}" />
                 </td>
                 <td>
                     <a href="#" class="text-primary add-storage-row-header" data-index="${i}">
@@ -741,7 +759,7 @@ function populatePacketTable(data) {
             <tr>
                 <td class="text-end fw-bold">Total</td>
                 <td><span id="storagePacketTotal">0</span></td>
-                <td colspan="2"></td>
+                <td colspan="4"></td>
             </tr>
         </tfoot>
     `);
@@ -784,8 +802,9 @@ $(document).on('click', '.add-storage-row-header', function () {
         });
     const row = `
         <tr data-index="${index}">
-            <td><input type="checkbox" class="form-check-input packet-row-check" data-index="${index}" /></td>
-            <td>${baseUom}</td>
+            <td>
+                <input type="checkbox" class="form-check-input packet-row-check" data-index="${index}" />
+            </td>
             <td>
                 <input type="number" step="any" value="${remaining}" class="form-control storage-packet-qty mw-100" name="components[${activeRowIndex}][packets][${index}][quantity]" data-index="${index}" />
             </td>
@@ -793,9 +812,12 @@ $(document).on('click', '.add-storage-row-header', function () {
                 <input type="text" step="any" class="form-control storage-packet-number mw-100" name="components[${activeRowIndex}][packets][${index}][packet_number]" data-index="${index}" />
             </td>
             <td>
-                <select class="form-select form-select-sm storage-point-dropdown mw-100" data-index="${index}">
+                <select class="form-select form-select-sm wh_detail_id storage-point-dropdown mw-100" name="components[${activeRowIndex}][packets][${index}][wh_detail_id]" data-index="${index}">
                     ${options}
                 </select>
+            </td>
+            <td>
+                <input type="text" step="any" class="form-control storage-number mw-100" name="components[${activeRowIndex}][packets][${index}][storage_number]" data-index="${index}" />
             </td>
             <td>
                 <a href="#" class="text-primary add-storage-row-header" data-index="${index}">
@@ -852,16 +874,28 @@ $(document).on('click', '#saveStoragePointsBtn', function () {
         return;
     }
 
-    // const packets = [];
-    // $('#storagePacketTable tbody tr').each(function () {
-    //     const id = $(this).find('.id').val() || null;
-    //     const qty = parseFloat($(this).find('.storage-packet-qty').val()) || 0;
-    //     const packet_number = $(this).find('.packet_number').val() || null;
-    //     const unit = $(this).find('td:nth-child(4)').text().trim();
-    //     packets.push({ id: id, quantity: qty, packet_number: packet_number, unit: unit });
-    // });
+    const packets = [];
+    $('#storagePacketTable tbody tr').each(function () {
+        const id = $(this).find('.storage-packet-id').val() || null;
+        const item_location_id = $(this).find('.item-location-id').val() || null;
+        const qty = parseFloat($(this).find('.storage-packet-qty').val()) || 0;
+        const packet_number = $(this).find('.storage-packet-number').val() || null;
+        const storage_number = $(this).find('.storage-number').val() || null;
+        const wh_detail_id = $(this).find('.wh_detail_id').val() || null;
+        packets.push(
+            { 
+                id: id, 
+                item_location_id: item_location_id, 
+                quantity: qty, 
+                packet_number: packet_number,
+                storage_number: storage_number,
+                wh_detail_id: wh_detail_id 
+            }
+        );
+    });
 
-    // $(`#itemTable #row_${activeRowIndex} input[name*='[storage_packets]']`).val(JSON.stringify(packets));
+    $(`#itemTable #row_${activeRowIndex} input[name*='[storage_packets]']`).empty();
+    $(`#itemTable #row_${activeRowIndex} input[name*='[storage_packets]']`).val(JSON.stringify(packets));
     $('#storagePointsModal').modal('hide');
 });
 

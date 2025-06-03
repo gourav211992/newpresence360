@@ -73,7 +73,11 @@ Route::middleware(['user.auth'])->group(function () {
 
     Route::controller(AssessmentController::class)->prefix('assessments')->group(function () {
         Route::get('/', 'index')->name('recruitment.assessments');
+        Route::get('/create', 'create')->name('recruitment.assessments.create');
         Route::get('/result', 'result')->name('recruitment.assessments.result');
+        Route::get('/template-data', 'templateData')->name('recruitment.assessments.get-template-data');
+        Route::get('/edit/{id}', 'edit')->name('recruitment.assessments.edit');
+        Route::get('/preview/{id}', 'show')->name('recruitment.assessments.preview');
     });
 
     Route::controller(HrRequestController::class)->prefix('request-hr')->group(function () {
@@ -127,6 +131,15 @@ Route::middleware(['user.auth'])->group(function () {
             Route::post('/user-configuration', 'userConfiguration')->name('recruitment.user-configuration');
             Route::get('/get-locations/{groupId}', 'getLocations')->name('recruitment.get-locations');
 
+        });
+
+        Route::controller(AssessmentController::class)->prefix('assessments')->group(function () {
+            Route::post('/store', 'store')->name('recruitment.assessments.store');
+            Route::post('/update-status', 'updateStatus')->name('recruitment.assessments.update-status');
+            Route::delete('/remove-question/{id}', 'removeQuestion')->name('recruitment.assessments.remove-question');
+            Route::delete('/remove-option/{id}', 'removeOption')->name('recruitment.assessments.remove-option');
+            Route::delete('/remove-assessment/{id}', 'destroy')->name('recruitment.assessments.remove-assessment');
+            Route::put('/{id}', 'update')->name('recruitment.assessments.update');
         });
     });
 });

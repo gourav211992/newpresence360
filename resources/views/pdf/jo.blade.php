@@ -58,23 +58,33 @@
                         </tr>
                         <tr>
                             <td style="padding-top: 10px;">
-                                {{@$organizationAddress->line_1}}, {{@$organizationAddress->line_2}}, {{@$organizationAddress->line_3}} 
+                                {{$sellerBillingAddress?->address}}
                             </td>
                         </tr>
                         <tr>
                             <td style="padding-top: 3px;">
-                                {{ @$organizationAddress?->city?->name }}, {{ @$organizationAddress?->state?->name }}, {{ @$organizationAddress?->country?->name }}, Pin Code: {{ @$organizationAddress->pincode }}
+                                {{ @$sellerBillingAddress?->city?->name }}, {{ @$sellerBillingAddress?->state?->name }}, {{ @$sellerBillingAddress?->country?->name }}, Pin Code: {{ @$sellerBillingAddress->pincode }}
                             </td>
                         </tr>
-                        {{-- <tr>
-                            <td style="padding-top: 3px;">GSTIN NO:</td>
-                            <td style="padding-top: 3px;">{{@$organization?->gst_number}}</td>
-                        </tr> --}}
                         <tr>
                             <td style="padding-top: 3px;">
-                                @if(@$organizationAddress->phone)Phone: {{ @$organizationAddress->phone }}, @endif @if(@$organization?->email) Email: {{ @$organization?->email }} @endif
+                                @if(@$sellerBillingAddress->phone)Phone: {{ @$sellerBillingAddress->phone }}, @endif @if(@$organization?->email) Email: {{ @$organization?->email }} @endif
                             </td>
                         </tr>
+                        @if($organization?->gst_number || $organization?->pan_number)
+                        <tr>
+                            <td style="padding-top: 3px;">
+                                GSTIN NO: {{ $organization?->gst_number }}
+                            </td>
+                        </tr>
+                        @endif
+                        @if($organization?->pan_number)
+                        <tr>
+                            <td style="padding-top: 3px;">
+                                PAN NO: {{ $organization?->pan_number }}
+                            </td>
+                        </tr>
+                        @endif
                     </table>
                 </td>
                 <td rowspan="2"
@@ -89,48 +99,47 @@
                         </tr>
                         <tr>
                             <td colspan="3" style="font-weight: 700; font-size: 13px; padding-top: 3px;">
-                                {{-- <b>{{ Str::ucfirst(@$organization->name) }}</b> --}}
                                 <b>{{ Str::ucfirst(@$po?->vendor?->company_name) }}</b>
                             </td>
                         </tr>
                         <tr>
                             <td style="padding-top: 15px;">Address: </td>
                             <td style="padding-top: 15px;">
-                                {{ Str::ucfirst(@$sellerBillingAddress?->address) }},
+                                {{ Str::ucfirst(@$sellerShippingAddress?->address) }},
                             </td>
                         </tr>
                         <tr>
                             <td style="padding-top: 3px;">City :</td>
                             <td style="padding-top: 3px;">
-                                {{ @$sellerBillingAddress?->city?->name }}
+                                {{ @$sellerShippingAddress?->city?->name }}
                             </td>
                         </tr>
                         <tr>
                             <td style="padding-top: 3px;">State:</td>
                             <td style="padding-top: 3px;">
-                                {{ @$sellerBillingAddress?->state?->name }}
+                                {{ @$sellerShippingAddress?->state?->name }}
                             </td>
                         </tr>
                         <tr>
                             <td style="padding-top: 3px;">Country:</td>
                             <td style="padding-top: 3px;">
-                                {{ @$sellerBillingAddress?->country?->name }}
+                                {{ @$sellerShippingAddress?->country?->name }}
                             </td>
                         </tr>
                         <tr>
                             <td style="padding-top: 3px;">Pin Code : </td>
-                            <td style="padding-top: 3px;">{{ @$sellerBillingAddress->pincode }}
+                            <td style="padding-top: 3px;">{{ @$sellerShippingAddress->pincode }}
                             </td>
                         </tr>
                         <tr>
                             <td style="padding-top: 3px;">GSTIN No:</td>
-                            <td style="padding-top: 3px;">{{@$po?->vendor->compliances->gstin_no}}</td>
+                            <td style="padding-top: 3px;">{{@$po?->vendor?->compliances?->gstin_no}}</td>
                         </tr>
 
                         <tr>
                             <td style="padding-top: 3px;">Phone:</td>
                             <td style="padding-top: 3px;">
-                                {{ @$sellerBillingAddress->phone }}
+                                {{ @$sellerShippingAddress->phone }}
                             </td>
                         </tr>
                         <tr>
@@ -620,7 +629,7 @@
             <tr>
                 <td colspan="2"
                     style=" border: 1px solid #000; padding: 5px; text-align: center; font-size: 12px; border-top: none; text-align: center;">
-                    Regd. Office: {{@$organizationAddress->getFullAddressAttribute()}} <br>
+                    Regd. Office: {{@$organizationAddress->getFullAddressAttribute()}} @if(@$organization?->gst_number), GSTIN NO - {{@$organization?->gst_number}} @endif @if(@$organization?->pan_number), PAN NO - {{@$organization?->pan_number}} @endif<br>
                 </td>
                 <!-- Principal Office to be added later -->
             </tr>

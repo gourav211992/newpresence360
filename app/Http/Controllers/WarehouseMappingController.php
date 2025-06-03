@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
+use Str;
 use App\Traits\Deletable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -133,16 +134,14 @@ class WarehouseMappingController extends Controller
                     $whDetail->max_weight = $detail['max_weight'] ?? null;
                     $whDetail->max_volume = $detail['max_volume'] ?? null;
                     $whDetail->status = 'active';
-                    // Check for dynamic parent fields
-                    // foreach ($detail as $key => $value) {
-                    //     if (!in_array($key, ['name', 'storage_point', 'max_weight', 'max_volume']) && !empty($value)) {
-                    //         // Save the first dynamic field you find
-                    //         $whDetail->parent_id = $value;  // Assuming your `wh_details` table has a parent_id column
-                    //         break; // Only take first parent
-                    //     }
-                    // }
-            
                     $whDetail->save();
+
+                    if($whDetail->is_storage_point == 1){
+                        $randomNumber = strtoupper(Str::random(rand(6, 8)));
+                        $storageNumber = strtoupper(str_replace(' ', '-', $whDetail?->name)) .'-'. $randomNumber;
+                        $whDetail->storage_number = $storageNumber;
+                        $whDetail->save();
+                    }
                 }
             }
 
@@ -213,7 +212,7 @@ class WarehouseMappingController extends Controller
                     ->pluck('id')->toArray();
                 $updatedDetailIds = [];
                 foreach ($request->details as $l_key => $detail) {
-                    $whDetailId = $detail->id ?? null;
+                    $whDetailId = $detail['detail_id'] ?? null;
                     $whDetail = WhDetail::find($whDetailId) ?? new WhDetail;
                     $storagePoint = (isset($detail['storage_point']) && ($detail['storage_point'] == 'on')) ? 1 : 0;
             
@@ -229,11 +228,20 @@ class WarehouseMappingController extends Controller
                     $whDetail->max_volume = $detail['max_volume'] ?? null;
                     $whDetail->status = 'active';
                     $whDetail->save();
+
+                    $updatedDetailIds[] = $whDetail->id; // ✅ Add updated ID to prevent deletion
+
+                    if(!$whDetail->storage_number && ($whDetail->is_storage_point == 1)){
+                        $randomNumber = strtoupper(Str::random(rand(6, 8)));
+                        $storageNumber = strtoupper(str_replace(' ', '-', $whDetail?->name)) .'-'. $randomNumber;
+                        $whDetail->storage_number = $storageNumber;
+                        $whDetail->save();
+                    }
                 }
 
-                 // Delete details that are no longer present in the request
-                 $detailsToDelete = array_diff($existingDetailIds, $updatedDetailIds);
-                 WhDetail::whereIn('id', $detailsToDelete)->forceDelete();
+                // ✅ Delete details that are no longer present in the request
+                $detailsToDelete = array_diff($existingDetailIds, $updatedDetailIds);
+                WhDetail::whereIn('id', $detailsToDelete)->forceDelete();
             }
 
             DB::commit();
@@ -464,6 +472,50 @@ class WarehouseMappingController extends Controller
         // }
 
         return response()->json(['status' => 'success']);
+    }
+
+    # WM Print Labels
+    public function getBarcodes(Request $request, $id)
+    {
+        $user = Helper::getAuthenticatedUser();
+        $status = ConstantHelper::STATUS;
+
+        $level = WhLevel::where('store_id', $id)
+            ->where('sub_store_id', $request->sub_store)
+            ->where('id', $request->wh_level)
+            ->first();
+        
+        $whDetails = WhDetail::with(
+            ['whLevel', 'parent', 'store', 'sub_store'])->where('store_id', $id)
+            ->where('sub_store_id', $request->sub_store)
+            ->where('wh_level_id', $request->wh_level)
+            ->get();
+        
+        return view('procurement.warehouse-structure.mapping.get-barcodes', [
+            'level' => $level,
+            'status' => $status,
+            'whDetails' => $whDetails,
+        ]);
+    }
+
+    # WM Print Labels
+    public function printBarcodes(Request $request, $id)
+    {
+        $user = Helper::getAuthenticatedUser();
+        $status = ConstantHelper::STATUS;
+        
+        $whDetails = WhDetail::with(
+            ['whLevel', 'parent', 'store', 'sub_store'])->where('store_id', $id)
+            ->where('sub_store_id', $request->sub_store)
+            ->where('wh_level_id', $request->wh_level)
+            ->get();
+        
+        $html = view('procurement.warehouse-structure.mapping.print-barcodes', compact('whDetails'))->render();
+
+        return response()->json([
+            'status' => 200,
+            'html' => $html
+        ]);
     }
 
 }

@@ -333,70 +333,85 @@ class PoController extends Controller
 
     public function getAddress(Request $request)
     {
+        $vendorId = $request?->id ?? null;
         $vendor = Vendor::withDefaultGroupCompanyOrg()
-        ->with(['currency:id,name', 'paymentTerms:id,name'])->find($request->id);
-        $currency = $vendor->currency;
-        $paymentTerm = $vendor->paymentTerms;
-        $shipping = $vendor->addresses()->where(function($query) {
-                        $query->where('type', 'shipping')->orWhere('type', 'both');
-                    })->latest()->first();
-        $billing = $vendor->addresses()->where(function($query) {
-                    $query->where('type', 'billing')->orWhere('type', 'both');
-                })->latest()->first();
+                ->with(['currency:id,name', 'paymentTerms:id,name'])
+                ->find($vendorId);
+        $currency = $vendor?->currency;
+        $paymentTerm = $vendor?->paymentTerms;
+        $vendorId = $vendor?->id;
+        $documentDate = $request?->document_date;
+        $billingAddress = ErpAddress::where('addressable_id', $vendorId)
+                    ->where('addressable_type', Vendor::class)
+                    ->whereIn('type', ['billing', 'both'])
+                    ->orderByRaw("FIELD(type, 'billing', 'both')")
+                    ->latest()
+                    ->first();
+        $shippingAddresses = ErpAddress::where('addressable_id', $vendorId)
+                    ->where('addressable_type', Vendor::class)
+                    ->whereIn('type', ['billing', 'both'])
+                    ->orderByRaw("FIELD(type, 'shipping', 'both')")
+                    ->latest()
+                    ->first();
 
-        $vendorId = $vendor->id;
-        $documentDate = $request->document_date;
-        $billingAddresses = ErpAddress::where('addressable_id', $vendorId) -> where('addressable_type', Vendor::class) -> whereIn('type', ['billing', 'both'])-> get();
-        $shippingAddresses = ErpAddress::where('addressable_id', $vendorId) -> where('addressable_type', Vendor::class) -> whereIn('type', ['shipping','both'])-> get();
-        foreach ($billingAddresses as $billingAddress) {
-            $billingAddress -> value = $billingAddress -> id;
-            $billingAddress -> label = $billingAddress -> display_address;
-        }
-        foreach ($shippingAddresses as $shippingAddress) {
-            $shippingAddress -> value = $shippingAddress -> id;
-            $shippingAddress -> label = $shippingAddress -> display_address;
-        }
-        if (count($shippingAddresses) == 0) {
+        if (!$shippingAddresses) {
             return response() -> json([
                 'data' => array(
-                    'error_message' => 'Shipping Address not found for '. $vendor ?-> company_name
+                    'error_message' => 'Shipping Address not found for '. $vendor?->company_name
                 )
             ]);
         }
-        if (count($billingAddresses) == 0) {
+        if (!$billingAddress) {
             return response() -> json([
                 'data' => array(
-                    'error_message' => 'Billing Address not found for '. $vendor ?-> company_name
+                    'error_message' => 'Billing Address not found for '. $vendor?->company_name
                 )
             ]);
         }
         if (!isset($vendor->currency_id)) {
             return response() -> json([
                 'data' => array(
-                    'error_message' => 'Currency not found for '. $vendor ?-> company_name
+                    'error_message' => 'Currency not found for '. $vendor?->company_name
                 )
             ]);
         }
         if (!isset($vendor->payment_terms_id)) {
             return response() -> json([
                 'data' => array(
-                    'error_message' => 'Payment Terms not found for '. $vendor ?-> company_name
+                    'error_message' => 'Payment Terms not found for '. $vendor?->company_name
                 )
             ]);
         }
-        $currencyData = CurrencyHelper::getCurrencyExchangeRates($vendor->currency_id ?? 0, $documentDate ?? '');
-        $storeId = $request->store_id ?? null;
+        $currencyData = CurrencyHelper::getCurrencyExchangeRates($vendor?->currency_id ?? 0, $documentDate ?? '');
+        $storeId = $request?->store_id ?? null;
         $store = ErpStore::find($storeId);
-        $deliveryAddress = $store?->address?->display_address;
+        $deliveryAddress = $store?->address;
 
         $user = Helper::getAuthenticatedUser();
-        $organization = Organization::where('id', $user->organization_id)->first();
-        $organizationAddress = Address::with(['city', 'state', 'country'])
-            ->where('addressable_id', $user->organization_id)
+        $organizationAddress = Address::with(['city:id,name,state_id', 'state:id,name,country_id', 'country:id,name,code,dial_code'])
+            ->where('addressable_id', $user?->organization_id)
             ->where('addressable_type', Organization::class)
             ->first();
-        $orgAddress = $organizationAddress?->display_address;
-        return response()->json(['data' => ['org_address' => $orgAddress,'delivery_address' => $deliveryAddress, 'vendor' =>$vendor, 'shipping' => $shipping,'billing' => $billing, 'paymentTerm' => $paymentTerm, 'currency' => $currency, 'currency_exchange' => $currencyData], 'status' => 200, 'message' => 'fetched']);
+        $isStoreBilling = false;
+        if($store?->billing_address) {
+            $isStoreBilling = true;
+        }
+        return response()->json([
+            'data' =>
+                [
+                    'is_store_billing' => $isStoreBilling,
+                    'org_address' => $organizationAddress,
+                    'delivery_address' => $deliveryAddress, 
+                    'vendor' => $vendor, 
+                    'shipping' => $shippingAddresses,
+                    'billing' => $billingAddress, 
+                    'paymentTerm' => $paymentTerm, 
+                    'currency' => $currency, 
+                    'currency_exchange' => $currencyData
+                ], 
+            'status' => 200, 
+            'message' => 'fetched'
+        ]);
     }
 
     # Purchase Order store
@@ -428,8 +443,7 @@ class PoController extends Controller
                 ], 422);
             }
 
-            # Bom Header save
-
+            # PO Header Save
             $po = new PurchaseOrder;
             $po->type = $type;
             $po->organization_id = $organization->id;
@@ -471,8 +485,6 @@ class PoController extends Controller
 
             $po->document_number = $document_number;
             $po->document_date = $request->document_date;
-            // $po->revision_number = $request->revision_number;
-            // $po->revision_date = $request->revision_date;
             $po->reference_number = $request->reference_number;
             $po->vendor_id = $request->vendor_id;
             $po->vendor_code = $request->vendor_code;
@@ -482,7 +494,6 @@ class PoController extends Controller
             $currency = Currency::find($request->currency_id ?? null);
             $po->currency_code = $currency?->short_name;
             $po->document_status = $request->document_status;
-            // $po->approval_level = $request->approval_level;
             $po->remarks = $request->remarks ?? null;
             $po->payment_term_id = $request->payment_term_id;
             // $po->payment_term_code = $request->payment_term_code;
@@ -496,26 +507,41 @@ class PoController extends Controller
                 $po->supp_invoice_required = 'yes';
                 $po->save();
             }
-
+            $address = null;
+            if($po?->store_location?->billing_address) {
+                $vendorBillingAddress = $po?->store_location?->address;
+                $address = $vendorBillingAddress?->address;
+            } else {
+                $vendorBillingAddress = Address::with(['city', 'state', 'country'])
+                ->where('addressable_id', $user?->organization_id)
+                ->where('addressable_type', Organization::class)
+                ->first();  
+                $parts = [
+                    $vendorBillingAddress->line_1,
+                    $vendorBillingAddress->line_2,
+                    $vendorBillingAddress->line_3
+                ];
+                $address = implode(', ', array_filter($parts));
+            }
             $vendorBillingAddress = $po->bill_address ?? null;
-            $vendorShippingAddress = $po->ship_address ?? null;
 
             if ($vendorBillingAddress) {
                 $billingAddress = $po->bill_address_details()->firstOrNew([
                     'type' => 'billing',
                 ]);
                 $billingAddress->fill([
-                    'address' => $vendorBillingAddress->address,
-                    'country_id' => $vendorBillingAddress->country_id,
-                    'state_id' => $vendorBillingAddress->state_id,
-                    'city_id' => $vendorBillingAddress->city_id,
-                    'pincode' => $vendorBillingAddress->pincode,
-                    'phone' => $vendorBillingAddress->phone,
-                    'fax_number' => $vendorBillingAddress->fax_number,
+                    'address' => $address,
+                    'country_id' => $vendorBillingAddress?->country_id,
+                    'state_id' => $vendorBillingAddress?->state_id,
+                    'city_id' => $vendorBillingAddress?->city_id,
+                    'pincode' => $vendorBillingAddress->pincode ?? $vendorBillingAddress->postal_code,
+                    'phone' => $vendorBillingAddress->phone ?? $vendorBillingAddress->mobile,
+                    'fax_number' => $vendorBillingAddress?->fax_number ?? null,
                 ]);
                 $billingAddress->save();
             }
 
+            $vendorShippingAddress = $po?->ship_address ?? null;
             if ($vendorShippingAddress) {
                 $shippingAddress = $po->ship_address_details()->firstOrNew([
                     'type' => 'shipping',
@@ -1711,29 +1737,22 @@ class PoController extends Controller
     public function editAddress(Request $request)
     {
         $type = $request->type;
-        $addressId = $request->address_id;
-        $vendor = Vendor::find($request->vendor_id ?? null);
+        $addressId = $request?->address_id;
+        $vendor = Vendor::find($request?->vendor_id ?? null);
         if(!$vendor) {
             return response()->json([
                 'message' => 'Please First select vendor.',
                 'error' => null,
             ], 500);
         }
-        if($request->type == 'shipping') {
-            $addresses = $vendor->addresses()->where(function($query) {
-                $query->where('type', 'shipping')->orWhere('type', 'both');
-            })->latest()->get();
-
-            $selectedAddress = $vendor->addresses()->where('id', $addressId)->where(function($query) {
-                $query->where('type', 'shipping')->orWhere('type', 'both');
-            })->latest()->first();
-        } else {
-            $addresses = $vendor->addresses()->where(function($query) {
-                    $query->where('type', 'billing')->orWhere('type', 'both');
-                })->latest()->get();
-            $selectedAddress = $vendor->addresses()->where('id', $addressId)->where(function($query) {
-                    $query->where('type', 'billing')->orWhere('type', 'both');
-                })->latest()->first();
+        if($request?->type == 'billing') {
+            $addresses = $vendor->addresses()
+                        ->where(function($query) {
+                            $query->where('type', 'billing')->orWhere('type', 'both');
+                        })
+                        ->latest()
+                        ->get();
+            $selectedAddress = ErpAddress::where('id', $addressId)->first();
         }
         $html = '';
         if(!intval($request->onChange)) {
@@ -1936,13 +1955,8 @@ class PoController extends Controller
         } else {
             $shortClose = 0;
         }
-        $store = $po->store_location;
+        $store = $po?->store_location;
         $deliveryAddress = $store?->address?->display_address;
-        $organizationAddress = Address::with(['city', 'state', 'country'])
-            ->where('addressable_id', $user->organization_id)
-            ->where('addressable_type', Organization::class)
-            ->first();
-        $orgAddress = $organizationAddress?->display_address;
         $isEdit = $buttons['submit'];
         if(!$isEdit) {
             $isEdit = $buttons['amend'] && intval(request('amendment') ?? 0) ? true: false;
@@ -1953,7 +1967,6 @@ class PoController extends Controller
             'users' => $users,
             'isEdit'=> $isEdit,
             'deliveryAddress'=> $deliveryAddress,
-            'orgAddress'=> $orgAddress,
             'books'=> $books,
             'po' => $po,
             'buttons' => $buttons,
@@ -1981,7 +1994,6 @@ class PoController extends Controller
     public function generatePdf(Request $request, $type, $id)
     {
         $user = Helper::getAuthenticatedUser();
-
         $organization = Organization::where('id', $user->organization_id)->first();
         $organizationAddress = Address::with(['city', 'state', 'country'])
             ->where('addressable_id', $user->organization_id)
@@ -2000,19 +2012,16 @@ class PoController extends Controller
         $totalAfterTax = ($totalTaxableValue + $totalTaxes);
         $totalAmount = ($totalAfterTax + $po->total_expense_value ?? 0.00);
         $amountInWords = NumberHelper::convertAmountToWords($totalAmount);
-        // Path to your image (ensure the file exists and is accessible)
-        $imagePath = public_path('assets/css/midc-logo.jpg'); // Store the image in the public directory
+        $imagePath = public_path('assets/css/midc-logo.jpg');
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$po->document_status] ?? '';
         $fileName = '';
         if ($type == 'supplier-invoice') {
-            // $path = 'pdf.supplier-invoice';
             $path = 'pdf.supplier-invoice2';
             $fileName = 'Supplier-Invoice-' . date('Y-m-d') . '.pdf';
         } elseif($type == 'job-order') {
             $path = 'pdf.jo';
             $fileName = 'Job-Order-' . date('Y-m-d') . '.pdf';
         } else {
-            // $path = 'pdf.po';
             $path = 'pdf.po2';
             $fileName = 'Purchase-Order-' . date('Y-m-d') . '.pdf';
         }

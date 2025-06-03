@@ -21,10 +21,10 @@
                     <thead>
                         <tr>
                             <th width="30px;">#</th>
-                            <th width="60px;">Unit</th>
                             <th width="80px;">Quantity</th>
-                            <th width="150px;">QR/Bar Code No.</th>
-                            <th width="300px;">Storage Point</th>
+                            <th width="250px;">QR/Bar Code No.</th>
+                            <th width="600px;">Storage Point</th>
+                            <th width="250px;">Storage No.</th>
                             <th width="50px;">Action</th>
                         </tr>
                     </thead>

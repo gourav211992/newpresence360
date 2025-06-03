@@ -161,17 +161,12 @@
                                                         <input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct" id="vendor_name" name="vendor_name" value="{{$po->vendor->company_name}}" />
                                                         <input type="hidden" value="{{$po->vendor_id}}" id="vendor_id" name="vendor_id" />
                                                         <input type="hidden" value="{{$po->vendor_code}}" id="vendor_code" name="vendor_code" />
-                                                        @if($po->latestShippingAddress() || $po->latestBillingAddress())
+
                                                         <input type="hidden" value="{{$po->latestShippingAddress()}}" id="shipping_id" name="shipping_id" />
                                                         <input type="hidden" id="billing_id" value="{{$po->latestBillingAddress()->id}}" name="billing_id" />
                                                         <input type="hidden" value="{{$po->latestShippingAddress()->state?->id}}" id="hidden_state_id" name="hidden_state_id" />
                                                         <input type="hidden" value="{{$po->latestShippingAddress()->country?->id}}" id="hidden_country_id" name="hidden_country_id" />
-                                                        @else
-                                                        <input type="hidden" value="{{$po->shipping_address}}" id="shipping_id" name="shipping_id" />
-                                                        <input type="hidden" id="billing_id" value="{{$po->billing_address}}" name="billing_id" />
-                                                        <input type="hidden" value="{{$po?->ship_address?->state?->id}}" id="hidden_state_id" name="hidden_state_id" />
-                                                        <input type="hidden" value="{{$po?->ship_address?->country?->id}}" id="hidden_country_id" name="hidden_country_id" />
-                                                        @endif
+
                                                     </div>
                                                 </div>
                                                 <div class="col-md-3">
@@ -191,40 +186,7 @@
                                                     </div>
                                                 </div>
                                             </div>
-
                                             <div class="row">
-                                                {{-- <div class="col-md-6">
-                                                    <div class="customer-billing-section">
-                                                        <p>Shipping Details</p>
-                                                        <div class="bilnbody">
-
-                                                            <div class="genertedvariables genertedvariablesnone">
-                                                                <label class="form-label w-100">Select Shipping Address <span class="text-danger">*</span> <a href="javascript:;" class="float-end font-small-2 editAddressBtn" data-type="shipping"><i data-feather='edit-3'></i> Edit</a></label>
-                                                                <div class="mrnaddedd-prim shipping_detail">@if($po->latestShippingAddress())
-                                                                     {{$po->latestShippingAddress()->display_address}}
-                                                                    @else
-                                                                     {{$po->ship_address?->display_address}}
-                                                                    @endif</div>
-                                                            </div>
-                                                        </div>
-
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <div class="customer-billing-section h-100">
-                                                        <p>Billing Details</p>
-                                                        <div class="bilnbody">
-                                                            <div class="genertedvariables genertedvariablesnone">
-                                                                <label class="form-label w-100">Select Billing Address <span class="text-danger">*</span> <a href="javascript:;" class="float-end font-small-2 editAddressBtn" data-type="billing"><i data-feather='edit-3'></i> Edit</a></label>
-                                                                <div class="mrnaddedd-prim billing_detail">@if($po->latestBillingAddress())
-                                                                    {{$po->latestBillingAddress()->display_address}}
-                                                                    @else
-                                                                    {{$po->bill_address?->display_address}}
-                                                                    @endif</div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div> --}}
                                                 <div class="col-md-4">
                                                     <div class="customer-billing-section h-100">
                                                         <p>Vendor Address</p>
@@ -232,11 +194,7 @@
                                                             <div class="genertedvariables genertedvariablesnone">
                                                                 <label class="form-label w-100">Vendor Address <span class="text-danger">*</span> <a href="javascript:;" class="float-end font-small-2 editAddressBtn d-none" data-type="billing"><i data-feather='edit-3'></i> Edit</a></label>
                                                                 <div class="mrnaddedd-prim billing_detail">
-                                                                    @if($po->latestBillingAddress())
-                                                                    {{$po->latestBillingAddress()->display_address}}
-                                                                    @else
-                                                                    {{$po->bill_address?->display_address}}
-                                                                    @endif
+                                                                    {{$po?->latestBillingAddress()?->display_address}}
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -247,10 +205,11 @@
                                                         <p>Billing Address</p>
                                                         <div class="bilnbody">  
                                                             <div class="genertedvariables genertedvariablesnone">
-                                                                <label class="form-label w-100">Billing Address <span class="text-danger">*</span> 
-                                                                    {{-- <a href="javascript:;" class="float-end font-small-2 editAddressBtn" data-type="billing"><i data-feather='edit-3'></i> Edit</a> --}}
+                                                                <label class="form-label w-100">Billing Address <span class="text-danger">*</span>
                                                                 </label>
-                                                                <div class="mrnaddedd-prim org_address">{{$orgAddress}}</div>   
+                                                                <div class="mrnaddedd-prim org_address">
+                                                                    {{ $po?->latestBillingAddress()?->display_address }}
+                                                                </div>   
                                                             </div>
                                                         </div>
                                                     </div>
@@ -261,7 +220,6 @@
                                                         <div class="bilnbody">  
                                                             <div class="genertedvariables genertedvariablesnone">
                                                                 <label class="form-label w-100">Delivery Address <span class="text-danger">*</span>
-                                                                    {{-- <a href="javascript:;" class="float-end font-small-2 editAddressBtn" data-type="billing"><i data-feather='edit-3'></i> Edit</a> --}}
                                                                 </label>
                                                                 <div class="mrnaddedd-prim delivery_address">{{$deliveryAddress}}</div>   
                                                             </div>

@@ -2252,7 +2252,7 @@ return [
             }) -> orWhere(function ($userQuery) use($userIds) {
                 $userQuery -> where('authenticable_type', 'user') -> whereIn('authenticable_id', $userIds);
             });
-        })->get();
+        })->where('organization_id', $organizationId)->get();
         return $employees;
     }
 

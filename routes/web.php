@@ -1681,6 +1681,8 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
             Route::get('/report/filter', 'getReportFilter')->name('report.filter');
             Route::post('/add-scheduler', 'addScheduler')->name('add.scheduler');
             Route::get('/order/report', 'purchaseReturnReport')->name('order.report');
+            Route::get('/{id}/print-labels', 'printLabels')->name('print-labels');
+            Route::get('/{id}/print-barcodes', 'printBarcodes')->name('print-barcodes');
 
             /*Remove data*/
             Route::delete('remove-dis-item-level', 'removeDisItemLevel')->name('remove.item.dis');
@@ -1832,6 +1834,8 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         Route::get('/levels', 'getLevels')->name('get.levels');
         Route::get('/level-parents', 'getLevelParents')->name('get.level-parents');
         Route::get('/get-parents', 'getParents')->name('get.parents');
+        Route::get('/{id}/print-labels', 'getBarcodes')->name('print-labels');
+        Route::get('/{id}/print-barcodes', 'printBarcodes')->name('print-barcodes');
         Route::post('/delete-details', 'deleteDetails')->name('delete-details');
     });
 

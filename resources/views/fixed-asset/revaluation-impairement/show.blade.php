@@ -1103,31 +1103,40 @@ $(document).on('input change', '[name="document_type"]', function() {
 
         }
 
-        function postVoucher(element)
-        {
-            const bookId = "{{isset($data) ? $data -> book_id : ''}}";
-            const documentId = "{{isset($data) ? $data -> id : ''}}";
-            const postingApiUrl = "{{route('finance.fixed-asset.revaluation-impairement.post')}}"
+                        function postVoucher(element) {
+    Swal.fire({
+        title: 'Are you sure?',
+        text: " Note: Once Submit the Voucher you are not able to redo the entry.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, post it!',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const bookId = "{{ isset($data) ? $data->book_id : '' }}";
+            const documentId = "{{ isset($data) ? $data->id : '' }}";
+            const postingApiUrl = "{{ route('finance.fixed-asset.revaluation-impairement.post') }}";
+
             if (bookId && documentId) {
                 $.ajax({
                     url: postingApiUrl,
                     type: "POST",
                     dataType: "json",
-                    contentType: "application/json", // Specifies the request payload type
+                    contentType: "application/json",
                     data: JSON.stringify({
-                        // Your JSON request data here
                         book_id: bookId,
                         document_id: documentId,
                     }),
-                    success: function(data) {
+                    success: function (data) {
                         const response = data.data;
                         if (response.status) {
                             Swal.fire({
                                 title: 'Success!',
                                 text: response.message,
                                 icon: 'success',
+                            }).then(() => {
+                                location.reload();
                             });
-                            location.reload();
                         } else {
                             Swal.fire({
                                 title: 'Error!',
@@ -1136,18 +1145,21 @@ $(document).on('input change', '[name="document_type"]', function() {
                             });
                         }
                     },
-                    error: function(jqXHR, textStatus, errorThrown) {
+                    error: function () {
                         Swal.fire({
                             title: 'Error!',
-                            text: 'Some internal error occured',
+                            text: 'Some internal error occurred',
                             icon: 'error',
                         });
                     }
                 });
-
             }
         }
-        $('#ap_file').prop('disabled', false).prop('readonly', false);
+    });
+}
+
+
+$('#ap_file').prop('disabled', false).prop('readonly', false);
         $('#revisionNumber').prop('disabled', false).prop('readonly', false);
         
 $(document).on('click', '#amendmentSubmit', (e) => {

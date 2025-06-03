@@ -73,7 +73,7 @@ class TDSReportController extends Controller
             ])->when($organization_id, function ($query) use ($organization_id) {
                 $query->where('organization_id', $organization_id);
             })
-            //->whereIn('id', $vouchers)
+            ->whereIn('id', $vouchers)
             ->when(request('tax_filter'), function ($query) {
                 $query->whereHas('items.hsn.tax', function ($query) {
                     $query->where('id', request('tax_filter')); // Assuming 'tax_group' is the field you want to filter by
