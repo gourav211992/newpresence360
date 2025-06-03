@@ -38,7 +38,7 @@
 								
 								   
                                 <div class="table-responsive">
-									<table class="datatables-basic table myrequesttablecbox "> 
+									<table class="datatables-basic table myrequesttablecbox tableistlastcolumnfixed"> 
                                             <thead>
                                              <tr>
 												<th>#</th>
@@ -47,32 +47,33 @@
 												<th>Doc No.</th>
 												<th>Asset Name</th>
 												<th>Asset Code</th>
+												<th>Cap. Date</th>
+												<th>Qty</th>
 												<th>Ledger Name</th>
                          <th>Location</th>
                                                 <th>Cost Center</th>
-												<th>Qty</th>
-												<th>Cap. Date</th>
-												<th>Status</th>
-												<th>Action</th>
+												<th class="text-end">Status</th>
 											  </tr>
 											</thead>
 											<tbody>
                                                 @foreach($data as $key => $d)
                                                 <tr>
-													<td>{{$key+1}}</td>
-													<td>{{ $d?->document_date ? \Carbon\Carbon::parse($d->document_date)->format('d-m-Y') : '' }}</td>
-                          <td class="fw-bolder text-dark">{{$d?->book?->book_code}}</td>
-													<td>{{$d?->document_number}}</td>
-													<td>{{$d?->asset?->asset_name}}</td>
-													<td>{{$d?->asset?->asset_code}}</td>
-													<td>{{$d?->ledger?->name}}</td>
-                           <td>{{ $d?->location?->store_name ??"-" }}</td>
-                          <td>{{ $d?->cost_center?->name ??"-" }}</td>
-													<td>{{ $d?->quantity }}</td>
-                          <td>{{ $d?->capitalize_date ? \Carbon\Carbon::parse($d->capitalize_date)->format('d-m-Y') : '' }}</td>
-@php $statusClasss = App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$d->document_status??"draft"];  @endphp
-                            
-													<td>
+													<td class="text-nowrap">{{$key+1}}</td>
+													<td class="fw-bolder text-dark text-nowrap">{{ $d?->document_date ? \Carbon\Carbon::parse($d->document_date)->format('d-m-Y') : '' }}</td>
+                          <td class="text-nowrap">{{$d?->book?->book_code}}</td>
+													<td class="text-nowrap">{{$d?->document_number}}</td>
+													<td class="text-nowrap">{{$d?->asset?->asset_name}}</td>
+													<td class="text-nowrap">{{$d?->asset?->asset_code}}</td>
+													                          <td class="text-nowrap">{{ $d?->capitalize_date ? \Carbon\Carbon::parse($d->capitalize_date)->format('d-m-Y') : '' }}</td>
+													<td class="text-nowrap">{{ $d?->quantity }}</td>
+
+                          <td class="text-nowrap">{{$d?->ledger?->name}}</td>
+                           <td class="text-nowrap">{{ $d?->location?->store_name ??"-" }}</td>
+                          <td class="text-nowrap">{{ $d?->cost_center?->name ??"-" }}</td>
+
+									    <td class="tableactionnew">
+                        <div class="d-flex align-items-center justify-content-end">
+                          @php $statusClasss = App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$d->document_status??"draft"];  @endphp
                             <span
                                 class='badge rounded-pill {{ $statusClasss }} badgeborder-radius'>
                                 @if ($d->document_status == App\Helpers\ConstantHelper::APPROVAL_NOT_REQUIRED)
@@ -81,10 +82,9 @@
                                     {{ ucfirst($d->document_status) }}
                                 @endif
                             </span>
-                        </td>
-                      <td class="tableactionnew">
+                       
 														<div class="dropdown">
-															<button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
+															<button type="button" class="btn btn-sm dropdown-toggle hide-arrow p-0" data-bs-toggle="dropdown">
 																<i data-feather="more-vertical"></i>
 															</button>
 															<div class="dropdown-menu dropdown-menu-end">
@@ -101,6 +101,7 @@
                                 @endif
 															</div>
 														</div>
+                          </div>
 													</td>
 												  </tr>
                                                   @endforeach
@@ -226,7 +227,8 @@
       order: [[0, 'asc']],
       dom: 
         '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-3 withoutheadbuttin dt-action-buttons text-end"B><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
-      displayLength: 7,
+      scrollX: true,
+        displayLength: 7,
       lengthMenu: [7, 10, 25, 50, 75, 100],
       buttons: [
         {

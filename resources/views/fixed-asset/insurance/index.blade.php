@@ -43,49 +43,46 @@
 
 
                                 <div class="table-responsive">
-                                    <table class="datatables-basic table myrequesttablecbox ">
+                                    <table class="datatables-basic table myrequesttablecbox tableistlastcolumnfixed ">
                                         <thead>
                                             <tr>
                                                 <th>#</th>
+                                                <th>Renewal Date</th>
                                                 <th>Asset Name</th>
                                                 <th>Asset Code</th>
                                                 <th>Location</th>
                                                 <th>Cost Center</th>
-                                                <th>Renewal Date</th>
                                                 <th>Insured Value</th>
                                                 <th>Expiry Date</th>
                                                 <th>Policy No.</th>
                                                 <th>Lien / Security Details</th>
-                                                <th>Status</th>
-                                                <th>Action</th>
+                                                <th class="text-end">Status</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             @if (isset($data))
                                                 @forelse($data as $key => $item)
                                                     <tr>
-                                                        <td>{{ $key + 1 }}</td>
-                                                        <td>{{ $item?->asset?->asset_name }}</td>
-                                                        <td>{{ $item?->asset?->asset_code }}</td>
-                                                        <td>{{ $item?->location?->store_name }}</td>
-                                                        <td>{{ $item?->cost_center?->name }}</td>
-                                                        <td>{{ $item->renewal_date }}</td>
-                                                        <td>{{ $item->insured_value }}</td>
-                                                        <td>{{ $item->expiry_date }}</td>
-                                                        <td>{{ $item->policy_no }}</td>
-                                                        <td>{{ $item->lien_security_details }}</td>
-                                                        <td>
-                                                            @if (now()->greaterThan($item->expiry_date))
+                                                        <td class="text-nowrap">{{ $key + 1 }}</td>
+                                                        <td class="fw-bolder text-nowrap text-dark">{{ $item->renewal_date }}</td>
+                                                        <td class="text-nowrap">{{ $item?->asset?->asset_name }}</td>
+                                                        <td class="text-nowrap">{{ $item?->asset?->asset_code }}</td>
+                                                        <td class="text-nowrap">{{ $item?->location?->store_name }}</td>
+                                                        <td class="text-nowrap">{{ $item?->cost_center?->name }}</td>
+                                                        <td class="text-nowrap">{{ $item->insured_value }}</td>
+                                                        <td class="text-nowrap">{{ $item->expiry_date }}</td>
+                                                        <td class="text-nowrap">{{ $item->policy_no }}</td>
+                                                        <td class="text-nowrap">{{ $item->lien_security_details }}</td>
+                                                        <td class="tableactionnew">
+                                                            <div class="d-flex align-items-center justify-content-end">
+                                                                 @if (now()->greaterThan($item->expiry_date))
                                                                 Expired
                                                             @else
                                                                 Renewed
                                                             @endif
-                                                        </td>
-
-                                                        <td class="tableactionnew">
                                                             <div class="dropdown">
                                                                 <button type="button"
-                                                                    class="btn btn-sm dropdown-toggle hide-arrow py-0"
+                                                                    class="btn btn-sm dropdown-toggle hide-arrow p-0"
                                                                     data-bs-toggle="dropdown">
                                                                     <i data-feather="more-vertical"></i>
                                                                 </button>
@@ -103,6 +100,7 @@
 
                                                                 </div>
                                                             </div>
+                                                        </div>
                                                         </td>
                                                     </tr>
                                                 @empty
@@ -223,6 +221,7 @@
                 '<"col-sm-12 col-md-3"f>>t' +
                 '<"d-flex justify-content-between mx-2 row"' +
                 '<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+            scollX:true,
             displayLength: 10, // Set initial row display count
             lengthMenu: [10, 25, 50, 75, 100], // Row count options
             buttons: [

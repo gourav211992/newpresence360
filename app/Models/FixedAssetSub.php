@@ -59,22 +59,7 @@ class FixedAssetSub extends Model
 {
     // Delete all existing sub-assets with the same parent_id
     self::withTrashed()->where('parent_id', $parentId)->forceDelete();
-
-    $subAssets = [];
-    $unitValue = $totalValue / $quantity;
-    $salvageValueUnit = $salvageValue / $quantity;
-    
-    for ($i = 1; $i <= $quantity; $i++) {
-        $subAssets[] = self::create([
-            'parent_id' => $parentId,
-            'sub_asset_code' => $assetCode . '-' . sprintf('%02d', $i),
-            'current_value' => $unitValue,
-            'current_value_after_dep'=> $unitValue,
-            'salvage_value' => $salvageValueUnit,
-        ]);
-    }
-    
-    return $subAssets;
+    return self::generateSubAssets($parentId, $assetCode, $quantity, $totalValue, $salvageValue);
 }
 
 

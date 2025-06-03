@@ -38,7 +38,7 @@
 								
 								   
                                 <div class="table-responsive">
-									<table class="datatables-basic table myrequesttablecbox "> 
+									<table class="datatables-basic table myrequesttablecbox tableistlastcolumnfixed"> 
                                             <thead>
                                              <tr>
 												<th>#</th>
@@ -50,23 +50,23 @@
 												<th>Location</th>
 												<th>Cost Center</th>
 												<th>No. of Assets</th> 
-												<th>Status</th>
-												<th>Action</th>
+												<th class="text-end">Status</th>
 											  </tr>
 											</thead>
 											<tbody>
                                                 @foreach($data as $key => $d)
                                                 <tr>
-													<td>{{$key+1}}</td>
-													 <td>{{ $d?->document_date ? \Carbon\Carbon::parse($d->document_date)->format('d-m-Y') : '' }}</td>
-                         	<td>{{ucfirst($d?->document_type)}}</td>
-												  <td class="fw-bolder text-dark">{{$d?->book?->book_code}}</td>
-													<td>{{$d?->document_number}}</td>
-													<td>{{$d?->category?->name}}</td>
-													<td>{{$d?->location?->store_name}}</td>
-													<td>{{$d?->cost_center?->name}}</td>
-                          <td>{{count(json_decode($d?->asset_details))??0}}</td>
-                          <td>
+													<td class="text-nowrap">{{$key+1}}</td>
+													 <td class="fw-bolder text-nowrap text-dark">{{ $d?->document_date ? \Carbon\Carbon::parse($d->document_date)->format('d-m-Y') : '' }}</td>
+                         	<td class="text-nowrap">{{ucfirst($d?->document_type)}}</td>
+												  <td class="text-nowrap" >{{$d?->book?->book_code}}</td>
+													<td class="text-nowrap">{{$d?->document_number}}</td>
+													<td class="text-nowrap">{{$d?->category?->name}}</td>
+													<td class="text-nowrap">{{$d?->location?->store_name}}</td>
+													<td class="text-nowrap">{{$d?->cost_center?->name}}</td>
+                          <td class="text-nowrap">{{count(json_decode($d?->asset_details))??0}}</td>
+                      <td class="tableactionnew">
+                        <div class="d-flex align-items-center justify-content-end">
                             @php $statusClasss = App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$d->document_status??"draft"];  @endphp
                             <span
                                 class='badge rounded-pill {{ $statusClasss }} badgeborder-radius'>
@@ -76,10 +76,8 @@
                                     {{ ucfirst($d->document_status) }}
                                 @endif
                             </span>
-                        </td>
-                      <td class="tableactionnew">
 														<div class="dropdown">
-															<button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
+															<button type="button" class="btn btn-sm dropdown-toggle hide-arrow p-0" data-bs-toggle="dropdown">
 																<i data-feather="more-vertical"></i>
 															</button>
 															<div class="dropdown-menu dropdown-menu-end">
@@ -98,6 +96,7 @@
                               
 															</div>
 														</div>
+                          </div>
 													</td>
 												  </tr>
                                                   @endforeach
@@ -223,7 +222,8 @@
       order: [[0, 'asc']],
       dom: 
         '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-3 withoutheadbuttin dt-action-buttons text-end"B><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
-      displayLength: 11,
+      scollX: true,
+        displayLength: 11,
       lengthMenu: [7, 10, 25, 50, 75, 100],
       buttons: [
         {
