@@ -49,7 +49,7 @@
                                         <tbody>
                                             @foreach($records as $index=>$row)
                                             @php
-                                               $vs =  App\Models\Voucher::where('reference_doc_id',$row->id)->where('reference_service','expense_advice')->first();
+                                               $vs =  App\Models\Voucher::where('reference_doc_id',$row->id)->where('reference_service','expense-advice')->first();
                                             @endphp
                                             <tr class="trail-bal-tabl-none">
                                                 <td>{{$index+1}}</td>
@@ -60,13 +60,12 @@
                                                 <td>{{$row->vendor ? $row->vendor?->pan_number : 'N/A'}}</td>
                                                 <td>
                                                     <div style="width: 200px">
-                                                        {{ $row->items->pluck('hsn.tax.tax_group')->filter()->unique()->implode(', ') }}
-
+                                                        {{ $row->items->map(fn($item) => $item->hsn->tax->tax_group ?? null)->filter()->unique()->implode(', ') }}
                                                     </div>
                                                 </td>
                                                 <td>{{ $row->vendor ? ($row?->vendor?->erpOrganizationType?->name == 'Private Limited' || $row?->vendor?->erpOrganizationType?->name == 'Public Limited' ? 'Company' : 'Non-Company') : 'N/A' }}</td>
-                                                <td><a href="#"><span
-                                                            class="badge rounded-pill badge-light-secondary badgeborder-radius">{{$vs?->voucher_no}}</span></a>
+                                                <td><span
+                                                            class="badge rounded-pill badge-light-secondary badgeborder-radius">{{$vs?->voucher_no}}</span>
                                                 </td>
                                                 <td class="text-end">{{number_format(($row->total_item_amount - $row->total_discount),2)}}</td>
                                                 <td>{{$vs?->document_date}}</td>

@@ -52,8 +52,8 @@ use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Support\Facades\Storage;
 
-class EInvoiceHelper
-{   
+class EInvBacHelper
+{
     public function __construct()
 	{
 		// $logFactory = new LoggerFactory();
@@ -63,7 +63,7 @@ class EInvoiceHelper
     const B2B_INVOICE_TYPE = "B2B";
     const B2C_INVOICE_TYPE = "B2C";
     const EXPORT_INVOICE_TYPE = "Export";
-    
+
     public static function getGstInvoiceType($partyId, $partyCountryId, $sellerCountryId, string $partyType = 'customer') : string|null
     {
         //Retrieve party first
@@ -112,7 +112,7 @@ class EInvoiceHelper
         $user = Helper::getAuthenticatedUser();
 
         $invoiceDtls = self::getInvoiceDetail($documentHeader, $documentDetails);
-        
+
         $invoiceData = [
             "Version" => '1.1',
             "TranDtls" => $invoiceDtls['tranDetails'],
@@ -347,7 +347,7 @@ class EInvoiceHelper
 
         $itemList = array();
         $result = array();
-        
+
         $orderQty = 0;
         $totalAmt = 0;
         $itemDiscount = 0;
@@ -720,7 +720,7 @@ class EInvoiceHelper
         if($condition){
             $documentHeader = $document;
             $documentDetails = $document ?-> items ?? [];
-            
+
             $organization = Organization::where('id', $user->organization_id)->first();
             $organizationAddress = Address::with(['city', 'state', 'country'])
                 ->where('addressable_id', $user->organization_id)
@@ -734,11 +734,11 @@ class EInvoiceHelper
             // $checkSellerGstIn = EInvoiceHelper::getGstDetail($organization?->gst_number);
             // if(!(is_string($checkSellerGstIn))){
             //     if(!$checkSellerGstIn['Status']){
-            //         $errorMsg = "Seller : "; 
+            //         $errorMsg = "Seller : ";
             //         if($checkSellerGstIn['ErrorDetails'][0]['ErrorMessage'] == "Requested data is not available"){
-            //             $errorMsg = "Seller : "."Error: ". @$checkSellerGstIn['ErrorDetails'][0]['ErrorCode'].' - Invalid GST Number';    
+            //             $errorMsg = "Seller : "."Error: ". @$checkSellerGstIn['ErrorDetails'][0]['ErrorCode'].' - Invalid GST Number';
             //         } else{
-            //             $errorMsg = "Seller : "."Error: ". @$checkSellerGstIn['ErrorDetails'][0]['ErrorCode'].' -'.$checkSellerGstIn['ErrorDetails'][0]['ErrorMessage']; 
+            //             $errorMsg = "Seller : "."Error: ". @$checkSellerGstIn['ErrorDetails'][0]['ErrorCode'].' -'.$checkSellerGstIn['ErrorDetails'][0]['ErrorMessage'];
             //         }
             //         return [
             //             'checkSellerGstIn' => $checkSellerGstIn,
@@ -750,11 +750,11 @@ class EInvoiceHelper
             // $checkBuyerGstIn = EInvoiceHelper::getGstDetail($documentHeader?->vendor->compliances->gstin_no);
             // if(!(is_string($checkBuyerGstIn))){
             //     if(!$checkBuyerGstIn['Status']){
-            //         $errorMsg = "Buyer : "; 
+            //         $errorMsg = "Buyer : ";
             //         if($checkBuyerGstIn['ErrorDetails'][0]['ErrorMessage'] == "Requested data is not available"){
-            //             $errorMsg = "Seller : "."Error: ". @$checkBuyerGstIn['ErrorDetails'][0]['ErrorCode'].' - Invalid GST Number';    
+            //             $errorMsg = "Seller : "."Error: ". @$checkBuyerGstIn['ErrorDetails'][0]['ErrorCode'].' - Invalid GST Number';
             //         } else{
-            //             $errorMsg = "Seller : "."Error: ". @$checkBuyerGstIn['ErrorDetails'][0]['ErrorCode'].' -'.$checkBuyerGstIn['ErrorDetails'][0]['ErrorMessage']; 
+            //             $errorMsg = "Seller : "."Error: ". @$checkBuyerGstIn['ErrorDetails'][0]['ErrorCode'].' -'.$checkBuyerGstIn['ErrorDetails'][0]['ErrorMessage'];
             //         }
             //         return [
             //             'checkBuyerGstIn' => $checkBuyerGstIn,
@@ -774,11 +774,11 @@ class EInvoiceHelper
         $checkGstIn = EInvoiceHelper::getGstDetail($gstNumber);
         if(!(is_string($checkGstIn))){
             if(!$checkGstIn['Status']){
-                $errorMsg = ""; 
+                $errorMsg = "";
                 if($checkGstIn['ErrorDetails'][0]['ErrorMessage'] == "Requested data is not available"){
-                    $errorMsg = "Error: ". @$checkGstIn['ErrorDetails'][0]['ErrorCode'].' - Invalid GST Number';    
+                    $errorMsg = "Error: ". @$checkGstIn['ErrorDetails'][0]['ErrorCode'].' - Invalid GST Number';
                 } else{
-                    $errorMsg = "Error: ". @$checkGstIn['ErrorDetails'][0]['ErrorCode'].' -'.$checkGstIn['ErrorDetails'][0]['ErrorMessage']; 
+                    $errorMsg = "Error: ". @$checkGstIn['ErrorDetails'][0]['ErrorCode'].' -'.$checkGstIn['ErrorDetails'][0]['ErrorMessage'];
                 }
                 return [
                     'checkGstIn' => $checkGstIn,
@@ -800,8 +800,8 @@ class EInvoiceHelper
     public static function checkIfGstInShouldGenerate(Model $document, $documentType = null)
     {
         $serviceAlias = $document ?-> book ?-> service ?-> alias;
-        if ($serviceAlias === ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS || $serviceAlias === ConstantHelper::SR_SERVICE_ALIAS || 
-        ($serviceAlias === ConstantHelper::SI_SERVICE_ALIAS) || 
+        if ($serviceAlias === ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS || $serviceAlias === ConstantHelper::SR_SERVICE_ALIAS ||
+        ($serviceAlias === ConstantHelper::SI_SERVICE_ALIAS) ||
         ($serviceAlias === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS && !$document -> invoice_required)) {
             return true;
         } else {
@@ -836,5 +836,5 @@ class EInvoiceHelper
         }
         return $value;
     }
-    
+
 }

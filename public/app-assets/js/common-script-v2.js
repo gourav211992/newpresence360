@@ -154,7 +154,7 @@ $(document).ready(function () {
                                     eval($callback);
                                 }
                             } else {
-                                window.location.replace(app_url + window.location.pathname);
+                                window.location.replace(window.location.pathname);
                             }
                         }, 1000);
                     },
@@ -351,6 +351,20 @@ function show_validation_error(msg) {
         if (index === 'bank_date') {
             $('#bank-date-error').html('<span class="help-block text-danger fw-bolder">' + value + '</span>');
             return; // Skip default logic
+        }
+
+        if (index.match(/^questions\.\d+\.options$/)) {
+            let match = index.match(/^questions\.(\d+)\.options$/);
+            if (match) {
+                let qIndex = match[1];
+                let customName = `questions[${qIndex}][new_option_label]`;
+                let $input = $(`form [name="${customName}"]`);
+                if ($input.length) {
+                    $input.addClass("is-invalid");
+                    $input.after('<span class="help-block text-danger fw-bolder">' + value[0] + '</span>');
+                    return; // Skip rest of loop
+                }
+            }
         }
 
         if (name.indexOf("[]") !== -1) {

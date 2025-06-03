@@ -1,6 +1,7 @@
 @php
     $type = $data->document_type ==='receipts'?'debit':'credit';
 @endphp
+@php use App\Helpers\ConstantHelper; @endphp
 @extends('layouts.app')
 
 @section('styles')
@@ -1452,6 +1453,39 @@ $('#revisionNumber').prop('disabled', false);
                     },
                     minLength: 0,
                     select: function(event, ui) {
+                        const documentType = $("#document_type").val();
+                        const isReceipts = (documentType === '{{ ConstantHelper::RECEIPTS_SERVICE_ALIAS }}');
+
+                        let relation = null;
+                        let relationLabel = '';
+
+                        if (isReceipts) {
+                            relation = ui.item.customer;
+                            relationLabel = 'Customer';
+                        } else {
+                            relation = ui.item.vendor;
+                            relationLabel = 'Vendor';
+                        }
+
+                        // Check if relation exists
+                        if (!relation) {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: `${relationLabel} Missing`,
+                                text: `${relationLabel} does not exist for this ledger.`
+                            });
+                            return false; // Block selection
+                        }
+
+                        // Check credit_days
+                        if (!relation.credit_days || relation.credit_days == 0) {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: `${relationLabel} Credit Days Missing`,
+                                text: `This ${relationLabel.toLowerCase()} does not have credit days set.`
+                            });
+                            return false; // Block selection
+                        }
                         $(this).val(ui.item.code);
 
                         const id = $(this).attr("data-id");
@@ -1741,7 +1775,27 @@ $('#revisionNumber').prop('disabled', false);
     </script>
     <script>
 
-        function onPostVoucherOpen(type = "not_posted") {
+       function onPostVoucherOpen(type = "not_posted") {
+    const isPostButton = {{ $buttons['post'] ? 'true' : 'false' }};
+            if (isPostButton) {
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: 'Do you want to proceed with posting the voucher?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, proceed',
+                    cancelButtonText: 'No, cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        proceedWithVoucher(type);
+                    } 
+                });
+            } else {
+                proceedWithVoucher(type);
+            }
+        }
+
+        function proceedWithVoucher(type = "not_posted") {
             resetPostVoucher();
 
             const apiURL = "{{ route('paymentVouchers.getPostingDetails') }}";

@@ -6,10 +6,11 @@ use App\Models\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\Deletable;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ItemAttribute extends Model
 {
-    use HasFactory,Deletable;
+    use HasFactory,Deletable,SoftDeletes;
 
     protected $table = 'erp_item_attributes';
     
@@ -43,7 +44,7 @@ class ItemAttribute extends Model
 
     public function erpItem()
     {
-        return $this->belongsTo(Item::class);
+        return $this->belongsTo(Item::class, 'item_id');
     }
 
     public function attributes()

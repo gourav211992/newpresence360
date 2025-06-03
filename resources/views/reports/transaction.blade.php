@@ -245,9 +245,10 @@
         columns,
         filters,  // Apply filters
         "{{request() -> type === 'sq' ? 'Sales Quotations' : 'Sales Orders'}}",  // Export title
-        exportColumns,  // Export columns
+        ':visible',  // Export columns
         [],// default order
-        'landscape'
+        'landscape',
+        "{{$reportName == 'Sales Order' ? 'POST' : 'GET'}}"
     );
 
     //Add the filters in UI

@@ -35,6 +35,7 @@ class ItemRequest extends FormRequest
         return [
             'type' => 'required|string|in:Goods,Service',
             'hsn_id' => 'required|exists:erp_hsns,id',
+            'currency_id' => 'nullable|exists:mysql_master.currency,id',
             'category_id' => 'required|exists:erp_categories,id',
             'subcategory_id' => 'required|exists:erp_categories,id',
             'group_id' => 'nullable|exists:groups,id', 

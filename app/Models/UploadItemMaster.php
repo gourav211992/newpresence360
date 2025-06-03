@@ -19,6 +19,7 @@ class UploadItemMaster extends Model
         'subcategory',
         'hsn',
         'uom',
+        'currency',
         'item_code_type',
         'cost_price',
         'sell_price',

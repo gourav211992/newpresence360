@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 use App\Models\ErpSaleInvoice;
+use App\Models\ErpSaleInvoiceHistory;
 use App\Models\ErpSaleOrder;
+use App\Models\ErpSaleOrderHistory;
 use App\Models\ErpSaleReturn;
+use App\Models\ErpSaleReturnHistory;
 use App\Models\ErpStore;
 use Illuminate\Support\Facades\DB;
 use App\Helpers\SaleModuleHelper;
@@ -650,14 +653,27 @@ class TaxController extends Controller
             $user = Helper::getAuthenticatedUser();
             $organization = $user->organization;
             $fromOrigin = $request -> document_id ? TaxHelper::ADDRESS_TYPE_DOCUMENT : ($request -> store_id ? TaxHelper::ADDRESS_TYPE_STORE : TaxHelper::ADDRESS_TYPE_ORGANIZATION);
+            $modelType = $request -> document_type ? $request -> document_type : 'original';
             if ($fromOrigin === TaxHelper::ADDRESS_TYPE_DOCUMENT) { // Retrieve address from document
                 $document = null;
                 if ($alias === ConstantHelper::SR_SERVICE_ALIAS) {
-                    $document = ErpSaleReturn::find($request -> document_id);
+                    if ($modelType == 'history') {
+                        $document = ErpSaleReturnHistory::find($request -> document_id);
+                    } else {
+                        $document = ErpSaleReturn::find($request -> document_id);
+                    }
                 } else if ($alias === ConstantHelper::SI_SERVICE_ALIAS) {
-                    $document = ErpSaleInvoice::find($request -> document_id);
+                    if ($modelType == 'history') {
+                        $document = ErpSaleInvoiceHistory::find($request -> document_id);
+                    } else {
+                        $document = ErpSaleInvoice::find($request -> document_id);
+                    }
                 } else {
-                    $document = ErpSaleOrder::find($request -> document_id);
+                    if ($modelType == 'history') {
+                        $document = ErpSaleOrderHistory::find($request -> document_id);
+                    } else {
+                        $document = ErpSaleOrder::find($request -> document_id);
+                    }
                 }
                 if (isset($document) && isset($document -> location_address_details)) {
                     $companyCountryId = $document -> location_address_details ?->country_id;

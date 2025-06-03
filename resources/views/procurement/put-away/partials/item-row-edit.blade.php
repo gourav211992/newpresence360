@@ -5,8 +5,8 @@
    <tr id="row_{{$rowCount}}" data-index="{{$rowCount}}" @if($rowCount < 2 ) class="trselected" @endif>
       <input type="hidden" name="components[{{$rowCount}}][mrn_header_id]" value="{{$item->header->mrn_header_id}}">
       <input type="hidden" name="components[{{$rowCount}}][mrn_detail_id]" value="{{$item->mrn_detail_id}}">
-      <input type="hidden" name="components[{{$rowCount}}][inspection_item_id]" value="{{$item->id}}">
-      <input type="hidden" name="components[{{$rowCount}}][inspection_header_id]" value="{{$item->id}}">
+      <input type="hidden" name="components[{{$rowCount}}][putaway_item_id]" value="{{$item->id}}">
+      <input type="hidden" name="components[{{$rowCount}}][putaway_header_id]" value="{{$item->id}}">
       <td class="customernewsection-form">
          <div class="form-check form-check-primary custom-checkbox">
             <input type="checkbox" class="form-check-input" id="Email_{{$rowCount}}" data-id="{{$item->id}}" value="{{$rowCount}}">
@@ -52,51 +52,31 @@
          </select>
       </td>
       <td>
-         <input type="number" class="form-control mw-100 mrn_qty text-end checkNegativeVal" name="components[{{$rowCount}}][mrn_qty]" value="{{$item?->mrnDetail?->order_qty}}" readonly step="any"/>
-      </td>
-      <td>
          <input type="number" class="form-control mw-100 text-end order_qty" name="components[{{$rowCount}}][order_qty]" value="{{$item->order_qty}}" step="any" />
       </td>
       <td>
          <input type="number" class="form-control mw-100 text-end accepted_qty checkNegativeVal" name="components[{{$rowCount}}][accepted_qty]" value="{{$item->accepted_qty}}" step="any" />
       </td>
       <td>
-         <input type="number" class="form-control mw-100 text-end rejected_qty" readonly name="components[{{$rowCount}}][rejected_qty]" value="{{$item->rejected_qty}}" step="any" @readonly(true)/>
-      </td>
-      <td><input type="number" name="components[{{$rowCount}}][rate]" value="{{$item->rate}}" class="form-control mw-100 text-end rate checkNegativeVal" /></td>
-      <td>
-         <input type="number" name="components[{{$rowCount}}][basic_value]" value="{{($item->accepted_qty*$item->rate)}}" class="form-control text-end mw-100 basic_value" step="any" readonly />
-      </td>
-      <td>
-         <div class="position-relative d-flex align-items-center">
-            @foreach($item->itemDiscount as $itemDis_key => $itemDiscount)
-               <input type="hidden" value="{{$itemDiscount->id}}" name="components[{{$rowCount}}][discounts][{{$itemDis_key+1}}][id]">
-               <input type="hidden" value="{{$itemDiscount->ted_name}}" name="components[{{$rowCount}}][discounts][{{$itemDis_key+1}}][dis_name]">
-               <input type="hidden" value="{{$itemDiscount->ted_percentage}}" name="components[{{$rowCount}}][discounts][{{$itemDis_key+1}}][dis_perc]">
-               <input type="hidden" value="{{$itemDiscount->ted_amount}}" name="components[{{$rowCount}}][discounts][{{$itemDis_key+1}}][dis_amount]">
-            @endforeach
-            <input type="number" readonly name="components[{{$rowCount}}][discount_amount]" class="form-control mw-100 text-end" style="width: 70px" value="{{$item->discount_amount}}" step="any"/>
-            <input type="hidden" name="components[{{$rowCount}}][discount_amount_header]" value="{{$item->header_discount_amount}}"/>
-            <input type="hidden" name="components[{{$rowCount}}][exp_amount_header]" value="{{$item->header_exp_amount}}" />
-            <div class="ms-50">
-               <button type="button" data-row-count="{{$rowCount}}" class="btn p-25 btn-sm btn-outline-secondary addDiscountBtn" style="font-size: 10px">Discount</button>
-            </div>
-         </div>
-      </td>
-      <td>
-         <input type="number" name="components[{{$rowCount}}][item_total_cost]" value="{{$item->net_value}}" readonly class="form-control mw-100 text-end" step="any"/>
-         @foreach($item->taxes as $tax_key => $po_item_tax)
-            <input type="hidden" value="{{$po_item_tax->id}}" name="components[{{$rowCount}}][taxes][{{$tax_key + 1}}][id]">
-            <input type="hidden" value="{{$po_item_tax->ted_id}}" name="components[{{$rowCount}}][taxes][{{$tax_key + 1}}][t_d_id]">
-            <input type="hidden" value="{{$po_item_tax->applicability_type}}" name="components[1][taxes][{{$tax_key + 1}}][applicability_type]">
-            {{-- <input type="hidden" value="" name="components[1][taxes][1][t_code]"> --}}
-            <input type="hidden" value="{{$po_item_tax->ted_name}}" name="components[{{$rowCount}}][taxes][{{$tax_key + 1}}][t_type]">
-            <input type="hidden" value="{{$po_item_tax->ted_percentage}}" name="components[{{$rowCount}}][taxes][{{$tax_key + 1}}][t_perc]">
-            <input type="hidden" value="{{$po_item_tax->ted_amount}}" name="components[{{$rowCount}}][taxes][{{$tax_key + 1}}][t_value]">
-         @endforeach
-      </td>
-      <td>
          <div class="d-flex">
+            @foreach($item->itemLocations()->get() as $over_key => $overhead)
+               <input type="hidden" name="components[{{$rowCount}}][hidden_packets][{{$over_key+1}}][id]" value="{{$overhead->id}}">
+               <input type="hidden" name="components[{{$rowCount}}][hidden_packets][{{$over_key+1}}][item_location_id]" value="{{$overhead->item_id}}">
+               <input type="hidden" name="components[{{$rowCount}}][hidden_packets][{{$over_key+1}}][quantity]" value="{{@$overhead->inventory_uom_qty}}">
+               <input type="hidden" name="components[{{$rowCount}}][hidden_packets][{{$over_key+1}}][packet_number]" value="{{@$overhead->packet_number}}">
+               <input type="hidden" name="components[{{$rowCount}}][hidden_packets][{{$over_key+1}}][storage_number]" value="{{@$overhead->storage_number}}">
+               <input type="hidden" name="components[{{$rowCount}}][hidden_packets][{{$over_key+1}}][wh_detail_id]" value="{{@$overhead->wh_detail_id}}">
+            @endforeach
+            <input type="hidden" id="components_storage_packets_{{ $rowCount }}" name="components[{{$rowCount}}][storage_packets]" value=""/>
+            <input type="hidden" id="components_storage_points_{{ $rowCount }}" name="components[{{$rowCount}}][storage_points]" value=""/>
+            <div class="me-50 cursor-pointer addStoragePointBtn" data-bs-toggle="modal" data-row-count="{{$rowCount}}" data-bs-target="#storage-point-modal">
+               <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary"
+                  data-bs-original-title="Storage Point" aria-label="Storage Point">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  class="feather feather-map-pin">
+               <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></span>
+            </div>
             <div class="me-50 cursor-pointer addRemarkBtn" data-row-count="{{$rowCount}}" {{-- data-bs-toggle="modal" data-bs-target="#Remarks" --}}>
                <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary" data-bs-original-title="Remarks" aria-label="Remarks">
                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text">

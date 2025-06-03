@@ -207,17 +207,12 @@ $pi_item_ids = $po->pi_item_mappings()->pluck('pi_item_id')->implode(',');
                                                         <input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct" id="vendor_name" name="vendor_name" readonly value="{{$po->vendor->company_name}}" />
                                                         <input type="hidden" value="{{$po->vendor_id}}" id="vendor_id" name="vendor_id" />
                                                         <input type="hidden" value="{{$po->vendor_code}}" id="vendor_code" name="vendor_code" />
-                                                        @if($po->latestShippingAddress() || $po->latestBillingAddress())
+                                                            
                                                         <input type="hidden" value="{{$po->latestShippingAddress()?->id}}" id="shipping_id" name="shipping_id" />
                                                         <input type="hidden" id="billing_id" value="{{$po->latestBillingAddress()?->id}}" name="billing_id" />
                                                         <input type="hidden" value="{{$po->latestShippingAddress()?->state?->id}}" id="hidden_state_id" name="hidden_state_id" />
                                                         <input type="hidden" value="{{$po->latestShippingAddress()?->country?->id}}" id="hidden_country_id" name="hidden_country_id" />
-                                                        @else
-                                                        <input type="hidden" value="{{$po->shipping_address}}" id="shipping_id" name="shipping_id" />
-                                                        <input type="hidden" id="billing_id" value="{{$po->billing_address}}" name="billing_id" />
-                                                        <input type="hidden" value="{{$po?->ship_address?->state?->id}}" id="hidden_state_id" name="hidden_state_id" />
-                                                        <input type="hidden" value="{{$po?->ship_address?->country?->id}}" id="hidden_country_id" name="hidden_country_id" />
-                                                        @endif
+
                                                     </div>
                                                 </div>
                                                 <div class="col-md-3">
@@ -239,28 +234,6 @@ $pi_item_ids = $po->pi_item_mappings()->pluck('pi_item_id')->implode(',');
                                             </div>
 
                                             <div class="row">
-                                                {{-- <div class="col-md-6">
-                                                    <div class="customer-billing-section">
-                                                        <p>Shipping Details</p>
-                                                        <div class="bilnbody">
-
-                                                            <div class="genertedvariables genertedvariablesnone">
-                                                                <label class="form-label w-100">Select Shipping Address <span class="text-danger">*</span> 
-                                                                    <a href="javascript:;" class="float-end font-small-2 editAddressBtn d-none" data-type="shipping"><i data-feather='edit-3'></i> Edit</a>
-                                                                </label>
-                                                                <div class="mrnaddedd-prim shipping_detail">
-                                                                    @if($po->latestShippingAddress())
-                                                                     {{$po->latestShippingAddress()->display_address}}
-                                                                    @else
-                                                                     {{$po->ship_address?->display_address}}
-                                                                    @endif
-                                                                   
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                    </div>
-                                                </div> --}}
                                                 <div class="col-md-4">
                                                     <div class="customer-billing-section h-100">
                                                         <p>Vendor Address</p>
@@ -268,11 +241,7 @@ $pi_item_ids = $po->pi_item_mappings()->pluck('pi_item_id')->implode(',');
                                                             <div class="genertedvariables genertedvariablesnone">
                                                                 <label class="form-label w-100">Vendor Address <span class="text-danger">*</span> <a href="javascript:;" class="float-end font-small-2 editAddressBtn d-none" data-type="billing"><i data-feather='edit-3'></i> Edit</a></label>
                                                                 <div class="mrnaddedd-prim billing_detail">
-                                                                    @if($po->latestBillingAddress())
-                                                                    {{$po->latestBillingAddress()->display_address}}
-                                                                    @else
-                                                                    {{$po->bill_address?->display_address}}
-                                                                    @endif
+                                                                    {{$po->latestShippingAddress()->display_address}}
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -284,9 +253,10 @@ $pi_item_ids = $po->pi_item_mappings()->pluck('pi_item_id')->implode(',');
                                                         <div class="bilnbody">  
                                                             <div class="genertedvariables genertedvariablesnone">
                                                                 <label class="form-label w-100">Billing Address <span class="text-danger">*</span> 
-                                                                    {{-- <a href="javascript:;" class="float-end font-small-2 editAddressBtn" data-type="billing"><i data-feather='edit-3'></i> Edit</a> --}}
                                                                 </label>
-                                                                <div class="mrnaddedd-prim org_address">{{$orgAddress}}</div>   
+                                                                <div class="mrnaddedd-prim org_address">
+                                                                    {{$po?->latestBillingAddress()?->display_address}}
+                                                                </div>   
                                                             </div>
                                                         </div>
                                                     </div>
@@ -297,7 +267,6 @@ $pi_item_ids = $po->pi_item_mappings()->pluck('pi_item_id')->implode(',');
                                                         <div class="bilnbody">  
                                                             <div class="genertedvariables genertedvariablesnone">
                                                                 <label class="form-label w-100">Delivery Address <span class="text-danger">*</span>
-                                                                    {{-- <a href="javascript:;" class="float-end font-small-2 editAddressBtn" data-type="billing"><i data-feather='edit-3'></i> Edit</a> --}}
                                                                 </label>
                                                                 <div class="mrnaddedd-prim delivery_address">{{$deliveryAddress}}</div>   
                                                             </div>
@@ -893,6 +862,7 @@ $pi_item_ids = $po->pi_item_mappings()->pluck('pi_item_id')->implode(',');
 <script type="text/javascript">
     let type = '{{ request()->route("type") }}';
     let actionUrlTax = '{{route("po.tax.calculation",["type" => ":type"])}}'.replace(':type',type);
+    var getLocationUrl = '{{ route("store.get") }}';
 </script>
 <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
 <script type="text/javascript" src="{{asset('assets/js/modules/po.js')}}"></script>
@@ -1147,69 +1117,78 @@ function initializeAutocomplete1(selector, type) {
 }
 initializeAutocomplete1("#vendor_name");
 function vendorOnChange(vendorId) {
-    let store_id = $("[name='store_id'] option:selected").val() || '';
-    let type = '{{ request()->route("type") }}';
-    let actionUrl = "{{ route('po.get.address', ['type' => ':type']) }}".replace(':type', type) 
-    + '?id=' + vendorId+'&store_id='+store_id;
-    fetch(actionUrl).then(response => {
-        return response.json().then(data => {
-            if(data.data?.currency_exchange?.status == false) {
-                $("#vendor_name").val('');
-                $("#vendor_id").val('');
-                $("#vendor_code").val('');
-                $("#hidden_state_id").val('');
-                $("#hidden_country_id").val('');
-                // $("#vendor_id").trigger('blur');
-                $("select[name='currency_id']").empty().append('<option value="">Select</option>');
-                $("select[name='payment_term_id']").empty().append('<option value="">Select</option>');
-                $(".shipping_detail").text('-');
-                $(".billing_detail").text('-');
-                Swal.fire({
-                    title: 'Error!',
-                    text: data.data?.currency_exchange.message,
-                    icon: 'error',
-                });
-                return false;
-            }                    
-            if(data.status == 200) {
-            $("#vendor_name").val(data?.data?.vendor?.company_name);
-            $("#vendor_id").val(data?.data?.vendor?.id);
-            $("#vendor_code").val(data?.data?.vendor.vendor_code);
-            let curOption = `<option value="${data.data.currency.id}">${data.data.currency.name}</option>`;
-            let termOption = `<option value="${data.data.paymentTerm.id}">${data.data.paymentTerm.name}</option>`;
-            $('[name="currency_id"]').empty().append(curOption);
-            $('[name="payment_term_id"]').empty().append(termOption);
-            $("#shipping_id").val(data.data.shipping.id);
-            $("#billing_id").val(data.data.billing.id);
-            // $(".shipping_detail").text(data.data.shipping.display_address);
-            $(".billing_detail").text(data.data.billing.display_address);
-            $(".delivery_address").text(data.data.delivery_address);
-            $(".org_address").text(data.data.org_address);
-
-            $("#hidden_state_id").val(data.data.shipping.state.id);
-            $("#hidden_country_id").val(data.data.shipping.country.id);
-            } else {
-                if(data.data.error_message) {
+    if(vendorId) {
+        let store_id = $("[name='store_id'] option:selected").val() || '';
+        let type = '{{ request()->route("type") }}';
+        let actionUrl = "{{ route('po.get.address', ['type' => ':type']) }}".replace(':type', type) 
+        + '?id=' + vendorId+'&store_id='+store_id;
+        fetch(actionUrl).then(response => {
+            return response.json().then(data => {
+                if(data.data?.currency_exchange?.status == false) {
                     $("#vendor_name").val('');
                     $("#vendor_id").val('');
                     $("#vendor_code").val('');
                     $("#hidden_state_id").val('');
                     $("#hidden_country_id").val('');
-                    // $("#vendor_id").trigger('blur');
                     $("select[name='currency_id']").empty().append('<option value="">Select</option>');
                     $("select[name='payment_term_id']").empty().append('<option value="">Select</option>');
-                    // $(".shipping_detail").text('-');
+                    $(".shipping_detail").text('-');
                     $(".billing_detail").text('-');
                     Swal.fire({
                         title: 'Error!',
-                        text: data.data.error_message,
+                        text: data.data?.currency_exchange.message,
                         icon: 'error',
                     });
                     return false;
+                }                    
+                if(data.status == 200) {
+                    $("#vendor_name").val(data?.data?.vendor?.company_name);
+                    $("#vendor_id").val(data?.data?.vendor?.id);
+                    $("#vendor_code").val(data?.data?.vendor?.vendor_code);
+                    let curOption = `<option value="${data?.data?.currency?.id}">${data?.data?.currency?.name}</option>`;
+                    let termOption = `<option value="${data?.data?.paymentTerm?.id}">${data?.data?.paymentTerm?.name}</option>`;
+                    $('[name="currency_id"]').empty().append(curOption);
+                    $('[name="payment_term_id"]').empty().append(termOption);
+                    $("#shipping_id").val(data?.data?.billing?.id);
+                    let billingId = null;
+                    let displayOrg = '';
+                    if(data?.data?.is_store_billing) {
+                        billingId = data?.data?.delivery_address?.id || '';
+                        displayOrg = data?.data?.delivery_address?.display_address || ''
+                    } else {
+                        billingId = data?.data?.org_address.id || ''
+                        displayOrg = data?.data?.org_address?.display_address || ''
+                    }
+                    $(".org_address").text(displayOrg);
+                    $("#billing_id").val(billingId);
+                    
+                    $(".billing_detail").text(data?.data?.billing?.display_address);
+                    $(".delivery_address").text(data?.data?.delivery_address?.display_address);
+                    $("#hidden_state_id").val(data?.data?.shipping?.state.id);
+                    $("#hidden_country_id").val(data?.data?.shipping?.country?.id);
+                } else {
+                    if(data.data.error_message) {
+                        $("#vendor_name").val('');
+                        $("#vendor_id").val('');
+                        $("#vendor_code").val('');
+                        $("#hidden_state_id").val('');
+                        $("#hidden_country_id").val('');
+                        // $("#vendor_id").trigger('blur');
+                        $("select[name='currency_id']").empty().append('<option value="">Select</option>');
+                        $("select[name='payment_term_id']").empty().append('<option value="">Select</option>');
+                        // $(".shipping_detail").text('-');
+                        $(".billing_detail").text('-');
+                        Swal.fire({
+                            title: 'Error!',
+                            text: data.data.error_message,
+                            icon: 'error',
+                        });
+                        return false;
+                    }
                 }
-            }
+            });
         });
-    });
+    }
 }
 /*Add New Row*/
 // for component item code
@@ -1543,7 +1522,7 @@ $(document).on('click', '.editAddressBtn', (e) => {
     let addressType = $(e.target).closest('a').attr('data-type');
     let vendorId = $("#vendor_id").val();
     let onChange = 0;
-    let addressId = addressType === 'shipping' ? $("#shipping_id").val() : $("#billing_id").val();
+    let addressId =  $("#shipping_id").val();
     let routeType = '{{ request()->route("type") }}';
     let actionUrl = `{{ route("po.edit.address", ["type" => ":type"]) }}`
     .replace(':type', routeType)
@@ -2693,27 +2672,7 @@ $(document).on('click', '#revokeButton', (e) => {
     }); 
 });
 
-function getLocation(locationId = '')
-{
-    let actionUrl = '{{ route("store.get") }}'+'?location_id='+locationId;
-    fetch(actionUrl).then(response => {
-        return response.json().then(data => {
-            if(data.status == 200) {
-                let options = '';
-                data.data.locations.forEach(function(location) {
-                    options+= `<option value="${location.id}">${location.store_name}</option>`;
-                });
-                $("[name='store_id']").empty().append(options);
-            } else {
-                Swal.fire({
-                    title: 'Error!',
-                    text: data.message,
-                    icon: 'error',
-                });
-            }
-        });
-    });
-}
+
 
 // Short CLose 
 $(document).on('click', '#shortCloseBtn', (e) => {

@@ -3,13 +3,17 @@
 namespace App\Models;
 
 use App\Helpers\ConstantHelper;
+use App\Traits\DateFormatTrait;
+use App\Traits\DefaultGroupCompanyOrg;
+use App\Traits\DynamicFieldsTrait;
+use App\Traits\UserStampTrait;
 use App\Traits\FileUploadTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class ErpSaleOrderHistory extends Model
 {
-    use HasFactory, FileUploadTrait;
+    use HasFactory, DefaultGroupCompanyOrg, FileUploadTrait, DateFormatTrait, UserStampTrait, DynamicFieldsTrait;
     protected $table = 'erp_sale_orders_history';
 
     public $referencingRelationships = [
@@ -18,6 +22,25 @@ class ErpSaleOrderHistory extends Model
         'paymentTerms' => 'payment_term_id'
     ];
 
+    public function getFullDocumentNumberAttribute()
+    {
+        $fdn = strtoupper($this->book_code) . '-' . $this->document_number;
+        return $fdn;  
+    }
+    
+    public function media()
+    {
+        return $this->morphMany(ErpSoMedia::class, 'model');
+    }
+    public function media_files()
+    {
+        return $this->morphMany(ErpSoMedia::class, 'model') -> select('id', 'model_type', 'model_id', 'file_name');
+    }
+
+    public function cust()
+    {
+        return $this -> hasOne(Customer::class, 'id', 'customer_id');
+    }
     public function customer()
     {
         return $this -> hasOne(ErpCustomer::class, 'id', 'customer_id');
@@ -28,11 +51,10 @@ class ErpSaleOrderHistory extends Model
         return $this -> hasOne(ErpCurrency::class, 'id', 'currency_id');
     }
     
-    public function paymentTerms()
+    public function payment_terms()
     {
-        return $this->belongsTo(PaymentTerm::class);
+        return $this -> hasOne(ErpPaymentTerm::class, 'id', 'payment_term_id');
     }
-
     public function items()
     {
         return $this -> hasMany(ErpSoItemHistory::class, 'sale_order_id');
@@ -41,6 +63,10 @@ class ErpSaleOrderHistory extends Model
     public function expense_ted()
     {
         return $this -> hasMany(ErpSaleOrderTedHistory::class, 'sale_order_id') -> where('ted_level', 'H') -> where('ted_type', 'Expense');
+    }
+    public function tax_ted()
+    {
+        return $this->hasMany(ErpSaleOrderTedHistory::class,'sale_order_id')->where('ted_type','Tax');
     }
     public function discount_ted()
     {
@@ -70,14 +96,24 @@ class ErpSaleOrderHistory extends Model
         $status = str_replace('_', ' ', $this->document_status);
         return ucwords($status);
     }
-
-    public function media()
+    public function addresses()
     {
-        return $this->morphMany(ErpSoMedia::class, 'model');
+        return $this->morphMany(ErpAddress::class, 'addressable', 'addressable_type', 'addressable_id');
     }
-    public function media_files()
+    public function createdBy()
     {
-        return $this->morphMany(ErpSoMedia::class, 'model') -> select('id', 'model_type', 'model_id', 'file_name');
+        return $this->belongsTo(AuthUser::class,'created_by','id');
     }
-
+    public function store()
+    {
+        return $this -> belongsTo(ErpStore::class, 'store_id');
+    }
+    public function dynamic_fields()
+    {
+        return $this -> hasMany(ErpSoDynamicFieldHistory::class, 'header_id');
+    }
+    public function getDisplayDocumentNumberAttribute()
+    {
+        return $this -> book_code . ' - ' . $this -> document_number;
+    }
 }

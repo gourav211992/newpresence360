@@ -2252,7 +2252,7 @@ return [
             }) -> orWhere(function ($userQuery) use($userIds) {
                 $userQuery -> where('authenticable_type', 'user') -> whereIn('authenticable_id', $userIds);
             });
-        })->get();
+        })->where('organization_id', $organizationId)->get();
         return $employees;
     }
 
@@ -2440,7 +2440,7 @@ return [
             $arr = [];
 
             foreach ($modelObj as $modelOb) {
-                $modelData = $modelOb->getOriginal();
+                $modelData = $modelOb->getRawOriginal();
                 $modelData['source_id'] = $modelData['id'];
                 if (isset($headerColumn) && count($headerId)) {
                     $sourceHeaderId = $modelData[$headerColumn];
@@ -2471,7 +2471,6 @@ return [
                 } else if (isset($modelData['attachment'])) {
                     $modelData['attachment'] = json_encode($modelData['attachment']);
                 }
-
                 $insertedHistoryId = $HistoryModelInstance::insertGetId($modelData);
                 array_push($arr, ['source_id' => $modelData['source_id'], 'history_id' => $insertedHistoryId]);
 
@@ -2513,6 +2512,7 @@ return [
                 }
             }
             return $arr;
+
         } catch (Exception $e) {
             $error = $e->getMessage();
             Log::error("documentAmendment Error: $error");

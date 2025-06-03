@@ -146,8 +146,21 @@ class CustomersExport implements FromCollection, WithHeadings, WithMapping, With
                 'fill' => [
                     'fillType' => 'solid',
                     'startColor' => ['argb' => 'FFFF00'] 
-                ]
+                ],
+                 'alignment' => [
+                    'wrapText' => true, 
+                    'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+                    'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+                ],
+                'borders' => [
+                    'allBorders' => [
+                        'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                        'color' => ['argb' => 'FF000000'],
+                    ],
+                ],
             ];
+            $sheet->getColumnDimension($columnLetter)->setWidth(15);
+            $sheet->getStyle("{$columnLetter}")->getAlignment()->setWrapText(true);
         }
 
         $totalColumns = count($this->headings());
@@ -162,8 +175,22 @@ class CustomersExport implements FromCollection, WithHeadings, WithMapping, With
                     'fill' => [
                         'fillType' => 'solid',
                         'startColor' => ['argb' => 'D3D3D3'] 
-                    ]
+                    ],
+                    'alignment' => [
+                       'wrapText' => true, 
+                       'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+                       'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+                   ],
+                   'borders' => [
+                       'allBorders' => [
+                           'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                           'color' => ['argb' => 'FF000000'],
+                       ],
+                   ],
                 ];
+                $sheet->getColumnDimension($columnLetter)->setWidth(15);
+                $sheet->getStyle("{$columnLetter}")->getAlignment()->setWrapText(true);
+               
             }
         }
 

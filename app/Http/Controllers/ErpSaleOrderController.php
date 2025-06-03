@@ -26,6 +26,7 @@ use App\Models\Address;
 use App\Models\Department;
 use App\Models\ErpAddress;
 use App\Models\ErpAttribute;
+use App\Models\ErpInvoiceItem;
 use App\Models\ErpSaleOrderHistory;
 use App\Models\ErpSoDynamicField;
 use App\Models\ErpSoItemBom;
@@ -43,6 +44,7 @@ use App\Models\ErpSoItem;
 use App\Models\ErpSoItemAttribute;
 use App\Models\ErpSoItemDelivery;
 use App\Models\ErpVendor;
+use App\Models\ItemSpecification;
 use App\Models\NumberPattern;
 use App\Models\Organization;
 use App\Models\ProductionLevel;
@@ -450,14 +452,14 @@ class ErpSaleOrderController extends Controller
                 {
                     $revisionData = [
                         ['model_type' => 'header', 'model_name' => 'ErpSaleOrder', 'relation_column' => ''],
+                        ['model_type' => 'detail', 'model_name' => 'ErpSoDynamicField', 'relation_column' => 'header_id'],
                         ['model_type' => 'detail', 'model_name' => 'ErpSoItem', 'relation_column' => 'sale_order_id'],
                         ['model_type' => 'sub_detail', 'model_name' => 'ErpSoItemAttribute', 'relation_column' => 'so_item_id'],
                         ['model_type' => 'sub_detail', 'model_name' => 'ErpSoItemDelivery', 'relation_column' => 'so_item_id'],
-                        ['model_type' => 'sub_detail', 'model_name' => 'ErpSaleOrderTed', 'relation_column' => 'so_item_id']
+                        ['model_type' => 'sub_detail', 'model_name' => 'ErpSaleOrderTed', 'relation_column' => 'so_item_id'],
+                        ['model_type' => 'sub_detail', 'model_name' => 'ErpSoItemBom', 'relation_column' => 'so_item_id']
                     ];
-
-                    $a = Helper::documentAmendment($revisionData, $saleOrder->id);
-
+                    Helper::documentAmendment($revisionData, $saleOrder->id);
                 }
                 $keys = ['deletedItemDiscTedIds', 'deletedHeaderDiscTedIds', 'deletedHeaderExpTedIds', 'deletedSoItemIds', 'deletedDelivery', 'deletedAttachmentIds'];
                 $deletedData = [];
@@ -795,33 +797,36 @@ class ErpSaleOrderController extends Controller
                             $soItem = ErpSoItem::create($itemRowData);
                         }
                         //BOM 
-                        $bomDetails = isset($request -> item_bom_details[$itemDataKey]) ? json_decode($request -> item_bom_details[$itemDataKey], true) : [];
-                        if (isset($bomDetails) && count($bomDetails) > 0) {
-                            foreach ($bomDetails as $bomDetail) {
-                                if (isset($bomDetail['id'])) {
-                                    $soItemBom = ErpSoItemBom::find($bomDetail['id']);
-                                    if (isset($soItemBom)) {
-                                        $soItemBom -> item_attributes = ($bomDetail['bom_attributes']);
-                                        $soItemBom -> save();
+                        if ($saleOrder -> document_type == ConstantHelper::SO_SERVICE_ALIAS) {
+                            $bomDetails = isset($request -> item_bom_details[$itemDataKey]) ? json_decode($request -> item_bom_details[$itemDataKey], true) : [];
+                            if (isset($bomDetails) && count($bomDetails) > 0) {
+                                foreach ($bomDetails as $bomDetail) {
+                                    if (isset($bomDetail['id'])) {
+                                        $soItemBom = ErpSoItemBom::find($bomDetail['id']);
+                                        if (isset($soItemBom)) {
+                                            $soItemBom -> item_attributes = ($bomDetail['bom_attributes']);
+                                            $soItemBom -> save();
+                                        }
+                                    } else {
+                                        $currentBomDetail = BomDetail::find($bomDetail['bom_detail_id']);
+                                        ErpSoItemBom::create([
+                                            'sale_order_id' => $saleOrder -> id,
+                                            'so_item_id' => $soItem -> id,
+                                            'bom_id' => $currentBomDetail ?-> bom ?-> id,
+                                            'bom_detail_id' => $currentBomDetail ?-> id,
+                                            'uom_id' => $bomDetail['uom_id'],
+                                            'item_id' => $bomDetail['item_id'],
+                                            'item_code' => $bomDetail['item_code'],
+                                            'item_attributes' => ($bomDetail['bom_attributes']),
+                                            'qty' => $bomDetail['qty'],
+                                            'station_id' => $bomDetail['station_id'],
+                                            'station_name' => $bomDetail['station_name'],
+                                        ]);
                                     }
-                                } else {
-                                    $currentBomDetail = BomDetail::find($bomDetail['bom_detail_id']);
-                                    ErpSoItemBom::create([
-                                        'sale_order_id' => $saleOrder -> id,
-                                        'so_item_id' => $soItem -> id,
-                                        'bom_id' => $currentBomDetail ?-> bom ?-> id,
-                                        'bom_detail_id' => $currentBomDetail ?-> id,
-                                        'uom_id' => $bomDetail['uom_id'],
-                                        'item_id' => $bomDetail['item_id'],
-                                        'item_code' => $bomDetail['item_code'],
-                                        'item_attributes' => ($bomDetail['bom_attributes']),
-                                        'qty' => $bomDetail['qty'],
-                                        'station_id' => $bomDetail['station_id'],
-                                        'station_name' => $bomDetail['station_name'],
-                                    ]);
                                 }
                             }
                         }
+                        
                         //Quotation 
                         if ($request -> quotation_item_ids && isset($request -> quotation_item_ids[$itemDataKey])) {
                             $qtItem = ErpSoItem::find($request -> quotation_item_ids[$itemDataKey]);
@@ -1621,7 +1626,6 @@ class ErpSaleOrderController extends Controller
         $imagePath = public_path('assets/css/midc-logo.jpg'); // Store the image in the public directory
         $approvedBy = Helper::getDocStatusUser(get_class($order), $order -> id, $order -> document_status);
         $dynamicFields = $order -> dynamic_fields;
-        // dd($imagePath);
         $dataArray = [
             'type' => $type,
             'user' => $user,
@@ -2043,6 +2047,288 @@ class ErpSaleOrderController extends Controller
             }
             $datatables = $datatables
             ->rawColumns(['item_attributes','delivery_schedule','status'])
+            ->make(true);
+            return $datatables;
+    }
+
+    public function salesOrderReportAttributeGrouped(Request $request)
+    {
+        $pathUrl = route('sale.order.index');
+        $orderType = ConstantHelper::SO_SERVICE_ALIAS;
+        $soItems = ErpSoItem::whereHas('header', function ($headerQuery) use($orderType, $pathUrl, $request) {
+            $headerQuery -> where('document_type', $orderType)-> withDefaultGroupCompanyOrg() -> withDraftListingLogic();
+            //Customer Filter
+            $headerQuery = $headerQuery -> when($request -> customer_id, function ($custQuery) use($request) {
+                $custQuery -> where('customer_id', $request -> customer_id);
+            });
+            //Book Filter
+            $headerQuery = $headerQuery -> when($request -> book_id, function ($bookQuery) use($request) {
+                $bookQuery -> where('book_id', $request -> book_id);
+            });
+            //Document Id Filter
+            $headerQuery = $headerQuery -> when($request -> document_number, function ($docQuery) use($request) {
+                $docQuery -> where('document_number', 'LIKE', '%' . $request -> document_number . '%');
+            });
+            //Location Filter
+            $headerQuery = $headerQuery -> when($request -> location_id, function ($docQuery) use($request) {
+                $docQuery -> where('store_id', $request -> location_id);
+            });
+            //Company Filter
+            $headerQuery = $headerQuery -> when($request -> company_id, function ($docQuery) use($request) {
+                $docQuery -> where('store_id', $request -> company_id);
+            });
+            //Organization Filter
+            $headerQuery = $headerQuery -> when($request -> organization_id, function ($docQuery) use($request) {
+                $docQuery -> where('organization_id', $request -> organization_id);
+            });
+            //Document Status Filter
+            $headerQuery = $headerQuery -> when($request -> doc_status, function ($docStatusQuery) use($request) {
+                $searchDocStatus = [];
+                if ($request -> doc_status === ConstantHelper::DRAFT) {
+                    $searchDocStatus = [ConstantHelper::DRAFT];
+                } else if ($searchDocStatus === ConstantHelper::SUBMITTED) {
+                    $searchDocStatus = [ConstantHelper::SUBMITTED, ConstantHelper::PARTIALLY_APPROVED];
+                } else {
+                    $searchDocStatus = [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED];
+                }
+                $docStatusQuery -> whereIn('document_status', $searchDocStatus);
+            });
+            //Date Filters
+            $dateRange = $request -> date_range ??  Carbon::now()->startOfMonth()->format('Y-m-d') . " to " . Carbon::now()->endOfMonth()->format('Y-m-d');
+            $headerQuery = $headerQuery -> when($dateRange, function ($dateRangeQuery) use($request, $dateRange) {
+            $dateRanges = explode('to', $dateRange);
+            if (count($dateRanges) == 2) {
+                    $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
+                    $toDate = Carbon::parse(trim($dateRanges[1])) -> format('Y-m-d');
+                    $dateRangeQuery -> whereDate('document_date', ">=" , $fromDate) -> where('document_date', '<=', $toDate);
+            }
+            else{
+                $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
+                $dateRangeQuery -> whereDate('document_date', $fromDate);
+            }
+            });
+            //Item Id Filter
+            $headerQuery = $headerQuery -> when($request -> item_id, function ($itemQuery) use($request) {
+                $itemQuery -> withWhereHas('items', function ($itemSubQuery) use($request) {
+                    $itemSubQuery -> where('item_id', $request -> item_id)
+                    //Compare Item Category
+                    -> when($request -> item_category_id, function ($itemCatQuery) use($request) {
+                        $itemCatQuery -> whereHas('item', function ($itemRelationQuery) use($request) {
+                            $itemRelationQuery -> where('category_id', $request -> category_id)
+                            //Compare Item Sub Category
+                            -> when($request -> item_sub_category_id, function ($itemSubCatQuery) use($request) {
+                                $itemSubCatQuery -> where('subcategory_id', $request -> item_sub_category_id);
+                            });
+                        });
+                    });
+                });
+            });
+        }) -> select(
+            'sale_order_id','item_id', 'item_code', 'item_name', 'hsn_id', 'hsn_code', 'uom_id', 'rate',
+            DB::raw('SUM(order_qty) AS order_qty'),
+            DB::raw('SUM(item_discount_amount) AS item_discount_amount'),
+            DB::raw('SUM(header_discount_amount) AS header_discount_amount'),
+            DB::raw('SUM(total_item_amount) AS total_item_amount'),
+            DB::raw('SUM(tax_amount) AS tax_amount'),
+            DB::raw('SUM(pwo_qty) AS pwo_qty'),
+            DB::raw('SUM(pslip_qty) AS pslip_qty'),
+            DB::raw('SUM(invoice_qty) AS invoice_qty'),
+            DB::raw('SUM(srn_qty) AS srn_qty'),
+            DB::raw('SUM(short_close_qty) AS short_close_qty'),
+            DB::raw('GROUP_CONCAT(id) AS so_item_ids')
+        )
+        ->groupBy('sale_order_id','item_id', 'item_code', 'item_name', 'hsn_id', 'hsn_code', 'uom_id', 'rate')
+        ->orderByDesc('id');
+            $dynamicFields = DynamicFieldHelper::getServiceDynamicFields(ConstantHelper::SO_SERVICE_ALIAS);
+            $datatables = DataTables::of($soItems) ->addIndexColumn()
+            ->editColumn('status', function ($row) use($orderType) {
+                $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->header->document_status ?? ConstantHelper::DRAFT];    
+                $displayStatus = ucfirst($row -> header -> document_status);   
+                $editRoute = null;
+                if ($orderType == ConstantHelper::SO_SERVICE_ALIAS) {
+                    $editRoute = route('sale.order.edit', ['id' => $row->header->id]);
+                }
+                if ($orderType == ConstantHelper::SQ_SERVICE_ALIAS) {
+                    $editRoute = route('sale.quotation.edit', ['id' => $row->header->id]);
+                }     
+                return "
+                <div style='text-align:right;'>
+                    <span class='badge rounded-pill $statusClasss badgeborder-radius'>$displayStatus</span>
+                        <a href='" . $editRoute . "'>
+                            <i class='cursor-pointer' data-feather='eye'></i>
+                        </a>
+                </div>
+            ";
+            })
+            ->addColumn('book_name', function ($row) {
+                return $row -> header -> book_code;
+            })
+            ->addColumn('document_number', function ($row) {
+                return $row -> header -> document_number;
+            })
+            ->addColumn('document_date', function ($row) {
+                return $row -> header -> document_date;
+            })
+            ->addColumn('store_name', function ($row) {
+                return $row -> header ?-> store ?-> store_name;
+            })
+            ->addColumn('store_name', function ($row) {
+                return $row -> header ?-> store ?-> store_name;
+            })
+            ->addColumn('customer_name', function ($row) {
+                return $row -> header ?-> customer ?-> company_name;
+            })
+            ->addColumn('customer_currency', function ($row) {
+                return $row -> header -> currency_code;
+            })
+            ->addColumn('payment_terms_name', function ($row) {
+                return $row -> header -> payment_term_code;
+            })
+            ->addColumn('hsn_code', function ($row) {
+                return $row -> hsn ?-> code;
+            })
+            ->addColumn('uom_name', function ($row) {
+                return $row -> uom ?-> name;
+            })
+            ->addColumn('item_category', function ($row) {
+                return $row -> item ?-> category ?-> name;
+            })
+            ->addColumn('so_qty', function ($row) {
+                return number_format($row -> order_qty, 2);
+            })
+            ->editColumn('mi_qty', function ($row) {
+                return number_format($row -> mi_qty, 2);
+            })
+            ->editColumn('pwo_qty', function ($row) {
+                return number_format($row -> pwo_qty, 2);
+            })
+            ->editColumn('pslip_qty', function ($row) {
+                return number_format($row -> pslip_qty, 2);
+            })
+            ->editColumn('invoice_qty', function ($row) {
+                return number_format($row -> invoice_qty, 2);
+            })
+            ->editColumn('srn_qty', function ($row) {
+                return number_format($row -> srn_qty, 2);
+            })
+            ->editColumn('rate', function ($row) {
+                return number_format($row -> rate, 2);
+            })
+            ->addColumn('total_discount_amount', function ($row) {
+                return number_format($row -> header_discount_amount + $row -> item_discount_amount, 2);
+            })
+            ->editColumn('tax_amount', function ($row) {
+                return number_format($row -> tax_amount, 2);
+            })
+            ->addColumn('taxable_amount', function ($row) {
+                return number_format($row -> total_item_amount - $row -> tax_amount, 2);
+            })
+            ->editColumn('total_item_amount', function ($row) {
+                return number_format($row -> total_item_amount, 2);
+            })
+            ->editColumn('short_close_qty', function ($row) {
+                return number_format($row -> short_close_qty, 2);
+            })
+            ->editColumn('pending_qty', function ($row) {
+                return number_format(((($row -> order_qty - $row -> short_close_qty) - $row -> invoice_qty) + $row -> srn_qty), 2);
+            })
+            ->addColumn('doc_remarks', function ($row) {
+                return $row -> header -> remarks;
+            })
+            ->addColumn('delivery_schedule', function ($row) {
+                $deliveryHtml = '';
+                $soItemIds = explode(',',$row -> so_item_ids);
+                $itemDeliveries = ErpSoItemDelivery::whereIn('so_item_id', $soItemIds) -> get();
+                if (count($itemDeliveries) > 0) {
+                    foreach ($itemDeliveries as $itemDelivery) {
+                        $deliveryDate = Carbon::parse($itemDelivery -> delivery_date) -> format('d-m-Y');
+                        $deliveryQty = number_format($itemDelivery -> qty, 2);
+                        $deliveryHtml .= "<span class='badge rounded-pill badge-light-primary'><strong>$deliveryDate</strong> : $deliveryQty</span>";
+                    }
+                } else {
+                    $parsedDeliveryDate = Carbon::parse($row -> delivery_date) -> format('d-m-Y');
+                    $deliveryHtml .= "$parsedDeliveryDate";
+                }
+                return $deliveryHtml;
+            });
+            foreach ($dynamicFields as $field) {
+                $datatables = $datatables->addColumn($field -> name, function ($row) use ($field) {
+                    $value = '';
+                    $actualDynamicFields = $row -> header ?-> dynamic_fields;
+                    foreach ($actualDynamicFields as $actualDynamicField) {
+                        if ($field -> id == $actualDynamicField -> dynamic_field_detail_id) {
+                            $value = $actualDynamicField -> value;
+                            return $value;
+                        }
+                    }
+                });
+            }
+            $headers = $request -> columns;
+            $meanArray = [];
+            foreach ($headers as $header) {
+                if (str_contains($header['data'], '_CUSTOMATTRCODE')) {
+                    //Attributes fields
+                    $data = explode('_', $header['data']);
+                    if (count($data) == 3) {
+                        $attributeName = $data[0];
+                        $attributeValue = $data[1];
+                        $datatables->addColumn($header['name'], function ($row) use ($field, $attributeName, $attributeValue, &$meanArray) {
+                            $soItemIds = explode(',',$row -> so_item_ids);
+                            $itemAttributes = ErpSoItemAttribute::whereIn('so_item_id', $soItemIds) -> get();
+                            foreach ($itemAttributes as $itemAttr) {
+                                if ($itemAttr -> attribute_name == $attributeName && $itemAttr -> attribute_value == $attributeValue) {
+                                    $row -> mean_sizes += (int) $attributeValue;
+                                    $row -> mean_count += 1;
+                                    return $itemAttr -> soItem ?-> order_qty;
+                                }
+                            }
+                        });
+                    }
+                }
+                if (str_contains($header['data'], '_CUSTOMSPECCODE')) {
+                    $specData = explode('_', $header['data']);
+                    if (count($specData) == 2) {
+                        $datatables->addColumn($header['name'], function ($row) use ($field, $specData) {
+                            $itemId = $row -> item_id;
+                            $specValue = ItemSpecification::where('item_id', $itemId) -> whereRaw('LOWER(specification_name) = ?', [$specData[0]]) -> first();
+                            if (isset($specValue)) {
+                                return $specValue -> value;
+                            } else {
+                                return '';
+                            }
+                        });
+                    }
+                }
+                if (str_contains($header['data'],'_CUSTOMONLY')) {
+                    $valData = explode('_', $header['data']);
+                    if (count($valData) == 2) {
+                        $datatables->addColumn($header['name'], function ($row) use ($field, $valData) {
+                            if ($valData[0] == 'finalcrd') {
+                                $finalCRDHtml = '';
+                                $soItemIds = explode(',',$row -> so_item_ids);
+                                $invoiceItems = ErpInvoiceItem::whereIn('so_item_id', $soItemIds) -> withWhereHas('header', function ($headerQuery) {
+                                    $headerQuery -> whereIn('document_status', [ConstantHelper::APPROVED, 
+                                    ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::POSTED]);
+                                }) -> get();
+                                foreach ($invoiceItems as $invoiceItem) {
+                                    $docData = Carbon::parse($invoiceItem -> header -> document_date)  -> format('d-m-Y');
+                                    $docQty = number_format($invoiceItem -> order_qty, 2);
+                                    $finalCRDHtml .= "<span class='badge rounded-pill badge-light-primary'><strong>$docData</strong> : $docQty  </span>";
+                                }
+                                return $finalCRDHtml;
+                            }
+                        });
+                        
+                    } 
+                }
+            }
+            $datatables->addColumn('mean_size', function ($row) use ($field) {
+                if ($row -> mean_sizes && $row -> mean_count) {
+                    return number_format($row -> mean_sizes / $row -> mean_count, 2);
+                }
+            });
+            $datatables = $datatables
+            ->rawColumns(['item_attributes','delivery_schedule', 'finalcrd_CUSTOMONLY','status'])
             ->make(true);
             return $datatables;
     }

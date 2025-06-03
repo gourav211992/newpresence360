@@ -1643,6 +1643,10 @@
                             $("#itemTable .mrntableselectexcel").empty().append(data.data.pos);
                         }
                         initializeAutocomplete2(".comp_item_code");
+                        
+                        let currentTr = $("#itemTable .mrntableselectexcel tr[id*='row_']:first");
+                        getItemDetail(currentTr);
+                        
                         $("#poModal").modal('hide');
                         // $(".poSelect").prop('disabled',true);
                         
@@ -1661,57 +1665,7 @@
                         let locationId = $("[name='header_store_id']").val();
                         getLocation(locationId);
                         
-                        if(finalDiscounts.length) {
-                            let rows = '';
-                            finalDiscounts.forEach(function(item,index) {
-                                index = index + 1;
-                                rows+= `<tr class="display_summary_discount_row">
-                                        <td>${index}</td>
-                                        <td>${item.ted_name}
-                                            <input type="hidden" value="${item.ted_id}" name="disc_summary[${index}][ted_d_id]">
-                                            <input type="hidden" value="" name="disc_summary[${index}][d_id]">
-                                            <input type="hidden" value="${item.ted_name}" name="disc_summary[${index}][d_name]">
-                                        </td>
-                                        <td class="text-end">${typeof item.ted_percentage === "number" ? '0' : item.ted_percentage}
-                                            <input type="hidden" value="${typeof item.ted_percentage === "number" ? '0' : item.ted_percentage}" name="disc_summary[${index}][d_perc]">
-                                            <input type="hidden" value="${item.ted_percentage}" name="disc_summary[${index}][hidden_d_perc]">
-                                        </td>
-                                        <td class="text-end">
-                                        <input type="hidden" value="" name="disc_summary[${index}][d_amnt]">
-                                        </td>
-                                    </tr>`
-                            });
-
-                            $("#summaryDiscountTable tbody").find('.display_summary_discount_row').remove();
-                            $("#summaryDiscountTable tbody").find('#disSummaryFooter').before(rows);
-                            $("#f_header_discount_hidden").removeClass('d-none');
-                        } else {
-                            $("#f_header_discount_hidden").addClass('d-none');
-                        }
-
-                        if(finalExpenses.length) {
-                            let rows = '';
-                            finalExpenses.forEach(function(item,index) {
-                                index = index + 1;
-                                rows+=`<tr class="display_summary_exp_row">
-                                        <td>${index}</td>
-                                        <td>${item.ted_name}
-                                            <input type="hidden" value="${item.ted_id}" name="exp_summary[${index}][ted_e_id]">
-                                            <input type="hidden" value="" name="exp_summary[${index}][e_id]">
-                                            <input type="hidden" value="${item.ted_name}" name="exp_summary[${index}][e_name]">
-                                        </td>
-                                        <td class="text-end">${typeof item.ted_percentage === "number" ? '0' : item.ted_percentage}
-                                            <input type="hidden" value="${typeof item.ted_percentage === "number" ? '0' : item.ted_percentage}" name="exp_summary[${index}][e_perc]">
-                                            <input type="hidden" value="${item.ted_percentage}" name="exp_summary[${index}][hidden_e_perc]">
-                                        </td>
-                                        <td class="text-end">
-                                            <input type="hidden" value="" name="exp_summary[${index}][e_amnt]">
-                                        </td>
-                                    </tr>`;
-                            });
-                            $("#summaryExpTable tbody").find('.display_summary_exp_row').remove();
-                            $("#summaryExpTable tbody").find('#expSummaryFooter').before(rows);
-                        }
+                        
                         setTimeout(() => {
                             
                         },500);

@@ -60,21 +60,32 @@ class ErpSoItemHistory extends Model
         }
         $processedData = [];
         foreach ($itemAttributes as $attribute) {
+            $existingAttribute = ErpSoItemAttributeHistory::where('so_item_id', $this -> getAttribute('id')) -> where('item_attribute_id', $attribute -> id) -> first();
+            if (!isset($existingAttribute)) {
+                continue;
+            }
             $attributesArray = array();
-            $attribute_ids = json_decode($attribute -> attribute_id);
+            $attribute_ids = [];
+            if ($attribute -> all_checked) {
+                $attribute_ids = ErpAttribute::where('attribute_group_id', $attribute -> attribute_group_id) -> get() -> pluck('id') -> toArray();
+            } else {
+                $attribute_ids = $attribute -> attribute_id ? json_decode($attribute -> attribute_id) : [];
+            }
             $attribute -> group_name = $attribute -> group ?-> name;
+            $attribute -> short_name = $attribute -> group ?-> short_name;
             foreach ($attribute_ids as $attributeValue) {
-                $attributeValueData = ErpAttribute::where('id', $attributeValue) -> select('id', 'value') -> where('status', 'active') -> first();
-                if (isset($attributeValueData))
-                {
-                    $isSelected = ErpSoItemAttributeHistory::where('so_item_id', $this -> getAttribute('id')) -> where('item_attribute_id', $attribute -> id) -> where('attribute_value', $attributeValueData -> value) -> first();
-                    $attributeValueData -> selected = $isSelected ? true : false;
-                    array_push($attributesArray, $attributeValueData);
-                }
+                    $attributeValueData = ErpAttribute::where('id', $attributeValue) -> select('id', 'value') -> where('status', 'active') -> first();
+                    if (isset($attributeValueData))
+                    {
+                        $isSelected = ErpSoItemAttributeHistory::where('so_item_id', $this -> getAttribute('id')) -> where('item_attribute_id', $attribute -> id) -> where('attribute_value', $attributeValueData -> value) -> first();
+                        $attributeValueData -> selected = $isSelected ? true : false;
+                        array_push($attributesArray, $attributeValueData);
+                    }
+                
             }
            $attribute -> values_data = $attributesArray;
-           $attribute = $attribute -> only(['id','group_name', 'values_data', 'attribute_group_id']);
-           array_push($processedData, ['id' => $attribute['id'], 'group_name' => $attribute['group_name'], 'values_data' => $attributesArray, 'attribute_group_id' => $attribute['attribute_group_id']]);
+           $attribute = $attribute -> only(['id','group_name', 'short_name' ,'values_data', 'attribute_group_id']);
+           array_push($processedData, ['id' => $attribute['id'], 'group_name' => $attribute['group_name'], 'values_data' => $attributesArray, 'attribute_group_id' => $attribute['attribute_group_id'],'short_name' => $attribute['short_name']]);
         }
         $processedData = collect($processedData);
         return $processedData;

@@ -46,130 +46,107 @@
                     <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
                         <tr>
                             <td colspan="3" style="font-weight: 900; font-size: 13px; padding-bottom: 3px;">
-                                Buyer Name &
-                                Address:
+                                Buyer Name & Address:
                             </td>
                         </tr>
                         <tr>
-                            <td colspan="3">
+                            <td colspan="2" style="padding-top: 3px;">
                                 <span style="font-weight: 700; font-size: 13px;">
-                                    {{ Str::ucfirst(@$organizationAddress->line_1) }} {{ Str::ucfirst(@$organizationAddress->line_2) }}
-                                </span> <br>
-                                {{ @$organizationAddress->landmark }}
+                                    <b>{{ Str::ucfirst(@$organization->name) }}</b>
+                                </span>
                             </td>
                         </tr>
                         <tr>
-                            <td style="padding-top: 15px;">Pin Code : </td>
-                            <td style="padding-top: 15px; font-weight: 700;">{{ @$organizationAddress->postal_code }}</td>
+                            <td style="padding-top: 10px;">
+                                {{$sellerBillingAddress?->address}}
+                            </td>
                         </tr>
                         <tr>
-                            <td style="padding-top: 3px;">City:</td>
                             <td style="padding-top: 3px;">
-                                {{ @$organizationAddress->city->name }}
+                                {{ @$sellerBillingAddress?->city?->name }}, {{ @$sellerBillingAddress?->state?->name }}, {{ @$sellerBillingAddress?->country?->name }}, Pin Code: {{ @$sellerBillingAddress->pincode }}
                             </td>
                         </tr>
                         <tr>
-                            <td style="padding-top: 3px;">State:</td>
                             <td style="padding-top: 3px;">
-                                {{ @$organizationAddress->state->name }}
+                                @if(@$sellerBillingAddress->phone)Phone: {{ @$sellerBillingAddress->phone }}, @endif @if(@$organization?->email) Email: {{ @$organization?->email }} @endif
                             </td>
                         </tr>
+                        @if($organization?->gst_number || $organization?->pan_number)
                         <tr>
-                            <td style="padding-top: 3px;">GSTIN NO</td>
-                            <td style="padding-top: 3px;"></td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 3px;">State Code:</td>
-                            <td style="padding-top: 3px;"></td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 3px;">Country:</td>
                             <td style="padding-top: 3px;">
-                                {{ @$organizationAddress->country->name }}
+                                GSTIN NO: {{ $organization?->gst_number }}
                             </td>
                         </tr>
+                        @endif
+                        @if($organization?->pan_number)
                         <tr>
-                            <td style="padding-top: 3px;">GSTIN NO:</td>
-                            <td style="padding-top: 3px;"></td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 3px;">CIN NO:</td>
-                            <td style="padding-top: 3px;"></td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 3px;">PHONE:</td>
                             <td style="padding-top: 3px;">
-                                {{ @$organizationAddress->mobile }}
+                                PAN NO: {{ $organization?->pan_number }}
                             </td>
                         </tr>
-                        <tr>
-                            <td style="padding-top: 3px;">EMAIL ID:</td>
-                            <td style="padding-top: 3px;">
-                                {{ @$organizationAddress->email }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 3px;">PAN NO. :</td>
-                            <td style="padding-top: 3px;"></td>
-                        </tr>
+                        @endif
                     </table>
                 </td>
                 <td rowspan="2"
                     style="border: 1px solid #000; padding: 3px; border-left: none; vertical-align: top; width: 40%;">
                     <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
                         <tr>
-                            <td colspan="2" style="font-weight: 900; vertical-align: top;">Supplier's Name & Address:
+                            <td colspan="2"
+                                style="font-weight: 900; font-size: 13px; padding-bottom: 3px; vertical-align: top;">
+                                Seller's
+                                Name & Address:
                             </td>
                         </tr>
                         <tr>
-                            <td colspan="2" style="padding-top: 3px;">
-                                JPS PLASTICS PVT LTD <br>
-                                SARAI ROAD
+                            <td colspan="3" style="font-weight: 700; font-size: 13px; padding-top: 3px;">
+                                <b>{{ Str::ucfirst(@$po?->vendor?->company_name) }}</b>
                             </td>
                         </tr>
                         <tr>
-                            <td style="padding-top: 10px;">City: </td>
-                            <td style="padding-top: 10px;">
-                                {{ @$shippingAddress->city->name }}
+                            <td style="padding-top: 15px;">Address: </td>
+                            <td style="padding-top: 15px;">
+                                {{ Str::ucfirst(@$sellerShippingAddress?->address) }},
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding-top: 3px;">City :</td>
+                            <td style="padding-top: 3px;">
+                                {{ @$sellerShippingAddress?->city?->name }}
                             </td>
                         </tr>
                         <tr>
                             <td style="padding-top: 3px;">State:</td>
                             <td style="padding-top: 3px;">
-                                {{ @$shippingAddress->state->name }}
+                                {{ @$sellerShippingAddress?->state?->name }}
                             </td>
                         </tr>
                         <tr>
-                            <td style="padding-top: 3px;">Country</td>
+                            <td style="padding-top: 3px;">Country:</td>
                             <td style="padding-top: 3px;">
-                                {{ @$shippingAddress->country->name }}
+                                {{ @$sellerShippingAddress?->country?->name }}
                             </td>
                         </tr>
                         <tr>
-                            <td style="padding-top: 3px;">Pin code:</td>
+                            <td style="padding-top: 3px;">Pin Code : </td>
+                            <td style="padding-top: 3px;">{{ @$sellerShippingAddress->pincode }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding-top: 3px;">GSTIN No:</td>
+                            <td style="padding-top: 3px;">{{@$po?->vendor?->compliances?->gstin_no}}</td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding-top: 3px;">Phone:</td>
                             <td style="padding-top: 3px;">
-                                {{ @$shippingAddress->pincode }}
+                                {{ @$sellerShippingAddress->phone }}
                             </td>
                         </tr>
                         <tr>
-                            <td style="padding-top: 3px;">GSTIN NO:</td>
-                            <td style="padding-top: 3px;"></td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 3px;">PHONE:</td>
+                            <td style="padding-top: 3px;">Email:</td>
                             <td style="padding-top: 3px;">
-                                {{ @$po->vendor->mobile }}
+                                {{ @$po?->vendor?->email }}
                             </td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 3px;">EMAIL ID:</td>
-                            <td style="padding-top: 3px;">
-                                {{ @$po->vendor->email }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 3px;">PAN NO. :</td>
-                            <td style="padding-top: 3px;"></td>
                         </tr>
                     </table>
                 </td>
@@ -588,18 +565,13 @@
             <tr>
                 <td colspan="2"
                     style=" border: 1px solid #000; padding: 5px; text-align: center; font-size: 12px; border-top: none; text-align: center;">
-                    Regd. Office:604 Ashadeep,9 Hailey Road,New Delhi 110001 <br>
-                    Principal office: Plot No 14, Sector 135 Noida Expressway, Noida -201305
+                    Regd. Office: {{@$organizationAddress->getFullAddressAttribute()}} @if(@$organization?->gst_number), GSTIN NO - {{@$organization?->gst_number}} @endif @if(@$organization?->pan_number), PAN NO - {{@$organization?->pan_number}} @endif<br>
                 </td>
             </tr>
 
         </table>
 
         <div style="page-break-before:always"></div>
-
-
-        <!-- Third page Forth page -->
-
         <table style="width: 100%; margin-bottom: 0px; margin-top: 10px; font-size: 13px;" cellspacing="0"
             cellpadding="0">
             <tr>
@@ -616,178 +588,6 @@
                 </td>
             </tr>
         </table>
-
-        <div style="page-break-before:always"></div>
-        <!-- Fifth page -->
-
-        <table style="width: 100%; margin-bottom: 0px; margin-top: 15px; font-size: 13px;" cellspacing="0"
-            cellpadding="0">
-            <tr>
-                <td colspan="2" style="padding: 8px 5px;">Date:</td>
-            </tr>
-            <tr>
-                <td colspan="2" style="padding: 5px 5px; padding-top: 40px;">To</td>
-            </tr>
-            <tr>
-                <td colspan="2" style="padding: 0px 5px; line-height: 18px;">SHEELA FOAM LTD UNIT-VI (GNA) <br>
-                    PLOT NO 51-A, UDYOG VIHAR , GREATER NOIDA, G.B NAGAR
-                </td>
-            </tr>
-            <tr>
-                <td colspan="2" style="padding: 2px 5px; padding-top: 20px;">UTTAR PRADESH</td>
-            </tr>
-            <tr>
-                <td style="width: 45px; padding: 2px 5px;">Phone : </td>
-                <td style="padding: 2px 5px;">0120-2569291-93</td>
-            </tr>
-            <tr>
-                <td style="width: 45px; padding: 2px 5px;">E-Mail :</td>
-                <td style="padding: 2px 5px;"></td>
-            </tr>
-
-            <tr>
-                <td colspan="2"
-                    style="padding: 8px 5px; padding-top: 50px; font-weight: bold; font-size: 15px; text-decoration: underline;">
-                    Sub.: Quality Assurance Certificate. </td>
-            </tr>
-
-            <tr>
-                <td colspan="2" style="padding: 8px 5px; line-height: 25px;">
-                    We hereby certify that the goods manufactured / supplied by us against Supplier invoice No. 13
-                    dated : 05-04-2024 do conform to specifications / standard mention in the Supplier invoice.
-                    of M/s. Sheela Foam Ltd and our Invoice No. <span
-                        style="display: inline-block; min-width: 150px; border-bottom: 1px dotted #000;"> </span>
-
-                    dated : <span style="display: inline-block; min-width: 100px; border-bottom: 1px dotted #000;">
-                    </span>, do conform to specifications / standard mention in the Supplier invoice.
-                </td>
-            </tr>
-            <tr>
-                <td colspan="2" style="padding: 8px 5px;">We assure for the quality of goods supplied as above.</td>
-            </tr>
-
-            <tr>
-                <td colspan="2" style="padding: 8px 5px; padding-top: 30px;">For JPS PLASTICS PVT LTD</td>
-            </tr>
-
-            <tr>
-                <td colspan="2" style="padding: 8px 5px; padding-top: 30px;">AUTHORISED SIGNATORY</td>
-            </tr>
-        </table>
-
-        <table style="width: 100%; margin-bottom: 0px; margin-top: 15px; font-size: 13px;" cellspacing="0" cellpadding="0">
-            <tr>
-                <td style="padding: 8px 5px; width: 182px; font-weight: bold; font-size: 13px; vertical-align: top;">IMPORTANT INSTRUCTION-: </td>
-                <td style="padding: 8px 5px; font-weight: bold; font-size: 13px;" >Please esnure that latest PDIR format with latest revision number is being filled
-                    at your end and sent along with each invoice sent to The Company. For any query
-                    regarding same, contact Purchase department.</td>
-            </tr>
-        </table>
-
-        <div style="page-break-before:always"></div>
-        <!-- Six page -->
-
-        <table style="width: 100%; margin-bottom: 0px; margin-top: 15px; font-size: 13px;" cellspacing="0" cellpadding="0">
-            <tr>
-                <td colspan="2" style="padding: 5px 0px; font-weight: bold; text-decoration: underline; font-size: 16px; text-align: center;">SAFETY INSTRUCTIONS</td>
-            </tr>
-            <tr>
-                <td colspan="2" style="padding: 5px 0px; padding-top: 15px;">Following po_items are strictly prohibited to be brought / used in our factory premises:</td>
-            </tr>
-            <tr>
-                <td style="padding: 5px 0px; padding-left: 20px; width: 25px;">1).</td>
-                <td style="padding: 5px 0px;">BIDDI, Cigarette. </td>
-            </tr>
-            <tr>
-                <td style="padding: 5px 0px; padding-left: 20px; width: 25px;">2).</td>
-                <td style="padding: 5px 0px;">Tobacco or any other intoxicant in any form. </td>
-            </tr>
-            <tr>
-                <td style="padding: 5px 0px; padding-left: 20px; width: 25px;">3).</td>
-                <td style="padding: 5px 0px;">Gutka, Pan Masala.</td>
-            </tr>
-            <tr>
-                <td style="padding: 5px 0px; padding-left: 20px; width: 25px;">4).</td>
-                <td style="padding: 5px 0px;">Match Sticks or Match Box (Filled or Empty).</td>
-            </tr>
-            <tr>
-                <td style="padding: 5px 0px; padding-left: 20px; width: 25px;">5).</td>
-                <td style="padding: 5px 0px;">Lighters.</td>
-            </tr>
-            <tr>
-                <td style="padding: 5px 0px; padding-left: 20px; width: 25px;">6).</td>
-                <td style="padding: 5px 0px;">Alcohal in any form.</td>
-            </tr>
-            <tr>
-                <td colspan="2" style="padding: 5px 0px;">Upon not following above instructions, The Company shall be at liberty to impose the penalties which may please be noted as under:
-                </td>
-            </tr>
-            <tr>
-                <td style="padding: 5px 0px; padding-left: 20px; width: 25px;">A).</td>
-                <td style="padding: 5px 0px;">
-                    Penalty of Rs. 250/- (Rupees Two Hundred and Fifty Only) shall be imposed if a pack / bundle or a part of
-                    BIDDI or Cigarette is found. This penalty shall multiply with additional packs / bundle.
-                </td>
-            </tr>
-            <tr>
-                <td style="padding: 5px 0px; padding-left: 20px; width: 25px;">B).</td>
-                <td style="padding: 5px 0px;">
-                    Penalty of Rs. 250/- (Rupees Two Hundred and Fifty Only) per pouch (Open or Sealed) shall be imposed if a
-                    Chewing Tobacco or any other intoxicant in any form is found.
-                </td>
-            </tr>
-            <tr>
-                <td style="padding: 5px 0px; padding-left: 20px; width: 25px;">C).</td>
-                <td style="padding: 5px 0px;">
-                    Penalty of Rs. 250/- (Rupees Two Hundred and Fifty Only) per pouch (Open or Sealed) of Gutka, Pan
-                    Masala shall be imposed.
-                </td>
-            </tr>
-            <tr>
-                <td style="padding: 5px 0px; padding-left: 20px; width: 25px;">D).</td>
-                <td style="padding: 5px 0px;">
-                    Penalty of Rs. 1500/- (Rupees One Thousand Five Hundred Only) shall be imposed if a Match Box (Empty or
-                    ttract a penalty of Rs. 1500/- (Rupees One Thousand Five Hundred Only).
-                </td>
-            </tr>
-            <tr>
-                <td style="padding: 5px 0px; padding-left: 20px; width: 25px;">E).</td>
-                <td style="padding: 5px 0px;">
-                    Penalty of Rs. 1000/- (Rupees One Thousand Only) shall be imposed on bringing Alcohal inside our factory.
-
-                </td>
-            </tr>
-            <tr>
-                <td style="padding: 5px 0px; padding-left: 20px; width: 25px;">F).</td>
-                <td style="padding: 5px 0px;">
-                    Damage caused to any property inside The Company shall be fully recoverable and the cost of damage shall
-                    be acertained by The Company.
-                </td>
-            </tr>
-            <tr>
-                <td style="padding: 5px 0px; padding-left: 20px; width: 25px;">G).</td>
-                <td style="padding: 5px 0px;">Any other instructions which are given by our Security at entry has to be followed to avoid penalty which is
-                    not specifically mentioned above.</td>
-            </tr>
-
-            <tr>
-                <td colspan="2" style="padding: 5px 0px; padding-top: 20px;"> Repeat offenders shall be considered for black-listing.</td>
-            </tr>
-            <tr>
-                <td colspan="2" style="padding: 5px 0px; padding-top: 20px;">
-                    It shall be your responsibility to instruct and make sure that the driver / representative of your vehicle deposit
-                    above po_items if he / she is carrying at our Security. These po_items shall be returned on vehicle exit from our
-                    premises. We shall directly hold you responsible for any lapse on transporters' end on account of above Safety
-                    Instructions.
-                </td>
-            </tr>
-            <tr>
-                <td colspan="2" style="padding: 5px 0px; padding-top: 20px;">We request your co-operation in the matter.</td>
-            </tr>
-
-        </table>
-
     </div>
 </body>
-
 </html>

@@ -495,7 +495,7 @@ class ExpenseAdviseController extends Controller
                         $partyCountryId = isset($shippingAddress) ? $shippingAddress -> country_id : null;
                         $partyStateId = isset($shippingAddress) ? $shippingAddress -> state_id : null;
 
-                        $taxDetails = TaxHelper::calculateTax($expenseItem['hsn_id'], $itemPrice, $companyCountryId, $companyStateId, $partyCountryId ?? $request -> shipping_country_id, $partyStateId ?? $request -> shipping_state_id, 'sale');
+                        $taxDetails = TaxHelper::calculateTax($expenseItem['hsn_id'], $itemPrice, $companyCountryId, $companyStateId, $partyCountryId ?? $request -> shipping_country_id, $partyStateId ?? $request -> shipping_state_id, 'purchase');
 
                         $applicabilityType = $taxDetails[0]['applicability_type'];
                         if (isset($taxDetails) && count($taxDetails) > 0) {
@@ -1109,7 +1109,7 @@ class ExpenseAdviseController extends Controller
 
                         $partyCountryId = isset($shippingAddress) ? $shippingAddress -> country_id : null;
                         $partyStateId = isset($shippingAddress) ? $shippingAddress -> state_id : null;
-                        $taxDetails = TaxHelper::calculateTax($expenseItem['hsn_id'], $itemPrice, $companyCountryId, $companyStateId, $partyCountryId ?? $request->shipping_country_id, $partyStateId ?? $request->shipping_state_id, 'sale');
+                        $taxDetails = TaxHelper::calculateTax($expenseItem['hsn_id'], $itemPrice, $companyCountryId, $companyStateId, $partyCountryId ?? $request->shipping_country_id, $partyStateId ?? $request->shipping_state_id, 'purchase');
                         $applicabilityType = $taxDetails[0]['applicability_type'];
                         if (isset($taxDetails) && count($taxDetails) > 0) {
                             foreach ($taxDetails as $taxDetail) {
@@ -1606,7 +1606,7 @@ class ExpenseAdviseController extends Controller
             $upToState = $companyStateId;
         }
         try {
-            $taxDetails = TaxHelper::calculateTax( $hsnId,$price,$fromCountry,$fromState,$upToCountry,$upToState,'sale',$document_date);
+            $taxDetails = TaxHelper::calculateTax( $hsnId,$price,$fromCountry,$fromState,$upToCountry,$upToState,'purchase',$document_date);
             $rowCount = intval($request->rowCount) ?? 1;
             $itemPrice = floatval($request->price) ?? 0;
             $html = view('procurement.expense-advise.partials.item-tax',compact('taxDetails','rowCount','itemPrice'))->render();
@@ -1935,7 +1935,7 @@ class ExpenseAdviseController extends Controller
 
             # Calculate header expenses
             $priceAfterBothDis = $itemPriceAfterItemDis - $headerDis;
-            $taxDetails = TaxHelper::calculateTax($expense_item->hsn_id, $priceAfterBothDis, $companyCountryId, $companyStateId, $vendorShippingCountryId, $vendorShippingStateId, 'sale');
+            $taxDetails = TaxHelper::calculateTax($expense_item->hsn_id, $priceAfterBothDis, $companyCountryId, $companyStateId, $vendorShippingCountryId, $vendorShippingStateId, 'purchase');
             if (isset($taxDetails) && count($taxDetails) > 0) {
                 $itemTax = 0;
                 $cTaxDeIds = array_column($taxDetails, 'id');

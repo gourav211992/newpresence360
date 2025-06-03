@@ -986,17 +986,17 @@ $(document).on('input', '.qty-input', function() {
 //Disable form submit on enter button
 document.querySelector("form").addEventListener("keydown", function(event) {
     if (event.key === "Enter") {
-        event.preventDefault();  // Prevent form submission
+        event.preventDefault();
     }
 });
 $("input[type='text']").on("keydown", function(event) {
     if (event.key === "Enter") {
-        event.preventDefault();  // Prevent form submission
+        event.preventDefault();
     }
 });
 $("input[type='number']").on("keydown", function(event) {
     if (event.key === "Enter") {
-        event.preventDefault();  // Prevent form submission
+        event.preventDefault();
     }
 });
 
@@ -1460,11 +1460,47 @@ $(document).on('input', 'select[name*="[uom_id]"], input[name*="[qty]"]', functi
 
 // Handle attribute button click
 $('.submitAttributeBtn').on('click', function(e) {
-    let currentTr = $(e.target).closest('tr'); // this is the button's tr, likely modal-footer
-    let row = $('#attribute tbody tr'); // there's only one attribute row in the modal table
+    let currentTr = $(e.target).closest('tr');
+    let row = $('#attribute tbody tr');
 
     let rowCount = row.find('input[name^="row_count"]').val();
     let tr = $('#row_'+rowCount);
     console.log(tr);
     handleRowChange(tr);
 });
+
+$(document).on('change', "select[name='store_id']", (e) => {
+    let vendorName = $("#vendor_name").attr("data-name");
+    let vendorId = $("#vendor_id").val() || '';
+    if(vendorId) {
+        const item = { label: vendorName, value: vendorName, id: vendorId };
+        $('#vendor_name')
+            .val(item.label)
+            .data('ui-autocomplete')
+            ._trigger('select', null, { item: item });
+        $("#vendor_name").val(vendorId).trigger('change');
+    }
+});
+
+function getLocation(locationId = '')
+{
+    let actionUrl = getLocationUrl+'?location_id='+locationId;
+    fetch(actionUrl).then(response => {
+        return response.json().then(data => {
+            if(data.status == 200) {
+                let options = '';
+                data.data.locations.forEach(function(location) {
+                    let selected = location.id == locationId ? 'selected' : '';
+                    options += `<option value="${location.id}" ${selected}>${location.store_name}</option>`;
+                });
+                $("[name='store_id']").html(options).trigger('change');
+            } else {
+                Swal.fire({
+                    title: 'Error!',
+                    text: data.message,
+                    icon: 'error',
+                });
+            }
+        });
+    });
+}

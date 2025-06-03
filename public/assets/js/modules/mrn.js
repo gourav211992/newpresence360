@@ -166,6 +166,15 @@ $(document).on('blur',"[name*='accepted_qty']",(e) => {
     let siDetailId = $(e.target).closest('tr').find("[name*='supplier_inv_detail_id']").val() || '';
     let itemValue = $(e.target).closest('tr').find("[name*='basic_value']");
     let isInspection = $(e.target).closest('tr').find("[name*='is_inspection']").val() || '';
+    if (Number(acceptedQuantity.val()) > Number(receiptQuantity.val())) {
+        Swal.fire({
+            title: 'Error!',
+            text: 'Accepted Qty. can not be greater than Receipt Qty.',
+            icon: 'error',
+        });
+        acceptedQuantity.val(receiptQuantity.val());
+        return false;
+    }
 
     if(mrnDetailId || poDetailId){
         let actionUrl = '/material-receipts/validate-quantity?item_id='+itemId+
@@ -224,6 +233,7 @@ $(document).on('blur',"[name*='accepted_qty']",(e) => {
     } else {
         itemValue.val('');
     }
+    generatePackets(dataIndex, itemId, acceptedQuantity.val());
 });
 
 /*rate on change*/
@@ -1405,7 +1415,14 @@ const selectedSubStoreId = $(".sub_store").val();
 const isSubStoreRequired = Number($selectedSubStore.data("warehouse-required")) === 1;
 
 if (selectedStoreId) {
-    getSubStores(selectedStoreId, selectedSubStoreId); // avoid double-check
+    const path = window.location.pathname;
+    const match = path.match(/\/material-receipts\/edit\/(\d+)/);
+    const id = match ? match[1] : null;
+    if(id == null)
+    {
+        getSubStores(selectedStoreId, selectedSubStoreId);
+    }
+     // avoid double-check
     getCostCenters(selectedStoreId);
 }
 
@@ -1429,17 +1446,15 @@ function getSubStores(storeLocationId, selectedSubStoreId = null)
                 let options = '';
 
                 response.data.forEach(function(location) {
-                    const isSelected = (selectedSubStoreId && location.id == selectedSubStoreId) ||
-                        (!selectedSubStoreId && location.id == 1)
-                        ? 'selected' : '';
+                    const isSelected = selectedSubStoreId && location.id == selectedSubStoreId ? 'selected' : '';
                     options += `<option value="${location.id}" data-warehouse-required="${location.is_warehouse_required}" ${isSelected}>${location.name}</option>`;
                 });
 
                 $(".sub_store").html(options);
 
-                // Set selected value and trigger change
-                let finalSelectedId = selectedSubStoreId ?? 1;
-                $(".sub_store").val(finalSelectedId).trigger('change');
+                if (selectedSubStoreId) {
+                    $(".sub_store").val(selectedSubStoreId).trigger('change');
+                }
 
                 // ✅ Trigger change manually after population to check warehouse setup
                 const $selectedOption = $(".sub_store option:selected");
@@ -1523,48 +1538,9 @@ let allStoragePointsList = [];
 let activeRowIndex = null;
 let expectedInvQty = 0;
 
-// Open modal on icon/button click
-$(document).on('click', '.addStoragePointBtn', function () {
-    activeRowIndex = $(this).data('row-count');
-    let qty = Number($("#itemTable #row_" + activeRowIndex).find("[name*='[accepted_qty]']").val());
-    if(!qty) {
-        Swal.fire({
-            title: 'Error!',
-            text: 'Please enter quantity then you can add store location.',
-            icon: 'error',
-        });
-        return false;
-    }
-
-    let itemId = $("#itemTable #row_" + activeRowIndex).find("[name*='[item_id]']").val();
-
-    // Only extract packets if no storage_packets exists yet
-    const existingValue = $(`#itemTable #row_${activeRowIndex} input[name*='[storage_packets]']`).val();
-
-    let parsed = null;
-    if(existingValue && existingValue.length) {
-        parsed = JSON.parse(existingValue);
-    } else {
-        // If no existing value, initialize with empty array
-        console.log('3', existingValue);
-        getOldPackets(activeRowIndex);
-        const $storageInput = $(`#itemTable #row_${activeRowIndex} input[name*='[storage_packets]']`).val();
-        if($storageInput) {
-            parsed = JSON.parse($storageInput); // re-parse after rebuild
-        }
-    }
-
-    console.log(`Parsed storage packets for row ${activeRowIndex}:`, parsed);
-
-    if (Array.isArray(parsed) && parsed.length > 0) {
-        // console.log('123');
-        populatePacketTable(parsed);
-        updateAddButtonState();
-        $('#storagePointsRowIndex').val(activeRowIndex);
-        $('#storagePointsModal').modal('show');
-        return;
-    }
-
+// Generate Packets 
+function generatePackets(activeRowIndex, itemId, qty){
+    let uomId = Number($("#itemTable #row_" + activeRowIndex).find("select[name*='[uom_id]']").val());
     // Call backend API to get item conversion & storage details
     $.ajax({
         url: `/material-receipts/warehouse/item-uom-info`,
@@ -1572,6 +1548,7 @@ $(document).on('click', '.addStoragePointBtn', function () {
         dataType: 'json',
         data: {
             item_id: itemId,
+            uom_id: uomId,
             qty: qty,
         },
         success: function(response) {
@@ -1585,61 +1562,18 @@ $(document).on('click', '.addStoragePointBtn', function () {
                 }
                 totalPackets = Math.ceil(invQty / perPktQty);
                 const packetUom = response.data.storage_uom_name || 'PKT';
-                const baseUom = response.data.inventory_uom_name || 'PCS';
                 expectedInvQty = invQty;
 
-                $('.packet_item_name').text(response.data.item.item_name);
-                $('.packet_inv_uom_qty').text(invQty);
-
                 let rows = '';
+                const packets = [];
                 for (let i = 0; i < totalPackets; i++) {
                     let defaultQty = (i < totalPackets - 1) ? perPktQty : invQty - (perPktQty * (totalPackets - 1));
-                    rows += `
-                        <tr data-index="${i}">
-                            <td>
-                                <input type="checkbox" class="form-check-input packet-row-check" data-index="${i}" />
-                            </td>
-                            <td>
-                                <input type="number" step="any" value="${defaultQty}" class="form-control storage-packet-qty mw-100" name="components[${activeRowIndex}][packets][${i}][quantity]" data-index="${i}" />
-                            </td>
-                            <td>
-                                <input type="text" step="any" class="form-control storage-packet-number mw-100" name="components[${activeRowIndex}][packets][${i}][packet_number]" data-index="${i}" />
-                            </td>
-                            <td>${baseUom}</td>
-                            <td>
-                                <a href="#" class="text-primary add-storage-row-header" data-index="${i}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus-circle">
-                                        <circle cx="12" cy="12" r="10"></circle>
-                                        <line x1="12" y1="8" x2="12" y2="16"></line>
-                                        <line x1="8" y1="12" x2="16" y2="12"></line>
-                                    </svg>
-                                </a>
-                                <a href="#" class="text-danger remove-storage-row" data-index="${i}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle">
-                                        <circle cx="12" cy="12" r="10"></circle>
-                                        <line x1="15" y1="9" x2="9" y2="15"></line>
-                                        <line x1="9" y1="9" x2="15" y2="15"></line>
-                                    </svg>
-                                </a>
-                            </td>
-                        </tr>`;
+                    const id = $(this).find('.storage-packet-id').val() || null;
+                    const qty = $(this).find('.storage-packet-qty').val() || defaultQty;
+                    const packet_number = $(this).find('.storage-packet-number').val() || null;
+                    packets.push({ id: id, quantity: qty, packet_number: packet_number });
                 }
-
-                $('#storagePacketTable tbody').html(rows);
-                $('#storagePacketTable tfoot').remove();
-                $('#storagePacketTable').append(`
-                    <tfoot>
-                        <tr>
-                            <td class="text-end fw-bold">Total</td>
-                            <td><span id="storagePacketTotal">${invQty}</span></td>
-                            <td colspan="3"></td>
-                        </tr>
-                    </tfoot>
-                `);
-
-                $('#storagePointsRowIndex').val(activeRowIndex);
-                $('#storagePointsModal').modal('show');
-                updateAddButtonState();
+                $(`#itemTable #row_${activeRowIndex} input[name*='[storage_packets]']`).val(JSON.stringify(packets));        
             } else {
                 Swal.fire('Error', 'Could not fetch item storage conversion info.', 'error');
             }
@@ -1651,34 +1585,70 @@ $(document).on('click', '.addStoragePointBtn', function () {
 
     const packets = [];
     $('#storagePacketTable tbody tr').each(function () {
-        const id = $(this).find('.id').val() || null;
+        const id = $(this).find('.storage-packet-id').val() || null;
         const qty = parseFloat($(this).find('.storage-packet-qty').val()) || 0;
-        const packet_number = $(this).find('.packet_number').val() || null;
-        const unit = $(this).find('td:nth-child(4)').text().trim();
-        packets.push({ id: id, quantity: qty, packet_number: packet_number, unit: unit });
+        const packet_number = $(this).find('.storage-packet-number').val() || null;
+        packets.push({ id: id, quantity: qty, packet_number: packet_number });
     });
 
     $(`#itemTable #row_${activeRowIndex} input[name*='[storage_packets]']`).val(JSON.stringify(packets));
+}
+
+// Open modal on icon/button click
+$(document).on('click', '.addStoragePointBtn', function () {
+    activeRowIndex = $(this).data('row-count');
+    let qty = Number($("#itemTable #row_" + activeRowIndex).find("[name*='[accepted_qty]']").val());
+
+    if(!qty) {
+        Swal.fire({
+            title: 'Error!',
+            text: 'Please enter quantity then you can add store location.',
+            icon: 'error',
+        });
+        return false;
+    }
+
+    let itemId = $("#itemTable #row_" + activeRowIndex).find("[name*='[item_id]']").val();
+    // Only extract packets if no storage_packets exists yet
+    const existingValue = $(`#itemTable #row_${activeRowIndex} input[name*='[storage_packets]']`).val();
+
+    let parsed = null;
+    if(existingValue && existingValue.length) {
+        parsed = JSON.parse(existingValue);
+    } else {
+        // If no existing value, initialize with empty array
+        getOldPackets(activeRowIndex);
+        const $storageInput = $(`#itemTable #row_${activeRowIndex} input[name*='[storage_packets]']`).val();
+        if($storageInput) {
+            parsed = JSON.parse($storageInput); // re-parse after rebuild
+        }
+    }
+
+    if (Array.isArray(parsed) && parsed.length > 0) {
+        // console.log('123');
+        populatePacketTable(parsed);
+        updateAddButtonState();
+        $('#storagePointsRowIndex').val(activeRowIndex);
+        $('#storagePointsModal').modal('show');
+        return;
+    }
 });
 
 // Utility: Extract and save old packets into hidden input
 function getOldPackets(rowCount) {
     const packets = [];
-    console.log(`Extracting old packets for row: ${rowCount}`);
-
+    
     $(`[id="row_${rowCount}"]`).find("[name*='[packet_number]']").each(function(index,item) {
         let key = index +1;
-        const id = $(item).closest('tr').find(`[name*='[${key}][id]']`).val();
+        const id = $(item).closest('tr').find(`[name*='[${key}][packet_id]']`).val();
         const packet_number = $(item).closest('tr').find(`[name*='[${key}][packet_number]']`).val();
         const quantity = $(item).closest('tr').find(`[name*='[${key}][quantity]']`).val();
-        const unit = $(item).closest('tr').find(`[name*='[${key}][unit]']`).val();
         if (quantity || packet_number) {
-            packets.push({ id: id, quantity: quantity, packet_number: packet_number, unit: unit });
+            packets.push({ id: id, quantity: quantity, packet_number: packet_number });
             expectedInvQty += Number(quantity);
         }
     });
-    console.log(packets);
-
+    
     if (packets.length) {
         $(`#itemTable #row_${rowCount} input[name*='[storage_packets]']`).val(JSON.stringify(packets));
     }
@@ -1694,11 +1664,11 @@ function populatePacketTable(data) {
                 <td><input type="checkbox" class="form-check-input packet-row-check" data-index="${i}" /></td>
                 <td>
                     <input type="number" step="any" value="${row.quantity}" class="form-control storage-packet-qty mw-100" name="components[${activeRowIndex}][packets][${i}][quantity]" data-index="${i}" />
+                    <input type="hidden" step="any" value="${row.id}" class="form-control storage-packet-id mw-100" name="components[${activeRowIndex}][packets][${i}][packet_id]" data-index="${i}" />
                 </td>
                 <td>
                     <input type="text" step="any" value="${row.packet_number}" class="form-control storage-packet-number mw-100" name="components[${activeRowIndex}][packets][${i}][packet_number]" data-index="${i}" />
                 </td>
-                <td>${row.unit}</td>
                 <td>
                     <a href="#" class="text-primary add-storage-row-header" data-index="${i}">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus-circle">
@@ -1769,7 +1739,6 @@ $(document).on('click', '.add-storage-row-header', function () {
             <td>
                 <input type="text" step="any" class="form-control storage-packet-number mw-100" name="components[${activeRowIndex}][packets][${index}][packet_number]" data-index="${index}" />
             </td>
-            <td>${baseUom}</td>
             <td>
                 <a href="#" class="text-primary add-storage-row-header" data-index="${index}">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus-circle">
@@ -1820,21 +1789,21 @@ function updateAddButtonState() {
 // Save button validation
 $(document).on('click', '#saveStoragePointsBtn', function () {
     const totalQty = Number($('#storagePacketTotal').text());
+    
     if (totalQty !== expectedInvQty) {
         Swal.fire('Error', `Total quantity (${totalQty}) must equal inventory quantity (${expectedInvQty}).`, 'error');
         return;
     }
 
-    // const packets = [];
-    // $('#storagePacketTable tbody tr').each(function () {
-    //     const id = $(this).find('.id').val() || null;
-    //     const qty = parseFloat($(this).find('.storage-packet-qty').val()) || 0;
-    //     const packet_number = $(this).find('.packet_number').val() || null;
-    //     const unit = $(this).find('td:nth-child(4)').text().trim();
-    //     packets.push({ id: id, quantity: qty, packet_number: packet_number, unit: unit });
-    // });
-
-    // $(`#itemTable #row_${activeRowIndex} input[name*='[storage_packets]']`).val(JSON.stringify(packets));
+    const packets = [];
+    $('#storagePacketTable tbody tr').each(function () {
+        const id = $(this).find('.storage-packet-id').val() || null;
+        const qty = parseFloat($(this).find('.storage-packet-qty').val()) || 0;
+        const packet_number = $(this).find('.storage-packet-number').val() || null;
+        packets.push({ id: id, quantity: qty, packet_number: packet_number });
+    });
+    $(`#itemTable #row_${activeRowIndex} input[name*='[storage_packets]']`).empty(); // Clear existing value
+    $(`#itemTable #row_${activeRowIndex} input[name*='[storage_packets]']`).val(JSON.stringify(packets));
     $('#storagePointsModal').modal('hide');
 });
 
