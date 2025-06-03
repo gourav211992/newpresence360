@@ -135,11 +135,17 @@ class SetupController extends Controller
                     }
                 });
         })->get();
+       $organization = Helper::getAuthenticatedUser()->organization;
+        
+        $dep_percentage = $organization->dep_percentage;
+       
 
         
         $dep_ledger_id = FixedAssetSetup::withDefaultGroupCompanyOrg()->orderBy('updated_at', 'desc')->first()?->dep_ledger_id;
         $dep_ledger_group_id = FixedAssetSetup::withDefaultGroupCompanyOrg()->orderBy('updated_at', 'desc')->first()?->dep_ledger_group_id;
-        return view('fixed-asset.setup.create', compact('categories', 'ledgers', 'dep_ledger_id', 'dep_ledger_group_id', 'dep_ledgers', 'sur_ledgers', 'sales_exp_ledgers'));
+        return view('fixed-asset.setup.create', compact('categories', 'ledgers', 'dep_ledger_id', 'dep_ledger_group_id', 'dep_ledgers', 'sur_ledgers', 'sales_exp_ledgers','dep_percentage'))
+            ->with('services', $servicesBooks['services'])
+            ->with('parentURL', $parentURL);
     }
 
     /**
