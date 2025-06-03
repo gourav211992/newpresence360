@@ -517,11 +517,6 @@ function loadCategoriesOnSelection() {
 
                 },
                 error: function () {
-                    Swal.fire({
-                            title: 'Error!',
-                            text: 'Failed to load cost centers.',
-                            icon: 'error',
-                        });
                     $('#cost_center').empty();
                 }
             });

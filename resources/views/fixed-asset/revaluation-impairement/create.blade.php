@@ -604,12 +604,6 @@ function initializeAssetAutocomplete(selector) {
                     }));
                 },
                 error: function () {
-
-                    Swal.fire({
-                            title: 'Error!',
-                            text: 'Failed to fetch assets. Please try again.',
-                            icon: 'error',
-                        });
                     response([]);
                 }
             });
@@ -681,11 +675,6 @@ function initializeSubAssetAutocomplete(selector) {
                     }));
                 },
                 error: function () {
-                    Swal.fire({
-                            title: 'Error!',
-                            text: 'Failed to fetch sub-assets. Please try again.',
-                            icon: 'error',
-                        });
                     response([]);
                 }
             });

@@ -167,37 +167,41 @@
                                                             </select>
                                                         </div>
                                                     </div>
-                                                    <div class="row align-items-center mb-1">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Currency<span class="text-danger">*</span></label>  
-                                                        </div>  
-                                                        <div class="col-md-2 mb-1 mb-sm-0">
-                                                            <select class="form-select select2" id="currencySelect" name="currency_id" style="height: 40px;">
-                                                                @foreach($currencies as $currency)
-                                                                <option value="{{ $currency->id }}" data-short-name="{{ $currency->short_name }}" 
-                                                                    @if(isset($organization) && $currency->id == $organization->currency_id) selected @endif>
-                                                                    {{ $currency->name }}
-                                                                </option>
-                                                                @endforeach
-                                                            </select>
+                                                    <div class="row align-items-center mb-1"> 
+                                                        <div class="col-md-3 ">  
+                                                            <label class="form-label">Cost Price</label> 
                                                         </div>
-                                                        <div class="col-md-1 pe-sm-0">  
-                                                            <label class="form-label">Cost Price</label>  
-                                                        </div>  
-                                                        <div class="col-md-2 mb-1 mb-sm-0">
-                                                            <input type="text" name="cost_price" class="form-control cost-price-input" placeholder="Enter Cost Price">
+                                                        <div class="col-md-3 mb-1 mb-sm-0">
+                                                            <div class="input-group">
+                                                                <input type="text" name="cost_price" class="form-control cost-price-input" placeholder="Enter Cost Price">
+                                                                <select class="form-select currency-select" name="cost_price_currency_id">
+                                                                    @foreach($currencies as $currency)
+                                                                        <option value="{{ $currency->id }}" data-short-name="{{ $currency->short_name }}"
+                                                                            @if(isset($organization) && $currency->id == $organization->currency_id) selected @endif>
+                                                                           {{ $currency->short_name }}
+                                                                        </option>
+                                                                    @endforeach
+                                                                </select>
+                                                            </div>
                                                         </div>
-                                                     
-                                                        <div class="col-md-2 pe-sm-0"> 
-                                                            <label class="form-label">Selling price</label>  
-                                                       </div>
-                                                       <div class="col-md-2 mb-1 mb-sm-0">
-                                                            <input type="text" name="sell_price" class="form-control sell-price-input" placeholder="Enter Sell Price">
-                                                        </div>
-                                                   
-                                                    </div>
 
-                                                  
+                                                        <div class="col-md-3 text-sm-end mb-1 mb-sm-0">  
+                                                            <label class="form-label fw-bold">Selling Price</label>  
+                                                        </div>
+                                                        <div class="col-md-3">
+                                                            <div class="input-group">
+                                                                <input type="text" name="sell_price" class="form-control sell-price-input" placeholder="Enter Sell Price">
+                                                                <select class="form-select currency-select" name="sell_price_currency_id">
+                                                                    @foreach($currencies as $currency)
+                                                                        <option value="{{ $currency->id }}" data-short-name="{{ $currency->short_name }}"
+                                                                            @if(isset($organization) && $currency->id == $organization->currency_id) selected @endif>
+                                                                           {{ $currency->short_name }} 
+                                                                        </option>
+                                                                    @endforeach
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                    </div>
 
                                                     <div class="row align-items-center mb-1">
                                                         <div class="col-md-3"> 

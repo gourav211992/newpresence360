@@ -30,4 +30,9 @@ class DynamicFieldDetail extends Model
     {
         return preg_replace('/[^\w\s]/', ' ', $value);
     }
+
+    public function values()
+    {
+        return $this->hasMany(DynamicFieldDetailValue::class, 'dynamic_field_detail_id');
+    }
 }

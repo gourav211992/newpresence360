@@ -208,9 +208,10 @@ class ItemImport implements ToModel, WithHeadingRow, WithChunkReading
                 'subcategory' => $row['sub_category'] ?? null,
                 'hsn' => $row['hsnsac'] ?? null,
                 'uom' => $row['inventory_uom'] ?? null,
-                'currency' => $row['currency'] ?? null,
                 'cost_price' =>$row['cost_price']?? null,
+                'cost_price_currency' => $row['cost_price_currency'] ?? null,
                 'sell_price' => $row['sale_price']?? null,
+                'sell_price_currency' => $row['sell_price_currency'] ?? null,
                 'type' => ($row['type'] === 'G') ? 'Goods' : (($row['type'] === 'S') ? 'Service' : 'Goods'),
                 'status' => 'Processed',
                 'group_id' => $validatedData['group_id'], 
@@ -302,9 +303,17 @@ class ItemImport implements ToModel, WithHeadingRow, WithChunkReading
             }
         }
 
-        if (!empty($uploadedItem->currency)) {
+        if (!empty($uploadedItem->cost_price_currency)) {
             try {
-                $currencyId = $this->service->getCurrencyId($uploadedItem->currency);
+                $costPriceCurrencyId= $this->service->getCurrencyId($uploadedItem->cost_price_currency);
+            } catch (Exception $e) {
+                $errors[] = $e->getMessage();
+            }
+        } 
+
+        if (!empty($uploadedItem->sell_price_currency)) {
+            try {
+                $sellPriceCurrencyId = $this->service->getCurrencyId($uploadedItem->sell_price_currency);
             } catch (Exception $e) {
                 $errors[] = $e->getMessage();
             }
@@ -343,7 +352,8 @@ class ItemImport implements ToModel, WithHeadingRow, WithChunkReading
                 'item_code_type' => $uploadedItem->item_code_type ?? null,
                 'hsn_id' => $hsnCodeId ?? null,
                 'uom_id' => $uomId ?? null,
-                'currency_id' => $currencyId ?? null,
+                'cost_price_currency_id' => $costPriceCurrencyId ?? null,
+                'sell_price_currency_id' => $sellPriceCurrencyId ?? null,
                 'storage_uom_id' => $uomId ?? null,
                 'storage_uom_conversion' => 1,
                 'storage_uom_count' =>1,
@@ -370,7 +380,8 @@ class ItemImport implements ToModel, WithHeadingRow, WithChunkReading
                 'hsn_id' => 'required|exists:erp_hsns,id',
                 'category_id' => 'required|exists:erp_categories,id',
                 'subcategory_id' => 'required|exists:erp_categories,id',
-                'currency_id' => 'nullable|exists:mysql_master.currency,id',
+                'cost_price_currency_id' => 'nullable|exists:mysql_master.currency,id',
+                'sell_price_currency_id' => 'nullable|exists:mysql_master.currency,id',
                 'group_id' => 'nullable',
                 'company_id' => 'nullable',
                 'organization_id' => 'nullable',

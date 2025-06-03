@@ -61,6 +61,7 @@ class DynamicFieldRequest extends FormRequest
             ],
             'field_details.*.id' => 'nullable|exists:erp_dynamic_field_details,id',
             'field_details.*.name' => 'nullable|string|max:255',
+            'field_details.*.value' => 'nullable|string|max:255',
             'field_details.*.description' => 'nullable|string',
         ];
     }

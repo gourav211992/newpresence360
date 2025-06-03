@@ -35,9 +35,10 @@ class FailedItemsExport implements FromCollection, WithHeadings, WithMapping,Wit
             'Type',
             'Sub-Type',
             'Inventory UOM',
-            'Currency',
-            'Cost Price', 
+            'Cost Price',
+            'Cost Price Currency',
             'Sale Price', 
+            'Sell Price Currency',
             'Status'
         ];
 
@@ -84,9 +85,10 @@ class FailedItemsExport implements FromCollection, WithHeadings, WithMapping,Wit
             $item->type ?? 'N/A',
             $item->sub_type ?? 'N/A',
             $item->uom?? 'N/A',
-            $item->currency?? 'N/A',
             $item->cost_price ?? 'N/A',
+            $item->cost_price_currency?? 'N/A',
             $item->sell_price ?? 'N/A',
+            $item->sell_price_currency?? 'N/A',
             $item->status ?? 'N/A',
         ];
 
@@ -131,7 +133,7 @@ class FailedItemsExport implements FromCollection, WithHeadings, WithMapping,Wit
     public function styles(Worksheet $sheet)
     {
         $styles = [];
-        $requiredColumns = range(1, 9); 
+        $requiredColumns = range(1, 10); 
         $totalColumns = count($this->headings());
         $remarksColIndex = $totalColumns; 
         foreach ($requiredColumns as $col) {
@@ -166,7 +168,7 @@ class FailedItemsExport implements FromCollection, WithHeadings, WithMapping,Wit
         
     
         $totalColumns = count($this->headings());
-        for ($col = 10; $col <= $totalColumns; $col++) {
+        for ($col = 11; $col <= $totalColumns; $col++) {
             $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col); 
             $sheet->getStyle("{$columnLetter}1")->applyFromArray([
                 'font' => [

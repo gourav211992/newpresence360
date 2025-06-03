@@ -240,10 +240,11 @@ class CustomerController extends Controller
         $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
         $user = Helper::getAuthenticatedUser();
         $organization = $user->organization;
-        $groupOrganizationIds = $user->groupOrganizationsIds(); 
+        $groupId = $organization->group_id;
         $groupOrganizations = Organization::where('status', 'active')
-            ->where('id', '!=', $groupOrganizationIds)
-            ->get();
+        ->where('group_id', $groupId)
+        ->where('id', '!=', $organization->id)
+        ->get();
         $customerCodeType = 'Manual';
         if ($services && $services['current_book']) {
             if (isset($services['current_book'])) {
@@ -441,9 +442,10 @@ class CustomerController extends Controller
         $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
         $user = Helper::getAuthenticatedUser();
         $organization = $user->organization;
-        $groupOrganizationIds = $user->groupOrganizationsIds(); 
+        $groupId = $organization->group_id;
         $groupOrganizations = Organization::where('status', 'active')
-        ->where('id', '!=', $groupOrganizationIds)
+        ->where('group_id', $groupId)
+        ->where('id', '!=', $organization->id)
         ->get();
         $customerCodeType ='Manual';
         if ($services && $services['current_book']) {

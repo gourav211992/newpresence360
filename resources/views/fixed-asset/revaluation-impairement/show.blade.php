@@ -587,11 +587,6 @@ function initializeAssetAutocomplete(selector) {
                     }));
                 },
                 error: function () {
-                    Swal.fire({
-                            title: 'Error!',
-                            text: 'Some internal error occurred',
-                            icon: 'error',
-                        });
                     response([]);
                 }
             });

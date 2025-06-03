@@ -1655,11 +1655,6 @@ $('#location').on('change', function () {
             }
             },
             error: function () {
-                Swal.fire({
-                            title: 'Error!',
-                            text: 'Some internal error occurred',
-                            icon: 'error',
-                        });
                 $('#cost_center').empty();
             }
         });

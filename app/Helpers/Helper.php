@@ -2716,7 +2716,6 @@ return [
                 'all_book_access' => false,
                 'message' => 'Organization Menu not found'
             ];
-            
         } else {
             if ($selectedServiceAlias) {
                 $organizationServices = OrganizationService::withDefaultGroupCompanyOrg()
@@ -2730,8 +2729,7 @@ return [
                 ];
             } else {
                 $services = EmployeeBookMapping::where('service_menu_id', $organizationMenu ?-> serviceMenu ?-> id) -> where('employee_id', $authUser -> auth_user_id) -> first();
-               
-                if (!isset($services)) { 
+                if (!isset($services)) { //Assign all services and books data if no record is found
                     $serviceIds = $organizationMenu ?-> serviceMenu ?-> erp_service_id ?? [];
 
                     if(is_string($serviceIds)) {
@@ -2739,7 +2737,6 @@ return [
                     }
 
                     $bookIds = [];
-                    
                     $organizationServices = OrganizationService::withDefaultGroupCompanyOrg()->whereIn('service_id', $serviceIds ?? [])->when($selectedServiceAlias, function ($aliasQuery) use($selectedServiceAlias) {
                         $aliasQuery -> where('alias', $selectedServiceAlias);
                     })->get();
@@ -2754,7 +2751,6 @@ return [
                     ];
                 } else {
                     $serviceIds = $services ?-> erp_service_ids ?? [];
-                    
                     $bookIds = $services ?-> book_ids ?? [];
                     $organizationServices = OrganizationService::withDefaultGroupCompanyOrg()->whereIn('service_id', $serviceIds)->when($selectedServiceAlias, function ($aliasQuery) use($selectedServiceAlias) {
                         $aliasQuery -> where('alias', $selectedServiceAlias);

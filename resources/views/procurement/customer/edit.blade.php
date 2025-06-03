@@ -292,7 +292,7 @@
 
                                                              <div class="row align-items-center mb-1" id="reldCustomerDropdown">
                                                                 <div class="col-md-2">
-                                                                    <label class="form-label">Related Customers</label>
+                                                                    <label class="form-label">Parent Customer</label>
                                                                 </div>
                                                                 <div class="col-md-3">
                                                                     <select class="form-select select2" name="reld_customer_id" id="reld_customer_id">

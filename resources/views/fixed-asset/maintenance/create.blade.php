@@ -532,11 +532,6 @@
                     }
                 },
                 error: function () {
-                    Swal.fire({
-                            title: 'Error!',
-                            text: 'Failed to load assets. Please try again later.',
-                            icon: 'error',
-                        });
                     $('#asset_id').empty().append(
                         $('<option>', {
                             value: '',

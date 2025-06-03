@@ -238,9 +238,10 @@ class VendorController extends Controller
             $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
             $user = Helper::getAuthenticatedUser();
             $organization = $user->organization;
-            $groupOrganizationIds = $user->groupOrganizationsIds(); 
+            $groupId = $organization->group_id;
             $groupOrganizations = Organization::where('status', 'active')
-            ->where('id', '!=', $groupOrganizationIds)
+            ->where('group_id', $groupId)
+            ->where('id', '!=', $organization->id)
             ->get();
             $stores = StoreHelper::getAvailableStoresForVendor();
             $vendorCodeType = 'Manual';
@@ -493,9 +494,10 @@ class VendorController extends Controller
             $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
             $user = Helper::getAuthenticatedUser();
             $organization = $user->organization;
-            $groupOrganizationIds = $user->groupOrganizationsIds(); 
+           $groupId = $organization->group_id;
             $groupOrganizations = Organization::where('status', 'active')
-            ->where('id', '!=', $groupOrganizationIds)
+            ->where('group_id', $groupId)
+            ->where('id', '!=', $organization->id)
             ->get();
             $selectedStoreIds = $vendor ?-> locations() -> pluck('store_id') -> toArray();
             $stores = StoreHelper::getAvailableStoresForVendor($selectedStoreIds, $vendor -> id);

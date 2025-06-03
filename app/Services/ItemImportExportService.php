@@ -623,23 +623,23 @@ class ItemImportExportService
         $gstinRegistrationDate = $data['compliance']['gstin_registration_date'] ?? null;
         $gstinLegalName = $data['compliance']['gst_registered_name'] ?? null;
     
-        if ($gstinNo and $gstinApplicable == 1) {
-            $gstValidation = EInvoiceHelper::validateGstNumber($gstinNo);
-            if ($gstValidation['Status'] == 1) {
-                $gstData = json_decode($gstValidation['checkGstIn'], true);
+        // if ($gstinNo and $gstinApplicable == 1) {
+        //     $gstValidation = EInvoiceHelper::validateGstNumber($gstinNo);
+        //     if ($gstValidation['Status'] == 1) {
+        //         $gstData = json_decode($gstValidation['checkGstIn'], true);
     
-                if ($gstinLegalName && $gstinLegalName !== ($gstData['LegalName'] ?? '')) {
-                    $errors['compliance.gst_registered_name'] = 'Legal name does not match GSTIN record.';
-                }
+        //         if ($gstinLegalName && $gstinLegalName !== ($gstData['LegalName'] ?? '')) {
+        //             $errors['compliance.gst_registered_name'] = 'Legal name does not match GSTIN record.';
+        //         }
     
-                if (($gstData['DtReg'] ?? null) && $gstinRegistrationDate !== $gstData['DtReg']) {
-                    $errors['compliance.gstin_registration_date'] = 'GSTIN registration date does not match GSTIN records.';
-                }
+        //         if (($gstData['DtReg'] ?? null) && $gstinRegistrationDate !== $gstData['DtReg']) {
+        //             $errors['compliance.gstin_registration_date'] = 'GSTIN registration date does not match GSTIN records.';
+        //         }
 
-            } else {
-                $errors['compliance.gstin_no'] = 'The provided GSTIN number is invalid. Please verify and try again.';
-            }
-        }
+        //     } else {
+        //         $errors['compliance.gstin_no'] = 'The provided GSTIN number is invalid. Please verify and try again.';
+        //     }
+        // }
     
         return $errors;
     }
