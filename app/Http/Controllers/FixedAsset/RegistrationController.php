@@ -638,6 +638,13 @@ class RegistrationController extends Controller
 
         return $query->limit(20)->get();
     }
+    public function categorySearch(Request $request)
+    {
+        $q = $request->input('q');
+        $query = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->withWhereHas('setup')
+            ->where('name', 'like', "%$q%");
+        return $query->limit(20)->get();
+    }
       public function checkCode(Request $request)
 {
     if($request->edit_id)
@@ -724,4 +731,5 @@ class RegistrationController extends Controller
        
         return response()->json($costCenters);
     }
+
 }

@@ -162,10 +162,17 @@
                                     <input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct" id="vendor_name" name="vendor_name" />
                                     <input type="hidden" id="vendor_id" name="vendor_id" />
                                     <input type="hidden" id="vendor_code" name="vendor_code" />
-                                    <input type="hidden" id="shipping_id" name="shipping_id" />
-                                    <input type="hidden" id="billing_id" name="billing_id" />
+                                    <input type="hidden" id="vendor_address_id" name="vendor_address_id" />
+                                    <input type="hidden" id="billing_address_id" name="billing_address_id" />
+                                    <input type="hidden" id="delivery_address_id" name="delivery_address_id" />
                                     <input type="hidden" id="hidden_state_id" name="hidden_state_id" />
                                     <input type="hidden" id="hidden_country_id" name="hidden_country_id" />
+                                    
+                                    <input type="hidden" id="delivery_country_id" name="delivery_country_id" />
+                                    <input type="hidden" id="delivery_state_id" name="delivery_state_id" />
+                                    <input type="hidden" id="delivery_city_id" name="delivery_city_id" />
+                                    <input type="hidden" id="delivery_pincode" name="delivery_pincode" />
+                                    <input type="hidden" id="delivery_address" name="delivery_address" />
                                 </div>
                             </div> 
                             <div class="col-md-3">
@@ -183,28 +190,16 @@
                                 </div>
                             </div>
                         </div>
-
                         <div class="row">
-                            {{-- <div class="col-md-6">
-                                <div class="customer-billing-section">
-                                    <p>Shipping Details</p>
-                                    <div class="bilnbody"> 
-
-                                        <div class="genertedvariables genertedvariablesnone">
-                                            <label class="form-label w-100">Select Shipping Address <span class="text-danger">*</span> <a href="javascript:;" class="float-end font-small-2 editAddressBtn" data-type="shipping"><i data-feather='edit-3'></i> Edit</a></label>
-                                            <div class="mrnaddedd-prim shipping_detail">-</div>   
-                                        </div> 
-                                    </div>
-
-                                </div>
-                            </div> --}}
                             <div class="col-md-4">
                                 <div class="customer-billing-section h-100">
                                     <p>Vendor Address</p>
                                     <div class="bilnbody">  
                                         <div class="genertedvariables genertedvariablesnone">
-                                            <label class="form-label w-100">Vendor Address <span class="text-danger">*</span> <a href="javascript:;" class="float-end font-small-2 editAddressBtn" data-type="billing"><i data-feather='edit-3'></i> Edit</a></label>
-                                            <div class="mrnaddedd-prim billing_detail">-</div>   
+                                            <label class="form-label w-100">Vendor Address <span class="text-danger">*</span> 
+                                                <a href="javascript:;" class="float-end font-small-2 editAddressBtn d-none" data-type="vendor_address"><i data-feather='edit-3'></i> Edit</a>
+                                            </label>
+                                            <div class="mrnaddedd-prim vendor_address">-</div>   
                                         </div>
                                     </div>
                                 </div>
@@ -215,9 +210,8 @@
                                     <div class="bilnbody">  
                                         <div class="genertedvariables genertedvariablesnone">
                                             <label class="form-label w-100">Billing Address <span class="text-danger">*</span> 
-                                                {{-- <a href="javascript:;" class="float-end font-small-2 editAddressBtn" data-type="billing"><i data-feather='edit-3'></i> Edit</a> --}}
                                             </label>
-                                            <div class="mrnaddedd-prim org_address">-</div>   
+                                            <div class="mrnaddedd-prim billing_address">-</div>   
                                         </div>
                                     </div>
                                 </div>
@@ -228,7 +222,7 @@
                                     <div class="bilnbody">  
                                         <div class="genertedvariables genertedvariablesnone">
                                             <label class="form-label w-100">Delivery Address <span class="text-danger">*</span>
-                                                {{-- <a href="javascript:;" class="float-end font-small-2 editAddressBtn" data-type="billing"><i data-feather='edit-3'></i> Edit</a> --}}
+                                                <a href="javascript:;" class="float-end font-small-2 editAddressBtn d-done" data-type="delivery_address"><i data-feather='edit-3'></i> Edit</a>
                                             </label>
                                             <div class="mrnaddedd-prim delivery_address">-</div>   
                                         </div>
@@ -609,9 +603,10 @@
 @endsection
 @section('scripts')
 <script type="text/javascript">
- let type = '{{ request()->route("type") }}';
- let actionUrlTax = '{{route("po.tax.calculation",["type" => ":type"])}}'.replace(':type',type);
+ var type = '{{ request()->route("type") }}';
+ var actionUrlTax = '{{route("po.tax.calculation",["type" => ":type"])}}'.replace(':type',type);
  var getLocationUrl = '{{ route("store.get") }}';
+ var getAddressOnVendorChangeUrl = "{{ route('po.get.address', ['type' => ':type']) }}".replace(':type', type); 
 </script>
 <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
 <script type="text/javascript" src="{{asset('assets/js/modules/po.js')}}"></script>
@@ -735,133 +730,6 @@ function setServiceParameters(parameters) {
     }
 }
 
-
-/*Vendor drop down*/
-function initializeAutocomplete1(selector, type) {
-    $(selector).autocomplete({
-        minLength: 0,
-        source: function(request, response) {
-            $.ajax({
-                url: '/search',
-                method: 'GET',
-                dataType: 'json',
-                data: {
-                    q: request.term,
-                    type:'vendor_list'
-                },
-                success: function(data) {
-                    response($.map(data, function(item) {
-                        return {
-                            id: item.id,
-                            label: item.company_name,
-                            code: item.vendor_code,
-                            addresses: item.addresses
-                        };
-                    }));
-                },
-                error: function(xhr) {
-                    console.error('Error fetching customer data:', xhr.responseText);
-                }
-            });
-        },
-        select: function(event, ui) {
-            var $input = $(this);
-            var itemName = ui.item.value;
-            var itemId = ui.item.id;
-            var itemCode = ui.item.code;
-            $input.attr('data-name', itemName);
-            $input.val(itemName);
-            $("#vendor_id").val(itemId);
-            $("#vendor_code").val(itemCode);
-            vendorOnChange(itemId);
-            return false;
-        },
-        change: function(event, ui) {
-            console.log("changess!");
-            if (!ui.item) {
-                $(this).val("");
-                $(this).attr('data-name', '');
-            }
-        }
-    }).focus(function() {
-        if (this.value === "") {
-            $(this).autocomplete("search", "");
-        }
-    });
-}
-initializeAutocomplete1("#vendor_name");
-
-function vendorOnChange(vendorId) {
-    if(vendorId) {
-        let store_id = $("[name='store_id']").val() || '';
-        let type = '{{ request()->route("type") }}';
-        let actionUrl = "{{ route('po.get.address', ['type' => ':type']) }}".replace(':type', type) 
-        + '?id=' + vendorId+'&store_id='+store_id;
-        fetch(actionUrl).then(response => {
-            return response.json().then(data => {
-                if(data.data?.currency_exchange?.status == false) {
-                    $("#vendor_name").val('');
-                    $("#vendor_id").val('');
-                    $("#vendor_code").val('');
-                    $("#hidden_state_id").val('');
-                    $("#hidden_country_id").val('');
-                    $("select[name='currency_id']").empty().append('<option value="">Select</option>');
-                    $("select[name='payment_term_id']").empty().append('<option value="">Select</option>');
-                    $(".billing_detail").text('-');
-                    Swal.fire({
-                        title: 'Error!',
-                        text: data.data?.currency_exchange.message,
-                        icon: 'error',
-                    });
-                    return false;
-                }                    
-                if(data.status == 200) {
-                    $("#vendor_name").val(data?.data?.vendor?.company_name);
-                    $("#vendor_id").val(data?.data?.vendor?.id);
-                    $("#vendor_code").val(data?.data?.vendor?.vendor_code);
-                    let curOption = `<option value="${data?.data?.currency?.id}">${data?.data?.currency?.name}</option>`;
-                    let termOption = `<option value="${data?.data?.paymentTerm?.id}">${data?.data?.paymentTerm?.name}</option>`;
-                    $('[name="currency_id"]').empty().append(curOption);
-                    $('[name="payment_term_id"]').empty().append(termOption);
-                    $("#shipping_id").val(data?.data?.billing?.id);
-                    let billingId = null;
-                    let displayOrg = '';
-                    if(data?.data?.is_store_billing) {
-                        billingId = data?.data?.delivery_address?.id || '';
-                        displayOrg = data?.data?.delivery_address?.display_address || ''
-                    } else {
-                        billingId = data?.data?.org_address.id || ''
-                        displayOrg = data?.data?.org_address?.display_address || ''
-                    }
-                    $(".org_address").text(displayOrg);
-                    $("#billing_id").val(billingId);
-                    
-                    $(".billing_detail").text(data?.data?.billing?.display_address);
-                    $(".delivery_address").text(data?.data?.delivery_address?.display_address);
-                    $("#hidden_state_id").val(data?.data?.shipping?.state.id);
-                    $("#hidden_country_id").val(data?.data?.shipping?.country?.id);
-                } else {
-                    if(data.data.error_message) {
-                        $("#vendor_name").val('');
-                        $("#vendor_id").val('');
-                        $("#vendor_code").val('');
-                        $("#hidden_state_id").val('');
-                        $("#hidden_country_id").val('');
-                        $("select[name='currency_id']").empty().append('<option value="">Select</option>');
-                        $("select[name='payment_term_id']").empty().append('<option value="">Select</option>');
-                        $(".billing_detail").text('-');
-                        Swal.fire({
-                            title: 'Error!',
-                            text: data?.data?.error_message || '',
-                            icon: 'error',
-                        });
-                        return false;
-                    }
-                }
-            });
-        });
-    }
-}
 /*Add New Row*/
 $(document).on('click','#addNewItemBtn', (e) => {
     if(!checkBasicFilledDetail()) {
@@ -1145,34 +1013,51 @@ function getItemAttribute(itemId, rowCount, selectedAttr, tr){
     });
 }
 
-// Event listener for Edit Address button click
 $(document).on('click', '.editAddressBtn', (e) => {
     let addressType = $(e.target).closest('a').attr('data-type');
-    let vendorId = $("#vendor_id").val();
-    let onChange = 0;
-    let addressId =  $("#shipping_id").val();
+    let vendorId = $("#vendor_id").val() || '';
+    let addressId =  '';
+    if(addressType == 'vendor_address') 
+    {
+        addressId = $("#vendor_address_id").val() || '';
+    }
+    if(addressType == 'delivery_address') 
+    {
+        addressId = $("#delivery_address_id").val() || '';
+    }
     let routeType = '{{ request()->route("type") }}';
     let actionUrl = `{{ route("po.edit.address", ["type" => ":type"]) }}`
     .replace(':type', routeType)
-    + `?vendor_id=${vendorId}&address_id=${addressId}&onChange=${onChange}&type=${addressType}`;
+    + `?vendor_id=${vendorId}&address_id=${addressId}&type=${addressType}`;
 
     fetch(actionUrl)
         .then(response => response.json())
         .then(data => {
             if (!data.status) {
                 Swal.fire({
-                            title: 'Error!',
-                            text: data.message,
-                            icon: 'error',
-                        });
-                        return false;
+                    title: 'Error!',
+                    text: data.message,
+                    icon: 'error',
+                });
+                return false;
             }
             if (data.status === 200) {
-                $("#edit-address .modal-dialog").html(data.data.html);
-                $("#address_type").val(addressType);
-                $("#hidden_vendor_id").val(vendorId);
+                if(data.data.html) {
+                    $("#edit-address .modal-dialog").html(data.data.html);
+                }
                 $("#edit-address").modal('show');
                 initializeFormComponents(data.data.selectedAddress);
+                $("#address_type").val(addressType);
+                let v = $("#vendor_id").val();
+                $("#hidden_vendor_id").val(v);
+                if(addressType == 'vendor_address') 
+                {
+                    $("#vendor_address_id").val(data.data.selectedAddress.id);
+                }
+                if(addressType == 'delivery_address') 
+                {
+                    $("#delivery_address_id").val(data.data.selectedAddress.id);
+                }
             } else {
                 console.error('Failed to fetch address data:', data.message);
             }
@@ -1181,33 +1066,37 @@ $(document).on('click', '.editAddressBtn', (e) => {
 });
 
 $(document).on('change', "[name='address_id']", (e) => {
-    let vendorId = $("#vendor_id").val();
-    let addressType = $("#address_type").val();
-    let addressId = e.target.value;
-    if (!addressId) {
-        $("#country_id").val('').trigger('change');
-        $("#state_id").val('').trigger('change');
-        $("#city_id").val('').trigger('change');
+    const selectedValue = $(e.target).val();
+    if (!selectedValue) {
+        $("#city_id").removeClass('disabled-input');
+        $("#pincode").removeClass('disabled-input');
+        $("#address").removeClass('disabled-input');
+        $("#city_id").val('');
         $("#pincode").val('');
         $("#address").val('');
         return false;
+    } else {
+        $form.find(":input").not(e.target).not("button, [type='button'], [type='submit']").addClass('disabled-input');
+        $(this).removeClass('disabled-input');
     }
-    let onChange = 1;
+    let vendorId = $("#vendor_id").val();
+    let addressType = $("#address_type").val();
+    let addressId = selectedValue
+
     let type = '{{ request()->route("type") }}';
     let actionUrl = `{{ route("po.edit.address", ["type" => ":type"]) }}`
     .replace(':type', type)
-    + `?type=${addressType}&vendor_id=${vendorId}&address_id=${addressId}&onChange=${onChange}`;
-
+    + `?type=${addressType}&vendor_id=${vendorId}&address_id=${addressId}`;
     fetch(actionUrl)
         .then(response => response.json())
         .then(data => {
             if (!data.status) {
                 Swal.fire({
-                            title: 'Error!',
-                            text: data.message,
-                            icon: 'error',
-                        });
-                        return false;
+                    title: 'Error!',
+                    text: data.message,
+                    icon: 'error',
+                });
+                return false;
             }
             if (data.status === 200) {
                 initializeFormComponents(data.data.selectedAddress);
@@ -1329,8 +1218,10 @@ $(document).on('click', '.submitAddress', function (e) {
     $('#edit-address').find('input,textarea,select').each(function () {
         innerFormData.append($(this).attr('name'), $(this).val());
     });
+
     var method = "POST" ;
     var type = '{{ request()->route("type") }}';
+    let addressType = $("#address_type").val();
     var url = '{{ route("po.address.save", ["type" => ":type"]) }}'.replace(':type', type);
     fetch(url, {
         method: method, 
@@ -1344,14 +1235,40 @@ $(document).on('click', '.submitAddress', function (e) {
     })
     .then(data => {
         if(data.status == 200) {
-            let addressType = $("#address_type").val();
-            if(addressType == 'shipping') {
-                $("#shipping_id").val(data.data.new_address.id);
-                $(".shipping_detail").text(data.data.new_address.display_address);
-            } else {
-                $(".billing_detail").text(data.data.new_address.display_address);
-                $("#billing_id").val(data.data.new_address.id);
+            let addressDisplay = data?.data?.new_address?.display_address || data?.data?.add_new_address || ''
+            if(addressType == 'vendor_address') {
+                $("#vendor_address_id").val(data?.data?.new_address?.id);
+                $(".vendor_address").text(addressDisplay);
+            } 
+            if(addressType == 'delivery_address') {
+                $("#delivery_address_id").val(data?.data?.new_address?.id);
+                $(".delivery_address").text(addressDisplay);
+                if(data?.data?.add_new_address) {
+                    $("#delivery_address_id").val('');
+                    let country_id = $("#country_id").val() || '';
+                    let state_id = $("#state_id").val() || '';
+                    let city_id = $("#city_id").val() || '';
+                    let pincode = $("#pincode").val() || '';
+                    let address = $("#address").val() || '';
+
+                    $("#delivery_country_id").val(country_id);
+                    $("#delivery_state_id").val(state_id);
+                    $("#delivery_city_id").val(city_id);
+                    $("#delivery_pincode").val(pincode);
+                    $("#delivery_address").val(address);
+                } else {
+                    $("#delivery_country_id").val('');
+                    $("#delivery_state_id").val('');
+                    $("#delivery_city_id").val('');
+                    $("#delivery_pincode").val('');
+                    $("#delivery_address").val('');
+                }
             }
+            setTimeout(() => {
+                if(data?.data?.add_new_address) {
+                    $("#delivery_address_id").val('');
+                }
+            },0);
             $("#edit-address").modal('hide');
         } else {
             let formObj = $("#edit-address");
@@ -1891,7 +1808,7 @@ $(document).on('click', '.prProcess', (e) => {
                 $("select[name='currency_id']").empty().append('<option value="">Select</option>').prop('readonly',false);
                 $("select[name='payment_term_id']").empty().append('<option value="">Select</option>').prop('readonly',false);
                 $(".shipping_detail").text('-');
-                $(".billing_detail").text('-');
+                $(".vendor_address").text('-');
                 Swal.fire({
                     title: 'Error!',
                     text: data.message,

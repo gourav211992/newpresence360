@@ -14,27 +14,11 @@ class CommonHelper
     const PAGE_LENGTH_2000 = 2000;
     const PAGE_LENGTH_1000 = 1000;
     const PAGE_LENGTH_10000 = 10000;
-
-    const PAGE_LENGTHS = [
-        self::PAGE_LENGTH_10,
-        self::PAGE_LENGTH_20,
-        self::PAGE_LENGTH_50,
-        self::PAGE_LENGTH_100,
-    ];
-    
     const ACTIVE = 'active';
     const INACTIVE = 'inactive';
     const HIGH = 'high';
     const LOW = 'low';
     const MEDIUM = 'medium';
-
-    const PRIORITY = [
-       self::HIGH,
-       self::MEDIUM,
-       self::LOW
-    ];
-
-    
     const SCHEDULED = 'scheduled';
     const ASSIGNED = 'assigned';
     const APPROVED_FORWARD = 'approved-forward';
@@ -58,6 +42,20 @@ class CommonHelper
 	const SEND_BACK = 'send-back';
     const PAYMENTS = 'payments';
     const RECEIPTS = 'receipts';
+    const IAM_VENDOR = 'IAM-VENDOR';
+
+    const PAGE_LENGTHS = [
+        self::PAGE_LENGTH_10,
+        self::PAGE_LENGTH_20,
+        self::PAGE_LENGTH_50,
+        self::PAGE_LENGTH_100,
+    ];
+
+    const PRIORITY = [
+       self::HIGH,
+       self::MEDIUM,
+       self::LOW
+    ];
 
     const JOB_REQUEST_STATUS = [
         self::APPROVED_FORWARD,

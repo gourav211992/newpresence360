@@ -10,6 +10,6 @@ class ErpRecruitmentAssignedCandidate extends Model
     use HasFactory;
     protected $table = 'erp_recruitment_assigned_candidates';
     protected $fillable = [
-        'id', 'candidate_id', 'job_id','status'
+        'id', 'candidate_id', 'job_id','status','remark','created_by','created_by_type'
     ];
 }

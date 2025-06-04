@@ -28,11 +28,6 @@ class StoreController extends Controller
     
     public function index(Request $request)
     {
-        $user = Helper::getAuthenticatedUser();
-        $organization = Organization::where('id', $user->organization_id)->first(); 
-        $organizationId = $organization?->id ?? null;
-        $companyId = $organization?->company_id ?? null;
-    
         if ($request->ajax()) {
             $stores = ErpStore::withDefaultGroupCompanyOrg()
             ->orderBy('id', 'desc'); 
@@ -47,11 +42,6 @@ class StoreController extends Controller
                 })
                 ->addColumn('shelfs', function ($store) {
                     return $store->Shelfs ? count($store->Shelfs) : 0;
-                })
-                ->addColumn('billing_address', function ($store) {
-                    $label = $store->billing_address == 1 ? 'Yes' : 'No';
-                    $class = $store->billing_address == 1 ? 'text-success' : 'text-secondary';
-                    return '<span class="' . $class . '">' . $label . '</span>';
                 })
                 ->addColumn('status', function ($store) {
                     return '<span class="badge rounded-pill badge-light-' . ($store->status == 'active' ? 'success' : 'danger') . '">'
@@ -71,7 +61,7 @@ class StoreController extends Controller
                         </div>
                     </div>';
                 })
-                ->rawColumns(['status','billing_address','action'])
+                ->rawColumns(['status','action'])
                 ->make(true);
         }
     
@@ -106,7 +96,6 @@ class StoreController extends Controller
                     'contact_person'=>$validatedData['contact_person'],
                     'contact_phone_no'=>$validatedData['contact_phone_no'],
                     'contact_email'=>$validatedData['contact_email'],
-                    'billing_address'=>$validatedData['billing_address'],
                     'store_location_type'=>ConstantHelper::STOCKK,
                     'status'=>$validatedData['status'],
                     'organization_id' => $validatedData['organization_id'],
@@ -368,7 +357,6 @@ class StoreController extends Controller
                 'contact_person' => $validatedData['contact_person'],
                 'contact_phone_no' => $validatedData['contact_phone_no'],
                 'contact_email' => $validatedData['contact_email'],
-                'billing_address' => $validatedData['billing_address'],
                 'status' => $validatedData['status'],
                 'organization_id' => $validatedData['organization_id'],
                 'company_id' => $organizations->company_id,

@@ -180,7 +180,7 @@ class FixedAssetSplit extends Model
                     'expiry_date' => $request->capitalize_date && $request->useful_life
                         ? \Carbon\Carbon::parse($request->capitalize_date)
                             ->addYears($request->useful_life)
-                            ->subDay()
+                            ->subDay()->toDateString()
                         : null,
                 ]);
             }

@@ -29,8 +29,8 @@
 @endsection
 
 @section('content')
-<!-- BEGIN: Content-->
-<div class="app-content content ">
+    <!-- BEGIN: Content-->
+    <div class="app-content content ">
         <div class="content-overlay"></div>
         <div class="header-navbar-shadow"></div>
         <div class="content-wrapper container-xxl p-0">
@@ -41,7 +41,7 @@
                             <h2 class="content-header-title float-start mb-0">Fixed Asset Registration</h2>
                             <div class="breadcrumb-wrapper">
                                 <ol class="breadcrumb">
-                                    <li class="breadcrumb-item"><a href="{{route('/')}}">Home</a></li>
+                                    <li class="breadcrumb-item"><a href="{{ route('/') }}">Home</a></li>
                                     <li class="breadcrumb-item active">Asset List</li>
                                 </ol>
                             </div>
@@ -50,8 +50,11 @@
                 </div>
                 <div class="content-header-right text-sm-end col-md-7 mb-50 mb-sm-0">
                     <div class="form-group breadcrumb-right">
-                        <button class="btn btn-warning btn-sm mb-50 mb-sm-0" data-bs-target="#filter" data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button>
-						<a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{route('finance.fixed-asset.registration.create')}}"><i data-feather="plus-circle"></i> Add New</a>
+                        <button class="btn btn-warning btn-sm mb-50 mb-sm-0" data-bs-target="#filter"
+                            data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button>
+                        <a class="btn btn-primary btn-sm mb-50 mb-sm-0"
+                            href="{{ route('finance.fixed-asset.registration.create') }}"><i data-feather="plus-circle"></i>
+                            Add New</a>
                     </div>
                 </div>
             </div>
@@ -59,14 +62,14 @@
 
 
 
-				<section id="basic-datatable">
+                <section id="basic-datatable">
                     <div class="row">
                         <div class="col-12">
                             <div class="card">
 
 
                                 <div class="table-responsive">
-									<table class="datatables-basic table myrequesttablecbox ">
+                                    <table class="datatables-basic table myrequesttablecbox tableistlastcolumnfixed ">
                                         <thead>
                                             <tr>
                                                 <th>#</th>
@@ -76,76 +79,87 @@
                                                 <th>Asset Name</th>
                                                 <th>Asset Code</th>
                                                 <th>Dep. Method</th>
-                                                <th>Ledger Name</th>
-                                                <th>Book Date</th>
+                                                <th>Cap. Date</th>
+                                                <th>Qty</th>
                                                 <th>Location</th>
                                                 <th>Cost Center</th>
-                                                <th>Qty</th>
-                                                <th>Cap. Date</th>
-                                                <th>Status</th>
-                                                <th>Action</th>
+                                                <th>Ledger Name</th>
+                                                <th>Book Date</th>
+                                                <th class="text-end">Status</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             @isset($data)
-                                            @forelse($data as $asset)
-                                                <tr>
-                                                    <td>{{ $loop->iteration }}</td>
-                                                    <td>{{ \Carbon\Carbon::parse($asset->document_date)->format('d-m-Y') ??"-"}}</td>
-                                                    <td>{{ $asset?->book?->book_code ??"-" }}</td>
-                                                    <td>{{ $asset->document_number ??"-" }}</td>
-                                                    <td class="fw-bolder text-dark">{{ $asset->asset_name??"-" }}</td>
-                                                    <td>{{ $asset->asset_code??"-" }}</td>
-                                                    <td>{{ $asset->depreciation_method??"-" }}</td>
-                                                    <td>{{ $asset->ledger->name??"-" }}</td>
-                                                    <td>{{ $asset->book_date!=null?\Carbon\Carbon::parse($asset->book_date)->format('d-m-Y'):"-" }}</td>
-                                                    <td>{{ $asset?->location?->store_name ??"-" }}</td>
-                                                    <td>{{ $asset?->cost_center?->name ??"-" }}</td>
-                                                    <td>{{ $asset->quantity ??"-" }}</td>
-                                                    <td>{{ $asset->capitalize_date!=null?\Carbon\Carbon::parse($asset->capitalize_date)->format('d-m-Y'):"-"}}</td>
-                                                   
-                                                    <td>
-                                                        @php $statusClasss = App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$asset->document_status??"draft"];  @endphp
-                                                        <span
-                                                            class='badge rounded-pill {{ $statusClasss }} badgeborder-radius'>
-                                                            @if ($asset->document_status == App\Helpers\ConstantHelper::APPROVAL_NOT_REQUIRED)
-                                                                Approved
-                                                            @else
-                                                                {{ ucfirst($asset->document_status) }}
-                                                            @endif
-                                                        </span>
-                                                    </td>
+                                                @forelse($data as $asset)
+                                                    <tr>
+                                                        <td class="text-nowrap">{{ $loop->iteration }}</td>
+                                                        <td class="fw-bolder text-dark text-nowrap">
+                                                            {{ \Carbon\Carbon::parse($asset->document_date)->format('d-m-Y') ?? '-' }}
+                                                        </td>
+                                                        <td class="text-nowrap">{{ $asset?->book?->book_code ?? '-' }}</td>
+                                                        <td class="text-nowrap">{{ $asset->document_number ?? '-' }}</td>
+                                                        <td class="text-nowrap">
+                                                            {{ $asset->asset_name ?? '-' }}</td>
+                                                        <td class="text-nowrap">{{ $asset->asset_code ?? '-' }}</td>
+                                                        <td class="text-nowrap">{{ $asset->depreciation_method ?? '-' }}</td>
+                                                        <td class="text-nowrap">
+                                                            {{ $asset->capitalize_date != null ? \Carbon\Carbon::parse($asset->capitalize_date)->format('d-m-Y') : '-' }}
+                                                        </td>
+                                                        <td class="text-nowrap">{{ $asset->quantity ?? '-' }}</td>
+                                                        <td class="text-nowrap">{{ $asset?->location?->store_name ?? '-' }}
+                                                        </td>
+                                                        <td class="text-nowrap">{{ $asset?->cost_center?->name ?? '-' }}</td>
+                                                        <td class="text-nowrap">{{ $asset->ledger->name ?? '-' }}</td>
+                                                        <td class="text-nowrap">
+                                                            {{ $asset->book_date != null ? \Carbon\Carbon::parse($asset->book_date)->format('d-m-Y') : '-' }}
+                                                        </td>
+                                                        <td class="tableactionnew">
+                                                            <div class="d-flex align-items-center justify-content-end">
+                                                                @php $statusClasss = App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$asset->document_status??"draft"];  @endphp
+                                                                <span
+                                                                    class='badge rounded-pill {{ $statusClasss }} badgeborder-radius'>
+                                                                    @if ($asset->document_status == App\Helpers\ConstantHelper::APPROVAL_NOT_REQUIRED)
+                                                                        Approved
+                                                                    @else
+                                                                        {{ ucfirst($asset->document_status) }}
+                                                                    @endif
+                                                                </span>
 
-                                                    <td class="tableactionnew">
-                                                        <div class="dropdown">
-                                                            <button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
-                                                                <i data-feather="more-vertical"></i>
-                                                            </button>
-                                                            <div class="dropdown-menu dropdown-menu-end">
-                                                                @if($asset->document_status=='draft')
-                                                                <a class="dropdown-item" href="{{route('finance.fixed-asset.registration.edit', $asset->id)}}">
-                                                                    <i data-feather="edit" class="me-50"></i>
-                                                                   <span>View</span>
-                                                                </a>
-                                                                @else
-                                                                <a class="dropdown-item" href="{{route('finance.fixed-asset.registration.show', $asset->id)}}">
-                                                                    <i data-feather="edit" class="me-50"></i>
-                                                                    <span>View</span>
-                                                                </a>
-                                                                @endif    
+
+                                                                <div class="dropdown">
+                                                                    <button type="button"
+                                                                        class="btn btn-sm dropdown-toggle hide-arrow p-0"
+                                                                        data-bs-toggle="dropdown">
+                                                                        <i data-feather="more-vertical"></i>
+                                                                    </button>
+                                                                    <div class="dropdown-menu dropdown-menu-end">
+                                                                        @if ($asset->document_status == 'draft')
+                                                                            <a class="dropdown-item"
+                                                                                href="{{ route('finance.fixed-asset.registration.edit', $asset->id) }}">
+                                                                                <i data-feather="edit" class="me-50"></i>
+                                                                                <span>View</span>
+                                                                            </a>
+                                                                        @else
+                                                                            <a class="dropdown-item"
+                                                                                href="{{ route('finance.fixed-asset.registration.show', $asset->id) }}">
+                                                                                <i data-feather="edit" class="me-50"></i>
+                                                                                <span>View</span>
+                                                                            </a>
+                                                                        @endif
+                                                                    </div>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            @empty
-                                                <tr>
-                                                    <td colspan="14" class="text-center">No data available</td>
-                                                </tr>
-                                            @endforelse
+                                                        </td>
+                                                    </tr>
+                                                @empty
+                                                    <tr>
+                                                        <td colspan="14" class="text-center">No data available</td>
+                                                    </tr>
+                                                @endforelse
                                             @endisset
                                         </tbody>
                                     </table>
-                                                                    </div>
+                                </div>
 
 
 
@@ -158,34 +172,41 @@
                     <div class="modal modal-slide-in fade" id="modals-slide-in">
                         <div class="modal-dialog sidebar-sm">
                             <form class="add-new-record modal-content pt-0">
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">×</button>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                    aria-label="Close">×</button>
                                 <div class="modal-header mb-1">
                                     <h5 class="modal-title" id="exampleModalLabel">New Record</h5>
                                 </div>
                                 <div class="modal-body flex-grow-1">
                                     <div class="mb-1">
                                         <label class="form-label" for="basic-icon-default-fullname">Full Name</label>
-                                        <input type="text" class="form-control dt-full-name" id="basic-icon-default-fullname" placeholder="John Doe" aria-label="John Doe" />
+                                        <input type="text" class="form-control dt-full-name"
+                                            id="basic-icon-default-fullname" placeholder="John Doe" aria-label="John Doe" />
                                     </div>
                                     <div class="mb-1">
                                         <label class="form-label" for="basic-icon-default-post">Post</label>
-                                        <input type="text" id="basic-icon-default-post" class="form-control dt-post" placeholder="Web Developer" aria-label="Web Developer" />
+                                        <input type="text" id="basic-icon-default-post" class="form-control dt-post"
+                                            placeholder="Web Developer" aria-label="Web Developer" />
                                     </div>
                                     <div class="mb-1">
                                         <label class="form-label" for="basic-icon-default-email">Email</label>
-                                        <input type="text" id="basic-icon-default-email" class="form-control dt-email" placeholder="john.doe@example.com" aria-label="john.doe@example.com" />
+                                        <input type="text" id="basic-icon-default-email" class="form-control dt-email"
+                                            placeholder="john.doe@example.com" aria-label="john.doe@example.com" />
                                         <small class="form-text"> You can use letters, numbers & periods </small>
                                     </div>
                                     <div class="mb-1">
                                         <label class="form-label" for="basic-icon-default-date">Joining Date</label>
-                                        <input type="text" class="form-control dt-date" id="basic-icon-default-date" placeholder="MM/DD/YYYY" aria-label="MM/DD/YYYY" />
+                                        <input type="text" class="form-control dt-date" id="basic-icon-default-date"
+                                            placeholder="MM/DD/YYYY" aria-label="MM/DD/YYYY" />
                                     </div>
                                     <div class="mb-4">
                                         <label class="form-label" for="basic-icon-default-salary">Salary</label>
-                                        <input type="text" id="basic-icon-default-salary" class="form-control dt-salary" placeholder="$12000" aria-label="$12000" />
+                                        <input type="text" id="basic-icon-default-salary"
+                                            class="form-control dt-salary" placeholder="$12000" aria-label="$12000" />
                                     </div>
                                     <button type="button" class="btn btn-primary data-submit me-1">Submit</button>
-                                    <button type="reset" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="reset" class="btn btn-outline-secondary"
+                                        data-bs-dismiss="modal">Cancel</button>
                                 </div>
                             </form>
                         </div>
@@ -199,93 +220,97 @@
     <!-- END: Content-->
 @endsection
 @section('scripts')
-<script>
-    $(function() {
-    var dt_basic_table = $('.datatables-basic'),
-        assetPath = '../../../app-assets/';
+    <script>
+        $(function() {
+            var dt_basic_table = $('.datatables-basic'),
+                assetPath = '../../../app-assets/';
 
-    if ($('body').attr('data-framework') === 'laravel') {
-        assetPath = $('body').attr('data-asset-path');
-    }
-
-    if (dt_basic_table.length) {
-        var dt_basic = dt_basic_table.DataTable({
-            order: [], // Disable default sorting
-            columnDefs: [{
-                    orderable: false,
-                    targets: [0, -1] // Disable sorting on the first and last columns (Action and # columns)
-                },
-                {
-                    targets: 8, // Adjust this index according to your column number (Status column)
-                    render: function(data, type, row, meta) {
-                        if (type === 'export') {
-                            var $node = $('<div>').html(data);
-                            return $node.find('.usernames').text();
-                        }
-                        return data;
-                    }
-                }
-            ],
-            dom: '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-3 withoutheadbuttin dt-action-buttons text-end"B><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
-            displayLength: 7,
-            lengthMenu: [7, 10, 25, 50, 75, 100],
-            buttons: [{
-                extend: 'collection',
-                className: 'btn btn-outline-secondary dropdown-toggle',
-                text: feather.icons['share'].toSvg({
-                    class: 'font-small-4 mr-50'
-                }) + 'Export',
-                buttons: [{
-                        extend: 'excel',
-                        text: feather.icons['file-text'].toSvg({
-                            class: 'font-small-4 mr-50'
-                        }) + 'Excel',
-                        className: 'dropdown-item',
-                        filename: 'Asset_RegistrationReport', // Set filename as needed
-                              exportOptions: {
-      columns: ':not(:last-child)' // exclude the last column
-    },
-         
-                    }],
-                init: function(api, node, config) {
-                    $(node).removeClass('btn-secondary');
-                    $(node).parent().removeClass('btn-group');
-                    setTimeout(function() {
-                        $(node).closest('.dt-buttons').removeClass('btn-group')
-                            .addClass('d-inline-flex');
-                    }, 50);
-                }
-            }],
-            drawCallback: function() {
-                    feather.replace();
-                },
-                
-            language: {
-                paginate: {
-                    previous: '&nbsp;',
-                    next: '&nbsp;'
-                }
+            if ($('body').attr('data-framework') === 'laravel') {
+                assetPath = $('body').attr('data-asset-path');
             }
+
+            if (dt_basic_table.length) {
+                var dt_basic = dt_basic_table.DataTable({
+                    order: [], // Disable default sorting
+                    columnDefs: [{
+                            orderable: false,
+                            targets: [0, -
+                                1
+                            ] // Disable sorting on the first and last columns (Action and # columns)
+                        },
+                        {
+                            targets: 8, // Adjust this index according to your column number (Status column)
+                            render: function(data, type, row, meta) {
+                                if (type === 'export') {
+                                    var $node = $('<div>').html(data);
+                                    return $node.find('.usernames').text();
+                                }
+                                return data;
+                            }
+                        }
+                    ],
+                    dom: '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-3 withoutheadbuttin dt-action-buttons text-end"B><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+                    scrollX: true,
+                    displayLength: 7,
+                    lengthMenu: [7, 10, 25, 50, 75, 100],
+                    buttons: [{
+                        extend: 'collection',
+                        className: 'btn btn-outline-secondary dropdown-toggle',
+                        text: feather.icons['share'].toSvg({
+                            class: 'font-small-4 mr-50'
+                        }) + 'Export',
+                        buttons: [{
+                            extend: 'excel',
+                            text: feather.icons['file-text'].toSvg({
+                                class: 'font-small-4 mr-50'
+                            }) + 'Excel',
+                            className: 'dropdown-item',
+                            filename: 'Asset_RegistrationReport', // Set filename as needed
+                            exportOptions: {
+                                columns: ':not(:last-child)' // exclude the last column
+                            },
+
+                        }],
+                        init: function(api, node, config) {
+                            $(node).removeClass('btn-secondary');
+                            $(node).parent().removeClass('btn-group');
+                            setTimeout(function() {
+                                $(node).closest('.dt-buttons').removeClass('btn-group')
+                                    .addClass('d-inline-flex');
+                            }, 50);
+                        }
+                    }],
+                    drawCallback: function() {
+                        feather.replace();
+                    },
+
+                    language: {
+                        paginate: {
+                            previous: '&nbsp;',
+                            next: '&nbsp;'
+                        }
+                    }
+                });
+
+                // Update the label for the table to "Asset Registration"
+                $('div.head-label').html('<h6 class="mb-0">Asset Registration</h6>');
+            }
+
+            // Flat Date picker (if necessary)
+            if (dt_date_table.length) {
+                dt_date_table.flatpickr({
+                    monthSelectorType: 'static',
+                    dateFormat: 'm/d/Y'
+                });
+            }
+
+            // Delete Record (if applicable)
+            $('.datatables-basic tbody').on('click', '.delete-record', function() {
+                dt_basic.row($(this).parents('tr')).remove().draw();
+            });
         });
 
-        // Update the label for the table to "Asset Registration"
-        $('div.head-label').html('<h6 class="mb-0">Asset Registration</h6>');
-    }
-
-    // Flat Date picker (if necessary)
-    if (dt_date_table.length) {
-        dt_date_table.flatpickr({
-            monthSelectorType: 'static',
-            dateFormat: 'm/d/Y'
-        });
-    }
-
-    // Delete Record (if applicable)
-    $('.datatables-basic tbody').on('click', '.delete-record', function() {
-        dt_basic.row($(this).parents('tr')).remove().draw();
-    });
-});
-function showToast(icon, title) {
+        function showToast(icon, title) {
             const Toast = Swal.mixin({
                 toast: true,
                 position: "top-end",
@@ -311,12 +336,11 @@ function showToast(icon, title) {
             showToast("error", "{{ session('error') }}");
         @endif
 
-        
+
         @if ($errors->any())
             showToast('error',
                 "@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach"
             );
         @endif
-
-</script>
+    </script>
 @endsection
