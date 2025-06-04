@@ -224,7 +224,7 @@ class RegistrationController extends Controller
 
 
         // if ($data->depreciations->count() != 0)
-        //     $buttons['amend'] = false;
+            //$buttons['amend'] = true;
 
 
         $group_name = ConstantHelper::FIXED_ASSETS;
@@ -673,7 +673,7 @@ class RegistrationController extends Controller
             ->where('current_value_after_dep', '>', 0)
             ->where('sub_asset_code', 'like', "%$q%")
              ->whereNotNull('expiry_date')
-             ->where('expiry_date','>','last_dep_date')
+             ->whereColumn('expiry_date', '>', 'last_dep_date')
             ->limit(20)
             ->get();
     }

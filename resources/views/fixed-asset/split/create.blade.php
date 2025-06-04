@@ -312,7 +312,7 @@
                                                                 <th class="text-end">Current Value</th>
                                                                 <th class="text-end">Dep %</th>
                                                                 <th class="text-end">Salvage Value</th>
-                                                                
+
                                                             </tr>
                                                         </thead>
                                                         <tbody class="mrntableselectexcel">
@@ -333,7 +333,8 @@
                                                                 </td>
                                                                 <td class="poprod-decpt">
                                                                     <input type="text" required placeholder="Enter"
-                                                                        class="form-control mw-100 mb-25 asset-name-input" />
+                                                                        class="form-control mw-100 mb-25 asset-name-input"
+                                                                        oninput="syncInputAcrossSameAssets(this)" />
                                                                 </td>
                                                                 <td class="poprod-decpt">
                                                                     <input type="text" required placeholder="Enter"
@@ -369,7 +370,8 @@
                                                                 </td>
                                                                 <td>
                                                                     <input type="text" required
-                                                                        class="form-control mw-100 mb-25 life">
+                                                                        class="form-control mw-100 mb-25 life"
+                                                                        oninput="syncInputAcrossSameAssets(this)">
                                                                 </td>
                                                                 <td>
                                                                     <input type="date" required
@@ -382,21 +384,23 @@
                                                                 </td>
                                                                 <td>
                                                                     <input type="text" required
-                                                                        class="form-control mw-100 text-end current-value-input"
+                                                                        class="form-control mw-100 text-end current-value-input" oninput="calculateTotals()"
                                                                         min="1" />
                                                                 </td>
-                                                                 <td>
-                <input type="text" required class="form-control mw-100 text-end dep_per" readonly />
-              </td>
+                                                                <td>
+                                                                    <input type="text" required
+                                                                        class="form-control mw-100 text-end dep_per"
+                                                                        readonly />
+                                                                </td>
                                                                 <td>
                                                                     <input type="text" required
                                                                         class="form-control mw-100 text-end salvage-value-input"
                                                                         min="1" readonly />
                                                                 </td>
-                                                                        
 
-                                                                
-                                                                
+
+
+
                                                             </tr>
 
 
@@ -452,7 +456,7 @@
                                                         </div>
                                                     </div>
 
-                                                    <div class="col-md-3 d-none" >
+                                                    <div class="col-md-3 d-none">
                                                         <div class="mb-1">
                                                             <label class="form-label">Ledger <span
                                                                     class="text-danger">*</span></label>
@@ -535,7 +539,7 @@
                                                                     class="text-danger">*</span></label>
                                                             <input type="text" class="form-control" name="useful_life"
                                                                 id="useful_life" value="{{ old('useful_life') }}"
-                                                                oninput="updateDepreciationValues()" required />
+                                                                required />
                                                         </div>
                                                     </div>
 
@@ -685,7 +689,7 @@
                     <span class="text-danger code_error"></span>
                 </td>
                 <td class="poprod-decpt">
-                    <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-name-input" />
+                    <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-name-input" oninput="syncInputAcrossSameAssets(this)" />
                 </td>
                 <td class="poprod-decpt">
                     <input type="text" required placeholder="Enter" disabled class="form-control mw-100 mb-25 sub-asset-code-input" />
@@ -713,7 +717,7 @@
                 </select>
                 </td>
               <td>
-                <input type="text" required class="form-control mw-100 mb-25 life"> 
+                <input type="text" required class="form-control mw-100 mb-25 life" oninput="syncInputAcrossSameAssets(this)"> 
                 </td>
               <td>
                 <input type="date" required class="form-control mw-100 mb-25 capitalize_date"/>
@@ -722,7 +726,7 @@
                     <input type="text" required disabled value="1" class="form-control mw-100 quantity-input" />
                 </td>
                 <td>
-                    <input type="text" required class="form-control mw-100 text-end current-value-input" max="${Current}" min="1" />
+                    <input type="text" required class="form-control mw-100 text-end current-value-input"  oninput="calculateTotals()" max="${Current}" min="1" />
                 </td>
                 <td>
                 <input type="text" required class="form-control mw-100 text-end dep_per" readonly />
@@ -936,6 +940,7 @@
                                     `<option value="${item.id}">${item.name}</option>`
                                 );
                             });
+
                         },
                         error: function() {
                             showToast('error', 'Error fetching group items.');
@@ -944,6 +949,7 @@
                 } else {
                     $ledgerGroupSelect.empty();
                 }
+                syncInputAcrossSameAssets(this);
             });
             $('#category').val($('#old_category').val()).trigger('change');
 
@@ -1171,15 +1177,15 @@
         function updateSubAssetCodes() {
             const assetCodeCounts = {};
             const assetCodeToName = {}; // Store the first encountered name for each asset code
+            const assetCodeToCategoryId = {}; // Store the first encountered category for each asset code
+            const assetCodeToLedger = {}; // Store the first encountered ledger for each asset code
+            const assetCodeToLedgerGroup = {}; // Store the first encountered ledger group for each asset code
+            const asstCodeToLife = {};
+            const assetCodeToCategoryText = {};
+            const assetCodeToSalvage = {};
 
-            let totalQuantity = 0;
-            let totalCurrentValue = 0;
-            let totalSalvageValue = 0;
-            let depreciationType = document.getElementById("depreciation_type").value;
-            let method = document.getElementById("depreciation_method").value;
 
-
-
+           
             $('.mrntableselectexcel tr').each(function() {
                 const $row = $(this);
 
@@ -1204,20 +1210,13 @@
                         }
                     }
                 });
-           
-            
+
+
                 const $assetNameInput = $row.find('.asset-name-input');
                 const $subAssetInput = $row.find('.sub-asset-code-input');
-                const $salvageValueInput = $row.find('.salvage-value-input');
-                const $depRateInput = $row.find('.dep_per');
-
-                const quantity = parseFloat($row.find('.quantity-input').val()) || 0;
-                const currentValue = parseFloat($row.find('.current-value-input').val()) || 0;
-                const depreciationPercentage = parseFloat($row.find('.salvage_per').val()) || 0;
-                const usefulLife = parseFloat($row.find('.life').val()) || 0;
 
 
-                
+
 
                 if (assetCode !== '') {
                     // Count sub-assets per asset code
@@ -1228,65 +1227,43 @@
                     // Handle asset name consistency
                     const currentAssetName = $assetNameInput.val().trim();
 
-                    if (!assetCodeToName[assetCode] && currentAssetName !== '') {
+                    if (!assetCodeToName[assetCode] && currentAssetName !== '' && !assetCodeToCategoryId[
+                            assetCode] && !assetCodeToCategoryText[assetCode] && !assetCodeToLedger[assetCode] && !
+                        assetCodeToLedgerGroup[assetCode] && !asstCodeToLife[assetCode] && !assetCodeToSalvage[assetCode]) {
                         // First time seeing this asset code — store its name
                         assetCodeToName[assetCode] = currentAssetName;
+                        assetCodeToCategoryId[assetCode] = $row.find('.category-input').val().trim();
+                        assetCodeToCategoryText[assetCode] = $row.find('.category').val().trim();
+                        assetCodeToLedger[assetCode] = $row.find('.ledger').val();
+                        assetCodeToLedgerGroup[assetCode] = $row.find('.ledger-group').val();
+                        asstCodeToLife[assetCode] = $row.find('.life').val().trim();
+                        assetCodeToSalvage[assetCode] = $row.find('.salvage_per').val().trim();
+
                     } else if (assetCodeToName[assetCode]) {
-                        // Set name from previously stored value
                         $assetNameInput.val(assetCodeToName[assetCode]);
+                        $row.find('.category-input').val(assetCodeToCategoryId[assetCode]).trigger('change');
+                        $row.find('.category').val(assetCodeToCategoryText[assetCode]).trigger('change');
+                        $row.find('.ledger').val(assetCodeToLedger[assetCode]).trigger('change');
+                        $row.find('.ledger-group').val(assetCodeToLedgerGroup[assetCode]).trigger('change');
+                        $row.find('.life').val(asstCodeToLife[assetCode]);
+                        $row.find('.salvage_per').val(assetCodeToSalvage[assetCode]);
+
                     }
                 } else {
                     $subAssetInput.val('');
+
                 }
 
-                const salvageValue = (currentValue * (depreciationPercentage / 100)).toFixed(2);
-                $salvageValueInput.val(salvageValue);
-
-
-            
-            // Ensure all required values are provided
-           if (!depreciationType || !currentValue || !depreciationPercentage || !usefulLife || !method) {
-                if (!depreciationType) console.log("Missing: depreciationType");
-                if (!currentValue) console.log("Missing: currentValue");
-                if (!depreciationPercentage) console.log("Missing: depreciationPercentage");
-                if (!usefulLife) console.log("Missing: usefulLife");
-                if (!method) console.log("Missing: method");
-                return;
-            }
-
-            let depreciationRate = 0;
-            if (method === "SLM") {
-                depreciationRate = ((((currentValue - salvageValue) / usefulLife) / currentValue) * 100).toFixed(2);
-            } else if (method === "WDV") {
-                depreciationRate = ((1 - Math.pow(salvageValue / currentValue, 1 / usefulLife)) * 100).toFixed(2);
-            }
-            //console.log(depreciationRate);
-
-            $depRateInput.val(depreciationRate);
-            
-
-                // Accumulate totals
-                totalSalvageValue += parseFloat(salvageValue);
-                totalQuantity += quantity;
-                totalCurrentValue += currentValue;
             });
+            calculateTotals();
 
-            $('#quantity').val(totalQuantity);
-
-            let currentValueAsset = parseFloat($('#current_value_asset').val()) || 0;
-            if (totalCurrentValue > currentValueAsset) {
-                showToast('error', 'Total Current Value cannot be greater than Asset Current Value.');
-            }
-
-            $('#current_value').val(totalCurrentValue.toFixed(2));
-            $('#salvage_value').val(totalSalvageValue.toFixed(2));
-           
         }
 
         $('#ledger').change(function() {
             if ($(this).val() == "") {
                 return;
             }
+            //syncInputAcrossSameAssets('ledger');
 
             let groupDropdown = $('#ledger_group');
             $.ajax({
@@ -1340,7 +1317,6 @@
             $('#maintenance_schedule').val("");
             $('#useful_life').val("");
 
-            updateSubAssetCodes();
 
             var category_id = $(this).val();
             if (category_id) {
@@ -1360,10 +1336,11 @@
                                 $('#depreciation_percentage').val('{{ $dep_percentage }}');
 
                         }
-                        updateSubAssetCodes();
                     }
                 });
             }
+            updateSubAssetCodes();
+
         });
 
         function collectSubAssetDataToJson() {
@@ -1394,33 +1371,7 @@
             $('#sub_assets').val(JSON.stringify(subAssetData));
         }
 
-        function updateDepreciationValues() {
-            let depreciationType = document.getElementById("depreciation_type").value;
-            let currentValue = parseFloat(document.getElementById("current_value").value) || 0;
-            let depreciationPercentage = parseFloat(document.getElementById("depreciation_percentage").value) || 0;
-            let usefulLife = parseFloat(document.getElementById("useful_life").value) || 0;
-            let method = document.getElementById("depreciation_method").value;
-
-            // Ensure all required values are provided
-            if (!depreciationType || !currentValue || !depreciationPercentage || !usefulLife || !method) {
-                return;
-            }
-            let salvageValue = (parseFloat($('#salvage_value').val())).toFixed(2);
-
-            let depreciationRate = 0;
-            if (method === "SLM") {
-                depreciationRate = ((((currentValue - salvageValue) / usefulLife) / currentValue) * 100).toFixed(2);
-            } else if (method === "WDV") {
-                depreciationRate = ((1 - Math.pow(salvageValue / currentValue, 1 / usefulLife)) * 100).toFixed(2);
-            }
-
-            let totalDepreciation = 0;
-            document.getElementById("depreciation_rate").value = depreciationRate;
-            document.getElementById("depreciation_rate_year").value = depreciationRate;
-            document.getElementById("total_depreciation").value = totalDepreciation;
-        }
-        $(document).on('input change', '.asset-code-input,.asset-name-input, .quantity-input, .current-value-input,.life',
-            updateSubAssetCodes);
+        $(document).on('input change', '.asset-code-input', updateSubAssetCodes);
         $('#location').on('change', function() {
             var locationId = $(this).val();
             var selectedCostCenterId = '{{ $data->cost_center_id ?? '' }}';
@@ -1479,7 +1430,7 @@
                 <span class="text-danger code_error"></span>
               </td>
               <td class="poprod-decpt">
-                <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-name-input" />
+                <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-name-input" oninput="syncInputAcrossSameAssets(this)"/>
               </td>
               <td class="poprod-decpt">
                 <input type="text" required placeholder="Enter" disabled class="form-control mw-100 mb-25 sub-asset-code-input" />
@@ -1508,7 +1459,7 @@
                 
               </td>
               <td>
-                <input type="text" required class="form-control mw-100 mb-25 life"> 
+                <input type="text" required class="form-control mw-100 mb-25 life" oninput="syncInputAcrossSameAssets(this)"> 
                 </td>
               <td>
                 <input type="date" required class="form-control mw-100 mb-25 capitalize_date"/>
@@ -1517,7 +1468,7 @@
                 <input type="text" required disabled value="1" class="form-control mw-100 quantity-input" />
               </td>
               <td>
-                <input type="text" required class="form-control mw-100 text-end current-value-input" min="1" />
+                <input type="text" required class="form-control mw-100 text-end current-value-input"  oninput="calculateTotals()" min="1" />
               </td>
               <td>
                 <input type="text" required class="form-control mw-100 text-end dep_per" readonly />
@@ -1595,7 +1546,8 @@
                                     value: item.id,
                                     ledger: item.setup.ledger_id,
                                     life: item.setup.expected_life_years,
-                                    salvage:item.setup.salvage_percentage??salvage_rate,
+                                    salvage: item.setup.salvage_percentage ??
+                                        salvage_rate,
                                 };
                             }));
                         },
@@ -1606,13 +1558,19 @@
                 },
                 minLength: 0,
                 select: function(event, ui) {
+                    
+                    //syncInputAcrossSameAssets('category');
+                    //syncInputAcrossSameAssets('category-input');
                     const row = $(this).closest('tr');
                     row.find('.category').val(ui.item.value);
                     $(this).val(ui.item.label);
                     row.find('.ledger').val(ui.item.ledger).trigger('change');
                     row.find('.life').val(ui.item.life);
                     row.find('.salvage_per').val(ui.item.salvage);
-                    
+                    syncInputAcrossSameAssets(this)
+                  
+
+
                     return false;
                 },
                 change: function(event, ui) {
@@ -1623,10 +1581,14 @@
                         $(this).val('');
                         row.find('.ledger').val('').trigger('change');
                         row.find('.life').val('');
-                         row.find('.salvage_per').val('');
-                   
+                        row.find('.salvage_per').val('');
+                        syncInputAcrossSameAssets(this)
+                    
+                        //syncInputAcrossSameAssets('category');
+                        //syncInputAcrossSameAssets('category-input');
+
                     }
-                    return false; 
+                    return false;
                 }
 
             }).focus(function() {
@@ -1634,6 +1596,100 @@
                     $(this).autocomplete('search');
                 }
             });
+
+        }
+
+        function syncInputAcrossSameAssets(element) {
+            const $this = $(element);
+            const row = $this.closest('tr');
+            const value = $this.val();
+            const assetName = row.find('.asset-code-input').val().trim();
+
+            // Get the first class that identifies the field (excluding utility classes)
+            const fieldClass = $this.attr('class').split(' ').find(cls => ['life', 'ledger', 'ledger-group',
+                'category-input', 'salvage_per', 'asset-name-input', 'category'
+            ].includes(cls));
+
+            if (!fieldClass) return;
+
+            $('.mrntableselectexcel tr').each(function() {
+                const $otherRow = $(this);
+                const otherAssetName = $otherRow.find('.asset-code-input').val().trim();
+
+                if (otherAssetName === assetName && $otherRow[0] !== row[0]) {
+                    const $target = $otherRow.find(`.${fieldClass}`);
+                    if ($target.length) {
+                         $target.val(value);
+                        if (fieldClass === 'category-input')
+                            $target.trigger('change'); // Trigger change for category input
+                        
+                    }
+                }
+            });
+            calculateTotals();
+        }
+
+        function calculateTotals() {
+             let totalQuantity = 0;
+            let totalCurrentValue = 0;
+            let totalSalvageValue = 0;
+            let depreciationType = document.getElementById("depreciation_type").value;
+            let method = document.getElementById("depreciation_method").value;
+
+
+
+            $('.mrntableselectexcel tr').each(function() {
+                const $row = $(this);
+                const $salvageValueInput = $row.find('.salvage-value-input');
+                const $depRateInput = $row.find('.dep_per');
+                const quantity = parseFloat($row.find('.quantity-input').val()) || 0;
+                const currentValue = parseFloat($row.find('.current-value-input').val()) || 0;
+                const depreciationPercentage = parseFloat($row.find('.salvage_per').val()) || 0;
+                const usefulLife = parseFloat($row.find('.life').val()) || 0;
+                const salvageValue = (currentValue * (depreciationPercentage / 100)).toFixed(2);
+                $salvageValueInput.val(salvageValue);
+
+
+
+                // Ensure all required values are provided
+                if (!depreciationType || !currentValue || !depreciationPercentage || !usefulLife || !method) {
+                    // if (!depreciationType) console.log("Missing: depreciationType");
+                    // if (!currentValue) console.log("Missing: currentValue");
+                    // if (!depreciationPercentage) console.log("Missing: depreciationPercentage");
+                    // if (!usefulLife) console.log("Missing: usefulLife");
+                    // if (!method) console.log("Missing: method");
+                    return;
+                }
+
+                let depreciationRate = 0;
+                if (method === "SLM") {
+                    depreciationRate = ((((currentValue - salvageValue) / usefulLife) / currentValue) * 100)
+                        .toFixed(2);
+                } else if (method === "WDV") {
+                    depreciationRate = ((1 - Math.pow(salvageValue / currentValue, 1 / usefulLife)) * 100).toFixed(
+                        2);
+                }
+                //console.log(depreciationRate);
+
+                $depRateInput.val(depreciationRate);
+
+
+                // Accumulate totals
+                totalSalvageValue += parseFloat(salvageValue);
+                totalQuantity += quantity;
+                totalCurrentValue += currentValue;
+            });
+            $('#quantity').val(totalQuantity);
+
+            let currentValueAsset = parseFloat($('#current_value_asset').val()) || 0;
+            if (totalCurrentValue > currentValueAsset) {
+                showToast('error', 'Total Current Value cannot be greater than Asset Current Value.');
+            }
+
+            $('#current_value').val(totalCurrentValue.toFixed(2));
+            $('#salvage_value').val(totalSalvageValue.toFixed(2));
+
+
         }
 
 

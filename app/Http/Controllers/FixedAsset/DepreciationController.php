@@ -281,10 +281,11 @@ class DepreciationController extends Controller
         }
         $asset_details = [];
         $asset_details = FixedAssetRegistration::withDefaultGroupCompanyOrg()
+            ->where('last_dep_date', '<', $endDate)
             ->withWhereHas('subAsset', function ($query) {
                 $query->where('current_value_after_dep', '>', 0);
                 $query->whereNotNull('expiry_date');
-                $query->where('expiry_date','>','last_dep_date');
+                $query->whereColumn('expiry_date', '>', 'last_dep_date');
             })
             ->whereNotNull('depreciation_percentage')
             ->whereNotNull('depreciation_percentage_year')
@@ -295,8 +296,7 @@ class DepreciationController extends Controller
                         ->orWhereNotNull('reference_doc_id');
             })
             ->withWhereHas('category')
-            ->get()
-            ->where('last_dep_date', '<', $endDate);
+            ->get()->values();
         return response()->json($asset_details);
     }
     function getPeriods($startDate, $endDate, $period)
