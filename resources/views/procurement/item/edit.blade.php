@@ -210,7 +210,7 @@
                                                                 <option value="{{ $currency->id }}" data-short-name="{{ $currency->short_name ?? '' }}"
                                                                     {{ (isset($item) && $item->cost_price_currency_id == $currency->id) || 
                                                                     (isset($item) && !isset($item->cost_price_currency_id) && isset($organization) && $organization->currency_id == $currency->id) ? 'selected' : '' }}>
-                                                                    {{ $currency->name }}
+                                                                     {{ $currency->short_name }}
                                                                 </option>
                                                                 @endforeach
                                                             </select>
@@ -227,7 +227,7 @@
                                                                 <option value="{{ $currency->id }}" data-short-name="{{ $currency->short_name ?? '' }}"
                                                                     {{ (isset($item) && $item->sell_price_currency_id == $currency->id) || 
                                                                     (isset($item) && !isset($item->sell_price_currency_id) && isset($organization) && $organization->currency_id == $currency->id) ? 'selected' : '' }}>
-                                                                    {{ $currency->name }}
+                                                                      {{ $currency->short_name }}
                                                                 </option>
                                                                 @endforeach
                                                             </select>

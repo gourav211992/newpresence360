@@ -100,11 +100,13 @@ Route::middleware(['user.auth'])->group(function () {
         Route::controller(JobController::class)->prefix('jobs')->group(function () {
             Route::post('/store', 'store')->name('recruitment.jobs.store');
             Route::post('/assign-candidate/{id}', 'assignCandidate')->name('recruitment.jobs.assign-candidate');
+            Route::post('/assign-vendor/{id}', 'assignVendor')->name('recruitment.jobs.assign-vendor');
             Route::put('/{id}', 'update')->name('recruitment.jobs.update');
             Route::delete('/remove-panel/{id}/{roundId}', 'removePanel')->name('recruitment.jobs.remove-panel');
             Route::post('/update-candidate-status', 'updateCandidateStatus')->name('recruitment.jobs.update-candidate-status');
             Route::post('/recruitment.jobs.scheduled-interview/{id}', 'updateCandidateStatus')->name('recruitment.jobs.scheduled-interview');
             Route::post('/update-status/{id}', 'updateStatus')->name('recruitment.jobs.update-status');
+            Route::get('/get-assigned-vendors/{id}', 'getAssignedVendors');
         });
 
         Route::controller(JobInterviewController::class)->prefix('jobs-interviews')->group(function () {

@@ -325,6 +325,12 @@ class PurchaseOrder extends Model
     {
         return $this->addresses()->where('type', 'shipping')->latest()->first();
     }
+
+    public function latestDeliveryAddress()
+    {
+        return $this->addresses()->where('type', 'location')->latest()->first();
+    }
+    
     public function createdBy()
     {
         return $this->belongsTo(Employee::class,'created_by','id');

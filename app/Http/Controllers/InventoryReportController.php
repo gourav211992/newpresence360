@@ -401,7 +401,6 @@ class InventoryReportController extends Controller
             $records = $records->toArray();
         }
         $subStoreLocType = ConstantHelper::ERP_SUB_STORE_LOCATION_TYPES;
-
         return view('procurement.inventory-report.detailed_report', [
             'user' => $user,
             'records' => $records,
@@ -698,7 +697,6 @@ class InventoryReportController extends Controller
         if ($request->ajax()) {
             return response()->json($records);
         }
-
         $subStoreLocType = ConstantHelper::ERP_SUB_STORE_LOCATION_TYPES;
         // Otherwise, return the full HTML page
         return view('procurement.inventory-report.summary_report', [
@@ -866,48 +864,9 @@ class InventoryReportController extends Controller
             if (!file_exists($filePath)) {
                 throw new \Exception('File does not exist at path: ' . $filePath);
             }
-            // $users = $request->to ?? [];
             $email_to = $request->email_to ?? [];
             $email_cc = $request->email_cc ?? [];
-            // $email_cc = $request->email_cc ?? [];
-            // foreach ($users as $val) {
-            //     $type = $val['type'];
-            //     $user = $type::find($val['id']);
-            //     if($user->email)
-            //     {
-            //         $title = "Inventory Report Generated";
-            //         $remarks = $request->remarks ?? null;
-            //         $mail_from = '';
-            //         $mail_from_name = '';
-            //         $cc = null;
-            //         $bcc = null;
-            //         $attachment = $filePath ?? null;
-            //         $name = $user->name;
-            //         $description = <<<HTML
-            //         <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; padding: 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); font-family: Arial, sans-serif; line-height: 1.6;">
-            //             <tr>
-            //                 <td>
-            //                     <h2 style="color: #2c3e50; font-size: 24px; margin-bottom: 20px;">Inventory Report</h2>
-            //                     <p style="font-size: 16px; color: #555; margin-bottom: 20px;">
-            //                         Dear <strong style="color: #2c3e50;">{$name}</strong>,
-            //                     </p>
 
-            //                     <p style="font-size: 15px; color: #333; margin-bottom: 20px;">
-            //                         We hope this email finds you well. Please find your inventory report attached below.
-            //                     </p>
-            //                     <p style="font-size: 15px; color: #333; margin-bottom: 30px;">
-            //                         <strong>Remark:</strong> {$remarks}
-            //                     </p>
-            //                     <p style="font-size: 14px; color: #777;">
-            //                         If you have any questions or need further assistance, feel free to reach out to us.
-            //                     </p>
-            //                 </td>
-            //             </tr>
-            //         </table>
-            //         HTML;
-            //         self::sendMail($user,$title,$description,$cc,$bcc, $attachment,$mail_from,$mail_from_name);
-            //     }
-            // }
             foreach($email_to as $email)
             {
                 $user = AuthUser::where('email', $email)
@@ -941,7 +900,6 @@ class InventoryReportController extends Controller
                 $cc = implode(', ', $email_cc);
                 $bcc = null;
                 $attachment = $filePath ?? null;
-                // $name = $user->name;
                 $description = <<<HTML
                 <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; padding: 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); font-family: Arial, sans-serif; line-height: 1.6;">
                     <tr>
@@ -995,4 +953,11 @@ class InventoryReportController extends Controller
 
     }
 
+    public function getSingleItemData(Request $request)
+    {
+        $items = Item::where('id', $request->item_id)
+            ->withDefaultGroupCompanyOrg()
+            ->get();
+        return $items ? ['name' => isset($items[0]) ? $items[0]->item_name: null] : response()->json(['error' => 'Not found'], 404);
+    }
 }

@@ -18,6 +18,7 @@ use Illuminate\Http\Request;
 use App\Lib\Validation\Recruitment\Job as Validator;
 use App\Models\OrganizationCompany;
 use App\Models\Recruitment\ErpRecruitmentAssignedCandidate;
+use App\Models\Recruitment\ErpRecruitmentAssignedVendor;
 use App\Models\Recruitment\ErpRecruitmentInterviewFeedback;
 use App\Models\Recruitment\ErpRecruitmentJob;
 use App\Models\Recruitment\ErpRecruitmentJobCandidate;
@@ -27,6 +28,7 @@ use App\Models\Recruitment\ErpRecruitmentJobNotification;
 use App\Models\Recruitment\ErpRecruitmentJobPanelAllocation;
 use App\Models\Recruitment\ErpRecruitmentJobSkill;
 use App\Models\Recruitment\ErpRecruitmentRound;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Validation\ValidationException;
 
@@ -38,7 +40,7 @@ class JobController extends Controller
         $masterData = self::masterData();
         $summaryData = self::getJobSummary($request, $user);
 
-        $jobs = ErpRecruitmentJob::with('jobSkills')
+        $jobsQuery = ErpRecruitmentJob::with('jobSkills')
                 ->withCount([
                     'panelAllocations as totalJobRounds' => function ($q) {
                         $q->select(\DB::raw('COUNT(DISTINCT round_id)'));
@@ -47,10 +49,21 @@ class JobController extends Controller
             ->where(function($query) use($request){
                 self::filter($request, $query);
             })
-            ->where('created_by',$user->id)
-            ->where('created_by_type',$user->authenticable_type)
             ->whereDoesntHave('assignedCandidates')
-            ->orderBy('created_at','desc')->paginate($length);
+            ->orderBy('created_at','desc');
+
+            if ($user->user_type === CommonHelper::IAM_VENDOR) {
+                $jobsQuery->whereHas('assignedVendors', function ($q) use ($user) {
+                    $q->where('vendor_id', $user->id);
+                });
+            } else {
+                $jobsQuery->where('created_by', $user->id)
+                        ->where('created_by_type', $user->authenticable_type);
+            }
+
+            $jobs = $jobsQuery->paginate($length);
+
+            $vendors = User::where('user_type',CommonHelper::IAM_VENDOR)->paginate($length);
         
         return view('recruitment.job.index',[
             'jobs' => $jobs,
@@ -63,6 +76,7 @@ class JobController extends Controller
             'candidatesCount' => $summaryData['candidatesCount'],
             'selectedCandidatesCount' => $summaryData['selectedCandidatesCount'],
             'closedJobCount' => $summaryData['closedJobCount'],
+            'vendors' => $vendors,
         ]);
     }
 
@@ -81,7 +95,7 @@ class JobController extends Controller
     
         $jobInterviews = ErpRecruitmentJobInterview::with([
                     'job' =>function($q) use($user){
-                        $q->select('id','job_id','job_title_id','status');
+                        $q->select('id','job_id','job_title_id','status','created_by');
                     },
                     'candidate' =>function($q) use($user){
                         $q->select('id','name');
@@ -112,11 +126,18 @@ class JobController extends Controller
                     $query->whereBetween('date_time', [$startDate, $endDate]);
                 })
                 ->whereHas('job',function($q) use($user){
-                    $q->where('created_by',$user->id)
-                    ->where('created_by_type',$user->authenticable_type);
+                    if ($user->user_type === CommonHelper::IAM_VENDOR) {
+                        $q->whereHas('assignedVendors', function ($q2) use ($user) {
+                            $q2->where('vendor_id', $user->id);
+                        });
+                    } else {
+                        $q->where('created_by', $user->id)
+                        ->where('created_by_type', $user->authenticable_type);
+                    }
                 })
                 ->orderBy('date_time','desc')
                 ->paginate($length);
+                // dd($jobInterviews->toArray(),$user->id);
         
         return view('recruitment.job.interview-scheduled',[
             'jobInterviews' => $jobInterviews,
@@ -138,7 +159,7 @@ class JobController extends Controller
         $masterData = self::masterData();
         $summaryData = self::getJobSummary($request, $user);
 
-        $jobs = ErpRecruitmentJob::with('jobSkills')
+        $jobQuery = ErpRecruitmentJob::with('jobSkills')
                 ->withCount([
                     'panelAllocations as totalJobRounds' => function ($q) {
                         $q->select(\DB::raw('COUNT(DISTINCT round_id)'));
@@ -147,15 +168,26 @@ class JobController extends Controller
             ->where(function($query) use($request){
                 self::filter($request, $query);
             })
-            ->where('created_by',$user->id)
-            ->where('created_by_type',$user->authenticable_type)
             ->whereHas('assignedCandidates', function($q){
                 $q->where('status',CommonHelper::ASSIGNED);
             })
-            ->orderBy('created_at','desc')->paginate($length);
-        
+            ->orderBy('created_at','desc');
+
+        if ($user->user_type === CommonHelper::IAM_VENDOR) {
+            $jobQuery->whereHas('assignedVendors', function ($q) use ($user) {
+                $q->where('vendor_id', $user->id);
+            });
+        } else {
+            $jobQuery->where('created_by', $user->id)
+                    ->where('created_by_type', $user->authenticable_type);
+        }
+
+        $jobs = $jobQuery->paginate($length);
+        $vendors = User::where('user_type',CommonHelper::IAM_VENDOR)->paginate($length);
+
         return view('recruitment.job.assgined-candidate',[
             'jobs' => $jobs,
+            'vendors' => $vendors,
             'jobTitles' => $masterData['jobTitles'],
             'status' => CommonHelper::JOB_STATUS,
             'skills' => $masterData['skills'],
@@ -172,24 +204,45 @@ class JobController extends Controller
         $jobCount = ErpRecruitmentJob::where(function($query) use($request){
                 self::filter($request, $query);
             })
-            ->where('created_by',$user->id)
-            ->where('created_by_type',$user->authenticable_type)
+            ->where(function($query) use ($user) {
+                $query->where(function($q) use ($user) {
+                    $q->where('created_by', $user->id)
+                      ->where('created_by_type', $user->authenticable_type);
+                })
+                ->orWhereHas('assignedVendors', function ($q) use ($user) {
+                    $q->where('vendor_id', $user->id);
+                });
+            })
             ->whereDoesntHave('assignedCandidates')
             ->count();
 
         $closedJobCount = ErpRecruitmentJob::where(function($query) use($request){
                 self::filter($request, $query);
             })
-            ->where('created_by',$user->id)
-            ->where('created_by_type',$user->authenticable_type)
+            ->where(function($query) use ($user) {
+                $query->where(function($q) use ($user) {
+                    $q->where('created_by', $user->id)
+                      ->where('created_by_type', $user->authenticable_type);
+                })
+                ->orWhereHas('assignedVendors', function ($q) use ($user) {
+                    $q->where('vendor_id', $user->id);
+                });
+            })
             ->where('status',CommonHelper::CLOSED)
             ->count();
 
         $candidatesCount = ErpRecruitmentJob::where(function($query) use($request){
                 self::filter($request, $query);
             })
-            ->where('created_by',$user->id)
-            ->where('created_by_type',$user->authenticable_type)
+            ->where(function($query) use ($user) {
+                $query->where(function($q) use ($user) {
+                    $q->where('created_by', $user->id)
+                      ->where('created_by_type', $user->authenticable_type);
+                })
+                ->orWhereHas('assignedVendors', function ($q) use ($user) {
+                    $q->where('vendor_id', $user->id);
+                });
+            })
             ->whereHas('assignedCandidates', function($q){
                 $q->where('status',CommonHelper::ASSIGNED);
             })
@@ -198,8 +251,15 @@ class JobController extends Controller
         $interviewCount = ErpRecruitmentJob::where(function($query) use($request){
                 self::filter($request, $query);
             })
-            ->where('created_by',$user->id)
-            ->where('created_by_type',$user->authenticable_type)
+            ->where(function($query) use ($user) {
+                $query->where(function($q) use ($user) {
+                    $q->where('created_by', $user->id)
+                      ->where('created_by_type', $user->authenticable_type);
+                })
+                ->orWhereHas('assignedVendors', function ($q) use ($user) {
+                    $q->where('vendor_id', $user->id);
+                });
+            })
             ->whereHas('jobInterview', function($q){
                     $q->where('status',CommonHelper::SCHEDULED);
                 })
@@ -208,8 +268,15 @@ class JobController extends Controller
         $selectedCandidatesCount = ErpRecruitmentJob::where(function($query) use($request){
                 self::filter($request, $query);
             })
-            ->where('created_by',$user->id)
-            ->where('created_by_type',$user->authenticable_type)
+            ->where(function($query) use ($user) {
+                $query->where(function($q) use ($user) {
+                    $q->where('created_by', $user->id)
+                      ->where('created_by_type', $user->authenticable_type);
+                })
+                ->orWhereHas('assignedVendors', function ($q) use ($user) {
+                    $q->where('vendor_id', $user->id);
+                });
+            })
             ->whereHas('assignedCandidates', function($q){
                 $q->where('status',CommonHelper::SELECTED);
             })
@@ -721,6 +788,8 @@ class JobController extends Controller
                 $candidate->candidate_id = $candidateId;
                 $candidate->job_id = $id;
                 $candidate->status = CommonHelper::ASSIGNED;
+                $candidate->created_by = $user->id;
+                $candidate->created_by_type = $user->authenticable_type;
                 $candidate->save();
 
                 $jobActivityLog = new ErpRecruitmentJobLog();
@@ -920,5 +989,48 @@ class JobController extends Controller
             \DB::rollback();
             throw new ApiGenericException($e->getMessage());
         }
+    }
+
+    public function assignVendor(Request $request, $id){
+        $validator = (new Validator($request))->assgnVendors();
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        \DB::beginTransaction();
+        try {
+            $vendorIds = $request->input('vendor_ids', []);
+            $user = Helper::getAuthenticatedUser();
+            
+            ErpRecruitmentAssignedVendor::where('job_id',$id)->delete();
+            foreach($vendorIds as $vendorId){
+                $vendor = new ErpRecruitmentAssignedVendor();
+                $vendor->vendor_id = $vendorId;
+                $vendor->job_id = $id;
+                $vendor->remark = $request->log_message;
+                $vendor->created_by_type = $user->authenticable_type;
+                $vendor->created_by = $user->id;
+                $vendor->save();
+            }
+            
+            \DB::commit();
+            return [
+                "data" => null,
+                "message" => "Vendor assigned successfully!"
+            ];
+
+        } catch (\Exception $e) {
+            \DB::rollback();
+            throw new ApiGenericException($e->getMessage());
+        }
+    }
+
+    public function getAssignedVendors($jobId){
+        $assignedVendorIds = ErpRecruitmentAssignedVendor::where('job_id', $jobId)
+                            ->pluck('vendor_id')
+                            ->toArray();
+        return [
+            "data" => $assignedVendorIds
+        ];
     }
 }

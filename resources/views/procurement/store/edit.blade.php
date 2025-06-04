@@ -136,21 +136,6 @@
                                                     <input type="email" name="contact_email" class="form-control" value="{{ old('contact_email', $store->contact_email) }}" />
                                                 </div>
                                             </div>
-                                            <div class="row align-items-center mb-1">
-                                                <div class="col-md-3">
-                                                    <label class="form-label">Billing Address</label>
-                                                </div>
-                                                <div class="col-md-5">
-                                                    <div class="form-check">
-                                                        <input type="hidden" name="billing_address" value="0">
-                                                        <input class="form-check-input" type="checkbox" name="billing_address" value="1"
-                                                            {{ isset($store) && $store->billing_address == 1 ? 'checked' : '' }}>
-                                                            <label class="form-check-label" for="is_billing_address">
-                                                              Yes/No
-                                                            </label>
-                                                    </div>
-                                                </div>
-                                            </div>
                                         </div>
 
                                         <div class="col-md-3 border-start">

@@ -1,6 +1,11 @@
 @extends('layouts.app')
 
 @section('content')
+    <style>
+        .sidebar-filter {
+        -webkit-overflow-scrolling: touch; /* for smooth scroll on iOS */
+    }
+    </style>
     <!-- BEGIN: Content-->
     <div class="app-content content">
         <div class="content-overlay"></div>
@@ -27,91 +32,76 @@
                     <div class="card border  overflow-hidden">
                         <div class="row">
                             <div class="col-md-12 bg-light border-bottom mb-1 po-reportfileterBox">
-                                <div class="row pofilterhead action-button align-items-center">
-                                    <div class="col-md-4">
-                                        <h3>Detailed Report</h3>
-                                        <p>Apply the Filter</p>
+                                <div class="d-flex justify-content-between align-items-center p-2">
+                                    <div>
+                                        <h3 class="mb-0">Stock Ledger Report</h3>
+                                        <p class="mb-0">Apply the Filter</p>
                                     </div>
-                                    <div
-                                        class="col-md-8 text-sm-end pofilterboxcenter mb-0 d-flex flex-wrap align-items-center justify-content-sm-end">
-                                            <div class="btn-group new-btn-group my-1 my-sm-0 ps-0">
-                                                <button type = "button" onclick = "sendMailTo();"
-                                                    class="btn btn-primary btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i
-                                                        data-feather="mail"></i> E-Mail</button>
-                                            </div>
-                                        <div class="btn-group new-btn-group my-1 my-sm-0 ps-0">
-                                            <a href="/inventory-reports" type="button" class=" btn btn-warning ">Back</a>
-                                        </div>
+                                    <div class="d-flex gap-1">
+                                        <button class="btn btn-secondary" onclick="toggleFilterSidebar()">Filters</button>
+                                        <a href="/inventory-reports/get-stock-ledger-summary-reports" class="btn btn-danger">Clear</a>
+                                        <button type="button" onclick="sendMailTo();" class="btn btn-primary">
+                                            <i data-feather="mail"></i> E-Mail
+                                        </button>
                                     </div>
                                 </div>
-                                <form action ='/inventory-reports/get-stock-ledger-reports' method="GET">
-                                    <div class="customernewsection-form poreportlistview p-1">
-                                        <div class="row">
-                                            <div class="col-2">
-                                                <input type="text" name="Period" id="Custom"
-                                                    class="form-control flatpickr-input" readonly />
-                                            </div>
-                                            <div class="col">
-                                                <input type="text" placeholder="Select"
-                                                    class="form-control mw-100 ledgerselecct inventory_items ui-autocomplete-input"
-                                                    id="item" name="item" />
-                                            </div>
-                                            <div class="col">
-                                                <div class="mb-1 mb-sm-0 d-flex justify-content-center align-items-center"
-                                                    style="height: 100%;">
-                                                    <button type="button"
-                                                        class="btn btn-primary btn-md mb-0 waves-effect attributeBtn"
-                                                        style="background:#fff !important; border:1px solid #6e6b7b59 !important; color:black !important; width: 100%; height: 100%; padding: 10px 20px; box-sizing: border-box;"
-                                                        disabled>Attributes</button>
-                                                </div>
-                                            </div>
-                                            <div class="col store_id">
-                                                <div class="mb-1 mb-sm-0">
-                                                    <select class="form-select mw-100 select2 store_code" name="store_id"
-                                                        id="store_id" disabled>
-                                                        <option value="">Location</option>
-                                                        @foreach ($erpStores as $val)
-                                                            <option value="{{ $val->id }}">
-                                                                {{ $val->store_name }}
-                                                            </option>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            <div class="col sub_store_id">
-                                                <div class="mb-1 mb-sm-0">
-                                                    <select class="form-select mw-100 select2 sub_store_code"
-                                                        name="sub_store_id" id="sub_store_id" disabled>
-                                                        <option value="">Store</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            <div class="col stock_type">
-                                                <div class="mb-1 mb-sm-0">
-                                                    <select class="form-select mw-100 select2 stock_types" name="stock_type"
-                                                        id="stock_type" disabled>
-                                                        <option value="R">Regular</option>
-                                                        <option value="W">WIP</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            <div class="col type_of_stock_id">
-                                                <div class="mb-1 mb-sm-0">
-                                                    <select class="form-select mw-100 select2 type_of_stock"
-                                                        name="type_of_stock_id" id="type_of_stock_id" disabled>
-                                                        <option value="">Stock Type</option>
-                                                        <option value="confirmed_stock">Confirmed</option>
-                                                        <option value="unconfirmed_stock">Unconfirmed</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            <div class="col pe-0">
-                                                <div class="mb-1 mb-sm-0">
-                                                    <a href="/inventory-reports/get-stock-ledger-reports" type="button"
-                                                        class="btn btn-danger btn-md mb-0 waves-effect">Clear</a>
-                                                </div>
-                                            </div>
-                                        </div>
+                            </div>
+                            <div id="filterSidebar" class="sidebar-filter bg-white shadow p-3" style="width: 300px; position: fixed; top: 0; right: -300px; height: 100vh; overflow-y: auto; transition: all 0.3s; z-index: 1050;">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h5>Filters</h5>
+                                    <button class="btn-close" onclick="toggleFilterSidebar()"></button>
+                                </div>
+                                <form action="/inventory-reports/get-stock-ledger-summary-filter" method="GET">
+                                    <div class="mb-2">
+                                        <label>Period</label>
+                                        <input type="text" name="Period" id="Custom" class="form-control flatpickr-input" readonly />
+                                    </div>
+                                    <div class="mb-2">
+                                        <label>Item</label>
+                                        <input type="text" placeholder="Select" class="form-control ledgerselecct inventory_items" id="item" name="item" />
+                                    </div>
+                                    <div class="mb-2">
+                                        <label>Attributes</label>
+                                        <button type="button" class="btn btn-outline-secondary w-100 attributeBtn">Attributes</button>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label>Location</label>
+                                        <select class="form-select select2 store_code" name="store_id" id="store_id">
+                                            <option value="">Location</option>
+                                            @foreach ($erpStores as $val)
+                                                <option value="{{ $val->id }}">{{ $val->store_name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label>Store</label>
+                                        <select class="form-select select2 sub_store_code" name="sub_store_id" id="sub_store_id">
+                                            <option value="">Store</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label>Stock Type</label>
+                                        <select class="form-select select2 stock_types" name="stock_type" id="stock_type">
+                                            <option value="R">Regular</option>
+                                            <option value="W">WIP</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label>Doc Type</label>
+                                        <select class="form-select select2 book_type_code" name="book_type_id" id="book_type_id">
+                                            <option value="">Doc Type</option>
+                                            @foreach ($bookTypes as $val)
+                                                <option value="{{ $val }}">{{ $val }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label>Status</label>
+                                        <select class="form-select select2 type_of_stock" name="type_of_stock_id" id="type_of_stock_id">
+                                            <option value="">Status</option>
+                                            <option value="confirmed_stock">Confirmed</option>
+                                            <option value="unconfirmed_stock">Unconfirmed</option>
+                                        </select>
                                     </div>
                                 </form>
                             </div>
@@ -248,6 +238,7 @@
         const documentStatusCssList = @json($statusCss);
         var selectedItemId = '';
         var subStoreId = '';
+        var storeId = '';
         var subStoreLocType = @json($subStoreLocType);
         window.routes = {
             poReport: @json(route('inventory-report.detail.filter')),
@@ -343,33 +334,71 @@
 
             function setDropdownValues(params) {
                 Object.keys(params).forEach(key => {
-                    let element = document.querySelector(`#${key}`);
+                    let element = document.getElementById(key);
                     if (element) {
                         let paramValue = params[key];
-
-                        // Only proceed if the paramValue is not null, undefined, or an empty string
                         if (paramValue !== null && paramValue !== undefined && paramValue !== "") {
-                            if (element.tagName === 'SELECT') {
-                                // Handle the dropdown (select) field
-                                if (Array.isArray(paramValue)) {
-                                    paramValue.forEach(value => {
-                                        let option = element.querySelector(
-                                            `option[value="${value}"]`);
-                                        if (option) option.selected = true;
-                                    });
-                                } else {
+                            if (key === "item") {
+                                $(element).attr("data-id", paramValue);
+                                var data = {
+                                    item_id: paramValue,
+                                };
+                                $.ajax({
+                                    type: 'GET',
+                                    data: data,
+                                    url: '/inventory-reports/single-item',
+                                    success: function(data) {
+                                        if (data && data.name) {
+                                            element.value = data.name;
+                                        }
+                                    }
+                                });
+                                return;
+                            }
+                            if (key === "store_id") {
+                                storeId = paramValue;
+                            }
+                            if (key === "sub_store_id") {
+                                // var data = {
+                                //     store_id: storeId
+                                // };
+                                // $.ajax({
+                                //     type: 'GET',
+                                //     data: data,
+                                //     url: '/sub-stores/store-wise',
+                                //     success: function(data) {
+                                //         $('#sub_store_id').empty();
+                                //         $('#sub_store_id').append('<option value="">Select</option>');
+                                //         $.each(data.data, function(index, item) {
+                                //             $('#sub_store_id').append('<option value="' + item.id +
+                                //                 '">' + item.name + '</option>');
+                                //         });
+                                //         $('#sub_store_id').trigger('change');
+                                //     }
+                                // });
+                                subStoreId = paramValue;
+                            }
+                            if (Array.isArray(paramValue)) {
+                                Array.from(element.options).forEach(option => {
+                                    option.selected = paramValue.includes(option.value);
+                                });
+                            } else {
+                                if (element.tagName.toLowerCase() === "select") {
                                     let option = element.querySelector(`option[value="${paramValue}"]`);
                                     if (option) option.selected = true;
+                                } else {
+                                    element.value = paramValue;
                                 }
-                                handleFilterChange(`#${key}`, key);
+                            }
+                            if ($(element).hasClass("select2")) {
+                                $(element).val(paramValue).trigger('change');
+                            } else {
                                 element.dispatchEvent(new Event('change'));
-                            } else if (element.tagName === 'INPUT' && element.classList.contains(
-                                    'ui-autocomplete-input')) {
-                                let autocompleteInput = $(element);
-                                autocompleteInput.val(selectedItem);
-                                autocompleteInput.attr('data-id', selectedItemId);
-                                autocompleteInput.trigger('change');
-                                autocompleteInput.trigger('autocomplete.select');
+                            }
+
+                            // Call external filter handler if needed
+                            if (typeof handleFilterChange === "function") {
+                                handleFilterChange(`#${key}`, key);
                             }
                         }
                     }
@@ -533,7 +562,11 @@
                                     : (report?.item?.item_name ?? "")
                             }
                         </td>`,
-                        `<td class="no-wrap">${attributesHTML}</td>`,
+                        `<td class='no-wrap'>
+                            <div style="white-space: normal;">
+                                ${attributesHTML}
+                            </div>
+                        </td>`,
                         `<td class="no-wrap">${report?.location?.store_name ?? ""}</td>`,
                         `<td class="no-wrap">${report?.store?.name ?? ""}</td>`,
                         `<td class="no-wrap">${report?.station?.name ?? ""}</td>`,
@@ -684,11 +717,9 @@
                                 params.append(key, value);
                             }
                         });
-                        fetchPurchaseOrders(filterData, startDate, endDate);
                     }
                 }
             }
-
 
             function handleFilterChange(selector, key) {
                 $(selector).on('change', function() {
@@ -721,7 +752,6 @@
                     let columnOrderList = filterData.columnOrder || getColumnVisibilitySettings();
                     delete filterData.columnOrder;
                     const params = new URLSearchParams();
-
                     let itemValue = $("#item").attr('data-id');
                     let storeIdValue = $("#store_id").val();
                     let subStoreIdValue = $("#sub_store_id").val();
@@ -791,7 +821,7 @@
                 const actionUrl = `{{ route('inventory-report.item.attr') }}?item_id=${itemId}`;
                 const response = await fetch(actionUrl);
                 const data = await response.json();
-                if (data.status === 200) {
+                if (data.status === 200) {$('#item').val()
                     $("#attribute tbody").html(data.data.html);
                     const isItemSelected = $('#item').val() !== '';
                     $('#store_id, #sub_store_id').prop(
@@ -822,7 +852,9 @@
             $(document).on('change', '.store_code', function() {
                 var store_code_id = $(this).val();
                 if (store_code_id) {
-                    $('#store_id').val(store_code_id).select2();
+                    setTimeout(() => {
+                        $('#store_id').val(store_code_id).trigger('change.select2');
+                    }, 10);
                     var data = {
                         store_id: store_code_id
                     };
@@ -1022,6 +1054,14 @@
             }
             $("#mail_remarks").val("Your Mail has been sent successfully.");
             $('#sendMail').modal('show');
+        }
+        function toggleFilterSidebar() {
+            const sidebar = document.getElementById('filterSidebar');
+            if (sidebar.style.right === '0px') {
+                sidebar.style.right = '-300px';
+            } else {
+                sidebar.style.right = '0px';
+            }
         }
     </script>
 @endsection

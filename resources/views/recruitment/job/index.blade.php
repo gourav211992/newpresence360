@@ -25,8 +25,10 @@
                     <div class="form-group breadcrumb-right">
                         <button class="btn btn-dark btn-sm mb-50 mb-sm-0" data-bs-target="#filter" data-bs-toggle="modal"><i
                                 data-feather="filter"></i> Filter</button>
-                        <a href="{{ route('recruitment.jobs.create') }}" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i
-                                data-feather="plus-square"></i> Create Job</a>
+                        @if ($user->user_type !== App\Helpers\CommonHelper::IAM_VENDOR)
+                            <a href="{{ route('recruitment.jobs.create') }}" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i
+                                    data-feather="plus-square"></i> Create Job</a>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -125,6 +127,12 @@
                                                             </td>
                                                             <td>{{ $job->totalJobRounds }}</td>
                                                             <td class="tableactionnew">
+                                                                @php
+                                                                    $isCreator = $user->id == $job->created_by;
+                                                                    $isVendor =
+                                                                        $user->user_type ==
+                                                                        App\Helpers\CommonHelper::IAM_VENDOR;
+                                                                @endphp
                                                                 <div class="dropdown">
                                                                     <button type="button"
                                                                         class="btn btn-sm dropdown-toggle hide-arrow py-0"
@@ -132,28 +140,43 @@
                                                                         <i data-feather="more-vertical"></i>
                                                                     </button>
                                                                     <div class="dropdown-menu dropdown-menu-end">
-                                                                        <a class="dropdown-item"
-                                                                            href="{{ route('recruitment.jobs.show', ['id' => $job->id]) }}">
-                                                                            <i data-feather="eye" class="me-50"></i>
-                                                                            <span>View Detail</span>
-                                                                        </a>
-                                                                        @if ($job->status == 'open' && $user->id == $job->created_by)
+
+
+                                                                        @if ($job->status == 'open' && ($isCreator || $isVendor))
                                                                             <a class="dropdown-item"
                                                                                 href="{{ route('recruitment.jobs.candidates', ['id' => $job->id]) }}">
                                                                                 <i data-feather="users" class="me-50"></i>
                                                                                 <span>Assign Candidates</span>
                                                                             </a>
-
+                                                                        @endif
+                                                                        @if ($job->status == 'open' && $isCreator)
+                                                                            <a class="dropdown-item" href="javascript:;"
+                                                                                data-bs-target="#assign-vendor-modal"
+                                                                                data-bs-toggle="modal"
+                                                                                data-id="{{ $job->id }}">
+                                                                                <i data-feather="users" class="me-50"></i>
+                                                                                <span>Assign Vendors</span>
+                                                                            </a>
                                                                             <a class="dropdown-item"
                                                                                 href="{{ route('recruitment.jobs.edit', ['id' => $job->id]) }}">
                                                                                 <i data-feather="edit-3" class="me-50"></i>
                                                                                 <span>Edit</span>
                                                                             </a>
+
+                                                                            <a class="dropdown-item" href="#">
+                                                                                <i data-feather="trash-2"
+                                                                                    class="me-50"></i>
+                                                                                <span>Closed</span>
+                                                                            </a>
                                                                         @endif
-                                                                        <a class="dropdown-item" href="#">
-                                                                            <i data-feather="trash-2" class="me-50"></i>
-                                                                            <span>Closed</span>
+
+                                                                        <a class="dropdown-item"
+                                                                            href="{{ route('recruitment.jobs.show', ['id' => $job->id]) }}">
+                                                                            <i data-feather="eye" class="me-50"></i>
+                                                                            <span>View Detail</span>
                                                                         </a>
+
+
                                                                     </div>
                                                                 </div>
                                                             </td>
@@ -199,6 +222,50 @@
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="assign-vendor-modal" tabindex="-1" aria-labelledby="vendorModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal"> Assign Vendor</h4>
+                        <p class="mb-0 fw-bold voucehrinvocetxt mt-0"></p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form role="post-data" method="POST" id="vendor-form">
+                    <div class="modal-body pb-2">
+                        <div class="row mt-1">
+                            <div class="col-md-12">
+                                <div class="mb-1">
+                                    <label class="form-label">Vendor <span class="text-danger">*</span></label>
+                                    <select name="vendor_ids[]" class="form-select select2" multiple id="select-vendor">
+                                        <option value="">Select</option>
+                                        @forelse($vendors as $vendor)
+                                            <option value="{{ $vendor->id }}">{{ $vendor->name }}</option>
+                                        @empty
+                                        @endforelse
+                                    </select>
+                                </div>
+
+                                <div class="mb-1">
+                                    <label class="form-label">Remarks</label>
+                                    <textarea class="form-control" name="log_message"></textarea>
+                                </div>
+
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <div class="modal-footer justify-content-center">
+                        <button type="button" class="btn btn-primary" data-request="ajax-submit"
+                            data-target="[role=post-data]">Submit</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
     <!-- BEGIN: FILTER MODAL-->
     @include('recruitment.job.filter', [
         'skillsData' => $skills,
@@ -225,6 +292,42 @@
                         `<span class="badge rounded-pill badge-light-secondary badgeborder-radius me-1 mb-1">${skill}</span>`;
                     body.innerHTML += badge;
                 });
+            });
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const buttons = document.querySelectorAll('[data-bs-toggle="modal"]');
+
+            buttons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const jobId = this.getAttribute('data-id');
+
+                    const form = document.getElementById('vendor-form');
+                    form.action = `{{ url('/recruitment/jobs/assign-vendor/${jobId}') }}`;
+
+                    $('#select-vendor').val(null).trigger('change');
+                    fetch(`{{ url('/recruitment/jobs/get-assigned-vendors/${jobId}') }}`)
+                        .then(response => response.json())
+                        .then(response => {
+                            console.log(response.data);
+                            if (response.data) {
+                                $('#select-vendor').val(response.data).trigger('change');
+                            } else {
+                                $('#select-vendor').val([]).trigger('change');
+                            }
+                        });
+                });
+            });
+
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('assign-vendor-modal');
+
+            modal.addEventListener('hidden.bs.modal', function() {
+                location.reload(); // 👈 reload on modal close
             });
         });
     </script>

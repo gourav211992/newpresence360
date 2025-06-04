@@ -29,8 +29,7 @@ class ErpStore extends Model
         'status',
         'contact_person', 
         'contact_phone_no',
-        'contact_email',
-        'billing_address'
+        'contact_email'
     ];
 
     public function organization()

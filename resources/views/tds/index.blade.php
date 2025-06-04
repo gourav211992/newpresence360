@@ -47,6 +47,7 @@
                                             </tr>
                                         </thead>
                                         <tbody>
+                                            @php $serial = 1; @endphp
                                            @foreach($records as $i => $row)
                                                 @php
                                                        $eh =  App\Models\Voucher::where('reference_doc_id',$row->expenseHeader?->id)->where('reference_service','expense-advice')->first();
@@ -54,7 +55,7 @@
                                                 @endphp
                                                 @if($row->expenseHeader?->vendor != null && $row->assesment_amount > 0 && $eh)
                                                         <tr class="trail-bal-tabl-none">
-                                                            <td>{{ $i + 1 }}</td>
+                                                            <td>{{ $serial++ }}</td>
                                                             <td>
                                                                 <div style="width: 200px" class="fw-bolder text-dark">
                                                                     {{ $row->expenseHeader?->vendor?->company_name ?? 'N/A' }}
@@ -63,7 +64,7 @@
                                                             <td>{{ $row->expenseHeader?->vendor?->pan_number ?? 'N/A' }}</td>
                                                             <td>
                                                                 <div style="width: 200px">
-                                                                    {{ $row->ted_code ?? 'N/A' }}
+                                                                    {{ $row->ted_name ?? 'N/A' }}
                                                                 </div>
                                                             </td>
 
@@ -134,7 +135,7 @@
 
                     <div class="mb-1">
                         <label class="form-label">Organization</label>
-                        <select name="organization_filter" id="organization_filter" class="form-select select2">
+                        <select name="organization_filter" id="organization_filter" class="form-select select2" multiple>
                             <option value="">Select</option>
                             @foreach ($mappings as $organization)
                         <option value="{{ $organization->organization->id }}"
@@ -211,7 +212,9 @@
  function updateLocationsDropdown(selectedOrgId) {
         console.log(selectedOrgId,'selected')
         const filteredLocations = locations.filter(loc =>
-            String(loc.organization_id) === String(selectedOrgId)
+            // String(loc.organization_id) === String(selectedOrgId)
+            selectedOrgId.includes(String(loc.organization_id))
+
         );
 
         const $locationDropdown = $('#location_id');
@@ -265,14 +268,14 @@
     $(document).ready(function() {
     // On change of organization
         $('#organization_filter').on('change', function () {
-             const selectedOrgId = $(this).val(); 
+             const selectedOrgId =  $(this).val() || [];
             updateLocationsDropdown(selectedOrgId);
         });
 
         // On page load, check for preselected orgs
         console.log('preselectedOrgId',$('#organization_filter').val())
-        const preselectedOrgId = $('#organization_filter').val();
-        if (preselectedOrgId) {
+        const preselectedOrgId = $('#organization_filter').val() || [];
+        if (preselectedOrgId.length > 0) {
             updateLocationsDropdown(preselectedOrgId);
         }
         // On location change, load cost centers
