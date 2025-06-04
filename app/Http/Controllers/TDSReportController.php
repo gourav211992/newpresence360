@@ -48,7 +48,6 @@ class TDSReportController extends Controller
 
 
         $mappings = Helper::getAuthenticatedUser()->access_rights_org;
-        $vendors = Vendor::withDefaultGroupCompanyOrg()->get();
         
       $records = ExpenseTed::where('ted_type', 'Tax')
         ->whereHas('expenseHeader', function ($query) {
@@ -92,24 +91,35 @@ class TDSReportController extends Controller
         //     ->where('document_status', ConstantHelper::POSTED)
         //     ->latest()
         //     ->get();
+        $vendorIds = $records->pluck('expenseHeader.vendor_id')->filter()->unique()->toArray();
 
-        $taxTypes = Tax::all();
-         $cost_centers =  CostCenterOrgLocations::with(['costCenter' => function ($query) {
-            $query->where('status', 'active');
-            $query->withDefaultGroupCompanyOrg();
-        }])
-        ->get()
-        ->filter(function ($item) {
-            return $item->costCenter !== null;
-        })
-        ->map(function ($item) {
-            return [
-                'id' => $item->costCenter->id,
-                'name' => $item->costCenter->name,
-                'location' => $item->costCenter->locations,
-            ];
-        })
-        ->toArray();
+        // Fetch vendors matching these IDs
+        $vendors = Vendor::withDefaultGroupCompanyOrg()
+            ->whereIn('id', $vendorIds)
+            ->get();
+            // Get ExpenseTed IDs from $records
+            $tedIds = $records->pluck('ted_id')->filter()->unique()->toArray();
+            $taxIds = \App\Models\TaxDetail::whereIn('id', $tedIds)
+            ->pluck('tax_id')
+            ->filter()
+            ->unique()
+            ->toArray();
+
+            // Fetch Tax records linked with these TED IDs
+            // $taxTypes = Tax::whereHas('taxDetails', function ($query) use ($tedIds) {
+            //         $query->whereIn('ted_id', $tedIds);
+            //     })
+            //     ->get();
+            $taxTypes = Tax::whereIn('id', $taxIds)->get();
+            $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
+                $item->withDefaultGroupCompanyOrg()->where('status', 'active');
+
+                return [
+                    'id' => $item->costCenter->id,
+                    'name' => $item->costCenter->name,
+                    'location' => $item->costCenter->locations,
+                ];
+            })->toArray();
 
         $startDate = date('d-m-Y', strtotime($startDate));
         $endDate = date('d-m-Y', strtotime($endDate));

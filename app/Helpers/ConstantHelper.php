@@ -984,12 +984,14 @@ class ConstantHelper
     const DATA_TYPE_TEXT = 'text';
     const DATA_TYPE_NUMBER = 'number';
     const DATA_TYPE_DATE = 'date';
+    const DATA_TYPE_LIST = 'list';
     const DATA_TYPE_BOOLEAN = 'boolean';
 
     const DATA_TYPES = [
         ['label' => 'Text', 'value' => self::DATA_TYPE_TEXT],
-        ['label' => 'Number', 'value' => self::DATA_TYPE_NUMBER],
+        ['label' => 'Number','value' => self::DATA_TYPE_NUMBER],
         ['label' => 'Date', 'value' => self::DATA_TYPE_DATE],
+        ['label' => 'List', 'value' => self::DATA_TYPE_LIST],
         ['label' => 'Boolean (Yes/No)', 'value' => self::DATA_TYPE_BOOLEAN],
     ];
 }

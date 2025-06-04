@@ -34,21 +34,6 @@ class RequestController extends Controller
         $user = Helper::getAuthenticatedUser();
         $length = $request->length ? $request->length : CommonHelper::PAGE_LENGTH_10;
 
-        // $query = ErpRecruitmentJobRequests::with('recruitmentSkills')
-        //     ->where(function($query) use($request){
-        //         self::filter($request, $query);
-        //         self::sorting($request, $query);
-        //     });
-
-        //     if (\Request::route()->getName() == "recruitment.requests.for-approval") {
-        //         $query->where('approval_authority',$user->id)
-        //         ->whereIn('status',['pending','approved-forward']);
-        //     } else {
-        //         $query->where('created_by',$user->id)
-        //             ->where('created_by_type',$user->authenticable_type);
-        //     }
-        // $requests = $query->paginate($length);
-
         $query = ErpRecruitmentJobRequests::with('recruitmentSkills');
 
         self::filter($request, $query);   // Filtering
@@ -406,7 +391,6 @@ class RequestController extends Controller
         try {
 
             $user = Helper::getAuthenticatedUser();
-
             $jobRequest = new ErpRecruitmentJobRequests();
             $jobRequest->job_type = $request->job_type;
             $jobRequest->organization_id = $user->organization_id;

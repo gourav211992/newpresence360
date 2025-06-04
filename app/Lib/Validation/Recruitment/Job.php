@@ -383,4 +383,20 @@ class Job
 		return $validator;
 	}
 
+	public function assgnVendors() : ValidationValidator
+	{
+		$validator = Validator::make($this->request->all(),[
+			"vendor_ids" => [
+                "required",
+                "array"
+            ],
+
+		],[
+			'vendor_ids.required' => 'Vendor is required.'
+		]);
+
+
+		return $validator;
+	}
+
 }

@@ -18,7 +18,6 @@ use App\Http\Controllers\ErpRCController;
 use App\Http\Controllers\ErpTransporterRequestController;
 use App\Http\Controllers\ErpTransportersController;
 use App\Http\Controllers\ErpProductionSlipController;
-
 use App\Http\Controllers\OrganizationServiceController;
 use App\Http\Controllers\LoanProgress\AppraisalController;
 use App\Http\Controllers\LoanProgress\ApprovalController;
@@ -38,7 +37,6 @@ use App\Http\Controllers\FixedAsset\DepreciationController;
 use App\Http\Controllers\FixedAsset\SplitController;
 use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\AssetCategoryController;
-
 use App\Http\Controllers\LoanProgress\SanctionLetterController;
 use App\Http\Controllers\ServiceController;
 use Illuminate\Support\Facades\Log;
@@ -56,8 +54,6 @@ use App\Http\Controllers\FixedAsset\MaintenanceController;
 use App\Http\Controllers\ComplaintManagementController;
 use App\Http\Controllers\Stakeholder\StakeholderController;
 use App\Http\Controllers\FeedbackProcessController;
-
-
 use App\Http\Controllers\TaxController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BankController;
@@ -525,8 +521,8 @@ Route::middleware(['user.auth'])->group(function () {
             Route::get('get-machine-detail', 'getMachineDetail')->name('get.machine.detail');
     });
 
-    
-    
+
+
 
     Route::prefix('transporter-requests')
         ->name('transporter.')
@@ -588,7 +584,7 @@ Route::middleware(['user.auth'])->group(function () {
         Route::put('/{id}', 'update')->name('machine.update');
         Route::get('/attribute/values','attributeValues')->name('machine.attribute.values');
     });
-    
+
     Route::prefix('items')->controller(ItemController::class)->group(function () {
         Route::get('get-cost','getItemCost')->name('items.get.cost');
         Route::get('/', 'index')->name('item.index');
@@ -1419,6 +1415,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
             Route::get('/get-stock-ledger-summary-reports', 'summaryReport');
             Route::get('/get-stock-ledger-summary-filter', 'summaryReportFilter')->name('summary.filter');
             Route::post('add-scheduler', 'addScheduler')->name('add.scheduler');
+            Route::get('/single-item', 'getSingleItemData')->name('single.item.data');
         });
 
     // Expense routes
@@ -1888,6 +1885,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         Route::get('/{id}/edit', 'edit')->name('dynamic-fields.edit');
         // Route::get('/{id}', 'show')->name('dynamic-fields.show');
         Route::put('/{id}', 'update')->name('dynamic-fields.update');
+        Route::delete('/detail-value/{id}', 'dynamicValueDestroy')->name('dynamic-fields-value.destroy');
         Route::delete('/{id}', 'destroy')->name('dynamic-fields.destroy');
         Route::delete('/field-detail/{id}', 'deleteFieldDetail')->name('field-detail.delete');
         Route::get('/detail', 'getDynamicFieldDetails')->name('dynamic-fields.detail');
@@ -2141,7 +2139,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
      //Driver
     Route::get('/driver', [ErpDriverController::class, 'index'])->name('driver.index');
     Route::get('/driver/create', [ErpDriverController::class, 'create'])->name('driver.create');
-   
+
      //Production Slip
      Route::get('/production-slip', [ErpProductionSlipController::class, 'index'])->name('production.slip.index');
      Route::get('/production-slip/create', [ErpProductionSlipController::class, 'create'])->name('production.slip.create');
@@ -2381,7 +2379,9 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::get('fixed-asset/get-locations', [RegistrationController::class, 'getLocations'])->name('finance.fixed-asset.get-locations');
     Route::get('fixed-asset/get-cost-centers', [RegistrationController::class, 'getCostCenters'])->name('finance.fixed-asset.get-cost-centers');
     Route::post('fixed-asset/check-code', [RegistrationController::class, 'checkCode'])->name('finance.fixed-asset.check-code');
-    
+
+    Route::post('fixed-asset/category-search', [RegistrationController::class, 'categorySearch'])->name('finance.fixed-asset.category-search');
+
     Route::resource('fixed-asset/issue-transfer', IssueTransferController::class)->names([
         'index' => 'finance.fixed-asset.issue-transfer.index',
         'create' => 'finance.fixed-asset.issue-transfer.create',

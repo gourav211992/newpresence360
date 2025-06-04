@@ -893,8 +893,8 @@ function checkVendorFilledDetail()
     let vName = $("#vendor_name").val();
     let vCurrency = $("[name='currency_id']").val();
     let vPaymentTerm = $("[name='payment_term_id']").val();
-    let shippingId = $("#shipping_id").val();
-    let billingId = $("#billing_id").val();
+    let shippingId = $("#vendor_address_id").val();
+    let billingId = $("#billing_address_id").val();
     if(vName && vCurrency && vPaymentTerm && shippingId && billingId) {
         filled = true;
     }
@@ -962,8 +962,11 @@ $(document).on('blur', '#vendor_name', (e) => {
     if(!e.target.value) {
         $("#vendor_id").val('');
         $("#vendor_code").val('');
-        $("#shipping_id").val('');
-        $("#billing_id").val('');
+        $("#vendor_address_id").val('');
+        $("#delivery_address_id").val('');
+        $("#billing_address_id").val('');
+        $("#hidden_state_id").val('');
+        $("#hidden_country_id").val('');
         $("[name='currency_id']").val('').trigger('change');
         $("[name='payment_term_id']").val('').trigger('change');
         $(".shipping_detail").text('-');
@@ -1493,13 +1496,133 @@ function getLocation(locationId = '')
                     let selected = location.id == locationId ? 'selected' : '';
                     options += `<option value="${location.id}" ${selected}>${location.store_name}</option>`;
                 });
-                $("[name='store_id']").html(options).trigger('change');
+                // $("[name='store_id']").html(options).trigger('change');
+                $("[name='store_id']").html(options);
             } else {
                 Swal.fire({
                     title: 'Error!',
                     text: data.message,
                     icon: 'error',
                 });
+            }
+        });
+    });
+}
+
+/*Vendor drop down*/
+function initializeAutocompleteVendor(selector, type) {
+    $(selector).autocomplete({
+        minLength: 0,
+        source: function(request, response) {
+            $.ajax({
+                url: '/search',
+                method: 'GET',
+                dataType: 'json',
+                data: {
+                    q: request.term,
+                    type:'vendor_list'
+                },
+                success: function(data) {
+                    response($.map(data, function(item) {
+                        return {
+                            id: item.id,
+                            label: item.company_name,
+                            code: item.vendor_code
+                        };
+                    }));
+                },
+                error: function(xhr) {
+                    console.error('Error fetching customer data:', xhr.responseText);
+                }
+            });
+        },
+        select: function(event, ui) {
+            var itemId = ui.item.id;
+            vendorOnChange(itemId);
+            $(".editAddressBtn").removeClass('d-none');
+            return false;
+        },
+        change: function(event, ui) {
+            if (!ui.item) {
+                $(this).val("");
+                clearVendorData();
+            }
+        }
+    }).focus(function() {
+        if (this.value === "") {
+            $(this).autocomplete("search", "");
+            clearVendorData();
+        }
+    }).on("input", function () {
+        if ($(this).val().trim() === "") {
+            $(this).removeData("selected");
+            clearVendorData();
+        }
+    });
+}
+initializeAutocompleteVendor("#vendor_name");
+
+function clearVendorData() 
+{
+    $("#vendor_name").val('');
+    $("#vendor_id").val('');
+    $("#vendor_code").val('');
+    $("#hidden_state_id").val('');
+    $("#hidden_country_id").val('');
+    $("select[name='currency_id']").empty().append('<option value="">Select</option>');
+    $("select[name='payment_term_id']").empty().append('<option value="">Select</option>');
+    $(".vendor_address").text('-');
+    $(".billing_address").text('-');
+    $(".delivery_address").text('-');
+    $("#vendor_address_id").val('');
+    $("#billing_address_id").val('');
+    $("#delivery_address_id").val('');
+    $(".editAddressBtn").addClass('d-none');
+}
+// Vendor on chanhge
+function vendorOnChange(vendorId) {
+    let store_id = $("[name='store_id']").val() || '';
+    let actionUrl = `${getAddressOnVendorChangeUrl}?id=${vendorId}&store_id=${store_id}`;
+    fetch(actionUrl).then(response => {
+        return response.json().then(data => {
+            if(data.data?.currency_exchange?.status == false) {
+                clearVendorData();
+                Swal.fire({
+                    title: 'Error!',
+                    text: data.data?.currency_exchange.message,
+                    icon: 'error',
+                });
+                return false;
+            }                    
+            if(data.status == 200) {
+                $("#vendor_name").val(data?.data?.vendor?.company_name);
+                $("#vendor_id").val(data?.data?.vendor?.id);
+                $("#vendor_code").val(data?.data?.vendor?.vendor_code);
+                let curOption = `<option value="${data?.data?.currency?.id}">${data?.data?.currency?.name}</option>`;
+                let termOption = `<option value="${data?.data?.paymentTerm?.id}">${data?.data?.paymentTerm?.name}</option>`;
+                $('[name="currency_id"]').empty().append(curOption);
+                $('[name="payment_term_id"]').empty().append(termOption);
+
+                $("#delivery_address_id").val(data?.data?.location_address?.id);
+                $(".delivery_address").text(data?.data?.location_address?.display_address);
+
+                $("#vendor_address_id").val(data?.data?.vendor_address?.id);
+                $("#billing_address_id").val(data?.data?.location_address?.id);
+                $("#hidden_state_id").val(data?.data?.vendor_address?.state.id);
+                $("#hidden_country_id").val(data?.data?.vendor_address.country?.id);
+                $(".vendor_address").text(data?.data?.vendor_address?.display_address);
+                $(".billing_address").text(data?.data?.location_address?.display_address);
+
+            } else {
+                if(data.data.error_message) {
+                    clearVendorData();
+                    Swal.fire({
+                        title: 'Error!',
+                        text: data?.data?.error_message || '',
+                        icon: 'error',
+                    });
+                    return false;
+                }
             }
         });
     });

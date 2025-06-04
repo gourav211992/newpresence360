@@ -142,4 +142,9 @@ class ErpRecruitmentJob extends Model
     //         'candidate_id'                                    
     //     );
     // }
+
+    public function assignedVendors()
+    {
+        return $this->hasMany(ErpRecruitmentAssignedVendor::class, 'job_id');
+    }
 }

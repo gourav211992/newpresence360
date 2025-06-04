@@ -311,7 +311,7 @@
 
                                                             <div class="row align-items-center mb-1" id="reldVendorDropdown">
                                                                 <div class="col-md-2">
-                                                                    <label class="form-label">Related Vendors</label>
+                                                                    <label class="form-label">Parent Vendor</label>
                                                                 </div>
                                                                 <div class="col-md-3">
                                                                     <select class="form-select select2" name="reld_vendor_id" id="reld_vendor_id">

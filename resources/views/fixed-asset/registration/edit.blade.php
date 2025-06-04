@@ -1236,7 +1236,6 @@
                 $('#grn_table tbody').html(res.html);
             },
             error: function (xhr) {
-                showToast('error',xhr.responseText);
                 console.error(xhr.responseText);
             }
         });
@@ -1386,9 +1385,8 @@
                     });
 
                 },
-                error: function (xhr) {
-                showToast('error',xhr.responseText);
-                //    alert('Error fetching group items.');
+                error: function() {
+                    alert('Error fetching group items.');
                 }
             });
 
@@ -1416,7 +1414,7 @@
                 $('#grn_table tbody').html(res.html);
             },
             error: function (xhr) {
-                showToast('error',xhr.responseText);
+                console.error(xhr.responseText);
             }
         });
     });
@@ -1653,9 +1651,8 @@ $('#location').on('change', function () {
                     });
             }
             },
-            error: function (xhr) {
-                showToast('error',xhr.responseText);
-                    $('#cost_center').empty();
+            error: function () {
+                $('#cost_center').empty();
             }
         });
     } else {

@@ -271,7 +271,6 @@ class RegistrationController extends Controller
                     $ref_view_route = Helper::getRouteNameFromServiceAlias($data->reference_series, $data->reference_doc_id);
                     $buttons['reference'] = true;
                     $buttons['post']=false;
-                    $buttons['amend']=false;
                 }
             }
         }
@@ -639,6 +638,13 @@ class RegistrationController extends Controller
 
         return $query->limit(20)->get();
     }
+    public function categorySearch(Request $request)
+    {
+        $q = $request->input('q');
+        $query = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->withWhereHas('setup')
+            ->where('name', 'like', "%$q%");
+        return $query->limit(20)->get();
+    }
       public function checkCode(Request $request)
 {
     if($request->edit_id)
@@ -725,4 +731,5 @@ class RegistrationController extends Controller
        
         return response()->json($costCenters);
     }
+
 }

@@ -21,6 +21,8 @@ use App\Models\ErpSaleOrder;
 use App\Http\Requests\PoBulkRequest;
 use App\Http\Requests\PoRequest;
 use App\Models\Address;
+use App\Models\City;
+use App\Models\Country;
 use App\Models\Currency;
 use App\Models\ErpAddress;
 use App\Models\Item;
@@ -46,6 +48,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Models\Department;
 use App\Models\ErpStore;
 use App\Models\PurchaseIndent;
+use App\Models\State;
 
 class PoController extends Controller
 {
@@ -331,6 +334,7 @@ class PoController extends Controller
         }
     }
 
+    # Get address on vendor change and set
     public function getAddress(Request $request)
     {
         $vendorId = $request?->id ?? null;
@@ -341,30 +345,15 @@ class PoController extends Controller
         $paymentTerm = $vendor?->paymentTerms;
         $vendorId = $vendor?->id;
         $documentDate = $request?->document_date;
-        $billingAddress = ErpAddress::where('addressable_id', $vendorId)
+        $vendorAddress = ErpAddress::where('addressable_id', $vendorId)
                     ->where('addressable_type', Vendor::class)
-                    ->whereIn('type', ['billing', 'both'])
-                    ->orderByRaw("FIELD(type, 'billing', 'both')")
-                    ->latest()
-                    ->first();
-        $shippingAddresses = ErpAddress::where('addressable_id', $vendorId)
-                    ->where('addressable_type', Vendor::class)
-                    ->whereIn('type', ['billing', 'both'])
-                    ->orderByRaw("FIELD(type, 'shipping', 'both')")
                     ->latest()
                     ->first();
 
-        if (!$shippingAddresses) {
+        if (!$vendorAddress) {
             return response() -> json([
                 'data' => array(
-                    'error_message' => 'Shipping Address not found for '. $vendor?->company_name
-                )
-            ]);
-        }
-        if (!$billingAddress) {
-            return response() -> json([
-                'data' => array(
-                    'error_message' => 'Billing Address not found for '. $vendor?->company_name
+                    'error_message' => 'Address not found for '. $vendor?->company_name
                 )
             ]);
         }
@@ -385,26 +374,14 @@ class PoController extends Controller
         $currencyData = CurrencyHelper::getCurrencyExchangeRates($vendor?->currency_id ?? 0, $documentDate ?? '');
         $storeId = $request?->store_id ?? null;
         $store = ErpStore::find($storeId);
-        $deliveryAddress = $store?->address;
+        $locationAddress = $store?->address;
 
-        $user = Helper::getAuthenticatedUser();
-        $organizationAddress = Address::with(['city:id,name,state_id', 'state:id,name,country_id', 'country:id,name,code,dial_code'])
-            ->where('addressable_id', $user?->organization_id)
-            ->where('addressable_type', Organization::class)
-            ->first();
-        $isStoreBilling = false;
-        if($store?->billing_address) {
-            $isStoreBilling = true;
-        }
         return response()->json([
             'data' =>
                 [
-                    'is_store_billing' => $isStoreBilling,
-                    'org_address' => $organizationAddress,
-                    'delivery_address' => $deliveryAddress, 
+                    'vendor_address' => $vendorAddress, 
+                    'location_address' => $locationAddress, 
                     'vendor' => $vendor, 
-                    'shipping' => $shippingAddresses,
-                    'billing' => $billingAddress, 
                     'paymentTerm' => $paymentTerm, 
                     'currency' => $currency, 
                     'currency_exchange' => $currencyData
@@ -488,8 +465,8 @@ class PoController extends Controller
             $po->reference_number = $request->reference_number;
             $po->vendor_id = $request->vendor_id;
             $po->vendor_code = $request->vendor_code;
-            $po->billing_address = $request->billing_id;
-            $po->shipping_address = $request->shipping_id;
+            $po->billing_address = $request->billing_address_id;
+            $po->shipping_address = $request->vendor_address_id;
             $po->currency_id = $request->currency_id;
             $currency = Currency::find($request->currency_id ?? null);
             $po->currency_code = $currency?->short_name;
@@ -507,22 +484,7 @@ class PoController extends Controller
                 $po->supp_invoice_required = 'yes';
                 $po->save();
             }
-            $address = null;
-            if($po?->store_location?->billing_address) {
-                $vendorBillingAddress = $po?->store_location?->address;
-                $address = $vendorBillingAddress?->address;
-            } else {
-                $vendorBillingAddress = Address::with(['city', 'state', 'country'])
-                ->where('addressable_id', $user?->organization_id)
-                ->where('addressable_type', Organization::class)
-                ->first();  
-                $parts = [
-                    $vendorBillingAddress->line_1,
-                    $vendorBillingAddress->line_2,
-                    $vendorBillingAddress->line_3
-                ];
-                $address = implode(', ', array_filter($parts));
-            }
+            
             $vendorBillingAddress = $po->bill_address ?? null;
 
             if ($vendorBillingAddress) {
@@ -530,7 +492,7 @@ class PoController extends Controller
                     'type' => 'billing',
                 ]);
                 $billingAddress->fill([
-                    'address' => $address,
+                    'address' => $vendorBillingAddress?->address,
                     'country_id' => $vendorBillingAddress?->country_id,
                     'state_id' => $vendorBillingAddress?->state_id,
                     'city_id' => $vendorBillingAddress?->city_id,
@@ -558,22 +520,40 @@ class PoController extends Controller
                 $shippingAddress->save();
             }
             # Store location address
-            if($po?->store_location)
-            {
-                $storeAddress  = $po?->store_location->address;
+            $vendorDeliveryAddress = ErpAddress::find($request->delivery_address_id ?? null);
+            if($vendorDeliveryAddress) {
                 $storeLocation = $po->store_address()->firstOrNew();
                 $storeLocation->fill([
                     'type' => 'location',
-                    'address' => $storeAddress->address,
-                    'country_id' => $storeAddress->country_id,
-                    'state_id' => $storeAddress->state_id,
-                    'city_id' => $storeAddress->city_id,
-                    'pincode' => $storeAddress->pincode,
-                    'phone' => $storeAddress->phone,
-                    'fax_number' => $storeAddress->fax_number,
+                    'address' => $vendorDeliveryAddress->address,
+                    'country_id' => $vendorDeliveryAddress->country_id,
+                    'state_id' => $vendorDeliveryAddress->state_id,
+                    'city_id' => $vendorDeliveryAddress->city_id,
+                    'pincode' => $vendorDeliveryAddress->pincode,
+                    'phone' => $vendorDeliveryAddress->phone,
+                    'fax_number' => $vendorDeliveryAddress->fax_number,
+                ]);
+                $storeLocation->save();
+            } else {
+                $d_country_id = $request->delivery_country_id ?? null; 
+                $d_state_id = $request->delivery_state_id ?? null; 
+                $d_city_id = $request->delivery_city_id ?? null; 
+                $d_pincode = $request->delivery_pincode ?? null; 
+                $d_address = $request->delivery_address ?? null; 
+                $storeLocation = $po->store_address()->firstOrNew();
+                $storeLocation->fill([
+                    'type' => 'location',
+                    'address' => $d_address,
+                    'country_id' => $d_country_id,
+                    'state_id' => $d_state_id,
+                    'city_id' => $d_city_id,
+                    'pincode' => $d_pincode,
+                    'phone' => null,
+                    'fax_number' => null,
                 ]);
                 $storeLocation->save();
             }
+
             $totalItemValue = 0.00;
             $totalTaxValue = 0.00;
             $totalDiscValue = 0.00;
@@ -1736,27 +1716,28 @@ class PoController extends Controller
     # Get edit address modal
     public function editAddress(Request $request)
     {
-        $type = $request->type;
-        $addressId = $request?->address_id;
-        $vendor = Vendor::find($request?->vendor_id ?? null);
-        if(!$vendor) {
-            return response()->json([
-                'message' => 'Please First select vendor.',
-                'error' => null,
-            ], 500);
+        $type = $request?->type ?? '';
+        $addressId = $request?->address_id ;
+        $selectedAddress = ErpAddress::where('id', $addressId)->first();
+        $addresses = collect();
+        if($type == 'vendor_address') {
+            $vendorId = $request?->vendor_id ?? null;
+            $addresses = ErpAddress::where('addressable_id', $vendorId)
+                    ->where('addressable_type', Vendor::class)
+                    ->latest()
+                    ->get();
         }
-        if($request?->type == 'billing') {
-            $addresses = $vendor->addresses()
-                        ->where(function($query) {
-                            $query->where('type', 'billing')->orWhere('type', 'both');
-                        })
-                        ->latest()
-                        ->get();
-            $selectedAddress = ErpAddress::where('id', $addressId)->first();
+        if($type == 'delivery_address') {
+            $locations = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
+            $storeIds = $locations->pluck('id')->toArray() ?? [];
+            $addresses = ErpAddress::whereIn('addressable_id', $storeIds)
+                    ->where('addressable_type', ErpStore::class)
+                    ->latest()
+                    ->get();
         }
         $html = '';
-        if(!intval($request->onChange)) {
-            $html = view('procurement.po.partials.edit-address-modal',compact('addresses','selectedAddress'))->render();
+        if($selectedAddress) {
+            $html = view('procurement.po.partials.edit-address-modal', compact('type', 'addresses', 'selectedAddress'))->render();
         }
         return response()->json(['data' => ['html' => $html,'selectedAddress' => $selectedAddress], 'status' => 200, 'message' => 'fetched!']);
     }
@@ -1764,70 +1745,46 @@ class PoController extends Controller
     # Save Address
     public function addressSave(Request $request)
     {
-
         $addressId = $request->address_id;
-        // if(!$addressId) {
-            $request->validate([
-                'country_id' => 'required',
-                'state_id' => 'required',
-                'city_id' => 'required',
-                'pincode' => 'required',
-                'address' => 'required'
-            ]);
-        // }
-
+        $request->validate([
+            'country_id' => 'required',
+            'state_id' => 'required',
+            'city_id' => 'required',
+            'pincode' => 'required',
+            'address' => 'required'
+        ]);
         $addressType =  $request->address_type;
-
         $vendorId = $request->hidden_vendor_id;
         $countryId = $request->country_id;
         $stateId = $request->state_id;
         $cityId = $request->city_id;
         $pincode = $request->pincode;
         $address = $request->address;
+        $selectedAddress = null;
 
-        $vendor = Vendor::find($vendorId ?? null);
-        $selectedAddress = $vendor->addresses()
-        ->where('id', $addressId)
-        ->where(function($query) use ($addressType) {
-            if ($addressType == 'shipping') {
-                $query->where('type', 'shipping')
-                      ->orWhere('type', 'both');
-            } else {
-                $query->where('type', 'billing')
-                      ->orWhere('type', 'both');
-            }
-        })
-        ->first();
-
-        $newAddress = null;
-
-        if ($selectedAddress) {
-            $newAddress = $vendor->addresses()->firstOrNew([
-                'type' => $addressType ?? 'both',
-            ]);
-            $newAddress->fill([
-                'country_id' => $countryId,
-                'state_id' => $stateId,
-                'city_id' => $cityId,
-                'pincode' => $pincode,
-                'address' => $address,
-                'addressable_id' => $vendorId,
-                'addressable_type' => Vendor::class,
-            ]);
-            $newAddress->save();
-        } else {
-            $newAddress = $vendor->addresses()->create([
-                'type' => $addressType ?? 'both',
-                'country_id' => $countryId,
-                'state_id' => $stateId,
-                'city_id' => $cityId,
-                'pincode' => $pincode,
-                'address' => $address,
-                'addressable_id' => $vendorId,
-                'addressable_type' => Vendor::class
-            ]);
+        if($addressType == 'vendor_address' && $addressId) {
+            $vendor = Vendor::find($vendorId ?? null);
+            $selectedAddress = $vendor->addresses()->where('id', $addressId)->first();
         }
-        return response()->json(['data' => ['new_address' => $newAddress], 'status' => 200, 'message' => 'fetched!']);
+
+        if($addressType == 'delivery_address' && $addressId) {
+            $selectedAddress = ErpAddress::where('id', $addressId)->first();
+        }
+        $newAddres = '';
+        if(!$selectedAddress) {
+            $country = Country::find($countryId);
+            $state = State::find($stateId);
+            $city = City::find($cityId);
+            $addressParts = [
+                $address,
+                $city?->name,
+                $state?->name,
+                $country?->name,
+                $pincode ? 'Pincode - ' . $pincode : null,
+            ];
+            $newAddres = implode(', ', array_filter($addressParts));
+        }
+        return response()->json(['data' => ['new_address' => $selectedAddress, 'add_new_address' => $newAddres], 'status' => 200, 'message' => 'fetched!']);
     }
 
     # On select row get item detail
@@ -1956,7 +1913,6 @@ class PoController extends Controller
             $shortClose = 0;
         }
         $store = $po?->store_location;
-        $deliveryAddress = $store?->address?->display_address;
         $isEdit = $buttons['submit'];
         if(!$isEdit) {
             $isEdit = $buttons['amend'] && intval(request('amendment') ?? 0) ? true: false;
@@ -1966,7 +1922,6 @@ class PoController extends Controller
         return view($view, [
             'users' => $users,
             'isEdit'=> $isEdit,
-            'deliveryAddress'=> $deliveryAddress,
             'books'=> $books,
             'po' => $po,
             'buttons' => $buttons,
@@ -2033,7 +1988,9 @@ class PoController extends Controller
         ->get();
         $sellerShippingAddress = $po->latestShippingAddress();
         $sellerBillingAddress = $po->latestBillingAddress();
-        $buyerAddress = $po?->store_location?->address;
+        $buyerAddress = $po->latestDeliveryAddress();
+
+
         # Indent number
         $uniquePiIds = $po->pi_item_mappings->pluck('pi_id')->unique()->values()->toArray();
         $references = PurchaseIndent::whereIn('id', $uniquePiIds)->select('id','book_code','document_number')->get();

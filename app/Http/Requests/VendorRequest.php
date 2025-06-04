@@ -225,14 +225,14 @@ class VendorRequest extends FormRequest
                 'string', 
                 'size:15', 
                 'regex:/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/',
-                function ($attribute, $value, $fail) {
-                    if ($value) {
-                        $gstValidationResponse = $this->validateGstDetails();
-                        if ($gstValidationResponse !== true) {
-                            $fail($gstValidationResponse); 
-                        }
-                    }
-                },
+                // function ($attribute, $value, $fail) {
+                //     if ($value) {
+                //         $gstValidationResponse = $this->validateGstDetails();
+                //         if ($gstValidationResponse !== true) {
+                //             $fail($gstValidationResponse); 
+                //         }
+                //     }
+                // },
                 'required_if:compliance.gst_applicable,1'
             ],
             'compliance.gst_registered_name' => 'nullable|string|max:255',
@@ -402,44 +402,44 @@ class VendorRequest extends FormRequest
         ];
     }
 
-    protected function validateGstDetails()
-    {
-        $gstinNo = $this->input('compliance.gstin_no');
-        if (empty($gstinNo)) {
-            return true; 
-        }
-        $gstValidation = EInvoiceHelper::validateGstNumber($gstinNo);
-        if ($gstValidation['Status'] ===0) {
-            return $gstValidation['errorMsg'] ?? 'Invalid GST Number'; 
-        }
-        $gstData = json_decode($gstValidation['checkGstIn'], true);
-        $deregistrationDate = $gstData['DtDReg'] ?? null;
+    // protected function validateGstDetails()
+    // {
+    //     $gstinNo = $this->input('compliance.gstin_no');
+    //     if (empty($gstinNo)) {
+    //         return true; 
+    //     }
+    //     $gstValidation = EInvoiceHelper::validateGstNumber(gstNumber: $gstinNo);
+    //     if ($gstValidation['Status'] ===0) {
+    //         return $gstValidation['errorMsg'] ?? 'Invalid GST Number'; 
+    //     }
+    //     $gstData = json_decode($gstValidation['checkGstIn'], true);
+    //     $deregistrationDate = $gstData['DtDReg'] ?? null;
 
-        if ($deregistrationDate && $deregistrationDate !== '1900-01-01') {
-            return 'The provided GSTIN is deregistered as of ' . $deregistrationDate . '. It is no longer valid for use.';
-        }
-        return true;
-    }
+    //     if ($deregistrationDate && $deregistrationDate !== '1900-01-01') {
+    //         return 'The provided GSTIN is deregistered as of ' . $deregistrationDate . '. It is no longer valid for use.';
+    //     }
+    //     return true;
+    // }
 
-     // Helper method to validate GST-related address details
-     protected function addAddressValidationErrors($validator, $addresses, $gstData)
-    {
-        $gstnHelper = new GstnHelper();
-        foreach ($addresses as $index => $address) {
-            if (!empty($address['state_id'])) {
-                $stateValidation = $gstnHelper->validateStateCode(
-                    $address['state_id'],
-                    $gstData['StateCode'] ?? null
-                );
-                if (!$stateValidation['valid']) {
-                    $validator->errors()->add(
-                        "addresses.{$index}.state_id", 
-                        $stateValidation['message'] ?? 'State does not match GSTIN records'
-                    );
-                }
-            }
-        }
-    }
+    //  // Helper method to validate GST-related address details
+    //  protected function addAddressValidationErrors($validator, $addresses, $gstData)
+    // {
+    //     $gstnHelper = new GstnHelper();
+    //     foreach ($addresses as $index => $address) {
+    //         if (!empty($address['state_id'])) {
+    //             $stateValidation = $gstnHelper->validateStateCode(
+    //                 $address['state_id'],
+    //                 $gstData['StateCode'] ?? null
+    //             );
+    //             if (!$stateValidation['valid']) {
+    //                 $validator->errors()->add(
+    //                     "addresses.{$index}.state_id", 
+    //                     $stateValidation['message'] ?? 'State does not match GSTIN records'
+    //                 );
+    //             }
+    //         }
+    //     }
+    // }
 
 
     protected function validateBankInfo($validator)
@@ -535,35 +535,35 @@ class VendorRequest extends FormRequest
             $companyName = $this->input('company_name');
             $gstinRegistrationDate = $this->input('compliance.gstin_registration_date');
             $gstinLegalName = $this->input('compliance.gst_registered_name');
-            if ($gstinNo) {
-                $gstValidation = EInvoiceHelper::validateGstNumber($gstinNo);
-                if ($gstValidation['Status'] == 1) {
-                    $gstData = json_decode($gstValidation['checkGstIn'], true);
-                    // if ($companyName && $companyName !== ($gstData['TradeName'] ?? '')) {
-                    //     $validator->errors()->add(
-                    //         'company_name', 
-                    //         'Company name  does not match GSTIN record.'
-                    //     );
-                    // }
-                    if ($gstinLegalName && $gstinLegalName !== ($gstData['LegalName'] ?? '')) {
-                        $validator->errors()->add(
-                            'compliance.gst_registered_name', 
-                            'Legal name  does not match GSTIN record.'
-                        );
-                    }
-                    // Validate GSTIN registration date
-                    $gstRegistrationDate = $gstData['DtReg'] ?? null; 
-                    if ($gstRegistrationDate && $gstinRegistrationDate && $gstinRegistrationDate !== $gstRegistrationDate) {
-                        $validator->errors()->add(
-                            'compliance.gstin_registration_date', 
-                            'GSTIN registration date does not match GSTIN records. '
-                        );
-                    }
-                    $this->addAddressValidationErrors($validator, $addresses, $gstData);
-                } else {
-                    $validator->errors()->add('compliance.gstin_no', 'The provided GSTIN number is invalid. Please verify and try again.');
-                }
-            }
+            // if ($gstinNo) {
+            //     $gstValidation = EInvoiceHelper::validateGstNumber($gstinNo);
+            //     if ($gstValidation['Status'] == 1) {
+            //         $gstData = json_decode($gstValidation['checkGstIn'], true);
+            //         // if ($companyName && $companyName !== ($gstData['TradeName'] ?? '')) {
+            //         //     $validator->errors()->add(
+            //         //         'company_name', 
+            //         //         'Company name  does not match GSTIN record.'
+            //         //     );
+            //         // }
+            //         if ($gstinLegalName && $gstinLegalName !== ($gstData['LegalName'] ?? '')) {
+            //             $validator->errors()->add(
+            //                 'compliance.gst_registered_name', 
+            //                 'Legal name  does not match GSTIN record.'
+            //             );
+            //         }
+            //         // Validate GSTIN registration date
+            //         $gstRegistrationDate = $gstData['DtReg'] ?? null; 
+            //         if ($gstRegistrationDate && $gstinRegistrationDate && $gstinRegistrationDate !== $gstRegistrationDate) {
+            //             $validator->errors()->add(
+            //                 'compliance.gstin_registration_date', 
+            //                 'GSTIN registration date does not match GSTIN records. '
+            //             );
+            //         }
+            //         $this->addAddressValidationErrors($validator, $addresses, $gstData);
+            //     } else {
+            //         $validator->errors()->add('compliance.gstin_no', 'The provided GSTIN number is invalid. Please verify and try again.');
+            //     }
+            // }
         });
         
     }

@@ -848,11 +848,6 @@ let isValid=true;
                                 }));
                             },
                             error: function () {
-                                Swal.fire({
-                            title: 'Error!',
-                            text: 'Failed to fetch assets',
-                            icon: 'error',
-                        });
                                 response([]);
                             }
                         });
@@ -930,11 +925,6 @@ let isValid=true;
                                 }));
                             },
                             error: function () {
-                                Swal.fire({
-                            title: 'Error!',
-                            text: 'Failed to fetch sub-assets',
-                            icon: 'error',
-                        });
                                 response([]);
                             }
                         });

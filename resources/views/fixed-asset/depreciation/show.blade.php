@@ -62,7 +62,7 @@
                                     <div class="row">
                                         <div class="col-md-12">
                                             <div
-                                                class="newheader d-flex justify-content-between align-items-end border-bottom mb-2 pb-25">
+                                                class="newheader d-flex justify-content-between border-bottom mb-2 pb-25">
                                                 <div>
                                                     <h4 class="card-title text-theme">Basic Information</h4>
                                                     <p class="card-text">Fill the details</p>
@@ -697,11 +697,6 @@ $(document).on('click', '#reject-button', (e) => {
             }
             },
             error: function () {
-            Swal.fire({
-                            title: 'Error!',
-                            text: 'Some internal error occurred',
-                            icon: 'error',
-                        });
                 $('.cost_center').hide();
                 $('#cost_center').empty();
             }

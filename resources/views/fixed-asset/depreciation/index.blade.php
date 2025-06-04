@@ -42,57 +42,57 @@ $errorsList = session('errors'); // This is auto-flashed by Laravel
 
 
                                 <div class="table-responsive">
-									<table class="datatables-basic table myrequesttablecbox tableistlastcolumnfixed newerptabledesignlisthome">
+									<table class="datatables-basic table myrequesttablecbox tableistlastcolumnfixed">
                                         <thead>
                                              <tr>
 												<th>#</th>
 												<th>Date</th>
 												<th>Series</th>
-												<th> Document NO.</th>
+												<th>Document NO.</th>
+												<th>Period</th>
 												<th>Location</th>
 												<th>Cost Center</th>
-												<th>Period</th>
 												<th>Dep. AMt</th>
-												<th>Status</th>
-												<th>Action</th>
+												<th class="text-end">Status</th>
 											  </tr>
 											</thead>
 											<tbody>
                         @foreach($data as $index=>$d)
                         @php $statusClasss =  $statusClasss = App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$d->document_status ?? App\Helpers\ConstantHelper::DRAFT]; @endphp
 												 <tr>
-													<td>{{$index+1}}</td>
-													<td class="fw-bolder text-dark">{{ \Carbon\Carbon::parse($d->document_date)->format('d-m-Y') }}</td>
-                      	<td class="fw-bolder text-dark">{{strtoupper($d?->book?->book_code)}}</td>
-                          <td class="fw-bolder text-dark">{{$d->document_number}}</td>
-													<td>{{$d?->Erplocation?->store_name??"-"}}</td>
-													<td>{{$d?->cost_center?->name ?? "-"}}</td>
-													<td>{{\DateTime::createFromFormat('d-m-Y', explode(" to ", $d->period)[1])->format("M 'y")}}                          </td>
-                          <td>{{number_format($d->grand_total_dep_amount,2)}}</td>
-                          <td>
-                            @php $statusClasss = App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$d->document_status??"draft"];  @endphp
-                            <span
-                                class='badge rounded-pill {{ $statusClasss }} badgeborder-radius'>
-                                @if ($d->document_status == App\Helpers\ConstantHelper::APPROVAL_NOT_REQUIRED)
-                                    Approved
-                                @else
-                                    {{ ucfirst($d->document_status) }}
-                                @endif
-                            </span>
-                        </td>
-													<td class="tableactionnew">
-														<div class="dropdown">
-															<button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
-																<i data-feather="more-vertical"></i>
-															</button>
-															<div class="dropdown-menu dropdown-menu-end">
-																<a class="dropdown-item" href="{{route('finance.fixed-asset.depreciation.show', $d->id)}}">
-																	<i data-feather="edit" class="me-50"></i>
-																	<span>View Detail</span>
-																</a>
-															</div>
-														</div>
-													</td>
+													<td class="text-nowrap">{{$index+1}}</td>
+													<td class="fw-bolder text-dark text-nowrap">{{ \Carbon\Carbon::parse($d->document_date)->format('d-m-Y') }}</td>
+                      	<td class="text-nowrap">{{strtoupper($d?->book?->book_code)}}</td>
+                          <td class="text-nowrap">{{$d->document_number}}</td>
+													<td class="text-nowrap">{{\DateTime::createFromFormat('d-m-Y', explode(" to ", $d->period)[1])->format("M 'y")}}                          </td>
+                          <td class="text-nowrap">{{$d?->Erplocation?->store_name??"-"}}</td>
+													<td class="text-nowrap">{{$d?->cost_center?->name ?? "-"}}</td>
+													<td class="text-nowrap">{{number_format($d->grand_total_dep_amount,2)}}</td>
+                        	<td class="tableactionnew">
+                              <div class="d-flex align-items-center justify-content-end">
+                                @php $statusClasss = App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$d->document_status??"draft"];  @endphp
+                                  <span
+                                      class='badge rounded-pill {{ $statusClasss }} badgeborder-radius'>
+                                      @if ($d->document_status == App\Helpers\ConstantHelper::APPROVAL_NOT_REQUIRED)
+                                          Approved
+                                      @else
+                                          {{ ucfirst($d->document_status) }}
+                                      @endif
+                                  </span>
+                              
+                                  <div class="dropdown">
+                                    <button type="button" class="btn btn-sm dropdown-toggle hide-arrow p-0" data-bs-toggle="dropdown">
+                                      <i data-feather="more-vertical"></i>
+                                    </button>
+                                    <div class="dropdown-menu dropdown-menu-end">
+                                      <a class="dropdown-item" href="{{route('finance.fixed-asset.depreciation.show', $d->id)}}">
+                                        <i data-feather="edit" class="me-50"></i>
+                                        <span>View Detail</span>
+                                      </a>
+                                    </div>
+                                  </div>
+                              </div>
+													  </td>
 												  </tr>
                           @endforeach
 											   </tbody>
@@ -193,7 +193,9 @@ $errorsList = session('errors'); // This is auto-flashed by Laravel
       order: [[0, 'asc']],
       dom:
         '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-3 withoutheadbuttin dt-action-buttons text-end"B><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
-      displayLength: 7,
+      scrollX: true,
+                    
+        displayLength: 7,
       lengthMenu: [7, 10, 25, 50, 75, 100],
       buttons: [
         {

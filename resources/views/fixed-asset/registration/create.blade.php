@@ -1239,9 +1239,9 @@
         success: function(response) {
             $('#grn_table tbody').html(response.html);
         },
-        error: function (xhr) {
-                showToast('error',xhr.responseText);
-            }
+        error: function(xhr) {
+            console.log(xhr.responseText);
+        }
     });
   $('#rescdule').on('show.bs.modal', function (e) {
    
@@ -1409,7 +1409,7 @@
                 $('#grn_table tbody').html(res.html);
             },
             error: function (xhr) {
-                showToast('error',xhr.responseText);
+                console.error(xhr.responseText);
             }
         });
     });
@@ -1648,9 +1648,8 @@ function showToast(icon, title) {
                 });
             }
             },
-            error: function (xhr) {
-                showToast('error',xhr.responseText);
-                    $('#cost_center').empty();
+            error: function () {
+                $('#cost_center').empty();
             }
         });
     } else {

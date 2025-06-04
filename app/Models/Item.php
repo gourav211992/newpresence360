@@ -5,11 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\DefaultGroupCompanyOrg;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\Deletable;
 
 class Item extends Model
 {
-    use HasFactory, Deletable,DefaultGroupCompanyOrg;
+    use HasFactory,SoftDeletes,Deletable,DefaultGroupCompanyOrg;
 
     protected $table = 'erp_items';
 
@@ -17,7 +18,6 @@ class Item extends Model
         'type',
         'unit_id',
         'hsn_id',
-        'currency_id',
         'category_id',
         'subcategory_id',
         'item_code',
@@ -32,7 +32,9 @@ class Item extends Model
         'storage_volume',
         'is_inspection',
         'cost_price',
+        'cost_price_currency_id',
         'sell_price',
+        'sell_price_currency_id',
         'book_id',
         'book_code',
         'item_code_type',
@@ -106,7 +108,11 @@ class Item extends Model
         return $this->hasOne(InventoryDetail::class);
     }
 
-    public function currency()
+    public function costCurrency()
+    {
+        return $this->belongsTo(Currency::class, );
+    }
+    public function sellCurrency()
     {
         return $this->belongsTo(Currency::class, );
     }

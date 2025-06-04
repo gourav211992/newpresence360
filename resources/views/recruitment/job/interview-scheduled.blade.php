@@ -25,8 +25,10 @@
                     <div class="form-group breadcrumb-right">
                         <button class="btn btn-dark btn-sm mb-50 mb-sm-0" data-bs-target="#filter" data-bs-toggle="modal"><i
                                 data-feather="filter"></i> Filter</button>
-                        <a href="{{ route('recruitment.jobs.create') }}" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i
-                                data-feather="plus-square"></i> Create Job</a>
+                        @if ($user->user_type !== App\Helpers\CommonHelper::IAM_VENDOR)
+                            <a href="{{ route('recruitment.jobs.create') }}" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i
+                                    data-feather="plus-square"></i> Create Job</a>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -136,15 +138,18 @@
                                                                             <i data-feather="eye" class="me-50"></i>
                                                                             <span>View Detail</span>
                                                                         </a>
-                                                                        <a class="dropdown-item" href="javascript:;"
-                                                                            data-bs-target="#status-modal"
-                                                                            data-bs-toggle="modal"
-                                                                            data-status="{{ App\Helpers\CommonHelper::CLOSED }}"
-                                                                            data-title="Closed Job"
-                                                                            data-id="{{ $interview->job_id }}">
-                                                                            <i data-feather="trash-2" class="me-50"></i>
-                                                                            <span>Closed</span>
-                                                                        </a>
+                                                                        @if (isset($interview->job) && $interview->job->status == 'open' && $user->id == $interview->job->created_by)
+                                                                            <a class="dropdown-item" href="javascript:;"
+                                                                                data-bs-target="#status-modal"
+                                                                                data-bs-toggle="modal"
+                                                                                data-status="{{ App\Helpers\CommonHelper::CLOSED }}"
+                                                                                data-title="Closed Job"
+                                                                                data-id="{{ $interview->job_id }}">
+                                                                                <i data-feather="trash-2"
+                                                                                    class="me-50"></i>
+                                                                                <span>Closed</span>
+                                                                            </a>
+                                                                        @endif
                                                                     </div>
                                                                 </div>
                                                             </td>

@@ -41,7 +41,6 @@
                                                 <th>Racks</th>
                                                 <th>Shelfs</th>
                                                 <th>Contact Person</th>
-                                                <th>Billing Address</th>
                                                 <th>Status</th>
                                                 <th>Action</th>
                                             </tr>
@@ -83,7 +82,6 @@ $(document).ready(function() {
                 { data: 'racks', render: renderData },
                 { data: 'shelfs', render: renderData },
                 { data: 'contact_person', render: renderData },
-                { data: 'billing_address', name: 'billing_address',orderable: false },
                 { data: 'status', orderable: false },
                 { data: 'action', orderable: false, searchable: false }
             ],
