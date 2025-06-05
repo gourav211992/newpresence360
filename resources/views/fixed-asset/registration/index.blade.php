@@ -220,6 +220,7 @@
     <!-- END: Content-->
 @endsection
 @section('scripts')
+<script type="text/javascript" src="{{asset('assets/js/modules/finance-table.js')}}"></script>
     <script>
         $(function() {
             var dt_basic_table = $('.datatables-basic'),
@@ -342,5 +343,6 @@
                 "@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach"
             );
         @endif
+        handleRowSelection('.datatables-basic');
     </script>
 @endsection

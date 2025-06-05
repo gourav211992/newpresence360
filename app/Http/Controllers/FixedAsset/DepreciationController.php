@@ -116,7 +116,7 @@ class DepreciationController extends Controller
 
         DB::beginTransaction();
 
-        try {
+         try {
             $insert = FixedAssetDepreciation::create($data);
             $doc = Helper::approveDocument($insert->book_id, $insert->id, $insert->revision_number, "", null, 1, 'submit', 0, get_class($insert));
             $insert->document_status = $doc['approvalStatus'] ?? $insert->document_status;
@@ -136,10 +136,10 @@ class DepreciationController extends Controller
             }
 
             foreach ($sub_assets as $sub_asset) {
-                $subAsset = FixedAssetSub::find($sub_asset['sub_asset_id']);
+                $subAsset = FixedAssetSub::find((int)$sub_asset['sub_asset_id']);
                 if ($subAsset) {
-                    $subAsset->total_depreciation += Helper::removeCommas($sub_asset['dep_amount']) ?? 0;
-                    $subAsset->current_value_after_dep = Helper::removeCommas($sub_asset['after_dep_value']) ?? ($subAsset->current_value_after_dep - Helper::removeCommas($sub_asset['dep_amount']));
+                    $subAsset->total_depreciation += (float)$sub_asset['dep_amount'] ?? 0;
+                    $subAsset->current_value_after_dep = $subAsset->current_value_after_dep - (float)$sub_asset['dep_amount'];
                     $subAsset->last_dep_date = Carbon::createFromFormat('d-m-Y', $sub_asset['to_date'])->addDay()->format('Y-m-d');
                     $subAsset->save();
                 }
@@ -281,10 +281,11 @@ class DepreciationController extends Controller
         }
         $asset_details = [];
         $asset_details = FixedAssetRegistration::withDefaultGroupCompanyOrg()
+            ->where('last_dep_date', '<', $endDate)
             ->withWhereHas('subAsset', function ($query) {
                 $query->where('current_value_after_dep', '>', 0);
                 $query->whereNotNull('expiry_date');
-                $query->where('expiry_date','>','last_dep_date');
+                $query->whereColumn('expiry_date', '>', 'last_dep_date');
             })
             ->whereNotNull('depreciation_percentage')
             ->whereNotNull('depreciation_percentage_year')
@@ -295,8 +296,7 @@ class DepreciationController extends Controller
                         ->orWhereNotNull('reference_doc_id');
             })
             ->withWhereHas('category')
-            ->get()
-            ->where('last_dep_date', '<', $endDate);
+            ->get()->values();
         return response()->json($asset_details);
     }
     function getPeriods($startDate, $endDate, $period)

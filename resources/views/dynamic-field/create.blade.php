@@ -133,9 +133,16 @@
                                                                                 @endforeach
                                                                             </select>
                                                                         </td>
-                                                                        <td>
-                                                                            <input type="text" name="field_details[0][value]" class="form-control mw-100 list-value-input" placeholder="Enter Value" readonly />
-                                                                        </td>
+                                                                        <td class="poprod-decpt">
+    <div class="badge-container">
+        <!-- Badges yahan dynamically add honge -->
+    </div>
+    <!-- Hidden input to store just the values (for badges & display) -->
+    <input type="hidden" name="field_details[0][value]" class="list-value-input" value="">
+    <a href="javascript:void(0);" class="btn p-25 btn-sm btn-outline-secondary add-value-btn" style="font-size: 10px">
+        Add Value
+    </a>
+</td>
                                                                         <td>
                                                                             <a href="#" class="text-primary add-row"><i data-feather="plus-square"></i></a>
                                                                             <a href="#" class="text-danger delete-row"><i data-feather="trash-2"></i></a>
@@ -154,26 +161,25 @@
                         </div>
                     </section>
                 </div>
-                <!-- Add/Edit List Values Modal -->
-                <div class="modal fade" id="listValueModal" tabindex="-1" aria-labelledby="listValueModalLabel" aria-hidden="true" inert>
+               <!-- Add/Edit List Values Modal -->
+                <div class="modal fade" id="addaccess" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content">
                             <div class="modal-header p-0 bg-transparent">
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body px-sm-4 mx-50 pb-2">
-                                <h1 class="text-center mb-1" id="listValueModalLabel">Add List Values</h1>
+                                <h1 class="text-center mb-1" id="shareProjectTitle">Add List Values</h1>
                                 <p class="text-center">Enter the details below.</p>
 
-                                <div class="row mt-2">
-                                    <div class="col-md-12 mb-1">
-                                        <label class="form-label w-100">Value
-                                            <a href="#" id="add-value" class="float-end text-primary font-small-2"></a>
-                                        </label>
-                                        <div class="d-flex align-items-center">
-                                            <input type="text" id="value_input" class="form-control list-value-input" placeholder="Enter Value" aria-label="Value">
-                                            <!-- Removed Add button -->
-                                        </div>
+                                <div class="row mt-2 align-items-end">
+                                    <div class="col-md-10 mb-1">
+                                        <label class="form-label">Value<span class="text-danger">*</span></label>
+                                        <input type="text" id="value_input" class="form-control" placeholder="Enter Value" />
+                                    </div>
+                                    <div class="col-md-2 mb-1">
+                                        <label class="form-label">&nbsp;</label>
+                                        <a href="javascript:void(0);" class="btn btn-sm btn-primary" id="add-value">Add</a>
                                     </div>
                                 </div>
 
@@ -198,7 +204,6 @@
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
     </form>
@@ -209,29 +214,50 @@
     $(document).ready(function() {
         var $tableBody = $('#details-box');
         const DATA_TYPE_LIST = 'list';
-        let listValues = [];
+        function updateBadges($row) {
+            const badgeContainer = $row.find('.badge-container');
+            badgeContainer.empty();
 
-        $(document).on('change', '.data-type-select', function() {
-            if ($(this).val() === DATA_TYPE_LIST) {
-                $('#listValueModal').modal('show');
-            }
-        });
-        $(document).on('click', '.list-value-input', function() {
-            var $row = $(this).closest('tr'); 
-            var $dataTypeSelect = $row.find('.data-type-select'); 
+            const valuesStr = $row.find('.list-value-input').val().trim();
+            const values = valuesStr ? valuesStr.split(',').map(v => v.trim()).filter(v => v) : [];
+            values.forEach((value, index) => {
+                if (index < 3) {
+                    badgeContainer.append(`<span class="badge rounded-pill badge-light-primary">${value}</span>`);
+                } else if (index === 3) {
+                    const remaining = values.length - 3;
+                    badgeContainer.append(`<span class="badge rounded-pill badge-light-primary plus-badge">+${remaining}</span>`);
+                }
+            });
+        }
+
+        function saveListValues($row) {
+            let values = [];
+            $('#listValueTableBody tr').each(function() {
+                const value = $(this).find('td:nth-child(2)').text().trim();
+                if (value) {
+                    values.push(value);
+                }
+            });
+
+            $row.find('.list-value-input').val(values.join(','));
+
+            updateBadges($row);
+        }
+
+        $(document).on('click', '.add-value-btn', function() {
+            var $row = $(this).closest('tr');
+            var $dataTypeSelect = $row.find('.data-type-select');
             var selectedType = $dataTypeSelect.val();
 
             if (selectedType === DATA_TYPE_LIST) {
-                $('#listValueModal').modal('show');
+                $('#addaccess').data('row', $row); 
+                populateModal($row);
+                $('#addaccess').modal('show');
+            } else {
+                alert('Please select "List" as the data type to add values.');
             }
         });
 
-        $('#value_input').on('keypress', function(e) {
-            if (e.which === 13) { 
-                e.preventDefault();
-                addValueAndSave(); 
-            }
-        });
         function addValueAndSave() {
             const value = $('#value_input').val().trim();
             if (value) {
@@ -249,71 +275,91 @@
                     $('#value_input').val('');
                     return;
                 }
+
                 const rowCount = $('#listValueTableBody tr').length + 1;
                 const newRow = `
-                <tr>
-                    <td>${rowCount}</td>
-                    <td>${value}</td>
-                    <td>
-                        <a href="#" class="text-danger delete-row delete-list-value-row"><i data-feather="trash-2"></i></a>
-                    </td>
-                </tr>
-            `;
+                    <tr>
+                        <td>${rowCount}</td>
+                        <td>${value}</td>
+                        <td>
+                            <a href="#" class="text-danger delete-row delete-list-value-row"><i data-feather="trash-2"></i></a>
+                        </td>
+                    </tr>
+                `;
                 $('#listValueTableBody').append(newRow);
-                listValues.push(value);
                 $('#value_input').val('');
-                saveListValues();
+                const $row = $('#addaccess').data('row');
+                saveListValues($row);
                 updateRowNumbersAndValues();
             }
         }
 
-        function updateRowNumbersAndValues() {
-            var listValuesArr = [];
-            $('#listValueTableBody tr').each(function(index) {
-                $(this).find('td:first').text(index + 1);
-                const val = $(this).find('td:nth-child(2)').text();
-                if (val) {
-                    listValuesArr.push(val);
-                }
-            });
-            $('.data-type-select').each(function() {
-                if ($(this).val() === DATA_TYPE_LIST) {
-                    $(this).closest('tr').find('.list-value-input').val(listValuesArr.join(','));
-                }
-            });
-            listValues = listValuesArr;
-            feather.replace();
-        }
-        $('#listValueTableBody').on('click', '.delete-list-value-row', function() {
-            $(this).closest('tr').remove();
-            updateRowNumbersAndValues();
+        $('#add-value').on('click', function() {
+            addValueAndSave();
         });
-        function saveListValues() {
-            listValues = [];
-            $('#listValueTableBody tr').each(function() {
-                const value = $(this).find('td:nth-child(2)').text(); 
-                if (value) {
-                    listValues.push(value);
-                }
-            });
-            $('.data-type-select').each(function() {
-                if ($(this).val() === DATA_TYPE_LIST) {
-                    $(this).closest('tr').find('.list-value-input').val(listValues.join(',')); 
-                }
-            });
-        }
+
+        $('#value_input').on('keypress', function(e) {
+            if (e.which === 13) {
+                e.preventDefault();
+                addValueAndSave();
+            }
+        });
 
         $('#submitListValues').on('click', function() {
-            $('#listValueModal').modal('hide');
+            $('#addaccess').modal('hide');
         });
-        
-        $('#listValueModal').on('show.bs.modal', function() {
+
+        function populateModal($row) {
+            const combinedValuesStr = $row.find('.list-value-input').val().trim();
+            $('#listValueTableBody').empty();
+
+            if (combinedValuesStr && combinedValuesStr !== '') {
+                const values = combinedValuesStr.split(',');
+                values.forEach((value, index) => {
+                    const newRow = `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>${value}</td>
+                            <td>
+                                <a href="#" class="text-danger delete-row delete-list-value-row"><i data-feather="trash-2"></i></a>
+                            </td>
+                        </tr>
+                    `;
+                    $('#listValueTableBody').append(newRow);
+                });
+            }
+
+            updateRowNumbersAndValues();
+        }
+
+        function updateRowNumbersAndValues() {
+            $('#listValueTableBody tr').each(function(index) {
+                $(this).find('td:first').text(index + 1);
+            });
+            feather.replace();
+        }
+
+        $('#listValueTableBody').on('click', '.delete-list-value-row', function(e) {
+            e.preventDefault();
+            $(this).closest('tr').remove();
+            updateRowNumbersAndValues();
+            const $row = $('#addaccess').data('row');
+            saveListValues($row);
+        });
+
+      
+        $('#submitListValues').on('click', function() {
+            $('#addaccess').modal('hide');
+        });
+
+        $('#addaccess').on('show.bs.modal', function() {
             $(this).removeAttr('inert');
         });
 
-        $('#listValueModal').on('hidden.bs.modal', function() {
+        $('#addaccess').on('hidden.bs.modal', function() {
             $(this).attr('inert', 'inert');
         });
+
         function applyCapsLock() {
             $('input[type="text"], input[type="number"]').each(function() {
                 $(this).val($(this).val().toUpperCase());
@@ -373,6 +419,7 @@
 
             $newRow.find('textarea').val('');
             $newRow.find('.ajax-validation-error-span').remove();
+            $newRow.find('.badge-container').empty(); 
             $tableBody.append($newRow);
             attachEventListeners($newRow);
             updateDynamicFieldNumbers();

@@ -20,7 +20,11 @@
             <tr>
                 <!-- Organization Logo (Left) -->
                 <td style="vertical-align: top;">
-                    <img src="{{$orgLogo}}" height="50px" alt="">
+                    @if (isset($orgLogo) && $orgLogo)
+                        <img src="{!! $orgLogo !!}" alt="" height="50px" />
+                    @else
+                        <img src="{{ $imagePath }}" height="50px" alt="">
+                    @endif
                 </td>
 
                 <!--  Manufacturing Order Text (Center) -->
@@ -49,12 +53,6 @@
                             <!-- Left Column -->
                             <td style="width: 50%; vertical-align: top;">
                                 <table style="width: 50%;" cellspacing="0" cellpadding="2">
-                                    @if($order?->machine?->name)
-                                    <tr>
-                                        <td><b>Machine:</b></td>
-                                        <td>{{ $order->machine->name }}</td>
-                                    </tr>
-                                    @endif
                                     @if($order->store_location?->store_name)
                                     <tr>
                                         <td><b>Location:</b></td>
@@ -118,9 +116,14 @@
                                     <tr>
                                         <td><b>Created By:</b></td>
                                         <td>{{ $order?->createdBy?->name }}</td>
-                                    </tr><tr>
+                                    </tr>
+                                    <tr>
                                         <td><b>Printed By:</b></td>
                                         <td>{{ $user->name }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><b>Approved By:</b></td>
+                                        <td>{{$approvedBy}}</td>
                                     </tr>
                                 </table>
                             </td>
@@ -148,10 +151,12 @@
                     @php
                         $colspan = 9;
                         $sheet_check = $products->filter(function($prod){
-                                return $prod->number_of_sheets;
+                                //return $prod->number_of_sheets;
+                                return 1;
                             });
                         $machine_check = $products->filter(function($prod){
-                                return $prod->machine_id;
+                                //return $prod->machine_id;
+                                return 1;
                             });
                         if(count($sheet_check))
                         {
@@ -180,16 +185,16 @@
                         UOM
                     </td>
                     <td style="font-weight: bold; padding: 4px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
-                        Quantity
+                        Qty
                     </td>
-                    @if(count($sheet_check))
-                    <td style="font-weight: bold; padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
-                        Sheet Qty
-                    </td>
-                    @endif
                     @if(count($machine_check))
                     <td style="font-weight: bold; padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
                         Machine
+                    </td>
+                    @endif
+                    @if(count($sheet_check))
+                    <td style="font-weight: bold; padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
+                        Sheets#
                     </td>
                     @endif
                     <td style="font-weight: bold; padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
@@ -294,18 +299,18 @@
         <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
             <thead>
                 <tr>
-                    <th colspan="6" style="padding: 6px; border: 1px solid #000; background: #80808070; text-align: center; font-weight: bold">
-                        Item(s)
+                    <th colspan="7" style="padding: 6px; border: 1px solid #000; background: #80808070; text-align: center; font-weight: bold">
+                        Components
                     </th>
                 </tr>
                 <tr>
-                    <th style="padding: 6px; border: 1px solid #000; background: #80808070; text-align: center; font-weight: bold">#</th>
-                    <th style="padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center; font-weight: bold">Process</th>
-                    <th style="padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: left; font-weight: bold">Item</th>
-                    <th style="padding: 4px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center; font-weight: bold">UOM</th>
-                    <th style="padding: 4px; border: 1px solid #000; border-left: none; background: #80808070; text-align: right; font-weight: bold">Required Qty</th>
-                    <th style="padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: right; font-weight: bold">Consumed Qty</th>
-                </tr>
+                    <th style="padding: 6px; border: 1px solid #000; background: #80808070; text-align: center; font-weight: bold; width: 20px;">#</th>
+                    <th style="padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center; font-weight: bold; width: 60px;">Process</th>
+                    <th style="padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: left; font-weight: bold; width: 150px;">Item</th>
+                    <th style="padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center; font-weight: bold; width: 100px;">Attribute</th>
+                    <th style="padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center; font-weight: bold; width: 50px;">Item Type</th>
+                    <th style="padding: 4px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center; font-weight: bold; width: 50px;">UOM</th>
+                    <th style="padding: 4px; border: 1px solid #000; border-left: none; background: #80808070; text-align: right; font-weight: bold; width: 40px;">Qty</th></tr>
             </thead>
             <tbody>
                 @foreach($items as $key => $val)
@@ -314,11 +319,22 @@
                         {{ $key + 1 }}
                     </td>
                     <td width='140px' style="vertical-align: middle; padding: 2px 3px; border: 1px solid #000; border-top: none; text-align: center;">
-                        {{ $val->station->name }} - {{ $val->rm_type == "rm" ? "Raw Material" : "Semi Finished" }}
+                        {{ $val->station->name }}
                     </td>
                     <td style="vertical-align: middle; padding: 10px 3px; text-align:left; border: 1px solid #000; border-top: none; border-left: none;">
-                        <b>{{ @$val->item->item_name }}</b><br>
+                      <b>{{ @$val->item->item_name }}</b><br>
                         {{ @$val->item->item_code }}<br />
+                        @if(isset($val->specifications))
+                            @foreach($val->specifications as $data)
+                                @if(isset($data->value))
+                                    {{ $data->specification_name }}: {{ $data->value }}<br>
+                                @endif
+                            @endforeach
+                        @endif
+
+                        {{ @$val->remarks }}
+                    </td>
+                    <td width='40px' style="vertical-align: middle; padding: 10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
                         @if($val?->attributes->count())
                             @php 
                                 $html = '';
@@ -337,25 +353,15 @@
                             @endphp
                             {{ $html }}<br>
                         @endif
-
-                        @if(isset($val->specifications))
-                            @foreach($val->specifications as $data)
-                                @if(isset($data->value))
-                                    {{ $data->specification_name }}: {{ $data->value }}<br>
-                                @endif
-                            @endforeach
-                        @endif
-
-                        {{ @$val->remarks }}
+                    </td>
+                    <td width='40px' style="vertical-align: middle; padding: 10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
+                        {{ $val->rm_type == "rm" ? "RM" : "WIP" }}
                     </td>
                     <td width='40px' style="vertical-align: middle; padding: 10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
                         {{ @$val->uom->name }}
                     </td>
                     <td style="vertical-align: middle; padding: 10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
                         {{ @$val->qty }}
-                    </td>
-                    <td style="vertical-align: middle; padding: 10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
-                        {{ @$val->consumed_qty }}
                     </td>
                 </tr>
                 @endforeach
@@ -392,7 +398,7 @@
                             <td style="padding: 5px; border: 1px solid black; border-left: none; text-align: center; font-weight: bold;"><p></p></td>
                             <td style="padding: 5px; border: 1px solid black; border-left: none; text-align: center; font-weight: bold;"><p></p></td>
                             <td style="padding: 5px; border: 1px solid black; border-left: none; text-align: center; font-weight: bold;"><p></p></td>
-                          <td style="padding: 5px; border: 1px solid black; border-left: none; text-align: center; font-weight: bold;"><p>{{$approvedBy}}</p></td>
+                          <td style="padding: 5px; border: 1px solid black; border-left: none; text-align: center; font-weight: bold;"><p></p></td>
                         </tr>
                         <tr>
                             <td style="padding: 5px; border: 1px solid black; border-top: none; text-align: center; font-weight: bold;">Store</td>

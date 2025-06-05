@@ -816,6 +816,10 @@ class ErpTransporterRequestController extends Controller
                         $title = "New Transporter Request";
                         $bidLink = route('supplier.transporter.index',[$vendor->id]); // Generate route in PHP
                         $name = $vendor->company_name;
+                        $mail_from = '';
+                        $mail_from_name = '';
+                        $cc = $request->cc_to ? implode(',', $request->cc_to) : null;
+                        $attachment = $request->file('attachments') ?? null;
                         $description = <<<HTML
                         <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; padding: 20px; border-radius: 5px; box-shadow: 0px 0px 10px #ccc;">
                             <tr>
@@ -834,7 +838,7 @@ class ErpTransporterRequestController extends Controller
                             </tr>
                         </table>
                         HTML;
-                        self::sendMail($vendor,$title,$description);
+                        self::sendMail($vendor,$title,$description,$cc,$attachment,$mail_from,$mail_from_name);
                     }
                     $tr->save();
                 }
@@ -994,15 +998,17 @@ class ErpTransporterRequestController extends Controller
     //     ]);
     // }
 
-    public function sendMail($receiver, $title, $description)
+    public function sendMail($receiver, $title, $description, $cc = null, $attachment, $mail_from=null, $mail_from_name=null)
     {
         if (!$receiver || !isset($receiver->email)) {
             return "Error: Receiver details are missing or invalid.";
         }
 
-        dispatch(new SendEmailJob($receiver, $title, $description));
-
-        return "Success: Email job dispatched!";
+        dispatch(new SendEmailJob($receiver, $mail_from, $mail_from_name,$title,$description,$cc,$attachment));
+        return response() -> json([
+            'status' => 'success',
+            'message' => 'Email request sent succesfully',
+        ]);
     }
         // Check if receiver object exists and has an email
         // if (!$receiver || !isset($receiver->email)) {
@@ -1097,6 +1103,10 @@ class ErpTransporterRequestController extends Controller
                 $bidLink = route('supplier.transporter.index',[$vendor->id]); // Generate route in PHP
                 $bid_name = $tr->document_number;
                 $name = $vendor->company_name;
+                $mail_from = '';
+                $mail_from_name = '';
+                $cc = $request->cc_to ? implode(',', $request->cc_to) : null;
+                $attachment = $request->file('attachments') ?? null;
                 $description = <<<HTML
                 <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; padding: 20px; border-radius: 5px; box-shadow: 0px 0px 10px #ccc;">
                     <tr>
@@ -1116,7 +1126,7 @@ class ErpTransporterRequestController extends Controller
                     </tr>
                 </table>
                 HTML;
-                self::sendMail($vendor,$title,$description);
+                self::sendMail($vendor,$title,$description,$cc,$attachment,$mail_from,$mail_from_name);
             }
             
             $approveDocument = Helper::approveDocument($tr->book_id, $tr->id, 0, $remarks, [], $tr->approval_level, 'bid-reopened' , 0,get_class($tr));

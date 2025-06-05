@@ -3,8 +3,10 @@
 namespace App\Imports\BankReconciliation;
 
 use App\Helpers\CommonHelper;
+use App\Helpers\Helper;
 use App\Models\BankDetail;
 use App\Models\BankReconciliation\BankStatement;
+use App\Models\BankReconciliation\FailedBankStatement;
 use App\Models\ItemDetail;
 use App\Models\Ledger;
 use App\Models\PaymentVoucher;
@@ -23,6 +25,8 @@ class BankStatementImport implements ToModel, WithValidation, WithHeadingRow, Sk
     use Importable;
     protected $bank;
     protected $ledger;
+    protected $user;
+    protected $batchUid;
     protected $successfulRows = 0;
     protected $failedRows = 0;
     protected $failures = [];
@@ -31,6 +35,11 @@ class BankStatementImport implements ToModel, WithValidation, WithHeadingRow, Sk
     {
         $this->bank = BankDetail::findOrFail($id);
         $this->ledger = Ledger::find($this->bank->ledger_id);
+        $this->user = Helper::getAuthenticatedUser();;
+        $this->batchUid = (string) Str::uuid();
+        FailedBankStatement::where('created_by', $this->user->id)
+        ->where('created_by_type', $this->user->authenticable_type)
+        ->delete();
     }
 
     /**
@@ -40,7 +49,16 @@ class BankStatementImport implements ToModel, WithValidation, WithHeadingRow, Sk
     */
     public function model(array $row)
     {
-        $date = \Carbon\Carbon::createFromFormat('d-m-Y', $row['date']);
+        $date = $this->isValidDateFormat($row['date']);
+        if (!$date) {
+            $this->failedRows++;
+            $this->failures[] = [
+                'data' => $row,
+                'errors' => "Invalid date format: {$row['date']}"
+            ];
+            $this->addFailedStatement("Invalid date format: {$row['date']}", $row);
+            return null;
+        }
 
         // Duplicate check
         $duplicate = BankStatement::where('ref_no', $row['chqref_no'])
@@ -52,9 +70,13 @@ class BankStatementImport implements ToModel, WithValidation, WithHeadingRow, Sk
         if ($duplicate) {
             $this->failedRows++;
             $this->failures[] = [
-                'chqref_no' => $row['chqref_no'],
-                'errors' => ["The Ref No: {$row['chqref_no']} already exists for the selected account."],
+                'data' => $row,
+                'errors' => "The Ref No: {$row['chqref_no']} already exists for the selected account."
             ];
+
+
+            $errors = "The Ref No: {$row['chqref_no']} already exists for the selected account.";
+            $this->addFailedStatement($errors,$row);
             return null;
         }
 
@@ -70,13 +92,15 @@ class BankStatementImport implements ToModel, WithValidation, WithHeadingRow, Sk
         $statement->bank_id = $this->bank->bank_id;
         $statement->account_id = $this->bank->id;
         $statement->account_number = $this->bank->account_number;
-        $statement->uid = (string) Str::uuid();
+        $statement->uid = $this->batchUid;
         $statement->narration =  $row['narration'];
-        $statement->date = $row['date'] ? \Carbon\Carbon::createFromFormat('d-m-Y', $row['date']) : NULL;
+        $statement->date = $date;
         $statement->ref_no = $row['chqref_no'];
         $statement->debit_amt = $row['debit_amount'];
         $statement->credit_amt = $row['credit_amount'];
         $statement->balance = $row['balance'];
+        $statement->created_by = $this->user->id;
+        $statement->created_by_type = $this->user->authenticable_type;
         $statement->save();
         $this->attemptMatch($statement);
 
@@ -85,27 +109,6 @@ class BankStatementImport implements ToModel, WithValidation, WithHeadingRow, Sk
 
     protected function attemptMatch(BankStatement $statement)
     {
-        // $match = PaymentVoucher::where('bank_id', $statement->bank_id)
-        //     ->where('ledger_id', $statement->ledger_id)
-        //     ->where('account_id', $statement->account_id)
-        //     ->where('accountNo', $statement->account_number)
-        //     ->where('ledger_group_id', $statement->ledger_group_id)
-        //     ->where('group_id', $statement->group_id)
-        //     ->where('company_id', $statement->company_id)
-        //     ->where('organization_id', $statement->organization_id)
-        //     ->where('reference_no', $statement->ref_no)
-        //     ->whereDate('document_date', $statement->date)
-        //     ->where(function ($query) use ($statement) {
-        //         $query->where(function ($q) use ($statement) {
-        //             $q->where('document_type', CommonHelper::PAYMENTS)
-        //             ->where('amount', $statement->credit_amt);
-        //         })->orWhere(function ($q) use ($statement) {
-        //             $q->where('document_type', CommonHelper::RECEIPTS)
-        //             ->where('amount', $statement->debit_amt);
-        //         });
-        //     })
-        //     ->first();
-
         $match = ItemDetail::join('erp_vouchers','erp_vouchers.id','=','erp_item_details.voucher_id')
                 ->join('erp_payment_vouchers','erp_payment_vouchers.id','=','erp_vouchers.reference_doc_id')
                 ->where('erp_payment_vouchers.bank_id', $statement->bank_id)
@@ -122,7 +125,7 @@ class BankStatementImport implements ToModel, WithValidation, WithHeadingRow, Sk
                 ->whereDate('erp_vouchers.document_date', $statement->date)
                 ->select('erp_item_details.id')
                 ->first();
-            // dd($match,$statement->toArray());
+
         if ($match) {
             $statement->matched = true;
             $match->statement_uid = $statement->uid;
@@ -135,28 +138,55 @@ class BankStatementImport implements ToModel, WithValidation, WithHeadingRow, Sk
     public function onFailure(...$failures)
     {
         foreach ($failures as $failure) {
-            $row = $failure->row();
+            $rowData = $failure->values();
 
-            // Avoid double-counting the same row
-            if (!isset($this->failures[$row])) {
-                $this->failedRows++; // Count each row only once
-                $this->failures[$row] = [
-                    'row' => $row,
-                    'errors' => [],
-                ];
-            }
+            $this->failedRows++;
 
-            $this->failures[$row]['errors'] = array_merge(
-                $this->failures[$row]['errors'],
-                $failure->errors()
-            );
+            $this->failures[] = [
+                'data' => $rowData,
+                'errors' => implode(', ', $failure->errors())
+            ];
+
+            $errors = implode(', ', $failure->errors());
+            $this->addFailedStatement($errors,$rowData);
         }
+    }
+
+    protected function addFailedStatement($errors,$rowData)
+    {
+        $date = $this->isValidDateFormat($rowData['date']);
+       
+        FailedBankStatement::create([
+                'group_id' => $this->ledger->group_id,
+                'company_id' => $this->ledger->company_id,
+                'organization_id' => $this->ledger->organization_id,
+                'ledger_id' => $this->bank->ledger_id,
+                'ledger_group_id' => $this->bank->ledger_group_id,
+                'bank_id' => $this->bank->bank_id,
+                'account_id' => $this->bank->id,
+                'account_number' => $this->bank->account_number ?? null,
+                'ref_no' => $rowData['chqref_no'] ?? null,
+                'narration' => $rowData['narration'] ?? null,
+                'date' => $date ? $date : null,
+                'debit_amount' => $rowData['debit_amount'] ?? 0,
+                'credit_amount' => $rowData['credit_amount'] ?? 0,
+                'balance' => $rowData['balance'] ?? 0,
+                'uid' => $this->batchUid,
+                'errors' => $errors,
+                'created_by' => $this->user->id,
+                'created_by_type' => $this->user->authenticable_type
+            ]);
     }
 
     // Count of successful rows
     public function getSuccessfulRowsCount()
     {
         return $this->successfulRows;
+    }
+
+    public function getBatchId()
+    {
+        return $this->batchUid;
     }
 
     // Count of failed rows
@@ -168,13 +198,27 @@ class BankStatementImport implements ToModel, WithValidation, WithHeadingRow, Sk
     public function rules(): array
     {
         return [
-            'date' => ['required', 'date_format:d-m-Y'],
+            'date' => ['required'],
             'narration' => ['required'],
             'debit_amount' => ['required', 'numeric'],
             'credit_amount' => ['required', 'numeric'],
             'balance' => ['required', 'numeric'],
             'chqref_no' => ['required'],
         ];
+    }
+
+    protected function isValidDateFormat($value)
+    {
+        $formats = ['d-m-Y', 'd/m/Y', 'Y-m-d'];
+        foreach ($formats as $format) {
+            $date = \DateTime::createFromFormat($format, $value);
+            $errors = \DateTime::getLastErrors();
+            if ($date && $errors['warning_count'] === 0 && $errors['error_count'] === 0 && $date->format($format) === $value) {
+                // Always return Carbon date in Y-m-d
+                return \Carbon\Carbon::createFromFormat($format, $value)->format('Y-m-d');
+            }
+        }
+        return false;
     }
 
     public function customValidationMessages()

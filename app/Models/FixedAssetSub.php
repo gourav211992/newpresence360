@@ -65,6 +65,9 @@ class FixedAssetSub extends Model
                 'expiry_date' => $expiry,
             ]);
         }
+        Log::info("Sub Assets", [
+                'Sub Assets' => $subAssets,
+            ]);
 
         return $subAssets;
     }

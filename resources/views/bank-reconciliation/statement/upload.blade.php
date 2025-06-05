@@ -74,6 +74,7 @@
 
                                 </div>
                             </div>
+
                         </div>
                     </form>
                 </section>
@@ -81,21 +82,6 @@
         </div>
     </div>
     <!-- END: Content-->
-
-    <!-- Error Details Modal -->
-    <div class="modal fade" id="errorDetailsModal" tabindex="-1" aria-labelledby="errorDetailsLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="errorDetailsLabel">Failed Rows Details</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body" id="errorDetailsBody" style="max-height: 500px; overflow-y: auto;">
-                    <!-- Error details will be injected here -->
-                </div>
-            </div>
-        </div>
-    </div>
 @endsection
 
 @section('scripts')
@@ -191,18 +177,21 @@
                                     Transaction Succeeded: ${successCount}
                                 </span>
                                 ${failureCount > 0 ? 
-                                    `<span class="badge rounded-pill badge-light-danger fw-bold mb-1">Failed Rows: ${failureCount}</span>
-                                                                                                                                            <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#errorDetailsModal">View Details</button>` 
+                                    `<span class="badge rounded-pill badge-light-danger fw-bold mb-1">Failed Rows: ${failureCount}</span>` 
                                 : ''}
-                                <button type="button" class="editbtnNew mt-2" id="upload-again-btn">
-                                    <i data-feather='upload'></i> Upload Again
-                                </button>
                             </div>`;
 
                         $('#success-container').html(successHtml).show();
                         if (typeof feather !== 'undefined') {
                             feather.replace();
                         }
+
+                        setTimeout(function() {
+                            const currentUrl = window.location.href.split('?')[0];
+                            window.location.href = currentUrl +
+                                '?type=success-statement&batch_uid=' +
+                                $response.data.batchId;
+                        }, 3000);
                     }
 
                     $this.prop('disabled', false);

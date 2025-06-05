@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\DynamicFieldsTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Helpers\ConstantHelper;
@@ -12,7 +13,7 @@ use App\Traits\FileUploadTrait;
 
 class MfgOrder extends Model
 {
-    use HasFactory,DateFormatTrait,FileUploadTrait,DefaultGroupCompanyOrg;
+    use HasFactory,DateFormatTrait,DynamicFieldsTrait,FileUploadTrait,DefaultGroupCompanyOrg;
 
     protected $table = 'erp_mfg_orders';
 
@@ -113,7 +114,7 @@ class MfgOrder extends Model
 
     public function machine()
     {
-        return $this->belongsTo(ErpMachine::class, 'machine');
+        return $this->belongsTo(ErpMachine::class, 'machine_id');
     }
 
     public function bom()
@@ -193,5 +194,10 @@ class MfgOrder extends Model
     public function item()
     {
         return $this->belongsTo(Item::class, 'item_id');
+    }
+    
+    public function dynamic_fields()
+    {
+        return $this -> hasMany(ErpMoDynamicField::class, 'header_id');
     }
 }

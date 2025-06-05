@@ -22,7 +22,7 @@
                 </div>
                 <div class="content-header-right text-sm-end col-md-7 mb-50 mb-sm-0">
                     <div class="form-group breadcrumb-right">
-                        <button class="btn btn-warning btn-sm mb-50 mb-sm-0"><i data-feather="filter"></i> Filter</button>
+                        <button class="btn btn-warning btn-sm mb-50 mb-sm-0" onclick ='openFiltersModal();'><i data-feather="filter"></i> Filter</button>
                         @if ($create_button)
 						<a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{$create_route}}"><i data-feather="plus-circle"></i> Create {{request() -> type == 'sq' ? 'Quotation' : 'Order'}}</a> 
                         @endif

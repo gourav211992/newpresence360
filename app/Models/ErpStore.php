@@ -99,4 +99,8 @@ class ErpStore extends Model
         });
     }
 
+    public function employees()
+    {
+        return $this->belongsToMany(Employee::class, 'erp_employee_stores', 'location_id', 'employee_id');
+    }
 }

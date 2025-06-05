@@ -182,10 +182,25 @@
                                                 </select>
                                             </div>
                                         </div>
+                                        <div class="row align-items-center d-none mb-1 lease-hidden">
+                                            <div class="col-md-3"> 
+                                                <label class="form-label" id="from_store_header_label">Store<span class="text-danger">*</span></label>  
+                                            </div>
+                                            <div class="col-md-5">  
+                                                <select class="form-select disable_on_edit" name="sub_store_id" id="xsub_store_id_input">
+                                                    @if(isset($order) && $order->sub_store_id && $order->document_status != App\Helpers\ConstantHelper::DRAFT)
+                                                        <option value="{{ $order->sub_store_id }}" selected> {{ $order->sub_store_code }}</option>
+                                                    @else
+                                                    <option value="">Select</option> 
+                                                        
+                                                    @endif    
+                                                </select>
+                                            </div>
+                                        </div>
                                     </div>
                                     @if(isset($order))
                                     @include('partials.approval-history', ['document_status' => $order->document_status, 'revision_number' => $order->revision_number]) 
-                                    @endif
+                              @endif
                                 </div> 
                             </div>
                         </div>
@@ -249,14 +264,17 @@
     </form>
         <!-- END: Content-->
     @endsection
-
+    @section('modals')
+    @include('PL.modals')
+    @endsection
     @section('scripts')
+    <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
     <script>
-    var currentfy = json_encode({!! isset($order) ? $order : null !!});
+    var currentfy = JSON.stringify({!! isset($order) ? $order : " " !!});
     let requesterTypeParam = "{{isset($order) ? $order -> requester_type : 'Department'}}";
     let redirect = "{{$redirect_url}}";   
     </script>
-    @include('pl.common-js-route')
+    @include('PL.common-js-route',["order" => isset($order) ? $order : null, "route_prefix" => "PL"])
     <script src="{{ asset("assets\\js\\modules\\pl\\common-script.js") }}"></script>
     <script src="{{ asset("assets\\js\\modules\\pl\\pl.js") }}"></script>
 

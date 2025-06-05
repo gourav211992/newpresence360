@@ -143,10 +143,34 @@
                                                                                     @endforeach
                                                                                 </select>
                                                                             </td>
-                                                                            <td>
-                                                                                <input type="text" name="field_details[{{ $index }}][value]" class="form-control mw-100 list-value-input" placeholder="Enter Value" value=" @foreach($detail->values as $value) {{ $value->value }}@if(!$loop->last), @endif @endforeach" readonly />
-                                                                                <input type="hidden" class="form-control mw-100 list-value-hidden-input"  value=" @foreach($detail->values as $value) {{ $value->value }}|{{ $value->id }}@if(!$loop->last), @endif @endforeach" readonly />
+                                                                            <td class="poprod-decpt">
+                                                                               @php
+                                                                                    $totalValues = $detail->values->count();
+                                                                                @endphp
+
+                                                                                <div class="badge-container">
+                                                                                    @foreach($detail->values->take(3) as $value)
+                                                                                        <span class="badge rounded-pill badge-light-primary">{{ $value->value }}</span>
+                                                                                    @endforeach
+
+                                                                                    @if ($totalValues > 3)
+                                                                                        <span class="badge rounded-pill badge-light-primary">
+                                                                                            +{{ $totalValues - 3 }}
+                                                                                        </span>
+                                                                                    @endif
+                                                                                </div>
+                                                                                <!-- Hidden input to store just the values (for badges & display) -->
+                                                                                <input type="hidden" name="field_details[{{ $index }}][value]" class="list-value-hidden-input" 
+                                                                                    value="@foreach($detail->values as $value){{ $value->value }}@if(!$loop->last),@endif @endforeach"/>
+                                                                                <!-- Hidden input to store value|id pairs (for backend update/delete) -->
+                                                                                <input type="hidden" name="field_details[{{ $index }}][value_ids]" class="list-value-id-hidden-input" 
+                                                                                    value="@foreach($detail->values as $value){{ $value->value }}|{{ $value->id }}@if(!$loop->last),@endif @endforeach" />
+
+                                                                                <a href="javascript:void(0);" class="btn p-25 btn-sm btn-outline-secondary add-value-btn" style="font-size: 10px">
+                                                                                    Add Value
+                                                                                </a>
                                                                             </td>
+
                                                                             <td>
                                                                                 <a href="#" class="text-primary add-row"><i data-feather="plus-square"></i></a>
                                                                                 <a href="#" class="text-danger delete-row"><i data-feather="trash-2"></i></a>
@@ -173,8 +197,12 @@
                                                                                     @endforeach
                                                                                 </select>
                                                                             </td>
-                                                                            <td>
-                                                                                <input type="text" name="field_details[0][value]" class="form-control mw-100 list-value-input" placeholder="Enter Value" readonly />
+                                                                            <td class="poprod-decpt">
+                                                                                <div class="badge-container"></div>
+                                                                                <input type="hidden" name="field_details[0][value]" class="form-control mw-100 list-value-input" placeholder="Enter Value"/>
+                                                                                <a href="javascript:void(0);" class="btn p-25 btn-sm btn-outline-secondary add-value-btn" style="font-size: 10px">
+                                                                                    Add Value
+                                                                                </a>
                                                                             </td>
                                                                             <td>
                                                                                 <a href="#" class="text-primary add-row"><i data-feather="plus-square"></i></a>
@@ -196,40 +224,35 @@
                     </section>
                 </div>
                  <!-- Add/Edit List Values Modal -->
-                 <div class="modal fade" id="listValueModal" tabindex="-1" aria-labelledby="listValueModalLabel"
-                     aria-hidden="true" inert>
+                 <div class="modal fade" id="addaccess" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content">
                             <div class="modal-header p-0 bg-transparent">
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                        aria-label="Close"></button>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body px-sm-4 mx-50 pb-2">
-                                <h1 class="text-center mb-1" id="listValueModalLabel">Add List Values</h1>
+                                <h1 class="text-center mb-1" id="shareProjectTitle">Add List Values</h1>
                                 <p class="text-center">Enter the details below.</p>
 
-                                <div class="row mt-2">
-                                    <div class="col-md-12 mb-1">
-                                        <label class="form-label w-100">Value
-                                            <a href="#" id="add-value"
-                                               class="float-end text-primary font-small-2"></a>
-                                        </label>
-                                        <div class="d-flex align-items-center">
-                                            <input type="text" id="value_input" class="form-control list-value-input"
-                                                   placeholder="Enter Value" aria-label="Value">
-                                        </div>
+                                <div class="row mt-2 align-items-end">
+                                    <div class="col-md-10 mb-1">
+                                        <label class="form-label">Value<span class="text-danger">*</span></label>
+                                        <input type="text" id="value_input" class="form-control" placeholder="Enter Value" />
+                                    </div>
+                                    <div class="col-md-2 mb-1">
+                                        <label class="form-label">&nbsp;</label>
+                                        <a href="javascript:void(0);" class="btn btn-sm btn-primary" id="add-value">Add</a>
                                     </div>
                                 </div>
 
                                 <div class="table-responsive" style="max-height: 300px">
-                                    <table
-                                        class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable">
+                                    <table class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable">
                                         <thead>
-                                        <tr>
-                                            <th>S.No</th>
-                                            <th>Value</th>
-                                            <th>Action</th>
-                                        </tr>
+                                            <tr>
+                                                <th>S.No</th>
+                                                <th>Value</th>
+                                                <th>Action</th>
+                                            </tr>
                                         </thead>
                                         <tbody id="listValueTableBody">
                                         </tbody>
@@ -237,13 +260,8 @@
                                 </div>
                             </div>
                             <div class="modal-footer justify-content-center">
-                                <button type="button" data-bs-dismiss="modal"
-                                        class="btn btn-outline-secondary me-1 waves-effect">Cancel
-                                </button>
-                                <button type="button"
-                                        class="btn btn-primary submitListValuesBtn waves-effect waves-float waves-light"
-                                        id="submitListValues">Save
-                                </button>
+                                <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1 waves-effect">Cancel</button>
+                                <button type="button" class="btn btn-primary submitListValuesBtn waves-effect waves-float waves-light" id="submitListValues">Save</button>
                             </div>
                         </div>
                     </div>
@@ -259,52 +277,33 @@
 $(document).ready(function() {
     var $tableBody = $('#field-details-box');
     const DATA_TYPE_LIST = 'list';
-    function initializeRowListValues($row) {
-        $row.find('.data-type-select').off('change');
-        $row.find('.list-value-input').off('click');
-
-        $row.find('.data-type-select').on('change', function() {
-            const selectedValue = $(this).val();
-            const $listInput = $row.find('.list-value-input'); 
-
-            if (selectedValue === DATA_TYPE_LIST) {
-                $('#listValueTableBody').empty();
-                $('#listValueModal').data('row', $row);
-                populateListValueModal($row);
-                $('#listValueModal').modal('show');
-            } else {
-                $row.find('.list-value-input').val('');
-            }
-
-        });
-        // When the list value input is clicked
-        $row.find('.list-value-input').on('click', function() {
-            var selectedType = $row.find('.data-type-select').val();
-            if (selectedType === DATA_TYPE_LIST) {
-                $('#listValueTableBody').empty();
-                $('#listValueModal').data('row', $row);  
-                populateListValueModal($row); 
-                $('#listValueModal').modal('show');
+    function updateBadges($row) {
+        const badgeContainer = $row.find('.badge-container');
+        badgeContainer.empty(); 
+        const valuesStr = $row.find('.list-value-hidden-input').val().trim();
+        const values = valuesStr ? valuesStr.split(',').map(v => v.trim()).filter(v => v) : [];
+        values.forEach((value, index) => {
+            if (index < 3) {
+                badgeContainer.append(`<span class="badge rounded-pill badge-light-primary">${value}</span>`);
+            } else if (index === 3) {
+                const remaining = values.length - 3;
+                badgeContainer.append(`<span class="badge rounded-pill badge-light-primary plus-badge">+${remaining}</span>`);
             }
         });
     }
-    // Function to populate the List Value Modal
-    function populateListValueModal($row) {
-        var combinedValues = $row.find('.list-value-hidden-input').val().trim(); 
+
+    function populateModal($row) {
+        const combinedValueIdsStr = $row.find('.list-value-id-hidden-input').val().trim();
         $('#listValueTableBody').empty();
 
-        if (combinedValues && combinedValues !== '') {
-            var valuesArray = combinedValues.split(',');
-
-            valuesArray.forEach(function(combinedValue, index) {
-                var [value, id] = combinedValue.split('|'); 
-                if (!id) {
-                    id = ''; 
-                }
+        if (combinedValueIdsStr && combinedValueIdsStr !== '') {
+            const pairs = combinedValueIdsStr.split(',');
+            pairs.forEach((pair, index) => {
+                const [value, id] = pair.split('|').map(item => item.trim());
                 const newRow = `
-                    <tr data-id="${id.trim()}">
+                    <tr data-id="${id || ''}">
                         <td>${index + 1}</td>
-                        <td>${value.trim()}</td>
+                        <td>${value}</td>
                         <td>
                             <a href="#" class="text-danger delete-row delete-list-value-row"><i data-feather="trash-2"></i></a>
                         </td>
@@ -313,72 +312,109 @@ $(document).ready(function() {
                 $('#listValueTableBody').append(newRow);
             });
         }
+
         updateRowNumbersAndValues();
     }
 
-    $('#value_input').on('keypress', function(e) {
-        if (e.which === 13) { 
-            e.preventDefault();
-            addValueAndSave();
-        }
-    });
+    function saveListValues() {
+        const $modal = $('#addaccess');
+        const $row = $modal.data('row');
+        if (!$row) return;
+
+        let values = [];
+        let valueIds = [];
+
+        $('#listValueTableBody tr').each(function() {
+            const value = $(this).find('td:nth-child(2)').text().trim();
+            const id = $(this).data('id') || ''; 
+
+            if (value) {
+                values.push(value);
+                valueIds.push(id ? `${value}|${id}` : `${value}|`);
+            }
+        });
+
+        $row.find('.list-value-hidden-input').val(values.join(','));
+        $row.find('.list-value-id-hidden-input').val(valueIds.join(','));
+
+        updateBadges($row);
+    }
 
     function addValueAndSave() {
-        const value = $('#value_input').val().trim(); 
-
-        if (value) {
-            let exists = false;
-            $('#listValueTableBody tr').each(function() {
-                const rowVal = $(this).find('td:nth-child(2)').text().trim();
-                if (rowVal === value) {
-                    exists = true;
-                    return false;
-                }
-            });
-
-            if (exists) {
-                alert('This value already exists.');
-                $('#value_input').val('');
-                return;
+        const value = $('#value_input').val().trim();
+        if (!value) return;
+        let exists = false;
+        $('#listValueTableBody tr td:nth-child(2)').each(function() {
+            if ($(this).text().trim() === value) {
+                exists = true;
+                return false;
             }
-            const rowCount = $('#listValueTableBody tr').length + 1;
-            const newRow = `
-                <tr>
-                    <td>${rowCount}</td>
-                    <td>${value}</td>
-                    <td>
-                        <a href="#" class="text-danger delete-row delete-list-value-row"><i data-feather="trash-2"></i></a>
-                    </td>
-                </tr>
-            `;
-            $('#listValueTableBody').append(newRow);
+        });
 
+        if (exists) {
+            alert('This value already exists.');
             $('#value_input').val('');
-
-            updateRowNumbersAndValues(); 
+            return;
         }
+
+        const rowCount = $('#listValueTableBody tr').length + 1;
+        const newRow = `
+            <tr data-id=""> <!-- New values have no ID yet -->
+                <td>${rowCount}</td>
+                <td>${value}</td>
+                <td><a href="#" class="text-danger delete-row delete-list-value-row"><i data-feather="trash-2"></i></a></td>
+            </tr>
+        `;
+
+        $('#listValueTableBody').append(newRow);
+        $('#value_input').val('');
+
+        saveListValues();
+        updateRowNumbersAndValues();
     }
 
     function updateRowNumbersAndValues() {
-        let listValuesArr = [];
         $('#listValueTableBody tr').each(function(index) {
             $(this).find('td:first').text(index + 1);
-            const val = $(this).find('td:nth-child(2)').text();
-            if (val) {
-                listValuesArr.push(val);
-            }
         });
-        const $row = $('#listValueModal').data('row');
-        if ($row) {
-            $row.find('.list-value-input').val(listValuesArr.join(','));
-        }
+
+        saveListValues();
         feather.replace();
     }
+    $(document).on('change', '.data-type-select', function() {
+        var $row = $(this).closest('tr');
+        var $dataTypeSelect = $row.find('.data-type-select');
+        var selectedType = $dataTypeSelect.val();
+        if (selectedType === DATA_TYPE_LIST) {
+            const $row = $(this).closest('tr');
+            $('#addaccess').data('row', $row);
+            populateModal($row);
+            $('#addaccess').modal('show');
+        }
+    });
+
+    $(document).on('click', '.add-value-btn', function() {
+        var $row = $(this).closest('tr');
+        var $dataTypeSelect = $row.find('.data-type-select');
+        var selectedType = $dataTypeSelect.val();
+        if (selectedType === DATA_TYPE_LIST) {
+        const $row = $(this).closest('tr');
+        $('#addaccess').data('row', $row);
+        populateModal($row);
+        $('#addaccess').modal('show');
+    } else {
+        alert('Please select "List" as the data type to add values.');
+    }
+    });
+
+    $('#add-value').on('click', function() {
+        addValueAndSave();
+    });
 
     $('#listValueTableBody').on('click', '.delete-list-value-row', function(e) {
-        e.preventDefault(); 
-        var $row = $(this).closest('tr'); 
-        var listValueId = $row.data('id'); 
+        e.preventDefault();
+        const $row = $(this).closest('tr');
+        const listValueId = $row.data('id');
         if (listValueId) {
             Swal.fire({
                 title: 'Are you sure?',
@@ -397,40 +433,42 @@ $(document).ready(function() {
                         },
                         success: function(response) {
                             if (response.status) {
-                                $row.remove(); 
-                                Swal.fire('Deleted!', response.message, 'success').then(() => {
-                                    window.location.reload(); 
-                                });
-                                updateRowNumbersAndValues(); 
+                                $row.remove();
+                                Swal.fire('Deleted!', response.message, 'success');
+                                updateRowNumbersAndValues();
                             } else {
                                 Swal.fire('Error!', response.message || 'Could not delete list value.', 'error');
                             }
                         },
                         error: function(xhr) {
-                            Swal.fire('Error!', xhr.responseJSON.message || 'An error occurred while deleting the list value.', 'error');
+                            Swal.fire('Error!', xhr.responseJSON?.message || 'An error occurred while deleting the list value.', 'error');
                         }
                     });
                 }
             });
         } else {
-            $row.remove(); 
-            updateRowNumbersAndValues(); 
+            $row.remove();
+            updateRowNumbersAndValues();
         }
     });
 
+    $('#value_input').on('keypress', function(e) {
+        if (e.which === 13) {
+            e.preventDefault();
+            addValueAndSave();
+        }
+    });
 
     $('#submitListValues').on('click', function() {
-        $('#listValueModal').modal('hide');
+        $('#addaccess').modal('hide');
     });
 
-    $('#listValueModal').on('show.bs.modal', function() {
+    $('#addaccess').on('show.bs.modal', function() {
         $(this).removeAttr('inert');
     });
-
-    $('#listValueModal').on('hidden.bs.modal', function() {
+    $('#addaccess').on('hidden.bs.modal', function() {
         $(this).attr('inert', 'inert');
-    })
-
+    });
     function applyCapsLock() {
         $('input[type="text"], input[type="number"]').each(function() {
             $(this).val($(this).val().toUpperCase());
@@ -469,6 +507,8 @@ $(document).ready(function() {
         $newRow.find('select').val('');
         $newRow.attr('data-id', ''); 
         $newRow.find('.ajax-validation-error-span').remove();
+        $newRow.find('.badge-container').empty();
+        $newRow.find('.list-value-input').val(''); 
         var rowCount = $tableBody.find('tr').length;
         $newRow.find('[name]').each(function() {
             var name = $(this).attr('name');
@@ -481,7 +521,6 @@ $(document).ready(function() {
         $tableBody.append($newRow);
         updateFieldDetailsNumbers();
         applyCapsLock();
-        initializeRowListValues($newRow);
         $tableBody.find('.delete-row').show();
     });
 
@@ -530,12 +569,6 @@ $(document).ready(function() {
             $tableBody.find('.delete-row').hide();
             $tableBody.find('.add-row').show();
         }
-    });
-
-
-    // Apply initial setup to existing rows
-    $tableBody.find('tr').each(function() {
-        initializeRowListValues($(this));
     });
 
     updateFieldDetailsNumbers();

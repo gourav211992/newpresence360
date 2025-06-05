@@ -3158,8 +3158,8 @@
         // }
         document.getElementById('add_item_section').style.display = "none";
         document.getElementById('copy_item_section').style.display = "none";
-        $("#order_date_input").attr('max', "<?php echo date('Y-m-d'); ?>");
-        $("#order_date_input").attr('min', "<?php echo date('Y-m-d'); ?>");
+        $("#order_date_input").attr('max', "{{$current_financial_year['end_date']}}");
+        $("#order_date_input").attr('min', "{{$current_financial_year['start_date']}}");
         $("#order_date_input").off('input');
         if (reset) {
             $("#order_date_input").val(moment().format("YYYY-MM-DD"));
@@ -3357,13 +3357,13 @@
         }
 
         if (backDateAllow && futureDateAllow) { // Allow both ways (future and past)
-            $("#order_date_input").removeAttr('max');
-            $("#order_date_input").removeAttr('min');
+            $("#order_date_input").attr('max',"{{ $current_financial_year['end_date'] }}");
+            $("#order_date_input").attr('min',"{{ $current_financial_year['start_date'] }}");
             $("#order_date_input").off('input');
         } 
         if (backDateAllow && !futureDateAllow) { // Allow only back date
             $("#order_date_input").removeAttr('min');
-            $("#order_date_input").attr('max', "<?php echo date('Y-m-d'); ?>");
+            $("#order_date_input").attr('max', "{{ min($current_financial_year['end_date'],Carbon\Carbon::now()) }}");
             $("#order_date_input").off('input');
             $('#order_date_input').on('input', function() {
                 restrictFutureDates(this);
@@ -3371,7 +3371,7 @@
         } 
         if (!backDateAllow && futureDateAllow) { // Allow only future date
             $("#order_date_input").removeAttr('max');
-            $("#order_date_input").attr('min', "<?php echo date('Y-m-d'); ?>");
+            $("#order_date_input").attr('min', "{{ max($current_financial_year['start_date'],Carbon\Carbon::now()) }}");
             $("#order_date_input").off('input');
             $('#order_date_input').on('input', function() {
                 restrictPastDates(this);

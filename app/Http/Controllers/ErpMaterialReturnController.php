@@ -63,11 +63,12 @@ class ErpMaterialReturnController extends Controller
         $pathUrl = request()->segments()[0];
         $orderType = ConstantHelper::MATERIAL_RETURN_SERVICE_ALIAS_NAME;
         $redirectUrl = route('material.return.index');
+        $selectedfyYear = Helper::getFinancialYear(Carbon::now()->format('Y-m-d'));
         $createRoute = route('material.return.create');
         $typeName = ConstantHelper::MATERIAL_RETURN_SERVICE_NAME;
         if ($request -> ajax()) {
             try {
-            $docs = ErpMaterialReturnHeader::withDefaultGroupCompanyOrg() ->  bookViewAccess($pathUrl) ->  withDraftListingLogic() -> orderByDesc('id');
+            $docs = ErpMaterialReturnHeader::withDefaultGroupCompanyOrg() ->  bookViewAccess($pathUrl) ->  withDraftListingLogic() ->whereBetween('document_date', [$selectedfyYear['start_date'], $selectedfyYear['end_date']]) -> orderByDesc('id');
             return DataTables::of($docs) ->addIndexColumn()
             ->editColumn('document_status', function ($row) use($orderType) {
                 $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->document_status ?? ConstantHelper::DRAFT];    
@@ -155,6 +156,10 @@ class ErpMaterialReturnController extends Controller
         $departments = UserHelper::getDepartments($user -> auth_user_id);
         $users = AuthUser::select('id', 'name') -> where('organization_id', $user -> organization_id) 
         -> where('status', ConstantHelper::ACTIVE) -> get();
+        $currentfyYear = Helper::getCurrentFinancialYear();
+        $selectedfyYear = Helper::getFinancialYear(Carbon::now());
+        $currentfyYear['current_date'] = Carbon::now() -> format('Y-m-d');
+        $stockTypes = InventoryHelper::getStockType();
         $data = [
             'user' => $user,
             'users' => $users,
@@ -164,9 +169,11 @@ class ErpMaterialReturnController extends Controller
             'series' => array(),
             'countries' => $countries,
             'typeName' => $typeName,
+            'current_financial_year' => $selectedfyYear,
             'stores' => $stores,
             'vendors' => $vendors,
-            'redirect_url' => $redirectUrl
+            'redirect_url' => $redirectUrl,
+            'stockTypes' => $stockTypes,
         ];
         return view('materialReturn.create_edit', $data);
     }
@@ -213,6 +220,7 @@ class ErpMaterialReturnController extends Controller
             } else {
                 $revNo = $doc->revision_number;
             }
+            $selectedfyYear = Helper::getFinancialYear($order->document_date ?? Carbon::now()->format('Y-m-d'));
             $docValue = $doc->total_amount ?? 0;
             $approvalHistory = Helper::getApprovalHistory($doc->book_id, $ogDoc->id, $revNo, $docValue, $doc -> created_by);
             $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$doc->document_status] ?? '';
@@ -245,6 +253,7 @@ class ErpMaterialReturnController extends Controller
                 'docStatusClass' => $docStatusClass,
                 'typeName' => $typeName,
                 'stores' => $stores,
+                'current_financial_year' => $selectedfyYear,
                 'vendors' => $vendors,
                 'maxFileCount' => isset($order -> mediaFiles) ? (10 - count($doc -> media_files)) : 10,
                 'dynamicFieldsUi' => $dynamicFieldsUI,

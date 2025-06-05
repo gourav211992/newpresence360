@@ -69,11 +69,13 @@ class ErpPlController extends Controller
         $orderType = ConstantHelper::PL_SERVICE_ALIAS;
         $redirectUrl = route('PL.index');
         $createRoute = route('PL.create');
+        $accessible_locations = InventoryHelper::getAccessibleLocations()->pluck('id')->toArray();
+        $selectedfyYear = Helper::getFinancialYear(Carbon::now()->format('Y-m-d'));
         $typeName = "Pick List";
         if ($request -> ajax()) {
             try {
                 $docs = ErpPlHeader::withDefaultGroupCompanyOrg() ->  bookViewAccess($pathUrl) ->  
-                withDraftListingLogic() -> orderByDesc('id');
+                withDraftListingLogic() -> whereIn('store_id',$accessible_locations) -> orderByDesc('id');
                 return DataTables::of($docs) ->addIndexColumn()
                 ->editColumn('document_status', function ($row) use($orderType) {
                     $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->document_status ?? ConstantHelper::DRAFT];    
@@ -132,6 +134,7 @@ class ErpPlController extends Controller
     {
         //Get the menu 
         $parentURL = request() -> segments()[0];
+        $selectedfyYear = Helper::getFinancialYear(Carbon::now());
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
         if (count($servicesBooks['services']) == 0) {
             return redirect() -> route('/');
@@ -165,6 +168,7 @@ class ErpPlController extends Controller
             'selectedDepartmentId' => $departments['selectedDepartmentId'],
             'requesters' => $users,
             'selectedUserId' => null,
+            'current_financial_year' => $selectedfyYear,
             'redirect_url' => $redirectUrl
         ];
         return view('PL.layout', $data);
@@ -215,6 +219,7 @@ class ErpPlController extends Controller
             $approvalHistory = Helper::getApprovalHistory($doc->book_id, $ogDoc->id, $revNo, $docValue, $doc -> created_by);
             $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$doc->document_status] ?? '';
             $typeName = ConstantHelper::PL_SERVICE_NAME;
+            $selectedfyYear = Helper::getFinancialYear($doc->document_date ?? Carbon::now()->format('Y-m-d'));
             $vendors = Vendor::select('id', 'company_name') -> withDefaultGroupCompanyOrg()->where('status', ConstantHelper::ACTIVE) 
             -> get();
             $stations = Station::withDefaultGroupCompanyOrg()
@@ -258,6 +263,7 @@ class ErpPlController extends Controller
                 'requesters' => $users,
                 'selectedUserId' => $doc ?-> user_id,
                 'sub_stores' => $SubStores,                
+                'current_financial_year' => $selectedfyYear,
                 'dynamicFieldsUi' => $dynamicFieldsUI,
                 'redirect_url' => $redirect_url
             ];
@@ -314,7 +320,7 @@ class ErpPlController extends Controller
             }
             $PL = null;
             $store = ErpStore::find($request -> store_id);
-                        
+            $subStore = ErpSubStore::find($request -> sub_store_id??null);
             if ($request -> pl_header_id) { //Update
                 $PL = ErpPlHeader::find($request -> pl_header_id);
                 $PL -> document_date = $request -> document_date;
@@ -357,6 +363,8 @@ class ErpPlController extends Controller
                     'book_code' => $request->book_code,
                     'store_id' => $request->store_id ?? null,
                     'store_code' => $store?->store_name ?? null,
+                    'sub_store_id' => $request->sub_store_id ?? null,
+                    'sub_store_code' => $substore?->name ?? null,
                     'doc_number_type' => $numberPatternData['type'],
                     'doc_reset_pattern' => $numberPatternData['reset_pattern'],
                     'doc_prefix' => $numberPatternData['prefix'],
@@ -516,7 +524,7 @@ class ErpPlController extends Controller
                 if ($request->pl_header_id) { // Update condition
                     $bookId = $PL->book_id;
                     $docId = $PL->id;
-                    $amendRemarks = $request->amend_remarks ?? null;
+                    $amendRemarks = $request->remarks ?? null;
                     $remarks = $PL->remarks;
                     $amendAttachments = $request->file('amend_attachments');
                     $attachments = $request->file('attachments');
@@ -1059,160 +1067,112 @@ class ErpPlController extends Controller
     {
         $pathUrl = route('PL.index');
         $orderType = [ConstantHelper::PL_SERVICE_ALIAS];
-        $PL = ErpPlHeader::with('items') -> bookViewAccess($pathUrl)
-        -> withDefaultGroupCompanyOrg() -> withDraftListingLogic() -> orderByDesc('id');
-        //Customer Filter
-        $PL = $PL -> when($request -> vendor_id, function ($custQuery) use($request) {
-            $custQuery -> where('vendor_id', $request -> vendor_id);
-        });
-        //Book Filter
-        $PL = $PL -> when($request -> book_id, function ($bookQuery) use($request) {
-            $bookQuery -> where('book_id', $request -> book_id);
-        });
-        //Document Id Filter
-        $PL = $PL -> when($request -> document_number, function ($docQuery) use($request) {
-            $docQuery -> where('document_number', 'LIKE', '%' . $request -> document_number . '%');
-        });
-        //From Location Filter
-        $PL = $PL -> when($request -> type, function ($docQuery) use($request) {
-            $docQuery -> where('issue_type', 'LIKE', "%".$request -> type . "%");
-        });
-        //From Location Filter
-        $PL = $PL -> when($request -> location_id, function ($docQuery) use($request) {
-            $docQuery -> where('from_store_id', $request -> location_id);
-        });
-        //To Location Filter
-        $PL = $PL -> when($request -> to_location_id, function ($docQuery) use($request) {
-            $docQuery -> where('to_store_id', $request -> to_location_id);
-        });
-        //Company Filter
-        $PL = $PL -> when($request -> company_id, function ($docQuery) use($request) {
-            $docQuery -> where('from_store_id', $request -> company_id);
-        });
-        //Organization Filter
-        $PL = $PL -> when($request -> organization_id, function ($docQuery) use($request) {
-            $docQuery -> where('organization_id', $request -> organization_id);
-        });
-        //Document Status Filter
-        $PL = $PL -> when($request -> doc_status, function ($docStatusQuery) use($request) {
-            $searchDocStatus = [];
-            if ($request -> doc_status === ConstantHelper::DRAFT) {
-                $searchDocStatus = [ConstantHelper::DRAFT];
-            } else if ($searchDocStatus === ConstantHelper::SUBMITTED) {
-                $searchDocStatus = [ConstantHelper::SUBMITTED, ConstantHelper::PARTIALLY_APPROVED];
-            } else {
-                $searchDocStatus = [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED];
+        $PL = ErpPlItem::whereHas('header', function ($headerQuery) use($orderType, $pathUrl, $request) {
+            $headerQuery -> withDefaultGroupCompanyOrg() -> withDraftListingLogic();
+            //Book Filter
+            $headerQuery = $headerQuery -> when($request -> book_id, function ($bookQuery) use($request) {
+                $bookQuery -> where('book_id', $request -> book_id);
+            });
+            //Document Id Filter
+            $headerQuery = $headerQuery -> when($request -> document_number, function ($docQuery) use($request) {
+                $docQuery -> where('document_number', 'LIKE', '%' . $request -> document_number . '%');
+            });
+            //Location Filter
+            $headerQuery = $headerQuery -> when($request -> location_id, function ($docQuery) use($request) {
+                $docQuery -> where('store_id', $request -> location_id);
+            });
+            //Company Filter
+            $headerQuery = $headerQuery -> when($request -> company_id, function ($docQuery) use($request) {
+                $docQuery -> where('store_id', $request -> company_id);
+            });
+            //Organization Filter
+            $headerQuery = $headerQuery -> when($request -> organization_id, function ($docQuery) use($request) {
+                $docQuery -> where('organization_id', $request -> organization_id);
+            });$headerQuery = $headerQuery -> when($request -> doc_status, function ($docStatusQuery) use($request) {
+                $searchDocStatus = [];
+                if ($request -> doc_status === ConstantHelper::DRAFT) {
+                    $searchDocStatus = [ConstantHelper::DRAFT];
+                } else if ($searchDocStatus === ConstantHelper::SUBMITTED) {
+                    $searchDocStatus = [ConstantHelper::SUBMITTED, ConstantHelper::PARTIALLY_APPROVED];
+                } else {
+                    $searchDocStatus = [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED];
+                }
+                $docStatusQuery -> whereIn('document_status', $searchDocStatus);
+            });
+            //Date Filters
+            $dateRange = $request -> date_range ??  Carbon::now()->startOfMonth()->format('Y-m-d') . " to " . Carbon::now()->endOfMonth()->format('Y-m-d');
+            $headerQuery = $headerQuery -> when($dateRange, function ($dateRangeQuery) use($request, $dateRange) {
+            $dateRanges = explode('to', $dateRange);
+            if (count($dateRanges) == 2) {
+                    $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
+                    $toDate = Carbon::parse(trim($dateRanges[1])) -> format('Y-m-d');
+                    $dateRangeQuery -> whereDate('document_date', ">=" , $fromDate) -> where('document_date', '<=', $toDate);
             }
-            $docStatusQuery -> whereIn('document_status', $searchDocStatus);
-        });
-        //Date Filters
-        $dateRange = $request -> date_range ??  Carbon::now()->startOfMonth()->format('Y-m-d') . " to " . Carbon::now()->endOfMonth()->format('Y-m-d');
-        $PL = $PL -> when($dateRange, function ($dateRangeQuery) use($request, $dateRange) {
-           $dateRanges = explode('to', $dateRange);
-           if (count($dateRanges) == 2) {
+            else{
                 $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
-                $toDate = Carbon::parse(trim($dateRanges[1])) -> format('Y-m-d');
-                $dateRangeQuery -> whereDate('document_date', ">=" , $fromDate) -> where('document_date', '<=', $toDate);
-           }
-        });
-        //Item Id Filter
-        $PL = $PL -> when($request -> item_id, function ($itemQuery) use($request) {
-            $itemQuery -> withWhereHas('items', function ($itemSubQuery) use($request) {
-                $itemSubQuery -> where('item_id', $request -> item_id)
-                //Compare Item Category
-                -> when($request -> item_category_id, function ($itemCatQuery) use($request) {
-                    $itemCatQuery -> whereHas('item', function ($itemRelationQuery) use($request) {
-                        $itemRelationQuery -> where('category_id', $request -> category_id)
-                        //Compare Item Sub Category
-                        -> when($request -> item_sub_category_id, function ($itemSubCatQuery) use($request) {
-                            $itemSubCatQuery -> where('subcategory_id', $request -> item_sub_category_id);
+                $dateRangeQuery -> whereDate('document_date', $fromDate);
+            }
+            });
+            //Item Id Filter
+            $headerQuery = $headerQuery -> when($request -> item_id, function ($itemQuery) use($request) {
+                $itemQuery -> withWhereHas('items', function ($itemSubQuery) use($request) {
+                    $itemSubQuery -> where('item_id', $request -> item_id)
+                    //Compare Item Category
+                    -> when($request -> item_category_id, function ($itemCatQuery) use($request) {
+                        $itemCatQuery -> whereHas('item', function ($itemRelationQuery) use($request) {
+                            $itemRelationQuery -> where('category_id', $request -> category_id)
+                            //Compare Item Sub Category
+                            -> when($request -> item_sub_category_id, function ($itemSubCatQuery) use($request) {
+                                $itemSubCatQuery -> where('subcategory_id', $request -> item_sub_category_id);
+                            });
                         });
                     });
                 });
             });
-        });
-        $PL = $PL -> get();
+        }) -> orderByDesc('id');
+        $dynamicFields = DynamicFieldHelper::getServiceDynamicFields(ConstantHelper::SO_SERVICE_ALIAS);   
         $processedSalesOrder = collect([]);
-        foreach ($PL as $PL) {
-            foreach ($PL -> items as $PLItem) {
-                $reportRow = new stdClass();
-                //Header Details
-                $header = $PLItem -> header;
-                $reportRow -> id = $header -> id;
-                $reportRow -> book_name = $header -> book_code;
-                $reportRow -> document_number = $header -> document_number;
-                $reportRow -> document_date = $header -> document_date;
-                $reportRow -> issue_type = $header -> issue_type;
-                $reportRow -> store_name = $header -> erpStore ?-> store_name;
-                $reportRow -> vendor_name = $header -> vendor ?-> company_name ?? " ";
-                $reportRow -> customer_currency = $header -> org_currency_code ?? $header ?-> vendor ?-> currency ?-> short_name ?: $header ?-> vendor ?-> currency ?-> name ;
-                $reportRow -> payment_terms_name = $header -> payment_term_code;
-                $reportRow -> from_store_name = $header -> from_store ?-> store_name;
-                $reportRow -> to_store_name = $header -> to_store ?-> store_name;
-                $reportRow -> from_sub_store_name = $PLItem ?-> fromErpSubStore ?-> name;
-                $reportRow -> to_sub_store_name = $PLItem ?-> toErpSubStore ?-> name;
-                $reportRow -> requester = $header -> issue_type == "Consumption" ? $header -> requester_name() : " ";
-                //Item Details
-                $reportRow -> item_name = $PLItem -> item_name;
-                $reportRow -> item_code = $PLItem -> item_code;
-                $reportRow -> hsn_code = $PLItem -> hsn ?-> code;
-                $reportRow -> uom_name = $PLItem -> uom ?-> name;
-                //Amount Details
-                $reportRow -> qty = number_format($PLItem -> issue_qty, 2);
-                $reportRow -> mr_qty = number_format($PLItem -> mr_qty, 2);
-                $reportRow -> rate = number_format($PLItem -> rate, 2);
-                $reportRow -> total_discount_amount = number_format($PLItem -> header_discount_amount + $PLItem -> item_discount_amount, 2);
-                $reportRow -> tax_amount = number_format($PLItem -> tax_amount, 2);
-                $reportRow -> taxable_amount = number_format($PLItem -> total_item_amount - $PLItem -> tax_amount, 2);
-                $reportRow -> total_item_amount = number_format($PLItem -> total_item_amount, 2);
-                //Delivery Schedule UI
-                // $deliveryHtml = '';
-                // if (count($PLItem -> item_deliveries) > 0) {
-                //     foreach ($PLItem -> item_deliveries as $itemDelivery) {
-                //         $deliveryDate = Carbon::parse($itemDelivery -> delivery_date) -> format('d-m-Y');
-                //         $deliveryQty = number_format($itemDelivery -> qty, 2);
-                //         $deliveryHtml .= "<span class='badge rounded-pill badge-light-primary'><strong>$deliveryDate</strong> : $deliveryQty</span>";
-                //     }
-                // } else {
-                //     $parsedDeliveryDate = Carbon::parse($PLItem -> delivery_date) -> format('d-m-Y');
-                //     $deliveryHtml .= "$parsedDeliveryDate";
-                // }
-                // $reportRow -> delivery_schedule = $deliveryHtml;
-                //Attributes UI
-                $attributesUi = '';
-                if (count($PLItem -> item_attributes) > 0) {
-                    foreach ($PLItem -> item_attributes as $soAttribute) {
-                        $attrName = $soAttribute -> attribute_name;
-                        $attrValue = $soAttribute -> attribute_value;
-                        $attributesUi .= "<span class='badge rounded-pill badge-light-primary' > $attrName : $attrValue </span>";
-                    }
-                } else {
-                    $attributesUi = 'N/A';
+        return DataTables::of($PL)
+            ->addIndexColumn()
+            ->editColumn('document_number', fn($pl) => $pl->header->document_number)
+            ->editColumn('document_date', fn($pl) => $pl->header->document_date)
+            ->editColumn('book_code', fn($pl) => $pl->header->book_code)
+            ->addColumn('so_no', fn($pl) => $pl->so->book_code."-".$pl->so->document_number)
+            ->addColumn('so_date', fn($pl) => $pl->so->document_date)
+            ->addColumn('store_name', fn($pl) => $pl->header->store?->store_name)
+            ->addColumn('sub_store_name', fn($pl) => $pl->header->subStore?->name)
+            ->editColumn('item_name', fn($pl) => $pl->item_name)
+            ->editColumn('item_code', fn($pl) => $pl->item_code)
+            ->editColumn('hsn_code', fn($pl) => $pl->item->hsn?->code)
+            ->editColumn('uom_name', fn($pl) => $pl->item->uom?->name)
+            ->editColumn('picked_qty', fn($pl) => number_format($pl->picked_qty, 2))
+            ->editColumn('order_qty', fn($pl) => number_format($pl->order_qty, 2))
+            ->editColumn('rate', fn($pl) => number_format($pl->rate, 2))
+            ->editColumn('total_amount', fn($pl) => number_format($pl->total_amount, 2))
+            ->editColumn('item_attributes', function ($pl) {
+                if (count($pl->item_attributes) > 0) {
+                    return collect($pl->item_attributes)->map(fn($attr) => "<span class='badge rounded-pill badge-light-primary'>{$attr->attribute_name} : {$attr->attribute_value}</span>")->implode(' ');
                 }
-                $reportRow -> item_attributes = $attributesUi;
-                //Main header Status
-                $reportRow -> status = $header -> document_status;
-                $processedSalesOrder -> push($reportRow);
-            }
-        }
-        return DataTables::of($processedSalesOrder) ->addIndexColumn()
-        ->editColumn('status', function ($row) use($orderType) {
-            $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->status ?? ConstantHelper::DRAFT];    
-            $displayStatus = ucfirst($row -> status);   
-            $editRoute = null;
-            $editRoute = route('sale.return.edit', ['id' => $row->id]);
-            return "
-            <div style='text-align:right;'>
-                <span class='badge rounded-pill $statusClasss badgeborder-radius'>$displayStatus</span>
-                    <a href='" . $editRoute . "'>
-                        <i class='cursor-pointer' data-feather='eye'></i>
-                    </a>
-            </div>
-        ";
-        })
-        ->rawColumns(['item_attributes','delivery_schedule','status'])
-        ->make(true);
+                return 'N/A';
+            })
+            ->editColumn('status', function ($pl) use ($orderType) {
+                $status = $pl->header->document_status ?? ConstantHelper::DRAFT;
+                $statusClass = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$status];
+                $editRoute = route('PL.edit', ['id' => $pl->id]);
+
+                return "
+                    <div style='text-align:right;'>
+                        <span class='badge rounded-pill $statusClass badgeborder-radius'>" . ucfirst($status) . "</span>
+                        <a href='$editRoute'>
+                            <i class='cursor-pointer' data-feather='eye'></i>
+                        </a>
+                    </div>";
+            })
+            ->rawColumns(['item_attributes', 'status'])
+            ->make(true);
     }
+
+
     public function getPostingDetails(Request $request)
     {
         try {

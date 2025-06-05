@@ -64,15 +64,19 @@ class ErpPSVController extends Controller
 {
     public function index(Request $request)
     {
+        $currentfyYear = Helper::getCurrentFinancialYear();
+        $selectedfyYear = Helper::getFinancialYear(Carbon::now());
+
         $pathUrl = request()->segments()[0];
         $orderType = ConstantHelper::PSV_SERVICE_ALIAS;
+        $selectedfyYear = Helper::getFinancialYear(Carbon::now()->format('Y-m-d'));
         $redirectUrl = route('psv.index');
         $createRoute = route('psv.create');
         $typeName = "Physical Stock Verification ";
         if ($request -> ajax()) {
             try {
                 $docs = ErpPsvHeader::withDefaultGroupCompanyOrg() ->  bookViewAccess($pathUrl) ->  
-                withDraftListingLogic() -> orderByDesc('id');
+                withDraftListingLogic()->whereBetween('document_date', [$selectedfyYear['start_date'], $selectedfyYear['end_date']])->orderByDesc('id');
                 return DataTables::of($docs) ->addIndexColumn()
                 ->editColumn('document_status', function ($row) use($orderType) {
                     $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->document_status ?? ConstantHelper::DRAFT];    
@@ -124,17 +128,21 @@ class ErpPSVController extends Controller
         }
         $parentURL = request() -> segments()[0];
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
-        return view('PSV.index', ['typeName' => $typeName, 'redirect_url' => $redirectUrl, 'create_route' => $createRoute, 'create_button' => count($servicesBooks['services'])]);
+        return view('PSV.index', ['typeName' => $typeName, 'redirect_url' => $redirectUrl,'create_route' => $createRoute, 'create_button' => count($servicesBooks['services'])]);
     }
 
     public function create(Request $request)
     {
         //Get the menu 
+        
         $parentURL = request() -> segments()[0];
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
         if (count($servicesBooks['services']) == 0) {
             return redirect() -> route('/');
         }
+        $currentfyYear = Helper::getCurrentFinancialYear();
+        $selectedfyYear = Helper::getFinancialYear(Carbon::now());
+        $currentfyYear['current_date'] = Carbon::now() -> format('Y-m-d');
         $redirectUrl = route('psv.index');
         $firstService = $servicesBooks['services'][0];
         $user = Helper::getAuthenticatedUser();
@@ -158,19 +166,17 @@ class ErpPSVController extends Controller
             'countries' => $countries,
             'typeName' => $typeName,
             'stores' => $stores,
-            'vendors' => $vendors,
             'stations' => $stations,
-            'departments' => $departments['departments'],
-            'selectedDepartmentId' => $departments['selectedDepartmentId'],
-            'requesters' => $users,
-            'selectedUserId' => null,
-            'redirect_url' => $redirectUrl
+            'redirect_url' => $redirectUrl,
+            'current_financial_year' => $selectedfyYear,
         ];
         return view('PSV.create_edit', $data);
     }
     public function edit(Request $request, String $id)
     {
         try {
+            $currentfyYear = Helper::getCurrentFinancialYear();
+            $currentfyYear['current_date'] = Carbon::now() -> format('Y-m-d');
             $parentUrl = request() -> segments()[0];
             $redirect_url = route('psv.index');
             $user = Helper::getAuthenticatedUser();
@@ -178,15 +184,13 @@ class ErpPSVController extends Controller
             if (isset($request -> revisionNumber))
             {
                 $doc = ErpPsvHeaderHistory::with(['book'])
-                ->where('source_id', $id)
                 ->first();
         
             $ogDoc = ErpPsvHeader::find($id);
             } else {
                 $doc = ErpPsvHeader::with(['book'])
                 ->find($id);
-        
-            $ogDoc = $doc;
+                $ogDoc = $doc;
             }
             $items = self::pullItems($doc);
             $stores = InventoryHelper::getAccessibleLocations([ConstantHelper::STOCKK, ConstantHelper::SHOP_FLOOR]);
@@ -194,6 +198,7 @@ class ErpPSVController extends Controller
                 $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl,$doc -> book ?-> service ?-> alias);
             }            
             $revision_number = $doc->revision_number;
+            $selectedfyYear = Helper::getFinancialYear($doc->document_date ?? Carbon::now()->format('Y-m-d'));
             $totalValue = ($doc -> total_item_value - $doc -> total_discount_value) + 
             $doc -> total_tax_value + $doc -> total_expense_value;
             $userType = Helper::userCheck();
@@ -252,7 +257,9 @@ class ErpPSVController extends Controller
                 'requesters' => $users,
                 'selectedUserId' => $doc ?-> user_id,
                 'sub_stores' => $SubStores,
-                'redirect_url' => $redirect_url
+                'redirect_url' => $redirect_url,
+                'current_financial_year' => $selectedfyYear,
+
             ];
             return view('PSV.create_edit', $data);  
         } catch(Exception $ex) {
@@ -790,35 +797,38 @@ class ErpPSVController extends Controller
             ]);
         }
     }
-    public function generatePdf(Request $request, $id, $pattern)
+    public function generatePdf(Request $request, $id)
     {
         $user = Helper::getAuthenticatedUser();
         $organization = Organization::where('id', $user->organization_id)->first();
         $organizationAddress = Address::with(['city', 'state', 'country'])
-            ->where('addressable_id', $user->organization_id)
-            ->where('addressable_type', Organization::class)
-            ->first();
-        $mx = ErpPsvHeader::with(
-            [
-                'from_store',
-                'to_store',
-                'vendor',
-            ]
-        )
-            ->with('items', function ($query) {
-                $query->with('from_item_locations','to_item_locations')->with([
-                    'item' => function ($itemQuery) {
-                        $itemQuery->with(['specifications', 'alternateUoms.uom', 'uom']);
-                    }
-                ]);
-            })
-            ->find($id);
+        ->where('addressable_id', $user->organization_id)
+        ->where('addressable_type', Organization::class)
+        ->first();
+        $mx = ErpPsvHeader::with([
+            'store',
+            'sub_store',
+            'book',
+            'items.item.specifications',
+            'items.item.alternateUoms.uom',
+            'items.item.uom',
+        ])
+        ->find($id);
+
+        // Add item_attributes to each item
+        if ($mx && $mx->items) {
+            foreach ($mx->items as $item) {
+                $item->item_attributes = $item->get_attributes_array();
+            }
+        }
+
         // $creator = AuthUser::with(['authUser'])->find($mx->created_by);
         // dd($creator,$mx->created_by);
         $shippingAddress = $mx?->from_store?->address;
         $billingAddress = $mx?->to_store?->address;
 
         $approvedBy = Helper::getDocStatusUser(get_class($mx), $mx -> id, $mx -> document_status);
+        $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$mx->document_status] ?? '';
 
         // dd($user);
         // $type = ConstantHelper::SERVICE_LABEL[$mx->document_type];
@@ -832,8 +842,7 @@ class ErpPSVController extends Controller
         $approvedBy = Helper::getDocStatusUser(get_class($mx), $mx -> id, $mx -> document_status);
         $imagePath = public_path('assets/css/midc-logo.jpg'); // Store the image in the public directory
         $data_array = [
-            'print_type' => $pattern,
-            'mx' => $mx,
+            'psv' => $mx,
             'user' => $user,
             'shippingAddress' => $shippingAddress,
             'billingAddress' => $billingAddress,
@@ -844,16 +853,23 @@ class ErpPSVController extends Controller
             'totalTaxes' => $totalTaxes,
             'totalAmount' => $totalAmount,
             'imagePath' => $imagePath,
+            'docStatusClass' => $docStatusClass,
             'approvedBy' => $approvedBy,
         ];
-        $pdf = PDF::loadView(
+        $pdf = PDF::loadView('PSV.psv', $data_array);
+        // $pdfPath = storage_path('app/temp.pdf');
+        // file_put_contents($pdfPath, $pdf->output());
 
-            // return view(
-            'pdf.material_document',
-            $data_array
-        );
+        // $linearizedPath = storage_path('app/linearized.pdf');
 
-        return $pdf->stream('psv_header.pdf');
+        // // Run Ghostscript to linearize
+        // exec("gs -dNOPAUSE -dBATCH -dFastWebView=true -sDEVICE=pdfwrite -sOutputFile={$linearizedPath} {$pdfPath}");
+
+        // return response()->file($linearizedPath, [
+        //     'Content-Type' => 'application/pdf',
+        //     'Content-Disposition' => 'inline; filename="' . $mx->book_code . '-' . $mx->document_number . '.pdf"',
+        // ]);
+        return $pdf->stream('Physical Stock Verification.pdf');
     }
     // public function report(){
     //     $issue_data = ErpPsvHeader::where('issue_type', 'Consumption')
@@ -1521,7 +1537,7 @@ class ErpPSVController extends Controller
             $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->status ?? ConstantHelper::DRAFT];    
             $displayStatus = ucfirst($row -> status);   
             $editRoute = null;
-            $editRoute = route('sale.return.edit', ['id' => $row->id]);
+            $editRoute = route('psv.edit', ['id' => $row->id]);
             return "
             <div style='text-align:right;'>
                 <span class='badge rounded-pill $statusClasss badgeborder-radius'>$displayStatus</span>

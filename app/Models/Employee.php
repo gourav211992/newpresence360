@@ -192,6 +192,14 @@ class Employee extends Authenticatable
     {
         return $this->belongsToMany(Role::class, 'employee_role', 'employee_id', 'role_id');
     }
+    public function stores()
+    {
+        return $this->belongsToMany(ErpStore::class, 'erp_employee_stores', 'employee_id', 'location_id');
+    }
+    public function sub_stores()
+    {
+        return $this->belongsToMany(ErpSubStore::class, 'erp_employee_sub_stores', 'employee_id', 'location_id');
+    }
 
     public function hasPermission($permission)
     {

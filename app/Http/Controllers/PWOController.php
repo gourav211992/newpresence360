@@ -1106,46 +1106,57 @@ class PWOController extends Controller
      }
 
     // genrate pdf
-     public function generatePdf(Request $request, $id)
-     {
-         $user = Helper::getAuthenticatedUser();
-         $organization = Organization::where('id', $user->organization_id)->first();
-         $organizationAddress = Address::with(['city', 'state', 'country'])
-             ->where('addressable_id', $user->organization_id)
-             ->where('addressable_type', Organization::class)
-             ->first();
-         $bom = MfgOrder::findOrFail($id);
- 
-         $specifications = collect();
-         if(isset($bom->item) && $bom->item) {
-             $specifications = $bom->item->specifications()->whereNotNull('value')->get();
-         }
- 
-         $totalAmount = $bom->total_value;
-         $amountInWords = NumberHelper::convertAmountToWords($totalAmount);
-         // Path to your image (ensure the file exists and is accessible)
-         $imagePath = public_path('assets/css/midc-logo.jpg'); // Store the image in the public directory
-         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$bom->document_status] ?? '';
-         $pdf = PDF::loadView(
- 
-             // return view(
-             'pdf.mo',
-             [
-                 'bom'=> $bom,
-                 'organization' => $organization,
-                 'organizationAddress' => $organizationAddress,
-                 'totalAmount'=>$totalAmount,
-                 'amountInWords'=>$amountInWords,
-                 'imagePath' => $imagePath,
-                 'specifications' => $specifications,
-                 'docStatusClass' => $docStatusClass
-             ]
-         );
- 
-         $pdf->setOption('isHtml5ParserEnabled', true);
-         return $pdf->stream('MfgOrder-' . date('Y-m-d') . '.pdf');
-     }
- 
+    public function generatePdf(Request $request, $id)
+    {
+        $user = Helper::getAuthenticatedUser();
+        $organization = Organization::where('id', $user->organization_id)->first();
+        $organizationAddress = Address::with(['city', 'state', 'country'])
+            ->where('addressable_id', $user->organization_id)
+            ->where('addressable_type', Organization::class)
+            ->first();
+        $pwo = ErpProductionworkorder::findOrFail($id);
+        $specifications = collect();
+        $products = collect();
+        $items = collect();
+        if(isset($pwo -> items) && $pwo -> items) {
+            $items = $pwo -> items;
+        }
+        if(isset($pwo->mapping))
+        {
+            $products = $pwo -> mapping;            
+        }
+
+        $totalAmount = 0;
+        $amountInWords = NumberHelper::convertAmountToWords($totalAmount);
+        // Path to your image (ensure the file exists and is accessible)
+        $imagePath = public_path('assets/css/midc-logo.jpg'); // Store the image in the public directory
+        $approvedBy = Helper::getDocStatusUser(get_class($pwo), $pwo -> id, $pwo -> document_status);
+        $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$pwo->document_status] ?? '';
+        $dynamicFields = $pwo -> dynamic_fields ?? [];
+        $pdf = PDF::loadView(
+        // return view(
+        'pdf.pwo',
+        [
+            'order'=> $pwo,
+            'items' => $items,
+            'user'=>$user,
+            'products' => $products,
+            'organization' => $organization,
+            'organizationAddress' => $organizationAddress,
+            'totalAmount'=>$totalAmount,
+            'amountInWords'=>$amountInWords,
+            'approvedBy' => $approvedBy,
+            'imagePath' => $imagePath,
+            'specifications' => $specifications,
+            'docStatusClass' => $docStatusClass,
+            'dynamicFields' => $dynamicFields
+        ]
+        );
+        // $pdf->setPaper('a4', 'landscape');
+        // $pdf->setOption('isHtml5ParserEnabled', true);
+        return $pdf->stream('MfgOrder-' . date('Y-m-d') . '.pdf');
+    }
+
      public function revokeDocument(Request $request)
      {
          DB::beginTransaction();

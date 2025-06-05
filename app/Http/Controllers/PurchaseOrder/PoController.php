@@ -197,6 +197,7 @@ class PoController extends Controller
             $selectedDepartmentId = $user?->department_id;
         }
         $locations = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
+        $currencyName = $organization?->currency?->short_name ?? '';
         return view('procurement.po.create', [
             'books'=> $books,
             'termsAndConditions' => $termsAndConditions,
@@ -209,7 +210,8 @@ class PoController extends Controller
             'selectedDepartmentId' => $selectedDepartmentId,
             'departments' => $departments,
             'locations' => $locations,
-            'serviceAlias' => $serviceAlias
+            'serviceAlias' => $serviceAlias,
+            'currencyName' => $currencyName
         ]);
     }
 
@@ -419,7 +421,6 @@ class PoController extends Controller
                     'message' => 'Please create an organization first'
                 ], 422);
             }
-
             # PO Header Save
             $po = new PurchaseOrder;
             $po->type = $type;
@@ -653,7 +654,8 @@ class PoController extends Controller
                         'group_currency_exchange_rate' => @$component['group_currency_exchange_rate'] ?? 0.00,
                         'remarks' => $component['remark'] ?? null,
                         'value_after_discount' => $itemValueAfterDiscount,
-                        'item_value' => $itemValue
+                        'item_value' => $itemValue,
+                        'delivery_date' => @$component['delivery_date']
                     ];
                 }
 
@@ -727,6 +729,7 @@ class PoController extends Controller
                     $poDetail->group_currency_id = $poItem['group_currency_id'];
                     $poDetail->group_currency_exchange_rate = $poItem['group_currency_exchange_rate'];
                     $poDetail->remarks = $poItem['remarks'];
+                    $poDetail->delivery_date = $poItem['delivery_date'];
                     $poDetail->save();
                     $_key = $_key + 1;
                     $component = $request->all()['components'][$_key] ?? [];
@@ -812,6 +815,15 @@ class PoController extends Controller
                             }
                         }
                     }
+
+                    if($po?->po_items_delivery?->count() < 1) {
+                        $poItemDelivery = new PoItemDelivery;
+                        $poItemDelivery->purchase_order_id = $po->id;
+                        $poItemDelivery->po_item_id = $poDetail->id;
+                        $poItemDelivery->qty = $poDetail->order_qty ?? 0.00;
+                        $poItemDelivery->delivery_date = $poDetail->delivery_date ?? now();
+                        $poItemDelivery->save();
+                    }   
 
                     /*Item Level Discount Save*/
                     if(isset($component['discounts'])) {
@@ -924,7 +936,8 @@ class PoController extends Controller
 
             $po->org_currency_id = $currencyExchangeData['data']['org_currency_id'];
             $po->org_currency_code = $currencyExchangeData['data']['org_currency_code'];
-            $po->org_currency_exg_rate = $currencyExchangeData['data']['org_currency_exg_rate'];
+            $po->org_currency_exg_rate = $request?->exchange_rate ?? 1;
+            // $po->org_currency_exg_rate = $currencyExchangeData['data']['org_currency_exg_rate'];
             $po->comp_currency_id = $currencyExchangeData['data']['comp_currency_id'];
             $po->comp_currency_code = $currencyExchangeData['data']['comp_currency_code'];
             $po->comp_currency_exg_rate = $currencyExchangeData['data']['comp_currency_exg_rate'];
@@ -1267,7 +1280,8 @@ class PoController extends Controller
                         'remarks' => $component['remark'] ?? null,
                         'value_after_discount' => $itemValueAfterDiscount,
                         'item_value' => $itemValue,
-                        'pi_item_hidden_ids' => $component['pi_item_hidden_ids'] ?? []
+                        'pi_item_hidden_ids' => $component['pi_item_hidden_ids'] ?? [],
+                        'delivery_date' => $component['delivery_date']
                     ];
                 }
 
@@ -1362,6 +1376,7 @@ class PoController extends Controller
                     $poDetail->group_currency_id = $poItem['group_currency_id'];
                     $poDetail->group_currency_exchange_rate = $poItem['group_currency_exchange_rate'];
                     $poDetail->remarks = $poItem['remarks'];
+                    $poDetail->delivery_date = $poItem['delivery_date'];
                     $poDetail->save();
 
                     #Save component Attr
@@ -1486,6 +1501,15 @@ class PoController extends Controller
                             }
                         }
                     }
+                    
+                    if($po?->po_items_delivery?->count() < 1) {
+                        $poItemDelivery = new PoItemDelivery;
+                        $poItemDelivery->purchase_order_id = $po->id;
+                        $poItemDelivery->po_item_id = $poDetail->id;
+                        $poItemDelivery->qty = $poDetail->order_qty ?? 0.00;
+                        $poItemDelivery->delivery_date = $poDetail->delivery_date ?? now();
+                        $poItemDelivery->save();
+                    }   
 
                     /*Item Level Discount Save*/
                     if(isset($component['discounts'])) {
@@ -1600,7 +1624,8 @@ class PoController extends Controller
 
             $po->org_currency_id = $currencyExchangeData['data']['org_currency_id'];
             $po->org_currency_code = $currencyExchangeData['data']['org_currency_code'];
-            $po->org_currency_exg_rate = $currencyExchangeData['data']['org_currency_exg_rate'];
+            // $po->org_currency_exg_rate = $currencyExchangeData['data']['org_currency_exg_rate'];
+            $po->org_currency_exg_rate = $request?->exchange_rate ?? 1;
             $po->comp_currency_id = $currencyExchangeData['data']['comp_currency_id'];
             $po->comp_currency_code = $currencyExchangeData['data']['comp_currency_code'];
             $po->comp_currency_exg_rate = $currencyExchangeData['data']['comp_currency_exg_rate'];
@@ -1919,6 +1944,8 @@ class PoController extends Controller
         }
         $saleOrders = ErpSaleOrder::whereIn('id', $po->so_id ?? [])
         ->get();
+        $currencyName = $organization?->currency?->short_name ?? '';
+        $isDifferentCurrency = intval($po?->vendor?->currency_id) !== intval($organization?->currency_id);
         return view($view, [
             'users' => $users,
             'isEdit'=> $isEdit,
@@ -1940,7 +1967,9 @@ class PoController extends Controller
             'locations' => $locations,
             'shortClose' => $shortClose,
             'saleOrders' => $saleOrders,
-            'serviceAlias' => $serviceAlias
+            'serviceAlias' => $serviceAlias,
+            'currencyName' => $currencyName,
+            'isDifferentCurrency' => $isDifferentCurrency
 
         ]);
     }
@@ -2006,6 +2035,7 @@ class PoController extends Controller
         } else {
             $soTracking = false; 
         }
+        $isDifferentCurrency = intval($po?->currency_id) !== intval($po?->org_currency_id);
         $pdf = PDF::loadView(
             // return view(
             $path,
@@ -2029,7 +2059,8 @@ class PoController extends Controller
                 'sellerShippingAddress' => $sellerShippingAddress,
                 'sellerBillingAddress' => $sellerBillingAddress,
                 'buyerAddress' => $buyerAddress,
-                'soTracking' => $soTracking
+                'soTracking' => $soTracking,
+                'isDifferentCurrency' => $isDifferentCurrency
             ]
         );
         return $pdf->stream($fileName);
@@ -2683,7 +2714,6 @@ class PoController extends Controller
             if (!empty($component['pi_item_id'])) {
                 $vendorId = $component['vendor_id'] ?? null;
                 $vendor = Vendor::find($vendorId); 
-                
                 if (!isset($groupedDatas[$vendorId])) {
                     $shipping = $vendor?->addresses()->where(function($query) {
                         $query->where('type', 'shipping')->orWhere('type', 'both');
@@ -2733,14 +2763,10 @@ class PoController extends Controller
                 ];
             }    
         }
-
         $groupedDatas = array_values($groupedDatas);
-
         $finalGroupedDatas = [];
-
         foreach ($groupedDatas as $vendorData) {
             $vendorId = $vendorData['vendor_id'];
-
             if (!isset($finalGroupedDatas[$vendorId])) {
                 $finalGroupedDatas[$vendorId] = [
                     'vendor_id' => $vendorId,
@@ -2748,17 +2774,12 @@ class PoController extends Controller
                     'currency_id' => $vendorData['currency_id'],
                     'payment_terms_id' => $vendorData['payment_terms_id'],
                     'payment_term_code' => $vendorData['payment_term_code'],
-                    'billing_address' => $vendorData['billing_address'],
-                    'shipping_address' => $vendorData['shipping_address'],
                     'pi_items' => []
                 ];
             }
-
             $groupedPiItems = [];
-
             foreach ($vendorData['pi_items'] as $piItem) {
                 $key = $piItem['so_id'] . '-'.$piItem['item_id'] . '-' . $piItem['uom_id'] . '-' . json_encode($piItem['attributes']);
-
                 if (!isset($groupedPiItems[$key])) {
                     $groupedPiItems[$key] = [
                         'so_id' => $piItem['so_id'],
@@ -2778,24 +2799,19 @@ class PoController extends Controller
                         'pi_item_ids' => []
                     ];
                 }
-
                 $groupedPiItems[$key]['qty'] += $piItem['qty'];
                 $groupedPiItems[$key]['pi_item_ids'][] = $piItem['pi_item_id'];
             }
-
             $finalGroupedDatas[$vendorId]['pi_items'] = array_values($groupedPiItems);
         }
-
         $finalGroupedDatas = array_values($finalGroupedDatas);
         DB::beginTransaction();
-
         try {
             $type = $this->type;
-            $stateId = $request->store_id;
+            $storeId = $request->store_id;
             $bookId = $request->book_id;
             $bookCode = $request->book_code;
             $documentDate = $request->document_date;
-
             $parameters = [];
             $response = BookHelper::fetchBookDocNoAndParameters($request->book_id, $request->document_date);
             if ($response['status'] === 200) {
@@ -2817,7 +2833,7 @@ class PoController extends Controller
                 $po->group_id = $organization->group_id;
                 $po->company_id = $organization->company_id;
                 // $po->department_id = $request->department_id;
-                $po->store_id = $stateId;
+                $po->store_id = $storeId;
                 $po->book_id = $bookId;
                 $po->book_code = $bookCode;
                 $document_number = $request->document_number ?? null;
@@ -2834,14 +2850,13 @@ class PoController extends Controller
                                         ->where('book_id', $bookId)
                                         ->where('document_number', $document_number)
                                         ->first();
-                    //Again check regenerated doc no
-                    if (isset($regeneratedDocExist)) {
-                        return response()->json([
-                            'message' => ConstantHelper::DUPLICATE_DOCUMENT_NUMBER,
-                            'error' => "",
-                        ], 422);
-                    }
-
+                //Again check regenerated doc no
+                if (isset($regeneratedDocExist)) {
+                    return response()->json([
+                        'message' => ConstantHelper::DUPLICATE_DOCUMENT_NUMBER,
+                        'error' => "",
+                    ], 422);
+                }
                 $po->doc_number_type = $numberPatternData['type'];
                 $po->doc_reset_pattern = $numberPatternData['reset_pattern'];
                 $po->doc_prefix = $numberPatternData['prefix'];
@@ -2851,8 +2866,6 @@ class PoController extends Controller
                 $po->document_date = $documentDate;
                 $po->vendor_id = $groupedData['vendor_id'];
                 $po->vendor_code = $groupedData['vendor_code'];
-                $po->billing_address = $groupedData['billing_address'];
-                $po->shipping_address = $groupedData['shipping_address'];
                 $po->currency_id = $groupedData['currency_id'];
                 $currency = Currency::find($groupedData['currency_id'] ?? null);
                 $po->currency_code = $currency?->short_name;
@@ -2861,36 +2874,36 @@ class PoController extends Controller
                 $po->document_status = $request->document_status;
                 $po->payment_term_id = $groupedData['payment_terms_id'];
                 $po->payment_term_code = $groupedData['payment_term_code'];
-                // $po->total_item_value = 0.00;
-                // $po->total_discount_value = 0.00;
-                // $po->total_tax_value = 0.00;
-                // $po->total_expense_value = 0.00;
                 $po->save();
-                
                 if($po?->vendor?->supplier_books?->count()) {
                     $po->supp_invoice_required = 'yes';
                     $po->save();
                 }
-    
+
+                $vendorAddress = ErpAddress::where('addressable_id', $groupedData['vendor_id'])->where('addressable_type', Vendor::class)->latest()->first();
+                $store = ErpStore::find($storeId);
+                $locationAddress = $store?->address;
+                $po->billing_address = $locationAddress?->id ?? null;
+                $po->shipping_address = $vendorAddress?->id ?? null;
+                $po->save();
+
                 $vendorBillingAddress = $po->bill_address ?? null;
-                $vendorShippingAddress = $po->ship_address ?? null;
-    
                 if ($vendorBillingAddress) {
                     $billingAddress = $po->bill_address_details()->firstOrNew([
                         'type' => 'billing',
                     ]);
                     $billingAddress->fill([
-                        'address' => $vendorBillingAddress->address,
-                        'country_id' => $vendorBillingAddress->country_id,
-                        'state_id' => $vendorBillingAddress->state_id,
-                        'city_id' => $vendorBillingAddress->city_id,
-                        'pincode' => $vendorBillingAddress->pincode,
-                        'phone' => $vendorBillingAddress->phone,
-                        'fax_number' => $vendorBillingAddress->fax_number,
+                        'address' => $vendorBillingAddress?->address,
+                        'country_id' => $vendorBillingAddress?->country_id,
+                        'state_id' => $vendorBillingAddress?->state_id,
+                        'city_id' => $vendorBillingAddress?->city_id,
+                        'pincode' => $vendorBillingAddress->pincode ?? $vendorBillingAddress->postal_code,
+                        'phone' => $vendorBillingAddress->phone ?? $vendorBillingAddress->mobile,
+                        'fax_number' => $vendorBillingAddress?->fax_number ?? null,
                     ]);
                     $billingAddress->save();
                 }
-    
+                $vendorShippingAddress = $po?->ship_address ?? null;
                 if ($vendorShippingAddress) {
                     $shippingAddress = $po->ship_address_details()->firstOrNew([
                         'type' => 'shipping',
@@ -2907,19 +2920,18 @@ class PoController extends Controller
                     $shippingAddress->save();
                 }
                 # Store location address
-                if($po?->store_location)
-                {
-                    $storeAddress  = $po?->store_location->address;
+                $vendorDeliveryAddress = $locationAddress;
+                if($vendorDeliveryAddress) {
                     $storeLocation = $po->store_address()->firstOrNew();
                     $storeLocation->fill([
                         'type' => 'location',
-                        'address' => $storeAddress->address,
-                        'country_id' => $storeAddress->country_id,
-                        'state_id' => $storeAddress->state_id,
-                        'city_id' => $storeAddress->city_id,
-                        'pincode' => $storeAddress->pincode,
-                        'phone' => $storeAddress->phone,
-                        'fax_number' => $storeAddress->fax_number,
+                        'address' => $vendorDeliveryAddress->address,
+                        'country_id' => $vendorDeliveryAddress->country_id,
+                        'state_id' => $vendorDeliveryAddress->state_id,
+                        'city_id' => $vendorDeliveryAddress->city_id,
+                        'pincode' => $vendorDeliveryAddress->pincode,
+                        'phone' => $vendorDeliveryAddress->phone,
+                        'fax_number' => $vendorDeliveryAddress->fax_number,
                     ]);
                     $storeLocation->save();
                 }
@@ -2963,7 +2975,6 @@ class PoController extends Controller
                                 $poAttribute->save();
                             }
                         } 
-
                         if($isTax) {
                             $itemTax = 0;
                             $itemPrice = floatval($poDetail->rate) * floatval($poDetail->order_qty);
@@ -2981,10 +2992,8 @@ class PoController extends Controller
                             $totalTax += $itemTax;
                         }
                         $totalValue += floatval($poDetail->rate) * floatval($poDetail->order_qty);
-
                         # Store PI Po mapping
                         $pi_item_ids = $piItemRow['pi_item_ids'] ?? [];
-
                         $piItems = PiItem::whereIn('id',$pi_item_ids)
                                     ->where('item_id',$poDetail->item_id)
                                     ->where('uom_id',$poDetail->uom_id)
@@ -3032,10 +3041,8 @@ class PoController extends Controller
                         }
                     }
                 }
-
                 /*Store currency data*/
                 $currencyExchangeData = CurrencyHelper::getCurrencyExchangeRates($po->vendor->currency_id, $po->document_date);
-
                 $po->org_currency_id = $currencyExchangeData['data']['org_currency_id'];
                 $po->org_currency_code = $currencyExchangeData['data']['org_currency_code'];
                 $po->org_currency_exg_rate = $currencyExchangeData['data']['org_currency_exg_rate'];
@@ -3045,15 +3052,12 @@ class PoController extends Controller
                 $po->group_currency_id = $currencyExchangeData['data']['group_currency_id'];
                 $po->group_currency_code = $currencyExchangeData['data']['group_currency_code'];
                 $po->group_currency_exg_rate = $currencyExchangeData['data']['group_currency_exg_rate'];
-
                 $po->total_item_value = $totalValue;
                 $po->total_tax_value = $totalTax;
                 $po->save();
                 
             }
-
             DB::commit();
-
             return response()->json([
                 'message' => 'Record created successfully',
                 'data' => []

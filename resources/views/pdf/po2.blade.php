@@ -57,6 +57,13 @@
                             </td>
                         </tr>
                         <tr>
+                            <td colspan="2" style="padding-top: 3px;">
+                                <span style="font-weight: 700; font-size: 13px;">
+                                    <b>{{ Str::ucfirst(@$po?->store_location?->store_name ?? '') }}</b>
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
                             <td style="padding-top: 10px;">
                                 {{$sellerBillingAddress?->address}}
                             </td>
@@ -190,13 +197,6 @@
                         </tr>
                         <tr>
                             <td style="padding-top: 3px;">
-                                <span style="font-weight: 700; font-size: 13px;">
-                                    <b>{{ Str::ucfirst(@$po?->store_location?->store_name ?? '') }}</b>
-                                </span>
-                            </td>                            
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 10px;">
                                 {{@$buyerAddress->address}}
                             </td>
                         </tr>
@@ -205,10 +205,6 @@
                                 {{ @$buyerAddress?->city?->name }}, {{ @$buyerAddress?->state?->name }}, {{ @$buyerAddress?->country?->name }}, Pin Code: {{ @$buyerAddress->pincode }}
                             </td>
                         </tr>
-                        {{-- <tr>
-                            <td style="padding-top: 3px;">GSTIN NO:</td>
-                            <td style="padding-top: 3px;">{{@$organization?->gst_number}}</td>
-                        </tr> --}}
                         <tr>
                             <td style="padding-top: 3px;">
                                 @if(@$buyerAddress->phone)Phone: {{ @$buyerAddress->phone }}, @endif @if(@$organization?->email) Email: {{ @$organization?->email }} @endif
@@ -337,6 +333,16 @@
                             <br/>
                         @endif
                         Code : {{ @$val->item_code }}
+                        <br />
+                        @if($po->po_items_delivery->count() > 1)
+                            Delivery Schedule: <br />
+                            @foreach($po->po_items_delivery as  $poItemDelivery)
+                                {{$poItemDelivery->getFormattedDate('delivery_date')}}:{{$poItemDelivery->qty}} @if(!$loop->last) , @endif 
+                            @endforeach
+                        @else
+                            Delivery Date: {{$val->getFormattedDate('delivery_date')}}
+                        @endif
+
                         @if($soTracking) <br /> So No.: {{@$val->so->full_document_number}} @endif
                         @if(@$val->remarks) <br /> Remarks : {{@$val->remarks}}@endif
                     </td>
@@ -499,6 +505,16 @@
                                 {{ number_format($totalAmount,2) }}
                             </td>
                         </tr>
+                        {{-- @if($isDifferentCurrency)
+                        <tr>
+                            <td style="text-align: right; padding-top: 3px;">
+                                <b>Value in {{$po?->org_currency_code}}:</b>
+                            </td>
+                            <td style="text-align: right; padding-top: 3px;">
+                                {{ number_format(round($totalAmount * $po?->org_currency_exg_rate,2) ,2) }}
+                            </td>
+                        </tr>
+                        @endif --}}
                     </table>
                 </td>
             </tr>
@@ -520,82 +536,6 @@
                     </table>
                 </td>
             </tr>
-            {{-- <tr>
-            <td colspan="2"
-                style="padding: 3px; border: 1px solid #000; width: 50%; border-top: none; vertical-align: top;">
-                <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
-                    <tr>
-                        <td style="font-weight: bold; font-size: 13px;"> <b>Attachment :</b></td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <div style="min-height: 80px;">
-                                @if($po->getDocuments() && $po->getDocuments()->count())
-                                    @foreach($po->getDocuments() as $attachment)
-                                    @php
-                                        $imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'bmp'];
-                                    @endphp
-                                    @if(in_array(pathinfo($attachment->file_name, PATHINFO_EXTENSION), $imageExtensions))
-                                    @php
-                                    @endphp
-                                    <a href="{{ url($po->getDocumentUrl($attachment)) }}" target="_blank">
-                                        <img src="{{$po->getDocumentUrl($attachment)}}" alt="Image : {{$attachment->name}}" style="max-width: 100%; max-height: 150px; margin-top: 10px;">
-                                    </a>
-                                    @else
-                                    <p>
-                                        <a href="{{ url($po->getDocumentUrl($attachment)) }}" target="_blank">
-                                        {{ $attachment->name }}
-                                        </a>
-                                    </p>
-                                    @endif
-                                    @endforeach
-                                @else
-                                    <p>No attachments available.</p>
-                                @endif
-                            </div>
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr> --}}
-            <!-- <tr>
-                <td
-                    style="padding: 3px; border: 1px solid #000; width: 55%; border-top: none; border-right: none; vertical-align: top;">
-                    <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
-                        <tr>
-                            <td>Price Basis : </td>
-                            <td>FOR GREATER NOIDA</td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 15px;">Delivery on or before :</td>
-                            <td style="padding-top: 15px;"></td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 5px;">Mode of Transport :</td>
-                            <td style="padding-top: 5px;"></td>
-                        </tr>
-                    </table>
-
-                </td>
-                <td
-                    style="padding: 3px; border: 1px solid #000; border-top: none; border-left: none; vertical-align: top; padding-left: 80px;">
-                    <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
-                        <tr>
-                            <td>Insurance :</td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 5px; width: 80px; ">Pack Charges :
-                            </td>
-                            <td style="padding-top: 5px;"> INCLUDED
-                            </td>
-                        </tr>
-                    </table>
-                </td>
-            </tr> -->
-
-            <!--  -->
-
             <tr>
                 <td
                     style="padding: 3px; border: 1px solid #000; width: 50%; border-top: none; border-right: none; vertical-align: top;">

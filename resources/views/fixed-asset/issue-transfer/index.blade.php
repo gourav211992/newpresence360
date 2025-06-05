@@ -165,6 +165,8 @@
 @endsection
 
 @section('scripts')
+<script type="text/javascript" src="{{asset('assets/js/modules/finance-table.js')}}"></script>
+
     <script>
         $(window).on('load', function() {
             if (feather) {
@@ -277,6 +279,8 @@
                 "@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach"
             );
         @endif
+         handleRowSelection('.datatables-basic');
+
     </script>
 
 @endsection

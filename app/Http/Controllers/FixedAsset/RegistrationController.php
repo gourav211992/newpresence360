@@ -200,7 +200,7 @@ class RegistrationController extends Controller
         }
         $currNumber = $r->revisionNumber;
         if ($currNumber) {
-            $data = FixedAssetRegistrationHistory::withDefaultGroupCompanyOrg()->findorFail($id);
+            $data = FixedAssetRegistrationHistory::where('source_id',$id)->first();
         } else {
             $data = FixedAssetRegistration::withDefaultGroupCompanyOrg()->findorFail($id);
         }
@@ -224,7 +224,7 @@ class RegistrationController extends Controller
 
 
         // if ($data->depreciations->count() != 0)
-        //     $buttons['amend'] = false;
+            //$buttons['amend'] = true;
 
 
         $group_name = ConstantHelper::FIXED_ASSETS;
@@ -612,13 +612,13 @@ class RegistrationController extends Controller
 
         $query = FixedAssetRegistration::withDefaultGroupCompanyOrg()
             ->where('document_status', ConstantHelper::POSTED)
-            ->whereNotNull('capitalize_date')
+            //->whereNotNull('capitalize_date')
             ->where('asset_code', 'like', "%$q%")
-            ->whereHas('subAsset', function ($query) use ($oldAssets) {
+            ->withWhereHas('subAsset', function ($query) use ($oldAssets) {
                 $query->whereNotIn('id', $oldAssets);
                 $query->where('current_value_after_dep', '>', 0);
-                $query->whereNotNull('expiry_date');
-                $query->where('expiry_date','>','last_dep_date');
+                //$query->whereNotNull('expiry_date');
+                //$query->where('expiry_date','>','last_dep_date');
             });
 
         if (!empty($ids)) {
@@ -672,8 +672,8 @@ class RegistrationController extends Controller
             ->whereNotIn('id', $oldAssets)->with('asset')
             ->where('current_value_after_dep', '>', 0)
             ->where('sub_asset_code', 'like', "%$q%")
-             ->whereNotNull('expiry_date')
-             ->where('expiry_date','>','last_dep_date')
+             //->whereNotNull('expiry_date')
+             //->whereColumn('expiry_date', '>', 'last_dep_date')
             ->limit(20)
             ->get();
     }

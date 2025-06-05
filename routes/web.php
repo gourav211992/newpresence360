@@ -522,6 +522,7 @@ Route::middleware(['user.auth'])->group(function () {
             Route::get('get-pwo-create', 'getPwoCreate')->name('get.pwo.create');
             Route::get('process-pwo-item', 'processPwoItem')->name('process.pwo-item');
             Route::get('get-sub-store', 'getSubStore')->name('get.sub.store');
+            Route::get('report', 'moReport')->name('report');
             Route::get('get-machine-detail', 'getMachineDetail')->name('get.machine.detail');
     });
 
@@ -569,6 +570,7 @@ Route::middleware(['user.auth'])->group(function () {
             Route::post('process-so-item-submit', 'processSoItemSubmit')->name('process.so-item.submit');
             Route::get('get-selected-department', 'getSelectedDepartment')->name('get.selected.department');
             Route::get('report','piReport')->name('report');
+            Route::get('amend','piAmend')->name('amend');
 
         });
     // Route::prefix('pos')->controller(PurchaseOrderReportController::class)->group(function () {
@@ -2120,11 +2122,11 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::post('/psv/import', [ErpPSVController::class, 'import'])->name('psv.import');
     Route::get('/psv/itemList', [ErpPSVController::class, 'itemList'])->name('psv.itemlist');
     Route::get('/psv/getAllItems', [ErpPSVController::class, 'getAllItems'])->name('psv.getAllItems');
-
+     Route::get('/psv/{id}/pdf', [ErpPSVController::class, 'generatePdf'])->name('psv.generate-pdf');
+    
     //PL
     Route::get('/pick-list', [ErpPlController::class, 'index'])->name('PL.index');
     Route::get('/pick-list/create', [ErpPlController::class, 'create'])->name('PL.create');
-    Route::get('/pick-list/report', [ErpPlController::class, 'report'])->name('PL.report');
     Route::get('/pick-list/filter', [ErpPlController::class, 'filter'])->name('PL.filter');
     Route::post('/pick-list/store', [ErpPlController::class, 'store'])->name('PL.store');
     Route::get('/pick-list/edit/{id}', [ErpPlController::class, 'edit'])->name('PL.edit');
@@ -2134,7 +2136,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::get('/pick-list/so/get/items', [ErpPlController::class, 'getSoItemsForPulling'])->name('PL.pull.items');
     Route::get('/pick-list/{id}/pdf/{pattern}', [ErpPlController::class, 'generatePdf'])->name('PL.generate-pdf');
     Route::get('/pick-list/multi-stores-location', [ErpPlController::class, 'getLocationsWithMultipleStores'])->name('PL.multi-store-location');
-    Route::get('/pick-list/report', [ErpPlController::class, 'materialIssueReport'])->name('PL.report');
+    Route::get('/pick-list/report', [ErpPlController::class, 'PLReport'])->name('PL.report');
     Route::get('/pick-list/posting/get', [ErpPlController::class, 'getPostingDetails'])->name('PL.posting.get');
     Route::post('/pick-list/post', [ErpPlController::class, 'postPL'])->name('PL.post');
     Route::post('/pick-list/import', [ErpPlController::class, 'import'])->name('PL.import');

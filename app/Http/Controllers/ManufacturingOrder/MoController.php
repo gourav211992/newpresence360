@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\ManufacturingOrder;
 
 use App\Exceptions\ApiGenericException;
+use App\Helpers\DynamicFieldHelper;
 use App\Http\Controllers\Controller;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
@@ -52,8 +54,9 @@ class MoController extends Controller
         $parentUrl = request()->segments()[0];
         if (request()->ajax()) {
             $user = Helper::getAuthenticatedUser();
+            $selectedfyYear = Helper::getFinancialYear(Carbon::now()->format('Y-m-d'));
             $boms = MfgOrder::withDefaultGroupCompanyOrg()
-                    ->withDraftListingLogic();
+                    ->withDraftListingLogic()->whereBetween('document_date', [$selectedfyYear['start_date'], $selectedfyYear['end_date']]);
             return DataTables::of($boms)
                 ->addIndexColumn()
                 ->editColumn('document_status', function ($row) {
@@ -113,6 +116,9 @@ class MoController extends Controller
     {
         $parentUrl = request()->segments()[0];
         $servicesAliasParam = ConstantHelper::MO_SERVICE_ALIAS;
+        $currentfyYear = Helper::getCurrentFinancialYear();
+        $selectedfyYear = Helper::getFinancialYear(Carbon::now());
+        $currentfyYear['current_date'] = Carbon::now() -> format('Y-m-d');
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl, $servicesAliasParam);
 
         if (count($servicesBooks['services']) == 0) {
@@ -130,6 +136,7 @@ class MoController extends Controller
             'servicesBooks' => $servicesBooks,
             'serviceAlias' => $servicesAliasParam,
             'stations' => $stations,
+            'current_financial_year' => $selectedfyYear,
             'locations' => $locations
         ]);
     }
@@ -609,6 +616,7 @@ class MoController extends Controller
     # On select row get item detail
     public function getItemDetail2(Request $request)
     {
+
         $item = Item::find($request->item_id ?? null);
         $moItem = MoItem::find($request->mo_item_id ?? null);
         $selectedAttr = json_decode($request->selectedAttr,200) ?? [];
@@ -635,6 +643,7 @@ class MoController extends Controller
         $revision_number = $bom->revision_number;
         $books = Helper::getBookSeriesNew($servicesAliasParam,$parentUrl, true)->get();
         $wasteTypes = ConstantHelper::DISCOUNT_TYPES;
+        $selectedfyYear = Helper::getFinancialYear($doc->document_date ?? Carbon::now()->format('Y-m-d'));
         $creatorType = Helper::userCheck()['type'];
         $totalValue = 0;
         $buttons = Helper::actionButtonDisplay($bom->book_id,$bom->document_status , $bom->id, $totalValue, $bom->approval_level, $bom->created_by ?? 0, $creatorType, $revision_number);
@@ -698,6 +707,7 @@ class MoController extends Controller
             'stations' => $stations,
             'locations' => $locations,
             'productionBomInstructions' => $productionBomInstructions,
+            'current_financial_year' => $selectedfyYear,
             'sectionRequired' => $sectionRequired,
             'subSectionRequired' => $subSectionRequired,
             'machines' => $machines
@@ -1061,7 +1071,7 @@ class MoController extends Controller
         $approvedBy = "";
         $approvedBy = Helper::getDocStatusUser(get_class($mo), $mo -> id, $mo -> document_status);
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$mo->document_status] ?? '';
-        $dynamicFields = $mo -> dynamic_fields;
+        $dynamicFields = $mo -> dynamic_fields ?? [];
         $pdf = PDF::loadView(
         // return view(
         'pdf.mo',
@@ -1623,6 +1633,157 @@ class MoController extends Controller
         $results = InventoryHelper::getAccesibleSubLocations($storeId ?? 0,null, [ConstantHelper::SHOP_FLOOR]);
         return response()->json(['data' => $results, 'status' => 200, 'message' => "fetched!"]);
     }
+    public function moReport(Request $request)
+    {
+        $pathUrl = route('mo.index');
+        $orderType = ConstantHelper::MO_SERVICE_ALIAS;
+        $moProduct = MoProduct::with([
+                'mo',
+                'mo.store_location',
+                'mo.sub_store',
+                'mo.moItems.item',
+                'mo.moItems.uom',
+                'mo.moItems.attributes',
+                'item',
+                'uom',
+                'attributes',
+                'mo.dynamic_fields'
+            ])->whereHas('mo', function ($headerQuery) use($orderType, $pathUrl, $request) {
+            //Book Filter
+            $headerQuery = $headerQuery -> when($request -> book_id, function ($bookQuery) use($request) {
+                $bookQuery -> where('book_id', $request -> book_id);
+            });
+            //Document Id Filter
+            $headerQuery = $headerQuery -> when($request -> document_number, function ($docQuery) use($request) {
+                $docQuery -> where('document_number', 'LIKE', '%' . $request -> document_number . '%');
+            });
+            //Location Filter
+            $headerQuery = $headerQuery -> when($request -> location_id, function ($docQuery) use($request) {
+                $docQuery -> where('store_id', $request -> location_id);
+            });
+            //Company Filter
+            $headerQuery = $headerQuery -> when($request -> company_id, function ($docQuery) use($request) {
+                $docQuery -> where('store_id', $request -> company_id);
+            });
+            //Organization Filter
+            $headerQuery = $headerQuery -> when($request -> organization_id, function ($docQuery) use($request) {
+                $docQuery -> where('organization_id', $request -> organization_id);
+            });
+            //Document Status Filter
+            $headerQuery = $headerQuery -> when($request -> doc_status, function ($docStatusQuery) use($request) {
+                $searchDocStatus = [];
+                if ($request -> doc_status === ConstantHelper::DRAFT) {
+                    $searchDocStatus = [ConstantHelper::DRAFT];
+                } else if ($searchDocStatus === ConstantHelper::SUBMITTED) {
+                    $searchDocStatus = [ConstantHelper::SUBMITTED, ConstantHelper::PARTIALLY_APPROVED];
+                } else {
+                    $searchDocStatus = [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED];
+                }
+                $docStatusQuery -> whereIn('document_status', $searchDocStatus);
+            });
+            //Date Filters
+            $dateRange = $request -> date_range ??  Carbon::now()->startOfMonth()->format('Y-m-d') . " to " . Carbon::now()->endOfMonth()->format('Y-m-d');
+            $headerQuery = $headerQuery -> when($dateRange, function ($dateRangeQuery) use($request, $dateRange) {
+            $dateRanges = explode('to', $dateRange);
+            if (count($dateRanges) == 2) {
+                    $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
+                    $toDate = Carbon::parse(trim($dateRanges[1])) -> format('Y-m-d');
+                    $dateRangeQuery -> whereDate('document_date', ">=" , $fromDate) -> where('document_date', '<=', $toDate);
+            }
+            else{
+                $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
+                $dateRangeQuery -> whereDate('document_date', $fromDate);
+            }
+            });
+            //Item Id Filter
+            $headerQuery = $headerQuery -> when($request -> item_id, function ($itemQuery) use($request) {
+                $itemQuery -> withWhereHas('items', function ($itemSubQuery) use($request) {
+                    $itemSubQuery -> where('item_id', $request -> item_id)
+                    //Compare Item Category
+                    -> when($request -> item_category_id, function ($itemCatQuery) use($request) {
+                        $itemCatQuery -> whereHas('item', function ($itemRelationQuery) use($request) {
+                            $itemRelationQuery -> where('category_id', $request -> category_id)
+                            //Compare Item Sub Category
+                            -> when($request -> item_sub_category_id, function ($itemSubCatQuery) use($request) {
+                                $itemSubCatQuery -> where('subcategory_id', $request -> item_sub_category_id);
+                            });
+                        });
+                    });
+                });
+            });
+        }) -> orderByDesc('id');
+            $dynamicFields = DynamicFieldHelper::getServiceDynamicFields(ConstantHelper::MO_SERVICE_ALIAS);
+
+            $datatables = DataTables::of($moProduct)
+                ->addIndexColumn()
+                ->editColumn('status', function ($row) {
+                    $status = $row->mo->document_status ?? ConstantHelper::DRAFT;
+                    $statusClass = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$status];
+                    $displayStatus = ucfirst($status);
+                    $editRoute = route('mo.edit', ['id' => $row->mo->id]);
+
+                    return "
+                        <div style='text-align:right;'>
+                            <span class='badge rounded-pill $statusClass badgeborder-radius'>$displayStatus</span>
+                            <a href='$editRoute'>
+                                <i class='cursor-pointer' data-feather='eye'></i>
+                            </a>
+                        </div>
+                    ";
+                })
+                ->addColumn('book_name', fn($row) => $row->mo->book_code)
+                ->addColumn('document_number', fn($row) => $row->mo->document_number)
+                ->addColumn('document_date', fn($row) => $row->mo->document_date)
+                ->addColumn('store_name', fn($row) => $row->mo?->store_location?->store_name)
+                ->addColumn('sub_store_name', fn($row) => $row->mo?->sub_store?->name)
+                ->addColumn('product_name', fn($row) => $row?->item?->item_name)
+                ->addColumn('product_code', fn($row) => $row->item_code)
+                ->addColumn('product_uom_name', fn($row) => $row->uom?->name)
+                ->editColumn('product_qty', fn($row) => number_format($row->qty, 2))
+                ->addColumn('product_attributes', function ($row) {
+                    $attributesUi = '';
+                    if (count($row -> attributes) > 0) {
+                        foreach ($row -> attributes as $soAttribute) {
+                            $attrName = AttributeGroup::find($soAttribute->attribute_name);
+                            $attrValue = Attribute::find($soAttribute -> attribute_value);
+                            $attributesUi .= "<span class='badge rounded-pill badge-light-primary' > $attrName?->name : $attrValue?->value </span>";
+                        }
+                    } else {
+                        $attributesUi = 'N/A';
+                    }
+                    return $attributesUi;
+                })
+                ->addColumn('item_code', fn($row) => $row->mo->moItems?->item?->item_code ?? '')
+                ->addColumn('item_name', fn($row) => $row->mo->moItems?->item?->item_name ?? '')
+                ->addColumn('item_uom_name', fn($row) => $row->mo->moItems?->uom?->name ?? '')
+                ->addColumn('item_qty', fn($row) => number_format($row->mo->moItems?->qty ?? 0, 2))
+                ->addColumn('item_consumed_qty', fn($row) => number_format($row->mo->moItems?->consumed_qty ?? 0, 2))
+                ->addColumn('item_attributes', function ($row) {
+                    $attributesUi = '';
+                    $attrs = $row->mo->moItems->attributes ?? collect();
+                    if (count($attrs) > 0) {
+                        foreach ($attrs as $soAttribute) {
+                            $attrName = AttributeGroup::find($soAttribute->attribute_name);
+                            $attrValue = Attribute::find($soAttribute -> attribute_value);
+                            $attributesUi .= "<span class='badge rounded-pill badge-light-primary' > $attrName?->name : $attrValue?->value </span>";
+                        }
+                    } else {
+                        $attributesUi = 'N/A';
+                    }
+                    return $attributesUi;
+                });
+
+            foreach ($dynamicFields as $field) {
+                $datatables = $datatables->addColumn($field->name, function ($row) use ($field) {
+                    $fieldMap = $row->mo->dynamic_fields->keyBy('dynamic_field_detail_id');
+                    return $fieldMap[$field->id]->value ?? '';
+                });
+            }
+
+            return $datatables
+                ->rawColumns(['status', 'product_attributes', 'item_attributes'])
+                ->make(true);
+        }
 
     public function getMachineDetail(Request $request)
     {

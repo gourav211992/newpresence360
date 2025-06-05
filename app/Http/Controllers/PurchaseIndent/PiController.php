@@ -43,9 +43,13 @@ class PiController extends Controller
      # Po List
     public function index(Request $request)
     {
+        $currentfyYear = Helper::getCurrentFinancialYear();
+        $selectedfyYear = Helper::getFinancialYear(Carbon::now());
+
         if (request()->ajax()) {
             $pis = PurchaseIndent::withDefaultGroupCompanyOrg()
                     ->withDraftListingLogic()
+                    -> whereBetween('document_date',[$selectedfyYear['start_date'],$selectedfyYear['end_date']])
                     ->with('vendor')
                     ->latest();
             return DataTables::of($pis)
@@ -105,6 +109,7 @@ class PiController extends Controller
         $user = Helper::getAuthenticatedUser();
         $serviceAlias = ConstantHelper::PI_SERVICE_ALIAS;
         $books = Helper::getBookSeriesNew($serviceAlias,$parentUrl)->get();
+        $selectedfyYear = Helper::getFinancialYear(Carbon::now());
         $users = UserHelper::getUserSubOrdinates($user->auth_user_id ?? 0);
         $selecteduserId = $user -> auth_user_id;
         $locations = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
@@ -113,7 +118,8 @@ class PiController extends Controller
             'books'=> $books,
             'users' => $users['data'],
             'selecteduserId' => $selecteduserId,
-            'locations' => $locations
+            'locations' => $locations,
+            'current_financial_year' => $selectedfyYear,
         ]);
     }
 
@@ -871,6 +877,7 @@ class PiController extends Controller
         } else {
             $revNo = $pi->revision_number;
         }
+        $selectedfyYear = Helper::getFinancialYear($pi->document_date??Carbon::now()->format('Y-m-d'));
 
         $approvalHistory = Helper::getApprovalHistory($pi->book_id, $pi->id, $revNo, 0, $createdBy);
         $view = 'procurement.pi.edit';
@@ -913,6 +920,7 @@ class PiController extends Controller
             'selecteduserId' => $selecteduserId,
             'locations' => $locations,
             'saleOrders' => $saleOrders,
+            'current_financial_year' => $selectedfyYear,
             'soTrackingRequired' => $soTrackingRequired
         ]);
     }

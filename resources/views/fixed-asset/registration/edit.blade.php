@@ -458,7 +458,7 @@
                                                                             </option>
                                                                         @endforeach
                                                                     </select>
-                                                                <input type="hidden" name="currency_id" id="currency_id" value="{{old('currency')}}">
+                                                                <input type="hidden" name="currency_id" id="currency_id" value="{{$data->currency_id}}">
 
                                                                      </div>
                                                     </div>

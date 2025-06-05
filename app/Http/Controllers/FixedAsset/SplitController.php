@@ -108,7 +108,7 @@ class SplitController extends Controller
         $dep_method = $organization->dep_method;
         $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
 
-        return view('fixed-asset.split.create', compact('locations', 'series', 'assets', 'categories','new_categories', 'ledgers', 'financialEndDate', 'financialStartDate', 'dep_percentage', 'dep_type', 'dep_method'));
+        return view('fixed-asset.split.create', compact('locations', 'series', 'assets', 'categories', 'new_categories', 'ledgers', 'financialEndDate', 'financialStartDate', 'dep_percentage', 'dep_type', 'dep_method'));
     }
 
     /**
@@ -118,14 +118,14 @@ class SplitController extends Controller
     {
         $user = Helper::getAuthenticatedUser();
         $grouped = collect(json_decode($request->sub_assets))->groupBy('asset_code');
-       foreach ($grouped as $assetCode => $items) {
+        foreach ($grouped as $assetCode => $items) {
             $existingAsset = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('asset_code', $assetCode)->first();
 
             if ($existingAsset) {
-               return redirect()
-                ->route('finance.fixed-asset.split.create')
-                ->withInput()
-                ->withErrors('Asset Code# ' . $existingAsset->asset_code . ' already exists.');
+                return redirect()
+                    ->route('finance.fixed-asset.split.create')
+                    ->withInput()
+                    ->withErrors('Asset Code# ' . $existingAsset->asset_code . ' already exists.');
             }
         }
         $status = $request->document_status;
@@ -171,7 +171,7 @@ class SplitController extends Controller
      */
     public function show(Request $r, string $id)
     {
-
+        $organization = Helper::getAuthenticatedUser()->organization;
         $parentURL = "fixed-asset_split";
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
         if (count($servicesBooks['services']) == 0) {
@@ -179,7 +179,7 @@ class SplitController extends Controller
         }
         $currNumber = $r->revisionNumber;
         if ($currNumber) {
-            $data = FixedAssetSplitHistory::withDefaultGroupCompanyOrg()->findorFail($id);
+            $data = FixedAssetSplitHistory::where('source_id',$id)->first();
         } else {
             $data = FixedAssetSplit::withDefaultGroupCompanyOrg()->with(['subAsset' => function ($query) {
                 $query->withTrashed();
@@ -204,10 +204,30 @@ class SplitController extends Controller
         $approvalHistory = Helper::getApprovalHistory($data->book_id, $data->id, $revNo, $data->current_value, $data->created_by);
         $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
 
-$categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
-        
+        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
+        $group_name = ConstantHelper::FIXED_ASSETS;
+        $group = Helper::getGroupsQuery()->where('name', $group_name)->first();
+        $allChildIds = $group->getAllChildIds();
+        $allChildIds[] = $group->id;
 
-        return view('fixed-asset.split.show', compact('categories','locations', 'data', 'buttons', 'docStatusClass', 'approvalHistory', 'revision_number'));
+        $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
+            $query->whereIn('ledger_group_id', $allChildIds)
+                ->orWhere(function ($subQuery) use ($allChildIds) {
+                    foreach ($allChildIds as $child) {
+                        $subQuery->orWhereJsonContains('ledger_group_id', (string)$child);
+                    }
+                });
+        })->get();
+            $dep_percentage = $organization->dep_percentage;
+            $dep_type = $organization->dep_type;
+            $dep_method = $organization->dep_method;
+            $financialEndDate = Helper::getFinancialYear(date('Y-m-d'))['end_date'];
+        $financialStartDate = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
+        
+      
+
+
+        return view('fixed-asset.split.show', compact('ledgers', 'categories', 'locations', 'data', 'buttons', 'docStatusClass', 'approvalHistory', 'revision_number', 'dep_percentage', 'dep_method', 'dep_type','financialStartDate','financialEndDate'));
     }
 
     /**
@@ -269,10 +289,10 @@ $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)
             $existingAsset = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('asset_code', $assetCode)->first();
 
             if ($existingAsset) {
-               return redirect()
-                ->route('finance.fixed-asset.split.edit',$id)
-                ->withInput()
-                ->withErrors('Asset Code# ' . $existingAsset->asset_code . ' already exists.');
+                return redirect()
+                    ->route('finance.fixed-asset.split.edit', $id)
+                    ->withInput()
+                    ->withErrors('Asset Code# ' . $existingAsset->asset_code . ' already exists.');
             }
         }
 

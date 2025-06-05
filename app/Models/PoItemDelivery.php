@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\DateFormatTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class PoItemDelivery extends Model
 {
-    use HasFactory;
+    use HasFactory,DateFormatTrait;
 
     protected $table = 'erp_po_item_delivery';
 

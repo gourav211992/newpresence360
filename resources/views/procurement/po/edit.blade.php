@@ -237,6 +237,12 @@ $pi_item_ids = $po->pi_item_mappings()->pluck('pi_item_id')->implode(',');
                                                         </select>
                                                     </div>
                                                 </div>
+                                                <div class="col-md-3">
+                                                    <div class="mb-1">
+                                                        <label class="form-label">Exchange Rate <span class="text-danger">*</span></label>
+                                                        <input type="text" class="form-control mw-100 {{$isDifferentCurrency ? '' : 'disabled-input'}}" value="{{$po->org_currency_exg_rate}}" id="exchange_rate" name="exchange_rate" />
+                                                    </div>
+                                                </div>
                                             </div>
 
                                             <div class="row">
@@ -332,6 +338,7 @@ $pi_item_ids = $po->pi_item_mappings()->pluck('pi_item_id')->implode(',');
                                                 <th>Discount</th>
                                                 {{-- <th>Tax</th> --}}
                                                 <th>Total</th>
+                                                <th>Delivery Date</th>
                                                 {{-- @if($shortClose)
                                                 <th width="100px">
                                                     Short Close
@@ -353,7 +360,7 @@ $pi_item_ids = $po->pi_item_mappings()->pluck('pi_item_id')->implode(',');
                                             <td></td>
                                         </tr>
                                         <tr valign="top">
-                                            <td colspan="7" rowspan="10">
+                                            <td colspan="8" rowspan="10">
                                                 <table class="table border">
                                                     <tbody id="itemDetailDisplay">
                                                     <tr>
@@ -429,6 +436,14 @@ $pi_item_ids = $po->pi_item_mappings()->pluck('pi_item_id')->implode(',');
                                                         <td>
                                                             <div class="quottotal-bg justify-content-end">
                                                                 <h5 id="f_total_after_exp">0.00</h5>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                    <tr class="voucher-tab-foot {{$isDifferentCurrency ? '' : 'd-none'}}" id="exchangeDiv">
+                                                        <td class="text-primary"><strong>Grand Total ({{$currencyName}})</strong></td>  
+                                                        <td>
+                                                            <div class="quottotal-bg justify-content-end"> 
+                                                                <h5 id="f_total_after_exp_rate">0.00</h5>
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -1711,6 +1726,18 @@ $(document).on('click','#deleteConfirm', (e) => {
         $(".editAddressBtn").removeClass('d-none');
         $("#vendor_name").prop('readonly',false); 
         getLocation();
+
+        let vendorName = $("#vendor_name").attr("data-name");
+        let vendorId = $("#vendor_id").val() || '';
+        if(vendorId) {
+            const item = { label: vendorName, value: vendorName, id: vendorId };
+            $('#vendor_name')
+                .val(item.label)
+                .data('ui-autocomplete')
+                ._trigger('select', null, { item: item });
+            $("#vendor_name").val(vendorId).trigger('change');
+        }
+
     }
 });
 

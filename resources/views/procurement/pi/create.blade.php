@@ -110,7 +110,7 @@
                                 <label class="form-label">Indent Date <span class="text-danger">*</span></label>  
                             </div>  
                             <div class="col-md-5"> 
-                                <input type="date" class="form-control" value="{{date('Y-m-d')}}" name="document_date">
+                                <input type="date" class="form-control" value="{{date('Y-m-d')}}" name="document_date" min = "{{ $current_financial_year['start_date'] }}" max = "{{ $current_financial_year['end_date'] }}">
                             </div> 
                         </div>  
                         {{-- <div class="row align-items-center mb-1">
@@ -382,8 +382,8 @@
             $("#book_code").val('');
             $("#document_number").val('');
             const docDateInput = $("[name='document_date']");
-            docDateInput.removeAttr('min');
-            docDateInput.removeAttr('max');
+            docDateInput.attr('min', "{{$current_financial_year['start_date']}}");
+            docDateInput.attr('max', "{{$current_financial_year['end_date']}}");
             docDateInput.val(new Date().toISOString().split('T')[0]);
             alert(data.message);
         }

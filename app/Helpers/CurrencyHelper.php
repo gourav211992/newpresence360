@@ -139,7 +139,8 @@ class CurrencyHelper
             'status' => true,
             'message' => 'Currency details found',
             'data' => array(
-                'party_currency_code'=>@$partyCurrency ?-> short_name,
+                'party_currency_code'=> @$partyCurrency ?-> short_name,
+                'party_currency_id' => @$partyCurrency ?-> id,
                 'organization_id' => @$organization -> id,
                 'org_currency_id' => @$organizationCurrency -> id,
                 'org_currency_code' => @$organizationCurrency -> short_name,
