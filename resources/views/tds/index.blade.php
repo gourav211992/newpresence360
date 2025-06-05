@@ -51,7 +51,6 @@
                                            @foreach($records as $i => $row)
                                                 @php
                                                        $eh =  App\Models\Voucher::where('reference_doc_id',$row->expenseHeader?->id)->where('reference_service','expense-advice')->first();
-
                                                 @endphp
                                                 @if($row->expenseHeader?->vendor != null && $row->assesment_amount > 0 && $eh)
                                                         <tr class="trail-bal-tabl-none">
@@ -64,7 +63,7 @@
                                                             <td>{{ $row->expenseHeader?->vendor?->pan_number ?? 'N/A' }}</td>
                                                             <td>
                                                                 <div style="width: 200px">
-                                                                    {{ $row->ted_name ?? 'N/A' }}
+                                                                           {{ \App\Helpers\ConstantHelper::getTdsSections()[$row->taxDetail?->ledger?->tds_section] ?? 'N/A' }}
                                                                 </div>
                                                             </td>
 
@@ -162,8 +161,10 @@
                         <label class="form-label">TDS Section</label>
                         <select class="form-select select2" name="tax_filter">
                             <option value="">Select</option>
-                            @foreach($taxTypes as $tax)
-                            <option value="{{$tax->id}}">{{$tax->tax_group}}</option>
+                            @foreach($taxTypes as $value => $label)
+                            <option value="{{ $value }}" @selected(old('tds_section') == $value)>
+                                {{ $label }}
+                            </option>
                         @endforeach
                         </select>
                     </div>
