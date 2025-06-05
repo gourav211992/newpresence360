@@ -303,9 +303,13 @@
             $('.collapse').click();
             $('#tableData').html('');
             let params = new URLSearchParams(window.location.search);
-                params.set('date', $('#fp-range').val());
-                params.set('cost_center_id', $('#cost_center_id').val());
-                params.set('location_id', $('#location_id').val());
+                const date = $('#fp-range').val()?.trim();
+                const costCenterId = $('#cost_center_id').val()?.trim();
+                const locationId = $('#location_id').val()?.trim();
+
+                if (date) params.set('date', date);
+                if (costCenterId) params.set('cost_center_id', costCenterId);
+                if (locationId) params.set('location_id', locationId);
 
 
                 let newUrl = window.location.pathname + '?' + params.toString();
@@ -328,8 +332,7 @@
 		})
 
         function getInitialGroups() {
-
-
+            $('.preloader').show();
             var obj={ date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),location_id:$('#location_id').val(),currency:$('#currency').val(),'_token':'{!!csrf_token()!!}',group_id:group_id};
             var selectedValues = $('#organization_id').val() || [];
             var filteredValues = selectedValues.filter(function(value) {
@@ -346,6 +349,7 @@
 				data    :obj,
                 success: function(data) {
                     if (data['data'].length > 0) {
+                        $('.preloader').hide();
                         reservesSurplus=data['profitLoss'];
                         let html = '';
 
@@ -548,7 +552,15 @@
         let baseUrl = currentHref.split('?')[0]; // remove old query params if any
 
         // Append new query parameters
-        let updatedUrl = `${baseUrl}?date=${encodeURIComponent($('#fp-range').val())}`;
+            let params = [];
+
+            const date = $('#fp-range').val()?.trim();
+            const costCenterId = $('#cost_center_id').val()?.trim();
+
+            if (date) params.push(`date=${encodeURIComponent(date)}`);
+            if (costCenterId) params.push(`cost_center_id=${encodeURIComponent(costCenterId)}`);
+            let updatedUrl = params.length > 0 ? `${baseUrl}?${params.join('&')}` : baseUrl;
+        // let updatedUrl = `${baseUrl}?date=${encodeURIComponent($('#fp-range').val())}`;
         $(this).attr('href', updatedUrl);
 
     });
@@ -597,7 +609,7 @@
                     if (filteredValues.length>0) {
                         obj.organization_id=filteredValues
                     }
-
+                    $('.preloader').show();
                     $.ajax({
                         headers: {'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')},
                         type    :"POST",
@@ -605,6 +617,7 @@
                         dataType:"JSON",
                         data    :obj,
                         success: function(data) {
+                        $('.preloader').hide();
                             $('#check' + id).val(id);
                             if (data['data'].length > 0) {
                                 let html = '';
@@ -691,7 +704,15 @@
         let baseUrl = currentHref.split('?')[0]; // remove old query params if any
 
         // Append new query parameters
-        let updatedUrl = `${baseUrl}?date=${encodeURIComponent($('#fp-range').val())}`;
+            let params = [];
+
+            const date = $('#fp-range').val()?.trim();
+            const costCenterId = $('#cost_center_id').val()?.trim();
+
+            if (date) params.push(`date=${encodeURIComponent(date)}`);
+            if (costCenterId) params.push(`cost_center_id=${encodeURIComponent(costCenterId)}`);
+            let updatedUrl = params.length > 0 ? `${baseUrl}?${params.join('&')}` : baseUrl;
+        // let updatedUrl = `${baseUrl}?date=${encodeURIComponent($('#fp-range').val())}`;
         $(this).attr('href', updatedUrl);
 
     });
@@ -715,9 +736,11 @@
             $('.parent-' + id).show();
             $(this).hide();
             $(this).siblings('.collapse').show();
+            // $('.preloader').hide();
         });
 
         $(document).on('click', '.collapse', function() {
+            // $('.preloader').show();
             const id = $(this).closest('tr').attr('id');
 
             // Collapse all children of this row recursively and hide their expand icons
@@ -735,6 +758,7 @@
 
             $(this).hide();
             $(this).siblings('.expand').show();
+            // $('.preloader').hide();
         });
 
         // Expand All rows
@@ -757,7 +781,7 @@
                 if (filteredValues.length>0) {
                     obj.organization_id=filteredValues
                 }
-
+                $('.preloader').show();
                 $.ajax({
                     headers: {'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')},
                     type    :"POST",
@@ -765,8 +789,8 @@
                     dataType:"JSON",
                     data    :obj,
                     success: function(res) {
+                        $('.preloader').hide();
                         if (res['data'].length > 0) {
-
 
                             res['data'].forEach(data => {
                                 let tot_credit =0;
@@ -885,7 +909,7 @@
                     }
                 });
             }
-
+            // $('.preloader').hide();
             $('.collapse').show();
             $('.expandable').show();
         });
@@ -915,6 +939,7 @@
     });
 
     function exportTrialBalanceReport(level){
+        $('.preloader').show();
         var obj={ date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),location_id:$('#location_id').val(),currency:$('#currency').val(),'_token':'{!!csrf_token()!!}',group_id:group_id,level:level};
         var selectedValues = $('#organization_id').val() || [];
         var filteredValues = selectedValues.filter(function(value) {
@@ -933,6 +958,7 @@
                 responseType: 'blob'
             },
             success: function(data, status, xhr) {
+                $('.preloader').hide();
                 var link = document.createElement('a');
                 var url = window.URL.createObjectURL(data);
                 link.href = url;
@@ -942,6 +968,7 @@
                 document.body.removeChild(link);
             },
             error: function(xhr, status, error) {
+                $('.preloader').hide();
                 console.log('Export failed:', error);
             }
         });

@@ -291,6 +291,10 @@ Route::middleware(['user.auth'])->group(function () {
     Route::resource('ledgers', LedgerController::class)->except(['show']);
     Route::get('/ledgers/{ledgerId}/groups', [LedgerController::class, 'getLedgerGroups'])->name('ledgers.groups');;
     Route::get('/search/ledger', [LedgerController::class,'getLedger'])->name('ledger.search');
+    Route::get('/ledger/import', [LedgerController::class,'showImportForm'])->name('ledger.show.import');
+    Route::post('/ledger/import', [LedgerController::class,'import'])->name('ledger.import');
+    Route::get('/ledger/export-successful', [LedgerController::class,'exportSuccessfulItems'])->name('ledgers.export.successful');
+    Route::get('/ledger/export-failed', [LedgerController::class,'exportFailedItems'])->name('ledgers.export.failed');
 
     // closefy
     Route::get('/close-fy', [CloseFyController::class,'index'])->name('close-fy');

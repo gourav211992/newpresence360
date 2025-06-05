@@ -1,0 +1,144 @@
+<?php
+
+namespace App\Exports;
+
+use App\Helpers\ConstantHelper;
+use App\Models\UploadItemMaster;
+use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithStyles;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+
+class FailedLedgersExport implements FromCollection, WithHeadings, WithMapping,WithStyles
+{
+    protected $items;
+
+    public function __construct($items)
+    {
+        $this->items = $items;
+     
+    }
+
+    public function collection()
+    {
+        // dd($this->items);
+        return $this->items;
+    }
+
+    public function headings(): array
+    {
+        $headings = [
+           'Code',
+            'Name',
+            'Group',
+            'Status',
+            'tds_section',
+            'tds_percentage',
+            'tcs_section',
+            'tcs_percentage',
+            'tax_type', 
+            'tax_percentage',
+        ];
+
+        $headings[] = 'Remark';
+
+        return $headings;
+    }
+
+    public function map($item): array
+    {
+        // dd($item->status);
+        // $status = $this->service->mapStatusToBoolean($uploadedItem->status ?? null);
+    $tdsSections = ConstantHelper::getTdsSections();
+    $tcsSections = ConstantHelper::getTcsSections();
+    $taxTypes    = ConstantHelper::getTaxTypes();
+        $data = [
+            $item->code,
+            $item->name,
+            $item->ledger_groups,
+            $item->status ?? 'N/A',
+            $tdsSections[$item->tds_section] ?? 'N/A',
+            $item->tds_percentage ?? 'N/A',
+            $tcsSections[$item->tcs_section] ?? 'N/A',
+            $item->tcs_percentage ?? 'N/A',
+            $taxTypes[$item->tax_type] ?? 'N/A',
+            $item->tax_percentage ?? 'N/A',
+        ];
+
+        $data[] = $item->import_remarks ?? 'N/A';
+        // dd($data);
+
+        return $data;
+    }
+
+    public function styles(Worksheet $sheet)
+    {
+        $styles = [];
+        $requiredColumns = range(1, 10); 
+        $totalColumns = count($this->headings());
+        $remarksColIndex = $totalColumns; 
+        foreach ($requiredColumns as $col) {
+            $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col);
+            $styles["{$columnLetter}1"] = [
+                'font' => [
+                    'color' => ['argb' => 'FF000000'],
+                    'bold' => true, 
+                ],
+                'fill' => [
+                    'fillType' => 'solid',
+                    'startColor' => ['argb' => 'FFFF00'] 
+                ],
+                'alignment' => [
+                    'wrapText' => true, 
+                    'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+                    'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+                ],
+                'borders' => [
+                    'allBorders' => [
+                        'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                        'color' => ['argb' => 'FF000000'],
+                    ],
+                ],
+                
+            ];
+            $sheet->getColumnDimension($columnLetter)->setWidth(15); 
+            if ($col !== $remarksColIndex) {
+                $sheet->getStyle("{$columnLetter}")->getAlignment()->setWrapText(true);
+            }
+        }
+        
+    
+        $totalColumns = count($this->headings());
+        for ($col = 11; $col <= $totalColumns; $col++) {
+            $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col); 
+            $sheet->getStyle("{$columnLetter}1")->applyFromArray([
+                'font' => [
+                    'color' => ['argb' => 'FF000000'], 
+                    'bold' => true,
+                ],
+                'fill' => [
+                    'fillType' => 'solid',
+                    'startColor' => ['argb' => 'D3D3D3'] 
+                ],
+                'alignment' => [
+                    'wrapText' => true, 
+                    'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+                    'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+                ],
+                'borders' => [
+                    'allBorders' => [
+                        'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                        'color' => ['argb' => 'FF000000'],
+                    ],
+                ],
+            ]);
+            $sheet->getColumnDimension($columnLetter)->setWidth(15);
+            if ($col !== $remarksColIndex) {
+                $sheet->getStyle("{$columnLetter}")->getAlignment()->setWrapText(true);
+            }
+        }
+        return $styles;
+    }
+    
+}

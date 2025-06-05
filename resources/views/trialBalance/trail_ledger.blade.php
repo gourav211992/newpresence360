@@ -148,7 +148,7 @@
 
                     </div>
                 </div>
-                <form method="GET" action="{{ route('trailLedger', [$id,$group]) }}">
+                    <form id="filterForm">
                     <div class="modal modal-slide-in fade filterpopuplabel" id="filter">
                         <div class="modal-dialog sidebar-sm">
                             <div class="modal-content pt-0">
@@ -198,4 +198,53 @@
         </div>
     </div>
     <!-- END: Content-->
+@endsection
+@section('scripts')
+<script>
+    $(window).on('load', function () {
+        setTimeout(function () {
+            $('.preloader').hide();
+        }, 5000);
+    });
+
+    $('#filterForm').on('submit', function (e) {
+        e.preventDefault();
+        $('.preloader').show();
+
+        let url = "{{ route('trailLedger', [$id, $group]) }}";
+        let params = {};
+
+       const date = $('#date').val()?.trim();
+        const cost_center_id = $('#cost_center_id').val()?.trim();
+        const company_id = $('#company_id').val()?.trim();
+
+        let params = {};
+
+        if (date) params.date = date;
+        if (cost_center_id) params.cost_center_id = cost_center_id;
+        if (company_id) params.company_id = company_id;
+
+        $.ajax({
+            url: url,
+            type: 'GET',
+            data: params,
+            beforeSend: function () {
+                $('.preloader').show();
+            },
+            success: function (response) {
+                $('.preloader').hide();
+
+                // Replace the whole report card-body
+                $('.card-body').html($(response).find('.card-body').html());
+
+                // Close modal
+                $('#filter').modal('hide');
+            },
+            error: function () {
+                $('.preloader').hide();
+                alert("Something went wrong while fetching data.");
+            }
+        });
+    });
+</script>
 @endsection

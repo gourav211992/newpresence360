@@ -500,6 +500,7 @@
     if (printButton) {
         printButton.addEventListener("click", function (e) {
             e.preventDefault();
+            $('.preloader').show();
 
             const url = printButton.getAttribute("data-url");
 
@@ -510,10 +511,12 @@
                     'X-Requested-With': 'XMLHttpRequest'
                 },
                 success: function () {
+                $('.preloader').hide();
                     // ✅ Open new tab if response is OK
                     window.open(url, '_blank');
                 },
                 error: function (xhr) {
+                    $('.preloader').hide();
                     let errorMessage = 'An unexpected error occurred.';
 
                     if (xhr.responseJSON && xhr.responseJSON.message) {
@@ -853,11 +856,13 @@ $(document).ready(function() {
                         '<div class="invalid-feedback">Please select a future date.</div>');
                     return; // Stop form submission
                 }
+                $('.preloader').show();
                 $.ajax({
                     url: "{{ route('finance.cashflow.add.scheduler') }}",
                     method: 'POST',
                     data: formData,
                     success: function (response) {
+                        $('.preloader').hide();
                         // Show success message
                         const Toast = Swal.mixin({
                             toast: true,
@@ -886,6 +891,7 @@ $(document).ready(function() {
                         }
                     },
                     error: function (xhr) {
+                        $('.preloader').hide();
                         if (xhr.status === 422) {
                             var errors = xhr.responseJSON.errors;
 
