@@ -189,6 +189,12 @@
                                     </select>  
                                 </div>
                             </div>
+                            <div class="col-md-3">
+                                <div class="mb-1">
+                                    <label class="form-label">Exchange Rate <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control mw-100 disabled-input" id="exchange_rate" name="exchange_rate" />
+                                </div>
+                            </div>
                         </div>
                         <div class="row">
                             <div class="col-md-4">
@@ -274,6 +280,7 @@
                                 <th>Value</th> 
                                 <th>Discount</th>
                                 <th>Total</th> 
+                                <th>Delivery Date</th> 
                                 <th width="50px">Action</th>
                             </tr>
                         </thead>
@@ -289,7 +296,7 @@
                             <td></td>
                         </tr>
                         <tr valign="top">
-                            <td colspan="7" rowspan="10">
+                            <td colspan="8" rowspan="10">
                                 <table class="table border">
                                     <tbody id="itemDetailDisplay">
                                     <tr>
@@ -357,6 +364,14 @@
                                         <td>
                                             <div class="quottotal-bg justify-content-end"> 
                                                 <h5 id="f_total_after_exp">0.00</h5>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr class="voucher-tab-foot d-none" id="exchangeDiv">
+                                        <td class="text-primary"><strong>Grand Total ({{$currencyName}})</strong></td>  
+                                        <td>
+                                            <div class="quottotal-bg justify-content-end"> 
+                                                <h5 id="f_total_after_exp_rate">0.00</h5>
                                             </div>
                                         </td>
                                     </tr>

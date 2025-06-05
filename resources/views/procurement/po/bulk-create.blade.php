@@ -40,192 +40,190 @@
               </div>
           </div>
       </div>
-  </div>
-  <div class="content-body">
-    <section id="basic-datatable">
-        <div class="row">
-            <div class="col-12">
-                <div class="card" id="basic_section">
-                   <div class="card-body customernewsection-form">  
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between"> 
-                                <div>
-                                    <h4 class="card-title text-theme">Basic Information</h4>
-                                    <p class="card-text">Fill the details</p>
+    </div>
+    <div class="content-body">
+        <section id="basic-datatable">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card" id="basic_section">
+                    <div class="card-body customernewsection-form">  
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between"> 
+                                    <div>
+                                        <h4 class="card-title text-theme">Basic Information</h4>
+                                        <p class="card-text">Fill the details</p>
+                                    </div> 
                                 </div> 
                             </div> 
-                        </div> 
-                        <div class="col-md-8"> 
+                            <div class="col-md-8"> 
+                                <div class="row align-items-center mb-1">
+                                    <div class="col-md-3"> 
+                                        <label class="form-label">Series <span class="text-danger">*</span></label>  
+                                    </div>  
+                                    <div class="col-md-5">  
+                                        <select class="form-select" id="book_id" name="book_id">
+                                        @foreach($books as $book)
+                                        <option value="{{$book->id}}">{{$book->book_code}}</option>
+                                        @endforeach 
+                                    </select>  
+                                    <input type="hidden" name="book_code" id="book_code">
+                                </div>
+                            </div>
+                            {{-- <div class="row align-items-center mb-1">
+                                <div class="col-md-3"> 
+                                    <label class="form-label">{{$short_title}} No <span class="text-danger">*</span></label>  
+                                </div>  
+                                <div class="col-md-5"> 
+                                    <input type="text" name="document_number" class="form-control" id="document_number">
+                                </div> 
+                            </div>   --}}
                             <div class="row align-items-center mb-1">
                                 <div class="col-md-3"> 
-                                    <label class="form-label">Series <span class="text-danger">*</span></label>  
+                                    <label class="form-label">{{$short_title}} Date <span class="text-danger">*</span></label>  
                                 </div>  
-                                <div class="col-md-5">  
-                                    <select class="form-select" id="book_id" name="book_id">
-                                      @foreach($books as $book)
-                                      <option value="{{$book->id}}">{{$book->book_code}}</option>
-                                      @endforeach 
-                                  </select>  
-                                  <input type="hidden" name="book_code" id="book_code">
-                              </div>
-                          </div>
-                          {{-- <div class="row align-items-center mb-1">
-                            <div class="col-md-3"> 
-                                <label class="form-label">{{$short_title}} No <span class="text-danger">*</span></label>  
-                            </div>  
-                            <div class="col-md-5"> 
-                                <input type="text" name="document_number" class="form-control" id="document_number">
+                                <div class="col-md-5"> 
+                                    <input type="date" class="form-control" value="{{date('Y-m-d')}}" name="document_date">
+                                </div> 
                             </div> 
-                        </div>   --}}
-                        <div class="row align-items-center mb-1">
-                            <div class="col-md-3"> 
-                                <label class="form-label">{{$short_title}} Date <span class="text-danger">*</span></label>  
-                            </div>  
-                            <div class="col-md-5"> 
-                                <input type="date" class="form-control" value="{{date('Y-m-d')}}" name="document_date">
-                            </div> 
+                            <div class="row align-items-center mb-1">
+                                <div class="col-md-3"> 
+                                    <label class="form-label">Location <span class="text-danger">*</span></label>  
+                                </div>  
+                                <div class="col-md-5"> 
+                                    <select class="form-select" id="store_id" name="store_id">
+                                    @foreach($locations as $location)
+                                    <option value="{{$location->id}}">{{ $location?->store_name }}</option>
+                                    @endforeach 
+                                </select> 
+                                </div> 
+                            </div>
                         </div> 
-                        <div class="row align-items-center mb-1">
-                            <div class="col-md-3"> 
-                                <label class="form-label">Location <span class="text-danger">*</span></label>  
-                            </div>  
-                            <div class="col-md-5"> 
-                                <select class="form-select" id="store_id" name="store_id">
-                                @foreach($locations as $location)
-                                <option value="{{$location->id}}">{{ $location?->store_name }}</option>
-                                @endforeach 
-                            </select> 
-                            </div> 
-                        </div>
                     </div> 
-                </div> 
-                </div>
-        </div>
-
-        <div class="card" id="item_section">
-           <div class="card-body customernewsection-form"> 
-            <div class="border-bottom mb-2 pb-25">
-               <div class="row">
-                <div class="col-md-6">
-                    <div class="newheader"> 
-                        {{-- <h4 class="card-title text-theme">{{$short_title}} Item Wise Detail</h4> --}}
-                        <h4 class="card-title text-theme">Purchase Indent</h4>
-                        {{-- <p class="card-text">Fill the details</p> --}}
                     </div>
                 </div>
-                {{-- <div class="col-md-6 text-sm-end">
-                    <a href="javascript:;" id="deleteBtn" class="btn btn-sm btn-outline-danger me-50">
-                        <i data-feather="x-circle"></i> Delete</a>
-                </div>  --}}
-                </div>
-                <div class="row"> 
-                    {{-- <div class="col">
-						<div class="mb-1">
-							<label class="form-label">Location</label>
-							<input type="text" id="store_po" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
-							<input type="hidden" id="store_id_po"></input>
-						</div>
-					</div> --}}
-                    <div class="col" id="subLocation">
-						<div class="mb-1">
-							<label class="form-label">Sub Location</label>
-							<input type="text" id="sub_store_po" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
-							<input type="hidden" id="sub_store_id_po"></input>
-						</div>
-					</div>
-                    <div class="col">
-						<div class="mb-1">
-							<label class="form-label">Requester</label>
-							<input type="text" id="requester_po" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
-							<input type="hidden" id="requester_id_po"></input>
-						</div>
-					</div>
-					<div class="col">
-						<div class="mb-1">
-							<label class="form-label">Vendor</label>
-							<input type="text" id="vendor_code_input_qt" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
-							<input type="hidden" id="vendor_id_qt_val"></input>
-						</div>
-					</div>
-					{{-- <div class="col">
-						<div class="mb-1">
-							<label class="form-label">Series</label>
-							<input type="text" id="book_code_input_qt" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
-							<input type="hidden" id="book_id_qt_val"></input>
-						</div>
-					</div> --}}
-					<div class="col">
-						<div class="mb-1">
-							<label class="form-label">@if(request()->type == 'supplier-invoice') Doc @else Indent @endif No.</label>
-							<input type="text" id="document_no_input_qt" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
-							<input type="hidden" id="document_id_qt_val"></input>
-						</div>
-					</div>
-                    <div class="col">
-						<div class="mb-1">
-							<label class="form-label">Sales Order</label>
-							<input type="text" id="pi_so_no_input_qt" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
-							<input type="hidden" id="pi_so_qt_val"></input>
-						</div>
-					</div>
-                    <div class="col">
-						<div class="mb-1">
-							<label class="form-label">Item</label>
-							<input type="text" name="item_name_search" id="item_name_search" placeholder="Item Name/Code" class="form-control mw-100" autocomplete="off" value="">
-						</div>
-					</div>
-					<div class="col mb-1">
-						<label class="form-label">&nbsp;</label><br/>
-						{{-- <button type="button" class="btn btn-primary btn-sm searchPiBtn"><i data-feather="search"></i> Search</button> --}}
-						<button type="button" class="btn btn-warning btn-sm clearPiFilter"><i data-feather="x-circle"></i> Clear</button>
-					</div>
-                    
-                   <div class="col-md-12">
-                       <div class="table-responsive pomrnheadtffotsticky" style="height: 450px">
-                           <table id="itemTable"  class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"> 
-                            <thead>
-                                <tr>
-                                    <th class="customernewsection-form">
-                                        <div class="form-check form-check-primary custom-checkbox">
-                                            <input type="checkbox" class="form-check-input" id="Email">
-                                            <label class="form-check-label" for="Email"></label>
-                                        </div> 
-                                    </th>
-                                    <th>Indent No.</th>
-                                    <th style="width:90px">Indent Date</th>
-                                    <th style="width:120px">Item Code</th>
-                                    <th style="max-width:300px">Item Name</th>
-                                    <th>Attributes</th>
-                                    <th>UOM</th>
-                                    <th style="width:250px">Vendor</th>
-                                    <th class="text-end" style="width:70px">Qty</th>
-                                    <th class="text-end" style="width:70px">Rate</th>
-                                    <th>Sales Order</th>
-                                    <th>Location</th>
-                                    <th>Sub Location</th>
-                                    <th>Requester</th>
-                                    <th>Remark</th> 
-                                </tr>
-                            </thead>
-                            <tbody class="mrntableselectexcel">
 
-                            </tbody>
-                            </table>
+            <div class="card" id="item_section">
+            <div class="card-body customernewsection-form"> 
+                <div class="border-bottom mb-2 pb-25">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="newheader"> 
+                            {{-- <h4 class="card-title text-theme">{{$short_title}} Item Wise Detail</h4> --}}
+                            <h4 class="card-title text-theme">Purchase Indent</h4>
+                            {{-- <p class="card-text">Fill the details</p> --}}
                         </div>
+                    </div>
+                    {{-- <div class="col-md-6 text-sm-end">
+                        <a href="javascript:;" id="deleteBtn" class="btn btn-sm btn-outline-danger me-50">
+                            <i data-feather="x-circle"></i> Delete</a>
+                    </div>  --}}
+                    </div>
+                    <div class="row"> 
+                        {{-- <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">Location</label>
+                                <input type="text" id="store_po" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+                                <input type="hidden" id="store_id_po"></input>
+                            </div>
+                        </div> --}}
+                        <div class="col" id="subLocation">
+                            <div class="mb-1">
+                                <label class="form-label">Sub Location</label>
+                                <input type="text" id="sub_store_po" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+                                <input type="hidden" id="sub_store_id_po"></input>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">Requester</label>
+                                <input type="text" id="requester_po" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+                                <input type="hidden" id="requester_id_po"></input>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">Vendor</label>
+                                <input type="text" id="vendor_code_input_qt" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+                                <input type="hidden" id="vendor_id_qt_val"></input>
+                            </div>
+                        </div>
+                        {{-- <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">Series</label>
+                                <input type="text" id="book_code_input_qt" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+                                <input type="hidden" id="book_id_qt_val"></input>
+                            </div>
+                        </div> --}}
+                        <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">@if(request()->type == 'supplier-invoice') Doc @else Indent @endif No.</label>
+                                <input type="text" id="document_no_input_qt" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+                                <input type="hidden" id="document_id_qt_val"></input>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">Sales Order</label>
+                                <input type="text" id="pi_so_no_input_qt" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+                                <input type="hidden" id="pi_so_qt_val"></input>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">Item</label>
+                                <input type="text" name="item_name_search" id="item_name_search" placeholder="Item Name/Code" class="form-control mw-100" autocomplete="off" value="">
+                            </div>
+                        </div>
+                        <div class="col mb-1">
+                            <label class="form-label">&nbsp;</label><br/>
+                            {{-- <button type="button" class="btn btn-primary btn-sm searchPiBtn"><i data-feather="search"></i> Search</button> --}}
+                            <button type="button" class="btn btn-warning btn-sm clearPiFilter"><i data-feather="x-circle"></i> Clear</button>
+                        </div>
+                        
+                    <div class="col-md-12">
+                        <div class="table-responsive pomrnheadtffotsticky" style="height: 450px">
+                            <table id="itemTable"  class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"> 
+                                <thead>
+                                    <tr>
+                                        <th class="customernewsection-form">
+                                            <div class="form-check form-check-primary custom-checkbox">
+                                                <input type="checkbox" class="form-check-input" id="Email">
+                                                <label class="form-check-label" for="Email"></label>
+                                            </div> 
+                                        </th>
+                                        <th>Indent No.</th>
+                                        <th style="width:90px">Indent Date</th>
+                                        <th style="width:120px">Item Code</th>
+                                        <th style="max-width:300px">Item Name</th>
+                                        <th>Attributes</th>
+                                        <th>UOM</th>
+                                        <th style="width:250px">Vendor</th>
+                                        <th class="text-end" style="width:70px">Qty</th>
+                                        <th class="text-end" style="width:70px">Rate</th>
+                                        <th>Sales Order</th>
+                                        <th>Location</th>
+                                        <th>Sub Location</th>
+                                        <th>Requester</th>
+                                        <th>Remark</th> 
+                                    </tr>
+                                </thead>
+                                <tbody class="mrntableselectexcel">
+
+                                </tbody>
+                                </table>
+                            </div>
+                        </div> 
                     </div> 
-                </div> 
+                </div>
+            </div>
             </div>
         </div>
+        </section>
+    </div>
     </div>
 </div>
-</section>
-</div>
-</div>
-</div>
-
 </form>
-
 @endsection
 @section('scripts')
 <script>
@@ -234,9 +232,9 @@ $(document).on('change','#book_id',(e) => {
   if (bookId) {
    getDocNumberByBookId(bookId); 
 } else {
-   $("#document_number").val('');
-   $("#book_id").val('');
-   $("#document_number").attr('readonly', false);
+$("#document_number").val('');
+$("#book_id").val('');
+$("#document_number").attr('readonly', false);
 }
 });
 

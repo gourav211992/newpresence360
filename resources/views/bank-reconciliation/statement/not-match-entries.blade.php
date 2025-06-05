@@ -27,7 +27,7 @@
                             class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</a>
                         <button class="btn btn-warning btn-sm mb-50 mb-sm-0" data-bs-target="#filter"
                             data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button>
-                        <a href="{{ route('bank.reconcile.index', ['id' => $bank->id]) }}{{ request()->has('date') ? '?date=' . request()->get('date') : '' }}"
+                        <a href="{{ route('bank.reconcile.index', ['id' => $bank->id]) }}"
                             class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather="check-circle"></i> Reconcile
                             Now</a>
                     </div>

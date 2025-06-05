@@ -6,13 +6,14 @@ use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
 use App\Traits\DateFormatTrait;
 use App\Traits\DefaultGroupCompanyOrg;
+use App\Traits\DynamicFieldsTrait;
 use App\Traits\FileUploadTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class PurchaseOrder extends Model
 {
-    use HasFactory, DateFormatTrait, FileUploadTrait,DefaultGroupCompanyOrg;
+    use HasFactory, DateFormatTrait, DynamicFieldsTrait ,FileUploadTrait,DefaultGroupCompanyOrg;
 
     protected $table = 'erp_purchase_orders';
     
@@ -343,5 +344,10 @@ class PurchaseOrder extends Model
     public function pi_item_mappings()
     {
         return $this->hasMany(PiPoMapping::class,'po_id','id');
+    }
+    
+    public function dynamic_fields()
+    {
+        return $this -> hasMany(ErpPoDynamicField::class, 'header_id');
     }
 }

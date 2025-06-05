@@ -57,6 +57,13 @@
                             </td>
                         </tr>
                         <tr>
+                            <td colspan="2" style="padding-top: 3px;">
+                                <span style="font-weight: 700; font-size: 13px;">
+                                    <b>{{ Str::ucfirst(@$po?->store_location?->store_name ?? '') }}</b>
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
                             <td style="padding-top: 10px;">
                                 {{$sellerBillingAddress?->address}}
                             </td>
@@ -150,29 +157,35 @@
                         </tr>
                     </table>
                 </td>
-                <td style="border: 1px solid #000; padding: 3px; border-left: none; vertical-align: top; width: 20%;">
-                    <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
+                <td style="border: 1px solid #000; padding: 6px 8px; vertical-align: top; width: 20%;">
+                    <table style="width: 100%; border-collapse: collapse;" cellspacing="0" cellpadding="3">
                         <tr>
-                            <td><b>PO No:</b></td>
-                            <td style="font-weight: 900;">{{ @$po->document_number }}
-                            </td>
+                            <td style="font-weight: bold; white-space: nowrap;">PO No:</td>
+                            <td style="font-weight: 900;">{{ $po->document_number ?? '-' }}</td>
                         </tr>
+                
+                        @if($po->document_date)
                         <tr>
-                            @if($po->document_date)
-                            <td><b>PO Date:</b></td>
-                                <td style="font-weight: 900;">{{ date('d-M-y', strtotime($po->document_date)) }}
-                                </td>
-                            @endif
+                            <td style="font-weight: bold; white-space: nowrap;">PO Date:</td>
+                            <td style="font-weight: 900;">{{ date('d-M-Y', strtotime($po->document_date)) }}</td>
                         </tr>
+                        @endif
+                
                         @if($po->reference_number)
                         <tr>
-                            <td><b>Reference :</b></td>
-                                <td style="font-weight: 900;">{{ $po->reference_number }}
-                                </td>
-                            </tr>
+                            <td style="font-weight: bold; white-space: nowrap;">Reference No.:</td>
+                            <td style="font-weight: 900;">{{ $po->reference_number }}</td>
+                        </tr>
+                        @endif
+                
+                        @if(!empty($referenceText))
+                        <tr>
+                            <td style="font-weight: bold; white-space: nowrap;">Indent:</td>
+                            <td style="font-weight: 900;">{{ $referenceText }}</td>
+                        </tr>
                         @endif
                     </table>
-                </td>
+                </td>                
             </tr>
             <tr>
                 <td style="border: 1px solid #000; padding: 3px; width: 40%; vertical-align: top;">
@@ -184,13 +197,6 @@
                         </tr>
                         <tr>
                             <td style="padding-top: 3px;">
-                                <span style="font-weight: 700; font-size: 13px;">
-                                    <b>{{ Str::ucfirst(@$po?->store_location?->store_name ?? '') }}</b>
-                                </span>
-                            </td>                            
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 10px;">
                                 {{@$buyerAddress->address}}
                             </td>
                         </tr>
@@ -199,10 +205,6 @@
                                 {{ @$buyerAddress?->city?->name }}, {{ @$buyerAddress?->state?->name }}, {{ @$buyerAddress?->country?->name }}, Pin Code: {{ @$buyerAddress->pincode }}
                             </td>
                         </tr>
-                        {{-- <tr>
-                            <td style="padding-top: 3px;">GSTIN NO:</td>
-                            <td style="padding-top: 3px;">{{@$organization?->gst_number}}</td>
-                        </tr> --}}
                         <tr>
                             <td style="padding-top: 3px;">
                                 @if(@$buyerAddress->phone)Phone: {{ @$buyerAddress->phone }}, @endif @if(@$organization?->email) Email: {{ @$organization?->email }} @endif

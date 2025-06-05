@@ -73,7 +73,7 @@
                                          <label class="form-label">Document Date <span class="text-danger">*</span></label>  
                                      </div>  
                                      <div class="col-md-5"> 
-                                         <input type="date" class="form-control" value="{{date('Y-m-d')}}" name="document_date">
+                                         <input type="date" class="form-control" value="{{date('Y-m-d')}}"  min = "{{ $current_financial_year['start_date'] }}" max = "{{ $current_financial_year['end_date'] }}" name="document_date">
                                      </div> 
                                  </div>
                                  <div class="row align-items-center mb-1">

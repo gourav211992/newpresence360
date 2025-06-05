@@ -469,7 +469,8 @@
                                                                                         <option disabled value="">
                                                                                             Select
                                                                                             Approver</option>
-                                                                                        @foreach ($workflowGroup -> employees as $user)
+                                                                                        @if(isset($workflowGroup->employee))
+                                                                                        @foreach ($workflowGroup ?-> employees as $user)
                                                                                             <option
                                                                                                 value="{{ $user->id }}|{{ $user->type }}"
                                                                                                 data-fixed = "{{(isset($users) && in_array($user->id, $users) && !$workflowGroup -> allow_change) ? 'true' : 'false'}}"
@@ -477,6 +478,7 @@
                                                                                                 {{ $user->name }}
                                                                                             </option>
                                                                                         @endforeach
+                                                                                        @endif
                                                                                     </select>
                                                                                 </td>
                                                                                 <td>

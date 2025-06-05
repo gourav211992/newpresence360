@@ -186,5 +186,49 @@ $(".clearPiFilter").on('click',function(){
 $('#delivery_date_filter, #so_document_no_input_qt, #document_date_filter, #customer_code_input_qt').val('');
 $('#delivery_date_filter, #so_document_no_input_qt, #document_date_filter, #customer_code_input_qt').trigger('change');
 });
-
+let subStoreUrl = window.routes.subStores;
+console.log('subStoreUrl', subStoreUrl);
+var sub_store_element = document.getElementById('sub_store_id_input');
+if (sub_store_element) {
+    console.log('sub_store_element', sub_store_element);
+    $("#store_id_input").on('change', function() {
+        const storeId = $(this).val();
+        $("#item_header").html('');
+        const sub_store_id  = order ? order.sub_store_id : null;
+        $('#sub_store_id_input').empty();
+        if (storeId) {
+            $.ajax({
+                url: subStoreUrl,
+                method: 'GET',
+                dataType: 'json',
+                data: {
+                store_id: storeId,
+                types : Stockk,
+                },
+                success: function(data) {
+                console.log('Sub-stores fetched successfully:', data);
+                if (data.data && data.data.length > 0) {
+                    let options = '<option value="" disabled selected>Select</option>';
+                    data.data.forEach(function(subStore) {
+                        options += `<option value="${subStore.id}" ${subStore.id == sub_store_id ? 'selected' : ''}>${subStore.name}</option>`;
+                    });
+                    $('#sub_store_id_input').empty().html(options);
+                }
+                else{
+                    $('#sub_store_id_input').empty();
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'No Store Found On this Location.',
+                        icon: 'warning',
+                    });
+                }
+                // Handle the response data as needed
+                },
+                error: function(xhr) {
+                console.error('Error fetching sub-stores:', xhr.responseText);
+                }
+            });
+        }
+    });
+}
 

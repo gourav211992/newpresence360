@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\DateFormatTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class PoItem extends Model
 {
-    use HasFactory;
+    use HasFactory,DateFormatTrait;
 
     protected $table = 'erp_po_items';
 
@@ -38,7 +39,8 @@ class PoItem extends Model
         'company_currency_exchange_rate',
         'group_currency_id',
         'group_currency_exchange_rate',
-        'remarks'
+        'remarks',
+        'delivery_date'
     ];
 
     public $referencingRelationships = [

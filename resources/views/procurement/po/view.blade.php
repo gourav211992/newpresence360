@@ -270,6 +270,7 @@
                                                 <th>Value</th>
                                                 <th>Discount</th>
                                                 <th>Total</th>
+                                                <th>Delivery Date</th>
                                                 {{-- @if($shortClose)
                                                 <th width="100px">
                                                     Short Close
@@ -283,7 +284,7 @@
                                         </tbody>
                                         <tfoot>
                                             <tr class="totalsubheadpodetail">
-                                                <td colspan="7"></td>
+                                                <td colspan="8"></td>
                                                 <td class="text-end" id="totalItemValue">0.00</td>
                                                 <td class="text-end" id="totalItemDiscount">0.00</td>
                                                 {{-- <td class="text-end" id="TotalEachRowTax">0.00</td> --}}
@@ -367,6 +368,14 @@
                                                         <td>
                                                             <div class="quottotal-bg justify-content-end">
                                                                 <h5 id="f_total_after_exp">0.00</h5>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                    <tr class="voucher-tab-foot {{$isDifferentCurrency ? '' : 'd-none'}}" id="exchangeDiv">
+                                                        <td class="text-primary"><strong>Grand Total ({{$currencyName}})</strong></td>  
+                                                        <td>
+                                                            <div class="quottotal-bg justify-content-end"> 
+                                                                <h5 id="f_total_after_exp_rate">0.00</h5>
                                                             </div>
                                                         </td>
                                                     </tr>

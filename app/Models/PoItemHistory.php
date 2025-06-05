@@ -37,7 +37,8 @@ class PoItemHistory extends Model
         'company_currency_exchange_rate',
         'group_currency_id',
         'group_currency_exchange_rate',
-        'remarks'
+        'remarks',
+        'delivery_date'
     ];
 
     public $referencingRelationships = [

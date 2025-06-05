@@ -1962,7 +1962,9 @@ class InventoryHelper
     public static function getAccessibleLocations(string|array $locationType = NULL, $storeId = NULL, bool|null $withMultiStore = null)
     {
         //Retrieve Editable Store
+        $employee = Helper::getAuthenticatedUser();
         $editStore = ErpStore::with('address') -> find($storeId);
+
         $stores = ErpStore::withDefaultGroupCompanyOrg()
         ->withWhereHas('address')
         ->where(function($query) use($storeId) {
@@ -1984,6 +1986,11 @@ class InventoryHelper
             $storeQuery -> whereHas('address', function ($addressQuery) use($editStore) {
                 $addressQuery -> where('country_id', $editStore -> address ?-> country_id)
                 -> where('state_id', $editStore -> address ?-> state_id);
+            });
+        })
+        ->when(($employee->authenticable_type == "employee"), function ($locationQuery) use($employee) { // Location with same country and state
+            $locationQuery->whereHas('employees', function ($employeeQuery) use ($employee) {
+                $employeeQuery->where('employee_id', $employee->id);
             });
         })
         ->get();

@@ -27,9 +27,10 @@
                                 <th width="240px">Item Name</th>
                                 <th>Attributes</th>
                                 <th>UOM</th>
+                                <th width="130px">Order No</th>
                                 <th class="numeric-alignment">Order Qty</th>
                                 <th class="numeric-alignment">Picked Qty</th>
-                                <th class="numeric-alignment">Delviery Date</th>
+                                <th class="numeric-alignment">Delivery Date</th>
                                 <th class="numeric-alignment">Rate</th>
                                 <th class="numeric-alignment">Value</th>
                                 <th>Action</th>
@@ -63,6 +64,9 @@
                                         <td>
                                             <select class="form-select" name="uom_id[]" id="uom_dropdown_{{$orderItemIndex}}">
                                             </select>
+                                        </td>
+                                        <td class="numeric-alignment">
+                                            <input type="text" id="item_order_no_{{$orderItemIndex}}" value="{{ $order->document_status !== 'approved' && $order->document_status !== 'approval_not_required' ? 0.00 : $orderItem->so->book_code."-".$orderItem->so->document_number }}" name="item_order_no[{{$orderItemIndex}}]" class="form-control mw-100 text-end" readonly>
                                         </td>
                                         <td class="numeric-alignment">
                                             <input type="text" id="item_order_qty_{{$orderItemIndex}}" value="{{ $order->document_status !== 'approved' && $order->document_status !== 'approval_not_required' ? 0.00 : $orderItem->order_qty }}" name="item_order_qty[{{$orderItemIndex}}]" class="form-control mw-100 text-end" readonly>

@@ -23,6 +23,7 @@ Route::middleware(['user.auth'])->group(function () {
         Route::get('/upload/{id}', 'upload')->name('bank.statements.upload');
         Route::get('/match-entries/{id}', 'matchEntries')->name('bank.statements.match-entries');
         Route::get('/not-match-entries/{id}', 'notMatchEntries')->name('bank.statements.not-match-entries');
+        Route::get('/export/{id}', 'export')->name('bank.statements.export');
     });
     
     Route::controller(BankReconciliationController::class)->prefix('reconcile')->group(function () {

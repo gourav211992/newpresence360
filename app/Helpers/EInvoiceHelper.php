@@ -163,6 +163,53 @@ class EInvoiceHelper
         }
     }
 
+    public static function formatGstinResponse($input_response)
+    {
+        try {
+            $data = json_decode($input_response, true);
+
+            $info = $data['data'];
+            $addr = $info['pradr']['addr'] ?? [];
+            $stateCode = '';
+            if (!empty($addr['stcd'])) {
+                $state = $addr['stcd'];
+                $stateModel = State::where('name', 'like', '%' . $state . '%')->first();
+                $stateCode = $stateModel ? $stateModel->state_code : '';
+            }
+
+            $formatted = [
+                'Gstin'      => $info['gstin'] ?? '',
+                'TradeName'  => $info['tradeNam'] ?? '',
+                'LegalName'  => $info['lgnm'] ?? '',
+                'AddrBnm'    => $addr['bnm'] ?? '',
+                'AddrBno'    => $addr['bno'] ?? '',
+                'AddrFlno'   => $addr['flno'] ?? '',
+                'AddrSt'     => $addr['st'] ?? '',
+                'AddrLoc'    => $addr['loc'] ?? '',
+                'StateCode'  => $stateCode,
+                'AddrPncd'   => $addr['pncd'] ?? '',
+                'TxpType'    => $info['dty'] ?? '',
+                'Status' => (isset($info['sts']) && $info['sts'] === 'Active') ? 'ACT' : ($info['sts'] ?? ''),
+                'BlkStatus'  => 'U',
+                'DtReg' => isset($info['rgdt']) && !empty($info['rgdt'])
+                    ? \DateTime::createFromFormat('d/m/Y', str_replace('\\/', '/', $info['rgdt']))->format('Y-m-d')
+                    : '',
+                'DtDReg'     => null,
+            ];
+            $final_response = [
+                'Status' => 1,
+                'errorMsg' => '',
+                'successMsg' => '',
+                'checkGstIn' => json_encode($formatted),
+            ];
+            // dd($final_response);
+            return $final_response;
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
     public static function validateGstinName(Request $request){
         try{
             $gstin = $request->gstin;
@@ -186,7 +233,18 @@ class EInvoiceHelper
             curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
             curl_setopt($curl, CURLOPT_HTTPHEADER, $requestHeader);
             $result = curl_exec($curl);
-            return $result;
+            $decodedResult = json_decode($result, true);
+            if (isset($decodedResult['error']) && $decodedResult['error'] === false) {
+                $final_result = EInvoiceHelper::formatGstinResponse($result);
+            } else {
+                $final_result = [
+                    'Status' => 0,
+                    'errorMsg' => $decodedResult['data'] ?? '',
+                    'successMsg' => '',
+                    'checkGstIn' => ''
+                ];
+            }
+            return $final_result;
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
 

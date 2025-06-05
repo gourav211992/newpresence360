@@ -69,6 +69,7 @@ class ErpSaleReturnController extends Controller
     {
         $pathUrl = request()->segments()[0];
         $orderType = SaleModuleHelper::SALES_RETURN_DEFAULT_TYPE;
+        $selectedfyYear = Helper::getFinancialYear(Carbon::now()->format('Y-m-d'));
         $redirectUrl = route('sale.return.index');
         $createRoute = route('sale.return.create');
         request()->merge(['type' => $orderType]);
@@ -77,6 +78,7 @@ class ErpSaleReturnController extends Controller
 
         if ($request->ajax()) {
             $returns = ErpSaleReturn::withDefaultGroupCompanyOrg()
+                ->whereBetween('document_date', [$selectedfyYear['start_date'], $selectedfyYear['end_date']])
                 ->withDraftListingLogic()
                 ->orderByDesc('id');
 
@@ -168,6 +170,9 @@ class ErpSaleReturnController extends Controller
         $parentURL = request()->segments()[0];
         $redirectUrl = route('sale.return.index');
         $user = Helper::getAuthenticatedUser();
+        $currentfyYear = Helper::getCurrentFinancialYear();
+        $selectedfyYear = Helper::getFinancialYear(Carbon::now());
+        $currentfyYear['current_date'] = Carbon::now() -> format('Y-m-d');
         $users = AuthUser::where('organization_id', $user -> organization_id) -> where('status', ConstantHelper::ACTIVE) -> get();
 
         $type = SaleModuleHelper::getAndReturnReturnType($request->type ?? ConstantHelper::SR_SERVICE_ALIAS);
@@ -204,6 +209,7 @@ class ErpSaleReturnController extends Controller
             'type' => $type,
             'typeName' => $typeName,
             'redirect_url' => $redirectUrl,
+            'current_financial_year' => $selectedfyYear,
             'transportationModes' => $transportationModes,
             'einvoice' => null
 
@@ -268,6 +274,7 @@ class ErpSaleReturnController extends Controller
             $buttons = Helper::actionButtonDisplay($order->book_id, $order->document_status, $order->id, $totalValue, $order->approval_level, $order->created_by ?? 0, $userType['type'], $revision_number);
             $type = SaleModuleHelper::getAndReturnReturnType($request->type ?? ConstantHelper::SR_SERVICE_ALIAS);
             $books = Helper::getBookSeries($type)->get();
+            $selectedfyYear = Helper::getFinancialYear($order->document_date ?? Carbon::now()->format('Y-m-d'));
             $countries = Country::select('id AS value', 'name AS label')->where('status', ConstantHelper::ACTIVE)->get();
             $revNo = $order->revision_number;
             if ($request->has('revisionNumber')) {
@@ -327,6 +334,7 @@ class ErpSaleReturnController extends Controller
                 'transportationModes' => $transportationModes,
                 'enableEinvoice' => $enableEinvoice,
                 'dynamicFieldsUi' => $dynamicFieldsUI,
+                'current_financial_year' => $selectedfyYear,
                 'editTransporterFields' => $editTransporterFields
             ];
             return view('salesReturn.create_edit', $data);

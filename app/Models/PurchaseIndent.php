@@ -6,13 +6,14 @@ use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
 use App\Traits\DateFormatTrait;
 use App\Traits\DefaultGroupCompanyOrg;
+use App\Traits\DynamicFieldsTrait;
 use App\Traits\FileUploadTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class PurchaseIndent extends Model
 {
-    use HasFactory,DateFormatTrait,DefaultGroupCompanyOrg,FileUploadTrait;
+    use HasFactory,DateFormatTrait,DynamicFieldsTrait,DefaultGroupCompanyOrg,FileUploadTrait;
 
     protected $table = 'erp_purchase_indents';
     
@@ -199,5 +200,9 @@ class PurchaseIndent extends Model
     public function getDepartmentNameAttribute()
     {
         return $this -> department ?-> name;
+    }
+       public function dynamic_fields()
+    {
+        return $this -> hasMany(ErpPiDynamicField::class, 'header_id');
     }
 }

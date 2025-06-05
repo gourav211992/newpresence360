@@ -7,6 +7,8 @@ use App\Helpers\TransactionReport\geReportHelper;
 use App\Helpers\TransactionReport\mrnReportHelper;
 use App\Helpers\TransactionReport\pbReportHelper;
 use App\Helpers\TransactionReport\prReportHelper;
+use App\Helpers\TransactionReport\plReportHelper;
+use App\Helpers\TransactionReport\moReportHelper;
 
 class TransactionReportHelper
 {
@@ -26,6 +28,8 @@ class TransactionReportHelper
         ConstantHelper::PSV_SERVICE_ALIAS => 'psv.report',
         ConstantHelper::PO_SERVICE_ALIAS => 'po.report,{"type":"purchase-order"}',
         ConstantHelper::PI_SERVICE_ALIAS => 'pi.report',
+        ConstantHelper::PL_SERVICE_ALIAS => 'PL.report',
+        ConstantHelper::MO_SERVICE_ALIAS => 'mo.report',
     ];
     const INDEX_ROUTES = [
         ConstantHelper::SO_SERVICE_ALIAS => 'sale.order.index',
@@ -36,6 +40,8 @@ class TransactionReportHelper
         ConstantHelper::PSV_SERVICE_ALIAS => 'psv.index',
         ConstantHelper::PO_SERVICE_ALIAS => 'po.index',
         ConstantHelper::PI_SERVICE_ALIAS => 'pi.index',
+        ConstantHelper::PL_SERVICE_ALIAS => 'PL.index',
+        ConstantHelper::MO_SERVICE_ALIAS => 'mo.index',
     ];
     const SO_TABLE_HEADERS = [
         [
@@ -2175,7 +2181,7 @@ class TransactionReportHelper
             'label' => 'Series',
             'id' => 'book_filter',
             'requestName' => 'book_id',
-            'term' => 'report_so_book',
+            'term' => 'report_psv_book',
             'value_key' => 'id',
             'label_key' => 'book_code',
             'type' => 'auto_complete'
@@ -2185,7 +2191,7 @@ class TransactionReportHelper
             'label' => 'Doc No',
             'id' => 'doc_number_filter',
             'requestName' => 'document_number',
-            'term' => 'report_so_documents',
+            'term' => 'report_psv_documents',
             'value_key' => 'id',
             'label_key' => 'document_number',
             'type' => 'input_text'
@@ -2842,6 +2848,8 @@ class TransactionReportHelper
         ConstantHelper::PSV_SERVICE_ALIAS => self::PSV_FILTERS,
         ConstantHelper::PO_SERVICE_ALIAS => self::PO_FILTERS,
         ConstantHelper::PI_SERVICE_ALIAS => self::PI_FILTERS,
+        ConstantHelper::PL_SERVICE_ALIAS => plReportHelper::PL_FILTERS,
+        ConstantHelper::MO_SERVICE_ALIAS => moReportHelper::MO_FILTERS,
 
     ];
     const TABLE_HEADERS = [
@@ -2859,6 +2867,8 @@ class TransactionReportHelper
         ConstantHelper::PSV_SERVICE_ALIAS => self::PSV_TABLE_HEADERS,
         ConstantHelper::PO_SERVICE_ALIAS => self::PO_TABLE_HEADERS,
         ConstantHelper::PI_SERVICE_ALIAS => self::PI_TABLE_HEADERS,
+        ConstantHelper::PL_SERVICE_ALIAS => plReportHelper::PL_TABLE_HEADERS,
+        ConstantHelper::MO_SERVICE_ALIAS => moReportHelper::MO_TABLE_HEADERS,
 
     ];
 

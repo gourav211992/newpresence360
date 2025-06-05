@@ -104,6 +104,10 @@ class ErpPlHeader extends Model
     {
         return $this->belongsTo(ErpStore::class, 'store_id');
     }
+    public function subStore()
+    {
+        return $this->belongsTo(ErpSubStore::class, 'sub_store_id');
+    }
     public function dynamic_fields()
     {
         return $this -> hasMany(ErpPlDynamicField::class, 'header_id');

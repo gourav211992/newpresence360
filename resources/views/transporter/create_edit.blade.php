@@ -73,7 +73,7 @@
                                                 </div>
                                             </div>   
                                             <div class="text-end mt-2 position-relative" style="z-index: 2">
-                                            @if(isset($order) && !in_array($order->document_status,[App\Helpers\ConstantHelper::COMPLETED,App\Helpers\ConstantHelper::SHORTLISTED,App\Helpers\ConstantHelper::CLOSED]))
+                                            @if(isset($order) && !in_array($order->document_status,[App\Helpers\ConstantHelper::COMPLETED,App\Helpers\ConstantHelper::SHORTLISTED,App\Helpers\ConstantHelper::CLOSED]) && count($order->bids))
                                                 <button data-bs-toggle="modal" onclick='setShortlist()' id='shortlist' data-bs-target="#approved" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather="check-circle"></i> Shortlist</button>    
                                             @elseif(isset($order) && in_array($order->document_status,[App\Helpers\ConstantHelper::COMPLETED,App\Helpers\ConstantHelper::CONFIRMED,App\Helpers\ConstantHelper::SHORTLISTED]))
                                             <button data-bs-toggle="modal" onclick='endBid()' id='shortlist' data-bs-target="#approved" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather="check-circle"></i>End Bid</button>    
@@ -415,7 +415,7 @@
                     </div>
                 </div>
                 <div class="modal-footer justify-content-center">  
-                    <button type="reset" class="btn btn-outline-secondary me-1">Cancel</button> 
+                    <button type="reset" class="btn btn-outline-secondary me-1" onclick = "closeModal('closeBid')">Cancel</button> 
                     <button id="confirm_close_bid" onclick="{{ $order->document_status == App\Helpers\ConstantHelper::CLOSED ? 'reOpenBid()' : 'closeBid()' }}" class="btn btn-primary">Submit</button>
                 </div>
             </div>
@@ -482,6 +482,7 @@
                             @if(!isset(request() -> revisionNumber))
                                 <button type = "button" onclick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>  
                                 @if (isset($order))
+                                @if($buttons['print'])
                                 <button class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                         stroke-linecap="round" stroke-linejoin="round" class="feather feather-printer">
@@ -504,6 +505,7 @@
                                         </li>
                                     @endforeach
                                 </ul>
+                                @endif
                                 @if($buttons['draft'])
                                     <button type="button" onclick = "submitForm('draft');" name="action" value="draft" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" id="save-draft-button" name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
                                 @endif

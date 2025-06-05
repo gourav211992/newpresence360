@@ -219,7 +219,7 @@ class ItemHelper
         $company = $organization?->company_id ? OrganizationCompany::find($organization->company_id) : null;
         $currency = $organization?->currency_id ? Currency::find($organization->currency_id) : null;
         return [
-            'org_currency_id'    => $currency,
+            'org_currency_id'    => $currency?->id ?? 0,
             'organization_id' => $organization?->id ?? 0,
             'group_id'        => $group?->id ?? 0,
             'company_id'      => $company?->id ?? 0
@@ -370,9 +370,8 @@ class ItemHelper
                     $costPrice = floatval($altUom->$priceField);
                 }
             }
-            $costPriceCurrency = $item?->cost_price_currency_id ?? null;
+            $costPriceCurrency = ($type == 'vendor' ? $item?->cost_price_currency_id : $item?->sell_price_currency_id);
         }
-
         if (!$costPrice) {
             $priceField = $type === 'vendor' ? 'cost_price' : 'sell_price';
             if ($uomId == $item->uom_id) {
@@ -380,7 +379,7 @@ class ItemHelper
             } elseif ($uomConversion) {
                 $costPrice = floatval($item?->$priceField * $uomConversion);
             }
-            $costPriceCurrency = $item?->cost_price_currency_id ?? null;
+            $costPriceCurrency = ($type == 'vendor' ? $item?->cost_price_currency_id : $item?->sell_price_currency_id);
         }
 
         if (!$costPriceCurrency) {
@@ -397,7 +396,7 @@ class ItemHelper
             }
         }
         
-        return round($costPrice);
+        return round($costPrice, 4);
     }
 
     public static function convertToBaseUom(int $itemId, int $altUomId, float $altQty) : float
