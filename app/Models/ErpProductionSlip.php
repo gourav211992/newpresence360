@@ -5,13 +5,14 @@ namespace App\Models;
 use App\Helpers\ConstantHelper;
 use App\Traits\DateFormatTrait;
 use App\Traits\DefaultGroupCompanyOrg;
+use App\Traits\DynamicFieldsTrait;
 use App\Traits\UserStampTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class ErpProductionSlip extends Model
 {
-    use HasFactory, DefaultGroupCompanyOrg, DateFormatTrait, UserStampTrait;
+    use HasFactory, DefaultGroupCompanyOrg, DateFormatTrait, UserStampTrait,DynamicFieldsTrait;
 
     protected $fillable = [
         'organization_id',
@@ -146,4 +147,9 @@ class ErpProductionSlip extends Model
     {
         return $this -> org_currency() ?-> first() ?-> short_name;
     }
+       public function dynamic_fields()
+    {
+        return $this -> hasMany(ErpPslipDynamicField::class, 'header_id');
+    }
+
 }

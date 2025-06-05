@@ -159,16 +159,7 @@
 
                                         </div>
                                         <div class="row align-items-center mb-1">
-                                                <div class="col-md-3">
-
-                                                    <label class="form-label">Category <span
-                                                            class="text-danger">*</span></label>
-                                                </div>
-                                                <div class="col-md-5">
-                                                    <select class="form-select select2" disabled required name="category_id"
-                                                        id="category" required>
-                                                        </select>
-                                                </div>
+                                              
                                             </div>
                                                 <!-- Asset Code & Name -->
                                                 <div class="row align-items-center mb-1">
@@ -189,7 +180,7 @@
                                                 </div>
                                                 <input type="hidden" id="selectedSubAssets" name="sub_asset" value="{{$data->sub_asset}}">
 
-<div class="row mb-1">
+                                                <div class="row mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Sub-Asset Code <span
                                                                 class="text-danger">*</span></label>

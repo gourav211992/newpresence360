@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Bank;
 
 use App\Exceptions\ApiGenericException;
+use App\Exports\bank\StatementExport;
 use App\Helpers\CommonHelper;
 use App\Helpers\Helper;
 use App\Http\Controllers\Controller;
 use App\Imports\BankReconciliation\BankStatementImport;
 use App\Models\BankDetail;
 use App\Models\BankReconciliation\BankStatement;
+use App\Models\BankReconciliation\FailedBankStatement;
 use App\Models\ItemDetail;
 use App\Models\Organization;
 use App\Models\Voucher;
@@ -22,8 +24,28 @@ use Maatwebsite\Excel\Facades\Excel;
 class StatementController extends Controller
 {
     public function upload(Request $request, $id){
+        $bank = BankDetail::findOrFail($id);
+        if($request->has('batch_uid')){
+            $batchUid = $request->get('batch_uid');
+    
+            $successCount = BankStatement::where('uid', $batchUid)->count();
+            $failureCount = FailedBankStatement::where('uid', $batchUid)->count();
+            $statements = BankStatement::where('uid', $batchUid)->paginate(10);
+            
+            if ($request->get('type') === 'failed-statement') {
+                $statements = FailedBankStatement::where('uid', $batchUid)->paginate(10);
+            }
+
+            return view('bank-reconciliation.statement.view',[
+                    'statements' => $statements,
+                    'bank' => $bank,
+                    'failureCount' => $failureCount,
+                    'successCount' => $successCount,
+            ]);
+        }
+
        return view('bank-reconciliation.statement.upload',[
-        'id' => $id
+            'id' => $id
        ]);
     }
 
@@ -46,14 +68,15 @@ class StatementController extends Controller
             // After import, capture the successful and failed rows
             $data['successfulRows'] = $import->getSuccessfulRowsCount();
             $data['failedRows'] = $import->getFailedRowsCount();
-            // $data['failures'] = $import->getFailures();
-            $data['failures'] = array_values($import->getFailures());
+            $data['batchId'] = $import->getBatchId();
+            // $data['failures'] = array_values($import->getFailures());
 
             return [
                 "data" => $data,
                 "message" => "Your Statement has been uploaded successfully."
             ];
         } catch (\Exception $e) {
+            dd($e->getMessage());
             throw new ApiGenericException('The system was unable to read the statement from the uploaded file. Please correct the file and upload again.');
         }
     }
@@ -68,24 +91,11 @@ class StatementController extends Controller
         $fyear = Helper::getFinancialYear(date('Y-m-d'));
         $startDate = $fyear['start_date'];
         $endDate = $fyear['end_date'];
-        // $openingStartDate = Carbon::parse($startDate)->subYear()->startOfYear()->format('Y-m-d');
-        // $openingEndDate = Carbon::parse($startDate)->subYear()->endOfYear()->format('Y-m-d');
 
         if ($request->date) {
             $dates = explode(' to ', $request->date);
             $startDate = Carbon::parse($dates[0])->format('Y-m-d');
             $endDate = Carbon::parse($dates[1])->format('Y-m-d');
-
-            // $fiscalYearStartMonth = 4; // April
-            // $startMonth = Carbon::parse($startDate)->month;
-            // $startYear = Carbon::parse($startDate)->year;
-            // if ($startMonth < $fiscalYearStartMonth) {
-            //     $openingStartDate = Carbon::create($startYear - 1, 4, 1)->format('Y-m-d');
-            // } else {
-            //     $openingStartDate = Carbon::create($startYear, 4, 1)->format('Y-m-d');
-            // }
-
-            // $openingEndDate = Carbon::parse($startDate)->subDay()->format('Y-m-d');
         }
 
         $bank = BankDetail::with([
@@ -96,55 +106,7 @@ class StatementController extends Controller
                 $q->select('id','bank_name');
             }
         ])->find($id);
-
-        // $totalDebit = BankStatement::where('account_id', $id)
-        //     ->where('matched', 1)
-        //     ->whereDate('date', '>=', $startDate)
-        //     ->whereDate('date', '<=', $endDate)
-        //     ->when($request->has('search') && $request->search != '', function($query) use ($request) {
-        //         $search = $request->search;
-        //         self::statementFilter($query,$search);
-        //     })
-        //     ->sum('debit_amt');
-
-        // $totalCredit = BankStatement::where('account_id', $id)
-        //     ->where('matched', 1)
-        //     ->whereDate('date', '>=', $startDate)
-        //     ->whereDate('date', '<=', $endDate)
-        //     ->when($request->has('search') && $request->search != '', function($query) use ($request) {
-        //         $search = $request->search;
-        //         self::statementFilter($query,$search);
-        //     })
-        //     ->sum('credit_amt');
-
-        // // Opening balance before startDate
-        // $openingBalance = BankStatement::where('account_id', $id)
-        //     ->where('matched', 1)
-        //     ->whereBetween('date', [$openingStartDate, $openingEndDate])
-        //     ->when($request->has('search') && $request->search != '', function($query) use ($request) {
-        //         $search = $request->search;
-        //         self::statementFilter($query,$search);
-        //     })
-        //     ->orderByDesc('date')
-        //     ->value('balance'); // You can also calculate balance by summing manually if needed
-
-        // // Fallback if null
-        // $openingBalance = $openingBalance ?? 0;
-
-        // // Closing = opening + (totalDebit - totalCredit)
-        // $closingBalance = $openingBalance + ($totalDebit - $totalCredit);
-
-
-        // $statements = BankStatement::select('id','debit_amt','balance','account_number','date','credit_amt','ref_no', 'narration')
-        // ->where('account_id',$id)
-        // ->where('matched',1)
-        // ->whereDate('date', '>=', $startDate)
-        // ->whereDate('date', '<=', $endDate)
-        // ->when($request->has('search') && $request->search != '', function($query) use ($request) {
-        //     $search = $request->search;
-        //     self::statementFilter($query,$search);
-        // })
-        // ->paginate($length);
+        
         $partyItemSubquery = $this->partyItemSubquery($startDate, $endDate, $organizationId);
 
         $vouchers = Voucher::join('erp_item_details','erp_item_details.voucher_id','=','erp_vouchers.id')
@@ -154,10 +116,6 @@ class StatementController extends Controller
                         $join->on('erp_vouchers.id', '=', 'party_details.voucher_id');
                     })
                     ->whereNotNull('erp_item_details.statement_uid')
-                    // ->where(function($query){
-                    //     $query->whereNotNull('erp_item_details.statement_uid')
-                    //     ->orWhereNotNull('erp_item_details.bank_date');
-                    // })
                     ->where('erp_vouchers.organization_id', $organizationId)
                     ->whereBetween('erp_vouchers.document_date', [$startDate, $endDate])
                     ->whereIn('erp_vouchers.approvalStatus',['approved','approval_not_required'])
@@ -186,11 +144,6 @@ class StatementController extends Controller
             'bank' => $bank,
             'dateRange' => $dateRange,
             'vouchers' => $vouchers,
-            // 'statements' => $statements,
-            // 'totalDebit' => $totalDebit,
-            // 'totalCredit' => $totalCredit,
-            // 'openingBalance' => $openingBalance,
-            // 'closingBalance' => $closingBalance,
         ]);
     }
 
@@ -259,15 +212,6 @@ class StatementController extends Controller
         ]);
     }
 
-    // private function statementFilter($query,$search){
-    //     $query->where(function($q) use ($search) {
-    //         $q->where('account_number', 'like', '%' . $search . '%')
-    //             ->orWhere('narration', 'like', '%' . $search . '%')
-    //             ->orWhere('ref_no', 'like', '%' . $search . '%');
-    //     });
-    //     return $query;
-    // }
-
     private function voucherFilter($query,$search){
         $query->where(function($q) use ($search) {
             $q->where('voucher_no', 'like', '%' . $search . '%')
@@ -291,6 +235,23 @@ class StatementController extends Controller
             ->groupBy('voucher_id');
 
             return $partyItemSubquery;
+    }
+
+    public function export(Request $request, $id){
+        if(!$request->type){
+            return new ApiGenericException('Type not found.');
+        }
+
+        if(!$request->batch_uid){
+            return new ApiGenericException('Batch id not found.');
+        }
+
+        $account = BankDetail::find($id);
+        $statementExport = new StatementExport();
+        $fileName = "temp/statement/".$account->bankInfo->bank_name.date('Ymd').".csv";
+        $statementExport->export($fileName, $request, $id);
+        return redirect($fileName);
+
     }
 
 }

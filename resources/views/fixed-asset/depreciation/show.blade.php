@@ -244,10 +244,10 @@
                                                                         <td>{{ $asset['to_date'] ?? '' }}</td>
                                                                         <td>{{ $asset['posted_days'] ?? 0 }}</td>
                                                                         <td>{{ $asset['days'] ?? '' }}</td>
-                                                                        <td hidden class="text-end">{{ number_format($asset['current_value'] ?? 0, 2) }}</td>
-                                                                        <td class="text-end">{{ number_format($asset['current_value_after_dep'] ?? 0, 2) }}</td>
-                                                                        <td class="text-end">{{ number_format($asset['dep_amount'] ?? 0, 2) }}</td>
-                                                                        <td class="text-end">{{ number_format($asset['after_dep_value'] ?? 0, 2) }}</td>
+                                                                        <td hidden class="text-end">{{ number_format((float)$asset['current_value'] ?? 0, 2) }}</td>
+                                                                        <td class="text-end">{{ number_format((float)$asset['current_value_after_dep'] ?? 0, 2) }}</td>
+                                                                        <td class="text-end">{{ number_format((float)$asset['dep_amount'] ?? 0, 2) }}</td>
+                                                                        <td class="text-end">{{ number_format((float)$asset['after_dep_value'] ?? 0, 2) }}</td>
                                                                     </tr>
                                                                 @endforeach    
                                                                 </tbody>

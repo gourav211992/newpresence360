@@ -51,6 +51,7 @@ class PoRequest extends FormRequest
         }
         $rules = [
             'book_id' => 'required',
+            'exchange_rate' => 'required',
             'document_date' => 'required|date',
             'document_number' => 'required',
             'vendor_id' => $vendor ? 'nullable' : 'required',
@@ -111,6 +112,7 @@ class PoRequest extends FormRequest
         $rules['components.*.rate'] = 'required|numeric|min:0.01';        
         $rules['components.*.attr_group_id.*.attr_name'] = 'required';
         $rules['components.*.uom_id'] = 'required';
+        $rules['components.*.delivery_date'] = ['required', 'date'];
 
         foreach ($this->input('components', []) as $index => $component) {
             $item_id = $component['item_id'] ?? null;

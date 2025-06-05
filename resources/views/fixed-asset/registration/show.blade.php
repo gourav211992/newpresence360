@@ -755,7 +755,7 @@
                         <div class="col-md-3">
                             <div class="mb-1">
                                 <label class="form-label">Voucher No <span class="text-danger">*</span></label>
-                                <input id = "voucher_doc_no" class="form-control indian-number " disabled="" value="">
+                                <input id = "voucher_doc_no" class="form-control" disabled="" value="">
                             </div>
                         </div>
                         <div class="col-md-3">

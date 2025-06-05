@@ -76,9 +76,10 @@
                                                         <td class="tableactionnew">
                                                             <div class="d-flex align-items-center justify-content-end">
                                                                  @if (now()->greaterThan($item->expiry_date))
-                                                                Expired
+                                                                 <span class="badge rounded-pill bg-danger">Expired</span>
                                                             @else
-                                                                Renewed
+                                                             <span class="badge rounded-pill bg-success">Renewed</span>
+                                                                
                                                             @endif
                                                             <div class="dropdown">
                                                                 <button type="button"
@@ -88,14 +89,9 @@
                                                                 </button>
                                                                 <div class="dropdown-menu dropdown-menu-end">
                                                                     <a class="dropdown-item"
-                                                                        href="{{ route('finance.fixed-asset.insurance.show', $item->id) }}">
-                                                                        <i data-feather="edit" class="me-50"></i>
-                                                                        <span>View Detail</span>
-                                                                    </a>
-                                                                    <a class="dropdown-item"
                                                                         href="{{ route('finance.fixed-asset.insurance.edit', $item->id) }}">
-                                                                        <i data-feather="edit-3" class="me-50"></i>
-                                                                        <span>Edit</span>
+                                                                        <i data-feather="edit" class="me-50"></i>
+                                                                        <span>View</span>
                                                                     </a>
 
                                                                 </div>
@@ -185,7 +181,10 @@
 @endsection
 
 @section('scripts')
+<script type="text/javascript" src="{{asset('assets/js/modules/finance-table.js')}}"></script>
+
     <script>
+
         $(window).on('load', function() {
             if (feather) {
                 feather.replace({
@@ -204,15 +203,6 @@
                 {
                     orderable: false,
                     targets: [0, -1], // Disable sorting for the first (#) and last (Action) columns
-                },
-                {
-                    targets: 10, // Status column
-                    render: function (data, type, row, meta) {
-                        if (type === 'export') {
-                            return data; // Return raw data for export
-                        }
-                        return `<span class="badge rounded-pill bg-${data=='Renewed' ? 'success' : 'danger'}">${data}</span>`;
-                    },
                 },
             ],
             dom:
@@ -309,6 +299,8 @@
                 "@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach"
             );
         @endif
+         handleRowSelection('.datatables-basic');
+
     </script>
 
 @endsection

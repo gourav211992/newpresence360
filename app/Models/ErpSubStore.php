@@ -39,5 +39,8 @@ class ErpSubStore extends Model
     {
         return $this -> hasMany(VendorLocation::class, 'store_id');
     }
-
+    public function employees()
+    {
+        return $this->belongsToMany(Employee::class, 'erp_employee_sub_store', 'location_id', 'employee_id');
+    }
 }

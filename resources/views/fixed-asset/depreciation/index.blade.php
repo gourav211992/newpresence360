@@ -161,6 +161,8 @@ $errorsList = session('errors'); // This is auto-flashed by Laravel
 	</div>
 
 @section('scripts')
+<script type="text/javascript" src="{{asset('assets/js/modules/finance-table.js')}}"></script>
+
 
     <script>
         $(window).on('load', function() {
@@ -330,6 +332,7 @@ $errorsList = session('errors'); // This is auto-flashed by Laravel
 
 
 
+ handleRowSelection('.datatables-basic');
 
 
 

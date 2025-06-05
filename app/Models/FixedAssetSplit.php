@@ -137,21 +137,21 @@ class FixedAssetSplit extends Model
                 'quantity' => $items->sum('quantity'),
                 'reference_doc_id' => $request->id,
                 'reference_series' => 'fixed-asset-split',
-                'category_id' => $request->category_id,
-                'ledger_id' => $request->ledger_id,
-                'ledger_group_id' => $request->ledger_group_id,
-                'capitalize_date' => $request->capitalize_date,
-                'last_dep_date' => $request->capitalize_date,
+                'category_id' => $firstItem->category,
+                'ledger_id' => $firstItem->ledger,
+                'ledger_group_id' => $firstItem->ledger_group,
+                'capitalize_date' => $firstItem->capitalize_date,
+                'last_dep_date' => $firstItem->capitalize_date,
                 'currency_id' => $request->currency_id,
                 'location_id' => $request->location_id,
                 'cost_center_id' => $request->cost_center_id,
                 'maintenance_schedule' => $request->maintenance_schedule,
                 'depreciation_method' => $request->depreciation_method,
-                'useful_life' => $request->useful_life,
-                'salvage_value' => $request->salvage_value,
-                'depreciation_percentage' => $request->depreciation_percentage,
-                'depreciation_percentage_year' => $request->depreciation_percentage,
-                'total_depreciation' => $request->total_depreciation,
+                'useful_life' => $firstItem->life,
+                'salvage_value' => $items->sum('salvage_value'),
+                'depreciation_percentage' => $firstItem->dep_per,
+                'depreciation_percentage_year' => $firstItem->dep_per,
+                'total_depreciation' => 0,
                 'dep_type' => $asset->dep_type,
                 'current_value' => $items->sum('current_value'),
                 'current_value_after_dep' => $items->sum('current_value'),
@@ -175,11 +175,11 @@ class FixedAssetSplit extends Model
                     'current_value_after_dep' => $subAsset->current_value,
                     'location_id' => $request->location_id,
                     'cost_center_id' => $request->cost_center_id,
-                    'capitalize_date' => $request->capitalize_date,
-                    'last_dep_date' => $request->capitalize_date,
-                    'expiry_date' => $request->capitalize_date && $request->useful_life
-                        ? \Carbon\Carbon::parse($request->capitalize_date)
-                            ->addYears($request->useful_life)
+                    'capitalize_date' => $subAsset->capitalize_date,
+                    'last_dep_date' => $subAsset->capitalize_date,
+                    'expiry_date' => $subAsset->capitalize_date && $subAsset->life
+                        ? \Carbon\Carbon::parse($subAsset->capitalize_date)
+                            ->addYears($subAsset->life)
                             ->subDay()->toDateString()
                         : null,
                 ]);

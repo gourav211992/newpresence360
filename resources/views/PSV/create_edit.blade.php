@@ -38,25 +38,11 @@
 						<div class="form-group breadcrumb-right" id = "buttonsDiv">   
                         @if(!isset(request() -> revisionNumber))
                         <button type = "button" onclick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>  
+                        @endif
                             @if (isset($order))
-                                {{--@if($buttons['print'])
-                                @php
-                                    $printOption = 'Physical Stock Verification';
-                                    if ($order -> issue_type === 'Location Transfer')
-                                    {
-                                        $printOption = 'Delivery Challan';
-                                    }
-                                @endphp
-                                <a href="{{ route('psv.generate-pdf', [$order->id, $printOption]) }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light dropdown-toggle" id="dropdownMenuButton" aria-expanded="false">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                        stroke-linecap="round" stroke-linejoin="round" class="feather feather-printer">
-                                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                                        <rect x="6" y="14" width="12" height="8"></rect>
-                                    </svg>
-                                    Print  <i class="fa-regular fa-circle-down"></i>
-                                </a>
-                                @endif--}}
+                                @if($buttons['print'])
+                                    <a type="button" href="{{ route('psv.generate-pdf', ['id' => $order -> id]) }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light dropdown-toggle" type="button"><i data-feather='printer'></i> Print</a>
+                                @endif
                                 @if($buttons['draft'])
                                     <button type="button" onclick = "submitForm('draft');" name="action" value="draft" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" id="save-draft-button" name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
                                 @endif
@@ -79,10 +65,11 @@
                                 @if($buttons['revoke'])
                                     <button id = "revokeButton" type="button" onclick = "revokeDocument();" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i> Revoke</button>
                                 @endif
-                                @else
+                                 @else
+
                                 <button type = "button" name="action" value="draft" id = "save-draft-button" onclick = "submitForm('draft');" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0"><i data-feather='save'></i> Save as Draft</button>  
                                 <button type = "button" name="action" value="submitted"  id = "submit-button" onclick = "submitForm('submitted');" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather="check-circle"></i> Submit</button> 
-                            @endif
+                                
                             @endif
 						</div>
 					</div>
@@ -162,7 +149,7 @@
                                             </div>  
 
                                             <div class="col-md-5"> 
-                                                <input type="date" value = "{{isset($order) ? $order -> document_date : Carbon\Carbon::now() -> format('Y-m-d')}}" class="form-control" name = "document_date" id = "order_date_input" oninput = "onDocDateChange();">
+                                                <input type="date" value = "{{isset($order) ? $order -> document_date : Carbon\Carbon::now() -> format('Y-m-d')}}" class="form-control" name = "document_date" id = "order_date_input" oninput = "onDocDateChange();" min = "{{ $current_financial_year['start_date'] }}" max = "{{ $current_financial_year['end_date'] }}" required>
                                             </div> 
                                             </div>
 
@@ -513,7 +500,7 @@
                     </div>
                     <div class="modal-footer justify-content-center">  
                         <button type="button" class="btn btn-outline-secondary me-1" onclick = "closeModal('amendConfirmPopup');">Cancel</button> 
-                        <button type="button" class="btn btn-primary" onclick = "submitAmend();">Submit</button>
+      d              <button type="button" class="btn btn-primary" onclick = "submitAmend();">Submit</button>
                     </div>
                 </div>
             </div>
@@ -652,7 +639,30 @@
                 });
             }
         });
+        const startDate = "{{ $current_financial_year['start_date'] }}";
+        const endDate = "{{ $current_financial_year['end_date'] }}";
 
+        $('#order_date_input').on('blur', function() {
+            checkDateRange(this);
+        });
+
+        function checkDateRange(element) {
+            let date = element.value;
+            console.log(date);
+
+            if (date > endDate || date < startDate) {
+                console.log("date Checkers");
+
+                element.value = endDate; // Use .value not .val() for DOM input
+
+                Swal.fire({
+                    title: 'Error!',
+                    text: `Date Should Range Between ${startDate} to ${endDate}`,
+                    icon: 'error',
+                });
+            }
+        }
+        
         $('#series').on('change', function() {
             var book_id = $(this).val();
             var request = $('#requestno');
@@ -2141,8 +2151,8 @@ initializeAutocompleteSearch('filter_item_name_code','filter_item_name_code_id',
         }
         let addItemSec = document.getElementById('add_item_section');
         if (addItemSec) addItemSec.style.display = "none";
-        $("#order_date_input").attr('max', "<?php echo date('Y-m-d'); ?>");
-        $("#order_date_input").attr('min', "<?php echo date('Y-m-d'); ?>");
+        $("#order_date_input").attr('max', "{{$current_financial_year['end_date']}}");
+        $("#order_date_input").attr('min', "{{$current_financial_year['start_date']}}");
         $("#order_date_input").off('input');
         if (reset) {
             $("#order_date_input").val(moment().format("YYYY-MM-DD"));
@@ -2328,15 +2338,16 @@ initializeAutocompleteSearch('filter_item_name_code','filter_item_name_code_id',
                 }
             }
         }
-
+        console.log("Back Date Allow: ", backDateAllow);
+        console.log("Future Date Allow: ", futureDateAllow);
         if (backDateAllow && futureDateAllow) { // Allow both ways (future and past)
-            $("#order_date_input").removeAttr('max');
-            $("#order_date_input").removeAttr('min');
+            $("#order_date_input").attr('max',"{{ $current_financial_year['end_date'] }}");
+            $("#order_date_input").attr('min',"{{ $current_financial_year['start_date'] }}");
             $("#order_date_input").off('input');
         } 
         if (backDateAllow && !futureDateAllow) { // Allow only back date
             $("#order_date_input").removeAttr('min');
-            $("#order_date_input").attr('max', "<?php echo date('Y-m-d'); ?>");
+            $("#order_date_input").attr('max', "{{ min($current_financial_year['end_date'],Carbon\Carbon::now()) }}");
             $("#order_date_input").off('input');
             $('#order_date_input').on('input', function() {
                 restrictFutureDates(this);
@@ -2344,7 +2355,7 @@ initializeAutocompleteSearch('filter_item_name_code','filter_item_name_code_id',
         } 
         if (!backDateAllow && futureDateAllow) { // Allow only future date
             $("#order_date_input").removeAttr('max');
-            $("#order_date_input").attr('min', "<?php echo date('Y-m-d'); ?>");
+            $("#order_date_input").attr('min', "{{ max($current_financial_year['start_date'],Carbon\Carbon::now()) }}");
             $("#order_date_input").off('input');
             $('#order_date_input').on('input', function() {
                 restrictPastDates(this);
@@ -4575,6 +4586,7 @@ function clearFilters() {
     }
 $("#generateReport").on('click', function() {
     $('#generated').val(1);
+    console.log('check for generate_click');
     $("#save-draft-button").trigger('click');
 });
 function onSearchAttributeChange(element)

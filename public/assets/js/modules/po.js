@@ -489,6 +489,7 @@ function setTableCalculation() {
         });
 
     });
+    updateTotalAfterExchangeRate();
 }
 
 /*Edit mode table calculation filled*/
@@ -1578,6 +1579,7 @@ function clearVendorData()
     $("#billing_address_id").val('');
     $("#delivery_address_id").val('');
     $(".editAddressBtn").addClass('d-none');
+    $("#exchange_rate").val('');
 }
 // Vendor on chanhge
 function vendorOnChange(vendorId) {
@@ -1612,7 +1614,14 @@ function vendorOnChange(vendorId) {
                 $("#hidden_country_id").val(data?.data?.vendor_address.country?.id);
                 $(".vendor_address").text(data?.data?.vendor_address?.display_address);
                 $(".billing_address").text(data?.data?.location_address?.display_address);
-
+                const expRate = data?.data?.currency_exchange?.data;
+                if (expRate) {
+                    const isDifferentCurrency = expRate.party_currency_id !== expRate.org_currency_id;
+                    $("#exchange_rate")
+                        .toggleClass('disabled-input', !isDifferentCurrency)
+                        .val(expRate.org_currency_exg_rate);
+                    $("#exchangeDiv").toggleClass('d-none', !isDifferentCurrency);
+                }
             } else {
                 if(data.data.error_message) {
                     clearVendorData();
@@ -1627,3 +1636,14 @@ function vendorOnChange(vendorId) {
         });
     });
 }
+
+// Change rate bind
+function updateTotalAfterExchangeRate() {
+    const gt = Number($("#f_total_after_exp").attr('amount')) || 0;
+    const er = Number($("#exchange_rate").val()) || 0;
+    const total = gt * er;
+    $("#f_total_after_exp_rate").text(total.toFixed(2));
+}
+// setTimeout(updateTotalAfterExchangeRate, 0);
+$("#exchange_rate").on('input change', updateTotalAfterExchangeRate);
+

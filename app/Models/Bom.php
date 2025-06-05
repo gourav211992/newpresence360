@@ -6,13 +6,14 @@ use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
 use App\Traits\DateFormatTrait;
 use App\Traits\DefaultGroupCompanyOrg;
+use App\Traits\DynamicFieldsTrait;
 use App\Traits\FileUploadTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Bom extends Model
 {
-    use HasFactory,DateFormatTrait,FileUploadTrait,DefaultGroupCompanyOrg;
+    use HasFactory,DateFormatTrait,DynamicFieldsTrait,FileUploadTrait,DefaultGroupCompanyOrg;
     
     protected $table = 'erp_boms';
     
@@ -194,5 +195,10 @@ class Bom extends Model
     public function soItem()
     {
         return $this->hasOne(ErpSoItem::class, 'item_id', 'item_id');
+    }
+    
+    public function dynamic_fields()
+    {
+        return $this -> hasMany(ErpSoDynamicField::class, 'header_id');
     }
 }

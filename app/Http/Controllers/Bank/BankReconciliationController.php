@@ -15,7 +15,7 @@ use App\Models\Voucher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
-
+use DB;
 class BankReconciliationController extends Controller
 {
     public function index(Request $request,$id){
@@ -45,63 +45,6 @@ class BankReconciliationController extends Controller
             }
         ])->find($id);
 
-        // $vouchers = PaymentVoucher::where('bank_id', $bank->bank_id)
-        // ->where('ledger_id', $bank->ledger_id)
-        // ->where('account_id', $bank->id)
-        // ->where('ledger_group_id', $bank->ledger_group_id)
-        // ->where('statement_uid', null)
-        // ->whereDate('document_date', '>=', $startDate)
-        // ->whereDate('document_date', '<=', $endDate)
-        // ->get();
-
-        // // Get Opening Balance before start date
-        // $openingDr = PaymentVoucher::where('bank_id', $bank->bank_id)
-        //     ->where('ledger_id', $bank->ledger_id)
-        //     ->where('account_id', $bank->id)
-        //     ->where('ledger_group_id', $bank->ledger_group_id)
-        //     ->where('document_date', '<', $startDate)
-        //     ->where('document_type', CommonHelper::RECEIPTS)
-        //     ->sum('amount');
-
-        // $openingCr = PaymentVoucher::where('bank_id', $bank->bank_id)
-        //     ->where('ledger_id', $bank->ledger_id)
-        //     ->where('account_id', $bank->id)
-        //     ->where('ledger_group_id', $bank->ledger_group_id)
-        //     ->where('document_date', '<', $startDate)
-        //     ->where('document_type', CommonHelper::PAYMENTS)
-        //     ->sum('amount');
-
-        // $openingBalance = $openingDr - $openingCr;
-
-        // // Total Receipts and Payments between the given date range
-        // $totalDr = PaymentVoucher::where('bank_id', $bank->bank_id)
-        //     ->where('ledger_id', $bank->ledger_id)
-        //     ->where('account_id', $bank->id)
-        //     ->where('ledger_group_id', $bank->ledger_group_id)
-        //     ->whereDate('document_date', '>=', $startDate)
-        //     ->whereDate('document_date', '<=', $endDate)
-        //     ->where('document_type', CommonHelper::RECEIPTS)
-        //     ->sum('amount');
-
-        // $totalCr = PaymentVoucher::where('bank_id', $bank->bank_id)
-        //     ->where('ledger_id', $bank->ledger_id)
-        //     ->where('account_id', $bank->id)
-        //     ->where('ledger_group_id', $bank->ledger_group_id)
-        //     ->whereDate('document_date', '>=', $startDate)
-        //     ->whereDate('document_date', '<=', $endDate)
-        //     ->where('document_type', CommonHelper::PAYMENTS)
-        //     ->sum('amount');
-
-        // // Final Company Book Closing Balance
-        // $companyBookBalance = $openingBalance + $totalDr - $totalCr;
-
-        // // Calculate total of unmatched vouchers
-        // $unreflectedDr = $vouchers->where('document_type', CommonHelper::RECEIPTS)->sum('amount');
-        // $unreflectedCr = $vouchers->where('document_type', CommonHelper::PAYMENTS)->sum('amount');
-
-        // // Compute bank balance
-        // $bankBalance = $companyBookBalance - $unreflectedDr + $unreflectedCr;
-
         $partyItemSubquery = $this->partyItemSubquery($startDate, $endDate, $organizationId);
         $vouchers = Voucher::join('erp_item_details','erp_item_details.voucher_id','=','erp_vouchers.id')
                     ->join('erp_payment_vouchers','erp_payment_vouchers.id','=','erp_vouchers.reference_doc_id')
@@ -110,9 +53,10 @@ class BankReconciliationController extends Controller
                         $join->on('erp_vouchers.id', '=', 'party_details.voucher_id');
                     })
                     ->whereNull('erp_item_details.statement_uid')
-                    // ->whereNull('erp_item_details.bank_date')
+                    ->whereNull('erp_item_details.bank_date')
                     ->where('erp_vouchers.organization_id', $organizationId)
-                    ->whereBetween('erp_vouchers.document_date', [$startDate, $endDate])
+                    ->whereDate('erp_vouchers.document_date', '<' ,$endDate)
+                    // ->whereBetween('erp_vouchers.document_date', [$startDate, $endDate])
                     ->whereIn('erp_vouchers.approvalStatus',['approved','approval_not_required'])
                     ->whereIn('erp_vouchers.reference_service',['receipts','payments'])
                     ->where('erp_item_details.ledger_parent_id',$bank->ledger_group_id)
@@ -136,18 +80,87 @@ class BankReconciliationController extends Controller
                         'party_details.name as party_name',
                     )
                     ->get();
-                // dd($vouchers->toArray());
+
+        // Get Opening Balance before start date
+        $openingQuery = $this->openingBalance($bank->ledger_id,$bank->ledger_group_id,$startDate,$organizationId);
+        $debitQuery = $this->debitQuery($bank->ledger_id,$bank->ledger_group_id,$startDate,$endDate,$organizationId);
+        $creditQuery = $this->creditQuery($bank->ledger_id,$bank->ledger_group_id,$startDate,$endDate,$organizationId);
+        $closingAmt = ($openingQuery->total_opening_debit - $openingQuery->total_opening_credit) + ($debitQuery->sum_debit_amt + $creditQuery->sum_credit_amt);
+
+        // Calculate total of unmatched vouchers
+        $unreflectedDr = $vouchers->sum('debit_amt_org');
+        $unreflectedCr = $vouchers->sum('credit_amt_org');
+
+        // Compute bank balance
+        $statement = BankStatement::where('ledger_id', $bank->ledger_id)
+                    ->where('ledger_group_id',$bank->ledger_group_id)
+                    ->whereDate('date',$endDate)
+                    ->orderBy('date','DESC')
+                    ->first();
+        $bankBalance = $statement ? $statement->balance : 0;
 
         $dateRange = \Carbon\Carbon::parse($startDate)->format('d-m-Y') . " to " . \Carbon\Carbon::parse($endDate)->format('d-m-Y');
         return view('bank-reconciliation.reconciliation.index',[
             'bank' => $bank,
             'vouchers' => $vouchers,
             'dateRange' => $dateRange,
-            // 'companyBookBalance' => $companyBookBalance,
-            // 'unreflectedDr' => $unreflectedDr,
-            // 'unreflectedCr' => $unreflectedCr,
-            // 'bankBalance' => $bankBalance,
+            'companyBookBalance' => $closingAmt,
+            'unreflectedDr' => $unreflectedDr,
+            'unreflectedCr' => $unreflectedCr,
+            'bankBalance' => $bankBalance,
         ]);
+    }
+
+    private function openingBalance($ledgerId,$ledgerParentId,$startDate,$organizationId){
+        $openingQuery = ItemDetail::select(
+                DB::raw('SUM(debit_amt_org) as total_opening_debit'),
+                DB::raw('SUM(credit_amt_org) as total_opening_credit')
+            )
+            ->join('erp_vouchers', 'erp_item_details.voucher_id', '=', 'erp_vouchers.id')
+            ->where('erp_item_details.ledger_parent_id', $ledgerParentId)
+            ->whereIn('erp_vouchers.approvalStatus', ['approved', 'approval_not_required'])
+            ->where('erp_vouchers.document_date', '<', $startDate)
+            ->where(function ($q) use ($organizationId) {
+                $q->where('erp_vouchers.organization_id', $organizationId);
+            })
+            ->where('ledger_id',$ledgerId)
+            ->first();
+
+            return $openingQuery;
+    }
+
+    private function debitQuery($ledgerId,$ledgerParentId,$startDate,$endDate,$organizationId){
+        $debitquery = ItemDetail::select(
+                DB::raw('SUM(erp_item_details.debit_amt_org) as sum_debit_amt')
+            )
+            ->join('erp_vouchers', 'erp_item_details.voucher_id', '=', 'erp_vouchers.id')
+            ->where('erp_item_details.ledger_parent_id', $ledgerParentId)
+            ->whereIn('erp_vouchers.approvalStatus', ['approved', 'approval_not_required'])
+            ->whereBetween('erp_vouchers.document_date', [$startDate, $endDate])
+            ->where(function ($q) use ($organizationId) {
+                $q->whereNull('erp_vouchers.organization_id')->orWhere('erp_vouchers.organization_id', $organizationId);
+            })
+            ->where('ledger_id',$ledgerId)
+            ->first();
+
+            return $debitquery;
+    }
+
+    private function creditQuery($ledgerId,$ledgerParentId,$startDate,$endDate,$organizationId){
+        $creditquery = ItemDetail::select(
+                DB::raw('SUM(erp_item_details.credit_amt_org) as sum_credit_amt')
+            )
+            ->join('erp_vouchers', 'erp_item_details.voucher_id', '=', 'erp_vouchers.id')
+            ->where('erp_item_details.ledger_parent_id', $ledgerParentId)
+            ->whereIn('erp_vouchers.approvalStatus', ['approved', 'approval_not_required'])
+            ->whereBetween('erp_vouchers.document_date', [$startDate, $endDate])
+            ->where(function ($q) use ($organizationId) {
+                $q->whereNull('erp_vouchers.organization_id')->orWhere('erp_vouchers.organization_id', $organizationId);
+            })
+            ->where('ledger_id',$ledgerId)
+            ->first();
+
+            return $creditquery;
     }
 
     private function voucherFilter($query,$search){

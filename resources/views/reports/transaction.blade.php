@@ -21,8 +21,8 @@
                             <input type = 'hidden' value = "{{ $reportName }}" name = 'folder_name' id ="folder_name" />
                             <div class="breadcrumb-wrapper">
                                 <ol class="breadcrumb">
-                                    <li class="breadcrumb-item"><a href="#l">Home</a></li>
-                                    <li class="breadcrumb-item active">Order List</li>
+                                    <li class="breadcrumb-item"><a onclick="javascript: history.go(-1)" href="#">Home</a></li>
+                                    <li class="breadcrumb-item active"> Report</li>
                                 </ol>
                             </div>
                         </div>

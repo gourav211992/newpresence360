@@ -2015,6 +2015,13 @@
     
 @section('scripts')
 <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
+<script>
+    var currentfy = JSON.stringify({!! isset($order) ? $order : " " !!});
+    let requesterTypeParam = "{{isset($order) ? $order -> requester_type : 'Department'}}";
+    let redirect = "{{$redirect_url}}";   
+</script>
+@include('PL.common-js-route',["order" => isset($order) ? $order : null, "route_prefix" => "material.issue"])
+<script src="{{ asset("assets\\js\\modules\\pl\\common-script.js") }}"></script>
 
 <script>
         $(window).on('load', function() {
@@ -2025,338 +2032,6 @@
                 });
             }
         });
-
-        $('#issues').on('change', function() {
-            var issue_id = $(this).val();
-            var seriesSelect = $('#series');
-
-            seriesSelect.empty(); // Clear any existing options
-            seriesSelect.append('<option value="">Select</option>');
-
-            if (issue_id) {
-                $.ajax({
-                    url: "{{ url('get-series') }}/" + issue_id,
-                    type: "GET",
-                    dataType: "json",
-                    success: function(data) {
-                        $.each(data, function(key, value) {
-                            seriesSelect.append('<option value="' + key + '">' + value + '</option>');
-                        });
-                    }
-                });
-            }
-        });
-
-        $('#series').on('change', function() {
-            var book_id = $(this).val();
-            var request = $('#requestno');
-
-            request.val(''); // Clear any existing options
-            
-            if (book_id) {
-                $.ajax({
-                    url: "{{ url('get-request') }}/" + book_id,
-                    type: "GET",
-                    dataType: "json",
-                    success: function(data) 
-                        {
-                            if (data.requestno) {
-                            request.val(data.requestno);
-                        }
-                    }
-                });
-            }
-        });
-
-        function onChangeSeries(element)
-        {
-            document.getElementById("order_no_input").value = 12345;
-        }
-
-        function onChangeCustomer(selectElementId) 
-        {
-            const selectedOption = document.getElementById(selectElementId);
-            const paymentTermsDropdown = document.getElementById('payment_terms_dropdown');
-            const currencyDropdown = document.getElementById('currency_dropdown');
-            //Set Currency
-            const currencyId = selectedOption.getAttribute('currency_id');
-            const currency = selectedOption.getAttribute('currency');
-            const currencyCode = selectedOption.getAttribute('currency_code');
-            if (currencyId && currency) {
-                const newCurrencyValues = `
-                    <option value = '${currencyId}' > ${currency} </option>
-                `;
-                currencyDropdown.innerHTML = newCurrencyValues;
-                $("#currency_code_input").val(currencyCode);
-            }
-            else {
-                currencyDropdown.innerHTML = '';
-                $("#currency_code_input").val("");
-            }
-            //Set Payment Terms
-            const paymentTermsId = selectedOption.getAttribute('payment_terms_id');
-            const paymentTerms = selectedOption.getAttribute('payment_terms');
-            const paymentTermsCode = selectedOption.getAttribute('payment_terms_code');
-            if (paymentTermsId && paymentTerms) {
-                const newPaymentTermsValues = `
-                    <option value = '${paymentTermsId}' > ${paymentTerms} </option>
-                `;
-                paymentTermsDropdown.innerHTML = newPaymentTermsValues;
-                $("#payment_terms_code_input").val(paymentTermsCode);
-            }
-            else {
-                paymentTermsDropdown.innerHTML = '';
-                $("#payment_terms_code_input").val("");
-            }
-            const locationElement = document.getElementById('store_id_input');
-            if (locationElement) {
-                const displayAddress = locationElement.options[locationElement.selectedIndex].getAttribute('display-address');
-                $("#current_pickup_address").text(displayAddress);
-            }
-            //Get Addresses (Billing + Shipping)
-            changeDropdownOptions(document.getElementById('customer_id_input'), ['billing_address_dropdown','shipping_address_dropdown'], ['billing_addresses', 'shipping_addresses'], '/customer/addresses/', 'vendor_dependent');
-        }
-
-        function changeDropdownOptions(mainDropdownElement, dependentDropdownIds, dataKeyNames, routeUrl, resetDropdowns = null, resetDropdownIdsArray = [])
-        {
-            const mainDropdown = mainDropdownElement;
-            const secondDropdowns = [];
-            const dataKeysForApi = [];
-            if (Array.isArray(dependentDropdownIds)) {
-                dependentDropdownIds.forEach(elementId => {
-                    if (elementId.type && elementId.type == "class") {
-                        const multipleUiDropDowns = document.getElementsByClassName(elementId.value);
-                        const secondDropdownInternal = [];
-                        for (let idx = 0; idx < multipleUiDropDowns.length; idx++) {
-                            secondDropdownInternal.push(document.getElementById(multipleUiDropDowns[idx].id));
-                        }
-                        secondDropdowns.push(secondDropdownInternal);
-                    } else {
-                        secondDropdowns.push(document.getElementById(elementId));
-                    }
-                });
-            } else {
-                secondDropdowns.push(document.getElementById(dependentDropdownIds))
-            }
-
-            if (Array.isArray(dataKeyNames)) {
-                dataKeyNames.forEach(key => {
-                    dataKeysForApi.push(key);
-                })
-            } else {
-                dataKeysForApi.push(dataKeyNames);
-            }
-
-            if (dataKeysForApi.length !== secondDropdowns.length) {
-                console.log("Dropdown function error");
-                return;
-            }
-
-            if (resetDropdowns) {
-                const resetDropdownsElement = document.getElementsByClassName(resetDropdowns);
-                for (let index = 0; index < resetDropdownsElement.length; index++) {
-                    resetDropdownsElement[index].innerHTML = `<option value = '0'>Select</option>`;
-                }
-            }
-
-            if (resetDropdownIdsArray) {
-                if (Array.isArray(resetDropdownIdsArray)) {
-                    resetDropdownIdsArray.forEach(elementId => {
-                        let currentResetElement = document.getElementById(elementId);
-                        if (currentResetElement) {
-                            currentResetElement.innerHTML = `<option value = '0'>Select</option>`;
-                        }
-                    });
-                } else {
-                    const singleResetElement = document.getElementById(resetDropdownIdsArray);
-                    if (singleResetElement) {
-                        singleResetElement.innerHTML = `<option value = '0'>Select</option>`;
-                    }            
-                }
-            }
-
-            const apiRequestValue = mainDropdown?.value;
-            const apiUrl = routeUrl + apiRequestValue;
-            fetch(apiUrl, {
-                method : "GET",
-                headers : {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-            }).then(response => response.json()).then(data => {
-                if (mainDropdownElement.id == "customer_id_input") {
-                    if (data?.data?.currency_exchange?.status == false || data?.data?.error_message) {
-                        Swal.fire({
-                            title: 'Error!',
-                            text: data?.data?.currency_exchange?.message ? data?.data?.currency_exchange?.message : data?.data?.error_message,
-                            icon: 'error',
-                        });
-                        mainDropdownElement.value = "";
-                        document.getElementById('currency_dropdown').innerHTML = "";
-                        document.getElementById('currency_dropdown').value = "";
-                        document.getElementById('payment_terms_dropdown').innerHTML = "";
-                        document.getElementById('payment_terms_dropdown').value = "";
-                        document.getElementById('current_billing_address_id').value = "";
-                        document.getElementById('current_shipping_address_id').value = "";
-                        document.getElementById('current_billing_address').textContent = "";
-                        document.getElementById('current_shipping_address').textContent = "";
-                        document.getElementById('customer_id_input').value = "";
-                        document.getElementById('customer_code_input').value = "";
-                        return;
-                    }
-                    
-                }
-                // console.clear();
-                // console.log(data);
-                // return false;
-                secondDropdowns.forEach((currentElement, idx) => {
-                    if (Array.isArray(currentElement)) {
-                        currentElement.forEach(currentElementInternal => {
-                            currentElementInternal.innerHTML = `<option value = '0'>Select</option>`;
-                            const response = data.data;
-                            response?.[dataKeysForApi[idx]]?.forEach(item => {
-                                const option = document.createElement('option');
-                                option.value = item.value;
-                                option.textContent = item.label;
-                                currentElementInternal.appendChild(option);
-                            })
-                        });
-                    } else {
-                        
-                        currentElement.innerHTML = `<option value = '0'>Select</option>`;
-                        const response = data.data;
-                        response?.[dataKeysForApi[idx]]?.forEach((item, idxx) => {
-                            if (idxx == 0) {
-                                if (currentElement.id == "billing_address_dropdown") {
-                                    document.getElementById('current_billing_address').textContent = item.label;
-                                    document.getElementById('current_billing_address_id').value = item.id;
-                                    // $('#billing_country_id_input').val(item.country_id).trigger('change');
-                                    // changeDropdownOptions(document.getElementById('billing_country_id_input'), ['billing_state_id_input'], ['states'], '/states/', null, ['billing_city_id_input']);
-                                }
-                                if (currentElement.id == "shipping_address_dropdown") {
-                                    document.getElementById('current_shipping_address').textContent = item.label;
-                                    document.getElementById('current_shipping_address_id').value = item.id;
-                                    document.getElementById('current_shipping_country_id').value = item.country_id;
-                                    document.getElementById('current_shipping_state_id').value = item.state_id;
-                                    // $('#shipping_country_id_input').val(item.country_id).trigger('change');
-                                    // changeDropdownOptions(document.getElementById('shipping_country_id_input'), ['shipping_state_id_input'], ['states'], '/states/', null, ['shipping_city_id_input']);
-                                }
-                                // if (currentElement.id == "billing_state_id_input") {
-                                //     changeDropdownOptions(document.getElementById('billing_state_id_input'), ['billing_city_id_input'], ['cities'], '/cities/', null, []);
-                                //     $('#billing_state_id_input').val(item.state_id).trigger('change');
-                                //     console.log("STATEID", item);
-
-                                // }
-                                // if (currentElement.id == "shipping_state_id_input") {
-                                //     changeDropdownOptions(document.getElementById('shipping_state_id_input'), ['shipping_city_id_input'], ['cities'], '/cities/', null, []);
-                                //     $('#shipping_state_id_input').val(item.state_id).trigger('change');
-                                //     console.log("STATEID", item);
-
-                                // }
-                            }
-                            const option = document.createElement('option');
-                            option.value = item.value;
-                            option.textContent = item.label;
-                            if (idxx == 0 && (currentElement.id == "billing_address_dropdown" || currentElement.id == "shipping_address_dropdown")) {
-                                option.selected = true;
-                            }
-                            currentElement.appendChild(option);
-                        })
-                    }
-                });
-            }).catch(error => {
-                console.log("Error : ", error);
-            })
-        }
-
-        function itemOnChange(selectedElementId, index, routeUrl) // Retrieve element and set item attiributes
-        {
-            const selectedElement = document.getElementById(selectedElementId);
-            const ItemIdDocument = document.getElementById(selectedElementId + "_value");
-            if (selectedElement && ItemIdDocument) {
-                ItemIdDocument.value = selectedElement.dataset?.id;
-                const apiRequestValue = selectedElement.dataset?.id;
-                const apiUrl = routeUrl + apiRequestValue;
-                fetch(apiUrl, {
-                    method : "GET",
-                    headers : {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                }).then(response => response.json()).then(data => {
-                    const response = data.data;
-                    selectedElement.setAttribute('attribute-array', JSON.stringify(response.attributes));
-                    selectedElement.setAttribute('item-name', response.item.item_name);
-                    selectedElement.setAttribute('hsn_code', (response.item_hsn));
-                    document.getElementById('items_name_' + index).value = response.item.item_name;
-                    setItemAttributes('items_dropdown_' + index, index);
-
-                    onItemClick(index);
-                    
-                }).catch(error => {
-                    console.log("Error : ", error);
-                })
-            }
-        }
-
-        function setItemAttributes(elementId, index, disabled=false)
-        {
-            document.getElementById('attributes_table_modal').setAttribute('item-index',index);
-            var elementIdForDropdown = elementId;
-            const dropdown = document.getElementById(elementId);
-            const attributesTable = document.getElementById('attribute_table');
-            if (dropdown) {
-                const attributesJSON = JSON.parse(dropdown.getAttribute('attribute-array'));
-                var innerHtml = ``;
-                attributesJSON.forEach((element, index) => {
-                    var optionsHtml = ``;
-                    console.log(disabled);
-                    element.values_data.forEach(value => {
-                        optionsHtml += `
-                        <option value = '${value.id}' ${value.selected ? 'selected' : ''}>${value.value}</option>
-                        `
-                    });
-                    innerHtml += `
-                    <tr>
-                    <td>
-                    ${element.group_name}
-                    </td>
-                    <td>
-                    <select ${disabled ? 'disabled' : ''} class="form-select select2 disable_on_edit" id = "attribute_val_${index}" style = "max-width:100% !important;" onchange = "changeAttributeVal(this, ${elementIdForDropdown}, ${index});">
-                        <option>Select</option>
-                        ${optionsHtml}
-                    </select> 
-                    </td>
-                    </tr>
-                    `
-                });
-                attributesTable.innerHTML = innerHtml;
-                if (attributesJSON.length == 0) {
-                    document.getElementById('item_qty_' + index).focus();
-                    document.getElementById('attribute_button_' + index).disabled = true;
-                } else {
-                    $("#attribute").modal("show");
-                    document.getElementById('attribute_button_' + index).disabled = false;
-                }
-            }
-
-        }
-
-        function changeAttributeVal(selectedElement, elementId, index)
-        {
-            const attributesJSON = JSON.parse(elementId.getAttribute('attribute-array'));
-            const selectedVal = selectedElement.value;
-            attributesJSON.forEach((element, currIdx) => {
-                if (currIdx == index) {
-                    element.values_data.forEach(value => {
-                    if (value.id == selectedVal) {
-                        value.selected = true;
-                    }
-                });
-                }
-            });
-            elementId.setAttribute('attribute-array', JSON.stringify(attributesJSON));
-        }
         function addItemRow()
         {
             var docType = $("#service_id_input").val();
@@ -2538,24 +2213,11 @@
             
         }
 
-        function setItemRemarks(elementId) {
-            const currentRemarksValue = document.getElementById(elementId).value;
-            const modalInput = document.getElementById('current_item_remarks_input');
-            modalInput.value = currentRemarksValue;
-            modalInput.setAttribute('current-item', elementId);
-        }
         function setItemLot(elementId) {
             $('#lot').modal('show');
         }
 
-        function changeItemRemarks(element)
-        {
-            const elementToBeChanged = document.getElementById(element.getAttribute('current-item'));
-            if (elementToBeChanged) {
-                elementToBeChanged.value = element.value;
-            }
-        }
-
+        
         function changeItemValue(index) // Single Item Value
         {
             const currentElement = document.getElementById('item_value_' + index);
@@ -2582,81 +2244,6 @@
         function changeAllItemsValue()
         {
 
-        }
-
-        function changeAllItemsTotal() //All items total value
-        {
-            const elements = document.getElementsByClassName('item_values_input');
-            var totalValue = 0;
-            for (let index = 0; index < elements.length; index++) {
-                totalValue += parseFloat(elements[index].value ? elements[index].value : 0);
-            }
-            document.getElementById('all_items_total_value').innerText = (totalValue).toFixed(2);
-            document.getElementById('all_items_total_value').innerText = (totalValue) ;
-        }
-        function changeAllItemsDiscount() //All items total discount
-        {
-            const elements = document.getElementsByClassName('item_discounts_input');
-            var totalValue = 0;
-            for (let index = 0; index < elements.length; index++) {
-                totalValue += parseFloat(elements[index].value ? elements[index].value : 0);
-            }
-            document.getElementById('all_items_total_discount').innerText = (totalValue).toFixed(2);
-            changeAllItemsTotalTotal();
-        }
-        function changeAllItemsTotalTotal() //All items total
-        {
-            const elements = document.getElementsByClassName('item_totals_input');
-            var totalValue = 0;
-            for (let index = 0; index < elements.length; index++) {
-                totalValue += parseFloat(elements[index].value ? elements[index].value : 0);
-            }
-            const totalElements = document.getElementsByClassName('all_tems_total_common');
-            for (let index = 0; index < totalElements.length; index++) {
-                totalElements[index].innerText = (totalValue).toFixed(2);
-            }
-        }
-
-        function changeItemRate(element, index)
-        {
-            var inputNumValue = parseFloat(element.value ? element.value  : 0);
-            // if (element.hasAttribute('max'))
-            // {
-            //     var maxInputVal = parseFloat(element.getAttribute('max'));
-            //     if (inputNumValue > maxInputVal) {
-            //         Swal.fire({
-            //             title: 'Error!',
-            //             text: 'Amount cannot be greater than ' + maxInputVal,
-            //             icon: 'error',
-            //         });
-            //         element.value = (parseFloat(maxInputVal ? maxInputVal  : 0)).toFixed(2);
-            //         itemRowCalculation(index);
-            //         return;
-            //     }
-            // } 
-            itemRowCalculation(index);
-        }
-
-        function changeItemQty(element, index)
-        {
-            var inputNumValue = parseFloat(element.value ? element.value  : 0);
-            if (element.hasAttribute('max'))
-            {
-                var maxInputVal = parseFloat(element.getAttribute('max'));
-                if (inputNumValue > maxInputVal) {
-                    Swal.fire({
-                        title: 'Error!',
-                        text: 'Quantity cannot be greater than ' + maxInputVal,
-                        icon: 'error',
-                    });
-                    element.value = (parseFloat(maxInputVal ? maxInputVal  : 0)).toFixed(2)
-                    return;
-                }
-            }
-            itemRowCalculation(index);
-            if ("{{$type == 'dn' || $type == 'srdn'}}") {
-                getStoresData(index, element.value);
-            }
         }
 
         function addDiscount(render = true)
@@ -2783,9 +2370,6 @@
             }
             
         }
-
-        
-
         function addDiscountInTable(ItemRowIndexVal, render = true)
         {
                 const previousHiddenNameFields = document.getElementsByClassName('discount_names_hidden_' + ItemRowIndexVal);
@@ -2880,94 +2464,94 @@
 
         function addOrderDiscountInTable(index)
         {
-                const previousHiddenNameFields = document.getElementsByClassName('order_discount_name_hidden');
-                const previousHiddenPercentageFields = document.getElementsByClassName('order_discount_percentage_hidden')?document.getElementsByClassName('order_discount_percentage_hidden'):" ";
-                const previousHiddenValuesFields = document.getElementsByClassName('order_discount_value_hidden');
-                const previousHiddenIdsFields = document.getElementsByClassName('order_discount_id_hidden');
-                
-                
-                const newIndex = previousHiddenNameFields.length ? previousHiddenNameFields.length : 0;
-                
-                var newData = ``;
-                var totalSummaryDiscount = 0;
-                var total = parseFloat(document.getElementById('total_order_discount').textContent ? document.getElementById('total_order_discount').textContent : 0);
-                for (let index = newIndex - 1; index < previousHiddenNameFields.length; index++) {
-                    const newHTML = document.getElementById('order_discount_main_table').insertRow(index+2);
-                    newHTML.className = "order_discounts";
-                    newHTML.id = "order_discount_modal_" + (parseInt(newIndex - 1));
-                    if(previousHiddenIdsFields[index]){
-                        newHTML.setAttribute('data-id',previousHiddenIdsFields[index].value);
-                    }
-                    newData = `
-                    <td>${index+1}</td>
-                    <td>${previousHiddenNameFields[index].value}</td>
-                    <td>${previousHiddenPercentageFields[index] ?previousHiddenPercentageFields[index].value:''}</td>
-                    <td id = "order_discount_input_val_${index}">${previousHiddenValuesFields[index].value}</td>
-                    <td>
-                            <a href="#" class="text-danger" onclick = "removeOrderDiscount(${newIndex - 1});"><i data-feather="trash-2"></i></a>
-                        </td>
-                        `;
-                    newHTML.innerHTML = newData;
-                    total+= parseFloat(previousHiddenValuesFields[index].value ? previousHiddenValuesFields[index].value : 0);
-                    totalSummaryDiscount += parseFloat(previousHiddenValuesFields[index].value ? previousHiddenValuesFields[index].value : 0);
+            const previousHiddenNameFields = document.getElementsByClassName('order_discount_name_hidden');
+            const previousHiddenPercentageFields = document.getElementsByClassName('order_discount_percentage_hidden')?document.getElementsByClassName('order_discount_percentage_hidden'):" ";
+            const previousHiddenValuesFields = document.getElementsByClassName('order_discount_value_hidden');
+            const previousHiddenIdsFields = document.getElementsByClassName('order_discount_id_hidden');
+            
+            
+            const newIndex = previousHiddenNameFields.length ? previousHiddenNameFields.length : 0;
+            
+            var newData = ``;
+            var totalSummaryDiscount = 0;
+            var total = parseFloat(document.getElementById('total_order_discount').textContent ? document.getElementById('total_order_discount').textContent : 0);
+            for (let index = newIndex - 1; index < previousHiddenNameFields.length; index++) {
+                const newHTML = document.getElementById('order_discount_main_table').insertRow(index+2);
+                newHTML.className = "order_discounts";
+                newHTML.id = "order_discount_modal_" + (parseInt(newIndex - 1));
+                if(previousHiddenIdsFields[index]){
+                    newHTML.setAttribute('data-id',previousHiddenIdsFields[index].value);
                 }
-                
-                document.getElementById('new_order_discount_name').value = "";
-                document.getElementById('new_order_discount_percentage').value = "";
-                document.getElementById('new_order_discount_percentage').disabled = false;
-                document.getElementById('new_order_discount_value').value = "";
-                document.getElementById('new_order_discount_value').disabled = false;
-                document.getElementById('total_order_discount').textContent = total;
-                renderIcons();
-                
-                getTotalorderDiscounts();
+                newData = `
+                <td>${index+1}</td>
+                <td>${previousHiddenNameFields[index].value}</td>
+                <td>${previousHiddenPercentageFields[index] ?previousHiddenPercentageFields[index].value:''}</td>
+                <td id = "order_discount_input_val_${index}">${previousHiddenValuesFields[index].value}</td>
+                <td>
+                        <a href="#" class="text-danger" onclick = "removeOrderDiscount(${newIndex - 1});"><i data-feather="trash-2"></i></a>
+                    </td>
+                    `;
+                newHTML.innerHTML = newData;
+                total+= parseFloat(previousHiddenValuesFields[index].value ? previousHiddenValuesFields[index].value : 0);
+                totalSummaryDiscount += parseFloat(previousHiddenValuesFields[index].value ? previousHiddenValuesFields[index].value : 0);
+            }
+            
+            document.getElementById('new_order_discount_name').value = "";
+            document.getElementById('new_order_discount_percentage').value = "";
+            document.getElementById('new_order_discount_percentage').disabled = false;
+            document.getElementById('new_order_discount_value').value = "";
+            document.getElementById('new_order_discount_value').disabled = false;
+            document.getElementById('total_order_discount').textContent = total;
+            renderIcons();
+            
+            getTotalorderDiscounts();
         }
 
 
         function addOrderExpenseInTable(index)
         {
-                const previousHiddenNameFields = document.getElementsByClassName('order_expense_name_hidden');
-                const previousHiddenPercentageFields = document.getElementsByClassName('order_expense_percentage_hidden');
-                const previousHiddenValuesFields = document.getElementsByClassName('order_expense_value_hidden');
+            const previousHiddenNameFields = document.getElementsByClassName('order_expense_name_hidden');
+            const previousHiddenPercentageFields = document.getElementsByClassName('order_expense_percentage_hidden');
+            const previousHiddenValuesFields = document.getElementsByClassName('order_expense_value_hidden');
 
-                const previousHiddenIdsFields = document.getElementsByClassName('order_expense_id_hidden');
-                const newIndex = previousHiddenNameFields.length ? previousHiddenNameFields.length : 0;
-                
-                var newData = ``;
-                var totalSummaryExpense = 0;
-                var total = parseFloat(document.getElementById('total_order_expense').textContent ? document.getElementById('total_order_expense').textContent : 0);
-                for (let index = newIndex - 1; index < previousHiddenNameFields.length; index++) {
-                    const newHTML = document.getElementById('order_expense_main_table').insertRow(index+2);
-                    newHTML.className = "order_expenses";
-                    newHTML.id = "order_expense_modal_" + (parseInt(newIndex - 1));
-                    if(previousHiddenIdsFields[index]){
-                        newHTML.setAttribute('data-id',previousHiddenIdsFields[index].value);
-                    }
-                    newData = `
-                        <td>${index+1}</td>
-                        <td>${previousHiddenNameFields[index].value}</td>
-                        <td>${previousHiddenPercentageFields[index] ? previousHiddenPercentageFields[index].value:''}</td>
-                        <td>${previousHiddenValuesFields[index].value}</td>
-                        <td>
-                            <a href="#" class="text-danger" onclick = "removeOrderExpense(${newIndex - 1});"><i data-feather="trash-2"></i></a>
-                        </td>
-                    `;
-                    total+= parseFloat(previousHiddenValuesFields[index].value ? previousHiddenValuesFields[index].value : 0);
-                    newHTML.innerHTML = newData;
-                    totalSummaryExpense += parseFloat(previousHiddenValuesFields[index].value ? previousHiddenValuesFields[index].value : 0);
+            const previousHiddenIdsFields = document.getElementsByClassName('order_expense_id_hidden');
+            const newIndex = previousHiddenNameFields.length ? previousHiddenNameFields.length : 0;
+            
+            var newData = ``;
+            var totalSummaryExpense = 0;
+            var total = parseFloat(document.getElementById('total_order_expense').textContent ? document.getElementById('total_order_expense').textContent : 0);
+            for (let index = newIndex - 1; index < previousHiddenNameFields.length; index++) {
+                const newHTML = document.getElementById('order_expense_main_table').insertRow(index+2);
+                newHTML.className = "order_expenses";
+                newHTML.id = "order_expense_modal_" + (parseInt(newIndex - 1));
+                if(previousHiddenIdsFields[index]){
+                    newHTML.setAttribute('data-id',previousHiddenIdsFields[index].value);
                 }
-                
-                
-                document.getElementById('order_expense_name').value = "";
-                document.getElementById('order_expense_percentage').value = "";
-                document.getElementById('order_expense_percentage').disabled = false;
-                document.getElementById('order_expense_value').value = "";
-                document.getElementById('order_expense_value').disabled = false;
-                document.getElementById('total_order_expense').textContent = total;
+                newData = `
+                    <td>${index+1}</td>
+                    <td>${previousHiddenNameFields[index].value}</td>
+                    <td>${previousHiddenPercentageFields[index] ? previousHiddenPercentageFields[index].value:''}</td>
+                    <td>${previousHiddenValuesFields[index].value}</td>
+                    <td>
+                        <a href="#" class="text-danger" onclick = "removeOrderExpense(${newIndex - 1});"><i data-feather="trash-2"></i></a>
+                    </td>
+                `;
+                total+= parseFloat(previousHiddenValuesFields[index].value ? previousHiddenValuesFields[index].value : 0);
+                newHTML.innerHTML = newData;
+                totalSummaryExpense += parseFloat(previousHiddenValuesFields[index].value ? previousHiddenValuesFields[index].value : 0);
+            }
+            
+            
+            document.getElementById('order_expense_name').value = "";
+            document.getElementById('order_expense_percentage').value = "";
+            document.getElementById('order_expense_percentage').disabled = false;
+            document.getElementById('order_expense_value').value = "";
+            document.getElementById('order_expense_value').disabled = false;
+            document.getElementById('total_order_expense').textContent = total;
 
-                renderIcons();
+            renderIcons();
 
-                getTotalOrderExpenses();
+            getTotalOrderExpenses();
         }
 
         function removeDiscount(index, itemIndex)
@@ -3054,46 +2638,46 @@
 
         function renderPreviousDiscount(ItemRowIndexVal)
         {
-                const previousHiddenNameFields = document.getElementsByClassName('discount_names_hidden_' + ItemRowIndexVal);
-                const previousHiddenPercentageFields = document.getElementsByClassName('discount_percentages_hidden_' + ItemRowIndexVal)?document.getElementsByClassName('discount_percentages_hidden_' + ItemRowIndexVal):" ";
-                const previousHiddenValuesFields = document.getElementsByClassName('discount_values_hidden_' + ItemRowIndexVal);
-                                    
-                    const oldDiscounts = document.getElementsByClassName('item_discounts');
-                    if (oldDiscounts && oldDiscounts.length > 0)
-                    {
-                        while (oldDiscounts.length > 0) {
-                            oldDiscounts[0].remove();
-                        }
+            const previousHiddenNameFields = document.getElementsByClassName('discount_names_hidden_' + ItemRowIndexVal);
+            const previousHiddenPercentageFields = document.getElementsByClassName('discount_percentages_hidden_' + ItemRowIndexVal)?document.getElementsByClassName('discount_percentages_hidden_' + ItemRowIndexVal):" ";
+            const previousHiddenValuesFields = document.getElementsByClassName('discount_values_hidden_' + ItemRowIndexVal);
+                                
+                const oldDiscounts = document.getElementsByClassName('item_discounts');
+                if (oldDiscounts && oldDiscounts.length > 0)
+                {
+                    while (oldDiscounts.length > 0) {
+                        oldDiscounts[0].remove();
                     }
-
-                var newData = ``;
-                for (let index = 0; index < previousHiddenNameFields.length; index++) {
-                    console.log(index,previousHiddenNameFields);
-                    const newHTML = document.getElementById('discount_main_table').insertRow(index + 2);
-                    newHTML.id = "item_discount_modal_" + index;
-                    newHTML.className = "item_discounts";
-                    newData = `
-                        <td>${index+1}</td>
-                        <td>${previousHiddenNameFields[index].value}</td>
-                        <td>${previousHiddenPercentageFields[index] ? previousHiddenPercentageFields[index].value:''}</td>
-                        <td class = "dynamic_discount_val_${ItemRowIndexVal}">${previousHiddenValuesFields[index].value}</td>
-                        <td>
-                            <a href="#" class="text-danger" onclick = "removeDiscount(${index}, ${ItemRowIndexVal});"><i data-feather="trash-2"></i></a>
-                        </td>
-                    `;
-                    newHTML.innerHTML = newData;
                 }
-                
-                document.getElementById('new_discount_name').value = "";
-                // document.getElementById('new_discount_type').value = "";
-                document.getElementById('new_discount_percentage').value = "";
-                document.getElementById('new_discount_percentage').disabled = false;
-                document.getElementById('new_discount_value').value = "";
-                document.getElementById('new_discount_value').disabled = false;
-                setModalDiscountTotal('item_discount_' + ItemRowIndexVal, ItemRowIndexVal);
-                itemRowCalculation(ItemRowIndexVal);
 
-                renderIcons();
+            var newData = ``;
+            for (let index = 0; index < previousHiddenNameFields.length; index++) {
+                console.log(index,previousHiddenNameFields);
+                const newHTML = document.getElementById('discount_main_table').insertRow(index + 2);
+                newHTML.id = "item_discount_modal_" + index;
+                newHTML.className = "item_discounts";
+                newData = `
+                    <td>${index+1}</td>
+                    <td>${previousHiddenNameFields[index].value}</td>
+                    <td>${previousHiddenPercentageFields[index] ? previousHiddenPercentageFields[index].value:''}</td>
+                    <td class = "dynamic_discount_val_${ItemRowIndexVal}">${previousHiddenValuesFields[index].value}</td>
+                    <td>
+                        <a href="#" class="text-danger" onclick = "removeDiscount(${index}, ${ItemRowIndexVal});"><i data-feather="trash-2"></i></a>
+                    </td>
+                `;
+                newHTML.innerHTML = newData;
+            }
+            
+            document.getElementById('new_discount_name').value = "";
+            // document.getElementById('new_discount_type').value = "";
+            document.getElementById('new_discount_percentage').value = "";
+            document.getElementById('new_discount_percentage').disabled = false;
+            document.getElementById('new_discount_value').value = "";
+            document.getElementById('new_discount_value').disabled = false;
+            setModalDiscountTotal('item_discount_' + ItemRowIndexVal, ItemRowIndexVal);
+            itemRowCalculation(ItemRowIndexVal);
+
+            renderIcons();
         }
 
         function onChangeDiscountPercentage(element)
@@ -3185,455 +2769,6 @@
             }
             addOrderExpenseInTable(index);
         }
-
-        function addHiddenInput(id, val, name, classname, docId)
-        {
-            const newHiddenInput = document.createElement("input");
-            newHiddenInput.setAttribute("type", "hidden");
-            newHiddenInput.setAttribute("name", name);
-            newHiddenInput.setAttribute("id", id);
-            newHiddenInput.setAttribute("value", val);
-            newHiddenInput.setAttribute("class", classname);
-            document.getElementById(docId).appendChild(newHiddenInput);
-        }
-
-        function renderIcons()
-        {
-            feather.replace()
-        }
-
-        function onItemClick(itemRowId)
-        {
-            if(itemRowId != -1)
-            {
-
-            const docType = "{{$type ? $type : 'si'}}";
-            
-            const hsn_code = document.getElementById('items_dropdown_'+ itemRowId).getAttribute('hsn_code');
-            const item_name = document.getElementById('items_dropdown_'+ itemRowId).getAttribute('item-name');
-            const attributes = JSON.parse(document.getElementById('items_dropdown_'+ itemRowId).getAttribute('attribute-array'));
-            const specs = JSON.parse(document.getElementById('items_dropdown_'+ itemRowId).getAttribute('specs'));
-            console.log(specs);
-            const locations = JSON.parse(decodeURIComponent(document.getElementById('data_stores_'+ itemRowId).getAttribute('data-stores')));
-            // document.getElementById('current_item_name').textContent = item_name;
-
-            const qtDetailsRow = document.getElementById('current_item_qt_no_row');
-            const qtDetails = document.getElementById('current_item_qt_no');
-            
-            let qtDocumentNo = document.getElementById('qt_document_no_'+ itemRowId);
-            let qtBookCode = document.getElementById('qt_book_code_'+ itemRowId);
-            let qtDocumentDate = document.getElementById('qt_document_date_'+ itemRowId);
-            // const storeDiv = document.getElementById('current_item_store_location');
-            // const storeDivRow = document.getElementById('current_item_store_location_row');
-            // let locationsHTML = ``;
-            // if (locations && locations.length > 0) {
-                //     locations.forEach((loc) => {
-                    //         locationsHTML += `<span class="badge rounded-pill badge-light-primary"><strong>Location</strong>: ${loc.store_code}</span><span class="badge rounded-pill badge-light-primary"><strong>Rack</strong>: ${loc.rack_code}</span><span class="badge rounded-pill badge-light-primary"><strong>Shelf</strong>: ${loc.shelf_code}</span><span class="badge rounded-pill badge-light-primary"><strong>Bin</strong>: ${loc.bin_code}</span><span class="badge rounded-pill badge-light-primary"><strong>Qty</strong>: ${loc.qty}</span><br/><br/>`;
-                    //     });
-                    //     storeDivRow.style.display = "table-row";
-                    //     storeDiv.innerHTML = locationsHTML;
-                    // } else {
-                        //     storeDivRow.style.display = "none";
-                        //     storeDiv.innerHTML = locationsHTML;
-                        // }
-                        
-                        qtDocumentNo = qtDocumentNo?.value ? qtDocumentNo.value : '';
-                        qtBookCode = qtBookCode?.value ? qtBookCode.value : '';
-                        qtDocumentDate = qtDocumentDate?.value ? qtDocumentDate.value : '';
-            referenceNo = document.getElementById('reference_no_input').value;
-            if (qtDocumentNo && qtBookCode && qtDocumentDate) {
-                qtDetailsRow.style.display = "table-row";
-                qtDetails.innerHTML = `<strong style = "font-size:11px; color : #6a6a6a;">Reference From</strong>:<span class="badge rounded-pill badge-light-primary"><strong>Document No: </strong>: ${qtBookCode + "-" + qtDocumentNo}</span><span class="badge rounded-pill badge-light-primary"><strong>Document Date: </strong>: ${qtDocumentDate}</span>`;
-                if (referenceNo.length > 0) {
-                    qtDetails.innerHTML += `<span class="badge rounded-pill badge-light-primary"><strong>Reference No:</strong> ${referenceNo}</span>`;
-                }
-            } else {
-                qtDetailsRow.style.display = "none";
-                qtDetails.innerHTML = ``;
-            }
-            // document.getElementById('current_item_hsn_code').innerText = hsn_code;
-            var innerHTMLAttributes = ``;
-            attributes.forEach(element => {
-                var currentOption = '';
-                element.values_data.forEach(subElement => {
-                    if (subElement.selected) {
-                        currentOption = subElement.value;
-                    }
-                });
-                innerHTMLAttributes +=  `<span class="badge rounded-pill badge-light-primary"><strong>${element.group_name}</strong>: ${currentOption}</span>`;
-            });
-            var specsInnerHTML = ``;
-            specs.forEach(spec => {
-                specsInnerHTML +=  `<span class="badge rounded-pill badge-light-primary "><strong>${spec.specification_name}</strong>: ${spec.value}</span>`;
-            });
-            
-            document.getElementById('current_item_attributes').innerHTML = `<strong style = "font-size:11px; color : #6a6a6a;">Attributes</strong>:` + innerHTMLAttributes;
-            if (innerHTMLAttributes) {
-                document.getElementById('current_item_attribute_row').style.display = "table-row";
-            } else {
-                document.getElementById('current_item_attribute_row').style.display = "none";
-            }
-            document.getElementById('current_item_specs').innerHTML = `<strong style = "font-size:11px; color : #6a6a6a;">Specifications</strong>:` + specsInnerHTML;
-            if (specsInnerHTML) {
-                document.getElementById('current_item_specs_row').style.display = "table-row";
-            } else {
-                document.getElementById('current_item_specs_row').style.display = "none";
-            }
-            const remarks = document.getElementById('item_remarks_' + itemRowId).value;
-            if (specsInnerHTML) {
-                document.getElementById('current_item_specs_row').style.display = "table-row";
-            } else {
-                document.getElementById('current_item_specs_row').style.display = "none";
-            }
-            document.getElementById('current_item_description').textContent = remarks;
-            if (remarks) {
-                document.getElementById('current_item_description_row').style.display = "table-row";
-            } else {
-                document.getElementById('current_item_description_row').style.display = "none";
-            }
-
-            let itemAttributes = JSON.parse(document.getElementById(`items_dropdown_${itemRowId}`).getAttribute('attribute-array'));
-            let selectedItemAttr = [];
-            if (itemAttributes && itemAttributes.length > 0) {
-                itemAttributes.forEach(element => {
-                    element.values_data.forEach(subElement => {
-                        if (subElement.selected) {
-                            selectedItemAttr.push(subElement.id);
-                        }
-                    });
-                });
-            }
-            $.ajax({
-                url: "{{route('get_item_inventory_details')}}",
-                method: 'GET',
-                dataType: 'json',
-                data: {
-                    quantity: document.getElementById('item_qty_' + itemRowId).value,
-                    item_id: document.getElementById('items_dropdown_'+ itemRowId + '_value').value,
-                    uom_id : document.getElementById('uom_dropdown_' + itemRowId).value,
-                                selectedAttr : selectedItemAttr
-                            },
-                            success: function(data) {
-                                if (data.inv_qty && data.inv_uom)
-                                document.getElementById('current_item_inventory_details').innerHTML = `
-                                <span class="badge rounded-pill badge-light-primary"><strong>Inv. UOM</strong>: ${data.inv_uom}</span>
-                                <span class="badge rounded-pill badge-light-primary"><strong>Qty in ${data.inv_uom}</strong>: ${data.inv_qty}</span>
-                                `;
-                                if (data?.item && data?.item?.category && data?.item?.sub_category) {
-                                    document.getElementById('current_item_cat_hsn').innerHTML = `
-                                    <span class="badge rounded-pill badge-light-primary"><strong>Category</strong>: <span id = "item_category">${ data?.item?.category?.name}</span></span>
-                                    <span class="badge rounded-pill badge-light-primary"><strong>Sub Category</strong>: <span id = "item_sub_category">${ data?.item?.sub_category?.name}</span></span>
-                                    <span class="badge rounded-pill badge-light-primary"><strong>HSN</strong>: <span id = "current_item_hsn_code">${hsn_code}</span></span>
-                                    `;
-                                }
-                                //Stocks
-                                
-                                document.getElementById('current_item_stocks_row').style.display = "table-row";
-                                document.getElementById('current_item_stocks').innerHTML = `
-                                <span class="badge rounded-pill badge-light-primary"><strong>Confirmed Stock</strong>: <span id = "item_sub_category">${data?.stocks?.confirmedStocks}</span></span>
-                                <span class="badge rounded-pill badge-light-primary"><strong>Pending Stock</strong>: <span id = "item_category">${data?.stocks?.pendingStocks}</span></span>
-                                    `;
-                                    var inputQtyBox = document.getElementById('item_qty_' + itemRowId);
-                                    // if (!inputQtyBox.value) {
-                                        //     inputQtyBox.value = parseFloat(data.stocks.confirmedStocks).toFixed(2);
-                                    // }
-                                    // inputQtyBox.addEventListener('input', function() {
-                                    //     var value = parseFloat(inputQtyBox.value);
-                                    //     if (value > data.stocks.confirmedStocks) {
-                                    //         inputQtyBox.value = parseFloat(data.stocks.confirmedStocks).toFixed(2);
-                                    //         Swal.fire({
-                                        //             title: 'Error!',
-                                        //             text: 'Qty cannot be greater than confirmed stocks',
-                                    //             icon: 'error',
-                                    //         });
-                                    //     }
-                                    // });
-                                    
-                                   
-                                //Stores
-                                // if (data?.stores && data?.stores?.length > 0) {
-                                //     var storesInnerHTML = ``;
-                                //     data?.stores.forEach(storeData => {
-                                //         storesInnerHTML += `
-                                //         <span class="badge rounded-pill badge-light-primary"><strong>Store</strong>: ${storeData.store_code}</span>
-                                //         <span class="badge rounded-pill badge-light-primary"><strong>Rack</strong>: ${storeData.rack_code}</span>
-                                //         <span class="badge rounded-pill badge-light-primary"><strong>Bin</strong>: ${storeData.bin_code}</span>
-                                //         <span class="badge rounded-pill badge-light-primary"><strong>Shelf</strong>: ${storeData.shelf_code}</span>
-                                //         <span class="badge rounded-pill badge-light-primary"><strong>Qty</strong>: ${storeData.receipt_qty}</span>
-                                //         <span class="badge rounded-pill badge-light-primary mb-1"><strong>Date</strong>: ${storeData.document_date}</span>
-                                //         <br/>
-                                //         `;
-                                //     });
-                                //     document.getElementById('current_item_stores').innerHTML = storesInnerHTML;
-                                // }
-                            },
-                            error: function(xhr) {
-                                console.error('Error fetching customer data:', xhr.responseText);
-                            }
-                        });
-
-                    var rateInput = document.getElementById('item_rate_'+ itemRowId);
-                    var qtyInput = document.getElementById('item_qty_'+ itemRowId);
-                }
-                else{
-                    // current_item_cat_hsn,current_item_attributes,current_item_stocks,current_item_inventory_details,current_item_qt_no_row,current_item_description_row clear these id values
-                    document.getElementById('current_item_cat_hsn').innerHTML = '';
-                    document.getElementById('current_item_attributes').innerHTML = '';
-                    document.getElementById('current_item_stocks').innerHTML = '';
-                    document.getElementById('current_item_inventory_details').innerHTML = '';
-                    document.getElementById('current_item_qt_no_row').style.display = 'none';
-                    document.getElementById('current_item_description_row').style.display = 'none';document.getElementById('current_item_cat_hsn').innerHTML = ``;
-
-                }
-
-                    
-        }
-
-        function getStoresData(itemRowId, qty = null, callOnClick = true,islocation=false)
-        {
-            console.log("{{$type}}",'type');
-            const itemDetailId = document.getElementById('item_row_' + itemRowId).getAttribute('data-detail-id');
-            const itemId = document.getElementById('items_dropdown_'+ itemRowId).getAttribute('data-id');
-            let itemAttributes = JSON.parse(document.getElementById(`items_dropdown_${itemRowId}`).getAttribute('attribute-array'));
-                    let selectedItemAttr = [];
-                    if (itemAttributes && itemAttributes.length > 0) {
-                        itemAttributes.forEach(element => {
-                        element.values_data.forEach(subElement => {
-                            if (subElement.selected) {
-                                selectedItemAttr.push(subElement.id);
-                            }
-                        });
-                    });
-                    }
-                        const storeElement = document.getElementById('data_stores_' + itemRowId);
-
-                        // document.getElementById('current_item_stores').innerHTML = ``;
-                        $.ajax({
-                        url: "{{route('get_store_data')}}",
-                            method: 'GET',
-                            dataType: 'json',
-                            data : {
-                                store_id : $("#item_store_"+itemRowId).val(),
-                            },
-                            success: function(data) {
-                                console.log(data.stores,"store",data?.stores?.store?.length,"length");
-                                if (data?.stores && data?.stores?.store && data.stores.code == 200) {
-                                    var storesArray = [];
-                                    var dataRecords = data?.stores?.store;
-                                    // dataRecords.forEach(storeData => {
-                                        storesArray.push({
-                                            store_id : dataRecords.id?dataRecords.id:null,
-                                            store_code : dataRecords.store_code?dataRecords.store_code:null,
-                                            rack_data : dataRecords.racks?dataRecords.racks:null,
-                                            shelf_data : dataRecords.shelf?dataRecords.shelf:null,
-                                            bin_data : dataRecords.bins?dataRecords.bins:null,
-                                        })
-                                    // });
-                                    console.log(storesArray,"storeArray");
-                                    storeElement.setAttribute('data-stores', encodeURIComponent(JSON.stringify(storesArray)));
-                                    if (callOnClick) {
-                                        onItemClick(itemRowId);
-                                    }
-                                    if(islocation){
-                                        openStoreLocationModal(itemRowId);
-                                    }
-                                } else if (data?.stores?.code == 202) {
-                                    Swal.fire({
-                                        title: 'Error!',
-                                        text: data?.stores?.message,
-                                        icon: 'error',
-                                    });
-                                    storeElement.setAttribute('data-stores', encodeURIComponent(JSON.stringify([])));
-                                    document.getElementById('item_qty_' + itemRowId).value = 0.00;
-                                    if (callOnClick) {
-                                        onItemClick(itemRowId);
-                                    }
-                                } else {
-                                    storeElement.setAttribute('data-stores', encodeURIComponent(JSON.stringify([])));
-                                    if (callOnClick) {
-                                        onItemClick(itemRowId);
-                                    }
-                                }
-                                
-                            },
-                            error: function(xhr) {
-                                console.error('Error fetching customer data:', xhr.responseText);
-                                storeElement.setAttribute('data-stores', encodeURIComponent(JSON.stringify([])));
-                            }
-                        });
-            
-        }
-
-
-
-        function openDeliverySchedule(itemRowIndex)
-        {
-            document.getElementById('delivery_schedule_main_table').setAttribute('item-row-index', itemRowIndex);
-            renderPreviousDeliverySchedule(itemRowIndex);
-        }
-
-        function renderPreviousDeliverySchedule(itemRowIndex)
-        {
-                const previousHiddenQtyFields = document.getElementsByClassName('delivery_schedule_qties_hidden_' + itemRowIndex);
-                const previousHiddenDateFields = document.getElementsByClassName('delivery_schedule_dates_hidden_' + itemRowIndex);
-                    
-                    const oldDelivery = document.getElementsByClassName('item_deliveries');
-                    if (oldDelivery && oldDelivery.length > 0)
-                    {
-                        while (oldDelivery.length > 0) {
-                            oldDelivery[0].remove();
-                        }
-                    }
-                var isNew = true;
-                var newData = ``;
-                for (let index = 0; index < previousHiddenQtyFields.length; index++) {
-                    const newHTML = document.getElementById('delivery_schedule_main_table').insertRow(index + 2);
-                    newHTML.id = "item_delivery_schedule_modal_" + index;
-                    newHTML.className = "item_deliveries";
-                    newData = `
-                        <td>${index+1}</td>
-                        <td>${previousHiddenQtyFields[index].value}</td>
-                        <td>${previousHiddenDateFields[index].value}</td>
-                        <td>
-                            <a href="#" class="text-danger" onclick = "removeDeliverySchedule(${index}, ${itemRowIndex});"><i data-feather="trash-2"></i></a>
-                        </td>
-                    `;
-                    newHTML.innerHTML = newData;
-                    isNew = false;
-                }
-
-                document.getElementById('new_item_delivery_date_input').value = "{{Carbon\Carbon::now() -> format('Y-m-d')}}";
-
-                if (isNew) {
-                    document.getElementById('new_item_delivery_qty_input').value = document.getElementById("item_qty_"+itemRowIndex).value;
-                } else {
-                    document.getElementById('new_item_delivery_qty_input').value = "";
-                }
-                renderIcons();
-        }
-
-        function removeDeliverySchedule(index, itemIndex)
-        {
-            const removableElement = document.getElementById('item_delivery_schedule_modal_' + index);
-            if (removableElement) {
-                removableElement.remove();
-            }
-            document.getElementById("item_delivery_schedule_qty_" + itemIndex + "_" + index)?.remove();
-            document.getElementById("item_delivery_schedule_date_" + itemIndex + "_" + index)?.remove();
-
-            renderPreviousDeliverySchedule(itemIndex);
-        }
-
-        function addDeliveryScheduleRow()
-        {
-            const deliveryQty = document.getElementById('new_item_delivery_qty_input').value;
-            const deliverySchedule = document.getElementById('new_item_delivery_date_input').value;
-            if (deliveryQty && deliverySchedule) //All fields filled
-            {
-                const ItemRowIndexVal = document.getElementById('delivery_schedule_main_table').getAttribute('item-row-index');
-
-                const previousHiddenFields = document.getElementsByClassName('delivery_schedule_qties_hidden_' + ItemRowIndexVal);
-
-                addDeliveryHiddenInput(ItemRowIndexVal, previousHiddenFields.length ? previousHiddenFields.length : 0);
-                
-                
-            }
-        }
-
-        function addDeliveryHiddenInput(itemRow, deliveryIndex)
-        {
-            addHiddenInput("item_delivery_schedule_qty_" + itemRow + "_" + deliveryIndex, document.getElementById('new_item_delivery_qty_input').value, `item_delivery_schedule_qty[${itemRow}][${deliveryIndex}]`, 'delivery_schedule_qties_hidden_' + itemRow, "item_row_" + itemRow);
-            addHiddenInput("item_delivery_schedule_date" + itemRow + "_" + deliveryIndex, document.getElementById('new_item_delivery_date_input').value, `item_delivery_schedule_date[${itemRow}][${deliveryIndex}]`, 'delivery_schedule_dates_hidden_' + itemRow, "item_row_" + itemRow);
-
-            addDeliveryScheduleInTable(itemRow);
-        }
-
-        function addDeliveryScheduleInTable(itemRowIndex)
-        {
-                const previousHiddenQtyFields = document.getElementsByClassName('delivery_schedule_qties_hidden_' + itemRowIndex);
-                const previousHiddenDateFields = document.getElementsByClassName('delivery_schedule_dates_hidden_' + itemRowIndex);
-
-                const newIndex = previousHiddenQtyFields.length ? previousHiddenQtyFields.length : 0;
-
-                var newData = ``;
-                for (let index = newIndex- 1; index < previousHiddenQtyFields.length; index++) {
-                    const newHTML = document.getElementById('delivery_schedule_main_table').insertRow(index + 2);
-                    newHTML.className = "item_deliveries";
-                    newHTML.id = "item_delivery_schedule_modal_" + newIndex;
-                    newData = `
-                        <td>${index+1}</td>
-                        <td>${previousHiddenQtyFields[index].value}</td>
-                        <td>${previousHiddenDateFields[index].value}</td>
-                        <td>
-                            <a href="#" class="text-danger" onclick = "removeDeliverySchedule(${newIndex}, ${itemRowIndex});"><i data-feather="trash-2"></i></a>
-                        </td>
-                    `;
-                    newHTML.innerHTML = newData;
-                }
-                
-                document.getElementById('new_item_delivery_date_input').value = "{{Carbon\Carbon::now() -> format('Y-m-d')}}";
-                document.getElementById('new_item_delivery_qty_input').value = "";
-                renderIcons();
-        }
-
-        function openModal(id)
-        {
-            $('#' + id).modal('show');
-            
-        }
-
-        function closeModal(id)
-        {
-            $('#' + id).modal('hide');
-            if (id === 'attribute') {
-                getStoresData(document.getElementById('attributes_table_modal').getAttribute('item-index'))
-            }
-        }
-
-        function submitForm(status) {
-            // Create FormData object
-            enableHeader();
-            // const form = document.getElementById('sale_order_form');
-            // const formData = new FormData(form);
-
-            // // Append a new key-value pair to the form data
-            // const items = document.getElementsByClassName('comp_item_code');
-            // for (let index = 0; index < items.length; index++) {
-            //     formData.append(`item_attributes[${index}]`, items[index].getAttribute('attribute-array'));
-            // }
-            // // Append a new key-value pair to the form data (for store locations)
-            // const storeItems = document.getElementsByClassName('item_store_locations');
-            // for (let index = 0; index < storeItems.length; index++) {
-            //     formData.append(`item_locations[${index}]`, (decodeURIComponent(storeItems[index].getAttribute('data-stores'))));
-            // }
-            // formData.append('_token', "{{csrf_token()}}");
-            // formData.append('document_status', status);
-
-            // // Submit the form using Fetch API or XMLHttpRequest
-            // fetch("{{route('sale.invoice.store')}}", {
-            //     method: 'POST',
-            //     body: formData
-            // })
-            // .then(response => response.json())
-            // .then(data => {
-            //     if (data.redirect_url) {
-            //         Swal.fire({
-            //             title: 'Success!',
-            //             text: data.message,
-            //             icon: 'success',
-            //         });
-            //         window.location.href = data.redirect_url;
-            //     } else {
-            //         Swal.fire({
-            //             title: 'Error!',
-            //             text: data?.message ? data.message : 'Internal Server Error',
-            //             icon: 'error',
-            //         });
-            //     }
-            // })
-            // .catch(error => console.error(error));
-        }
-
         function initializeAutocomplete1(selector, index) {
             let modalId = '#'+$("#" + selector).closest('.modal').attr('id');
             $("#" + selector).autocomplete({
@@ -3716,614 +2851,85 @@
             });
     }
     initializeAutocomplete1("items_dropdown_0", 0);
-    
 
     function initializeAutocompleteCustomer(selector) {
         let modalId = '#'+$("#" + selector).closest('.modal').attr('id');
-            $("#" + selector).autocomplete({
-                source: function(request, response) {
-                    $.ajax({
-                        url: '/search',
-                        method: 'GET',
-                        dataType: 'json',
-                        data: {
-                            q: request.term,
-                            type:'customer'
-                        },
-                        success: function(data) {
-                            response($.map(data, function(item) {
-                                return {
-                                    id: item.id,
-                                    label: `${item.company_name} (${item.customer_code})`,
-                                    code: item.customer_code || '', 
-                                    item_id: item.id,
-                                    payment_terms_id : item?.payment_terms?.id,
-                                    payment_terms : item?.payment_terms?.name,
-                                    payment_terms_code : item?.payment_terms?.name,
-                                    currency_id : item?.currency?.id,
-                                    currency : item?.currency?.name,
-                                    currency_code : item?.currency?.short_name,
-                                };
-                            }));
-                        },
-                        error: function(xhr) {
-                            console.error('Error fetching customer data:', xhr.responseText);
-                        }
-                    });
-                },
-                minLength: 0,
-                appendTo : modalId,
-                select: function(event, ui) {
-                    var $input = $(this);
-                    var paymentTermsId = ui.item.payment_terms_id;
-                    var paymentTerms = ui.item.payment_terms;
-                    var paymentTermsCode = ui.item.payment_terms_code;
-                    var currencyId = ui.item.currency_id;
-                    var currency = ui.item.currency;
-                    var currencyCode = ui.item.currency_code;
-                    $input.attr('payment_terms_id', paymentTermsId);
-                    $input.attr('payment_terms', paymentTerms);
-                    $input.attr('payment_terms_code', paymentTermsCode);
-                    $input.attr('currency_id', currencyId);
-                    $input.attr('currency', currency);
-                    $input.attr('currency_code', currencyCode);
-                    $input.val(ui.item.label);
-                    $("#customer_code_input_hidden").val(ui.item.code);
-                    document.getElementById('customer_id_input').value = ui.item.id;
-                    onChangeCustomer(selector);
-                    return false;
-                },
-                change: function(event, ui) {
-                    if (!ui.item) {
-                        $(this).val("");
-                        $("#customer_code_input_hidden").val("");
+        $("#" + selector).autocomplete({
+            source: function(request, response) {
+                $.ajax({
+                    url: '/search',
+                    method: 'GET',
+                    dataType: 'json',
+                    data: {
+                        q: request.term,
+                        type:'customer'
+                    },
+                    success: function(data) {
+                        response($.map(data, function(item) {
+                            return {
+                                id: item.id,
+                                label: `${item.company_name} (${item.customer_code})`,
+                                code: item.customer_code || '', 
+                                item_id: item.id,
+                                payment_terms_id : item?.payment_terms?.id,
+                                payment_terms : item?.payment_terms?.name,
+                                payment_terms_code : item?.payment_terms?.name,
+                                currency_id : item?.currency?.id,
+                                currency : item?.currency?.name,
+                                currency_code : item?.currency?.short_name,
+                            };
+                        }));
+                    },
+                    error: function(xhr) {
+                        console.error('Error fetching customer data:', xhr.responseText);
                     }
+                });
+            },
+            minLength: 0,
+            appendTo : modalId,
+            select: function(event, ui) {
+                var $input = $(this);
+                var paymentTermsId = ui.item.payment_terms_id;
+                var paymentTerms = ui.item.payment_terms;
+                var paymentTermsCode = ui.item.payment_terms_code;
+                var currencyId = ui.item.currency_id;
+                var currency = ui.item.currency;
+                var currencyCode = ui.item.currency_code;
+                $input.attr('payment_terms_id', paymentTermsId);
+                $input.attr('payment_terms', paymentTerms);
+                $input.attr('payment_terms_code', paymentTermsCode);
+                $input.attr('currency_id', currencyId);
+                $input.attr('currency', currency);
+                $input.attr('currency_code', currencyCode);
+                $input.val(ui.item.label);
+                $("#customer_code_input_hidden").val(ui.item.code);
+                document.getElementById('customer_id_input').value = ui.item.id;
+                onChangeCustomer(selector);
+                return false;
+            },
+            change: function(event, ui) {
+                if (!ui.item) {
+                    $(this).val("");
+                    $("#customer_code_input_hidden").val("");
                 }
-            }).focus(function() {
-                if (this.value === "") {
-                    $(this).autocomplete("search", "");
-                }
-            });
+            }
+        }).focus(function() {
+            if (this.value === "") {
+                $(this).autocomplete("search", "");
+            }
+        });
     }
 
     initializeAutocompleteCustomer('customer_code_input');
 
-    function disableHeader()
-    {
-        const disabledFields = document.getElementsByClassName('disable_on_edit');
-            for (let disabledIndex = 0; disabledIndex < disabledFields.length; disabledIndex++) {
-                disabledFields[disabledIndex].disabled = true;
-            }
-        const editBillButton = document.getElementById('billAddressEditBtn');
-        if (editBillButton) {
-            editBillButton.style.display = "none"
-        }
-        const editShipButton = document.getElementById('shipAddressEditBtn');
-        if (editShipButton) {
-            editShipButton.style.display = "none";
-        }
-        // let siButton = document.getElementById('select_si_button');
-        // if (siButton) {
-        //     siButton.disabled = true;
-        // }
-        // let dnButton = document.getElementById('select_dn_button');
-        // if (dnButton) {
-        //     dnButton.disabled = true;
-        // }
-        // let leaseButton = document.getElementById('select_lease_button');
-        // if (leaseButton) {
-        //     leaseButton.disabled = true;
-        // }
-        // let orderButton = document.getElementById('select_order_button');
-        // if (orderButton) {
-        //     orderButton.disabled = true;
-        // }
-        document.getElementById('customer_code_input').disabled = true;
-    }
-
-    function enableHeader()
-    {
-        const disabledFields = document.getElementsByClassName('disable_on_edit');
-            for (let disabledIndex = 0; disabledIndex < disabledFields.length; disabledIndex++) {
-                disabledFields[disabledIndex].disabled = false;
-            }
-        const editBillButton = document.getElementById('billAddressEditBtn');
-        if (editBillButton) {
-            editBillButton.style.display = "block"
-        }
-        const editShipButton = document.getElementById('shipAddressEditBtn');
-        if (editShipButton) {
-            editShipButton.style.display = "block";
-        }
-        let siButton = document.getElementById('select_si_button');
-        if (siButton) {
-            siButton.disabled = false;
-        }
-        let dnButton = document.getElementById('select_dn_button');
-        if (dnButton) {
-            dnButton.disabled = false;
-        }
-        let leaseButton = document.getElementById('select_lease_button');
-        if (leaseButton) {
-            leaseButton.disabled = false;
-        }
-        let orderButton = document.getElementById('select_order_button');
-        if (orderButton) {
-            orderButton.disabled = false;
-        }
-        document.getElementById('customer_code_input').disabled = false;
-    }
-
-    function submitAttr(id) {
-            var item_index = $('#attributes_table_modal').attr('item-index');
-            onItemClick(item_index);
-            setAttributesUI(item_index);
-            closeModal(id);
-        }
-    //Function to set values for edit form
-    function editScript()
-    {
-        localStorage.setItem('deletedItemDiscTedIds', JSON.stringify([]));
-        localStorage.setItem('deletedHeaderDiscTedIds', JSON.stringify([]));
-        localStorage.setItem('deletedHeaderExpTedIds', JSON.stringify([]));
-        localStorage.setItem('deletedSiItemIds', JSON.stringify([]));
-        localStorage.setItem('deletedAttachmentIds', JSON.stringify([]));
-        const order = @json(isset($order) ? $order : null);
-        if (order) {
-            //Disable header fields which cannot be changed
-            disableHeader();
-            //Item Discount
-            order.items.forEach((item, itemIndex) => {
-                const totalValue = item.item_discount_amount;
-                document.getElementById('discount_main_table').setAttribute('total-value', totalValue);
-                document.getElementById('discount_main_table').setAttribute('item-row', 'item_value_' + itemIndex);
-                document.getElementById('discount_main_table').setAttribute('item-row-index', itemIndex);
-
-                item.discount_ted.forEach((ted, tedIndex) => {
-                    addHiddenInput("item_discount_name_" + itemIndex + "_" + tedIndex, ted.ted_name, `item_discount_name[${itemIndex}][${tedIndex}]`, 'discount_names_hidden_' + itemIndex, 'item_value_' + itemIndex);
-                    addHiddenInput("item_discount_master_id_" + itemIndex + "_" + tedIndex, ted.ted_id, `item_discount_master_id[${itemIndex}][${tedIndex}]`, 'discount_master_id_hidden_' + itemIndex, 'item_value_' + itemIndex);
-                    addHiddenInput("item_discount_percentage_" + itemIndex + "_" + tedIndex, ted.ted_percentage?ted.ted_percentage:"", `item_discount_percentage[${itemIndex}][${tedIndex}]`, 'discount_percentages_hidden_' + itemIndex,  'item_value_' + itemIndex);
-                    addHiddenInput("item_discount_value_" + itemIndex + "_" + tedIndex, ted.ted_amount, `item_discount_value[${itemIndex}][${tedIndex}]`, 'discount_values_hidden_' + itemIndex, 'item_value_' + itemIndex); // Item_row to item_value (recheck)
-                    addHiddenInput("item_discount_id_" + itemIndex + "_" + tedIndex, ted.id, `item_discount_id[${itemIndex}][${tedIndex}]`, 'discount_ids_hidden_' + itemIndex, 'item_value_' + itemIndex);
-                }); 
-                //Item Locations
-                itemLocations = [];
-                item.item_locations.forEach((itemLoc, itemLocIndex) => {
-                    itemLocations.push({
-                        store_id : itemLoc.store_id,
-                        store_code : itemLoc.store_code,
-                        rack_id : itemLoc.rack_id,
-                        rack_code : itemLoc.rack_code,
-                        shelf_id : itemLoc.shelf_id,
-                        shelf_code : itemLoc.shelf_code,
-                        bin_id : itemLoc.bin_id,
-                        bin_code : itemLoc.bin_code,
-                        qty : itemLoc.quantity
-                    });
-                });
-                document.getElementById('data_stores_' + itemIndex).setAttribute('data-stores', encodeURIComponent(JSON.stringify(itemLocations)))
-                
-                itemUomsHTML = ``;
-                if (item.item.uom && item.item.uom.id) {
-                    itemUomsHTML += `<option value = '${item.item.uom.id}' ${item.item.uom.id == item.uom_id ? "selected" : ""}>${item.item.uom.alias}</option>`;
-                }
-                item.item.alternate_uoms.forEach(singleUom => {
-                    if (singleUom.is_selling) {
-                        itemUomsHTML += `<option value = '${singleUom.uom.id}' ${singleUom.uom.id == item.uom_id ? "selected" : ""} >${singleUom.uom?.alias}</option>`;
-                    }
-                });
-                document.getElementById('uom_dropdown_' + itemIndex).innerHTML = itemUomsHTML;
-                getItemTax(itemIndex);
-                if (itemIndex==0){
-                    onItemClick(itemIndex);
-                }
-                if(item.attributes.length) {
-                    setAttributesUI(itemIndex);
-                }
-            });
-            //Order Discount
-            order.discount_ted.forEach((orderDiscount, orderDiscountIndex) => {
-                document.getElementById('new_order_discount_name').value = orderDiscount.ted_name;
-                document.getElementById('new_order_discount_id').value = orderDiscount.ted_id;
-                document.getElementById('new_order_discount_percentage').value = orderDiscount.ted_percentage ? orderDiscount.ted_percentage : "";
-                document.getElementById('new_order_discount_value').value = orderDiscount.ted_amount;
-                addOrderDiscount(orderDiscount.id, false);
-            });
-            //Order Expense
-            order.expense_ted.forEach((orderExpense, orderExpenseIndex) => {
-                document.getElementById('order_expense_name').value = orderExpense.ted_name;
-                document.getElementById('order_expense_id').value = orderExpense.ted_id;
-                document.getElementById('order_expense_percentage').value = orderExpense.ted_percentage?orderExpense.ted_percentage:"";
-                document.getElementById('order_expense_value').value = orderExpense.ted_amount;
-                addOrderExpense(orderExpense.id, false);
-            });
-            setAllTotalFields();
-            order.media_files.forEach((mediaFile, mediaIndex) => {
-                appendFilePreviews(mediaFile.file_url, 'main_order_file_preview', mediaIndex, mediaFile.id, order.document_status == 'draft' ? false : true);
-            });
-            renderIcons();
-            let finalAmendSubmitButton = document.getElementById("amend-submit-button");
-
-            viewModeScript(finalAmendSubmitButton ? false : true);
-
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        const order = @json(isset($order) ? $order : null);
-        onSeriesChange(document.getElementById('service_id_input'), order ? false : true);
-
-        // getDocNumberByBookId(document.getElementById('series_id_input'), order ? false : true);
-    });
-
-    function resetParametersDependentElements(reset = true)
-    {
-        var selectionSection = document.getElementById('selection_section');
-        if (selectionSection) {
-            selectionSection.style.display = "none";
-        }
-        var selectionSectionSO = document.getElementById('sales_invoice_selection');
-        if (selectionSectionSO) {
-            selectionSectionSO.style.display = "none";
-        }
-        var selectionSectionSI = document.getElementById('sales_invoice_selection');
-        if (selectionSectionSI) {
-            selectionSectionSI.style.display = "none";
-        }
-        var selectionSectionSR = document.getElementById('sales_return_selection');
-        if (selectionSectionSR) {
-            selectionSectionSR.style.display = "none";
-        }
-        var selectionSectionDN = document.getElementById('delivery_note_selection');
-        if (selectionSectionDN) {
-            selectionSectionDN.style.display = "none";
-        }
-        var selectionSectionLease = document.getElementById('land_lease_selection');
-        if (selectionSectionLease) {
-            selectionSectionLease.style.display = "none";
-        }
-        // document.getElementById('add_item_section').style.display = "none";
-        $("#order_date_input").attr('max', "<?php echo date('Y-m-d'); ?>");
-        $("#order_date_input").attr('min', "<?php echo date('Y-m-d'); ?>");
-        $("#order_date_input").off('input');
-        // if ("{{!isset($order)}}") {
-        //     $("#order_date_input").val(moment().format("YYYY-MM-DD"));
-
-        // }
-        if (reset) {
-            $("#order_date_input").val(moment().format("YYYY-MM-DD"));
-        }
-        $('#order_date_input').on('input', function() {
-            restrictBothFutureAndPastDates(this);
-        });
-    }
-
-    function getDocNumberByBookId(element, reset = true) 
-    {
-        resetParametersDependentElements(reset);
-        let bookId = element.value;
-        console.log(bookId);
-        let actionUrl = '{{route("book.get.doc_no_and_parameters")}}'+'?book_id='+bookId + "&document_date=" + $("#order_date_input").val();
-        fetch(actionUrl).then(response => {
-            return response.json().then(data => {
-                if (data.status == 200) {
-                  $("#book_code_input").val(data.data.book_code);
-                  if(!data.data.doc.document_number) {
-                    if (reset) {
-                        $("#order_no_input").val('');
-                    }
-                  }
-                  if (reset) {
-                      $("#order_no_input").val(data.data.doc.document_number);
-                  }
-                  if(data.data.doc.type == 'Manually') {
-                     $("#order_no_input").attr('readonly', false);
-                  } else {
-                     $("#order_no_input").attr('readonly', true);
-                  }
-                  enableDisableQtButton();
-                  if (data.data.parameters)
-                  {
-                    implementBookParameters(data.data.parameters);
-                  }
-                  if (reset) {
-                      implementBookDynamicFields(data.data.dynamic_fields_html, data.data.dynamic_fields);
-                  }
-                }
-                if(data.status == 404) {
-                    if (reset) {
-                        $("#book_code_input").val('');
-                    }
-                    alert(data.message);
-                    enableDisableQtButton();
-                }
-                if(data.status == 500) {
-                    if (reset) {
-                        $("#book_code_input").val("");
-                        $("#series_id_input").val("");
-                        Swal.fire({
-                            title: 'Error!',
-                            text: data.message,
-                            icon: 'error',
-                        });
-                    }
-                    enableDisableQtButton();
-                }
-            });
-        }); 
-    }
-
-    function implementBookDynamicFields(html, data)
-    {
-        let dynamicBookSection = document.getElementById('dynamic_fields_section');
-        dynamicBookSection.innerHTML = html;
-        if (data && data.length > 0) {
-            dynamicBookSection.classList.remove('d-none');
-        } else {
-            dynamicBookSection.classList.add('d-none');
-        }
-    }
-
-    function onDocDateChange()
-    {
-        let bookId = $("#series_id_input").val();
-        let actionUrl = '{{route("book.get.doc_no_and_parameters")}}'+'?book_id='+bookId + "&document_date=" + $("#order_date_input").val();
-        console.log(actionUrl);
-        fetch(actionUrl).then(response => {
-            return response.json().then(data => {
-                if (data.status == 200) {
-                  $("#book_code_input").val(data.data.book_code);
-                  if(!data.data.doc.document_number) {
-                     $("#order_no_input").val('');
-                  }
-                  $("#order_no_input").val(data.data.doc.document_number);
-                  if(data.data.doc.type == 'Manually') {
-                     $("#order_no_input").attr('readonly', false);
-                  } else {
-                     $("#order_no_input").attr('readonly', true);
-                  }
-                }
-                if(data.status == 404) {
-                    $("#book_code_input").val("");
-                    alert(data.message);
-                }
-            });
-        });
-    }
-
-    function implementBookParameters(paramData)
-    {
-        var selectedRefFromServiceOption = paramData.reference_from_service;
-        var selectedBackDateOption = paramData.back_date_allowed;
-        var selectedFutureDateOption = paramData.future_date_allowed;
-        // Reference From
-        if (selectedRefFromServiceOption) {
-            var selectVal = selectedRefFromServiceOption;
-            if (selectVal && selectVal.length > 0) {
-                selectVal.forEach(selectSingleVal => {
-                    if (selectSingleVal == 'si') {
-                        var selectionSectionElement = document.getElementById('selection_section');
-                        if (selectionSectionElement) {
-                            selectionSectionElement.style.display = "";
-                        }
-                        var selectionPopupElement = document.getElementById('sales_invoice_selection');
-                        if (selectionPopupElement)
-                        {
-                            selectionPopupElement.style.display = ""
-                        }
-                    }
-                    if (selectSingleVal == 'd') {
-                        // document.getElementById('add_item_section').style.display = "";
-                    }
-                    if (selectSingleVal == 'sr') {
-                        var selectionSectionElement = document.getElementById('selection_section');
-                        if (selectionSectionElement) {
-                            selectionSectionElement.style.display = "";
-                        }
-                        var selectionPopupElement = document.getElementById('sales_return_selection');
-                        if (selectionPopupElement)
-                        {
-                            selectionPopupElement.style.display = ""
-                        }
-                    }
-                    if (selectSingleVal == 'dnote') {
-                        var selectionSectionElement = document.getElementById('selection_section');
-                        if (selectionSectionElement) {
-                            selectionSectionElement.style.display = "";
-                        }
-                        var selectionPopupElement = document.getElementById('delivery_note_selection');
-                        if (selectionPopupElement)
-                        {
-                            selectionPopupElement.style.display = ""
-                        }
-                    }
-                    if (selectSingleVal == 'land-lease') {
-                        var selectionSectionElement = document.getElementById('selection_section');
-                        if (selectionSectionElement) {
-                            selectionSectionElement.style.display = "";
-                        }
-                        var selectionPopupElement = document.getElementById('land_lease_selection');
-                        if (selectionPopupElement)
-                        {
-                            selectionPopupElement.style.display = ""
-                        }
-                    }
-                    
-                });
-            }
-        }
-
-        var backDateAllow = false;
-        var futureDateAllow = false;
-
-        //Back Date Allow
-        if (selectedBackDateOption) {
-            var selectVal = selectedBackDateOption;
-            if (selectVal && selectVal.length > 0) {
-                if (selectVal[0] == "yes") {
-                    backDateAllow = true;
-                } else {
-                    backDateAllow = false;
-                }
-            }
-        }
-
-        //Future Date Allow
-        if (selectedFutureDateOption) {
-            var selectVal = selectedFutureDateOption;
-            if (selectVal && selectVal.length > 0) {
-                if (selectVal[0] == "yes") {
-                    futureDateAllow = true;
-                } else {
-                    futureDateAllow = false;
-                }
-            }
-        }
-
-        if (backDateAllow && futureDateAllow) { // Allow both ways (future and past)
-            $("#order_date_input").removeAttr('max');
-            $("#order_date_input").removeAttr('min');
-            $("#order_date_input").off('input');
-        } 
-        if (backDateAllow && !futureDateAllow) { // Allow only back date
-            $("#order_date_input").removeAttr('min');
-            $("#order_date_input").attr('max', "<?php echo date('Y-m-d'); ?>");
-            $("#order_date_input").off('input');
-            $('#order_date_input').on('input', function() {
-                restrictFutureDates(this);
-            });
-        } 
-        if (!backDateAllow && futureDateAllow) { // Allow only future date
-            $("#order_date_input").removeAttr('max');
-            $("#order_date_input").attr('min', "<?php echo date('Y-m-d'); ?>");
-            $("#order_date_input").off('input');
-            $('#order_date_input').on('input', function() {
-                restrictPastDates(this);
-            });
-        }
-    }
-
-    function enableDisableQtButton()
-    {
-        const bookId = document.getElementById('series_id_input').value;
-        const bookCode = document.getElementById('book_code_input').value;
-        const documentDate = document.getElementById('order_date_input').value;
-
-        if (bookId && bookCode && documentDate) {
-            let siButton = document.getElementById('select_si_button');
-            if (siButton) {
-                siButton.disabled = false;
-            }
-            let dnButton = document.getElementById('select_dn_button');
-            if (dnButton) {
-                dnButton.disabled = false;
-            }
-            let leaseButton = document.getElementById('select_lease_button');
-            if (leaseButton) {
-                leaseButton.disabled = false;
-            }
-            let orderButton = document.getElementById('select_order_button');
-            if (orderButton) {
-                orderButton.disabled = false;
-            }
-            document.getElementById('customer_code_input').disabled = false;
-        } else {
-            let siButton = document.getElementById('select_si_button');
-            if (siButton) {
-                siButton.disabled = true;
-            }
-            let dnButton = document.getElementById('select_dn_button');
-            if (dnButton) {
-                dnButton.disabled = true;
-            }
-            let leaseButton = document.getElementById('select_lease_button');
-            if (leaseButton) {
-                leaseButton.disabled = true;
-            }
-            let orderButton = document.getElementById('select_order_button');
-            if (orderButton) {
-                orderButton.disabled = true;
-            }
-            document.getElementById('customer_code_input').disabled = true;
-        }
-    }
+   
+    
+    
 
     editScript();
 
-    $(document).on('click','#billAddressEditBtn',(e) => {
-                const addressId = document.getElementById('current_billing_address_id').value;
-                const apiRequestValue = addressId;
-                const apiUrl = "/customer/address/" + apiRequestValue;
-                fetch(apiUrl, {
-                    method : "GET",
-                    headers : {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                }).then(response => response.json()).then(data => {
-                    if (data) {
-                        $('#billing_country_id_input').val(data.address.country_id).trigger('change');
-                        $("#current_billing_address_id").val(data.address.id);
-                        $("#current_billing_country_id").val(data.address.country_id);
-                        $("#current_billing_state_id").val(data.address.state_id);
-                        $("#current_billing_address").text(data.address.display_address);
-                        setTimeout(() => {
-                            
-                            $('#billing_state_id_input').val(data.address.state_id).trigger('change');
-
-                            setTimeout(() => {
-                            
-                                $('#billing_city_id_input').val(data.address.city_id).trigger('change');
-                            }, 1000);
-                        }, 1000);
-                        $('#billing_pincode_input').val(data.address.pincode)
-                        $('#billing_address_input').val(data.address.address);
-
-                    }
-
-                }).catch(error => {
-                    console.log("Error : ", error);
-                })
-        $("#edit-address-billing").modal('show');
-    });
-
-    $(document).on('click','#shipAddressEditBtn',(e) => {
-                const addressId = document.getElementById('current_shipping_address_id').value;
-                const apiRequestValue = addressId;
-                const apiUrl = "/customer/address/" + apiRequestValue;
-                fetch(apiUrl, {
-                    method : "GET",
-                    headers : {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                }).then(response => response.json()).then(data => {
-                    if (data) {
-                        $('#shipping_country_id_input').val(data.address.country_id).trigger('change');
-                        $("#current_shipping_address_id").val(data.address.id);
-                        $("#current_shipping_country_id").val(data.address.country_id);
-                        $("#current_shipping_state_id").val(data.address.state_id);
-                        $("#current_shipping_address").text(data.address.display_address);
-                        setTimeout(() => {
-                            
-                            $('#shipping_state_id_input').val(data.address.state_id).trigger('change');
-
-                            setTimeout(() => {
-                            
-                                $('#shipping_city_id_input').val(data.address.city_id).trigger('change');
-                            }, 1000);
-                        }, 1000);
-                        $('#shipping_pincode_input').val(data.address.pincode)
-                        $('#shipping_address_input').val(data.address.address);
-
-                    }
-
-                }).catch(error => {
-                    console.log("Error : ", error);
-                })
-        $("#edit-address-shipping").modal('show');
-    });
-
+       
+      
     function checkItemAddValidation()
     {
         let addRow = $('#series_id_input').val &&  $('#order_no_input').val && $('#order_date_input').val && $('#customer_code_input').val;
@@ -4409,8 +3015,6 @@
                     });
 
             //Stores Data
-            
-        
     }
 
     function itemRowCalculation(itemRowIndex)
@@ -4645,47 +3249,7 @@
         }
     }
 
-    function sendMailTo() {
-        $('.ajax-validation-error-span').remove();
-        $('.reset_mail').removeClass('is-invalid');
-            
-        const customerEmail = "{{ isset($order) ? $order->customer->email : '' }}";
-        const customerName = "{{ isset($order) ? $order->customer->company_name : '' }}";
-        const emailInput = document.getElementById('cust_mail');
-        const header = document.getElementById('send_mail_heading_label');
-        if (emailInput) {
-            emailInput.value = customerEmail;
-        }
-        if(header)
-        {
-            header.innerHTML = "Send Mail";
-        }
-        $("#mail_remarks").val("Your Credit Note has been successfully generated.");
-        $('#sendMail').modal('show');
-    }
     
-    // function changeAllItemsTotal() //All items total
-    // {
-    //     const itemTotalInputs = document.getElementsByClassName('item_totals_input');
-    //     let itemTotal = 0;
-    //     for (let index = 0; index < itemTotalInputs.length; index++) {
-    //         itemTotal += parseFloat(itemTotalInputs[index].value ? itemTotalInputs[index].value : 0);
-    //     }
-    //     //Item Total
-    //     const totalTextContainers = document.getElementsByClassName('all_tems_total_common');
-    //     for (let indx = 0; indx < itemTotalInputs.length; indx++) {
-    //         totalTextContainers.textContent = itemTotal.toFixed(2);
-    //     }
-    //     //Item value
-    //     const itemTotalInputs = document.getElementsByClassName('item_totals_input');
-    //     let itemTotal = 0;
-    //     for (let index = 0; index < itemTotalInputs.length; index++) {
-    //         itemTotal += parseFloat(itemTotalInputs[index].value ? itemTotalInputs[index].value : 0);
-    //     }
-
-        
-    // }
-
     function onTaxClick(itemIndex)
     {
         const taxInput = document.getElementById('item_tax_' + itemIndex);
@@ -4755,22 +3319,6 @@
         });
         mainTableBody.innerHTML = newTaxesHtml;
     }
-
-    function setApproval()
-    {
-        document.getElementById('action_type').value = "approve";
-        document.getElementById('approve_reject_heading_label').textContent = "Approve " + "{{$typeName}}";
-
-    }
-    function setReject()
-    {
-        document.getElementById('action_type').value = "reject";
-        document.getElementById('approve_reject_heading_label').textContent = "Reject " + "{{$typeName}}";
-    }
-    function setFormattedNumericValue(element)
-    {
-        element.value = (parseFloat(element.value ? element.value  : 0)).toFixed(2)
-    }
     function processOrder(landLease = '')
     {
         const allCheckBoxes = document.getElementsByClassName('po_checkbox');
@@ -4789,7 +3337,7 @@
                 url: apiUrl,
                 method: 'GET',
                 dataType: 'json',
-                data: {
+                 data: {
                     order_id: docId,
                     items_id: soItemsId,
                     doc_type: 'si'
@@ -4836,97 +3384,97 @@
                             // }
                             // deleteItemRows();
                             
-                                currentOrder.items.forEach((item, itemIndex) => {
-                                    console.log("balance",item.balance_qty,"srn",item.srn_qty,"invoice",item.invoice_qty,"dnote",item.dnote_qty,"return",item.return_balance_qty);
-                                    const avl_qty = currentOrder.document_type=== "{{\App\Helpers\ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS}}" ? Number(item.dnote_qty)-Number(item.srn_qty) : Number(item.invoice_qty)-Number(item.srn_qty);
-                                    item.balance_qty = avl_qty;``
-                                    console.log(item.order_qty,item.srn_qty,item.invoice_qty,item.dnote_qty,currentOrder.document_type,item.balance_qty,avl_qty);
-                                    const itemRemarks = item.remarks ? item.remarks : '';
-                                    let amountMax = ``;
-                                    if (landLease) {
-                                        amountMax = `max = '${item.rate}'`;
+                            currentOrder.items.forEach((item, itemIndex) => {
+                                console.log("balance",item.balance_qty,"srn",item.srn_qty,"invoice",item.invoice_qty,"dnote",item.dnote_qty,"return",item.return_balance_qty);
+                                const avl_qty = currentOrder.document_type=== "{{\App\Helpers\ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS}}" ? Number(item.dnote_qty)-Number(item.srn_qty) : Number(item.invoice_qty)-Number(item.srn_qty);
+                                item.balance_qty = avl_qty;``
+                                console.log(item.order_qty,item.srn_qty,item.invoice_qty,item.dnote_qty,currentOrder.document_type,item.balance_qty,avl_qty);
+                                const itemRemarks = item.remarks ? item.remarks : '';
+                                let amountMax = ``;
+                                if (landLease) {
+                                    amountMax = `max = '${item.rate}'`;
+                                }
+                                let agreement_no = '';
+                                let lease_end_date = '';
+                                let due_date = '';
+                                let repayment_period = '';
+
+                                let land_parcel = '';
+                                let land_plots = '';
+
+                                let landLeasePullHtml = '';
+
+                                if (landLease) {
+                                    agreement_no = currentOrder?.agreement_no;
+                                    lease_end_date = moment(currentOrder?.lease_end_date).format('D/M/Y');
+                                    due_date = moment(item?.due_date).format('D/M/Y');
+                                    repayment_period = currentOrder.repayment_period_type;
+                                    land_parcel = item?.land_parcel_display;
+                                    land_plots = item?.land_plots_display;
+
+                                    landLeasePullHtml = `
+                                        <input type = "hidden" value = ${agreement_no} id = "land_lease_agreement_no_${itemIndex}" />
+                                        <input type = "hidden" value = ${lease_end_date} id = "land_lease_end_date_${itemIndex}" />
+                                        <input type = "hidden" value = ${due_date} id = "land_lease_due_date_${itemIndex}" />
+                                        <input type = "hidden" value = ${repayment_period} id = "land_lease_repayment_period_${itemIndex}" />
+                                        <input type = "hidden" value = ${land_parcel} id = "land_lease_land_parcel_${itemIndex}" />
+                                        <input type = "hidden" value = ${land_plots} id = "land_lease_land_plots_${itemIndex}" />
+                                    `;
+                                } else {
+                                    landLeasePullHtml = '';
+                                }
+                                var discountAmtPrev = 0;
+                                item.discount_ted.forEach((ted, tedIndex) => {
+                                    
+                                    var percentage = ted.ted_percentage;
+                                    var itemValue = (item.rate * item.balance_qty).toFixed(2);
+                                    if (!percentage) {
+                                        percentage = ted.ted_amount/(ted.assessment_amount ? ted.assessment_amount : itemValue) * 100;
                                     }
-                                    let agreement_no = '';
-                                    let lease_end_date = '';
-                                    let due_date = '';
-                                    let repayment_period = '';
+                                    console.log("PRECENTAGE", percentage, itemValue);
 
-                                    let land_parcel = '';
-                                    let land_plots = '';
+                                    var itemDiscountValuePrev = ((itemValue * percentage)/100).toFixed(2);
 
-                                    let landLeasePullHtml = '';
+                                    discountAmtPrev += parseFloat(itemDiscountValuePrev ? itemDiscountValuePrev : 0);
+                                });
 
-                                    if (landLease) {
-                                        agreement_no = currentOrder?.agreement_no;
-                                        lease_end_date = moment(currentOrder?.lease_end_date).format('D/M/Y');
-                                        due_date = moment(item?.due_date).format('D/M/Y');
-                                        repayment_period = currentOrder.repayment_period_type;
-                                        land_parcel = item?.land_parcel_display;
-                                        land_plots = item?.land_plots_display;
-
-                                        landLeasePullHtml = `
-                                            <input type = "hidden" value = ${agreement_no} id = "land_lease_agreement_no_${itemIndex}" />
-                                            <input type = "hidden" value = ${lease_end_date} id = "land_lease_end_date_${itemIndex}" />
-                                            <input type = "hidden" value = ${due_date} id = "land_lease_due_date_${itemIndex}" />
-                                            <input type = "hidden" value = ${repayment_period} id = "land_lease_repayment_period_${itemIndex}" />
-                                            <input type = "hidden" value = ${land_parcel} id = "land_lease_land_parcel_${itemIndex}" />
-                                            <input type = "hidden" value = ${land_plots} id = "land_lease_land_plots_${itemIndex}" />
-                                        `;
-                                    } else {
-                                        landLeasePullHtml = '';
-                                    }
-                                    var discountAmtPrev = 0;
-                                    item.discount_ted.forEach((ted, tedIndex) => {
-                                        
-                                        var percentage = ted.ted_percentage;
-                                        var itemValue = (item.rate * item.balance_qty).toFixed(2);
-                                        if (!percentage) {
-                                            percentage = ted.ted_amount/(ted.assessment_amount ? ted.assessment_amount : itemValue) * 100;
-                                        }
-                                        console.log("PRECENTAGE", percentage, itemValue);
-
-                                        var itemDiscountValuePrev = ((itemValue * percentage)/100).toFixed(2);
-
-                                        discountAmtPrev += parseFloat(itemDiscountValuePrev ? itemDiscountValuePrev : 0);
-                                    });
-
-                                    console.log(discountAmtPrev, currentOrderIndexVal, "INDEX FOR DISCOUNT AMT");
+                                console.log(discountAmtPrev, currentOrderIndexVal, "INDEX FOR DISCOUNT AMT");
 
 
-                                mainTableItem.innerHTML += `
-                                <tr id = "item_row_${itemIndex}" class = "item_header_rows" onclick = "onItemClick('${itemIndex}');">
-                                    <td class="customernewsection-form">
-                                    <div class="form-check form-check-primary custom-checkbox">
-                                        <input type="checkbox" class="form-check-input item_row_checks"  id="item_checkbox_${itemIndex}" del-index = "${itemIndex}">
-                                        <label class="form-check-label" for="Email"></label>
-                                    </div> 
-                                                                            </td>
-                                    <td class="poprod-decpt"> 
+                            mainTableItem.innerHTML += `
+                            <tr id = "item_row_${itemIndex}" class = "item_header_rows" onclick = "onItemClick('${itemIndex}');">
+                                <td class="customernewsection-form">
+                                <div class="form-check form-check-primary custom-checkbox">
+                                    <input type="checkbox" class="form-check-input item_row_checks"  id="item_checkbox_${itemIndex}" del-index = "${itemIndex}">
+                                    <label class="form-check-label" for="Email"></label>
+                                </div> 
+                                                                        </td>
+                                <td class="poprod-decpt"> 
 
-                                        <input type = "hidden" id = "qt_id_${itemIndex}" value = "${item?.id}" name = "quotation_item_ids[]"/>
+                                    <input type = "hidden" id = "qt_id_${itemIndex}" value = "${item?.id}" name = "quotation_item_ids[]"/>
 
-                                        <input type = "hidden" id = "qt_type_id_${itemIndex}" value = "${currentOrder.document_type}" name = "quotation_item_type[]"/>
+                                    <input type = "hidden" id = "qt_type_id_${itemIndex}" value = "${currentOrder.document_type}" name = "quotation_item_type[]"/>
 
-                                        <input type = "hidden" id = "qt_book_id_${itemIndex}" value = "${currentOrder?.book_id}" />
-                                        <input type = "hidden" id = "qt_book_code_${itemIndex}" value = "${currentOrder?.book_code}" />
+                                    <input type = "hidden" id = "qt_book_id_${itemIndex}" value = "${currentOrder?.book_id}" />
+                                    <input type = "hidden" id = "qt_book_code_${itemIndex}" value = "${currentOrder?.book_code}" />
 
-                                        <input type = "hidden" id = "qt_document_no_${itemIndex}" value = "${currentOrder?.document_number}" />
-                                        <input type = "hidden" id = "qt_document_date_${itemIndex}" value = "${currentOrder?.document_date}" />
+                                    <input type = "hidden" id = "qt_document_no_${itemIndex}" value = "${currentOrder?.document_number}" />
+                                    <input type = "hidden" id = "qt_document_date_${itemIndex}" value = "${currentOrder?.document_date}" />
 
-                                        <input type = "hidden" id = "qts_id_${itemIndex}" value = "${currentOrder?.document_number}" />
+                                    <input type = "hidden" id = "qts_id_${itemIndex}" value = "${currentOrder?.document_number}" />
 
-                                        ${landLeasePullHtml}
+                                    ${landLeasePullHtml}
 
                                     <input type="text" readonly id = "items_dropdown_${itemIndex}" name="item_code[]" placeholder="Select" class="form-control mw-100 ledgerselecct comp_item_code ui-autocomplete-input" autocomplete="off" data-name="${item?.item?.item_name}" data-code="${item?.item?.item_code}" data-id="${item?.item?.id}" hsn_code = "${item?.item?.hsn?.code}" item-name = "${item?.item?.item_name}" specs = '${JSON.stringify(item?.item?.specifications)}' attribute-array = '${JSON.stringify(item?.item_attributes_array)}'  value = "${item?.item?.item_code}">
                                     <input type = "hidden" name = "item_id[]" id = "items_dropdown_${itemIndex}_value" value = "${item?.item_id}"></input>
-                                                                            </td>
-                                                                            <td class="poprod-decpt">
-                                                                            <input type="text" id = "items_name_${currentOrderIndexVal}" class="form-control mw-100"   value = "${item?.item?.item_name}" readonly>
-                                                                        </td>
-                                                                            <td class="poprod-decpt" id='attribute_section_${itemIndex}'> 
+                                </td>
+                                <td class="poprod-decpt">
+                                    <input type="text" id = "items_name_${currentOrderIndexVal}" class="form-control mw-100"   value = "${item?.item?.item_name}" readonly>
+                                </td>
+                                <td class="poprod-decpt" id='attribute_section_${itemIndex}'> 
                                     <button id = "attribute_button_${itemIndex}" ${item?.item_attributes_array?.length > 0 ? '' : 'disabled'} type = "button" data-bs-toggle="modal" onclick = "setItemAttributes('items_dropdown_${itemIndex}', '${itemIndex}','DISABLED');" data-bs-target="#attribute" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">Attributes</button>
-                                    </td>
-                                                                            <td>
+                                </td>
+                                <td>
                                     <select class="form-select" disabled name = "uom_id[]" id = "uom_dropdown_${itemIndex}">
 
                                     </select> 
@@ -5598,28 +4146,28 @@ function removeStoreRow(index,storeIndex){
         console.log(storeElement);
         if (storeElement) {
             // Calculate the sum of all existing quantities
-        $(`#item_location_table tr[item-index="${index}"]`).each(function () {
-            const rowQty = parseInt($(this).find(`#item_qty_${index}_${$(this).attr('row-index')}`).val() || 0, 10);
-            totalStoreQty += isNaN(rowQty) ? 0 : rowQty;
-        });
-        console.log(totalStoreQty);
-        // Check if adding a new store exceeds the total item quantity
-        const remainingQty = parseInt(item_qty.value, 10) - totalStoreQty;
-        console.log(remainingQty);
-        if (remainingQty <= 0) {
-            Swal.fire({
-                title: 'Error!',
-                text: ' No further quantity left to add.',
-                icon: 'error'
+            $(`#item_location_table tr[item-index="${index}"]`).each(function () {
+                const rowQty = parseInt($(this).find(`#item_qty_${index}_${$(this).attr('row-index')}`).val() || 0, 10);
+                totalStoreQty += isNaN(rowQty) ? 0 : rowQty;
             });
-            return; // Exit the function
-        }
-        
-        else{
-            const total_qty=0;
-            const storesData = JSON.parse(decodeURIComponent(storeData.getAttribute('data-stores')));
-            console.log(storesData,"storesData");
-            if (storesData && storesData.length > 0) {
+            console.log(totalStoreQty);
+            // Check if adding a new store exceeds the total item quantity
+            const remainingQty = parseInt(item_qty.value, 10) - totalStoreQty;
+            console.log(remainingQty);
+            if (remainingQty <= 0) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: ' No further quantity left to add.',
+                    icon: 'error'
+                });
+                return; // Exit the function
+            }
+            
+            else{
+                const total_qty=0;
+                const storesData = JSON.parse(decodeURIComponent(storeData.getAttribute('data-stores')));
+                console.log(storesData,"storesData");
+                if (storesData && storesData.length > 0) {
                     storesData.forEach((store, storeIndex) => {
                         const rackOptions = store.rack_data
                             ? store.rack_data.map(rack => `<option value="${rack.id}">${rack.rack_code}</option>`).join('')
@@ -5678,7 +4226,6 @@ function removeStoreRow(index,storeIndex){
                 return;
             }
         }
-        
     }  
     function removeItemStore(index, itemIndex)
     {
@@ -5736,14 +4283,6 @@ function removeStoreRow(index,storeIndex){
             const errors = [];
             if (!store_id || isNaN(Number(store_id))) errors.push(`Invalid store_id: ${store_id}`);
             if (!store_code || typeof store_code !== 'string') errors.push(`Invalid store_code: ${store_code}`);
-            // if (!rack_id || isNaN(Number(rack_id))) errors.push(`Invalid rack_id: ${rack_id}`);
-            // if (!rack_code || typeof rack_code !== 'string') errors.push(`Invalid rack_code: ${rack_code}`);
-            // if (!shelf_id || isNaN(Number(shelf_id))) errors.push(`Invalid shelf_id: ${shelf_id}`);
-            // if (!shelf_code || typeof shelf_code !== 'string') errors.push(`Invalid shelf_code: ${shelf_code}`);
-            // if (!bin_id || isNaN(Number(bin_id))) errors.push(`Invalid bin_id: ${bin_id}`);
-            // if (!bin_code || typeof bin_code !== 'string') errors.push(`Invalid bin_code: ${bin_code}`);
-            // if (!store_qty || isNaN(Number(store_qty)) || store_qty<=0) errors.push(`Invalid store_qty: ${store_qty}`);
-
             // If there are errors, log them and skip this row
             if (errors.length > 0) {
                 alert(`Please enter all valid fields in Row ${rowIndex}`);
@@ -5814,59 +4353,59 @@ function removeStoreRow(index,storeIndex){
 
     function initializeAutocompleteStores(selector, siblingSelector, type, labelField) {
         let modalId = '#'+$("#" + selector).closest('.modal').attr('id');
-            $("#" + selector).autocomplete({
-                source: function(request, response) {
-                    let dataPayload = {
-                        q:request.term,
-                        type : type
-                    };
-                    if (type == "store_rack") {
-                        dataPayload.store_id = $("#new_store_id_input").val()
-                    }
-                    if (type == "rack_shelf") {
-                        dataPayload.rack_id = $("#new_rack_id_input").val()
-                    }
-                    if (type == "shelf_bin") {
-                        dataPayload.shelf_id = $("#new_shelf_id_input").val()
-                    }
-                    $.ajax({
-                        url: '/search',
-                        method: 'GET',
-                        dataType: 'json',
-                        data: dataPayload,
-                        success: function(data) {
-                            response($.map(data, function(item) {
-                                return {
-                                    id: item.id,
-                                    label: item[labelField],
-                                };
-                            }));
-                        },
-                        error: function(xhr) {
-                            console.error('Error fetching customer data:', xhr.responseText);
-                        }
-                    });
-                },
-                minLength: 0,
-                appendTo : modalId,
-                select: function(event, ui) {
-                    var $input = $(this);
-                    var itemCode = ui.item.label;
-                    var itemId = ui.item.id;
-                    $input.val(itemCode);
-                    $("#" + siblingSelector).val(itemId);
-                    return false;
-                },
-                change: function(event, ui) {
-                    if (!ui.item) {
-                        $(this).val("");
-                    }
+        $("#" + selector).autocomplete({
+            source: function(request, response) {
+                let dataPayload = {
+                    q:request.term,
+                    type : type
+                };
+                if (type == "store_rack") {
+                    dataPayload.store_id = $("#new_store_id_input").val()
                 }
-            }).focus(function() {
-                if (this.value === "") {
-                    $(this).autocomplete("search", "");
+                if (type == "rack_shelf") {
+                    dataPayload.rack_id = $("#new_rack_id_input").val()
                 }
-            });
+                if (type == "shelf_bin") {
+                    dataPayload.shelf_id = $("#new_shelf_id_input").val()
+                }
+                $.ajax({
+                    url: '/search',
+                    method: 'GET',
+                    dataType: 'json',
+                    data: dataPayload,
+                    success: function(data) {
+                        response($.map(data, function(item) {
+                            return {
+                                id: item.id,
+                                label: item[labelField],
+                            };
+                        }));
+                    },
+                    error: function(xhr) {
+                        console.error('Error fetching customer data:', xhr.responseText);
+                    }
+                });
+            },
+            minLength: 0,
+            appendTo : modalId,
+            select: function(event, ui) {
+                var $input = $(this);
+                var itemCode = ui.item.label;
+                var itemId = ui.item.id;
+                $input.val(itemCode);
+                $("#" + siblingSelector).val(itemId);
+                return false;
+            },
+            change: function(event, ui) {
+                if (!ui.item) {
+                    $(this).val("");
+                }
+            }
+        }).focus(function() {
+            if (this.value === "") {
+                $(this).autocomplete("search", "");
+            }
+        });
     }
 
     function resetStoreFields()
@@ -5885,24 +4424,6 @@ function removeStoreRow(index,storeIndex){
 
         $("#new_location_qty").val("")
     }
-
-    $(document).ready(function() {
-        // Event delegation to handle dynamically added input fields
-        $(document).on('input', '.decimal-input', function() {
-            // Allow only numbers and a single decimal point
-            this.value = this.value.replace(/[^0-9.]/g, ''); // Remove non-numeric characters
-            
-            // Prevent more than one decimal point
-            if ((this.value.match(/\./g) || []).length > 1) {
-                this.value = this.value.substring(0, this.value.length - 1);
-            }
-
-            // Optional: limit decimal places to 2
-            if (this.value.indexOf('.') !== -1) {
-                this.value = this.value.substring(0, this.value.indexOf('.') + 3);
-            }
-        });
-    });
 
     function saveAddressShipping()
     {
@@ -5986,29 +4507,29 @@ function removeStoreRow(index,storeIndex){
         $('#shipAddressEditBtn').click();
     }
     $(document).on('click', '#amendmentSubmit', (e) => {
-   let actionUrl = "{{ route('sale.return.amend', isset($order) ? $order -> id : 0) }}";
-   fetch(actionUrl).then(response => {
-      return response.json().then(data => {
-         if (data.status == 200) {
-            Swal.fire({
-                title: 'Success!',
-                text: data.message,
-                icon: 'success'
+    let actionUrl = "{{ route('sale.return.amend', isset($order) ? $order -> id : 0) }}";
+    fetch(actionUrl).then(response => {
+        return response.json().then(data => {
+            if (data.status == 200) {
+                Swal.fire({
+                    title: 'Success!',
+                    text: data.message,
+                    icon: 'success'
+                });
+                location.reload();
+            } else {
+                Swal.fire({
+                    title: 'Error!',
+                    text: data.message,
+                    icon: 'error'
+                });
+            }
             });
-            location.reload();
-         } else {
-            Swal.fire({
-                title: 'Error!',
-                text: data.message,
-                icon: 'error'
-            });
-        }
-      });
-   });
-});
-function getShelf(item_index,store_index){
-    const rack_id = $('#rack_data_' + item_index + '_' + store_index).val();
-    $.ajax({
+        });
+    });
+    function getShelf(item_index,store_index){
+        const rack_id = $('#rack_data_' + item_index + '_' + store_index).val();
+        $.ajax({
             url: "{{route('get_shelfs')}}",
             method: 'GET',
             data: {
@@ -6033,238 +4554,8 @@ function getShelf(item_index,store_index){
 
             }
         });
-}
-
-var currentRevNo = $("#revisionNumber").val();
-
-// # Revision Number On Change
-$(document).on('change', '#revisionNumber', (e) => {
-    e.preventDefault();
-    let actionUrl = location.pathname + '?type=' + "{{request() -> type ?? 'si'}}" + '&revisionNumber=' + e.target.value;
-    $("#revisionNumber").val(currentRevNo);
-    window.open(actionUrl, '_blank'); // Opens in a new tab
-});
-
-$(document).on('submit', '.ajax-submit-2', function (e) {
-    e.preventDefault();
-     var submitButton = (e.originalEvent && e.originalEvent.submitter) 
-                        || $(this).find(':submit');
-    var submitButtonHtml = submitButton.innerHTML; 
-    submitButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
-    submitButton.disabled = true;
-    var method = $(this).attr('method');
-    var url = $(this).attr('action');
-    var redirectUrl = $(this).data('redirect');
-    var data = new FormData($(this)[0]);
-
-    var formObj = $(this);
-    
-    $.ajax({
-        url,
-        type: method,
-        data,
-        contentType: false,
-        processData: false,
-        success: function (res) {
-            submitButton.disabled = false;
-            submitButton.innerHTML = submitButtonHtml;
-            $('.ajax-validation-error-span').remove();
-            $(".is-invalid").removeClass("is-invalid");
-            $(".help-block").remove();
-            $(".waves-ripple").remove();
-            Swal.fire({
-                title: 'Success!',
-                text: res.message,
-                icon: 'success',
-            });
-            setTimeout(() => {
-                if (res.store_id) {
-                    location.href = `/stores/${res.store_id}/edit`;
-                } else if (redirectUrl) {
-                    location.href = redirectUrl;
-                } else {
-                    location.reload();
-                }
-            }, 1500);
-            
-        },
-        error: function (error) {
-            submitButton.disabled = false;
-            submitButton.innerHTML = submitButtonHtml;
-            $('.ajax-validation-error-span').remove();
-            $(".is-invalid").removeClass("is-invalid");
-            $(".help-block").remove();
-            $(".waves-ripple").remove();
-            let res = error.responseJSON || {};
-            if (error.status === 422 && res.errors) {
-                if (
-                    Object.size(res) > 0 &&
-                    Object.size(res.errors) > 0
-                ) {
-                    show_validation_error(res.errors);
-                }
-                // let errors = res.errors;
-                // for (const [key, errorMessages] of Object.entries(errors)) {
-                //     var name = key.replace(/\./g, "][").replace(/\]$/, "");
-                //     formObj.find(`[name="${name}"]`).parent().append(
-                //         `<span class="ajax-validation-error-span form-label text-danger" style="font-size:12px">${errorMessages[0]}</span>`
-                //     );
-                // }
-
-            } else {
-                Swal.fire({
-                    title: 'Error!',
-                    text: res.message || 'An unexpected error occurred.',
-                    icon: 'error',
-                });
-            }
-        }
-    });
-});
-
-
-
-function viewModeScript(disable = true)
-{
-    const currentOrder = @json(isset($order) ? $order : null);
-    const editOrder = "{{( isset($buttons) && ($buttons['draft'] || $buttons['submit'])) ? false : true}}";
-    const revNoQuery = "{{ isset(request() -> revisionNumber) ? true : false }}";
-
-    if ((editOrder || revNoQuery) && currentOrder) {
-        document.querySelectorAll('input, textarea, select').forEach(element => {
-            if (element.id !== 'revisionNumber' && element.type !== 'hidden' && !element.classList.contains('cannot_disable')) {
-                // element.disabled = disable;
-                element.style.pointerEvents = disable ? "none" : "auto";
-                if (disable) {
-                    element.setAttribute('readonly', true);
-                } else {
-                    element.removeAttribute('readonly');
-                }
-            }
-        });
-        //Disable all submit and cancel buttons
-        document.querySelectorAll('.can_hide').forEach(element => {
-            element.style.display = disable ? "none" : "";
-        });
-        //Remove add delete button
-        document.getElementById('add_delete_item_section').style.display = disable ? "none" : "";
-    } else {
-        return;
-    }
-}
-
-function amendConfirm()
-{
-    viewModeScript(false);
-    disableHeader();
-    const amendButton = document.getElementById('amendShowButton');
-    if (amendButton) {
-        amendButton.style.display = "none";
-    }
-    //disable other buttons
-    var printButton = document.getElementById('dropdownMenuButton');
-    if (printButton) {
-        printButton.style.display = "none";
-    }   
-    var postButton = document.getElementById('postButton');
-    if (postButton) {
-        postButton.style.display = "none";
-    }
-    const buttonParentDiv = document.getElementById('buttonsDiv');
-    const newSubmitButton = document.createElement('button');
-    newSubmitButton.type = "button";
-    newSubmitButton.id = "amend-submit-button";
-    newSubmitButton.className = "btn btn-primary btn-sm mb-50 mb-sm-0";
-    newSubmitButton.innerHTML = `<i data-feather="check-circle"></i> Submit`;
-    newSubmitButton.onclick = function() {
-        openAmendConfirmModal();
-    };
-
-    if (buttonParentDiv) {
-        buttonParentDiv.appendChild(newSubmitButton);
     }
 
-    if (feather) {
-        feather.replace({
-            width: 14,
-            height: 14
-        });
-    }
-
-    reCheckEditScript();
-}
-
-function reCheckEditScript()
-    {
-        const currentOrder = @json(isset($order) ? $order : null);
-        if (currentOrder) {
-            currentOrder.items.forEach((item, index) => {
-                document.getElementById('item_checkbox_' + index).disabled = item?.is_editable ? false : true;
-                document.getElementById('items_dropdown_' + index).readonly = item?.is_editable ? false : true;
-                document.getElementById('attribute_button_' + index).disabled = item?.is_editable ? false : true;
-            });
-        }
-    }
-function openAmendConfirmModal()
-{
-    $("#amendConfirmPopup").modal("show");
-}
-
-function submitAmend()
-{
-    enableHeader();
-    let remark = $("#amendConfirmPopup").find('[name="amend_remarks"]').val();
-    $("#action_type_main").val("amendment");
-    $("#amendConfirmPopup").modal('hide');
-    $("#sale_invoice_form").submit();
-}
-
-const maxNumericLimit = 9999999;
-
-document.addEventListener('input', function (e) {
-        if (e.target.classList.contains('text-end')) {
-            let value = e.target.value;
-
-            // Remove invalid characters (anything other than digits and a single decimal)
-            value = value.replace(/[^0-9.]/g, '');
-
-            // Prevent more than one decimal point
-            const parts = value.split('.');
-            if (parts.length > 2) {
-                value = parts[0] + '.' + parts[1];
-            }
-
-            // Prevent starting with a decimal (e.g., ".5" -> "0.5")
-            if (value.startsWith('.')) {
-                value = '0' + value;
-            }
-
-            // Limit to 2 decimal places
-            if (parts[1]?.length > 2) {
-                value = parts[0] + '.' + parts[1].substring(0, 2);
-            }
-
-            // Prevent exceeding the max limit
-            if (value && Number(value) > maxNumericLimit) {
-                value = maxNumericLimit.toString();
-            }
-
-            e.target.value = value;
-        }
-    });
-
-    document.addEventListener('keydown', function (e) {
-        if (e.target.classList.contains('text-end')) {
-            if ( e.key === 'Tab' ||
-                ['Backspace', 'ArrowLeft', 'ArrowRight', 'Delete', '.'].includes(e.key) || 
-                /^[0-9]$/.test(e.key)
-            ) {
-                // Allow numbers, navigation keys, and a single decimal point
-                return;
-            }
-            e.preventDefault(); // Block everything else
-        }
-    });
 
 
 function resetPostVoucher()
@@ -6471,11 +4762,6 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
         }
     }
 
-    function resetSeries()
-    {
-        document.getElementById('series_id_input').innerHTML = '';
-    }
-
     function implementSeriesChange(val)
     {
         //COMMON CHANGES
@@ -6492,79 +4778,6 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
     }
 
     
-    function onSeriesChange(element, reset = true)
-    {
-        resetSeries();
-        implementSeriesChange(element.value);
-        $.ajax({
-            url: "{{route('book.service-series.get')}}",
-            method: 'GET',
-            dataType: 'json',
-            data: {
-                menu_alias: "{{request() -> segments()[0]}}",
-                service_alias: element.value,
-                book_id : reset ? null : "{{isset($order) ? $order -> book_id : null}}"
-            },
-            success: function(data) {
-                if (data.status == 'success') {
-                    let newSeriesHTML = ``;
-                    data.data.forEach((book, bookIndex) => {
-                        newSeriesHTML += `<option value = "${book.id}" ${bookIndex == 0 ? 'selected' : ''} >${book.book_code}</option>`;
-                    });
-                    document.getElementById('series_id_input').innerHTML = newSeriesHTML;
-                    console.log(document.getElementById('series_id_input').value);
-                    getDocNumberByBookId(document.getElementById('series_id_input'), reset);
-                } else {
-                    document.getElementById('series_id_input').innerHTML = '';
-                }
-            },
-            error: function(xhr) {
-                console.error('Error fetching customer data:', xhr.responseText);
-                document.getElementById('series_id_input').innerHTML = '';
-            }
-        });
-    }
-
-    function revokeDocument()
-    {
-        const orderId = "{{isset($order) ? $order -> id : null}}";
-        if (orderId) {
-            $.ajax({
-            url: "{{route('sale.return.revoke')}}",
-            method: 'POST',
-            dataType: 'json',
-            data: {
-                id : orderId
-            },
-            success: function(data) {
-                if (data.status == 'success') {
-                    Swal.fire({
-                        title: 'Success!',
-                        text: data.message,
-                        icon: 'success',
-                    });
-                    location.reload();
-                } else {
-                    Swal.fire({
-                        title: 'Error!',
-                        text: data.message,
-                        icon: 'error',
-                    });
-                    window.location.href = "{{$redirect_url}}";
-                }
-            },
-            error: function(xhr) {
-                console.error('Error fetching customer data:', xhr.responseText);
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'Some internal error occured',
-                    icon: 'error',
-                });
-            }
-        });
-        }
-    }
-
 
     function generateEInvoice(id)
     {
@@ -6649,101 +4862,7 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
             }
         });
     }
-    $('#attribute').on('hidden.bs.modal', function () {
-        setAttributesUI();
-    });
-    var currentSelectedItemIndex = null ;
-    function setAttributesUI(paramIndex = null) {
-        let currentItemIndex = null;
-        if (paramIndex != null || paramIndex != undefined) {
-            currentItemIndex = paramIndex;
-        } else {
-            currentItemIndex = currentSelectedItemIndex;
-        }
-        //Attribute modal is closed
-        let itemIdDoc = document.getElementById('items_dropdown_' + currentItemIndex);
-        if (!itemIdDoc) {
-            return;
-        }
-        //Item Doc is found
-        let attributesArray = itemIdDoc.getAttribute('attribute-array');
-        if (!attributesArray) {
-            return;
-        }
-        attributesArray = JSON.parse(attributesArray);
-        if (attributesArray.length == 0) {
-            return;
-        }
-        let attributeUI = `<div data-bs-toggle="modal" onclick = "setItemAttributes('items_dropdown_${currentItemIndex}', ${currentItemIndex});" data-bs-target="#attribute" style = "white-space:nowrap; cursor:pointer;">`;
-        let maxCharLimit = 15;
-        let attrTotalChar = 0;
-        let total_selected = 0;
-        let total_atts = 0;
-        let addMore = true;
-        attributesArray.forEach(attrArr => {
-            if (!addMore) {
-                return;
-            }
-            let short = false;
-            total_atts += 1;
-            console.log(attrArr);
-
-            if(attrArr.short_name.length > 0)
-            {
-                short = true;
-            }
-            //Retrieve character length of attribute name
-            let currentStringLength = short ? Number(attrArr.short_name.length) : Number(attrArr.group_name.length);
-            let currentSelectedValue = '';
-            attrArr.values_data.forEach((attrVal) => {
-                if (attrVal.selected === true) {
-                    total_selected += 1;
-                    // Add character length with selected value
-                    currentStringLength += Number(attrVal.value.length);
-                    currentSelectedValue = attrVal.value;
-                }
-            });
-            //Add the attribute in UI only if it falls within the range
-            if ((attrTotalChar + Number(currentStringLength)) <= 15) {
-                attributeUI += `
-                <span class="badge rounded-pill badge-light-primary"><strong>${short ? attrArr.short_name : attrArr.group_name}</strong>: ${currentSelectedValue ? currentSelectedValue :''}</span>
-                `;
-            } else {
-                //Get the remaining length
-                let remainingLength =  15 - attrTotalChar;
-                //Only show the data if remaining length is greater than 3
-                if (remainingLength >= 3) {
-                    attributeUI += `<span class="badge rounded-pill badge-light-primary"><strong>${short ? attrArr.short_name.substring(0, remainingLength - 1) : attrArr.group_name.substring(0, remainingLength - 1)}..</strong></span>`
-                }
-                else {
-                    addMore = false;
-
-                    attributeUI += `<i class="ml-2 fa-solid fa-ellipsis-vertical"></i>`;
-                }
-            }
-            attrTotalChar += Number(currentStringLength);
-        });
-        let attributeSection = document.getElementById('attribute_section_' + currentItemIndex);
-        if (attributeSection) {
-            attributeSection.innerHTML = attributeUI + '</div>';
-        }
-        if(total_selected == 0){
-            attributeSection.innerHTML = `
-                <button id = "attribute_button_${currentItemIndex}" 
-                    ${attributesArray.length > 0 ? '' : 'disabled'} 
-                    type = "button" 
-                    data-bs-toggle="modal" 
-                    onclick = "setItemAttributes('items_dropdown_${currentItemIndex}', '${currentItemIndex}', false);" 
-                    data-bs-target="#attribute" 
-                    class="btn p-25 btn-sm btn-outline-secondary" 
-                    style="font-size: 10px">Attributes</button>
-                <input type = "hidden" name = "attribute_value_${currentItemIndex}" />
-            `;
-        }
-        
-    }
-
-    
+   
     </script>
 @endsection
 @endsection

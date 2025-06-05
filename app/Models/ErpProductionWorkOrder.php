@@ -6,12 +6,13 @@ use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
 use App\Traits\DateFormatTrait;
 use App\Traits\DefaultGroupCompanyOrg;
+use App\Traits\DynamicFieldsTrait;
 use App\Traits\FileUploadTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 class ErpProductionWorkOrder extends Model
 {
-    use HasFactory,DateFormatTrait,DefaultGroupCompanyOrg,FileUploadTrait;
+    use HasFactory,DateFormatTrait,DynamicFieldsTrait,DefaultGroupCompanyOrg,FileUploadTrait;
     
     protected $fillable = [
         'organization_id', 
@@ -94,10 +95,6 @@ class ErpProductionWorkOrder extends Model
     {
         return $this->hasMany(ErpPwoItem::class, 'pwo_id');
     }
-    public function createdBy()
-    {
-        return $this->belongsTo(Employee::class,'created_by','id');
-    }
     public function location()
     {
         return $this->belongsTo(ErpStore::class,'location_id');
@@ -128,7 +125,12 @@ class ErpProductionWorkOrder extends Model
         }
         return null;
     }
-
-
-
+       public function dynamic_fields()
+    {
+        return $this -> hasMany(ErpPwoDynamicField::class, 'header_id');
+    }
+     public function createdBy()
+    {
+        return $this->belongsTo(AuthUser::class,'created_by','id');
+    }
 }

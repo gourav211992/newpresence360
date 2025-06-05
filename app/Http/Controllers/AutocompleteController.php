@@ -21,6 +21,7 @@ use App\Models\ErpMiItem;
 use App\Models\ErpMrItem;
 use App\Models\ErpProductionSlip;
 use App\Models\ErpProductionWorkOrder;
+use App\Models\ErpPsvHeader;
 use App\Models\ErpRack;
 use App\Models\ErpSaleInvoice;
 use App\Models\ErpSaleOrder;
@@ -849,7 +850,7 @@ class AutocompleteController extends Controller
             } else if ($type === 'location') {
                 $results = InventoryHelper::getAccessibleLocations();
             } else if ($type === 'sub_store') {
-                $storeId = $request->store_id ?? '';
+                $storeId = $request->store_id ?? 0;
                 $results = InventoryHelper::getAccesibleSubLocations($storeId ?? 0);
                 if ($results->isEmpty()) {
                     $results = InventoryHelper::getAccesibleSubLocations($storeId ?? 0);
@@ -864,7 +865,7 @@ class AutocompleteController extends Controller
                         ->get(['id', 'name', 'description']);
                 }
             } else if ($type === "sale_order_document_qt") {
-                $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request -> header_book_id);
+                $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request -> header_book_id??0);
                 $results = ErpSaleOrder::where('document_number', 'LIKE', "%$term%")
                     -> where('document_type', ConstantHelper::SQ_SERVICE_ALIAS)
                     -> withDefaultGroupCompanyOrg()
@@ -1085,8 +1086,7 @@ class AutocompleteController extends Controller
                         ->get(['id', 'document_number']);
                     }
             } else if ($type === "sale_order_document") {
-                $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request -> header_book_id);
-
+                $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request -> header_book_id??0);
                 $results = ErpSaleOrder::where('document_number', 'LIKE', "%$term%")
                     -> where('document_type', ConstantHelper::SO_SERVICE_ALIAS)
                     -> withDefaultGroupCompanyOrg()
@@ -1434,6 +1434,33 @@ class AutocompleteController extends Controller
                 }
             } else if ($type === 'report_so_book') {
                 $service = Service::where('alias', ConstantHelper::SO_SERVICE_ALIAS) -> first();
+
+                $query = Book::withDefaultGroupCompanyOrg() -> where('service_id', $service ?-> id);
+                $results = $query->when($term, function ($q) use ($term) {
+                    return $q->where(function($query) use ($term) {
+                        $query->where('book_code', 'LIKE', "%$term%")
+                        ->orWhere('book_name', 'LIKE', "%$term%");
+                    });
+                }) -> get(['id', 'book_code']);
+                if ($results->isEmpty()) {
+                    $results = Book::withDefaultGroupCompanyOrg() -> where('service_id', $service ?-> id)
+                        ->limit(10)
+                        ->get(['id', 'book_code']);
+                }
+            } else if ($type === 'report_psv_documents') {
+                $query = ErpPsvHeader::withDefaultGroupCompanyOrg();
+                $results = $query->when($term, function ($q) use ($term) {
+                    return $q->where(function($query) use ($term) {
+                        $query->where('document_number', 'LIKE', "%$term%");
+                    });
+                }) -> get(['id', 'document_number']);
+                if ($results->isEmpty()) {
+                    $results = ErpPsvHeader::withDefaultGroupCompanyOrg()
+                        ->limit(10)
+                        ->get(['id', 'document_number']);
+                }
+            } else if ($type === 'report_psv_book') {
+                $service = Service::where('alias', ConstantHelper::PSV_SERVICE_ALIAS) -> first();
 
                 $query = Book::withDefaultGroupCompanyOrg() -> where('service_id', $service ?-> id);
                 $results = $query->when($term, function ($q) use ($term) {

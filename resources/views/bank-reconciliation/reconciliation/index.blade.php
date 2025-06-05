@@ -27,6 +27,8 @@
                     </div>
                     <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
                         <div class="form-group breadcrumb-right">
+                            <button type="button" class="btn btn-warning btn-sm mb-50 mb-sm-0" data-bs-target="#filter"
+                                data-bs-toggle="modal"><i data-feather="filter"></i> Select Date Range</button>
                             <a href="{{ route('bank.statements.not-match-entries', ['id' => $bank->id]) }}"
                                 class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i>
                                 Back</a>
@@ -103,7 +105,7 @@
                                                     @endforelse
                                                 </tbody>
 
-                                                {{-- <tfoot>
+                                                <tfoot>
                                                     <tr>
                                                         <td colspan="6" class="text-end">Bal. as per Company Books</td>
                                                         <td>&nbsp;</td>
@@ -120,7 +122,7 @@
                                                         <td>&nbsp;</td>
                                                         <td colspan="2">{{ number_format($bankBalance, 2) }}</td>
                                                     </tr>
-                                                </tfoot> --}}
+                                                </tfoot>
 
 
                                             </table>
@@ -143,7 +145,44 @@
         </div>
     </div>
     <!-- END: Content-->
+    <!-- BEGIN: Modal-->
+    <div class="modal modal-slide-in fade filterpopuplabel" id="filter">
+        <div class="modal-dialog sidebar-sm">
+            <form class="add-new-record modal-content pt-0">
+                <div class="modal-header mb-1">
+                    <h5 class="modal-title" id="exampleModalLabel">Select Date Range</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">×</button>
+                </div>
+                <div class="modal-body flex-grow-1">
+                    <div class="mb-1">
+                        <label class="form-label" for="fp-range">Select Period</label>
+                        <input type="text" id="fp-range" class="form-control flatpickr-range bg-white"
+                            placeholder="YYYY-MM-DD to YYYY-MM-DD"
+                            value="{{ request('date') ? request('date') : $dateRange }}" name="date" />
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-start">
+                    <button type="submit" class="btn btn-primary data-submit mr-1">Apply</button>
+                    <button type="reset" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- END: Modal-->
 @endsection
 @section('scripts')
     <script src="{{ asset('app-assets/js/common-script-v2.js') }}"></script>
+    <script>
+        $(document).ready(function() {
+            let dateParam = "{{ request('date') }}";
+
+            if (!dateParam) {
+                // Show the modal if there's no date in the query string
+                $('#filter').modal({
+                    backdrop: 'static',
+                    keyboard: false
+                }).modal('show');
+            }
+        });
+    </script>
 @endsection

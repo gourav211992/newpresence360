@@ -73,6 +73,7 @@ class ErpSaleInvoiceController extends Controller
     public function index(Request $request)
     {
         $pathUrl = request()->segments()[0];
+        $selectedfyYear = Helper::getFinancialYear(Carbon::now()->format('Y-m-d'));
         if ($pathUrl === 'sale-invoices') {
             $orderType = SaleModuleHelper::SALES_INVOICE_DEFAULT_TYPE;
             $redirectUrl = route('sale.invoice.index');
@@ -88,7 +89,7 @@ class ErpSaleInvoiceController extends Controller
         $typeName = SaleModuleHelper::getAndReturnInvoiceTypeName($orderType);
         if ($request -> ajax()) {
             try {
-            $invoices = ErpSaleInvoice::withDefaultGroupCompanyOrg() ->  bookViewAccess($pathUrl) ->  withDraftListingLogic() -> whereIn('document_type', SaleModuleHelper::checkInvoiceDocTypesFromUrlType($orderType)) -> orderByDesc('id');
+            $invoices = ErpSaleInvoice::withDefaultGroupCompanyOrg() ->  bookViewAccess($pathUrl) ->  withDraftListingLogic() -> whereIn('document_type', SaleModuleHelper::checkInvoiceDocTypesFromUrlType($orderType)) -> whereBetween('document_date', [$selectedfyYear['start_date'], $selectedfyYear['end_date']]) -> orderByDesc('id');
             return DataTables::of($invoices) ->addIndexColumn()
             ->editColumn('document_status', function ($row) use($orderType) {
                 $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->document_status ?? ConstantHelper::DRAFT];    
@@ -194,6 +195,7 @@ class ErpSaleInvoiceController extends Controller
         //Get the menu
         $parentURL = request() -> segments()[0];
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
+        $selectedfyYear = Helper::getFinancialYear(Carbon::now());
         if (count($servicesBooks['services']) == 0) {
             return redirect() -> route('/');
         }
@@ -243,6 +245,7 @@ class ErpSaleInvoiceController extends Controller
             'stores' => $stores,
             'redirect_url' => $redirectUrl,
             'location_visibility' => $locationVisiblity,
+            'current_financial_year' => $selectedfyYear,
             'transportationModes' => $transportationModes,
             'einvoice' => null
         ];
@@ -263,6 +266,7 @@ class ErpSaleInvoiceController extends Controller
                 $orderType = SaleModuleHelper::SALES_INVOICE_LEASE_TYPE;
             }
             request() -> merge(['type' => $orderType]);
+            $selectedfyYear = Helper::getFinancialYear($doc->document_date ?? Carbon::now()->format('Y-m-d'));
             $user = Helper::getAuthenticatedUser();
             $users = AuthUser::where('organization_id', $user -> organization_id) -> where('status', ConstantHelper::ACTIVE) -> get();
             $servicesBooks = [];
@@ -397,6 +401,7 @@ class ErpSaleInvoiceController extends Controller
                     'subStores' => $subStores,
                     'dynamicFieldsUi' => $dynamicFieldsUI,
                     'transportationModes' => $transportationModes,
+                    'current_financial_year' => $selectedfyYear,
                     'editTransporterFields' => $editTransporterFields
                 ];
                 return view('salesInvoice.create_edit', $data);

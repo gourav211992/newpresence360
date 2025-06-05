@@ -98,6 +98,9 @@
 </td>
 @endif --}}
 <td>
+    <input type="date" value="{{ $po_item?->delivery_date }}" name="components[{{ $rowCount }}][delivery_date]" class="form-control mw-100" />
+</td>
+<td>
    <div class="d-flex">
     @foreach($po_item->itemDelivery as $itemDeli_key => $itemDelivery)
         <input type="hidden" value="{{$itemDelivery->id}}" name="components[{{$rowCount}}][delivery][{{$itemDeli_key + 1}}][id]">

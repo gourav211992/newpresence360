@@ -492,10 +492,11 @@ document.getElementById("process_btn").addEventListener("click", function () {
             let sno =1;
             let assetDataArray = [];
 
-                   
+             if (data && data.length > 0) {      
 
             data.forEach((asset, index) => {
                 let expire = false;
+                if (asset.sub_asset && asset.sub_asset.length > 0) {
                 asset.sub_asset.forEach((sub_asset, index) => {
                 let to_date = $('#to_date_param').val(); // e.g., "30-04-2025"
                 let inputDate = sub_asset.last_dep_date;   // e.g., "2025-04-25"
@@ -689,8 +690,9 @@ document.getElementById("process_btn").addEventListener("click", function () {
 
             }
                 });
-                
+            }
             });
+        }
 
             // Update Grand Total
             document.getElementById("grand_total_current_value_after_dep").value =  totalAfterDepCurrent.toFixed(2);

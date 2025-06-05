@@ -21,6 +21,7 @@ class TransactionReportController extends Controller
     {
         $reportType = $request -> reportType ?? '';
         $reportService = new TransactionReport($serviceAlias, $reportType);
+        $reportService->reportName = ConstantHelper::SERVICE_LABEL[$serviceAlias] ?? 'Transaction';
         $data = $reportService -> getIndexPageData();
         return view('reports.transaction', $data);
     }

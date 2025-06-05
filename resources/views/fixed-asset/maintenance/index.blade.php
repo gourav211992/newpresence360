@@ -74,15 +74,10 @@
                                                                 <i data-feather="more-vertical"></i>
                                                             </button>
                                                             <div class="dropdown-menu dropdown-menu-end">
-                                                                <a class="dropdown-item"
-                                                                    href="{{ route('finance.fixed-asset.maintenance.show', $item->id) }}">
-                                                                    <i data-feather="edit" class="me-50"></i>
-                                                                    <span>View Detail</span>
-                                                                </a>
-                                                                <a class="dropdown-item"
+                                                              <a class="dropdown-item"
                                                                     href="{{ route('finance.fixed-asset.maintenance.edit', $item->id) }}">
-                                                                    <i data-feather="edit-3" class="me-50"></i>
-                                                                    <span>Edit</span>
+                                                                    <i data-feather="edit" class="me-50"></i>
+                                                                    <span>View</span>
                                                                 </a>
 
                                                             </div>
@@ -165,6 +160,8 @@
 @endsection
 
 @section('scripts')
+<script type="text/javascript" src="{{asset('assets/js/modules/finance-table.js')}}"></script>
+
     <script>
         $(window).on('load', function() {
             if (feather) {
@@ -285,6 +282,9 @@
                 "@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach"
             );
         @endif
+             handleRowSelection('.datatables-basic');
+
+        
     </script>
 
 @endsection

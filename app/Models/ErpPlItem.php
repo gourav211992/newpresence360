@@ -111,4 +111,11 @@ class ErpPlItem extends Model
     {
         return $this->belongsTo(ErpSoItem::class,'order_item_id');
     }
+    public function so()
+    {
+        return $this->belongsTo(ErpSaleOrder::class, 'order_id');
+    }
+    public function header(){
+        return $this->belongsTo(ErpPlHeader::class, 'pl_header_id');
+    }
 }

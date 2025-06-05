@@ -37,6 +37,9 @@
     </div>
 </td>
 <td><input type="number" step="any" name="components[{{$rowCount}}][item_total_cost]" readonly class="form-control mw-100 text-end" /></td>
+<td>
+    <input type="date" value="{{ date('Y-m-d') }}" name="components[{{ $rowCount }}][delivery_date]" class="form-control mw-100" />
+</td>
 {{-- @if(isset($isEdit) && $isEdit)
 <td>
     <input type="number" step="any" name="components[{{$rowCount}}][short_close_qty]" class="form-control mw-100 text-end short-close-qty">

@@ -62,12 +62,13 @@ class ErpMaterialIssueController extends Controller
         $pathUrl = request()->segments()[0];
         $orderType = ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME;
         $redirectUrl = route('material.issue.index');
+        $selectedfyYear = Helper::getFinancialYear(Carbon::now()->format('Y-m-d'));
         $createRoute = route('material.issue.create');
         $typeName = ConstantHelper::MATERIAL_ISSUE_SERVICE_NAME;
         if ($request -> ajax()) {
             try {
                 $docs = ErpMaterialIssueHeader::withDefaultGroupCompanyOrg() ->  bookViewAccess($pathUrl) ->  
-                withDraftListingLogic() -> orderByDesc('id');
+                withDraftListingLogic() ->whereBetween('document_date', [$selectedfyYear['start_date'], $selectedfyYear['end_date']]) -> orderByDesc('id');
                 return DataTables::of($docs) ->addIndexColumn()
                 ->editColumn('document_status', function ($row) use($orderType) {
                     $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->document_status ?? ConstantHelper::DRAFT];    
@@ -181,6 +182,9 @@ class ErpMaterialIssueController extends Controller
         $stations = Station::withDefaultGroupCompanyOrg()
         ->where('status', ConstantHelper::ACTIVE)
         ->get();
+        $currentfyYear = Helper::getCurrentFinancialYear();
+        $selectedfyYear = Helper::getFinancialYear(Carbon::now());
+        $currentfyYear['current_date'] = Carbon::now() -> format('Y-m-d');
         $stockTypes = InventoryHelper::getStockType();
         $data = [
             'user' => $user,
@@ -197,6 +201,7 @@ class ErpMaterialIssueController extends Controller
             'requesters' => $users,
             'selectedUserId' => null,
             'redirect_url' => $redirectUrl,
+            'current_financial_year' => $selectedfyYear,
             'stockTypes' => $stockTypes
         ];
         return view('materialIssue.create_edit', $data);
@@ -248,6 +253,7 @@ class ErpMaterialIssueController extends Controller
             $typeName = ConstantHelper::MATERIAL_ISSUE_SERVICE_NAME;
             $vendors = Vendor::select('id', 'company_name') -> withDefaultGroupCompanyOrg()->where('status', ConstantHelper::ACTIVE) 
             -> get();
+            $selectedfyYear = Helper::getFinancialYear($order->document_date ?? Carbon::now()->format('Y-m-d'));
             $stations = Station::withDefaultGroupCompanyOrg()
             ->where('status', ConstantHelper::ACTIVE)
             ->get();
@@ -287,6 +293,7 @@ class ErpMaterialIssueController extends Controller
                 'services' => $servicesBooks['services'],
                 'departments' => $departments['departments'],
                 'selectedDepartmentId' => $doc ?-> department_id,
+                'current_financial_year' => $selectedfyYear,
                 'requesters' => $users,
                 'selectedUserId' => $doc ?-> user_id,
                 'toSubStores' => $toSubStores,
