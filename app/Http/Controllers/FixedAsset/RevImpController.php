@@ -180,7 +180,7 @@ class RevImpController extends Controller
         }
         $currNumber = $r->revisionNumber;
         if ($currNumber) {
-            $data = FixedAssetRevImpHistory::withDefaultGroupCompanyOrg()->findorFail($id);
+            $data = FixedAssetRevImpHistory::where('source_id',$id)->first();
         } else {
             $data = FixedAssetRevImp::withDefaultGroupCompanyOrg()->findorFail($id);
         }

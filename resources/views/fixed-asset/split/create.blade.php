@@ -228,6 +228,7 @@
                                                                 class="form-control" readonly />
                                                         </div>
                                                     </div>
+                                                    <input type="hidden" id="capitalize_date_old" name="capitalize_date"/>
 
                                                     <!-- Current Value -->
                                                     <div class="col-md-3">
@@ -375,7 +376,7 @@
                                                                 </td>
                                                                 <td>
                                                                     <input type="date" required
-                                                                        class="form-control mw-100 mb-25 capitalize_date" />
+                                                                        class="form-control mw-100 mb-25 capitalize_date" oninput="syncInputAcrossSameAssets(this)"/>
                                                                 </td>
 
                                                                 <td>
@@ -432,8 +433,8 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Category <span
                                                                     class="text-danger">*</span></label>
-                                                            <select class="form-select select2" name="category_id"
-                                                                id="category" required>
+                                                            <select class="form-select select2"
+                                                                id="category">
                                                                 <option value=""
                                                                     {{ old('category') ? '' : 'selected' }}>
                                                                     Select</option>
@@ -460,8 +461,8 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Ledger <span
                                                                     class="text-danger">*</span></label>
-                                                            <select class="form-select select2" name="ledger_id"
-                                                                id="ledger" required>
+                                                            <select class="form-select select2"
+                                                                id="ledger">
                                                                 <option value=""
                                                                     {{ old('ledger') ? '' : 'selected' }}>Select</option>
                                                                 @foreach ($ledgers as $ledger)
@@ -479,8 +480,8 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Ledger Group <span
                                                                     class="text-danger">*</span></label>
-                                                            <select class="form-select select2" name="ledger_group_id"
-                                                                id="ledger_group" required>
+                                                            <select class="form-select select2" 
+                                                                id="ledger_group">
                                                             </select>
                                                         </div>
                                                     </div>
@@ -489,11 +490,11 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Capitalize Date <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="date" class="form-control"
-                                                                name="capitalize_date" id="capitalize_date"
-                                                                value="{{ old('capitalize_date') }}" required />
+                                                            <input type="date" class="form-control" id="capitalize_date"
+                                                                value="{{ old('capitalize_date') }}" />
                                                         </div>
                                                     </div>
+                                                    
 
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
@@ -537,9 +538,9 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Est. Useful Life (yrs) <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" name="useful_life"
+                                                            <input type="text" class="form-control"
                                                                 id="useful_life" value="{{ old('useful_life') }}"
-                                                                required />
+                                                                />
                                                         </div>
                                                     </div>
 
@@ -558,7 +559,7 @@
                                                             <label class="form-label">Dep % <span
                                                                     class="text-danger">*</span></label>
                                                             <input type="number" class="form-control"
-                                                                id="depreciation_rate" name="depreciation_percentage"
+                                                                id="depreciation_rate"
                                                                 readonly />
                                                             <input type="hidden" value="{{ $dep_percentage }}"
                                                                 id="depreciation_percentage" />
@@ -720,7 +721,7 @@
                 <input type="text" required class="form-control mw-100 mb-25 life" oninput="syncInputAcrossSameAssets(this)"> 
                 </td>
               <td>
-                <input type="date" required class="form-control mw-100 mb-25 capitalize_date"/>
+                <input type="date" required class="form-control mw-100 mb-25 capitalize_date" oninput="syncInputAcrossSameAssets(this)"/>
               </td>
                 <td>
                     <input type="text" required disabled value="1" class="form-control mw-100 quantity-input" />
@@ -739,7 +740,7 @@
             $(".mrntableselectexcel tr").removeClass('trselected');
             $('.mrntableselectexcel').append(newRow);
             initializeCategoryAutocomplete('.category-input');
-            updateSubAssetCodes();
+            //updateSubAssetCodes();
         }
         $('#Email').on('change', function() {
             let isChecked = $(this).is(':checked');
@@ -996,7 +997,7 @@
                         .removeAttr('min')
                         .removeAttr('max')
                         .prop('readonly', true);
-                    $('#capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max',
+                    $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max',
                         '{{ $financialEndDate }}').prop('readonly', false);
                     $('#current_value_asset').val('');
                     add_blank();
@@ -1014,7 +1015,7 @@
                             .removeAttr('min')
                             .removeAttr('max')
                             .prop('readonly', true);
-                        $('#capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max',
+                        $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max',
                             '{{ $financialEndDate }}').prop('readonly', false);
                         $('#current_value_asset').val('');
                         add_blank();
@@ -1071,16 +1072,19 @@
                     //$('#category').val(asset.category_id).trigger('change');
                     $('#ledger').val(asset.ledger_id).trigger('change');
                     $('#ledger_group').val(asset.ledger_group_id).trigger('change');
+                    $('#capitalize_date_old').val(sub_asset.capitalize_date);
+
                     $('#last_dep_date')
                         .val('')
                         .removeAttr('min')
                         .removeAttr('max')
                         .prop('readonly', true);
-                    $('#capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max',
+                    $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max',
                         '{{ $financialEndDate }}').prop('readonly', false);
-
+                    
                     // Handle depreciation date
                     if (sub_asset.last_dep_date !== sub_asset.capitalize_date) {
+                        console.log("last_dep");
                         let lastDepDate = new Date(asset.last_dep_date);
                         lastDepDate.setDate(lastDepDate.getDate() - 1);
                         let formattedDate = lastDepDate.toISOString().split('T')[0];
@@ -1090,12 +1094,13 @@
                             .attr('min', formattedDate)
                             .attr('max', today)
                             .prop('readonly', false);
-                        $('#capitalize_date')
+                        
+                        $('.capitalize_date')
                             .removeAttr('min')
                             .removeAttr('max').prop('readonly', true);
                     }
 
-                    $('#capitalize_date').val(sub_asset.last_dep_date);
+                    $('.capitalize_date').val(sub_asset.last_dep_date);
                     $('#depreciation_rate').val(asset.depreciation_percentage);
                     $('#depreciation_rate_year').val(asset.depreciation_percentage_year);
                     $('#useful_life').val(asset.useful_life);
@@ -1111,13 +1116,13 @@
                         $(this).val('');
                         $('#current_value_asset').val("");
                         $('#last_dep_date').val("");
-                        $('#capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max',
+                        $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max',
                             '{{ $financialEndDate }}').prop('readonly', false);
                         $('#sub_asset_id').val('');
                         //$('#category').val("");
                         $('#ledger').val("");
                         $('#ledger_group').val("");
-                        $('#capitalize_date').val("");
+                        $('.capitalize_date').val("");
                         $('#depreciation_rate').val("");
                         $('#depreciation_rate_year').val("");
                         $('#useful_life').val("");
@@ -1183,6 +1188,7 @@
             const asstCodeToLife = {};
             const assetCodeToCategoryText = {};
             const assetCodeToSalvage = {};
+            const capitalizeDate = {};
 
 
            
@@ -1229,7 +1235,7 @@
 
                     if (!assetCodeToName[assetCode] && currentAssetName !== '' && !assetCodeToCategoryId[
                             assetCode] && !assetCodeToCategoryText[assetCode] && !assetCodeToLedger[assetCode] && !
-                        assetCodeToLedgerGroup[assetCode] && !asstCodeToLife[assetCode] && !assetCodeToSalvage[assetCode]) {
+                        assetCodeToLedgerGroup[assetCode] && !asstCodeToLife[assetCode] && !assetCodeToSalvage[assetCode] && !capitalizeDate[assetCode]) {
                         // First time seeing this asset code — store its name
                         assetCodeToName[assetCode] = currentAssetName;
                         assetCodeToCategoryId[assetCode] = $row.find('.category-input').val().trim();
@@ -1238,6 +1244,7 @@
                         assetCodeToLedgerGroup[assetCode] = $row.find('.ledger-group').val();
                         asstCodeToLife[assetCode] = $row.find('.life').val().trim();
                         assetCodeToSalvage[assetCode] = $row.find('.salvage_per').val().trim();
+                        capitalizeDate[assetCode] = $row.find('.capitalize_date').val().trim();
 
                     } else if (assetCodeToName[assetCode]) {
                         $assetNameInput.val(assetCodeToName[assetCode]);
@@ -1247,6 +1254,7 @@
                         $row.find('.ledger-group').val(assetCodeToLedgerGroup[assetCode]).trigger('change');
                         $row.find('.life').val(asstCodeToLife[assetCode]);
                         $row.find('.salvage_per').val(assetCodeToSalvage[assetCode]);
+                        $row.find('.capitalize_date').val(capitalizeDate[assetCode]);
 
                     }
                 } else {
@@ -1303,7 +1311,7 @@
                 .removeAttr('min')
                 .removeAttr('max')
                 .prop('readonly', true);
-            $('#capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max', '{{ $financialEndDate }}')
+            $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max', '{{ $financialEndDate }}')
                 .prop('readonly', false);
             $('#current_value_asset').val('');
             $('#category').val($(this).val()).trigger('change');
@@ -1355,6 +1363,15 @@
                 const quantity = parseFloat($row.find('.quantity-input').val()) || 0;
                 const currentValue = parseFloat($row.find('.current-value-input').val()) || 0;
                 const salvageValue = parseFloat($row.find('.salvage-value-input').val()) || 0;
+                const category = $row.find('.category').val()?.trim() || '';
+                const categoryInput = $row.find('.category-input').val()?.trim() || '';
+                const ledger = $row.find('.ledger').val() || '';
+                const ledgerGroup = $row.find('.ledger-group').val() || '';
+                const life = $row.find('.life').val()?.trim() || '';
+                const salvagePer = $row.find('.salvage_per').val()?.trim() || '';
+                const depPer = $row.find('.dep_per').val()?.trim() || '';
+                const capitalizeDate = $row.find('.capitalize_date').val()?.trim() || '';
+
 
                 if (assetCode !== '') {
                     subAssetData.push({
@@ -1364,6 +1381,14 @@
                         quantity: quantity,
                         current_value: currentValue,
                         salvage_value: salvageValue,
+                        category: category,
+                        category_input: categoryInput,
+                        ledger: ledger,
+                        ledger_group: ledgerGroup,
+                        life: life,
+                        salvage_per: salvagePer,
+                        dep_per: depPer,
+                        capitalize_date: capitalizeDate,
                     });
                 }
             });
@@ -1462,7 +1487,7 @@
                 <input type="text" required class="form-control mw-100 mb-25 life" oninput="syncInputAcrossSameAssets(this)"> 
                 </td>
               <td>
-                <input type="date" required class="form-control mw-100 mb-25 capitalize_date"/>
+                <input type="date" required class="form-control mw-100 mb-25 capitalize_date" oninput="syncInputAcrossSameAssets(this)"/>
               </td>
               <td>
                 <input type="text" required disabled value="1" class="form-control mw-100 quantity-input" />
@@ -1480,6 +1505,26 @@
             </tr>`;
             $('.mrntableselectexcel').append(blank_row);
             initializeCategoryAutocomplete('.category-input');
+            
+                    if ($('#last_dep_date').val()!="") {
+                        console.log("last_dep");
+                        let lastDepDate = new Date($('#last_dep_date').val());
+                        lastDepDate.setDate(lastDepDate.getDate() - 1);
+                        let formattedDate = lastDepDate.toISOString().split('T')[0];
+                        let today = new Date().toISOString().split('T')[0];
+                        $('.capitalize_date')
+                            .removeAttr('min')
+                            .removeAttr('max').prop('readonly', true);
+                             $('#last_dep_date').trigger('change');
+                       
+                    
+
+                    } else{
+                        $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max',
+                            '{{ $financialEndDate }}').prop('readonly', false);
+                    }
+
+
 
         }
 
@@ -1521,7 +1566,7 @@
             if (!isNaN(selectedDate)) {
                 selectedDate.setDate(selectedDate.getDate() + 1);
                 let nextDate = selectedDate.toISOString().split('T')[0];
-                $('#capitalize_date').val(nextDate);
+                $('.capitalize_date').val(nextDate);
             }
         });
 
@@ -1607,7 +1652,7 @@
 
             // Get the first class that identifies the field (excluding utility classes)
             const fieldClass = $this.attr('class').split(' ').find(cls => ['life', 'ledger', 'ledger-group',
-                'category-input', 'salvage_per', 'asset-name-input', 'category'
+                'category-input', 'salvage_per', 'asset-name-input', 'category','capitalize_date'
             ].includes(cls));
 
             if (!fieldClass) return;
@@ -1624,7 +1669,14 @@
                             $target.trigger('change'); // Trigger change for category input
                         
                     }
+                }else if (fieldClass === 'capitalize_date' && $otherRow[0] !== row[0]) {
+                   const $target = $otherRow.find(`.${fieldClass}`);
+                    if ($target.length) {
+                         $target.val(value);
+                         $('.capitalize_date').val(value);
+                       
                 }
+            }
             });
             calculateTotals();
         }

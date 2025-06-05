@@ -3321,9 +3321,9 @@ class FinancialPostingHelper
         foreach ($asset_details as $docItemKey => $docItem) {
             $itemValue = 0;
             $orgCurrencyCost = 0;
-            $asset = FixedAssetRegistration::find($docItem->asset_id);
+            $asset = FixedAssetRegistration::find((int)$docItem->asset_id);
             //$asset->updateTotalDep();
-            $docValue = $docItem->dep_amount;
+            $docValue = (float)$docItem->dep_amount;
             $assetsCreditAmount = $docValue;
             $assetsLedgerId = $asset->ledger_id;
             $assetsLedgerGroupId = $asset->ledger_group_id;
@@ -4235,7 +4235,7 @@ class FinancialPostingHelper
         //Assign Credit and Debit amount for tally check
         $totalCreditAmount = 0;
         $totalDebitAmount = 0;
-        $assetsAmount = $document->current_value;
+        $assetsAmount = (float)$document->current_value;
 
 
         //Status to check if all ledger entries were properly set
@@ -4246,18 +4246,6 @@ class FinancialPostingHelper
         $oldLedgerGroup = Group::find($oldLedgerGroupId);
         if (!isset($oldLedger) || !isset($oldLedgerGroup)) {
             $ledgerErrorStatus = self::ERROR_PREFIX . 'Old Asset Account not setup';
-        }
-        $newLedgerId = $document->ledger_id;
-        $newLedgerGroupId = $document->ledger_group_id;
-        $newLedger = Ledger::find($newLedgerId);
-        $newLedgerGroup = Group::find($newLedgerGroupId);
-        if (!isset($newLedger) || !isset($newLedgerGroup)) {
-            $ledgerErrorStatus = self::ERROR_PREFIX . 'New Asset Account not setup';
-        }
-
-
-        if ($oldLedgerId == $newLedgerId) {
-            $ledgerErrorStatus = self::ERROR_PREFIX . 'Old Asset Ledger cannot be the same as New Asset Ledger';
         }
         array_push($postingArray[self::OLD_ASSET], [
             'ledger_id' => $oldLedgerId,
@@ -4270,19 +4258,53 @@ class FinancialPostingHelper
             'debit_amount' => 0,
             'debit_amount_org' => 0,
         ]);
+        $asset_details = json_decode($document->sub_assets);
+           foreach ($asset_details as $docItemKey => $docItem) {
+            $docValue = (float)$docItem->current_value;
+            $assetsCreditAmount = $docValue;
+            $newLedgerId = $docItem->ledger;
+            $newLedgerGroupId = $docItem->ledger_group;
 
 
-        array_push($postingArray[self::NEW_ASSET], [
-            'ledger_id' => $newLedgerId,
-            'ledger_group_id' => $newLedgerGroupId,
-            'ledger_code' => $newLedger?->code,
-            'ledger_name' => $newLedger?->name,
-            'ledger_group_code' => $newLedgerGroup?->name,
-            'credit_amount' => 0,
-            'credit_amount_org' => 0,
-            'debit_amount' => $assetsAmount,
-            'debit_amount_org' => $assetsAmount,
-        ]);
+            $newLedger = Ledger::find($docItem->ledger);
+            $newLedgerGroup = Group::find($docItem->ledger_group);
+            //LEDGER NOT FOUND
+            if (!isset($newLedger) || !isset($newLedgerGroup)) {
+                $ledgerErrorStatus = self::ERROR_PREFIX . 'New Assets Account not setup';
+                break;
+            }
+
+
+            if ($oldLedgerId == $newLedgerId) {
+                $ledgerErrorStatus = self::ERROR_PREFIX . 'Old Asset Ledger cannot be the same as New Asset Ledger';
+                break;
+            }
+           
+            //Check for same ledger and group in SALES ACCOUNT
+            $existingLedger = array_filter($postingArray[self::NEW_ASSET], function ($posting) use ($newLedgerId, $newLedgerGroupId) {
+                return $posting['ledger_id'] == $newLedgerId && $posting['ledger_group_id'] == $newLedgerGroupId;
+            });
+            //Ledger found
+            if (count($existingLedger) > 0) {
+                $existingIndex = array_key_first($existingLedger);
+                $postingArray[self::NEW_ASSET][$existingIndex]['debit_amount'] +=  $assetsCreditAmount;
+                $postingArray[self::NEW_ASSET][$existingIndex]['debit_amount_org'] +=  $assetsCreditAmount;
+            } else { //Assign a new ledger
+                array_push($postingArray[self::NEW_ASSET], [
+                    'ledger_id' => $newLedgerId,
+                    'ledger_group_id' => $newLedgerGroupId,
+                    'ledger_code' => $newLedger?->code,
+                    'ledger_name' => $newLedger?->name,
+                    'ledger_group_code' => $newLedgerGroup?->name,
+                    'credit_amount' => 0,
+                    'credit_amount_org' => 0,
+                    'debit_amount' => $assetsCreditAmount,
+                    'debit_amount_org' => $assetsCreditAmount,
+                ]);
+            }
+        }
+     
+        
 
 
         if ($ledgerErrorStatus) {

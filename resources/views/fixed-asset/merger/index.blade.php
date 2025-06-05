@@ -196,6 +196,8 @@
 	</div>
 @endsection
 @section('scripts')
+<script type="text/javascript" src="{{asset('assets/js/modules/finance-table.js')}}"></script>
+
     <script>
         $(window).on('load', function() {
             if (feather) {
@@ -290,5 +292,6 @@
 	 
  
 });	
+ handleRowSelection('.datatables-basic');
 </script>
 @endsection

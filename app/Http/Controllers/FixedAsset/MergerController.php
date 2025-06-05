@@ -175,7 +175,7 @@ class MergerController extends Controller
         }
         $currNumber = $r->revisionNumber;
         if ($currNumber) {
-            $data = FixedAssetMergerHistory::withDefaultGroupCompanyOrg()->findorFail($id);
+            $data = FixedAssetMergerHistory::where('source_id',$id)->first();
         } else {
             $data = FixedAssetMerger::withDefaultGroupCompanyOrg()->findorFail($id);
         }
