@@ -388,6 +388,7 @@
 </script>
 <script>
      function removeZeroRows() {
+        $('.preloader').show();
         $('.zero_btn').css("display", "none");
         $('.zero_clear').css("display", "");
         let selectors = ['#tot2','#tot1','#GPco','#GLco','#grossLoss','#grossProfit','#closing','#opening', '#purchase', '#directExpense', '#indirectExpense', '#salesAccount', '#directIncome', '#indirectIncome'];
@@ -395,12 +396,15 @@
         selectors.forEach(function(selector) {
             if ($(selector).text().trim() === "0") {
                 $(selector).closest("tr").remove(); // Remove the entire row
+                $('.preloader').hide();
             }
         });
 
         $(".filter_zero").each(function() {
+            $('.preloader').show();
             if ($(this).text().trim() === "0") {
                 $(this).closest("tr").remove(); // Remove the entire row
+                $('.preloader').hide();
             }
         });
     }
@@ -413,7 +417,7 @@
         if (filteredValues.length>0) {
             obj.organization_id=filteredValues
         }
-
+        $('.preloader').show();
         $.ajax({
             headers: {'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')},
             type    :"POST",
@@ -423,6 +427,7 @@
                 responseType: 'blob'
             },
             success: function(data, status, xhr) {
+                $('.preloader').hide();
                 var link = document.createElement('a');
                 var url = window.URL.createObjectURL(data);
                 link.href = url;
@@ -435,6 +440,7 @@
                 document.body.removeChild(link);
             },
             error: function(xhr, status, error) {
+                $('.preloader').hide();
                 console.log('Export failed:', error);
             }
         });
@@ -514,6 +520,7 @@
         // Filter record
         $(".apply-filter").on("click", function() {
             // Hide the modal
+            $('.preloader').show();
             $(".modal").modal("hide");
             $('#collapse-all').click();
             $('#tableData').html('');
@@ -545,7 +552,7 @@
                 obj.organization_id=filteredValues
             }
 
-
+            $('.preloader').show();
             $.ajax({
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -555,6 +562,7 @@
                 dataType: "JSON",
                 data: obj,
                 success: function(data) {
+                    $('.preloader').hide();
                     $('#opening').text((data['data']['opening']).toLocaleString('en-IN'));
                     $('#purchase').text((data['data']['purchase']).toLocaleString('en-IN'));
                     $('#directExpense').text((data['data']['directExpense']).toLocaleString('en-IN'));
@@ -635,7 +643,7 @@ if (data['data']['netLoss'] == 0) {
                 if (filteredValues.length>0) {
                     obj.organization_id=filteredValues
                 }
-
+                $('.preloader').show();
                 $.ajax({
                     headers: {
                         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -645,6 +653,7 @@ if (data['data']['netLoss'] == 0) {
                     dataType: "JSON",
                     data: obj,
                     success: function(data) {
+                        $('.preloader').hide();
                         $('#check'+id).val(id);
                         if (data['data'].length > 0) {
                             let html = '';
@@ -670,8 +679,17 @@ if (data['data']['netLoss'] == 0) {
                 let baseUrl = currentHref.split('?')[0]; // remove old query params if any
 
                 // Append new query parameters
-                let updatedUrl = `${baseUrl}?date=${encodeURIComponent($('#fp-range').val())}&cost_center_id=${encodeURIComponent($('#cost_center_id').val())}`;
-        $(this).attr('href', updatedUrl);
+                let params = [];
+
+                const date = $('#fp-range').val()?.trim();
+                const costCenterId = $('#cost_center_id').val()?.trim();
+
+                if (date) params.push(`date=${encodeURIComponent(date)}`);
+                if (costCenterId) params.push(`cost_center_id=${encodeURIComponent(costCenterId)}`);
+                let updatedUrl = params.length > 0 ? `${baseUrl}?${params.join('&')}` : baseUrl;
+
+                    // let updatedUrl = `${baseUrl}?date=${encodeURIComponent($('#fp-range').val())}&cost_center_id=${encodeURIComponent($('#cost_center_id').val())}`;
+                $(this).attr('href', updatedUrl);
 
             });
                         }
@@ -733,7 +751,7 @@ if (data['data']['netLoss'] == 0) {
                 if (filteredValues.length>0) {
                     obj.organization_id=filteredValues
                 }
-
+                $('.preloader').show();
                 $.ajax({
                     headers: {'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')},
                     type    :"POST",
@@ -741,6 +759,7 @@ if (data['data']['netLoss'] == 0) {
                     dataType:"JSON",
                     data    :obj,
                     success: function(res) {
+                        $('.preloader').hide();
                         console.log(res);
                         if (res['data'].length > 0) {
                             res['data'].forEach(data => {
@@ -773,8 +792,16 @@ if (data['data']['netLoss'] == 0) {
                 let baseUrl = currentHref.split('?')[0]; // remove old query params if any
 
                 // Append new query parameters
-                let updatedUrl = `${baseUrl}?date=${encodeURIComponent($('#fp-range').val())}&cost_center_id=${encodeURIComponent($('#cost_center_id').val())}`;
-        $(this).attr('href', updatedUrl);
+                let params = [];
+
+                const date = $('#fp-range').val()?.trim();
+                const costCenterId = $('#cost_center_id').val()?.trim();
+
+                if (date) params.push(`date=${encodeURIComponent(date)}`);
+                if (costCenterId) params.push(`cost_center_id=${encodeURIComponent(costCenterId)}`);
+                let updatedUrl = params.length > 0 ? `${baseUrl}?${params.join('&')}` : baseUrl;
+                // let updatedUrl = `${baseUrl}?date=${encodeURIComponent($('#fp-range').val())}&cost_center_id=${encodeURIComponent($('#cost_center_id').val())}`;
+                $(this).attr('href', updatedUrl);
 
             });
                         }
