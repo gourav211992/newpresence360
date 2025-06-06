@@ -298,8 +298,8 @@
             }
 
             // Flat Date picker (if necessary)
-            if (dt_date_table.length) {
-                dt_date_table.flatpickr({
+            if (dt_basic_table.length) {
+                dt_basic_table.flatpickr({
                     monthSelectorType: 'static',
                     dateFormat: 'm/d/Y'
                 });
