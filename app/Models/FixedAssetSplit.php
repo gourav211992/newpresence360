@@ -190,7 +190,7 @@ class FixedAssetSplit extends Model
         $old = FixedAssetSub::find((int)$request->sub_asset_id);
         if ($old){
             if($old->last_dep_date!=$old->capitalize_date){
-                $old->expiry_date = $request->capitalize_date;
+                $old->expiry_date = Carbon::parse($request->capitalize_date)->addDay()->format('Y-m-d');
                 $old->save();
             }else{
                 $old->expiry_date = $old->last_dep_date;

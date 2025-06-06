@@ -12,6 +12,7 @@ use App\Helpers\Helper;
 use Carbon\Carbon;
 use App\Helpers\ConstantHelper;
 use App\Models\Group;
+use App\Helpers\InventoryHelper;
 
 class SetupController extends Controller
 {

@@ -24,7 +24,6 @@
                             <th width="80px;">Quantity</th>
                             <th width="250px;">QR/Bar Code No.</th>
                             <th width="600px;">Storage Point</th>
-                            <th width="250px;">Storage No.</th>
                             <th width="50px;">Action</th>
                         </tr>
                     </thead>

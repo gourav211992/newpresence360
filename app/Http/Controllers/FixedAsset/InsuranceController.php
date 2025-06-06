@@ -11,6 +11,7 @@ use App\Models\ErpStore;
 use App\Models\FixedAssetInsurance;
 use Carbon\Carbon;
 use App\Models\ErpAssetCategory;
+use App\Helpers\InventoryHelper;
 
 class InsuranceController extends Controller
 {
@@ -73,7 +74,7 @@ class InsuranceController extends Controller
             ->whereNotNull('asset_code')
             ->whereNotNull('asset_name')
             ->get();
-        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
+        $locations = InventoryHelper::getAccessibleLocations()->where('status','active')->get();
         $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         return view('fixed-asset.insurance.create', compact('assets','locations','categories'));
     }
@@ -106,7 +107,7 @@ class InsuranceController extends Controller
             ->whereNotNull('asset_code')
             ->whereNotNull('asset_name')
             ->get();
-        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
+        $locations = InventoryHelper::getAccessibleLocations()->where('status','active')->get();
         $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         return view('fixed-asset.insurance.show', compact('assets', 'data','locations','categories'));
     }
@@ -118,7 +119,7 @@ class InsuranceController extends Controller
             ->whereNotNull('asset_code')
             ->whereNotNull('asset_name')
             ->get();
-        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
+        $locations = InventoryHelper::getAccessibleLocations()->where('status','active')->get();
         $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         return view('fixed-asset.insurance.edit', compact('assets', 'data','locations','categories'));
     }

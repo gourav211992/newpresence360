@@ -26,7 +26,7 @@ use App\Models\WhItemMapping;
 use App\Helpers\ItemHelper;
 use App\Helpers\ConstantHelper;
 use App\Helpers\InventoryHelper;
-
+use App\Models\MrnItemLocation;
 use Illuminate\Support\Facades\Log;
 
 
@@ -173,40 +173,65 @@ class StoragePointHelper
     }
 
     // Save Storage Points
-    public static function saveStoragePoints($stockLedger, $storagePoints)
+    public static function saveStoragePoints($documentHeader, $documentDetailId=NULL, $bookType, $documentStatus, $transactionType = NULL, $stockReservation = NULL)
     {
         $user = Helper::getAuthenticatedUser();
         $data = array();
         try{
-            if(empty($storagePoints)){
+            if(empty($documentDetailId)){
                 $message = "No storage points found.";
                 $data = self::errorResponse($message);
                 return $data;
             }
-            $stockLedger = StockLedger::find($stockLedger->id);
-            if(!$stockLedger){
+
+            $stockLedger = StockLedger::withDefaultGroupCompanyOrg()
+                ->where('document_header_id',$documentHeader->id)
+                ->whereIn('document_detail_id',$documentDetailId)
+                ->where('store_id',$documentHeader->store_id)
+                ->where('sub_store_id',$documentHeader->sub_store_id)
+                ->where('book_type','=',$bookType)
+                ->whereIn('document_status', ['approved','posted','approval_not_required'])
+                ->whereNull('utilized_id')
+                ->get();
+
+            if(empty($stockLedger)){
                 $message = "Stock Ledger not found.";
                 $data = self::errorResponse($message);
                 return $data;
             }
-            foreach($storagePoints as $storagePoint){
-                $storagePoint = json_decode($storagePoint, true);
-                $stockLedgerStoragePoint = new StockLedgerStoragePoint();
-                $stockLedgerStoragePoint->stock_ledger_id = $stockLedger->id;
-                $stockLedgerStoragePoint->item_id = $stockLedger->item_id;
-                $stockLedgerStoragePoint->store_id = $stockLedger->store_id;
-                $stockLedgerStoragePoint->sub_store_id = $stockLedger->sub_store_id;
-                $stockLedgerStoragePoint->wh_detail_id = $storagePoint['wh_detail_id'];
-                $stockLedgerStoragePoint->quantity = $storagePoint['inventory_uom_qty'];
-                $stockLedgerStoragePoint->status = $storagePoint['status'];
-                $stockLedgerStoragePoint->save();
-            }
 
+            foreach($stockLedger as $val){
+                $mrnItemLocations = MrnItemLocation::with(
+                    [
+                        'mrnHeader',
+                        'mrnDetail',
+                    ]
+                )
+                ->where('mrn_header_id', $val->document_header_id)
+                ->where('mrn_detail_id', $val->document_detail_id)
+                ->whereNotNull('storage_number')
+                ->whereNotNull('packet_number')
+                ->get();
+
+                foreach($mrnItemLocations as $mrnItemLocation){
+                    $stockLedgerStoragePoint = new StockLedgerStoragePoint();
+                    $stockLedgerStoragePoint->stock_ledger_id = $val->id;
+                    $stockLedgerStoragePoint->item_id = $val->item_id;
+                    $stockLedgerStoragePoint->store_id = $val->store_id;
+                    $stockLedgerStoragePoint->sub_store_id = $val->sub_store_id;
+                    $stockLedgerStoragePoint->wh_detail_id = $mrnItemLocation->wh_detail_id;
+                    $stockLedgerStoragePoint->quantity = $mrnItemLocation->inventory_uom_qty;
+                    $stockLedgerStoragePoint->packet_number = $mrnItemLocation->packet_number;
+                    $stockLedgerStoragePoint->storage_number = $mrnItemLocation->storage_number;
+                    $stockLedgerStoragePoint->status = $documentStatus;
+                    $stockLedgerStoragePoint->save();
+                }
+            }
+            
             $message = "Storage points saved successfully.";
             $data = self::successResponse($message, $stockLedger);
             return $data;
         } catch(\Exception $e){
-            dd($e->getMessage());
             $data = self::errorResponse($e->getMessage());
             return $data;
         }
@@ -221,7 +246,6 @@ class StoragePointHelper
             "message" => $message,
             "data" => null,
         ];
-
     }
 
     // Success Response

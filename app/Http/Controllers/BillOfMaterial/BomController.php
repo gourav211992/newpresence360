@@ -1514,8 +1514,8 @@ class BomController extends Controller
     public function bomReport(Request $request)
     {
         $pathUrl = route('sale.order.index');
-        $orderType = ConstantHelper::SO_SERVICE_ALIAS;
-        $soItems = ::whereHas('header', function ($headerQuery) use($orderType, $pathUrl, $request) {
+        $orderType = ConstantHelper::BOM_SERVICE_ALIAS;
+        $soItems = Bom::whereHas('header', function ($headerQuery) use($orderType, $pathUrl, $request) {
             $headerQuery -> where('document_type', $orderType)-> withDefaultGroupCompanyOrg() -> withDraftListingLogic();
             //Customer Filter
             $headerQuery = $headerQuery -> when($request -> customer_id, function ($custQuery) use($request) {

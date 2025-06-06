@@ -24,15 +24,9 @@ class PutAwayDetail extends Model
         'inventoryUom' => 'inventory_uom_id'
     ];
 
-    protected $appends = [
-        'cgst_value',
-        'sgst_value',
-        'igst_value'
-    ];
-
-    public function mrnHeader()
+    public function mrnDetail()
     {
-        return $this->belongsTo(MrnHeader::class);
+        return $this->belongsTo(MrnDetail::class, 'mrn_detail_id');
     }
 
     public function so()
@@ -47,7 +41,7 @@ class PutAwayDetail extends Model
 
     public function attributes()
     {
-        return $this->hasMany(PutAwayAttribute::class);
+        return $this->hasMany(PutAwayAttribute::class, 'detail_id');
     }
 
     public function storage_points()

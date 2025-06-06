@@ -1680,6 +1680,8 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
             Route::get('/report/filter', 'getReportFilter')->name('report.filter');
             Route::post('/add-scheduler', 'addScheduler')->name('add.scheduler');
             Route::get('/order/report', 'purchaseReturnReport')->name('order.report');
+            Route::get('/warehouse/check-setup', 'checkWarehouseSetup')->name('warehouse-setup');
+            Route::get('/warehouse/item-uom-info', 'warehouseItemUomInfo')->name('warehouse-item-uom-info');
             Route::get('/{id}/print-labels', 'printLabels')->name('print-labels');
             Route::get('/{id}/print-barcodes', 'printBarcodes')->name('print-barcodes');
 

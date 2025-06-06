@@ -275,8 +275,8 @@
                                                                 name="last_dep_date" class="form-control indian-number" />
                                                         </div>
                                                     </div>
-                                                    <input type="hidden" id="capitalize_date_old"
-                                                        name="capitalize_date" />
+                                                    <input type="hidden" id="capitalize_date_old" name="capitalize_date"
+                                                        value="{{ $data->capitalize_date }}" />
 
                                                     <!-- Current Value -->
                                                     <div class="col-md-3">
@@ -355,7 +355,6 @@
                                                                 <th width="200">Sub Asset Code</th>
                                                                 <th width="200">Category</th>
                                                                 <th width="200">Ledger</th>
-                                                                <th width="200">Ledger Group</th>
                                                                 <th width="50">Est. Life</th>
                                                                 <th width="200">Capitalize Date</th>
                                                                 <th width="50">Quantity</th>
@@ -416,11 +415,10 @@
                                                                                 </option>
                                                                             @endforeach
                                                                         </select>
-                                                                    </td>
-                                                                    <td>
                                                                         <select
-                                                                            class="ledger-group form-select mw-100 mb-25"
-                                                                            required></select>
+                                                                            class="d-none ledger-group form-select mw-100 mb-25"
+                                                                            required>
+                                                                        </select>
                                                                     </td>
                                                                     <td>
                                                                         <input type="text"
@@ -520,7 +518,7 @@
                                                                 <option value="">Select</option>
                                                                 @foreach ($ledgers as $ledger)
                                                                     <option value="{{ $ledger->id }}"
-                                                                        {{ $data->ledger_id == $ledger->id ? 'selected' : '' }}>
+                                                                        {{ $data?->asset?->ledger_id == $ledger->id ? 'selected' : '' }}>
                                                                         {{ $ledger->name }}
                                                                     </option>
                                                                 @endforeach
@@ -529,14 +527,17 @@
                                                         </div>
                                                     </div>
 
-                                                    <div class="col-md-3 d-none">
+                                                    <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Ledger Group <span
                                                                     class="text-danger">*</span></label>
                                                             <select class="form-select select2" id="ledger_group"
-                                                                >
-                                                                <option value="{{ $data->ledger_group_id }}">
-                                                                    {{ $data?->ledgerGroup?->name }}</option>
+                                                                name="ledger_group_id">
+                                                                @foreach ($groups as $group)
+                                                                    <option value="{{ $group->id }}"
+                                                                        {{ $group->id == $data->ledger_group_id ? 'selected' : '' }}>
+                                                                        {{ $group?->name }}</option>
+                                                                @endforeach
                                                             </select>
                                                         </div>
                                                     </div>
@@ -547,7 +548,7 @@
                                                                     class="text-danger">*</span></label>
                                                             <input type="date" class="form-control"
                                                                 id="capitalize_date" readonly
-                                                                value="{{ $data->capitalize_date }}"/>
+                                                                value="{{ $data->capitalize_date }}" />
                                                         </div>
                                                     </div>
 
@@ -723,6 +724,24 @@
         });
 
         $('#add_new_sub_asset').on('click', function() {
+            let allInputsFilled = true;
+
+            $('.mrntableselectexcel').find('input, select').each(function() {
+                if ($(this).val() === null || $(this).val().toString().trim() === '') {
+                    allInputsFilled = false;
+                    $(this).addClass('is-invalid'); // highlight empty input/select
+                } else {
+                    $(this).removeClass('is-invalid');
+                }
+            });
+
+            if (!allInputsFilled) {
+                showToast('warning',
+                    'Please complete all input fields in the existing row(s) before adding a new one.');
+                return;
+            }
+
+
             const subAssetCode = $('#sub_asset_id').val();
             genereateSubAssetRow(subAssetCode);
         });
@@ -766,14 +785,13 @@
                                                                     </option>
                                                                 @endforeach
                                                             </select>
-                                                            </td>
-              <td>
-              <select class="ledger-group form-select mw-100 mb-25" required>
+                                                                   <select class="d-none ledger-group form-select mw-100 mb-25" required>
                 </select>
-                </td>
+            </td>
               <td>
                 <input type="text" required class="form-control mw-100 mb-25 life" oninput="syncInputAcrossSameAssets(this)"> 
                 </td>
+                
               <td>
                 <input type="date" required class="form-control mw-100 mb-25 capitalize_date" oninput="syncInputAcrossSameAssets(this)"/>
               </td>
@@ -794,8 +812,32 @@
             $(".mrntableselectexcel tr").removeClass('trselected');
             $('.mrntableselectexcel').append(newRow);
             initializeCategoryAutocomplete('.category-input');
+            if ($('#last_dep_date').val() != "") {
+                console.log("last_dep");
+                let lastDepDate = new Date($('#last_dep_date').val());
+                lastDepDate.setDate(lastDepDate.getDate() - 1);
+                let formattedDate = lastDepDate.toISOString().split('T')[0];
+                let today = new Date().toISOString().split('T')[0];
+                $('.capitalize_date')
+                    .removeAttr('min')
+                    .removeAttr('max').prop('readonly', true).prop('required', false);
+                $('#last_dep_date').trigger('change');
+
+
+
+            } else {
+                $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max',
+                    '{{ $financialEndDate }}').prop('readonly', false).prop('required', true);
+            }
+
+            removeLedger();
+
             //updateSubAssetCodes();
         }
+        $('#Email').on('change', function() {
+            let isChecked = $(this).is(':checked');
+            $('.form-check-input').not(this).prop('checked', isChecked);
+        });
 
 
         $('#delete_new_sub_asset').on('click', function() {
@@ -944,10 +986,13 @@
 
 
         $(document).ready(function() {
-            if($('#last_dep_date').val()!=""){
+            initializeCategoryAutocomplete('.category-input');
+
+            removeLedger();
+            if ($('#last_dep_date').val() != "") {
                 $('.capitalize_date')
                     .removeAttr('min')
-                    .removeAttr('max').prop('readonly', true);
+                    .removeAttr('max').prop('readonly', true).prop('required', false);
             }
             $('#last_dep_date').trigger('change');
             $(document).on('change', '.ledger', function() {
@@ -1034,9 +1079,10 @@
                             .val('')
                             .removeAttr('min')
                             .removeAttr('max')
-                            .prop('readonly', true);
+                            .prop('readonly', true).prop('required', false);
                         $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr(
-                            'max', '{{ $financialEndDate }}').prop('readonly', false);
+                            'max', '{{ $financialEndDate }}').prop('readonly', false).prop(
+                            'required', true);
 
                         $('#current_value_asset').val('');
 
@@ -1054,10 +1100,10 @@
                                 .val('')
                                 .removeAttr('min')
                                 .removeAttr('max')
-                                .prop('readonly', true);
+                                .prop('readonly', true).prop('required', false);
                             $('.capitalize_date').attr('min', '{{ $financialStartDate }}')
                                 .attr('max', '{{ $financialEndDate }}').prop('readonly',
-                                false);
+                                    false);
 
                             $('#current_value_asset').val('');
                             add_blank();
@@ -1120,9 +1166,10 @@
                             .val('')
                             .removeAttr('min')
                             .removeAttr('max')
-                            .prop('readonly', true);
+                            .prop('readonly', true).prop('required', false);
                         $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr(
-                            'max', '{{ $financialEndDate }}').prop('readonly', false);
+                            'max', '{{ $financialEndDate }}').prop('readonly', false).prop(
+                            'required', true);
                         $('#capitalize_date_old').val(sub_asset.capitalize_date);
 
 
@@ -1137,10 +1184,11 @@
                                 .val(formattedDate)
                                 .attr('min', formattedDate)
                                 .attr('max', today)
-                                .prop('readonly', false);
+                                .prop('readonly', false).prop('required', true);
                             $('.capitalize_date')
                                 .removeAttr('min')
-                                .removeAttr('max').prop('readonly', true);
+                                .removeAttr('max').prop('readonly', true).prop('required',
+                                    false);
                         }
 
                         $('.capitalize_date').val(sub_asset.last_dep_date);
@@ -1162,10 +1210,10 @@
                                 .val('')
                                 .removeAttr('min')
                                 .removeAttr('max')
-                                .prop('readonly', true);
+                                .prop('readonly', true).prop('required', false);
                             $('.capitalize_date').attr('min', '{{ $financialStartDate }}')
                                 .attr('max', '{{ $financialEndDate }}').prop('readonly',
-                                false);
+                                    false);
 
                             $('#sub_asset_id').val('');
                             $('#category').val("");
@@ -1359,9 +1407,9 @@
                 .val('')
                 .removeAttr('min')
                 .removeAttr('max')
-                .prop('readonly', true);
+                .prop('readonly', true).prop('required', false);
             $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max', '{{ $financialEndDate }}')
-                .prop('readonly', false);
+                .prop('readonly', false).prop('required', true);
 
             $('#current_value_asset').val('');
             loadLocation();
@@ -1530,15 +1578,13 @@
                                                                     </option>
                                                                 @endforeach
                                                             </select>
-                                                             </td>
-              <td>
-                <select class="ledger-group form-select mw-100 mb-25" required>
+                                                                   <select class="d-none ledger-group form-select mw-100 mb-25" required>
                 </select>
-                
-              </td>
-              <td>
+                                                             </td>
+            <td>
                 <input type="text" required class="form-control mw-100 mb-25 life" oninput="syncInputAcrossSameAssets(this)"> 
                 </td>
+              
               <td>
                 <input type="date" required class="form-control mw-100 mb-25 capitalize_date" oninput="syncInputAcrossSameAssets(this)"/>
               </td>
@@ -1558,6 +1604,7 @@
             </tr>`;
             $('.mrntableselectexcel').append(blank_row);
             initializeCategoryAutocomplete('.category-input');
+            renderLedgerSelects();
 
             if ($('#last_dep_date').val() != "") {
                 console.log("last_dep");
@@ -1567,14 +1614,16 @@
                 let today = new Date().toISOString().split('T')[0];
                 $('.capitalize_date')
                     .removeAttr('min')
-                    .removeAttr('max').prop('readonly', true);
-                $('#last_dep_date').triger('change');
+                    .removeAttr('max').prop('readonly', true).prop('required', false);
+                $('#last_dep_date').trigger('change');
+                 
+                       
 
 
 
             } else {
                 $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max',
-                    '{{ $financialEndDate }}').prop('readonly', false);
+                    '{{ $financialEndDate }}').prop('readonly', false).prop('required', true);
             }
 
 
@@ -1621,6 +1670,8 @@
                 selectedDate.setDate(selectedDate.getDate() + 1);
                 let nextDate = selectedDate.toISOString().split('T')[0];
                 $('.capitalize_date').val(nextDate);
+                $('#capitalize_date_old').val(nextDate);
+
             }
         });
 
@@ -1723,6 +1774,113 @@
             $('#salvage_value').val(totalSalvageValue.toFixed(2));
 
 
+        }
+
+        function initializeCategoryAutocomplete(selector) {
+
+            let salvage_rate = '{{ $dep_percentage }}';
+            $(selector).autocomplete({
+                source: function(request, response) {
+                    $.ajax({
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        },
+                        url: '{{ route('finance.fixed-asset.category-search') }}',
+                        type: 'POST',
+                        dataType: 'json',
+                        data: {
+                            q: request.term,
+                        },
+                        success: function(data) {
+                            response(data.map(function(item) {
+                                return {
+                                    label: item.name,
+                                    value: item.id,
+                                    ledger: item.setup.ledger_id,
+                                    life: item.setup.expected_life_years,
+                                    salvage: item.setup.salvage_percentage ??
+                                        salvage_rate,
+                                };
+                            }));
+                        },
+                        error: function() {
+                            response([]);
+                        }
+                    });
+                },
+                minLength: 0,
+                select: function(event, ui) {
+
+                    //syncInputAcrossSameAssets('category');
+                    //syncInputAcrossSameAssets('category-input');
+                    const row = $(this).closest('tr');
+                    row.find('.category').val(ui.item.value);
+                    $(this).val(ui.item.label);
+                    row.find('.ledger').val(ui.item.ledger).trigger('change');
+                    row.find('.life').val(ui.item.life);
+                    row.find('.salvage_per').val(ui.item.salvage);
+
+                    syncInputAcrossSameAssets(this);
+                    syncInputAcrossSameAssets($('.life'));
+                    syncInputAcrossSameAssets($('.ledger'));
+                    syncInputAcrossSameAssets($('.salvage_per'));
+                    calculateTotals();
+
+
+
+
+                    return false;
+                },
+                change: function(event, ui) {
+                    const row = $(this).closest('tr');
+                    if (!ui.item) {
+                        const row = $(this).closest('tr');
+                        row.find('.category').val('');
+                        $(this).val('');
+                        row.find('.ledger').val('').trigger('change');
+                        row.find('.life').val('');
+                        row.find('.salvage_per').val('');
+
+                        syncInputAcrossSameAssets(this);
+                        syncInputAcrossSameAssets($('.life'));
+                        syncInputAcrossSameAssets($('.ledger'));
+                        syncInputAcrossSameAssets($('.salvage_per'));
+                        calculateTotals();
+                    }
+                    return false;
+                }
+
+            }).focus(function() {
+                if (this.value === '') {
+                    $(this).autocomplete('search');
+                }
+            });
+
+        }
+        const allLedgers = @json($ledgers);
+
+        function removeLedger() {
+            let excludedLedgerId = $('#ledger').val();
+            $('.ledger').each(function() {
+                $(this).find(`option[value="${excludedLedgerId}"]`).remove();
+            });
+        }
+
+        function renderLedgerSelects() {
+            let excludedId = parseInt($('#ledger').val());
+            console.log($('#ledger').val());
+
+            $('.ledger').each(function() {
+               const $select = $(this);
+            $select.empty().append('<option value=""></option>');
+               allLedgers.forEach(ledger => {
+                    if (ledger.id !== excludedId) {
+                        console.log(ledger.id,excludedId);
+                        $select.append(
+                        `<option value="${ledger.id}">${ledger.name}</option>`);
+                    }
+                });
+            });
         }
     </script>
 

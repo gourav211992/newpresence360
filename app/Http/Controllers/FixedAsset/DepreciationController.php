@@ -17,6 +17,7 @@ use App\Models\ErpStore;
 use Carbon\Carbon;
 use App\Helpers\ConstantHelper;
 use App\Models\FixedAssetRegistration;
+use App\Helpers\InventoryHelper;
 use DateTime;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -79,7 +80,7 @@ class DepreciationController extends Controller
         $financialStartDate = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
 
 
-        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+        $locations = InventoryHelper::getAccessibleLocations();
 
 
         return view('fixed-asset.depreciation.create', compact('financialEndDate', 'financialStartDate', 'locations', 'series', 'periods', 'fy', 'dep_type'));
@@ -235,7 +236,7 @@ class DepreciationController extends Controller
 
 
         $approvalHistory = Helper::getApprovalHistory($data->book_id, $id, $revNo, $data->grand_total_current_value, $data->created_by);
-        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+        $locations = InventoryHelper::getAccessibleLocations();
 
 
 

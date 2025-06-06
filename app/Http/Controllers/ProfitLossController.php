@@ -502,7 +502,7 @@ class ProfitLossController extends Controller
             });
         }])
         ->get()
-         ->map(function($ledger) use($childrens,$currency,$startDate,$organizations,$cost,$fy,$carry) {
+         ->map(function($ledger) use($childrens,$currency,$startDate,$organizations,$cost,$fy,$carry,$location) {
                            
                     // Set to 0 if the sum is null
                     $ledger->details_sum_debit_amt = $ledger->details_sum_debit_amt ?? 0;

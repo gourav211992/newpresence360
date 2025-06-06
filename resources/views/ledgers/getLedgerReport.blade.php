@@ -139,7 +139,7 @@
     var companies = {!! json_encode($companies) !!};
 
 	function exportLedgerReport(){
-
+        $('.preloader').show();
         $.ajax({
             headers: {'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')},
             type    :"POST",
@@ -156,6 +156,7 @@
                 responseType: 'blob'
             },
             success: function(data, status, xhr) {
+                $('.preloader').hide();
                 var link = document.createElement('a');
                 var url = window.URL.createObjectURL(data);
                 link.href = url;
@@ -165,6 +166,7 @@
                 document.body.removeChild(link);
             },
             error: function(xhr, status, error) {
+                $('.preloader').hide();
                 console.log('Export failed:', error);
             }
         });
@@ -199,6 +201,7 @@
                                     'content') // CSRF token
                             },
                             success: function(response) {
+                                $('.preloader').hide();
                                 groupDropdown.empty(); // Clear previous options
 
                                 response.forEach(item => {
@@ -211,6 +214,7 @@
 
                             },
                             error: function(xhr) {
+                                $('.preloader').hide();
                                 let errorMessage =
                                 'Error fetching group items.'; // Default message
 
@@ -240,6 +244,7 @@
         url: url, // Use the dynamically constructed URL
         dataType: "JSON",
         success: function(data) {
+            $('.preloader').hide();
             if (data.length > 0) {
                 $.each(data, function(key, value) {
                     $("#ledger_id").append("<option value='" + value['id'] + "'>" + value['name'] + "</option>");
@@ -247,6 +252,7 @@
             }
         },
         error: function(xhr, status, error) {
+            $('.preloader').hide();
             console.error("Error: " + error);
             showToast('error',"Failed to fetch ledgers. Please try again.");
         }
@@ -256,6 +262,7 @@
 
     $(document).on('submit', '#form', function (e) {
 		e.preventDefault();
+        $('.preloader').show();
 
 		$('#mytable tbody').remove();
 		$('#mytable tfoot').remove();
@@ -277,9 +284,11 @@
 
 			},
 			success: function(response) {
+                $('.preloader').hide();
 				$('#mytable').append(response);
 			},
 			error: function(xhr, status, error) {
+                $('.preloader').hide();
 				showToast('error',"Somthing went wrong, try again!!");
 				console.error(error);
 			}

@@ -17,6 +17,7 @@ use App\Helpers\FinancialPostingHelper;
 use App\Models\FixedAssetRevImpHistory;
 use App\Models\FixedAssetSub;
 use App\Models\ErpStore;
+use App\Helpers\InventoryHelper;
 use Exception;
 
 
@@ -113,7 +114,7 @@ class RevImpController extends Controller
         $dep_percentage = $organization->dep_percentage;
         $dep_type = $organization->dep_type;
         $dep_method = $organization->dep_method;
-        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+        $locations = InventoryHelper::getAccessibleLocations();
 
 
         return view('fixed-asset.revaluation-impairement.create', compact('locations', 'assets', 'series', 'assets', 'categories', 'ledgers', 'financialEndDate', 'financialStartDate', 'dep_percentage', 'dep_type', 'dep_method'));
@@ -206,7 +207,7 @@ class RevImpController extends Controller
 
         $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)->get();
 
-        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+        $locations = InventoryHelper::getAccessibleLocations();
 
         return view('fixed-asset.revaluation-impairement.show', compact('locations', 'assets', 'data', 'buttons', 'docStatusClass', 'approvalHistory', 'revision_number'));
     }
@@ -251,7 +252,7 @@ class RevImpController extends Controller
         $dep_type = $organization->dep_type;
         $dep_method = $organization->dep_method;
         $data = FixedAssetRevImp::find($id);
-        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+        $locations = InventoryHelper::getAccessibleLocations();
 
         return view('fixed-asset.revaluation-impairement.edit', compact('locations', 'data', 'assets', 'series', 'assets', 'categories', 'ledgers', 'financialEndDate', 'financialStartDate', 'dep_percentage', 'dep_type', 'dep_method'));
     }

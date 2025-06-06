@@ -96,6 +96,7 @@ class PoBulkRequest extends FormRequest
                 $rules["components.$index.qty"] = 'required|numeric|min:0.000001';
                 $rules["components.$index.rate"] = 'required|numeric|min:0.01';
                 $rules["components.$index.vendor_id"] = 'required';
+                $rules["components.$index.delivery_date"] = 'required';
             }
          }
          return $rules;

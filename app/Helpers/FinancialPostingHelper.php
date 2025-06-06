@@ -3496,21 +3496,14 @@ class FinancialPostingHelper
             );
         }
 
-        $codes = isset($document->mrnDetail->taxes)?$document->mrnDetail->taxes->pluck('ted_code')->toArray():[];
         $totaltaxes = isset($document->mrnDetail->taxes)?$document->mrnDetail->taxes->sum('ted_amount'):0;
         $taxes = isset($document->mrnDetail->taxes)?$document->mrnDetail->taxes:[];
         //Invoice to follow
         $postingArray = array(
             self::ASSET => [],
-            self::VENDOR_ACCOUNT=> []
+            self::TAX_ACCOUNT=>[],
+            self::VENDOR_ACCOUNT=> [],
         );
-       if (!empty($codes)) {
-            foreach ($codes as $code) {
-                $postingArray[$code] = [];
-            }
-        }
-
-        //Status to check if all ledger entries were properly set
         $ledgerErrorStatus = null;
         $assetValue  = $document->current_value;
         $totalValue = $assetValue + $totaltaxes;
@@ -3547,7 +3540,7 @@ class FinancialPostingHelper
                     $ledgerErrorStatus = self::ERROR_PREFIX . $tax->ted_code.' Tax Account not setup';
                 }
 
-                $postingArray[$tax->ted_code][] = [
+                $postingArray[self::TAX_ACCOUNT][] = [
                     'ledger_id' => $taxLedgerId,
                     'ledger_group_id' => $taxLedgerGroupId,
                     'ledger_code' => $taxLedger?->code,

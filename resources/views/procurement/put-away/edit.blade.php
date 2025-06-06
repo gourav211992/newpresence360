@@ -6,11 +6,11 @@
 @endsection
 @section('content')
     @php
-        $routeName = $servicesBooks['services'][0]->alias ??  "material-receipt";
-        $routeAlias = ($routeName && ($routeName == 'mrn')) ? 'material-receipt' : $routeName;
-        $routeRedirect = ($routeAlias && ($routeAlias == 'material-receipt')) ? 'material-receipts' : $routeAlias;
+        $routeName = $servicesBooks['services'][0]->alias ??  "put-away";
+        $routeAlias = ($routeName && ($routeName == 'put-away')) ? 'put-away' : $routeName;
+        $routeRedirect = ($routeAlias && ($routeAlias == 'put-away')) ? 'put-away' : $routeAlias;
     @endphp
-    <form id="mrnEditForm" class="ajax-input-form" method="POST" action="{{ route('material-receipt.update', $mrn->id) }}" data-redirect="/{{$routeRedirect}}" enctype="multipart/form-data">
+    <form id="mrnEditForm" class="ajax-input-form" method="POST" action="{{ route('put-away.update', $mrn->id) }}" data-redirect="/put-away" enctype="multipart/form-data">
         @csrf
         <input type="hidden" name="tax_required" id="tax_required" value="">
         <div class="app-content content ">
@@ -41,7 +41,7 @@
                                 <button type="button" onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0">
                                     <i data-feather="arrow-left-circle"></i> Back
                                 </button>
-                                <a href="{{ route('material-receipt.generate-pdf', $mrn->id) }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
+                                <a href="{{ route('put-away.generate-pdf', $mrn->id) }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                         stroke-linecap="round" stroke-linejoin="round" class="feather feather-printer">
                                         <polyline points="6 9 6 2 18 2 18 9"></polyline>
@@ -49,6 +49,15 @@
                                         <rect x="6" y="14" width="12" height="8"></rect>
                                     </svg>
                                     Print
+                                </a>
+                                <a href="{{ route('put-away.print-labels', $mrn->id) }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" stroke-linejoin="round" class="feather feather-printer">
+                                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                                        <rect x="6" y="14" width="12" height="8"></rect>
+                                    </svg>
+                                    Print Labels
                                 </a>
                                 @if($buttons['draft'])
                                     <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="draft">
@@ -63,12 +72,6 @@
                                 @if($buttons['approve'])
                                     <button type="button" class="btn btn-primary btn-sm" id="approved-button" name="action" value="approved"><i data-feather="check-circle"></i> Approve</button>
                                     <button type="button" id="reject-button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg> Reject</button>
-                                @endif
-                                @if($buttons['post'])
-                                    <button id="postButton" onclick="onPostVoucherOpen();" type="button" class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Post</button>
-                                @endif
-                                @if($buttons['voucher'])
-                                    <button type="button" onclick="onPostVoucherOpen('posted');" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Voucher</button>
                                 @endif
                                 @if($buttons['amend'] && intval(request('amendment') ?? 0))
                                     <button type="button" class="btn btn-primary btn-sm" id="amendmentBtn"><i data-feather="check-circle"></i> Submit</button>
@@ -167,14 +170,6 @@
                                                         <input type="text" name="reference_number" value="{{@$mrn->reference_number}}" class="form-control">
                                                     </div>
                                                 </div> -->
-                                                <div class="row align-items-center mb-1">
-                                                    <div class="col-md-3">
-                                                        <label class="form-label">LOT No </label>
-                                                    </div>
-                                                    <div class="col-md-5">
-                                                        <input type="text" name="lot_number" value="{{@$mrn->lot_number}}" class="form-control" readonly>
-                                                    </div>
-                                                </div>
                                             </div>
                                             {{-- Approval History Section --}}
                                             @include('partials.approval-history', ['document_status' => $mrn->document_status, 'revision_number' => $revision_number])
@@ -392,14 +387,8 @@
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6 text-sm-end">
-                                                    <button type="button" id="importItem" class="btn btn-sm btn-outline-primary importItem" onclick="openImportItemModal('edit', {{$mrn->id}})">
-                                                        <i data-feather="upload"></i> Import Item
-                                                    </button>
                                                     <a href="javascript:;" id="deleteBtn" class="btn btn-sm btn-outline-danger me-50">
                                                         <i data-feather="x-circle"></i> Delete
-                                                    </a>
-                                                    <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary">
-                                                        <i data-feather="plus"></i> Add New Item
                                                     </a>
                                                 </div>
                                             </div>
@@ -420,32 +409,15 @@
                                                                 <th width="240px">Item Name</th>
                                                                 <th>Attributes</th>
                                                                 <th>UOM</th>
-                                                                <th class="text-end">Recpt Qty</th>
+                                                                <th class="text-end">MRN Qty</th>
                                                                 <th class="text-end">Acpt. Qty</th>
-                                                                <th class="text-end">Rej. Qty</th>
-                                                                <th class="text-end">Rate</th>
-                                                                <th class="text-end">Value</th>
-                                                                <th>Discount</th>
-                                                                <th class="text-end">Total</th>
                                                                 <th width="50px">Action</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody class="mrntableselectexcel">
-                                                            @include('procurement.material-receipt.partials.item-row-edit')
+                                                            @include('procurement.put-away.partials.item-row-edit')
                                                         </tbody>
                                                         <tfoot>
-                                                            <tr class="totalsubheadpodetail">
-                                                                <td colspan="9"></td>
-                                                                <td class="text-end" id="totalItemValue">
-                                                                    {{@$mrn->items->sum('basic_value')}}
-                                                                </td>
-                                                                <td class="text-end" id="totalItemDiscount">
-                                                                    {{@$mrn->items->sum('discount_amount')}}
-                                                                </td>
-                                                                <td class="text-end" id="TotalEachRowAmount">
-                                                                    {{@$mrn->items->sum('net_value')}}
-                                                                </td>
-                                                            </tr>
                                                             <tr valign="top">
                                                                 <td rowspan="10" colspan="8">
                                                                     <table class="table border">
@@ -468,97 +440,11 @@
                                                                         </tbody>
                                                                     </table>
                                                                 </td>
-                                                                <td colspan="5">
-                                                                    <table class="table border mrnsummarynewsty">
-                                                                        <tr>
-                                                                            <td colspan="2" class="p-0">
-                                                                                <h6 class="text-dark mb-0 bg-light-primary py-1 px-50 d-flex justify-content-between">
-                                                                                    <strong>Document Summary</strong>
-                                                                                    <div class="addmendisexpbtn">
-                                                                                        <button type="button" class="btn p-25 btn-sm btn-outline-secondary summaryTaxBtn">{{-- <i data-feather="plus"></i> --}} Tax</button>
-                                                                                        <button type="button" class="btn p-25 btn-sm btn-outline-secondary summaryDisBtn"><i data-feather="plus"></i> Discount</button>
-                                                                                        <button type="button" class="btn p-25 btn-sm btn-outline-secondary summaryExpBtn"><i data-feather="plus"></i> Expenses</button>
-                                                                                    </div>
-                                                                                </h6>
-                                                                            </td>
-                                                                        </tr>
-                                                                        <tr class="totalsubheadpodetail">
-                                                                            <td width="55%"><strong>Sub Total</strong></td>
-                                                                            <td class="text-end" id="f_sub_total">
-                                                                                <!-- {{ number_format(@$mrn->total_item_amount, 2) }} -->
-                                                                            </td>
-                                                                        </tr>
-                                                                        <tr>
-                                                                            <td><strong>Item Discount</strong></td>
-                                                                            <td class="text-end" id="f_total_discount">
-                                                                                <!-- {{ number_format(@$mrn->item_discount, 2) }} -->
-                                                                            </td>
-                                                                        </tr>
-                                                                        @if($mrn->headerDiscount)
-                                                                            <tr id="f_header_discount_hidden">
-                                                                                <td><strong>Header Discount</strong></td>
-                                                                                <td class="text-end" id="f_header_discount">
-                                                                                    {{$mrn->headerDiscount()->sum('ted_amount')}}
-                                                                                </td>
-                                                                            </tr>
-                                                                        @else
-                                                                            <tr class="d-none" id="f_header_discount_hidden">
-                                                                                <td><strong>Header Discount</strong></td>
-                                                                                <td class="text-end" id="f_header_discount">0.00</td>
-                                                                            </tr>
-                                                                        @endif
-                                                                        <tr class="totalsubheadpodetail">
-                                                                            <td><strong>Taxable Value</strong></td>
-                                                                            <td class="text-end" id="f_taxable_value" amount="">
-                                                                                <!-- {{ number_format(@$mrn->taxable_amount, 2) }} -->
-                                                                            </td>
-                                                                        </tr>
-                                                                        <tr>
-                                                                            <td><strong>Tax</strong></td>
-                                                                            <td class="text-end" id="f_tax">
-                                                                                <!-- {{ number_format(@$mrn->total_taxes, 2) }}         -->
-                                                                            </td>
-                                                                        </tr>
-                                                                        <tr class="totalsubheadpodetail">
-                                                                            <td><strong>Total After Tax</strong></td>
-                                                                            <td class="text-end" id="f_total_after_tax">
-                                                                                <!-- {{ number_format(@$mrn->total_after_tax_amount, 2) }} -->
-                                                                            </td>
-                                                                        </tr>
-                                                                        <tr>
-                                                                            <td><strong>Exp.</strong></td>
-                                                                            <td class="text-end" id="f_exp">
-                                                                                <!-- {{ number_format(@$mrn->expense_amount, 2) }} -->
-                                                                            </td>
-                                                                            <input type="hidden" name="expense_amount" class="text-end" id="expense_amount" value="{{$mrn->expense_amount}}">
-                                                                        </tr>
-                                                                        <tr class="voucher-tab-foot">
-                                                                            <td class="text-primary"><strong>Total After Exp.</strong></td>
-                                                                            <td>
-                                                                                <div class="quottotal-bg justify-content-end">
-                                                                                    <h5 id="f_total_after_exp">
-                                                                                        <!-- {{ number_format(@$mrn->total_amount, 2) }} -->
-                                                                                    </h5>
-                                                                                </div>
-                                                                            </td>
-                                                                        </tr>
-                                                                    </table>
-                                                                </td>
                                                             </tr>
                                                         </tfoot>
                                                     </table>
                                                 </div>
                                                 <div class="row mt-2">
-                                                    <div class="col-md-12">
-                                                        <div class="col-md-4">
-                                                            <div class="mb-1">
-                                                                <label class="form-label">Upload Document</label>
-                                                                <input type="file" name="attachment[]" class="form-control" onchange = "addFiles(this,'main_mrn_preview')" multiple>
-                                                                <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
-                                                            </div>
-                                                        </div>
-                                                        @include('partials.document-preview',['documents' => $mrn->getDocuments(), 'document_status' => $mrn->document_status,'elementKey' => 'main_mrn_preview'])
-                                                    </div>
                                                     <div class="col-md-12">
                                                         <div class="mb-1">
                                                             <label class="form-label">Final Remarks</label>
@@ -576,19 +462,12 @@
                 </div>
             </div>
         </div>
-        {{-- Discount summary modal --}}
-        @include('procurement.material-receipt.partials.summary-disc-modal')
-        {{-- Add expenses modal--}}
-        @include('procurement.material-receipt.partials.summary-exp-modal')
-        {{-- Edit Address --}}
         <div class="modal fade" id="edit-address" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
             <div class="modal-dialog  modal-dialog-centered" style="max-width: 700px">
             </div>
         </div>
-        @include('procurement.material-receipt.partials.amendement-modal', ['id' => $mrn->id])
+        @include('procurement.put-away.partials.amendement-modal', ['id' => $mrn->id])
     </form>
-    {{-- Item upload modal --}}
-    @include('partials.import-item-modal')
     {{-- Attribute popup --}}
     <div class="modal fade" id="attribute" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
         <div class="modal-dialog  modal-dialog-centered">
@@ -615,73 +494,6 @@
                 <div class="modal-footer justify-content-center">
                     <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button>
                     <button type="button" data-bs-dismiss="modal" class="btn btn-primary">Select</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Add each row discount popup --}}
-    <div class="modal fade" id="itemRowDiscountModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
-        <div class="modal-dialog  modal-dialog-centered" style="max-width: 700px">
-            <div class="modal-content">
-                <div class="modal-header p-0 bg-transparent">
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body px-sm-2 mx-50 pb-2">
-                    <h1 class="text-center mb-1" id="shareProjectTitle">Discount</h1>
-                    <div class="text-end"></div>
-                    <table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail">
-                        <thead>
-                            <tr>
-                                <td>#</td>
-                                <td>
-                                    <label class="form-label">Type<span class="text-danger">*</span></label>
-                                    <input type="text" id="new_item_dis_name_select" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
-                                    <input type = "hidden" id = "new_item_discount_id" />
-                                    <input type = "hidden" id = "new_item_dis_name" />
-                                </td>
-                                <td>
-                                    <label class="form-label">Percentage <span class="text-danger">*</span></label>
-                                    <input step="any" type="number" id="new_item_dis_perc" class="form-control mw-100" />
-                                </td>
-                                <td>
-                                    <label class="form-label">Value <span class="text-danger">*</span></label>
-                                    <input step="any" type="number" id="new_item_dis_value" class="form-control mw-100" />
-                                </td>
-                                <td>
-                                    <a href="javascript:;" id="add_new_item_dis" class="text-primary can_hide">
-                                        <i data-feather="plus-square"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                        </thead>
-                    </table>
-                    <div class="table-responsive-md customernewsection-form">
-                        <table id="eachRowDiscountTable" class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail">
-                            <thead>
-                                <tr>
-                                    <th>S.No</th>
-                                    <th width="150px">Discount Name</th>
-                                    <th>Discount %</th>
-                                    <th>Discount Value</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr id="disItemFooter">
-                                    <input type="hidden" name="row_count" id="row_count" value="1">
-                                    <td colspan="2"></td>
-                                    <td class="text-dark"><strong>Total</strong></td>
-                                    <td class="text-dark text-end"><strong id="total">0.00</strong></td>
-                                    <td></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="modal-footer justify-content-center">
-                    <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button>
-                    <button type="button" class="btn btn-primary itemDiscountSubmit">Submit</button>
                 </div>
             </div>
         </div>
@@ -715,7 +527,7 @@
         </div>
     </div>
     {{-- Item Locations --}}
-    @include('procurement.material-receipt.partials.item-location-modal')
+    @include('procurement.put-away.partials.item-location-modal')
     <!-- Item Locations Modal End -->
 
     {{-- Delete component modal --}}
@@ -736,65 +548,14 @@
         </div>
     </div>
 
-    {{-- Delete Item discount modal --}}
-    <div class="modal fade text-start alertbackdropdisabled" id="deleteItemDiscModal" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header p-0 bg-transparent">
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body alertmsg text-center warning">
-                    <i data-feather='alert-circle'></i>
-                    <h2>Are you sure?</h2>
-                    <p>Are you sure you want to delete selected <strong>Components</strong>?</p>
-                    <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" id="deleteItemDiscConfirm" class="btn btn-primary" >Confirm</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Delete Header discount modal --}}
-    <div class="modal fade text-start alertbackdropdisabled" id="deleteHeaderDiscModal" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header p-0 bg-transparent">
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body alertmsg text-center warning">
-                    <i data-feather='alert-circle'></i>
-                    <h2>Are you sure?</h2>
-                    <p>Are you sure you want to delete selected <strong>Components</strong>?</p>
-                    <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" id="deleteHeaderDiscConfirm" class="btn btn-primary" >Confirm</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Delete header exp modal --}}
-    <div class="modal fade text-start alertbackdropdisabled" id="deleteHeaderExpModal" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header p-0 bg-transparent">
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body alertmsg text-center warning">
-                    <i data-feather='alert-circle'></i>
-                    <h2>Are you sure?</h2>
-                    <p>Are you sure you want to delete selected <strong>Components</strong>?</p>
-                    <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" id="deleteHeaderExpConfirm" class="btn btn-primary" >Confirm</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Approve/Reject Modal -->
-    @include('procurement.material-receipt.partials.approve-modal', ['id' => $mrn->id])
+    @include('procurement.put-away.partials.approve-modal', ['id' => $mrn->id])
 
     {{-- Taxes --}}
-    @include('procurement.material-receipt.partials.tax-detail-modal')
+    @include('procurement.put-away.partials.tax-detail-modal')
+
+    {{-- Add Storage Point modal--}}
+    @include('procurement.put-away.partials.storage-point-modal')
 
     {{-- Amendment Modal --}}
     <div class="modal fade text-start alertbackdropdisabled" id="amendmentconfirm" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
@@ -814,96 +575,15 @@
         </div>
     </div>
 
-    <!-- GL Posting Modal -->
-    <div class="modal fade text-start show" id="postvoucher" tabindex="-1" aria-labelledby="postVoucherModal" aria-modal="true" role="dialog">
-		<div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 1000px">
-			<div class="modal-content">
-				<div class="modal-header">
-					<div>
-                        <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="postVoucherModal"> Voucher Details</h4>
-                    </div>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-				</div>
-				<div class="modal-body">
-					<div class="row">
-                        <div class="col-md-3">
-                            <div class="mb-1">
-                                <label class="form-label">Series <span class="text-danger">*</span></label>
-                                <input id = "voucher_book_code" class="form-control" disabled="" >
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="mb-1">
-                                <label class="form-label">Voucher No <span class="text-danger">*</span></label>
-                                <input id = "voucher_doc_no" class="form-control" disabled="" value="">
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="mb-1">
-                                <label class="form-label">Voucher Date <span class="text-danger">*</span></label>
-                                <input id = "voucher_date" class="form-control" disabled="" value="">
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="mb-1">
-                                <label class="form-label">Currency <span class="text-danger">*</span></label>
-                                <input id = "voucher_currency" class="form-control" disabled="" value="">
-                            </div>
-                        </div>
-						<div class="col-md-12">
-							<div class="table-responsive">
-								<table class="mt-1 table table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
-									<thead>
-										<tr>
-											<th>Type</th>
-											<th>Group</th>
-											<th>Leadger Code</th>
-											<th>Leadger Name</th>
-                                            <th class="text-end">Debit</th>
-                                            <th class="text-end">Credit</th>
-										</tr>
-									</thead>
-									<tbody id="posting-table"></tbody>
-								</table>
-							</div>
-						</div>
-					</div>
-				</div>
-				<div class="text-end">
-					<button style="margin: 1%;" onclick = "postVoucher(this);" id="posting_button" type = "button" class="btn btn-primary btn-sm waves-effect waves-float waves-light">Submit</button>
-				</div>
-			</div>
-		</div>
-	</div>
-
 @endsection
 @section('scripts')
-    <script type="text/javascript">
-        var actionUrlTax = '{{route("material-receipt.tax.calculation")}}';
-    </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script type="text/javascript" src="{{asset('assets/js/modules/mrn.js')}}"></script>
-    <script type="text/javascript" src="{{asset('assets/js/modules/import-item.js')}}"></script>
-    <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
+    <script type="text/javascript" src="{{asset('assets/js/modules/putaway.js')}}"></script>
     <script>
         /*Clear local storage*/
         setTimeout(() => {
-            localStorage.removeItem('deletedItemDiscTedIds');
-            localStorage.removeItem('deletedHeaderDiscTedIds');
-            localStorage.removeItem('deletedHeaderExpTedIds');
             localStorage.removeItem('deletedItemLocationIds');
             localStorage.removeItem('deletedMrnItemIds');
         },0);
-        @if($subStoreCount > 0)
-            // Set colspan to 9
-            $("td.dynamic-colspan").attr("colspan", 10);
-            $("td.dynamic-summary-colspan").attr("colspan", 10);
-        @else
-            // Set colspan to 8
-            $("td.dynamic-colspan").attr("colspan", 9);
-            $("td.dynamic-summary-colspan").attr("colspan", 9);
-        @endif
-
         @if($buttons['amend'] && intval(request('amendment') ?? 0))
 
         @else
@@ -912,14 +592,7 @@
                 $('textarea[name="amend_remark"], input[type="file"][name="amend_attachment[]"]').prop('readonly', false).prop('disabled', false);
                 $('select').not('.amendmentselect select').prop('disabled', true);
                 $("#deleteBtn").remove();
-                $("#addNewItemBtn").remove();
                 $(".editAddressBtn").remove();
-                $("#add_new_item_dis").remove();
-                $(".deleteItemDiscountRow").remove();
-                $("#add_new_head_dis").remove();
-                $(".deleteSummaryDiscountRow").remove();
-                $("#add_new_head_exp").remove();
-                $(".deleteExpRow").remove();
                 $(document).on('show.bs.modal', function (e) {
                     if(e.target.id != 'approveModal') {
                         if(e.target.id != 'shortCloseModal') {
@@ -932,15 +605,7 @@
                         $(e.target).find('select').prop('readonly', false);
                     }
                     $('.add-contactpeontxt').remove();
-                    let text = $(e.target).find('thead tr:first th:last').text();
-                    if(text.includes("Action")){
-                        $(e.target).find('thead tr').each(function() {
-                            $(this).find('th:last').remove();
-                        });
-                        $(e.target).find('tbody tr').each(function() {
-                            $(this).find('td:last').remove();
-                        });
-                    }
+                    
                 });
             @endif
         @endif
@@ -973,7 +638,7 @@
                         } else {
                             $("#tax_required").val("");
                         }
-                        setTableCalculation();
+                        
                     }
                     if(data.status == 404) {
                         $("#book_code").val('');
@@ -1084,7 +749,7 @@
         initializeAutocomplete1("#vendor_name");
         function vendorOnChange(vendorId) {
             let store_id = $("[name='header_store_id']").val() || '';
-            let actionUrl = "{{route('material-receipt.get.address')}}"+'?id=' + vendorId+'&store_id='+store_id;
+            let actionUrl = "{{route('put-away.get.address')}}"+'?id=' + vendorId+'&store_id='+store_id;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if(data.data?.currency_exchange?.status == false) {
@@ -1311,7 +976,7 @@
                 }
             }
 
-            let actionUrl = '{{route("material-receipt.item.row")}}'+'?count='+rowsLength+'&component_item='+JSON.stringify(lastTrObj);
+            let actionUrl = '{{route("put-away.item.row")}}'+'?count='+rowsLength+'&component_item='+JSON.stringify(lastTrObj);
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if (data.status == 200) {
@@ -1394,7 +1059,7 @@
                 $("#itemTable > thead .form-check-input").prop('checked',false);
                 // $(".prSelect").prop('disabled',false);
             }
-            setTableCalculation();
+            
         });
 
         /*Check attrubute*/
@@ -1423,7 +1088,7 @@
 
         /*For comp attr*/
         function getItemAttribute(itemId, rowCount, selectedAttr, tr){
-            let actionUrl = '{{route("material-receipt.item.attr")}}'+'?item_id='+itemId+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
+            let actionUrl = '{{route("put-away.item.attr")}}'+'?item_id='+itemId+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if (data.status == 200) {
@@ -1447,10 +1112,12 @@
         });
 
         function getItemDetail(currentTr) {
-            let pName = $(currentTr).find("[name*='component_item_name']").val();
-            let itemId = $(currentTr).find("[name*='item_id']").val();
-            let poHeaderId = $(currentTr).find("[name*='purchase_order_id']").val();
-            let poDetailId = $(currentTr).find("[name*='po_detail_id']").val();
+            let pName = $(currentTr).find("[name*='component_item_name']").val() || '';
+            let itemId = $(currentTr).find("[name*='item_id']").val() || '';
+            let mrnHeaderId = $(currentTr).find("[name*='mrn_header_id']").val() || '';
+            let mrnDetailId = $(currentTr).find("[name*='mrn_detail_id']").val() || '';
+            let storeId = $("[name='header_store_id']").val() || '';
+            let subStoreId = $("[name='sub_store_id']").val() || '';
             let remark = '';
             if($(currentTr).find("[name*='remark']")) {
                 remark = $(currentTr).find("[name*='remark']").val() || '';
@@ -1464,23 +1131,17 @@
                     }
                 });
                 let uomId = $(currentTr).find("[name*='[uom_id]']").val() || '';
-                let qtyElement = $(currentTr).find("[name*='[accepted_qty]']");  // Get the jQuery object, not the value
-                let qty = qtyElement.val() || '';  // Get the value of the accepted_qty input
-
-                let itemStoreData = JSON.parse($(currentTr).find("[id*='components_stores_data']").val() || "[]");
-                let headerId = $(currentTr).find("[name*='mrn_header_id']").val() ?? '';
-                let detailId = $(currentTr).find("[name*='mrn_detail_id']").val() ?? '';
-
-                let actionUrl = '{{route("material-receipt.get.itemdetail")}}' +
-                    '?item_id=' + itemId +
-                    '&purchase_order_id=' + poHeaderId +
-                    '&po_detail_id=' + poDetailId +
-                    '&selectedAttr=' + JSON.stringify(selectedAttr) +
-                    '&itemStoreData=' + JSON.stringify(itemStoreData) +
-                    '&remark=' + remark +
-                    '&uom_id=' + uomId +
-                    '&qty=' + qty +
-                    '&headerId=' + headerId +
+                let qty = $(currentTr).find("[name*='[accepted_qty]']").val() || '';
+                let headerId = $(currentTr).find("[name*='putaway_header_id']").val() ?? '';
+                let detailId = $(currentTr).find("[name*='putaway_detail_id']").val() ?? '';
+                let actionUrl = '{{route("put-away.get.itemdetail")}}'+'?item_id='+itemId+
+                    '&mrn_header_id='+mrnHeaderId+
+                    '&mrn_detail_id='+mrnDetailId+
+                    '&selectedAttr='+JSON.stringify(selectedAttr)+
+                    '&remark='+remark+
+                    '&uom_id='+uomId+
+                    '&qty='+qty+
+                    '&headerId='+headerId+
                     '&detailId='+detailId+
                     '&store_id='+storeId+
                     '&sub_store_id='+subStoreId;
@@ -1489,51 +1150,20 @@
                     return response.json().then(data => {
                         if (data.status == 200) {
                             const storagePoints = data.storagePoints?.data || [];
-
-                            if(storagePoints.length) {
-                                // ✅ Show storage point button
-                                $('.addStoragePointBtn').css('display', 'block');
-                            } else{
-                                // ✅ Hide storage point button
-                                $('.addStoragePointBtn').css('display', 'none');
-                            }
+                            console.log('storagePoints', storagePoints);
+                            // Store in global map (if needed for other logic)
+                            itemStorageMap[itemId] = storagePoints;
 
                             // ✅ Store globally for dropdown population
                             allStoragePointsList = storagePoints;
-
+                            console.log('allStoragePointsList', allStoragePointsList);
                             // Update the modal or display section
                             $("#itemDetailDisplay").html(data.data.html);
-                            
+
                             // ✅ Fill storage_points hidden input
                             const hiddenInput = $row.find("input[name*='[storage_points]']");
                             if (hiddenInput.length) {
                                 hiddenInput.val(JSON.stringify(storagePoints));
-                            }
-                            
-                            var approvedStockLedger = data.data.checkApprovedQuantity;
-                            if ((approvedStockLedger['code'] == 200) && (approvedStockLedger['status'] == 'error')) {
-                                let approved_stock = approvedStockLedger['approvedStock'];
-                                let receipt_qty = $(currentTr).find("[name*='[order_qty]']").val() || '';
-                                let rejQtyElement = $(currentTr).find("[name*='[rejected_qty]']");  // Get the jQuery object, not the value
-                                let rejQty = rejQtyElement.val() || '';  // Get the value of the rejected_qty input
-                                if (qty < approved_stock) {
-                                    if (qtyElement.length > 0) {  // Ensure the element was found
-                                        qtyElement.val(receipt_qty);  // Set the value of qtyElement (jQuery object)
-                                        rejQtyElement.val(0.00);  // Set the value of qtyElement (jQuery object)
-                                    } else {
-                                        Swal.fire({
-                                            title: 'Error!',
-                                            text: "Accepted quantity input not found",
-                                            icon: 'error',
-                                        });
-                                    }
-                                } else {
-                                    Swal.fire({
-                                        title: 'Error!',
-                                        text: "Accepted quantity is higher than the approved stock.",
-                                        icon: 'error',
-                                    });
-                                }
                             }
                         }
                     });
@@ -1547,7 +1177,7 @@
             let vendorId = $("#vendor_id").val();
             let onChange = 0;
             let addressId = addressType === 'shipping' ? $("#shipping_id").val() : $("#billing_id").val();
-            let actionUrl = `{{route("material-receipt.edit.address")}}?type=${addressType}&vendor_id=${vendorId}&address_id=${addressId}&onChange=${onChange}`;
+            let actionUrl = `{{route("put-away.edit.address")}}?type=${addressType}&vendor_id=${vendorId}&address_id=${addressId}&onChange=${onChange}`;
             fetch(actionUrl)
                 .then(response => response.json())
                 .then(data => {
@@ -1576,7 +1206,7 @@
                 return false;
             }
             let onChange = 1;
-            let actionUrl = `{{route("material-receipt.edit.address")}}?type=${addressType}&vendor_id=${vendorId}&address_id=${addressId}&onChange=${onChange}`;
+            let actionUrl = `{{route("put-away.edit.address")}}?type=${addressType}&vendor_id=${vendorId}&address_id=${addressId}&onChange=${onChange}`;
             fetch(actionUrl)
                 .then(response => response.json())
                 .then(data => {
@@ -1655,7 +1285,7 @@
                 innerFormData.append($(this).attr('name'), $(this).val());
             });
             var method = "POST" ;
-            var url = '{{route("material-receipt.address.save")}}';
+            var url = '{{route("put-away.address.save")}}';
             fetch(url, {
                 method: method,
                 body: innerFormData,
@@ -1706,7 +1336,7 @@
                     $(`.form-check-input[data-id='${id}']`).closest('tr').remove();
                 });
             }
-            setTableCalculation();
+            
             if(!$("#itemTable [id*=row_]").length) {
                 $("th .form-check-input").prop('checked',false);
                 $('#vendor_name').prop('readonly',false);
@@ -1860,7 +1490,7 @@
                 $.ajax({
                     type: 'POST',
                     data: data,
-                    url: '/material-receipts/get-store-racks',
+                    url: '/put-aways/get-store-racks',
                     success: function(data) {
                         $('#erp_rack_id_' + rowCount).empty();
                         $.each(data.storeRacks, function(key, value) {
@@ -1906,7 +1536,7 @@
             $.ajax({
                 type: 'POST',
                 data: data,
-                url: '/material-receipts/get-rack-shelfs',
+                url: '/put-aways/get-rack-shelfs',
                 success: function(data) {
                     // Clear the shelf dropdown and populate it with new options
                     $('#erp_shelf_id_' + rowKey).empty();
@@ -2115,7 +1745,7 @@
             $.ajax({
                 type: 'POST',
                 data: data,
-                url: '/material-receipts/get-store-racks',
+                url: '/put-aways/get-store-racks',
                 success: function(data) {
                     $('#erp_rack_id_'+rowKey).empty();
                     // $('#erp_rack_id_'+rowKey).append('<option value="">Select</option>');
@@ -2145,7 +1775,7 @@
             $.ajax({
                 type: 'POST',
                 data: data,
-                url: '/material-receipts/get-rack-shelfs',
+                url: '/put-aways/get-rack-shelfs',
                 success: function(data) {
                     $('#erp_shelf_id_'+rowKey).empty();
                     // $('#erp_shelf_id_'+rowKey).append('<option value="">Select</option>');
@@ -2207,7 +1837,7 @@
             });
             $(`[name*="components[${rowCount}][discount_amount]"]`).val(totalAmnt);
             $(`[name*="components[${rowCount}][discount_amount]"]`).after(hiddenDis);
-            setTableCalculation();
+            
         });
 
         /*Remove item level discount*/
@@ -2243,7 +1873,7 @@
                 }
             });
             summaryDisTotal();
-            setTableCalculation();
+            
         });
 
 
@@ -2284,7 +1914,7 @@
             });
 
             summaryExpTotal();
-            setTableCalculation();
+            
         });
 
         /*Amendment modal open*/
@@ -2345,7 +1975,7 @@
         function onPostVoucherOpen(type = "not_posted")
         {
             // resetPostVoucher();
-            const apiURL = "{{route('material-receipt.posting.get')}}";
+            const apiURL = "{{route('put-away.posting.get')}}";
             let urlType = '';
             if(type == "not_posted"){
                 urlType = "get";
@@ -2408,7 +2038,7 @@
         {
             const bookId = "{{isset($mrn) ? $mrn -> book_id : ''}}";
             const documentId = "{{isset($mrn) ? $mrn -> id : ''}}";
-            const postingApiUrl = "{{route('material-receipt.post')}}"
+            const postingApiUrl = "{{route('put-away.post')}}"
             if (bookId && documentId) {
                 $.ajax({
                     url: postingApiUrl,
@@ -2634,7 +2264,7 @@
 
         // Revoke Document
         $(document).on('click', '#revokeButton', (e) => {
-            let actionUrl = '{{ route("material-receipt.revoke.document") }}'+ '?id='+'{{$mrn->id}}';
+            let actionUrl = '{{ route("put-away.revoke.document") }}'+ '?id='+'{{$mrn->id}}';
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if(data.status == 'error') {
@@ -2651,156 +2281,6 @@
                         });
                     }
                     location.reload();
-                });
-            });
-        });
-
-        $(document).on('click', '.processImportedBtn', (e) => {
-            function initializeAutocomplete2(selector, type) {
-                $(selector).autocomplete({
-                    minLength: 0,
-                    source: function(request, response) {
-                        let selectedAllItemIds = [];
-                        $("#itemTable tbody [id*='row_']").each(function(index,item) {
-                            if(Number($(item).find('[name*="[item_id]"]').val())) {
-                                selectedAllItemIds.push(Number($(item).find('[name*="[item_id]"]').val()));
-                            }
-                        });
-                        $.ajax({
-                            url: '/search',
-                            method: 'GET',
-                            dataType: 'json',
-                            data: {
-                                q: request.term,
-                                type:'goods_item_list',
-                                selectedAllItemIds : JSON.stringify(selectedAllItemIds)
-                            },
-                            success: function(data) {
-                                response($.map(data, function(item) {
-                                    return {
-                                        id: item.id,
-                                        label: `${item.item_name} (${item.item_code})`,
-                                        code: item.item_code || '',
-                                        item_id: item.id,
-                                        item_name:item.item_name,
-                                        uom_name:item.uom?.name,
-                                        uom_id:item.uom_id,
-                                        hsn_id:item.hsn?.id,
-                                        hsn_code:item.hsn?.code,
-                                        alternate_u_o_ms:item.alternate_u_o_ms,
-                                        is_attr:item.item_attributes_count,
-                                    };
-                                }));
-                            },
-                            error: function(xhr) {
-                                console.error('Error fetching customer data:', xhr.responseText);
-                            }
-                        });
-                    },
-                    select: function(event, ui) {
-                        let $input = $(this);
-                        let itemCode = ui.item.code;
-                        let itemName = ui.item.value;
-                        let itemN = ui.item.item_name;
-                        let itemId = ui.item.item_id;
-                        let uomId = ui.item.uom_id;
-                        let uomName = ui.item.uom_name;
-                        let hsnId = ui.item.hsn_id;
-                        let hsnCode = ui.item.hsn_code;
-                        $input.attr('data-name', itemName);
-                        $input.attr('data-code', itemCode);
-                        $input.attr('data-id', itemId);
-                        $input.closest('tr').find('[name*="[item_id]"]').val(itemId);
-                        $input.closest('tr').find('[name*=item_code]').val(itemCode);
-                        $input.closest('tr').find('[name*=item_name]').val(itemN);
-                        $input.closest('tr').find('[name*=hsn_id]').val(hsnId);
-                        $input.closest('tr').find('[name*=hsn_code]').val(hsnCode);
-                        $input.val(itemCode);
-                        let uomOption = `<option value=${uomId}>${uomName}</option>`;
-                        if(ui.item?.alternate_u_o_ms) {
-                            for(let alterItem of ui.item.alternate_u_o_ms) {
-                            uomOption += `<option value="${alterItem.uom_id}" ${alterItem.is_purchasing ? 'selected' : ''}>${alterItem.uom?.name}</option>`;
-                            }
-                        }
-                        $input.closest('tr').find('[name*=uom_id]').append(uomOption);
-                        $input.closest('tr').find("input[name*='attr_group_id']").remove();
-                        setTimeout(() => {
-                            if(ui.item.is_attr) {
-                                $input.closest('tr').find('.attributeBtn').trigger('click');
-                            } else {
-                                $input.closest('tr').find('.attributeBtn').trigger('click');
-                                $input.closest('tr').find('[name*="[qty]"]').val('').focus();
-                            }
-                        }, 100);
-                        getItemCostPrice($input.closest('tr'));
-                        return false;
-                    },
-                    change: function(event, ui) {
-                        if (!ui.item) {
-                            $(this).val("");
-                                // $('#itemId').val('');
-                            $(this).attr('data-name', '');
-                            $(this).attr('data-code', '');
-                        }
-                    }
-                }).focus(function() {
-                    if (this.value === "") {
-                        $(this).autocomplete("search", "");
-                    }
-                });
-            }
-
-            let currencyId = $("select[name='currency_id']").val();
-            let transactionDate = $("input[name='document_date']").val() || '';
-            let actionUrl = '{{ route("material-receipt.process.import-item") }}';
-
-            fetch(actionUrl).then(response => {
-                return response.json().then(data => {
-                    console.log(actionUrl, data);
-
-                    if(data.status == 200) {
-                        $(".header_store_id").prop('disabled', true);
-                        initializeAutocomplete2(".comp_item_code");
-                        $("#importItemModal").modal('hide');
-                        $(".importItem").prop('disabled',true);
-                        $(".poSelect").prop('disabled',true);
-                        $("select[name='currency_id']").prop('disabled', true);
-                        $("select[name='payment_term_id']").prop('disabled', true);
-                        $("#vendor_name").prop('readonly',true);
-                        $(".editAddressBtn").addClass('d-none');
-                        if ($("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length) {
-                            $("#itemTable .mrntableselectexcel tr[id*='row_']:last").after(data.data.pos);
-                        } else {
-                            $("#itemTable .mrntableselectexcel").empty().append(data.data.pos);
-                        }
-                        let locationId = $("[name='header_store_id']").val();
-                        getLocation(locationId);
-                        getSubStores(locationId, item='');
-                        updateImportItemData(data.status);
-                        setTimeout(() => {
-                            setTableCalculation();
-                        },500);
-
-                    }
-                    if(data.status == 422) {
-                        updateImportItemData(data.status);
-                        $(".editAddressBtn").removeClass('d-none');
-                        $("#vendor_name").val('').prop('readonly',false);
-                        $("#vendor_id").val('');
-                        $("#vendor_code").val('');
-                        $("#hidden_state_id").val('');
-                        $("#hidden_country_id").val('');
-                        $("select[name='currency_id']").empty().append('<option value="">Select</option>').prop('readonly',false);
-                        $("select[name='payment_term_id']").empty().append('<option value="">Select</option>').prop('readonly',false);
-                        $(".shipping_detail").text('-');
-                        $(".billing_detail").text('-');
-                        Swal.fire({
-                            title: 'Error!',
-                            text: data.message,
-                            icon: 'error',
-                        });
-                        return false;
-                    }
                 });
             });
         });

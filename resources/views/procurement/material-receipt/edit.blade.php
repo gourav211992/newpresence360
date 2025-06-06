@@ -1473,8 +1473,8 @@
             let itemId = $(currentTr).find("[name*='item_id']").val();
             let poHeaderId = $(currentTr).find("[name*='purchase_order_id']").val();
             let poDetailId = $(currentTr).find("[name*='po_detail_id']").val();
-            let storeId = $(currentTr).find("[name*='header_store_id']").val() || '';
-            let subStoreId = $(currentTr).find("[name*='sub_store_id']").val() || '';
+            let storeId = $("[name='header_store_id']").val() || '';
+            let subStoreId = $("[name='sub_store_id']").val() || '';
             let remark = '';
             if($(currentTr).find("[name*='remark']")) {
                 remark = $(currentTr).find("[name*='remark']").val() || '';
