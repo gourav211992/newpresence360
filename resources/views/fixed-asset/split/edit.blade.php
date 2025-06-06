@@ -987,14 +987,24 @@
 
         $(document).ready(function() {
             initializeCategoryAutocomplete('.category-input');
-
-            removeLedger();
             if ($('#last_dep_date').val() != "") {
+                console.log("last_dep");
+                let lastDepDate = new Date($('#last_dep_date').val());
+                lastDepDate.setDate(lastDepDate.getDate() - 1);
+                let formattedDate = lastDepDate.toISOString().split('T')[0];
+                let today = new Date().toISOString().split('T')[0];
                 $('.capitalize_date')
                     .removeAttr('min')
                     .removeAttr('max').prop('readonly', true).prop('required', false);
+                $('#last_dep_date').trigger('change');
+
+
+
+            } else {
+                $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max',
+                    '{{ $financialEndDate }}').prop('readonly', false).prop('required', true);
             }
-            $('#last_dep_date').trigger('change');
+            removeLedger();
             $(document).on('change', '.ledger', function() {
                 const $row = $(this).closest('tr');
                 const ledgerId = $(this).val();
@@ -1408,7 +1418,8 @@
                 .removeAttr('min')
                 .removeAttr('max')
                 .prop('readonly', true).prop('required', false);
-            $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max', '{{ $financialEndDate }}')
+            $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max',
+                    '{{ $financialEndDate }}')
                 .prop('readonly', false).prop('required', true);
 
             $('#current_value_asset').val('');
@@ -1616,8 +1627,8 @@
                     .removeAttr('min')
                     .removeAttr('max').prop('readonly', true).prop('required', false);
                 $('#last_dep_date').trigger('change');
-                 
-                       
+
+
 
 
 
@@ -1698,13 +1709,6 @@
                         $target.val(value);
                         if (fieldClass === 'category-input')
                             $target.trigger('change'); // Trigger change for category input
-
-                    }
-                } else if (fieldClass === 'capitalize_date' && $otherRow[0] !== row[0]) {
-                    const $target = $otherRow.find(`.${fieldClass}`);
-                    if ($target.length) {
-                        $target.val(value);
-                        $('.capitalize_date').val(value);
 
                     }
                 }
@@ -1871,13 +1875,13 @@
             console.log($('#ledger').val());
 
             $('.ledger').each(function() {
-               const $select = $(this);
-            $select.empty().append('<option value=""></option>');
-               allLedgers.forEach(ledger => {
+                const $select = $(this);
+                $select.empty().append('<option value=""></option>');
+                allLedgers.forEach(ledger => {
                     if (ledger.id !== excludedId) {
-                        console.log(ledger.id,excludedId);
+                        console.log(ledger.id, excludedId);
                         $select.append(
-                        `<option value="${ledger.id}">${ledger.name}</option>`);
+                            `<option value="${ledger.id}">${ledger.name}</option>`);
                     }
                 });
             });

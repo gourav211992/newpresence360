@@ -774,7 +774,7 @@
                 $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max',
                     '{{ $financialEndDate }}').prop('readonly', false).prop('required', true);
             }
-            renderLedgerSelects();
+            removeLedger();
 
             //updateSubAssetCodes();
         }
@@ -901,7 +901,7 @@
             let currentValueAsset = parseFloat($('#current_value_asset').val()) || 0;
             let totalCurrentValue = parseFloat($('#current_value').val()) || 0;
 
-            if (totalCurrentValue > currentValueAsset) {
+                        if (totalCurrentValue > currentValueAsset) {
                 showToast('error', 'Total Current Value cannot be greater than Asset Current Value.');
                 return false;
             } else if (totalCurrentValue <= 0) {
@@ -1108,7 +1108,6 @@
                     // Fill other fields directly
                     //$('#category').val(asset.category_id).trigger('change');
                     $('#ledger').val(asset.ledger_id).trigger('change');
-                    renderLedgerSelects();
                     $('#ledger_group').val(asset.ledger_group_id).trigger('change');
                     $('#capitalize_date_old').val(sub_asset.capitalize_date);
 
@@ -1543,6 +1542,7 @@
             </tr>`;
             $('.mrntableselectexcel').append(blank_row);
             initializeCategoryAutocomplete('.category-input');
+            renderLedgerSelects();
 
             if ($('#last_dep_date').val() != "") {
                 console.log("last_dep");
@@ -1554,6 +1554,8 @@
                     .removeAttr('min')
                     .removeAttr('max').prop('readonly', true).prop('required', false);
                 $('#last_dep_date').trigger('change');
+                
+                    
 
 
 
@@ -1792,17 +1794,28 @@
         initializeCategoryAutocomplete('.category-input');
         const allLedgers = @json($ledgers);
 
-        function renderLedgerSelects() {
-            let excludedId = $('#ledger').val();
-            $select.empty().append('<option value="">Select Ledger</option>');
+        function removeLedger() {
+            let excludedLedgerId = $('#ledger').val();
+            $('.ledger').each(function() {
+                $(this).find(`option[value="${excludedLedgerId}"]`).remove();
+            });
+        }
 
-                allLedgers.forEach(ledger => {
+        function renderLedgerSelects() {
+            let excludedId = parseInt($('#ledger').val());
+            console.log($('#ledger').val());
+
+            $('.ledger').each(function() {
+               const $select = $(this);
+            $select.empty().append('<option value=""></option>');
+               allLedgers.forEach(ledger => {
                     if (ledger.id !== excludedId) {
-                        const isSelected = ledger.id == selectedVal ? 'selected' : '';
+                        console.log(ledger.id,excludedId);
                         $select.append(
-                            `<option value="${ledger.id}">${ledger.name}</option>`);
+                        `<option value="${ledger.id}">${ledger.name}</option>`);
                     }
                 });
+            });
         }
     </script>
     <!-- END: Content-->

@@ -226,11 +226,13 @@ class SplitController extends Controller
             $dep_method = $organization->dep_method;
             $financialEndDate = Helper::getFinancialYear(date('Y-m-d'))['end_date'];
         $financialStartDate = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
+                $groups = Group::whereIn('id',$allChildIds)->get();
+
         
       
 
 
-        return view('fixed-asset.split.show', compact('ledgers', 'categories', 'locations', 'data', 'buttons', 'docStatusClass', 'approvalHistory', 'revision_number', 'dep_percentage', 'dep_method', 'dep_type','financialStartDate','financialEndDate'));
+        return view('fixed-asset.split.show', compact('groups','ledgers', 'categories', 'locations', 'data', 'buttons', 'docStatusClass', 'approvalHistory', 'revision_number', 'dep_percentage', 'dep_method', 'dep_type','financialStartDate','financialEndDate'));
     }
 
     /**
