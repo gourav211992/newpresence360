@@ -881,18 +881,46 @@ class ItemController extends Controller
     
         if ($request->has('item_specifications')) {
             $specifications = $request->input('item_specifications');
-            $item->specifications()->delete();
+            if (!is_array($specifications)) {
+                $specifications = [];
+            } elseif (isset($specifications['specification_name'])) {
+                $specifications = [$specifications]; 
+            }
+        
+            $existingIds = [];
+        
             foreach ($specifications as $specificationData) {
-                if (isset($specificationData['specification_name']) && !empty($specificationData['specification_name'])) {
-                    $item->specifications()->create([
+                if (!is_array($specificationData)) {
+                    continue;
+                }
+        
+                if (!empty($specificationData['id'])) {
+                    $spec = $item->specifications()->where('id', $specificationData['id'])->first();
+        
+                    if ($spec) {
+                        $spec->update([
+                            'group_id' => $specificationData['group_id'] ?? null,
+                            'specification_id' => $specificationData['specification_id'] ?? null,
+                            'specification_name' => $specificationData['specification_name'] ?? null,
+                            'value' => $specificationData['value'] ?? null,
+                        ]);
+                        $existingIds[] = $spec->id;
+                        continue;
+                    }
+                }
+        
+                if (!empty($specificationData['specification_name'])) {
+                    $newSpec = $item->specifications()->create([
                         'group_id' => $specificationData['group_id'] ?? null,
                         'specification_id' => $specificationData['specification_id'] ?? null,
                         'specification_name' => $specificationData['specification_name'],
                         'value' => $specificationData['value'] ?? null,
                     ]);
+                    $existingIds[] = $newSpec->id;
                 }
             }
-        }else {
+            $item->specifications()->whereNotIn('id', $existingIds)->delete();
+        } else {
             $item->specifications()->delete();
         }
       

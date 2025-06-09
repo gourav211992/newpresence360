@@ -527,7 +527,7 @@ document.getElementById("process_btn").addEventListener("click", function () {
                 if (expiryDate <= toDateObj) {
                         // Set toDateObj to one day before expiryDate
                         toDateObj = new Date(expiryDate);
-                        toDateObj.setDate(toDateObj.getDate() - 1);
+                        toDateObj.setDate(toDateObj.getDate());
 
                         // Format the updated `to_date`
                         let d = toDateObj.getDate().toString().padStart(2, '0');
@@ -565,16 +565,17 @@ document.getElementById("process_btn").addEventListener("click", function () {
                             value = sub_asset.current_value_after_dep;
                         
                         } 
-                    //console.log("DepRate:"+asset.depreciation_percentage_year);
+                    //console.log("DepRate:"+asset.depreciation_percentage);
                     //console.log("DiffDays:"+diffDays);
-                    let totalDepreciation = ((parseFloat(asset.depreciation_percentage_year/100)*parseFloat(value)) * diffDays / 365).toFixed(4);
-                    let after_dep_value = sub_asset.current_value_after_dep - totalDepreciation;
-                    
-                    if(expire && (sub_asset.salvage_value<after_dep_value) && (depType === "WDV"))
+                    value= parseFloat(value);
+                    let totalDepreciation = ((parseFloat(asset.depreciation_percentage/100)*parseFloat(value)) * diffDays / 365).toFixed(4);
+                    let after_dep_value = value - totalDepreciation;
+                    let salv =parseFloat(sub_asset.salvage_value);
+                    let diff = parseFloat(after_dep_value - salv).toFixed(2);
+                    if(expire && (diff>0) && (depType === "WDV"))
                     {
-                        let diff = after_dep_value - sub_asset.salvage_value;
-                        totalDepreciation = totalDepreciation + diff;  
-                        after_dep_value = after_dep_value - diff;
+                        totalDepreciation = after_dep_value - salv;  
+                        after_dep_value = salv;
                     }
                     
                     

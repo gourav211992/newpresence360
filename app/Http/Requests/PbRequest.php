@@ -161,7 +161,7 @@ class PbRequest extends FormRequest
                             $ia = ItemAttribute::where('item_id',$itemId)
                                             ->where('attribute_group_id',$k)
                                             ->first();
-                            $selectedAttributes[] = ['attribute_id' => $ia->id, 'attribute_value' => intval($attr_group['attr_name'])];
+                            $selectedAttributes[] = ['attribute_id' => @$ia->id, 'attribute_value' => intval($attr_group['attr_name'])];
                         }
                     }
 

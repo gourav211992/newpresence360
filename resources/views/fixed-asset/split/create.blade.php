@@ -901,7 +901,7 @@
             let currentValueAsset = parseFloat($('#current_value_asset').val()) || 0;
             let totalCurrentValue = parseFloat($('#current_value').val()) || 0;
 
-                        if (totalCurrentValue > currentValueAsset) {
+            if (totalCurrentValue > currentValueAsset) {
                 showToast('error', 'Total Current Value cannot be greater than Asset Current Value.');
                 return false;
             } else if (totalCurrentValue <= 0) {
@@ -933,7 +933,7 @@
             let currentValueAsset = parseFloat($('#current_value_asset').val()) || 0;
             let totalCurrentValue = parseFloat($('#current_value').val()) || 0;
 
-            if (totalCurrentValue >= currentValueAsset) {
+            if (totalCurrentValue > currentValueAsset) {
                 showToast('error', 'Total Current Value cannot be greater than Asset Current Value.');
                 return false;
             } else if (totalCurrentValue <= 0) {
@@ -950,7 +950,7 @@
                 return false;
             }
 
-            // Submit form manually if validation passes
+            // Submit formadd_bln manually if validation passes
             this.submit();
         });
 
@@ -1506,7 +1506,7 @@
                
               </td>
               <td>
-              <select class="form-control mw-100 mb-25 ledger" required>
+              <select class="form-select mw-100 mb-25 ledger" required>
                                                                 <option value=""
                                                                     {{ old('ledger') ? '' : 'selected' }}>Select</option>
                                                                 @foreach ($ledgers as $ledger)
@@ -1807,7 +1807,7 @@
 
             $('.ledger').each(function() {
                const $select = $(this);
-            $select.empty().append('<option value=""></option>');
+            $select.empty().append('<option value="">Select</option>');
                allLedgers.forEach(ledger => {
                     if (ledger.id !== excludedId) {
                         console.log(ledger.id,excludedId);

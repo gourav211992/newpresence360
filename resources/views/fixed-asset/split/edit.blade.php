@@ -1008,8 +1008,8 @@
             $(document).on('change', '.ledger', function() {
                 const $row = $(this).closest('tr');
                 const ledgerId = $(this).val();
-                console.log(ledgerId);
                 const $ledgerGroupSelect = $row.find('.ledger-group');
+                
 
                 if (ledgerId) {
                     $.ajax({
@@ -1820,7 +1820,12 @@
                     const row = $(this).closest('tr');
                     row.find('.category').val(ui.item.value);
                     $(this).val(ui.item.label);
-                    row.find('.ledger').val(ui.item.ledger).trigger('change');
+                     if (ledgerSelect.find('option[value="' + ui.item.ledger + '"]').length > 0) {
+                        console.log("ss");
+                        ledgerSelect.val(ui.item.ledger).trigger('change');
+                        } else {
+                        ledgerSelect.val('').trigger('change'); // Clear selection
+                        }
                     row.find('.life').val(ui.item.life);
                     row.find('.salvage_per').val(ui.item.salvage);
 
@@ -1867,7 +1872,9 @@
             let excludedLedgerId = $('#ledger').val();
             $('.ledger').each(function() {
                 $(this).find(`option[value="${excludedLedgerId}"]`).remove();
+                $(this).val('');
             });
+            
         }
 
         function renderLedgerSelects() {
@@ -1876,7 +1883,7 @@
 
             $('.ledger').each(function() {
                 const $select = $(this);
-                $select.empty().append('<option value=""></option>');
+                $select.empty().append('<option value="">Select</option>');
                 allLedgers.forEach(ledger => {
                     if (ledger.id !== excludedId) {
                         console.log(ledger.id, excludedId);

@@ -584,8 +584,8 @@ $(document).on('click', '#reject-button', (e) => {
                             <td class="fw-bolder text-dark">${voucherDetail.ledger_group_code ? voucherDetail.ledger_group_code : ''}</td>
                             <td>${voucherDetail.ledger_code ? voucherDetail.ledger_code : ''}</td>
                             <td>${voucherDetail.ledger_name ? voucherDetail.ledger_name : ''}</td>
-                            <td class="text-end">${voucherDetail.debit_amount > 0 ? parseFloat(voucherDetail.debit_amount).toFixed(2) : ''}</td>
-                            <td class="text-end">${voucherDetail.credit_amount > 0 ? parseFloat(voucherDetail.credit_amount).toFixed(2) : ''}</td>
+                            <td class="text-end indian-number">${voucherDetail.debit_amount > 0 ? parseFloat(voucherDetail.debit_amount).toFixed(2) : ''}</td>
+                            <td class="text-end indian-number">${voucherDetail.credit_amount > 0 ? parseFloat(voucherDetail.credit_amount).toFixed(2) : ''}</td>
                             </tr>
                             `
                         });
@@ -593,8 +593,8 @@ $(document).on('click', '#reject-button', (e) => {
                     voucherEntriesHTML+= `
                     <tr>
                         <td colspan="4" class="fw-bolder text-dark text-end">Total</td>
-                        <td class="fw-bolder text-dark text-end">${voucherEntries.total_debit.toFixed(2)}</td>
-                        <td class="fw-bolder text-dark text-end">${voucherEntries.total_credit.toFixed(2)}</td>
+                        <td class="fw-bolder text-dark text-end indian-number">${voucherEntries.total_debit.toFixed(2)}</td>
+                        <td class="fw-bolder text-dark text-end indian-number">${voucherEntries.total_credit.toFixed(2)}</td>
                     </tr>
                     `;
                     document.getElementById('posting-table').innerHTML = voucherEntriesHTML;

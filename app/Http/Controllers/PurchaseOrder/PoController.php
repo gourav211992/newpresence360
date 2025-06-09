@@ -139,7 +139,7 @@ class PoController extends Controller
             ->editColumn('total_expense_value', function ($row) {
                 return number_format($row->total_expense_value,2);
             })
-            ->editColumn('grand_total_amount', function ($row) {
+            ->addColumn('grand_total_amount', function ($row) {
                 return number_format($row->grand_total_amount,2);
             })
             ->rawColumns(['document_status'])

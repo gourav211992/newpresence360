@@ -74,7 +74,7 @@ class InsuranceController extends Controller
             ->whereNotNull('asset_code')
             ->whereNotNull('asset_name')
             ->get();
-        $locations = InventoryHelper::getAccessibleLocations()->where('status','active')->get();
+        $locations = InventoryHelper::getAccessibleLocations();
         $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         return view('fixed-asset.insurance.create', compact('assets','locations','categories'));
     }
