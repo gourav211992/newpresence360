@@ -12,6 +12,7 @@ use App\Models\ErpStore;
 use App\Models\FixedAssetIssueTransfer;
 use Carbon\Carbon;
 use App\Models\FixedAssetSub;
+use App\Helpers\InventoryHelper;
 
 class IssueTransferController extends Controller
 {
@@ -81,7 +82,7 @@ class IssueTransferController extends Controller
         ->whereNotNull('asset_code')
         ->whereNotNull('asset_name')
         ->get();
-        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
+        $locations = InventoryHelper::getAccessibleLocations()->where('status','active')->get();
         $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         return view('fixed-asset.issue-transfer.create',compact('assets','employees','locations','categories'));
     }
@@ -139,7 +140,7 @@ class IssueTransferController extends Controller
         ->whereNotNull('asset_code')
         ->whereNotNull('asset_name')
         ->get();
-        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
+        $locations = InventoryHelper::getAccessibleLocations()->where('status','active')->get();
         $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         return view('fixed-asset.issue-transfer.show',compact('assets','employees','data','locations','categories'));
     }
@@ -160,7 +161,7 @@ class IssueTransferController extends Controller
         ->whereNotNull('asset_code')
         ->whereNotNull('asset_name')
         ->get();
-        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status','active')->get();
+        $locations = InventoryHelper::getAccessibleLocations()->where('status','active')->get();
         $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         return view('fixed-asset.issue-transfer.edit',compact('assets','employees','data','locations','categories'));
     }

@@ -29,12 +29,19 @@ class JobCandidateController extends Controller
     {
         $user = Helper::getAuthenticatedUser();
         $length = $request->length ? $request->length : CommonHelper::PAGE_LENGTH_10;
-        $candidates = ErpRecruitmentJobCandidate::with('candidateSkills')
+        $candidateQuery = ErpRecruitmentJobCandidate::with('candidateSkills')
             ->where(function($query) use($request){
                 self::filter($request, $query);
-            })
-            ->where('organization_id',$user->organization_id)
-            ->orderBy('created_at','desc')
+            });
+
+            if ($user->user_type === CommonHelper::IAM_VENDOR) {
+                $candidateQuery->where('created_by', $user->id)
+                        ->where('created_by_type', $user->authenticable_type);
+            } else {
+                $candidateQuery->where('organization_id',$user->organization_id);
+            }
+
+        $candidates = $candidateQuery->orderBy('created_at','desc')
             ->paginate($length);
             
         $masterData = self::masterData();

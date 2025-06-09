@@ -201,6 +201,7 @@
                                         <th style="width:250px">Vendor</th>
                                         <th class="text-end" style="width:70px">Qty</th>
                                         <th class="text-end" style="width:70px">Rate</th>
+                                        <th>Delivery Date</th>
                                         <th>Sales Order</th>
                                         <th>Location</th>
                                         <th>Sub Location</th>

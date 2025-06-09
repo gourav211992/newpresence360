@@ -27,6 +27,7 @@ use App\Models\FixedAssetRevImp;
 use App\Models\CostCenter;
 use Exception;
 use App\Models\ErpStore;
+use App\Helpers\InventoryHelper;
 use App\Models\Group;
 
 
@@ -98,8 +99,7 @@ class RegistrationController extends Controller
                 $q->whereHas('item.subTypes.subType', function ($q) {
                     $q->where('name', 'Asset');
                 })->doesntHave('asset');
-                $q->where('basic_value', '>',0);
-                
+                $q->where('basic_value', '>', 0);
             })
             ->whereHas('vendor')
             ->with(['items.item', 'vendor'])
@@ -111,7 +111,7 @@ class RegistrationController extends Controller
             $q->where('organization_id', Helper::getAuthenticatedUser()->organization_id);
         })->whereHas('item.subTypes.subType', function ($q) {
             $q->where('name', 'Asset');
-        })->where('basic_value', '>',0)->doesntHave('asset')->get();
+        })->where('basic_value', '>', 0)->doesntHave('asset')->get();
 
         $vendors = Vendor::withDefaultGroupCompanyOrg()->select('id', 'display_name as name')->get();
         $currencies = Currency::where('status', ConstantHelper::ACTIVE)->select('id', 'short_name as name')->get();
@@ -121,7 +121,7 @@ class RegistrationController extends Controller
 
         $financialEndDate = Helper::getFinancialYear(date('Y-m-d'))['end_date'];
         $financialStartDate = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
-        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+        $locations = InventoryHelper::getAccessibleLocations();
 
 
         return view('fixed-asset.registration.create', compact('locations', 'series', 'ledgers', 'categories', 'grns', 'vendors', 'currencies', 'grn_details', 'dep_method', 'dep_percentage', 'dep_type', 'financialEndDate', 'financialStartDate'));
@@ -200,7 +200,7 @@ class RegistrationController extends Controller
         }
         $currNumber = $r->revisionNumber;
         if ($currNumber) {
-            $data = FixedAssetRegistrationHistory::where('source_id',$id)->first();
+            $data = FixedAssetRegistrationHistory::where('source_id', $id)->first();
         } else {
             $data = FixedAssetRegistration::withDefaultGroupCompanyOrg()->findorFail($id);
         }
@@ -224,7 +224,7 @@ class RegistrationController extends Controller
 
 
         // if ($data->depreciations->count() != 0)
-            //$buttons['amend'] = true;
+        //$buttons['amend'] = true;
 
 
         $group_name = ConstantHelper::FIXED_ASSETS;
@@ -257,7 +257,7 @@ class RegistrationController extends Controller
         $approvalHistory = Helper::getApprovalHistory($data->book_id, $data->id, $revNo, $data->current_value, $data->created_by);
 
 
-        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+        $locations = InventoryHelper::getAccessibleLocations();
 
         $ref_view_route = "#";
         $buttons['reference'] = false;
@@ -270,7 +270,7 @@ class RegistrationController extends Controller
                     //$history = Helper::getApprovalHistory($referenceDoc->book_id, $referenceDoc->id, $referenceDoc->revision_number);
                     $ref_view_route = Helper::getRouteNameFromServiceAlias($data->reference_series, $data->reference_doc_id);
                     $buttons['reference'] = true;
-                    $buttons['post']=false;
+                    $buttons['post'] = false;
                 }
             }
         }
@@ -321,7 +321,7 @@ class RegistrationController extends Controller
         $dep_type = $organization->dep_type;
         $financialEndDate = Helper::getFinancialYear(date('Y-m-d'))['end_date'];
         $financialStartDate = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
-        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+        $locations = InventoryHelper::getAccessibleLocations();
 
         return view('fixed-asset.registration.edit', compact('locations', 'sub_assets', 'series', 'data', 'ledgers', 'categories', 'grns', 'vendors', 'currencies', 'grn_details', 'financialEndDate', 'dep_type', 'dep_method', 'dep_percentage', 'financialStartDate'));
     }
@@ -452,7 +452,7 @@ class RegistrationController extends Controller
             $q->where('organization_id', Helper::getAuthenticatedUser()->organization_id);
         })->whereHas('item.subTypes.subType', function ($q) {
             $q->where('name', 'Asset');
-        })->doesntHave('asset')->where('basic_value', '>',0);
+        })->doesntHave('asset')->where('basic_value', '>', 0);
 
 
         if ($request->grn_no) {
@@ -487,7 +487,7 @@ class RegistrationController extends Controller
                 'taxes'
             ])->whereHas('header', function ($q) {
                 $q->where('organization_id', Helper::getAuthenticatedUser()->organization_id);
-            })->where('basic_value', '>',0)->find($request->grn_id);
+            })->where('basic_value', '>', 0)->find($request->grn_id);
         }
         $selected_grn_id = $request->grn_id ?? null;
         $html = view('fixed-asset.registration.grn_rows', compact('grn_details', 'selected_grn_id'))->render();
@@ -645,15 +645,15 @@ class RegistrationController extends Controller
             ->where('name', 'like', "%$q%");
         return $query->limit(20)->get();
     }
-      public function checkCode(Request $request)
-{
-    if($request->edit_id)
-    $exists = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('asset_code', $request->code)->where('id','!=',$request->edit_id)->exists();
-    else
-    $exists = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('asset_code', $request->code)->exists();
+    public function checkCode(Request $request)
+    {
+        if ($request->edit_id)
+            $exists = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('asset_code', $request->code)->where('id', '!=', $request->edit_id)->exists();
+        else
+            $exists = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('asset_code', $request->code)->exists();
 
-    return response()->json(['exists' => $exists]);
-}
+        return response()->json(['exists' => $exists]);
+    }
 
     public function subAssetSearch(Request $request)
     {
@@ -672,8 +672,8 @@ class RegistrationController extends Controller
             ->whereNotIn('id', $oldAssets)->with('asset')
             ->where('current_value_after_dep', '>', 0)
             ->where('sub_asset_code', 'like', "%$q%")
-             //->whereNotNull('expiry_date')
-             //->whereColumn('expiry_date', '>', 'last_dep_date')
+            //->whereNotNull('expiry_date')
+            //->whereColumn('expiry_date', '>', 'last_dep_date')
             ->limit(20)
             ->get();
     }
@@ -697,7 +697,8 @@ class RegistrationController extends Controller
 
         return response()->json($categories);
     }
-    public function refereshAssetsData(){
+    public function refereshAssetsData()
+    {
         FixedAssetRegistration::truncate();
         FixedAssetSub::truncate();
         FixedAssetMerger::truncate();
@@ -709,27 +710,29 @@ class RegistrationController extends Controller
     {
         $categoryId = $request->input('category_id');
         $locationIds = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-        ->where('document_status', ConstantHelper::POSTED)
-        ->where('category_id', $categoryId)->pluck('location_id')->unique()->toArray();
-        $locations = ErpStore::withDefaultGroupCompanyOrg()->whereIn('id',$locationIds)
-            ->where('status', 'active')
-            ->get(['id', 'store_name as name']);
-       
+            ->where('document_status', ConstantHelper::POSTED)
+            ->where('category_id', $categoryId)->pluck('location_id')->unique()->toArray();
+        $locations = InventoryHelper::getAccessibleLocations()->map(function ($store) {
+            return [
+                'id' => $store['id'],
+                'name' => $store['store_name'],
+            ];
+        });
+
         return response()->json($locations);
     }
-     public function getCostCenters(Request $request)
+    public function getCostCenters(Request $request)
     {
         $categoryId = $request->input('category_id');
         $locationId =  $request->input('location_id');
         $locationIds = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('document_status', ConstantHelper::POSTED)
-        ->where('category_id', $categoryId)
-        ->where('location_id',$locationId)
-        ->pluck('cost_center_id')->unique()->toArray();
-        $costCenters = CostCenter::withDefaultGroupCompanyOrg()->whereIn('id',$locationIds)
+            ->where('category_id', $categoryId)
+            ->where('location_id', $locationId)
+            ->pluck('cost_center_id')->unique()->toArray();
+        $costCenters = CostCenter::withDefaultGroupCompanyOrg()->whereIn('id', $locationIds)
             ->where('status', 'active')
             ->get(['id', 'name']);
-       
+
         return response()->json($costCenters);
     }
-
 }

@@ -17,6 +17,7 @@ use App\Helpers\FinancialPostingHelper;
 use App\Models\FixedAssetMergerHistory;
 use App\Models\FixedAssetSub;
 use App\Models\ErpStore;
+use App\Helpers\InventoryHelper;
 use Exception;
 
 
@@ -103,7 +104,7 @@ class MergerController extends Controller
         $dep_percentage = $organization->dep_percentage;
         $dep_type = $organization->dep_type;
         $dep_method = $organization->dep_method;
-        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+        $locations = InventoryHelper::getAccessibleLocations();
         $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->whereHas('assets')->select('id', 'name')->get();
         $new_categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         
@@ -201,7 +202,7 @@ class MergerController extends Controller
         $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)->get();
 $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         
-        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+        $locations = InventoryHelper::getAccessibleLocations();
 
         return view('fixed-asset.merger.show', compact('categories','locations', 'assets', 'data', 'buttons', 'docStatusClass', 'approvalHistory', 'revision_number'));
     }
@@ -243,7 +244,7 @@ $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)
         $dep_type = $organization->dep_type;
         $dep_method = $organization->dep_method;
         $data = FixedAssetMerger::find($id);
-        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+        $locations = InventoryHelper::getAccessibleLocations();
         
         return view('fixed-asset.merger.edit', compact('locations', 'data', 'assets', 'series', 'assets', 'categories', 'ledgers', 'financialEndDate', 'financialStartDate', 'dep_percentage', 'dep_type', 'dep_method'));
     }

@@ -95,6 +95,9 @@ if($pi_item?->item?->approvedVendors->count()) {
     <input type="number" name="components[{{$rowCount}}][rate]" value="{{ floatval($itemCost) }}" class="form-control mw-100 text-end" />
 </td>
 <td>
+    <input type="date" value="{{ date('Y-m-d') }}" name="components[{{ $rowCount }}][delivery_date]" class="form-control mw-100" />
+</td>
+<td>
     <input readonly type="text" name="components[{{$rowCount}}][sale_order]" value="{{$pi_item?->so ? strtoupper($pi_item?->so?->book_code) .'-'. $pi_item?->so?->document_number : '' }}" class="form-control mw-100 text-end" />
 </td>
 <td>

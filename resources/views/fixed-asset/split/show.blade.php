@@ -339,7 +339,6 @@
                                                                 <th width="200">Sub Asset Code</th>
                                                                 <th width="200">Category</th>
                                                                 <th width="200">Ledger</th>
-                                                                <th width="200">Ledger Group</th>
                                                                 <th width="50">Est. Life</th>
                                                                 <th width="200">Capitalize Date</th>
                                                                 <th width="50">Quantity</th>
@@ -398,12 +397,6 @@
                                                                         </select>
                                                                     </td>
                                                                     <td>
-                                                                        <select
-                                                                            class="ledger-group form-select mw-100 mb-25"
-                                                                            disabled required>
-                                                                        </select>
-                                                                    </td>
-                                                                    <td>
                                                                         <input type="text" required
                                                                             class="form-control mw-100 mb-25 life"
                                                                             oninput="syncInputAcrossSameAssets(this)"
@@ -423,7 +416,7 @@
                                                                     </td>
                                                                     <td>
                                                                         <input type="text" required
-                                                                            class="form-control mw-100 text-end current-value-input"
+                                                                            class="form-control mw-100 text-end current-value-input indian-number"
                                                                             readonly
                                                                             value="{{ $subAsset->current_value ?? '' }}"
                                                                             oninput="calculateTotals()" min="1" />
@@ -436,7 +429,7 @@
                                                                     </td>
                                                                     <td>
                                                                         <input type="text" required
-                                                                            class="form-control mw-100 text-end salvage-value-input"
+                                                                            class="form-control mw-100 text-end salvage-value-input indian-number"
                                                                             value="{{ $subAsset->salvage_value ?? '' }}"
                                                                             min="1" readonly />
                                                                     </td>
@@ -513,14 +506,17 @@
                                                         </div>
                                                     </div>
 
-                                                    <div class="col-md-3 d-none">
+                                                      <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Ledger Group <span
                                                                     class="text-danger">*</span></label>
-                                                            <select class="form-select select2" id="ledger_group"
-                                                                required>
-                                                                <option value="{{ $data->ledger_group_id }}">
-                                                                    {{ $data?->ledgerGroup?->name }}</option>
+                                                            <select class="form-select select2" id="ledger_group" disabled
+                                                                name="ledger_group_id">
+                                                                @foreach ($groups as $group)
+                                                                    <option value="{{ $group->id }}"
+                                                                        {{ $group->id == $data->ledger_group_id ? 'selected' : '' }}>
+                                                                        {{ $group?->name }}</option>
+                                                                @endforeach
                                                             </select>
                                                         </div>
                                                     </div>
@@ -586,7 +582,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Salvage Value <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control"
+                                                            <input type="text" class="form-control indian-number"
                                                                 name="salvage_value" id="salvage_value" readonly
                                                                 value="{{ $data->salvage_value }}" required />
                                                         </div>
@@ -623,7 +619,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Current Value <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" required
+                                                            <input type="text" class="form-control indian-number" required
                                                                 name="current_value" id="current_value"
                                                                 value="{{ $data->current_value }}" readonly />
                                                         </div>
@@ -668,7 +664,7 @@
                         <div class="col-md-3">
                             <div class="mb-1">
                                 <label class="form-label">Series <span class="text-danger">*</span></label>
-                                <input id = "voucher_book_code" class="form-control indian-number " disabled="" >
+                                <input id = "voucher_book_code" class="form-control" disabled="" >
                             </div>
                         </div>
                         <div class="col-md-3">

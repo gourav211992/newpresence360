@@ -293,7 +293,7 @@ function setTableCalculation() {
         let price = itemValue3 - itemDisc3 - itemHeaderDisc;
         if (price > 0 && itemId) {
             if(isTax) {
-                let transactionType = 'collection';
+                let transactionType = 'purchase';
                 let partyCountryId = $("#hidden_country_id").val();
                 let partyStateId = $("#hidden_state_id").val();
                 let locationId = $("[name='store_id']").val();
@@ -365,7 +365,11 @@ function setTableCalculation() {
                         } else {
                             $(item4).find(`[name="components[${rowCount4}][taxes][${index+1}][t_value]"]`).val(eachTaxTypePrice.toFixed(2));
                         }
-                        taxAmountRow += eachTaxTypePrice;
+                        if($(item4).find(`[name="components[${rowCount4}][taxes][${index+1}][applicability_type]"]`).val() == 'collection') {
+                            taxAmountRow += eachTaxTypePrice;
+                        } else {
+                            taxAmountRow -= eachTaxTypePrice;
+                        }
                     });
                     totalTax += taxAmountRow;
                 }
@@ -384,7 +388,9 @@ function setTableCalculation() {
         $("#f_tax").attr('amount',totalTax.toFixed(2)).text(totalTax.toFixed(2));
         
         if (totalTax < 0) {
-            $("#f_tax").attr('style', 'color: #dc3545 !important;');
+            // $("#f_tax").attr('style', 'color: #dc3545 !important;');
+            let taxAbs = Number($("#f_tax").attr('amount'));
+            $("#f_tax").attr('amount',Math.abs(taxAbs)).text(Math.abs(taxAbs));
         } else {
             $("#f_tax").attr('style', 'color: inherit;');
         }  

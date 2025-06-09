@@ -21,7 +21,6 @@
             {{$mrnItem->mrnHeader?->document_number ?? 'NA'}}
         </td>
         <td class="no-wrap">
-            {{-- {{$mrnItem->mrnHeader?->document_date ?? 'NA'}} --}}
             {{ $mrnItem->mrnHeader->getFormattedDate('document_date') }}
         </td>
         <td class="no-wrap">

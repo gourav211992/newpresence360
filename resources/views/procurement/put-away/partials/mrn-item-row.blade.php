@@ -55,7 +55,7 @@
             </select>
         </td>
         <td>
-            <input type="number" class="form-control mw-100 mrn_qty text-end checkNegativeVal" name="components[{{$rowCount}}][mrn_qty]" value="{{$item->order_qty}}" readonly step="any"/>
+            <input type="number" class="form-control mw-100 order_qty text-end checkNegativeVal" name="components[{{$rowCount}}][order_qty]" value="{{$item->order_qty}}" readonly step="any"/>
         </td>
         <td>
             <input type="number" class="form-control mw-100 accepted_qty text-end checkNegativeVal" name="components[{{$rowCount}}][accepted_qty]" value="{{$qty}}" readonly step="any"/>

@@ -228,7 +228,8 @@
                                                                 class="form-control" readonly />
                                                         </div>
                                                     </div>
-                                                    <input type="hidden" id="capitalize_date_old" name="capitalize_date"/>
+                                                    <input type="hidden" id="capitalize_date_old"
+                                                        name="capitalize_date" />
 
                                                     <!-- Current Value -->
                                                     <div class="col-md-3">
@@ -306,7 +307,6 @@
                                                                 <th width="200">Sub Asset Code</th>
                                                                 <th width="200">Category</th>
                                                                 <th width="200">Ledger</th>
-                                                                <th width="200">Ledger Group</th>
                                                                 <th width="50">Est. Life</th>
                                                                 <th width="200">Capitalize Date</th>
                                                                 <th width="50">Quantity</th>
@@ -362,12 +362,12 @@
                                                                             </option>
                                                                         @endforeach
                                                                     </select>
-
-                                                                </td>
-                                                                <td>
-                                                                    <select class="ledger-group form-select mw-100 mb-25"
+                                                                    <select
+                                                                        class="d-none ledger-group form-select mw-100 mb-25"
                                                                         required>
                                                                     </select>
+
+
                                                                 </td>
                                                                 <td>
                                                                     <input type="text" required
@@ -376,7 +376,8 @@
                                                                 </td>
                                                                 <td>
                                                                     <input type="date" required
-                                                                        class="form-control mw-100 mb-25 capitalize_date" oninput="syncInputAcrossSameAssets(this)"/>
+                                                                        class="form-control mw-100 mb-25 capitalize_date"
+                                                                        oninput="syncInputAcrossSameAssets(this)" />
                                                                 </td>
 
                                                                 <td>
@@ -385,8 +386,8 @@
                                                                 </td>
                                                                 <td>
                                                                     <input type="text" required
-                                                                        class="form-control mw-100 text-end current-value-input" oninput="calculateTotals()"
-                                                                        min="1" />
+                                                                        class="form-control mw-100 text-end current-value-input"
+                                                                        oninput="calculateTotals()" min="1" />
                                                                 </td>
                                                                 <td>
                                                                     <input type="text" required
@@ -433,8 +434,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Category <span
                                                                     class="text-danger">*</span></label>
-                                                            <select class="form-select select2"
-                                                                id="category">
+                                                            <select class="form-select select2" id="category">
                                                                 <option value=""
                                                                     {{ old('category') ? '' : 'selected' }}>
                                                                     Select</option>
@@ -461,8 +461,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Ledger <span
                                                                     class="text-danger">*</span></label>
-                                                            <select class="form-select select2"
-                                                                id="ledger">
+                                                            <select class="form-select select2" id="ledger">
                                                                 <option value=""
                                                                     {{ old('ledger') ? '' : 'selected' }}>Select</option>
                                                                 @foreach ($ledgers as $ledger)
@@ -476,12 +475,16 @@
                                                         </div>
                                                     </div>
 
-                                                    <div class="col-md-3 d-none">
+                                                    <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Ledger Group <span
                                                                     class="text-danger">*</span></label>
-                                                            <select class="form-select select2" 
-                                                                id="ledger_group">
+                                                            <select class="form-select select2" id="ledger_group"
+                                                                name="ledger_group_id">
+                                                                @foreach ($groups as $group)
+                                                                    <option value="{{ $group->id }}">
+                                                                        {{ $group?->name }}</option>
+                                                                @endforeach
                                                             </select>
                                                         </div>
                                                     </div>
@@ -490,11 +493,12 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Capitalize Date <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="date" class="form-control" id="capitalize_date"
+                                                            <input type="date" class="form-control"
+                                                                id="capitalize_date"
                                                                 value="{{ old('capitalize_date') }}" />
                                                         </div>
                                                     </div>
-                                                    
+
 
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
@@ -538,9 +542,8 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Est. Useful Life (yrs) <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control"
-                                                                id="useful_life" value="{{ old('useful_life') }}"
-                                                                />
+                                                            <input type="text" class="form-control" id="useful_life"
+                                                                value="{{ old('useful_life') }}" />
                                                         </div>
                                                     </div>
 
@@ -559,8 +562,7 @@
                                                             <label class="form-label">Dep % <span
                                                                     class="text-danger">*</span></label>
                                                             <input type="number" class="form-control"
-                                                                id="depreciation_rate"
-                                                                readonly />
+                                                                id="depreciation_rate" readonly />
                                                             <input type="hidden" value="{{ $dep_percentage }}"
                                                                 id="depreciation_percentage" />
                                                             <input type="hidden" id="depreciation_rate_year"
@@ -669,6 +671,23 @@
         });
 
         $('#add_new_sub_asset').on('click', function() {
+            let allInputsFilled = true;
+
+            $('.mrntableselectexcel').find('input, select').each(function() {
+                if ($(this).val() === null || $(this).val().toString().trim() === '') {
+                    allInputsFilled = false;
+                    $(this).addClass('is-invalid'); // highlight empty input/select
+                } else {
+                    $(this).removeClass('is-invalid');
+                }
+            });
+
+            if (!allInputsFilled) {
+                showToast('warning',
+                    'Please complete all input fields in the existing row(s) before adding a new one.');
+                return;
+            }
+
             const subAssetCode = $('#sub_asset_id').val();
             genereateSubAssetRow(subAssetCode);
         });
@@ -712,11 +731,9 @@
                                                                     </option>
                                                                 @endforeach
                                                             </select>
-                                                            </td>
-              <td>
-              <select class="ledger-group form-select mw-100 mb-25" required>
+                                                                   <select class="d-none ledger-group form-select mw-100 mb-25" required>
                 </select>
-                </td>
+                                                            </td>
               <td>
                 <input type="text" required class="form-control mw-100 mb-25 life" oninput="syncInputAcrossSameAssets(this)"> 
                 </td>
@@ -740,6 +757,25 @@
             $(".mrntableselectexcel tr").removeClass('trselected');
             $('.mrntableselectexcel').append(newRow);
             initializeCategoryAutocomplete('.category-input');
+            if ($('#last_dep_date').val() != "") {
+                console.log("last_dep");
+                let lastDepDate = new Date($('#last_dep_date').val());
+                lastDepDate.setDate(lastDepDate.getDate() - 1);
+                let formattedDate = lastDepDate.toISOString().split('T')[0];
+                let today = new Date().toISOString().split('T')[0];
+                $('.capitalize_date')
+                    .removeAttr('min')
+                    .removeAttr('max').prop('readonly', true).prop('required', false);
+                $('#last_dep_date').trigger('change');
+
+
+
+            } else {
+                $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max',
+                    '{{ $financialEndDate }}').prop('readonly', false).prop('required', true);
+            }
+            removeLedger();
+
             //updateSubAssetCodes();
         }
         $('#Email').on('change', function() {
@@ -865,7 +901,7 @@
             let currentValueAsset = parseFloat($('#current_value_asset').val()) || 0;
             let totalCurrentValue = parseFloat($('#current_value').val()) || 0;
 
-            if (totalCurrentValue > currentValueAsset) {
+                        if (totalCurrentValue > currentValueAsset) {
                 showToast('error', 'Total Current Value cannot be greater than Asset Current Value.');
                 return false;
             } else if (totalCurrentValue <= 0) {
@@ -897,7 +933,7 @@
             let currentValueAsset = parseFloat($('#current_value_asset').val()) || 0;
             let totalCurrentValue = parseFloat($('#current_value').val()) || 0;
 
-            if (totalCurrentValue > currentValueAsset) {
+            if (totalCurrentValue >= currentValueAsset) {
                 showToast('error', 'Total Current Value cannot be greater than Asset Current Value.');
                 return false;
             } else if (totalCurrentValue <= 0) {
@@ -924,7 +960,7 @@
                 const $row = $(this).closest('tr');
                 const ledgerId = $(this).val();
                 console.log(ledgerId);
-                const $ledgerGroupSelect = $row.find('.ledger-group');
+                const $ledgerGroupSelect = $('.ledger-group');
 
                 if (ledgerId) {
                     $.ajax({
@@ -996,9 +1032,9 @@
                         .val('')
                         .removeAttr('min')
                         .removeAttr('max')
-                        .prop('readonly', true);
+                        .prop('readonly', true).prop('required', false);
                     $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max',
-                        '{{ $financialEndDate }}').prop('readonly', false);
+                        '{{ $financialEndDate }}').prop('readonly', false).prop('required', true);
                     $('#current_value_asset').val('');
                     add_blank();
 
@@ -1014,9 +1050,10 @@
                             .val('')
                             .removeAttr('min')
                             .removeAttr('max')
-                            .prop('readonly', true);
+                            .prop('readonly', true).prop('required', false);
                         $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max',
-                            '{{ $financialEndDate }}').prop('readonly', false);
+                            '{{ $financialEndDate }}').prop('readonly', false).prop('required',
+                            true);
                         $('#current_value_asset').val('');
                         add_blank();
 
@@ -1078,10 +1115,10 @@
                         .val('')
                         .removeAttr('min')
                         .removeAttr('max')
-                        .prop('readonly', true);
+                        .prop('readonly', true).prop('required', false);
                     $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max',
-                        '{{ $financialEndDate }}').prop('readonly', false);
-                    
+                        '{{ $financialEndDate }}').prop('readonly', false).prop('required', true);
+
                     // Handle depreciation date
                     if (sub_asset.last_dep_date !== sub_asset.capitalize_date) {
                         console.log("last_dep");
@@ -1093,11 +1130,11 @@
                             .val(formattedDate)
                             .attr('min', formattedDate)
                             .attr('max', today)
-                            .prop('readonly', false);
-                        
+                            .prop('readonly', false).prop('required', true);
+
                         $('.capitalize_date')
                             .removeAttr('min')
-                            .removeAttr('max').prop('readonly', true);
+                            .removeAttr('max').prop('readonly', true).prop('required', false);
                     }
 
                     $('.capitalize_date').val(sub_asset.last_dep_date);
@@ -1117,7 +1154,8 @@
                         $('#current_value_asset').val("");
                         $('#last_dep_date').val("");
                         $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max',
-                            '{{ $financialEndDate }}').prop('readonly', false);
+                            '{{ $financialEndDate }}').prop('readonly', false).prop('required',
+                            true);
                         $('#sub_asset_id').val('');
                         //$('#category').val("");
                         $('#ledger').val("");
@@ -1191,7 +1229,7 @@
             const capitalizeDate = {};
 
 
-           
+
             $('.mrntableselectexcel tr').each(function() {
                 const $row = $(this);
 
@@ -1235,7 +1273,8 @@
 
                     if (!assetCodeToName[assetCode] && currentAssetName !== '' && !assetCodeToCategoryId[
                             assetCode] && !assetCodeToCategoryText[assetCode] && !assetCodeToLedger[assetCode] && !
-                        assetCodeToLedgerGroup[assetCode] && !asstCodeToLife[assetCode] && !assetCodeToSalvage[assetCode] && !capitalizeDate[assetCode]) {
+                        assetCodeToLedgerGroup[assetCode] && !asstCodeToLife[assetCode] && !assetCodeToSalvage[
+                            assetCode] && !capitalizeDate[assetCode]) {
                         // First time seeing this asset code — store its name
                         assetCodeToName[assetCode] = currentAssetName;
                         assetCodeToCategoryId[assetCode] = $row.find('.category-input').val().trim();
@@ -1310,9 +1349,9 @@
                 .val('')
                 .removeAttr('min')
                 .removeAttr('max')
-                .prop('readonly', true);
+                .prop('readonly', true).prop('required', false);
             $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max', '{{ $financialEndDate }}')
-                .prop('readonly', false);
+                .prop('readonly', false).prop('required', true);
             $('#current_value_asset').val('');
             $('#category').val($(this).val()).trigger('change');
             loadLocation();
@@ -1477,12 +1516,10 @@
                                                                     </option>
                                                                 @endforeach
                                                             </select>
-                                                             </td>
-              <td>
-                <select class="ledger-group form-select mw-100 mb-25" required>
+                                                               <select class="d-none ledger-group form-select mw-100 mb-25" required>
                 </select>
-                
-              </td>
+             
+                                                             </td>
               <td>
                 <input type="text" required class="form-control mw-100 mb-25 life" oninput="syncInputAcrossSameAssets(this)"> 
                 </td>
@@ -1505,24 +1542,27 @@
             </tr>`;
             $('.mrntableselectexcel').append(blank_row);
             initializeCategoryAutocomplete('.category-input');
-            
-                    if ($('#last_dep_date').val()!="") {
-                        console.log("last_dep");
-                        let lastDepDate = new Date($('#last_dep_date').val());
-                        lastDepDate.setDate(lastDepDate.getDate() - 1);
-                        let formattedDate = lastDepDate.toISOString().split('T')[0];
-                        let today = new Date().toISOString().split('T')[0];
-                        $('.capitalize_date')
-                            .removeAttr('min')
-                            .removeAttr('max').prop('readonly', true);
-                             $('#last_dep_date').trigger('change');
-                       
+            renderLedgerSelects();
+
+            if ($('#last_dep_date').val() != "") {
+                console.log("last_dep");
+                let lastDepDate = new Date($('#last_dep_date').val());
+                lastDepDate.setDate(lastDepDate.getDate() - 1);
+                let formattedDate = lastDepDate.toISOString().split('T')[0];
+                let today = new Date().toISOString().split('T')[0];
+                $('.capitalize_date')
+                    .removeAttr('min')
+                    .removeAttr('max').prop('readonly', true).prop('required', false);
+                $('#last_dep_date').trigger('change');
+                
                     
 
-                    } else{
-                        $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max',
-                            '{{ $financialEndDate }}').prop('readonly', false);
-                    }
+
+
+            } else {
+                $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max',
+                    '{{ $financialEndDate }}').prop('readonly', false).prop('required', true);
+            }
 
 
 
@@ -1567,10 +1607,13 @@
                 selectedDate.setDate(selectedDate.getDate() + 1);
                 let nextDate = selectedDate.toISOString().split('T')[0];
                 $('.capitalize_date').val(nextDate);
+                $('#capitalize_date_old').val(nextDate);
+
             }
         });
 
         function initializeCategoryAutocomplete(selector) {
+
             let salvage_rate = '{{ $dep_percentage }}';
             $(selector).autocomplete({
                 source: function(request, response) {
@@ -1603,7 +1646,7 @@
                 },
                 minLength: 0,
                 select: function(event, ui) {
-                    
+
                     //syncInputAcrossSameAssets('category');
                     //syncInputAcrossSameAssets('category-input');
                     const row = $(this).closest('tr');
@@ -1612,8 +1655,12 @@
                     row.find('.ledger').val(ui.item.ledger).trigger('change');
                     row.find('.life').val(ui.item.life);
                     row.find('.salvage_per').val(ui.item.salvage);
-                    syncInputAcrossSameAssets(this)
-                  
+                    syncInputAcrossSameAssets(this);
+                    syncInputAcrossSameAssets($('.life'));
+                    syncInputAcrossSameAssets($('.ledger'));
+                    syncInputAcrossSameAssets($('.salvage_per'));
+                    calculateTotals();
+
 
 
                     return false;
@@ -1627,8 +1674,12 @@
                         row.find('.ledger').val('').trigger('change');
                         row.find('.life').val('');
                         row.find('.salvage_per').val('');
-                        syncInputAcrossSameAssets(this)
-                    
+                        syncInputAcrossSameAssets(this);
+                        syncInputAcrossSameAssets($('.life'));
+                        syncInputAcrossSameAssets($('.ledger'));
+                        syncInputAcrossSameAssets($('.salvage_per'));
+                        calculateTotals();
+
                         //syncInputAcrossSameAssets('category');
                         //syncInputAcrossSameAssets('category-input');
 
@@ -1647,12 +1698,14 @@
         function syncInputAcrossSameAssets(element) {
             const $this = $(element);
             const row = $this.closest('tr');
+            $this.removeClass('is-invalid')
+
             const value = $this.val();
             const assetName = row.find('.asset-code-input').val().trim();
 
             // Get the first class that identifies the field (excluding utility classes)
             const fieldClass = $this.attr('class').split(' ').find(cls => ['life', 'ledger', 'ledger-group',
-                'category-input', 'salvage_per', 'asset-name-input', 'category','capitalize_date'
+                'category-input', 'salvage_per', 'asset-name-input', 'category', 'capitalize_date'
             ].includes(cls));
 
             if (!fieldClass) return;
@@ -1664,25 +1717,18 @@
                 if (otherAssetName === assetName && $otherRow[0] !== row[0]) {
                     const $target = $otherRow.find(`.${fieldClass}`);
                     if ($target.length) {
-                         $target.val(value);
+                        $target.val(value);
                         if (fieldClass === 'category-input')
                             $target.trigger('change'); // Trigger change for category input
-                        
+
                     }
-                }else if (fieldClass === 'capitalize_date' && $otherRow[0] !== row[0]) {
-                   const $target = $otherRow.find(`.${fieldClass}`);
-                    if ($target.length) {
-                         $target.val(value);
-                         $('.capitalize_date').val(value);
-                       
                 }
-            }
             });
             calculateTotals();
         }
 
         function calculateTotals() {
-             let totalQuantity = 0;
+            let totalQuantity = 0;
             let totalCurrentValue = 0;
             let totalSalvageValue = 0;
             let depreciationType = document.getElementById("depreciation_type").value;
@@ -1746,6 +1792,31 @@
 
 
         initializeCategoryAutocomplete('.category-input');
+        const allLedgers = @json($ledgers);
+
+        function removeLedger() {
+            let excludedLedgerId = $('#ledger').val();
+            $('.ledger').each(function() {
+                $(this).find(`option[value="${excludedLedgerId}"]`).remove();
+            });
+        }
+
+        function renderLedgerSelects() {
+            let excludedId = parseInt($('#ledger').val());
+            console.log($('#ledger').val());
+
+            $('.ledger').each(function() {
+               const $select = $(this);
+            $select.empty().append('<option value=""></option>');
+               allLedgers.forEach(ledger => {
+                    if (ledger.id !== excludedId) {
+                        console.log(ledger.id,excludedId);
+                        $select.append(
+                        `<option value="${ledger.id}">${ledger.name}</option>`);
+                    }
+                });
+            });
+        }
     </script>
     <!-- END: Content-->
 @endsection

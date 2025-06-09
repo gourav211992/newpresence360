@@ -971,7 +971,7 @@ class InventoryHelper
         $stockLedger->save();
 
         // Store Storage Points If Available
-        $storagePoint = StoragePointHelper::saveStoragePoints($stockLedger, $documentDetail->storage_points ?? []);        
+        // $storagePoint = StoragePointHelper::saveStoragePoints($stockLedger, $documentDetail->storage_points ?? []);        
 
         return $stockLedger;
     }

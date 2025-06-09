@@ -63,7 +63,9 @@ class JobController extends Controller
 
             $jobs = $jobsQuery->paginate($length);
 
-            $vendors = User::where('user_type',CommonHelper::IAM_VENDOR)->paginate($length);
+            $vendors = User::where('organization_id',$user->organization_id)
+                            ->where('user_type',CommonHelper::IAM_VENDOR)
+                            ->paginate($length);
         
         return view('recruitment.job.index',[
             'jobs' => $jobs,
@@ -163,7 +165,12 @@ class JobController extends Controller
                 ->withCount([
                     'panelAllocations as totalJobRounds' => function ($q) {
                         $q->select(\DB::raw('COUNT(DISTINCT round_id)'));
-                    },'assignedCandidates'
+                    },'assignedCandidates' => function($q) use($user){
+                        if ($user->user_type === CommonHelper::IAM_VENDOR) {
+                            $q->where('created_by', $user->id)
+                                ->where('created_by_type', $user->authenticable_type);
+                        }
+                    }
                 ])
             ->where(function($query) use($request){
                 self::filter($request, $query);
@@ -183,7 +190,9 @@ class JobController extends Controller
         }
 
         $jobs = $jobQuery->paginate($length);
-        $vendors = User::where('user_type',CommonHelper::IAM_VENDOR)->paginate($length);
+        $vendors = User::where('organization_id',$user->organization_id)
+                        ->where('user_type',CommonHelper::IAM_VENDOR)
+                        ->paginate($length);
 
         return view('recruitment.job.assgined-candidate',[
             'jobs' => $jobs,
@@ -751,10 +760,16 @@ class JobController extends Controller
                     });
                 }
             })
-            ->where('organization_id',$user->organization_id)
             ->whereHas('candidateSkills', function ($q) use($skillIds) {
                     $q->whereIn('skill_id', $skillIds);
                 });
+
+            if ($user->user_type === CommonHelper::IAM_VENDOR) {
+                $query->where('created_by', $user->id)
+                        ->where('created_by_type', $user->authenticable_type);
+            } else {
+                $query->where('organization_id',$user->organization_id);
+            }
 
         $candidates = $query->paginate($length);
         $assignedCandidateIds = ErpRecruitmentAssignedCandidate::where('job_id', $job->id)
@@ -782,8 +797,12 @@ class JobController extends Controller
             $candidateIds = $request->input('candidate_ids', []);
             $user = Helper::getAuthenticatedUser();
             
-            ErpRecruitmentAssignedCandidate::where('job_id',$id)->delete();
             foreach($candidateIds as $candidateId){
+                $candidate = ErpRecruitmentAssignedCandidate::where('job_id',$id)->where('candidate_id',$candidateId)->first();
+                if($candidate){
+                    continue;
+                }
+
                 $candidate = new ErpRecruitmentAssignedCandidate();
                 $candidate->candidate_id = $candidateId;
                 $candidate->job_id = $id;
