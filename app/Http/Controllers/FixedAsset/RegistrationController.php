@@ -274,7 +274,23 @@ class RegistrationController extends Controller
                 }
             }
         }
-        return view('fixed-asset.registration.show', compact('ref_view_route', 'locations', 'sub_assets', 'series', 'data', 'ledgers', 'categories', 'grns', 'vendors', 'currencies', 'grn_details', 'buttons', 'docStatusClass', 'revision_number', 'currNumber', 'approvalHistory'));
+        return view('fixed-asset.registration.show', 
+        compact('ref_view_route', 
+        'locations', 
+        'sub_assets', 
+        'series', 
+        'data', 
+        'ledgers', 
+        'categories', 
+        'grns', 
+        'vendors', 
+        'currencies', 
+        'grn_details', 
+        'buttons', 
+        'docStatusClass', 
+        'revision_number', 
+        'currNumber', 
+        'approvalHistory'));
     }
 
     /**

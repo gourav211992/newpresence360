@@ -82,7 +82,11 @@ class MaintenanceController extends Controller
         ->whereNotNull('asset_name')
         ->get();
         $locations = InventoryHelper::getAccessibleLocations()->where('status','active')->get();
-        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
+        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()
+        ->where('status', 1)
+        ->whereHas('setup')
+        ->select('id', 'name')
+        ->get();
         return view('fixed-asset.maintenance.create',compact('assets','employees','locations','categories'));
     }
 
