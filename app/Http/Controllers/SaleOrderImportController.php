@@ -4,9 +4,10 @@ namespace App\Http\Controllers;
 use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
 use App\Helpers\InventoryHelper;
-use App\Helpers\SaleModuleHelper;
+use App\Helpers\Sales\ImportHelper;
 use App\Http\Requests\SaleOrderImportRequest;
 use App\Imports\SaleOrderShufabImport;
+use App\Models\SaleOrderImport;
 use App\Models\SaleOrderImportShufab;
 use DB;
 use Exception;
@@ -27,8 +28,13 @@ class SaleOrderImportController extends Controller
         if (count($servicesBooks['services']) == 0) {
             return redirect() -> route('/');
         }
-        $soImportFile = SaleModuleHelper::getSoImports();
+        $soImportFile = ImportHelper::getSoImports();
+        $headersSection = ImportHelper::getSoImportHeaders();
         $sampleFile = isset($soImportFile[$version]) ? $soImportFile[$version] : '';
+        $headers = isset($headersSection[$version]) ? $headersSection[$version] : '';
+        if (!($sampleFile) || !($headers)) {
+            return redirect() -> route('/');
+        }
         $user = Helper::getAuthenticatedUser();
         $books = Helper::getBookSeriesNew($orderType, $parentUrl) -> get();
         $stores = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
@@ -40,6 +46,7 @@ class SaleOrderImportController extends Controller
             'stores' => $stores,
             'services' => $servicesBooks['services'],
             'sampleFile' => $sampleFile,
+            'headers' => $headers,
             'redirectUrl' => $redirectUrl
         ];
         return view('salesOrder.import', $data);
@@ -53,18 +60,33 @@ class SaleOrderImportController extends Controller
             $bookId = (int) $request -> book_id;
             $locationId = (int) $request -> location_id;
             $user = Helper::getAuthenticatedUser();
-            SaleOrderImportShufab::where('created_by', $user->auth_user_id)->delete();
-            Excel::import(new \App\Imports\Sales\SaleOrderShufabImport($bookId, $locationId, $user -> auth_user_id), $request->file('attachment'));
-            $uploads = SaleOrderImportShufab::where('created_by', $user -> auth_user_id) -> where('is_migrated', "0") -> get();
-            DB::commit();
+            $uploads = [];
+            if ($version == "v1") { //Shufab
+                SaleOrderImportShufab::where('created_by', $user->auth_user_id)->delete();
+                Excel::import(new \App\Imports\Sales\SaleOrderShufabImport($bookId, $locationId, $user -> auth_user_id), $request->file('attachment'));
+                $uploads = SaleOrderImportShufab::where('created_by', $user -> auth_user_id) -> where('is_migrated', "0") -> get();
+                $response = ImportHelper::generateValidInvalidUi($version, $uploads);
+                DB::commit();
+            } else if ($version == "v2") { //Common
+                SaleOrderImport::where('created_by', $user->auth_user_id)->delete();
+                Excel::import(new \App\Imports\Sales\SaleOrderImportV2($bookId, $locationId, $user -> auth_user_id), $request->file('attachment'));
+                $uploads = SaleOrderImport::where('created_by', $user -> auth_user_id) -> where('is_migrated', "0") -> get();
+                $response = ImportHelper::generateValidInvalidUi($version, $uploads);
+                DB::commit();
+            } else {
+                DB::rollBack();
+                return response()->json([
+                    'message' => 'Invalid import version',
+                ], 422);
+            }
             return response() -> json([
-                'data' => $uploads
+                'data' => $response
             ], 200);
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
-                'message' => 'Error occurred while reading the file',
-                'error' => $e -> getMessage(),
+                'message' => 'Error occurred while reading the file. Please download the Sample File and try again',
+                'error' => $e -> getFile(),
             ], 500);
         }
     }
@@ -77,8 +99,18 @@ class SaleOrderImportController extends Controller
             $locationId = (int) $request -> location_id;
             $documentStatus = $request -> document_status;
             $user = Helper::getAuthenticatedUser();
-            $uploads = SaleOrderImportShufab::where('created_by', $user -> auth_user_id) -> where('is_migrated', "0") -> get();
-            $response = SaleModuleHelper::shufabImportDataSave($uploads, $bookId, $locationId, $user, $documentStatus);
+            if ($version == "v1") { //Shufab
+                $uploads = SaleOrderImportShufab::where('created_by', $user -> auth_user_id) -> where('is_migrated', "0") -> get();
+                $response = ImportHelper::shufabImportDataSave($uploads, $bookId, $locationId, $user, $documentStatus);
+            } else if ($version == 'v2') {
+                $uploads = SaleOrderImport::where('created_by', $user -> auth_user_id) -> where('is_migrated', "0") -> get();
+                $response = ImportHelper::v2ImportDataSave($uploads, $bookId, $locationId, $user, $documentStatus);
+            } else {
+                DB::rollBack();
+                return response()->json([
+                    'message' => 'Invalid import version',
+                ], 422);
+            }
             DB::commit();
             return response() -> json([
                 'message' => $response['message']

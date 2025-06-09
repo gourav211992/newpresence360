@@ -124,15 +124,7 @@
 									        <table class="datatables-basic table myrequesttablecbox"> 
                                                 <thead>
                                                     <tr>
-                                                    <th class = "no-wrap">Order No</th>
-                                                        <th class = "no-wrap">Order Date</th>
-                                                        <th class = "no-wrap">Customer</th>
-                                                        <th class = "no-wrap">Consignee</th>
-                                                        <th class = "no-wrap">Item Code</th>
-                                                        <th class = "no-wrap">UOM</th>
-                                                        <th class = "numeric-alignment no-wrap">Total Qty</th>
-                                                        <th class = "numeric-alignment">Rate</th>
-                                                        <th class = "no-wrap">Delivery Date</th>
+                                                    {!! $headers !!}
                                                     </tr>
                                                 </thead>
                                                 <tbody id="success-table-body">
@@ -148,15 +140,7 @@
 									        <table class="datatables-basic table myrequesttablecbox"> 
                                                 <thead>
                                                     <tr>
-                                                        <th class = "no-wrap">Order No</th>
-                                                        <th class = "no-wrap">Order Date</th>
-                                                        <th class = "no-wrap">Customer</th>
-                                                        <th class = "no-wrap">Consignee</th>
-                                                        <th class = "no-wrap">Item Code</th>
-                                                        <th class = "no-wrap">UOM</th>
-                                                        <th class = "numeric-alignment no-wrap">Total Qty</th>
-                                                        <th class = "numeric-alignment">Rate</th>
-                                                        <th class = "no-wrap">Delivery Date</th>
+                                                        {!! $headers !!}
                                                         <th class = "no-wrap">Errors</th>
                                                     </tr>
                                                 </thead>
@@ -233,57 +217,12 @@
                 let data = response.data;
                 let dataSuccessHTML = ``;
                 let dataErrorHTML = ``;
-                if (data && data.length > 0) {
-                    data.forEach((elementData) => {
-                        let totalQty = 0;
-                        for (let idx = 1; idx <= 14; idx++) {
-                            totalQty += Number(elementData['size_' + idx]);
-                        }
-                        //Invalid rows
-                        if (elementData.reason && elementData.reason.length > 0) {
-                            errorCount += 1;
-                            let errors = "";
-                            elementData.reason.forEach((err, errIndex) => {
-                                console.log(err, errIndex);
-                                errors += (errIndex == 0 ? err : ", " + err);
-                            });
-                            dataErrorHTML += `
-                                <tr>
-                                <td class = "no-wrap">${elementData.order_no}</td>
-                                <td class = "no-wrap">${elementData.document_date}</td>
-                                <td class = "no-wrap">${elementData.customer_code ? elementData.customer_code : ''}</td>
-                                <td class = "no-wrap">${elementData.consignee_name ? elementData.consignee_name : ''}</td>
-                                <td class = "no-wrap">${elementData.item_code ? elementData.item_code : ''}</td>
-                                <td class = "no-wrap">${elementData.uom_code ? elementData.uom_code : ''}</td>
-                                <td class = "numeric-alignment">${totalQty}</td>
-                                <td class = "numeric-alignment">${elementData.rate ? elementData.rate : 0}</td>
-                                <td class = "no-wrap">${elementData.delivery_date}</td>
-                                <td class = "no-wrap text-danger">${errors}</td>
-                                </tr>
-                            `;
-                        } else {
-                            //Success row
-                            successCount += 1;
-                            dataSuccessHTML += `
-                                <tr>
-                                <td class = "no-wrap">${elementData.order_no}</td>
-                                <td class = "no-wrap">${elementData.document_date}</td>
-                                <td class = "no-wrap">${elementData.customer_code}</td>
-                                <td class = "no-wrap">${elementData.consignee_name}</td>
-                                <td class = "no-wrap">${elementData.item_code}</td>
-                                <td class = "no-wrap">${elementData.uom_code}</td>
-                                <td class = "numeric-alignment">${totalQty}</td>
-                                <td class = "numeric-alignment">${elementData.rate ? elementData.rate : 0}</td>
-                                <td class = "no-wrap">${elementData.delivery_date}</td>
-                                </tr>
-                            `;
-                        }
-                    });
-                    successTable.innerHTML = dataSuccessHTML;
-                    failTable.innerHTML = dataErrorHTML;
-                    successSectionCount.innerHTML = `(${successCount})`;
-                    failCountSection.innerHTML = `(${errorCount})`;
-                    if (successCount > 0) {
+                if (data && (data.valid_records > 0 || data.invalid_records > 0)) {
+                    successTable.innerHTML = data.validUI;
+                    failTable.innerHTML = data.invalidUI;
+                    successSectionCount.innerHTML = `(${data.valid_records})`;
+                    failCountSection.innerHTML = `(${data.invalid_records})`;
+                    if (data.valid_records > 0) {
                         draftButton.classList.remove('d-none');
                         submitButton.classList.remove('d-none');
                     }
@@ -312,6 +251,7 @@
                 }
             },
             error: function (xhr) {
+                let errorResponse = xhr.responseJSON;
                 document.getElementById('erp-overlay-loader').style.display = "none";
                 successTable.innerHTML = `
                 <tr>
@@ -330,7 +270,7 @@
                 importSection.classList.add('d-none');
                 Swal.fire({
                     title: 'Error!',
-                    text: 'Error',
+                    text: errorResponse?.message ? errorResponse?.message : 'Some internal error occured. Please try again later.',
                     icon: 'error',
                 });
             },
@@ -369,15 +309,16 @@
                 } else {
                     Swal.fire({
                         title: 'Error!',
-                        text: 'Some internal error occured, Please try again after some time.',
+                        text: response.message ? response.message : 'Some internal error occured, Please try again after some time.',
                         icon: 'error',
                     });
                 }
             },
             error: function (xhr) {
+                let errorResponse = xhr.responseJSON;
                 Swal.fire({
                         title: 'Error!',
-                        text: 'Some internal error occured, Please try again after some time.',
+                        text: errorResponse?.message ? errorResponse?.message : 'Some internal error occured, Please try again after some time.',
                         icon: 'error',
                 });
             },

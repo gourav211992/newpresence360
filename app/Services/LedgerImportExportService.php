@@ -3,34 +3,8 @@
 namespace App\Services;
 
 use App\Helpers\ConstantHelper;
-use App\Models\Item;
-use App\Models\ItemAttribute;
-use App\Models\ItemSpecification;
-use App\Models\AlternateUOM;
-use App\Models\AttributeGroup;
-use App\Models\Attribute;
-use App\Models\ProductSpecification;
-use App\Models\ProductSpecificationDetail;
-use App\Models\Category;
 use App\Models\Ledger;
-use App\Models\Group;
-use App\Models\Unit;
-use App\Models\Hsn;
-use App\Models\Country;
-use App\Models\State;
-use App\Models\City;
-use App\Models\Customer;
-use App\Models\Vendor;
-use App\Models\Currency;
-use App\Models\Employee;
-use App\Models\PaymentTerm;
-use App\Models\SubType;
-use App\Models\UploadItemMaster;
-use App\Models\OrganizationType;
-use App\Helpers\EInvoiceHelper;
-use App\Helpers\GstnHelper;
 use App\Helpers\Helper;
-use Illuminate\Support\Facades\Log;
 use Exception;
 
 class LedgerImportExportService
@@ -43,9 +17,8 @@ class LedgerImportExportService
         return true;
     }
 
-    public function checkLedgerUniqueness($field, $value)
+    public function checkLedgerUniqueness($field, $value, $user)
     {
-        $user = Helper::getAuthenticatedUser();
         $organization = $user->organization;
 
         $groupId = $organization->group_id;
@@ -75,7 +48,7 @@ class LedgerImportExportService
             $groupLower = array_map('strtolower', $groupParts);
 
             $groupIds = Helper::getGroupsQuery()
-                ->whereIn('name', $groupParts) // use trimmed names
+                ->whereIn('name', $groupParts)
                 ->pluck('id')
                 ->toArray();
         }
@@ -94,7 +67,7 @@ class LedgerImportExportService
         } elseif ($normalized == 'in active' || $normalized == 'inactive') {
             return 0;
         }
-        return null; // fallback in case of invalid value
+        return null;
     }
 
     public function getGroupNamesByIds($groupIds)
@@ -115,7 +88,7 @@ class LedgerImportExportService
             ->whereIn('id', $groupIds)
             ->pluck('name')
             ->unique()
-            ->values() // reset array keys
+            ->values()
             ->toArray();
     }
 

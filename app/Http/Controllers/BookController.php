@@ -57,23 +57,8 @@ class BookController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $user = Helper::getAuthenticatedUser();
             $query = Book::withDefaultGroupCompanyOrg();
-            $books = $query->orderBy('id','desc')->get();
-            $books = $books -> filter(function ($book) {
-                $modelName = isset(ConstantHelper::SERVICE_ALIAS_MODELS[$book -> service ?-> alias]) ? ConstantHelper::SERVICE_ALIAS_MODELS[$book ?-> service ?-> alias] : '';
-                if (isset($modelName) && $modelName) {
-                    $model = resolve('App\\Models\\' . $modelName);
-                    $createdDocs = $model::where('group_id', $book->group_id)->where('book_id', $book->id)->first();
-                    if (isset($createdDocs) && !$book -> manual_entry) {
-                        return false;
-                    } else {
-                        return true;
-                    }
-                } else {
-                    return true;
-                }
-            });
+            $books = $query->orderBy('id','desc');
             return DataTables::of($books)
             ->addIndexColumn()
             ->addColumn('service_name', function ($row) {
@@ -497,6 +482,7 @@ class BookController extends Controller
         if (isset($book)) {
             //Patterns
             $serviceAlias = $book?->service?->alias;
+            $serviceType = $book?->master_service?->type;
             if ($book->service->service?->type === ConstantHelper::ERP_TRANSACTION_SERVICE_TYPE) {
                 foreach ($book->patterns as &$bookPattern) {
                     $modelName = isset(ConstantHelper::SERVICE_ALIAS_MODELS[$serviceAlias]) ? ConstantHelper::SERVICE_ALIAS_MODELS[$serviceAlias] : '';
@@ -782,6 +768,9 @@ class BookController extends Controller
                     $book -> manual_entry_editable = true;
                     $book -> manual_entry_editable_message = "";
                 }
+                if (isset($createdDocs) && !$book -> manual_entry) {
+                    $book -> non_edit = true;
+                }
             } else {
                 $book -> manual_entry_editable = true;
                 $book -> manual_entry_editable_message = "";
@@ -804,8 +793,7 @@ class BookController extends Controller
                 $subQuery -> where('status', ConstantHelper::ACTIVE)
                 -> orWhereIn('id', $selectedDynamicFieldIds);
             }) -> get();
-
-        return view('book.edit-book', compact('book', 'companies', 'people', 'dynamicFields', 'selectedDynamicFieldIds'));
+        return view('book.edit-book', compact('book', 'companies', 'people', 'dynamicFields', 'selectedDynamicFieldIds', 'serviceType'));
     }
 
     public function update_book(Request $request, $id)
@@ -991,6 +979,7 @@ class BookController extends Controller
             $glParamsHTML = '';
             $organizationService = OrganizationService::with('parameters')->find($orgServiceId);
             if (isset($organizationService)) {
+                $masterService = $organizationService -> service;
                 //Common Service
                 foreach ($organizationService->common_parameters as $orgServiceParamKey => &$orgServiceParam) {
                     $currentParamHTML = '';
@@ -1227,7 +1216,8 @@ class BookController extends Controller
                     'status' => 'success',
                     'data' => array(
                         'common_parameters' => $commonParamsHTML,
-                        'gl_parameters' => $glParamsHTML
+                        'gl_parameters' => $glParamsHTML,
+                        'service_type' => $masterService -> type
                     )
                 ]);
             } else {

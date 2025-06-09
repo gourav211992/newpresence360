@@ -2647,7 +2647,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     });
 
     Route::prefix('sales-order/import')->controller(SaleOrderImportController::class)->name('salesOrder.')->group(function () {
-        Route::get('/{version}', 'import')->name('index');
+        Route::get('/{version}', 'import')->name('import.index');
         Route::post('save/{version}', 'importSave')->name('import.save');
         Route::post('store/{version}', 'bulkUploadOrders')->name('import.store');
     });

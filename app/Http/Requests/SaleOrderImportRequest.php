@@ -29,4 +29,14 @@ class SaleOrderImportRequest extends FormRequest
             'attachment' => 'required|file|mimetypes:application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv|max:10240',
         ];
     }
+    public function messages(): array
+    {
+        return [
+            'book_id.required' => 'Series is required',
+            'location_id.required' => 'Location is required',
+            'attachment.required' => 'Import File is required',
+            'attachment.file' => 'Import File should be a valid Excel File',
+            'attachment.mimetypes' => 'Import File should be a valid Excel File',
+        ];
+    }
 }

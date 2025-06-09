@@ -53,6 +53,26 @@ class DynamicFieldHelper
                 </div>
             </div>
             ";
+        } else if ($dynamicFieldDetail -> data_type === ConstantHelper::DATA_TYPE_LIST) {
+            $defaultSelected = $value ? '' : 'selected';
+            $values = $dynamicFieldDetail -> values;
+            $options = "";
+            foreach ($values as $listValue) {
+                $currentValue = $listValue -> value;
+                $selected = ($value == $currentValue ? 'selected' : '');
+                $options .= "<option value = '$currentValue' $selected >$currentValue</option>";
+            }
+            $ui = "
+            <div class='col-md-3'>
+                <div class='mb-1'>
+                    <label class='form-label'>$dynamicFieldDetail->name</label> 
+                    <select class='form-control mw-100' name = 'dynamic_field[$dynamicFieldDetail->header_id-$dynamicFieldDetail->id]'>
+                    <option value = '' $defaultSelected >Select</option>
+                    $options
+                    </select>
+                </div>
+            </div>
+            ";
         } else {
             $ui = "";
         }

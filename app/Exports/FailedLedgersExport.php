@@ -10,26 +10,24 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class FailedLedgersExport implements FromCollection, WithHeadings, WithMapping,WithStyles
+class FailedLedgersExport implements FromCollection, WithHeadings, WithMapping, WithStyles
 {
     protected $items;
 
     public function __construct($items)
     {
         $this->items = $items;
-     
     }
 
     public function collection()
     {
-        // dd($this->items);
         return $this->items;
     }
 
     public function headings(): array
     {
         $headings = [
-           'Code',
+            'Code',
             'Name',
             'Group',
             'Status',
@@ -37,7 +35,7 @@ class FailedLedgersExport implements FromCollection, WithHeadings, WithMapping,W
             'tds_percentage',
             'tcs_section',
             'tcs_percentage',
-            'tax_type', 
+            'tax_type',
             'tax_percentage',
         ];
 
@@ -48,11 +46,9 @@ class FailedLedgersExport implements FromCollection, WithHeadings, WithMapping,W
 
     public function map($item): array
     {
-        // dd($item->status);
-        // $status = $this->service->mapStatusToBoolean($uploadedItem->status ?? null);
-    $tdsSections = ConstantHelper::getTdsSections();
-    $tcsSections = ConstantHelper::getTcsSections();
-    $taxTypes    = ConstantHelper::getTaxTypes();
+        $tdsSections = ConstantHelper::getTdsSections();
+        $tcsSections = ConstantHelper::getTcsSections();
+        $taxTypes    = ConstantHelper::getTaxTypes();
         $data = [
             $item->code,
             $item->name,
@@ -67,7 +63,6 @@ class FailedLedgersExport implements FromCollection, WithHeadings, WithMapping,W
         ];
 
         $data[] = $item->import_remarks ?? 'N/A';
-        // dd($data);
 
         return $data;
     }
@@ -75,70 +70,69 @@ class FailedLedgersExport implements FromCollection, WithHeadings, WithMapping,W
     public function styles(Worksheet $sheet)
     {
         $styles = [];
-        $requiredColumns = range(1, 10); 
+        $requiredColumns = range(1, 10);
         $totalColumns = count($this->headings());
-        $remarksColIndex = $totalColumns; 
+        $remarksColIndex = $totalColumns;
         foreach ($requiredColumns as $col) {
             $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col);
             $styles["{$columnLetter}1"] = [
                 'font' => [
-                    'color' => ['argb' => 'FF000000'],
-                    'bold' => true, 
+                    'color' => ['argb' => ConstantHelper::EXCEL_FONT_COLOR_BLACK],
+                    'bold' => ConstantHelper::EXCEL_FONT_BOLD,
                 ],
                 'fill' => [
-                    'fillType' => 'solid',
-                    'startColor' => ['argb' => 'FFFF00'] 
+                    'fillType' => ConstantHelper::EXCEL_FILL_TYPE_SOLID,
+                    'startColor' => ['argb' => ConstantHelper::EXCEL_FILL_YELLOW],
                 ],
                 'alignment' => [
-                    'wrapText' => true, 
-                    'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
-                    'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+                    'wrapText' => ConstantHelper::EXCEL_ALIGNMENT_WRAP,
+                    'vertical' => ConstantHelper::EXCEL_ALIGNMENT_VERTICAL_CENTER,
+                    'horizontal' => ConstantHelper::EXCEL_ALIGNMENT_HORIZONTAL_CENTER,
                 ],
                 'borders' => [
                     'allBorders' => [
-                        'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
-                        'color' => ['argb' => 'FF000000'],
+                        'borderStyle' => ConstantHelper::EXCEL_BORDER_STYLE_THIN,
+                        'color' => ['argb' => ConstantHelper::EXCEL_BORDER_COLOR_BLACK],
                     ],
                 ],
-                
+
             ];
-            $sheet->getColumnDimension($columnLetter)->setWidth(15); 
+            $sheet->getColumnDimension($columnLetter)->setWidth(ConstantHelper::EXCEL_COLUMN_WIDTH_DEFAULT);
             if ($col !== $remarksColIndex) {
-                $sheet->getStyle("{$columnLetter}")->getAlignment()->setWrapText(true);
+                $sheet->getStyle("{$columnLetter}")->getAlignment()->setWrapText(ConstantHelper::EXCEL_ALIGNMENT_WRAP);
             }
         }
-        
-    
+
+
         $totalColumns = count($this->headings());
         for ($col = 11; $col <= $totalColumns; $col++) {
-            $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col); 
+            $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col);
             $sheet->getStyle("{$columnLetter}1")->applyFromArray([
                 'font' => [
-                    'color' => ['argb' => 'FF000000'], 
-                    'bold' => true,
+                    'color' => ['argb' => ConstantHelper::EXCEL_FONT_COLOR_BLACK],
+                    'bold' => ConstantHelper::EXCEL_FONT_BOLD,
                 ],
                 'fill' => [
-                    'fillType' => 'solid',
-                    'startColor' => ['argb' => 'D3D3D3'] 
+                    'fillType' => ConstantHelper::EXCEL_FILL_TYPE_SOLID,
+                    'startColor' => ['argb' => ConstantHelper::EXCEL_FILL_YELLOW],
                 ],
                 'alignment' => [
-                    'wrapText' => true, 
-                    'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
-                    'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+                    'wrapText' => ConstantHelper::EXCEL_ALIGNMENT_WRAP,
+                    'vertical' => ConstantHelper::EXCEL_ALIGNMENT_VERTICAL_CENTER,
+                    'horizontal' => ConstantHelper::EXCEL_ALIGNMENT_HORIZONTAL_CENTER,
                 ],
                 'borders' => [
                     'allBorders' => [
-                        'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
-                        'color' => ['argb' => 'FF000000'],
+                        'borderStyle' => ConstantHelper::EXCEL_BORDER_STYLE_THIN,
+                        'color' => ['argb' => ConstantHelper::EXCEL_BORDER_COLOR_BLACK],
                     ],
                 ],
             ]);
-            $sheet->getColumnDimension($columnLetter)->setWidth(15);
+            $sheet->getColumnDimension($columnLetter)->setWidth(ConstantHelper::EXCEL_COLUMN_WIDTH_DEFAULT);
             if ($col !== $remarksColIndex) {
-                $sheet->getStyle("{$columnLetter}")->getAlignment()->setWrapText(true);
+                $sheet->getStyle("{$columnLetter}")->getAlignment()->setWrapText(ConstantHelper::EXCEL_ALIGNMENT_WRAP);
             }
         }
         return $styles;
     }
-    
 }

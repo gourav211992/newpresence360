@@ -12,7 +12,7 @@ use App\Models\Customer;
 use App\Models\ErpSaleOrder;
 use App\Models\ErpStore;
 use App\Models\Item;
-use App\Models\SaleOrderImportShufab;
+use App\Models\SaleOrderImport;
 use App\Models\SubType;
 use App\Models\Unit;
 use Carbon\Carbon;
@@ -22,7 +22,7 @@ use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use stdClass;
 
-class SaleOrderShufabImport implements ToArray, WithHeadingRow, SkipsEmptyRows, WithChunkReading
+class SaleOrderImportV2 implements ToArray, WithHeadingRow, SkipsEmptyRows, WithChunkReading
 {
     private $bookId = null;
     private $locationId = null;
@@ -91,15 +91,6 @@ class SaleOrderShufabImport implements ToArray, WithHeadingRow, SkipsEmptyRows, 
                         $errors[] = "Future Date is not allowed";
                     }
                 }
-                $bookParams = BookHelper::fetchBookDocNoAndParameters($this -> bookId, $orderDetail -> document_date);
-                $parameters = $bookParams['data']['parameters'];
-                if (isset($parameters -> future_date_allowed) && $parameters -> future_date_allowed == 'no') {
-                    //Check for Future date
-                    if (Carbon::parse($orderDetail -> document_date) -> gt(Carbon::now())) {
-                        $errors[] = "Future Date is not allowed";
-                    }
-                }
-
                 if (isset($parameters -> back_date_allowed) && $parameters -> back_date_allowed == 'no') {
                     //Check for past date
                     if (Carbon::parse($orderDetail -> document_date) -> lt(Carbon::now())) {
@@ -158,36 +149,67 @@ class SaleOrderShufabImport implements ToArray, WithHeadingRow, SkipsEmptyRows, 
                     }
                 }                
                 $totalQty = 0;
-                //Attribute Size
-                for ($i=1; $i <= 14; $i++) { 
-                    $key = 'size_' . $i;
-                    $currentQty = floatval($row[$key]);
-                    if ($currentQty > 0) {
-                        //Check if Item Bom Exists
-                        $attribute = Attribute::whereHas('attributeGroup', function ($groupQuery) {
-                            $groupQuery -> withDefaultGroupCompanyOrg() -> whereRaw('LOWER(name) = ?', ['size']);
-                        }) -> where('value', $i) -> first();
-                        if (!$attribute) {
-                            $errors[] = "Item Attribute Size - $i not found";
-                        } else {
-                            $attributesArray = [
-                                'attribute_id' => $attribute -> id,
-                                'attribute_value' => $i
-                            ];
-                            //Check BOM
-                            $bomDetails = ItemHelper::checkItemBomExists($orderDetail -> item_id, $attributesArray);
-                            if (!isset($bomDetails['bom_id'])) {
-                                $errors[] = "Bom not found";
-                            }
+                //Attributes
+                $actualItemAttributes = $item -> itemAttributes;
+                $attributesArray = [];
+                //Continue with attribute validation if present
+                if ($actualItemAttributes && count($actualItemAttributes) > 0) {
+                    $attributesString = $row['attributes'];
+                    if (!$attributesString) {
+                        $errors[] = "Item Attributes not specified";
+                    }
+                    //Explode the string to make the attributes array
+                    $attributesArrayRaw = explode(',', $attributesString);
+                    if (count($attributesArrayRaw) !== count($actualItemAttributes)) {
+                        $errors[] = "All Attributes of item not specified";
+                    }
+                    //Make the attributes array
+                    $attributeNameValues = [];
+                    foreach ($attributesArrayRaw as $attribute) {
+                        $attributeKeyValue = explode(':', $attribute);
+                        if (count($attributeKeyValue) == 2) {
+                            $attributeNameValues[$attributeKeyValue[1]] = $attributeKeyValue[0];
                         }
-                        $orderDetail -> {$key} = $currentQty;
-                        $totalQty += $orderDetail -> {$key};
-                    } else {
-                        $orderDetail -> {$key} = 0;
+                    }
+                    foreach ($actualItemAttributes as $actualItemAttribute) {
+                        $attribute = $actualItemAttribute -> attributeGroup;
+                        $attributeName = $attribute ?-> name;
+                        $index = array_search($attributeName, $attributeNameValues);
+                        //Attribute Value is matched and found
+                        if ($index && $attributeName == $attributeNameValues[$index]) {
+                            //Now check for the attribute Name
+                            $attributeValue = $index;
+                            $attributeVal = Attribute::whereIn('id', $actualItemAttribute -> attribute_id) 
+                            -> where('value', $attributeValue) -> first();
+                            //Both Value and name are matched -> add the item attribute
+                            if (isset($attributeVal)) {
+                                array_push($attributesArray, [
+                                    'item_attribute_id' => $actualItemAttribute -> id,
+                                    'attribute_name' => $attributeName,
+                                    'attr_name' => $attribute ?-> id,
+                                    'attribute_value' => $attributeVal -> value,
+                                    'attr_value' => $attributeVal -> id,
+                                    'attribute_id' => $attributeVal -> id,
+                                ]);
+                            } else {
+                                $errors[] = "Invalid Item Attributes specified";
+                                break;
+                            }
+                        } else {
+                            $errors[] = "Invalid Item Attributes specified";
+                            break;
+                        }
                     }
                 }
-                if ($totalQty <= 0) {
-                    $errors[] = 'Please specify item quantity';
+                $orderDetail -> attributes = $attributesArray;
+                //Check if Item Bom Exists
+                $bomDetails = ItemHelper::checkItemBomExists($orderDetail -> item_id, $attributesArray);
+                if (!isset($bomDetails['bom_id'])) {
+                    $errors[] = "Bom not found";
+                }
+                $orderDetail -> qty = floatval($row['qty']);
+                if ($orderDetail -> qty <= 0) {
+                    $errors[] = "Item Quantity not specified";
                 }
                 //Rate
                 if ($row['rate']) {
@@ -210,7 +232,7 @@ class SaleOrderShufabImport implements ToArray, WithHeadingRow, SkipsEmptyRows, 
                 $orderDetail -> updated_at = Carbon::now() -> format('Y-m-d');
                 $orderDetail -> reason = $errors;
                 //Sales Order Insertion
-                SaleOrderImportShufab::create((array) $orderDetail);
+                SaleOrderImport::create((array) $orderDetail);
             }
         }
         

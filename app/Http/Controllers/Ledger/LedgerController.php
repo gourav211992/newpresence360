@@ -187,7 +187,7 @@ class LedgerController extends Controller
         return view('ledgers.add_ledger', compact('costCenters', 'groups', 'gst_group_id', 'tds_group_id','tcs_group_id','taxTypes','tdsSections','tcsSections','Existingledgers'));
     }
 
-     public function showImportForm()
+    public function showImportForm()
     {
         return view('ledgers.import');
     }
@@ -195,7 +195,7 @@ class LedgerController extends Controller
     public function import(Request $request)
     {
         $user = Helper::getAuthenticatedUser();
-    
+
         try {
             $request->validate([
                 'file' => 'required|mimes:xlsx,xls|max:30720',
@@ -206,7 +206,7 @@ class LedgerController extends Controller
                     'message' => 'No file uploaded.',
                 ], 400);
             }
-    
+
             $file = $request->file('file');
             try {
                 $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load(filename: $file);
@@ -216,10 +216,9 @@ class LedgerController extends Controller
                     'message' => 'The uploaded file format is incorrect or corrupted. Please upload a valid Excel file.',
                 ], 400);
             }
-    
+
             $sheet = $spreadsheet->getActiveSheet();
             $rowCount = $sheet->getHighestRow() - 1;
-        //   dd($rowCount,$sheet);
             if ($rowCount > 10000) {
                 return response()->json([
                     'status' => false,
@@ -232,21 +231,20 @@ class LedgerController extends Controller
                     'message' => 'The uploaded file is empty.',
                 ], 400);
             }
-            // dd($sheet);
             $deleteQuery = UploadLedgerMaster::where('user_id', $user->id);
             $deleteQuery->delete();
-    
-            $import = new LedgerImport($this->ledgerImportExportService);
+
+            $import = new LedgerImport($this->ledgerImportExportService, $user);
             Excel::import($import, $request->file('file'));
-            
+
             $successfulItems = $import->getSuccessfulItems();
             $failedItems = $import->getFailedItems();
             $mailData = [
                 'modelName' => 'Ledgers',
                 'successful_items' => $successfulItems,
                 'failed_items' => $failedItems,
-                'export_successful_url' => route('ledgers.export.successful'), 
-                'export_failed_url' => route('ledgers.export.failed'), 
+                'export_successful_url' => route('ledgers.export.successful'),
+                'export_failed_url' => route('ledgers.export.failed'),
             ];
             if (count($failedItems) > 0) {
                 $message = 'Items import failed.';
@@ -257,7 +255,7 @@ class LedgerController extends Controller
             }
             if ($user->email) {
                 try {
-                    Mail::to($user->email)->send(new ImportComplete( $mailData)); 
+                    Mail::to($user->email)->send(new ImportComplete($mailData));
                 } catch (\Exception $e) {
                     $message .= " However, there was an error sending the email notification.";
                 }
@@ -268,7 +266,6 @@ class LedgerController extends Controller
                 'successful_items' => $successfulItems,
                 'failed_items' => $failedItems,
             ], 200);
-    
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'status' => false,
@@ -282,20 +279,19 @@ class LedgerController extends Controller
         }
     }
 
-     public function exportSuccessfulItems()
+    public function exportSuccessfulItems()
     {
-        $uploadItems = UploadLedgerMaster::where('import_status','Success') 
-        ->get();
+        $uploadItems = UploadLedgerMaster::where('import_status', 'Success')
+            ->get();
         $items = Ledger::withDefaultGroupCompanyOrg()->orderBy('id', 'desc')
-        ->whereIn('code', $uploadItems->pluck('code'))->get();
+            ->whereIn('code', $uploadItems->pluck('code'))->get();
         return Excel::download(new LedgersExport($items, $this->ledgerImportExportService), "successful-items.xlsx");
     }
 
     public function exportFailedItems()
     {
-        $failedItems = UploadLedgerMaster::where('import_status', 'Failed')  
-        ->get();
-        // dd($failedItems);
+        $failedItems = UploadLedgerMaster::where('import_status', 'Failed')
+            ->get();
         return Excel::download(new FailedLedgersExport($failedItems), "failed-items.xlsx");
     }
 
