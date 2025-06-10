@@ -567,21 +567,15 @@ document.getElementById("process_btn").addEventListener("click", function () {
                         } 
                     //console.log("DepRate:"+asset.depreciation_percentage);
                     //console.log("DiffDays:"+diffDays);
+                    value= parseFloat(value);
                     let totalDepreciation = ((parseFloat(asset.depreciation_percentage/100)*parseFloat(value)) * diffDays / 365).toFixed(4);
                     let after_dep_value = value - totalDepreciation;
-                    let salv = parseFloat(sub_asset.salvage_value);
-                    let diff = parseFloat(after_dep_value) - salv;
-                    if(expire && (diff>0.0) && (depType === "WDV"))
+                    let salv =parseFloat(sub_asset.salvage_value);
+                    let diff = parseFloat(after_dep_value - salv).toFixed(2);
+                    if(expire && (diff>0) && (depType === "WDV"))
                     {
-                        console.log("Code:"+sub_asset.sub_asset_code);
-                        console.log("After Dep Cal:"+after_dep_value);
-                        console.log("Total Dep Cal:"+totalDepreciation);
-                        console.log("Salv:"+salv);
-                        console.log("Diff:"+diff);
-                        totalDepreciation = parseFloat(totalDepreciation) + parseFloat(diff);  
-                        console.log("Total Dep New:"+totalDepreciation);
-                        after_dep_value = value - totalDepreciation;
-                        console.log("After Dep New:"+after_dep_value);
+                        totalDepreciation = after_dep_value - salv;  
+                        after_dep_value = salv;
                     }
                     
                     

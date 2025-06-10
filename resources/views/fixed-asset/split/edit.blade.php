@@ -249,7 +249,7 @@
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label" for="last_dep_date">Last Date of
-                                                                Dep. </label>
+                                                                Dep. <span class="text-danger">*</span></label>
                                                             @php
                                                                 $lastDate = $data?->capitalize_date;
                                                                 $isValid =
@@ -403,16 +403,18 @@
                                                                             value="{{ $subAsset?->salvage_per ?? '' }}" />
                                                                     </td>
                                                                     <td>
-                                                                        <select class="form-control mw-100 mb-25 ledger"
+                                                                        <select class="form-select mw-100 mb-25 ledger"
                                                                             required>
                                                                             <option value=""
                                                                                 {{ old('ledger') ? '' : 'selected' }}>
                                                                                 Select</option>
                                                                             @foreach ($ledgers as $ledger)
+                                                                                @if($ledger->id!=$data?->asset?->ledger_id)
                                                                                 <option value="{{ $ledger->id }}"
                                                                                     {{ isset($subAsset->ledger) && $subAsset->ledger == $ledger->id ? 'selected' : '' }}>
                                                                                     {{ $ledger->name }}
                                                                                 </option>
+                                                                                @endif
                                                                             @endforeach
                                                                         </select>
                                                                         <select
@@ -775,15 +777,10 @@
                
               </td>
               <td>
-               <select class="form-control mw-100 mb-25 ledger" required>
+               <select class="form-select mw-100 mb-25 ledger" required>
                                                                 <option value=""
                                                                     {{ old('ledger') ? '' : 'selected' }}>Select</option>
-                                                                @foreach ($ledgers as $ledger)
-                                                                    <option value="{{ $ledger->id }}"
-                                                                        {{ old('ledger') == $ledger->id ? 'selected' : '' }}>
-                                                                        {{ $ledger->name }}
-                                                                    </option>
-                                                                @endforeach
+                                                           
                                                             </select>
                                                                    <select class="d-none ledger-group form-select mw-100 mb-25" required>
                 </select>
@@ -830,9 +827,6 @@
                     '{{ $financialEndDate }}').prop('readonly', false).prop('required', true);
             }
 
-            removeLedger();
-
-            //updateSubAssetCodes();
         }
         $('#Email').on('change', function() {
             let isChecked = $(this).is(':checked');
@@ -987,19 +981,28 @@
 
         $(document).ready(function() {
             initializeCategoryAutocomplete('.category-input');
-
-            removeLedger();
             if ($('#last_dep_date').val() != "") {
+                console.log("last_dep");
+                let lastDepDate = new Date($('#last_dep_date').val());
+                lastDepDate.setDate(lastDepDate.getDate() - 1);
+                let formattedDate = lastDepDate.toISOString().split('T')[0];
+                let today = new Date().toISOString().split('T')[0];
                 $('.capitalize_date')
                     .removeAttr('min')
                     .removeAttr('max').prop('readonly', true).prop('required', false);
+                $('#last_dep_date').trigger('change');
+
+
+
+            } else {
+                $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max',
+                    '{{ $financialEndDate }}').prop('readonly', false).prop('required', true);
             }
-            $('#last_dep_date').trigger('change');
             $(document).on('change', '.ledger', function() {
                 const $row = $(this).closest('tr');
                 const ledgerId = $(this).val();
-                console.log(ledgerId);
                 const $ledgerGroupSelect = $row.find('.ledger-group');
+
 
                 if (ledgerId) {
                     $.ajax({
@@ -1347,6 +1350,7 @@
 
                     } else if (assetCodeToName[assetCode]) {
                         $assetNameInput.val(assetCodeToName[assetCode]);
+                        renderLedgerSelects();
                         $row.find('.category-input').val(assetCodeToCategoryId[assetCode]).trigger('change');
                         $row.find('.category').val(assetCodeToCategoryText[assetCode]).trigger('change');
                         $row.find('.ledger').val(assetCodeToLedger[assetCode]).trigger('change');
@@ -1408,7 +1412,8 @@
                 .removeAttr('min')
                 .removeAttr('max')
                 .prop('readonly', true).prop('required', false);
-            $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max', '{{ $financialEndDate }}')
+            $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max',
+                    '{{ $financialEndDate }}')
                 .prop('readonly', false).prop('required', true);
 
             $('#current_value_asset').val('');
@@ -1417,40 +1422,7 @@
 
 
         });
-        $('#category').on('change', function() {
-            $('#ledger').val("").select2();
-            $('#ledger').trigger('change');
-            $('#ledger_group').val("").select2();
-            $('#maintenance_schedule').val("");
-            $('#useful_life').val("");
-
-
-            var category_id = $(this).val();
-            if (category_id) {
-                $.ajax({
-                    type: "GET",
-                    url: "{{ route('finance.fixed-asset.setup.category') }}?category_id=" + category_id,
-                    success: function(res) {
-                        if (res) {
-                            $('#ledger').val(res.ledger_id).select2();
-                            $('#ledger').trigger('change');
-                            $('#ledger_group').val(res.ledger_group_id).select2();
-                            $('#maintenance_schedule').val(res.maintenance_schedule);
-                            $('#useful_life').val(res.expected_life_years);
-                            if (res.salvage_percentage)
-                                $('#depreciation_percentage').val(res.salvage_percentage);
-                            else
-                                $('#depreciation_percentage').val('{{ $dep_percentage }}');
-                            updateSubAssetCodes();
-
-                        }
-                    }
-                });
-            }
-            updateSubAssetCodes();
-
-        });
-
+       
         function collectSubAssetDataToJson() {
             const subAssetData = [];
 
@@ -1568,15 +1540,10 @@
                
               </td>
               <td>
-              <select class="form-control mw-100 mb-25 ledger" required>
+              <select class="form-select mw-100 mb-25 ledger" required>
                                                                 <option value=""
                                                                     {{ old('ledger') ? '' : 'selected' }}>Select</option>
-                                                                @foreach ($ledgers as $ledger)
-                                                                    <option value="{{ $ledger->id }}"
-                                                                        {{ old('ledger') == $ledger->id ? 'selected' : '' }}>
-                                                                        {{ $ledger->name }}
-                                                                    </option>
-                                                                @endforeach
+                                                             
                                                             </select>
                                                                    <select class="d-none ledger-group form-select mw-100 mb-25" required>
                 </select>
@@ -1604,7 +1571,6 @@
             </tr>`;
             $('.mrntableselectexcel').append(blank_row);
             initializeCategoryAutocomplete('.category-input');
-            renderLedgerSelects();
 
             if ($('#last_dep_date').val() != "") {
                 console.log("last_dep");
@@ -1616,8 +1582,8 @@
                     .removeAttr('min')
                     .removeAttr('max').prop('readonly', true).prop('required', false);
                 $('#last_dep_date').trigger('change');
-                 
-                       
+
+
 
 
 
@@ -1698,13 +1664,6 @@
                         $target.val(value);
                         if (fieldClass === 'category-input')
                             $target.trigger('change'); // Trigger change for category input
-
-                    }
-                } else if (fieldClass === 'capitalize_date' && $otherRow[0] !== row[0]) {
-                    const $target = $otherRow.find(`.${fieldClass}`);
-                    if ($target.length) {
-                        $target.val(value);
-                        $('.capitalize_date').val(value);
 
                     }
                 }
@@ -1816,7 +1775,14 @@
                     const row = $(this).closest('tr');
                     row.find('.category').val(ui.item.value);
                     $(this).val(ui.item.label);
-                    row.find('.ledger').val(ui.item.ledger).trigger('change');
+                    renderLedgerSelects();
+                    let excludedId = parseInt($('#ledger').val());
+                    if (ui.item.ledger !== excludedId) {
+                        row.find('.ledger').val(ui.item.ledger).trigger('change');
+                    } else {
+                        // Option is excluded, so clear the selection or do something else
+                        row.find('.ledger').val('').trigger('change');
+                    }
                     row.find('.life').val(ui.item.life);
                     row.find('.salvage_per').val(ui.item.salvage);
 
@@ -1837,7 +1803,9 @@
                         const row = $(this).closest('tr');
                         row.find('.category').val('');
                         $(this).val('');
-                        row.find('.ledger').val('').trigger('change');
+                        row.find('.ledger').empty().append(
+                            `<option value="">Select</option>`
+                        );
                         row.find('.life').val('');
                         row.find('.salvage_per').val('');
 
@@ -1859,25 +1827,27 @@
         }
         const allLedgers = @json($ledgers);
 
-        function removeLedger() {
-            let excludedLedgerId = $('#ledger').val();
-            $('.ledger').each(function() {
-                $(this).find(`option[value="${excludedLedgerId}"]`).remove();
-            });
-        }
-
+        
         function renderLedgerSelects() {
+            
             let excludedId = parseInt($('#ledger').val());
-            console.log($('#ledger').val());
+            
+            console.log('Excluded ID:', excludedId);
 
             $('.ledger').each(function() {
-               const $select = $(this);
-            $select.empty().append('<option value=""></option>');
-               allLedgers.forEach(ledger => {
+                const $select = $(this);
+                // Get current selected value from this select, convert to int
+                let currentSelected = parseInt($select.val());
+
+                $select.empty().append('<option value="">Select</option>');
+
+                allLedgers.forEach(ledger => {
                     if (ledger.id !== excludedId) {
-                        console.log(ledger.id,excludedId);
+                        // Select only if ledger.id equals currentSelected
+                        const isSelected = (ledger.id === currentSelected) ? 'selected' : '';
                         $select.append(
-                        `<option value="${ledger.id}">${ledger.name}</option>`);
+                            `<option value="${ledger.id}" ${isSelected}>${ledger.name}</option>`
+                        );
                     }
                 });
             });

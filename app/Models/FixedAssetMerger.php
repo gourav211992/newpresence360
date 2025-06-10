@@ -9,6 +9,7 @@ use App\Traits\DefaultGroupCompanyOrg;
 use App\Helpers\Helper;
 use App\Traits\Deletable;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 
 class FixedAssetMerger extends Model
@@ -61,35 +62,25 @@ class FixedAssetMerger extends Model
         $request = FixedAssetMerger::find($id);
 
 
-        $parentURL = "fixed-asset_registration";
-
-
-
-        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
-        if (count($servicesBooks['services']) == 0) {
+        $exitingReg = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('reference_series', $request->book_id)->where('reference_doc_id', $request->id)->first();
+        if ($exitingReg) {
             return array(
-                'status' => false,
-                'message' => 'Service Not Found',
-                'data' => []
+                'message' => 'Registration already posted',
+                'status' => false
             );
         }
-        $firstService = $servicesBooks['services'][0];
-        $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->first();
-        if (!$series) {
+        $exitingVoucher = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('document_number', $request->document_number)->where('book_id', $request->book_id)->first();
+        if ($exitingVoucher) {
             return array(
-                'status' => false,
-                'message' => 'Series Not Found',
-                'data' => []
+                'message' => 'Registration already posted with same Doc No# ' . $request->document_number,
+                'status' => false
             );
         }
-
-
-        $book = Helper::generateDocumentNumberNew($series->id, date('Y-m-d'));
-        if ($book['document_number'] == null) {
+        $exitingVouchers = Voucher::withDefaultGroupCompanyOrg()->where('voucher_no', $request->document_number)->where('book_id', $request->book_id)->first();
+        if ($exitingVouchers) {
             return array(
-                'status' => false,
-                'message' => 'Document Number Not Found',
-                'data' => []
+                'message' => 'Voucher already posted with same Doc No# ' . $request->document_number,
+                'status' => false
             );
         }
 
@@ -113,14 +104,9 @@ class FixedAssetMerger extends Model
             'company_id' => $request->company_id,
             'created_by' => $request->created_by,
             'type' => $request->type,
-            'book_id' => $series->id,
-            'document_number' => $book['document_number'],
+            'book_id' => $request->book_id,
+            'document_number' => $request->document_number,
             'document_date' => $request->document_date,
-            'doc_number_type' => $book['type'],
-            'doc_reset_pattern' => $book['reset_pattern'],
-            'doc_prefix' => $book['prefix'],
-            'doc_suffix' => $book['suffix'],
-            'doc_no' => $book['doc_no'],
             'asset_code' => $request->asset_code,
             'asset_name' => $request->asset_name,
             'quantity' => $request->quantity,
@@ -160,7 +146,7 @@ class FixedAssetMerger extends Model
                 $old = FixedAssetSub::find($sub);
                 if ($old) {
                     if ($old->last_dep_date != $old->capitalize_date) {
-                        $old->expiry_date = $request->capitalize_date;
+                        $old->expiry_date = Carbon::parse($request->capitalize_date)->subDay()->format('Y-m-d');
                         $old->save();
                     } else {
                         $old->expiry_date = $old->last_dep_date;

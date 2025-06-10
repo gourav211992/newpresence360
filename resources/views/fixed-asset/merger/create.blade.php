@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+
+
 @section('content')
     <div class="app-content content ">
         <div class="content-overlay"></div>
@@ -60,6 +62,8 @@
                             <input type="hidden" name="doc_no" id="doc_no">
                             <input type="hidden" name="document_status" id="document_status" value="">
                             <input type="hidden" name="dep_type" id="depreciation_type" value="{{ $dep_type }}">
+                            <input type="hidden" id="old_ledger">
+
                             <div class="col-12">
 
 
@@ -246,8 +250,9 @@
                                                             </tr>
                                                         </thead>
                                                         <tbody class="mrntableselectexcel">
-                                                            <tr>
+                                                            <tr class="trselected">
                                                                 <td class="customernewsection-form">
+                                                                    <input type="hidden" class="ledger">
                                                                     <div
                                                                         class="form-check form-check-primary custom-checkbox">
                                                                         <input type="checkbox"
@@ -804,9 +809,9 @@
 
         });
         $('#category').on('change', function() {
-            $('#ledger').val("").select2();
+            $('#ledger').val("").trigger('change');
             $('#ledger').trigger('change');
-            $('#ledger_group').val("").select2();
+            $('#ledger_group').val("").trigger('change');
             $('#maintenance_schedule').val("");
             $('#useful_life').val("");
             updateDepreciationValues();
@@ -818,15 +823,15 @@
                     url: "{{ route('finance.fixed-asset.setup.category') }}?category_id=" + category_id,
                     success: function(res) {
                         if (res) {
-                            $('#ledger').val(res.ledger_id).select2();
+                            $('#ledger').val(res.ledger_id).trigger('change');
                             $('#ledger').trigger('change');
-                            $('#ledger_group').val(res.ledger_group_id).select2();
+                            $('#ledger_group').val(res.ledger_group_id).trigger('change');
                             $('#maintenance_schedule').val(res.maintenance_schedule);
                             $('#useful_life').val(res.expected_life_years);
-                            if(res.salvage_percentage)
-                            $('#depreciation_percentage').val(res.salvage_percentage);
-                        else 
-                            $('#depreciation_percentage').val('{{$dep_percentage}}');
+                            if (res.salvage_percentage)
+                                $('#depreciation_percentage').val(res.salvage_percentage);
+                            else
+                                $('#depreciation_percentage').val('{{ $dep_percentage }}');
                             updateSum();
                             updateDepreciationValues();
 
@@ -965,6 +970,7 @@
 
                     let subAssetSelect = row.find('.sub_asset_id');
                     let last_dep = row.find('.last_dep_date');
+                    let ledger = row.find('.ledger');
                     subAssetSelect.html('<option value="">Loading...</option>');
 
                     $.ajax({
@@ -987,7 +993,9 @@
                                 last_dep.val('')
                                     .removeAttr('min')
                                     .removeAttr('max')
-                                    .prop('readonly', true);
+                                    .prop('readonly', true).prop('required', false);
+                                ledger.val(response[0].asset.ledger_id);
+                                renderLedgerSelects();
                                 if (response[0].asset.last_dep_date != response[0].asset
                                     .capitalize_date) {
                                     let lastDepDate = new Date(response[0].asset.last_dep_date);
@@ -997,12 +1005,12 @@
                                     last_dep.val(formatted)
                                         .attr('min', formatted)
                                         .attr('max', today)
-                                        .prop('readonly', false);
+                                        .prop('readonly', false).prop('required', true);
                                 } else {
                                     last_dep.val('')
                                         .removeAttr('min')
                                         .removeAttr('max')
-                                        .prop('readonly', true);
+                                        .prop('readonly', true).prop('required', false);
                                 }
                             }
                             row.find('.quantity').val('');
@@ -1025,6 +1033,9 @@
                         $(this).val('');
                         subAssetSelect.empty();
                         row.find('.sub_asset_id').empty();
+                        row.find('.ledger').val('');
+                        renderLedgerSelects();
+
                         row.find('.asset_id').val('');
                         row.find('.quantity').val('');
                         row.find('.currentvalue').val('');
@@ -1091,7 +1102,7 @@
             }
             let firstNonEmptyDate = null;
 
-           
+
         });
         $('.select2').select2();
 
@@ -1132,10 +1143,10 @@
                     return false; // Exit loop early
                 }
             });
-            
+
             if (allReadonly) {
                 $('#capitalize_date').val('').attr('min', '{{ $financialStartDate }}').attr('max',
-                    '{{ $financialEndDate }}').prop('readonly', false);
+                    '{{ $financialEndDate }}').prop('readonly', false).prop('required', true);
             } else {
                 let nextDate = new Date(lastDepDate);
                 nextDate.setDate(nextDate.getDate() + 1); // Add 1 day
@@ -1146,7 +1157,7 @@
                 let dd = String(nextDate.getDate()).padStart(2, '0');
                 let formattedDate = `${yyyy}-${mm}-${dd}`;
 
-                $('#capitalize_date').val(formattedDate).removeAttr('min').removeAttr('max').prop('readonly', true);
+                $('#capitalize_date').val(formattedDate).removeAttr('min').removeAttr('max').prop('readonly', true).prop('required', false);
             }
             updateDepreciationValues();
         }
@@ -1156,7 +1167,8 @@
         $('#addNewRowBtn').on('click', function() {
             rowCount++;
             let newRow = `
-    <tr>
+    <tr class="trselected">
+        <input type="hidden" class="ledger">
         <td class="customernewsection-form">
             <div class="form-check form-check-primary custom-checkbox">
                 <input type="checkbox" class="form-check-input row-check" id="Email_${rowCount}">
@@ -1391,27 +1403,72 @@
                 }
             });
         });
-        $(document).on('change', '.last_dep_date', function() {
-            var changedValue = $(this).val();
-            $('.last_dep_date').each(function() {
-                var dateValue = $(this).val();
-                if(!$(this).prop('readonly') && $(this).val() != '') {
-                    changedValue = dateValue;
-                     $(this).val(changedValue);
-                }
-               
+        $(document).ready(function() {
+            $(document).on('change', '.last_dep_date', function() {
+                const changedValue = $(this).val();
+
+                // Validate the date
+                if (!changedValue || isNaN(new Date(changedValue).getTime())) return;
+
+                // Update all non-readonly `.last_dep_date` inputs
+                $('.last_dep_date').each(function() {
+                    if (!$(this).prop('readonly')) {
+                        $(this).val(changedValue);
+                    }
+                });
+
+                // Compute and set #capitalize_date to next day
+                const nextDate = new Date(changedValue);
+                nextDate.setDate(nextDate.getDate() + 1);
+
+                const yyyy = nextDate.getFullYear();
+                const mm = String(nextDate.getMonth() + 1).padStart(2, '0');
+                const dd = String(nextDate.getDate()).padStart(2, '0');
+                const formattedDate = `${yyyy}-${mm}-${dd}`;
+
+                $('#capitalize_date')
+                    .val(formattedDate)
+                    .removeAttr('min')
+                    .removeAttr('max')
+                    .prop('readonly', true).prop('required', false);
             });
-                let nextDate = new Date(changedValue);
-                nextDate.setDate(nextDate.getDate() + 1); // Add 1 day
-
-                // Format as yyyy-mm-dd
-                let yyyy = nextDate.getFullYear();
-                let mm = String(nextDate.getMonth() + 1).padStart(2, '0');
-                let dd = String(nextDate.getDate()).padStart(2, '0');
-                let formattedDate = `${yyyy}-${mm}-${dd}`;
-
-             $('#capitalize_date').val(formattedDate).removeAttr('min').removeAttr('max').prop('readonly', true);
         });
+
+        const allLedgers = @json($ledgers);
+
+
+        function appendAllLedgers($select) {
+            $select.empty().append('<option value="">Select</option>');
+            allLedgers.forEach(ledger => {
+                $select.append(`<option value="${ledger.id}">${ledger.name}</option>`);
+            });
+        }
+
+
+        function renderLedgerSelects() {
+            // Collect all selected ledger IDs from all .ledger dropdowns
+            const selectedLedgerIds = [];
+            $('.ledger').each(function() {
+                const val = $(this).val();
+                if (val) {
+                    selectedLedgerIds.push(val.toString());
+                }
+            });
+
+            const $thisSelect = $('#ledger');
+            const currentVal = $thisSelect.val(); // not used now since we will exclude everything in selectedLedgerIds
+
+            $thisSelect.empty().append('<option value="">Select</option>');
+
+            allLedgers.forEach(ledger => {
+                const ledgerIdStr = ledger.id.toString();
+
+                // Exclude if this ledger ID is already selected anywhere
+                if (!selectedLedgerIds.includes(ledgerIdStr)) {
+                    $thisSelect.append(`<option value="${ledger.id}">${ledger.name}</option>`);
+                }
+            });
+        }
     </script>
     <!-- END: Content-->
 @endsection

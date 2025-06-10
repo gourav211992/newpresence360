@@ -137,6 +137,8 @@
                                         <div class="row">
 
 
+                                            
+
                                             <div class="col-md-8">
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
@@ -144,15 +146,12 @@
                                                                 class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <select class="form-select" name="book_id" id="book_id" disabled required>
-                                                            @if ($series)
-                                                                @foreach ($series as $index => $ser)
-                                                                    <option value="{{ $ser->id }}"
-                                                                        {{ $data->book_id == $ser->id ? 'selected' : '' }}>
-                                                                        {{ $ser->book_code }}
-                                                                    </option>
-                                                                @endforeach
-                                                            @endif
+                                                         <select class="form-select" id="book_id" name="book_id" required
+                                                            disabled>
+                                                            <option value="{{ $data->book_id }}">
+                                                                {{ $data?->book?->book_code }}
+                                                            </option>
+
                                                         </select>
                                                     </div>
                                                 </div>

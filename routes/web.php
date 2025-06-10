@@ -291,6 +291,10 @@ Route::middleware(['user.auth'])->group(function () {
     Route::resource('ledgers', LedgerController::class)->except(['show']);
     Route::get('/ledgers/{ledgerId}/groups', [LedgerController::class, 'getLedgerGroups'])->name('ledgers.groups');;
     Route::get('/search/ledger', [LedgerController::class,'getLedger'])->name('ledger.search');
+    Route::get('/ledger/import', [LedgerController::class,'showImportForm'])->name('ledger.show.import');
+    Route::post('/ledger/import', [LedgerController::class,'import'])->name('ledger.import');
+    Route::get('/ledger/export-successful', [LedgerController::class,'exportSuccessfulItems'])->name('ledgers.export.successful');
+    Route::get('/ledger/export-failed', [LedgerController::class,'exportFailedItems'])->name('ledgers.export.failed');
 
     // closefy
     Route::get('/close-fy', [CloseFyController::class,'index'])->name('close-fy');
@@ -2381,8 +2385,9 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::get('fixed-asset/get-locations', [RegistrationController::class, 'getLocations'])->name('finance.fixed-asset.get-locations');
     Route::get('fixed-asset/get-cost-centers', [RegistrationController::class, 'getCostCenters'])->name('finance.fixed-asset.get-cost-centers');
     Route::post('fixed-asset/check-code', [RegistrationController::class, 'checkCode'])->name('finance.fixed-asset.check-code');
+
     Route::post('fixed-asset/category-search', [RegistrationController::class, 'categorySearch'])->name('finance.fixed-asset.category-search');
-    
+
     Route::resource('fixed-asset/issue-transfer', IssueTransferController::class)->names([
         'index' => 'finance.fixed-asset.issue-transfer.index',
         'create' => 'finance.fixed-asset.issue-transfer.create',
