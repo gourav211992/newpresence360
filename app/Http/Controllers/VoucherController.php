@@ -8,6 +8,7 @@ use App\Models\ErpService;
 use App\Models\Book;
 use App\Models\BookType;
 use Illuminate\Http\Request;
+use App\Helpers\InventoryHelper;
 use App\Models\CostCenter;
 use Illuminate\Support\Facades\DB;
 use App\Exceptions\ApiGenericException;
@@ -608,6 +609,9 @@ class VoucherController extends Controller
         }
 
         $fyear = Helper::getFinancialYear(date('Y-m-d'));
+        $accessibleLocations = InventoryHelper::getAccessibleLocations();
+        $locationIds = $accessibleLocations->pluck('id')->toArray();
+
 
         // Retrieve vouchers based on organization_id and include series with levels
         $data =  Voucher::withDefaultGroupCompanyOrg()
@@ -619,7 +623,8 @@ class VoucherController extends Controller
                 $d->where('cost_center_id', $request->cost_center_id);
             }
         })
-        ->where('approvalStatus', '!=', 'cancel');
+        ->where('approvalStatus', '!=', 'cancel')
+        ->whereIn('location', $locationIds);
         // Apply filters based on the request
         if ($request->book_type) {
             $data = $data->where('book_type_id', $request->book_type);
@@ -684,7 +689,7 @@ class VoucherController extends Controller
             ];
         })->toArray();
          $fyearLocked = $fyear['authorized'];
-        $locations = ErpStore::where('status','active')->get();
+        $locations = InventoryHelper::getAccessibleLocations();
         return view('voucher.view_vouchers', compact('cost_centers','bookTypes', 'mappings', 'organizationId', 'data', 'book_type', 'date', 'voucher_no', 'voucher_name','date2','fyearLocked','locations'));
     }
 

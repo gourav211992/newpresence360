@@ -1002,7 +1002,16 @@ $(document).on('click','#addNewItemBtn', (e) => {
     let d_date = $("input[name='document_date']").val() || '';
     let book_id = $("#book_id").val() || '';
     let type = '{{ $servicesBooks['services'][0]?->alias }}';
-    let actionUrl = '{{route("bill.of.material.item.row")}}'+'?count='+rowsLength+'&item='+JSON.stringify(itemObj)+'&component_item='+JSON.stringify(lastTrObj)+'&header_attr='+JSON.stringify(headerSelectedAttr)+'&comp_attr='+JSON.stringify(componentAttr)+'&type='+type+'&customer_id='+customerId+'&d_date='+d_date+'&book_id='+book_id; 
+    let actionUrl = '{{ route("bill.of.material.item.row") }}'
+    + '?count=' + rowsLength
+    + '&item=' + encodeURIComponent(JSON.stringify(itemObj))
+    + '&component_item=' + encodeURIComponent(JSON.stringify(lastTrObj))
+    + '&header_attr=' + encodeURIComponent(JSON.stringify(headerSelectedAttr))
+    + '&comp_attr=' + encodeURIComponent(JSON.stringify(componentAttr))
+    + '&type=' + encodeURIComponent(type)
+    + '&customer_id=' + encodeURIComponent(customerId)
+    + '&d_date=' + encodeURIComponent(d_date)
+    + '&book_id=' + encodeURIComponent(book_id);
     fetch(actionUrl).then(response => {
         return response.json().then(data => {
             if (data.status == 200) {

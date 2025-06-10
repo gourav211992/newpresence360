@@ -630,13 +630,19 @@ class BomController extends Controller
         $moduleType = $request->type ?? null;
         $customerId = $request->customer_id ?? null;
         /*Check header mandatory*/
-        if ($item['selectedAttrRequired'] && $item['item_code']) {
-            if(!$item['item_code'] || $item['selectedAttrRequired']) {
-                return response()->json(['data' => ['html' => ''], 'status' => 422, 'message' => 'Please fill all the header details before adding components.']);
-            }
+        if (!empty($item['selectedAttrRequired'])) {
+            return response()->json([
+                'data' => ['html' => ''],
+                'status' => 422,
+                'message' => 'Please fill all the header details before adding components.'
+            ]);
         }
-        if(!$item['item_id']) {
-            return response()->json(['data' => ['html' => ''], 'status' => 422, 'message' => 'Please fill all the header details before adding components.']);
+        if (empty($item['item_id'])) {
+            return response()->json([
+                'data' => ['html' => ''],
+                'status' => 422,
+                'message' => 'Please fill all the header details before adding components.'
+            ]);
         }
 
         /*Check last tr in table mandatory*/

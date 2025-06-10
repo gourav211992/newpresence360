@@ -14,6 +14,7 @@ use App\Models\ApprovalWorkflow;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Storage;
 use App\Services\Mailers\Mailer;
+use App\Helpers\InventoryHelper;
 use App\Models\MailBox;
 use App\Exports\PaymentReceiptReportExport;
 use App\Models\CostCenterOrgLocations;
@@ -228,6 +229,8 @@ class PaymentVoucherController extends Controller
         }
 
           $fyear = Helper::getFinancialYear(date('Y-m-d'));
+          $accessibleLocations = InventoryHelper::getAccessibleLocations();
+          $locationIds = $accessibleLocations->pluck('id')->toArray();
         // Retrieve vouchers based on organization_id and include series with levels
         $data = PaymentVoucher::withDefaultGroupCompanyOrg()
             ->with([
@@ -243,7 +246,8 @@ class PaymentVoucherController extends Controller
                 'currency' => function ($d) {
                     $d->select('id', 'name', 'short_name');
                 }
-            ])->where('document_status', '!=', 'cancel');
+            ])->where('document_status', '!=', 'cancel')
+            ->whereIn('location', $locationIds);
 
         // Apply filters based on the request
         // if ($request->document_type) {
@@ -313,7 +317,7 @@ class PaymentVoucherController extends Controller
         })->toArray();
 
         $fyearLocked = $fyear['authorized'];
-         $locations = ErpStore::where('status','active')->get();
+        $locations = InventoryHelper::getAccessibleLocations();
         return view('paymentVoucher.paymentVouchers', compact('cost_centers','mappings', 'banks', 'ledgers', 'bank_id', 'ledger_id', 'organizationId', 'data', 'book_type', 'date', 'document_no', 'document_type', 'type', 'createRoute', 'editRouteString','date','date2','fyearLocked','locations'));
     }
 

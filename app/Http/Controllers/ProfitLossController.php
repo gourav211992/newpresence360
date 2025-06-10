@@ -13,6 +13,7 @@ use App\Models\PLGroups;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Helpers\ConstantHelper;
+use App\Helpers\InventoryHelper;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Models\CostCenterOrgLocations;
@@ -320,7 +321,7 @@ class ProfitLossController extends Controller
         })->toArray();
         $dateRange = \Carbon\Carbon::parse($startDate)->format('d-m-Y') . " to " . \Carbon\Carbon::parse($endDate)->format('d-m-Y');
         $date2 = \Carbon\Carbon::parse($startDate)->format('jS-F-Y') . ' to ' . \Carbon\Carbon::parse($endDate)->format('jS-F-Y');
-        $locations = ErpStore::where('status','active')->get();
+        $locations = InventoryHelper::getAccessibleLocations();
         return view('profitLoss.profitLoss',compact('cost_centers','organizations','organization','companies','organizationId','dateRange','date2','locations'));
     }
 

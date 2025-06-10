@@ -1963,6 +1963,16 @@ $('#revisionNumber').prop('disabled', false);
         }
 
         function postVoucher(element) {
+             Swal.fire({
+            title: 'Are you sure?',
+            text: 'Do you want to proceed with posting the voucher?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, proceed',
+            cancelButtonText: 'No, cancel'
+            }).then((result) => {
+            if (result.isConfirmed) {
+            $('.preloader').show();
             const bookId = "{{ $data->book_id }}";
             const type = "{{ $data->document_type }}"
             const documentId = "{{ $data->id }}";
@@ -2016,6 +2026,11 @@ $('#revisionNumber').prop('disabled', false);
                 });
 
             }
+            }
+            else{
+                $('#postvoucher').modal('hide');
+            }
+        });   
         }
 
     $(document).on('click', '#revokeButton', (e) => {

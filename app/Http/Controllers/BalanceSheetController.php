@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exports\balanceSheetReportExport;
 use App\Helpers\Helper;
+use App\Helpers\InventoryHelper;
 use App\Models\Group;
 use App\Models\Ledger;
 use App\Models\Organization;
@@ -46,9 +47,6 @@ class BalanceSheetController extends Controller
             $endDate = date('Y-m-d', strtotime($dates[1]));
             $today = date('Y-m-d');
 
-// if ($endDate > $today) {
-//     $endDate = $today;
-// }
         }
         $organizations=[];
         if ($r->organization_id && is_array($r->organization_id)) {
@@ -211,7 +209,7 @@ $data[] = [
 
         $dateRange = \Carbon\Carbon::parse($startDate)->format('d-m-Y') . " to " . \Carbon\Carbon::parse($endDate)->format('d-m-Y');
         $date2 = \Carbon\Carbon::parse($startDate)->format('jS-F-Y') . ' to ' . \Carbon\Carbon::parse($endDate)->format('jS-F-Y');
-        $locations = ErpStore::where('status','active')->get();
+        $locations = InventoryHelper::getAccessibleLocations();
 
 
         return view('balanceSheet.balanceSheet',compact('cost_centers','organizationId','companies','organization','dateRange','date2','locations'));
