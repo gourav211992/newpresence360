@@ -7,14 +7,13 @@ use App\Models\FixedAssetRegistration;
 use Illuminate\Http\Request;
 use App\Helpers\Helper;
 use App\Models\Employee;
-use App\Models\ErpAssetCategory;
 use App\Models\ErpStore;
-use App\Models\FixedAssetIssueTransfer;
+use App\Models\FixedAssetMaintenance;
 use Carbon\Carbon;
-use App\Models\FixedAssetSub;
+use App\Models\ErpAssetCategory;
 use App\Helpers\InventoryHelper;
 
-class IssueTransferController extends Controller
+class MaintenanceController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -28,15 +27,15 @@ class IssueTransferController extends Controller
          if (count($servicesBooks['services']) == 0) {
             return redirect() -> route('/');
         }
-        $query=FixedAssetIssueTransfer::withDefaultGroupCompanyOrg()->orderBy('id','desc');
+        $query=FixedAssetMaintenance::withDefaultGroupCompanyOrg()->orderBy('id','desc');
         $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()
         ->whereNotNull('asset_code')
         ->whereNotNull('asset_name')
         ->get();
 
     // Apply filters based on the request
-    if ($request->has('status') && $request->status!==null) {
-        $query->where('status', $request->status);
+    if ($request->has('condition') && $request->condition!==null) {
+        $query->where('condition', $request->condition);
     }
 
     if ($request->has('asset') && $request->asset!==null) {
@@ -52,10 +51,11 @@ class IssueTransferController extends Controller
         }
     }
 
+
     // Get the filtered data
     $data = $query->get();
 
-        return view('fixed-asset.issue-transfer.index',compact('data','assets'));
+        return view('fixed-asset.maintenance.index',compact('data','assets'));
     }
 
     /**
@@ -78,13 +78,16 @@ class IssueTransferController extends Controller
         })->get();
 
         $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-        ->doesntHave('issue_transfer')
         ->whereNotNull('asset_code')
         ->whereNotNull('asset_name')
         ->get();
-        $locations = InventoryHelper::getAccessibleLocations();
-        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
-        return view('fixed-asset.issue-transfer.create',compact('assets','employees','locations','categories'));
+        $locations = InventoryHelper::getAccessibleLocations()->where('status','active')->get();
+        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()
+        ->where('status', 1)
+        ->whereHas('setup')
+        ->select('id', 'name')
+        ->get();
+        return view('fixed-asset.maintenance.create',compact('assets','employees','locations','categories'));
     }
 
     /**
@@ -105,23 +108,11 @@ class IssueTransferController extends Controller
 
         // Store the asset
         try {
-            $asset = FixedAssetIssueTransfer::create($data);
-            if($asset->status=="transfer"){
-                $sub_assets = json_decode($asset->sub_asset);
-                foreach ($sub_assets as $sub_asset) {
-                    $sub = FixedAssetSub::find($sub_asset);
-                    if ($sub) {
-                        $sub->location_id = $request->transfer_location??null;
-                        $sub->cost_center_id = $request->transfer_cost_center??null;
-                        $sub->save();
-                    }
-                }
-
-            }
-            return redirect()->route("finance.fixed-asset.issue-transfer.index")->with('success', 'Issue/Transfer created successfully!');
+            $asset = FixedAssetMaintenance::create($data);
+            return redirect()->route("finance.fixed-asset.maintenance.index")->with('success', 'Maintenance created successfully!');
         } catch (\Exception $e) {
             // Set error message
-            return redirect()->route("finance.fixed-asset.issue-transfer.create")->with('error',$e->getMessage());
+            return redirect()->route("finance.fixed-asset.maintenance.create")->with('error',$e->getMessage());
         }}
 
     /**
@@ -129,20 +120,14 @@ class IssueTransferController extends Controller
      */
     public function show(string $id)
     {
-        $data = FixedAssetIssueTransfer::findorFail($id);
-        $organization_id=Helper::getAuthenticatedUser()->organization->id;
-        $employees = Employee::where(function ($query) use ($organization_id) {
-            $query->whereHas('access_rights_org', function ($subQuery) use ($organization_id) {
-                $subQuery->where('organization_id', $organization_id);
-            })->orWhere('organization_id', $organization_id);
-        })->get();
+        $data = FixedAssetMaintenance::findorFail($id);
         $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()
         ->whereNotNull('asset_code')
         ->whereNotNull('asset_name')
         ->get();
         $locations = InventoryHelper::getAccessibleLocations()->where('status','active')->get();
         $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
-        return view('fixed-asset.issue-transfer.show',compact('assets','employees','data','locations','categories'));
+        return view('fixed-asset.maintenance.show',compact('assets','data','locations','categories'));
     }
 
     /**
@@ -150,20 +135,14 @@ class IssueTransferController extends Controller
      */
     public function edit(string $id)
     {
-        $data = FixedAssetIssueTransfer::findorFail($id);
-        $organization_id=Helper::getAuthenticatedUser()->organization->id;
-        $employees = Employee::where(function ($query) use ($organization_id) {
-            $query->whereHas('access_rights_org', function ($subQuery) use ($organization_id) {
-                $subQuery->where('organization_id', $organization_id);
-            })->orWhere('organization_id', $organization_id);
-        })->get();
+        $data = FixedAssetMaintenance::findorFail($id);
         $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()
         ->whereNotNull('asset_code')
         ->whereNotNull('asset_name')
         ->get();
         $locations = InventoryHelper::getAccessibleLocations()->where('status','active')->get();
         $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
-        return view('fixed-asset.issue-transfer.edit',compact('assets','employees','data','locations','categories'));
+        return view('fixed-asset.maintenance.edit',compact('assets','data','locations','categories'));
     }
 
     /**
@@ -171,12 +150,12 @@ class IssueTransferController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $asset = FixedAssetIssueTransfer::find($id);
+        $asset = FixedAssetMaintenance::find($id);
 
     if (!$asset) {
         return redirect()
-            ->route('finance.fixed-asset.issue-transfer.index')
-            ->with('error', 'Issue/Transfer not found.');
+            ->route('finance.fixed-asset.maintenance.index')
+            ->with('error', 'Maintenance not found.');
     }
 
     $data = $request->all();
@@ -184,22 +163,10 @@ class IssueTransferController extends Controller
     // Update the asset
     try {
         $asset->update($data);
-        if($asset->status=="transfer"){
-                $sub_assets = json_decode($asset->sub_asset);
-                foreach ($sub_assets as $sub_asset) {
-                    $sub = FixedAssetSub::find($sub_asset);
-                    if ($sub) {
-                        $sub->location_id = $request->transfer_location??null;
-                        $sub->cost_center_id = $request->transfer_cost_center??null;
-                        $sub->save();
-                    }
-                }
-
-            }
-        return redirect()->route("finance.fixed-asset.issue-transfer.index")->with('success', 'Issue/Transfer updated successfully!');
+        return redirect()->route("finance.fixed-asset.maintenance.index")->with('success', 'Maintenance updated successfully!');
     } catch (\Exception $e) {
         // Handle any exceptions
-        return redirect()->route("finance.fixed-asset.issue-transfer.edit", $id)->with('error', $e->getMessage());
+        return redirect()->route("finance.fixed-asset.maintenance.edit", $id)->with('error', $e->getMessage());
     }
     }
 

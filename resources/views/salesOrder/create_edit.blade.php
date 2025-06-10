@@ -533,10 +533,9 @@
                                                                                 <td>
                                                                                     <div class="d-flex">
                                                                                        @if (request() -> type === 'so')
-                                                                                           <div class="me-50 cursor-pointer" onclick = "openDeliverySchedule('{{$orderItemIndex}}');">    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Delivery Schedule" class="text-primary"><i data-feather="calendar"></i></span>
+                                                                                           <div class="me-50 cursor-pointer" onclick = "openDeliverySchedule('{{$orderItemIndex}}');">    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Delivery Schedule" class="text-primary"><i data-feather="calendar"></i></span></div>
                                                                                            <div class="me-50 cursor-pointer dynamic_bom_div" id = "dynamic_bom_div_{{$orderItemIndex}}" style = "display:none;" onclick = "getCustomizableBOM({{$orderItemIndex}}, {{ json_encode(!$orderItem->is_editable) }})"> <span data-bs-toggle="tooltip" data-bs-placement="top" title="BOM" class="text-primary"><i data-feather="table"></i></span></div>
                                                                                        @endif
-                                                                                        </div>
                                                                                         <div class="me-50 cursor-pointer" data-bs-toggle="modal" data-bs-target="#Remarks" onclick = "setItemRemarks('item_remarks_{{$orderItemIndex}}');">        <span data-bs-toggle="tooltip" data-bs-placement="top" title="Remarks" class="text-primary"><i data-feather="file-text"></i></span></div>
                                                                                    </div>
                                                                                 </td>
@@ -2082,10 +2081,9 @@
                     <td>
                     <div class="d-flex">
                         @if(request() -> type === 'so')
-                            <div class="me-50 cursor-pointer" onclick = "openDeliverySchedule(${newIndex});">    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Delivery Schedule" class="text-primary"><i data-feather="calendar"></i></span>
+                            <div class="me-50 cursor-pointer" onclick = "openDeliverySchedule(${newIndex});">    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Delivery Schedule" class="text-primary"><i data-feather="calendar"></i></span></div>
                             <div class="me-50 cursor-pointer dynamic_bom_div" id = "dynamic_bom_div_${newIndex}" onclick = "getCustomizableBOM(${newIndex})" style = "display:none;"> <span data-bs-toggle="tooltip" data-bs-placement="top" title="BOM" class="text-primary"><i data-feather="table"></i></span></div>
                         @endif
-                        </div>
                         <div class="me-50 cursor-pointer" data-bs-toggle="modal" data-bs-target="#Remarks" onclick = "setItemRemarks('item_remarks_${newIndex}');">        <span data-bs-toggle="tooltip" data-bs-placement="top" title="Remarks" class="text-primary"><i data-feather="file-text"></i></span></div>
                    </div>
                 </td>
@@ -4456,10 +4454,9 @@
                                 <td>
                                     <div class="d-flex">
                                         @if(request() -> type === 'so')
-                                            <div class="me-50 cursor-pointer" onclick = "openDeliverySchedule('${currentOrderIndexVal}');">    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Delivery Schedule" class="text-primary"><i data-feather="calendar"></i></span>
+                                            <div class="me-50 cursor-pointer" onclick = "openDeliverySchedule('${currentOrderIndexVal}');">    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Delivery Schedule" class="text-primary"><i data-feather="calendar"></i></span></div>
                                             <div class="me-50 cursor-pointer dynamic_bom_div" id = "dynamic_bom_div_${currentOrderIndexVal}" onclick = "getCustomizableBOM(${currentOrderIndexVal})" style = "display:none;"> <span data-bs-toggle="tooltip" data-bs-placement="top" title="BOM" class="text-primary"><i data-feather="table"></i></span></div>
                                         @endif
-                                        </div>
                                         <div class="me-50 cursor-pointer" data-bs-toggle="modal" data-bs-target="#Remarks" onclick = "setItemRemarks('item_remarks_${currentOrderIndexVal}');">        <span data-bs-toggle="tooltip" data-bs-placement="top" title="Remarks" class="text-primary"><i data-feather="file-text"></i></span></div>
                                    </div>
                                 </td>
@@ -5442,10 +5439,9 @@ document.addEventListener('input', function (e) {
                 <td>
                 <div class="d-flex">
                     @if(request() -> type === 'so')
-                        <div class="me-50 cursor-pointer" onclick = "openDeliverySchedule(${newIndex});">    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Delivery Schedule" class="text-primary"><i data-feather="calendar"></i></span>
+                        <div class="me-50 cursor-pointer" onclick = "openDeliverySchedule(${newIndex});">    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Delivery Schedule" class="text-primary"><i data-feather="calendar"></i></span></div>
                         <div class="me-50 cursor-pointer dynamic_bom_div" id = "dynamic_bom_div_${newIndex}" onclick = "getCustomizableBOM(${newIndex})" style = "display:none;"> <span data-bs-toggle="tooltip" data-bs-placement="top" title="BOM" class="text-primary"><i data-feather="table"></i></span></div>
                     @endif
-                    </div>
                     <div class="me-50 cursor-pointer" data-bs-toggle="modal" data-bs-target="#Remarks" onclick = "setItemRemarks('item_remarks_${newIndex}');">        <span data-bs-toggle="tooltip" data-bs-placement="top" title="Remarks" class="text-primary"><i data-feather="file-text"></i></span></div>
                 </div>
             </td>

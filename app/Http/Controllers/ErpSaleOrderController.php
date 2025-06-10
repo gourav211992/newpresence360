@@ -939,17 +939,17 @@ class ErpSaleOrderController extends Controller
                                 }
                             }
                         } 
-                        // else {
-                        //     $itemDeliveryRowData = [
-                        //         'sale_order_id' => $saleOrder -> id,
-                        //         'so_item_id' => $soItem -> id,
-                        //         'ledger_id' => null,
-                        //         'qty' => $soItem -> order_qty,
-                        //         'invoice_qty' => 0,
-                        //         'delivery_date' => $soItem -> delivery_date
-                        //     ];
-                        //     ErpSoItemDelivery::updateOrCreate(['sale_order_id' => $saleOrder -> id, 'so_item_id' => $soItem -> id], $itemDeliveryRowData);
-                        // }
+                        else {
+                            $itemDeliveryRowData = [
+                                'sale_order_id' => $saleOrder -> id,
+                                'so_item_id' => $soItem -> id,
+                                'ledger_id' => null,
+                                'qty' => $soItem -> order_qty,
+                                'invoice_qty' => 0,
+                                'delivery_date' => $soItem -> delivery_date
+                            ];
+                            ErpSoItemDelivery::updateOrCreate(['sale_order_id' => $saleOrder -> id, 'so_item_id' => $soItem -> id], $itemDeliveryRowData);
+                        }
                         ErpSaleOrderTed::where([
                             'sale_order_id' => $saleOrder -> id,
                             'so_item_id' => $soItem -> id,

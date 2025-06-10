@@ -63,6 +63,10 @@ class Book extends Model
     {
         return $this -> belongsTo(OrganizationService::class, 'org_service_id');
     }
+    public function master_service()
+    {
+        return $this -> belongsTo(Service::class, 'service_id');
+    }
 
     public function parameters()
     {

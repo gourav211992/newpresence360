@@ -25,6 +25,9 @@
                         <button class="btn btn-warning btn-sm mb-50 mb-sm-0" onclick ='openFiltersModal();'><i data-feather="filter"></i> Filter</button>
                         @if ($create_button)
 						<a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{$create_route}}"><i data-feather="plus-circle"></i> Create {{request() -> type == 'sq' ? 'Quotation' : 'Order'}}</a> 
+                        @if (request() -> type == 'so')
+                            <a class="btn btn-success btn-sm mb-50 mb-sm-0" href="{{route('salesOrder.import.index', ['version' => 'v2'])}}"><i data-feather="upload-cloud"></i> Import Orders</a> 
+                        @endif
                         @endif
                         <a class="btn btn-dark btn-sm mb-50 mb-sm-0" href="{{ route('transactions.report', ['serviceAlias' => request() -> type]) }}"><i data-feather="bar-chart-2"></i>Report</a>
                     </div>

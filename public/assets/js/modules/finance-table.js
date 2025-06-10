@@ -14,3 +14,84 @@ function handleRowSelection(tableSelector) {
         }
     });
 }
+        function initializeBasicDataTable(selector, exportFileName = 'Data_Export') {
+    var dt_table = $(selector),
+        assetPath = '../../../app-assets/';
+
+    if ($('body').attr('data-framework') === 'laravel') {
+        assetPath = $('body').attr('data-asset-path');
+    }
+
+    if (dt_table.length) {
+        var dt = dt_table.DataTable({
+            order: [],
+            columnDefs: [
+                {
+                    orderable: false,
+                    targets: [0, -1]
+                },
+                {
+                    targets: 8,
+                    render: function (data, type, row, meta) {
+                        if (type === 'export') {
+                            var $node = $('<div>').html(data);
+                            return $node.find('.usernames').text();
+                        }
+                        return data;
+                    }
+                }
+            ],
+            dom: '<"d-flex justify-content-between align-items-center mx-2 row"' +
+                '<"col-sm-12 col-md-6"l>' +
+                '<"col-sm-12 col-md-3 withoutheadbuttin dt-action-buttons text-end"B>' +
+                '<"col-sm-12 col-md-3"f>>t' +
+                '<"d-flex justify-content-between mx-2 row"' +
+                '<"col-sm-12 col-md-6"i>' +
+                '<"col-sm-12 col-md-6"p>>',
+            scrollX: true,
+            displayLength: 7,
+            lengthMenu: [7, 10, 25, 50, 75, 100],
+            buttons: [
+                {
+                    extend: 'excel',
+                    className: 'btn btn-outline-secondary',
+                    text: feather.icons['file-text'].toSvg({ class: 'font-small-4 mr-50' }) + 'Excel',
+                    filename: exportFileName,
+                    exportOptions: {
+                        columns: ':not(:last-child)' // exclude last column
+                    },
+                    init: function (api, node, config) {
+                        $(node).removeClass('btn-secondary');
+                        setTimeout(function () {
+                            $(node).closest('.dt-buttons').removeClass('btn-group').addClass('d-inline-flex');
+                        }, 50);
+                    }
+                }
+            ],
+            drawCallback: function () {
+                feather.replace();
+            },
+            language: {
+                paginate: {
+                    previous: '&nbsp;',
+                    next: '&nbsp;'
+                }
+            }
+        });
+
+        // Optional: flatpickr for date inputs inside table
+        dt_table.find('input.flatpickr').flatpickr({
+            monthSelectorType: 'static',
+            dateFormat: 'm/d/Y'
+        });
+
+        // Delete row action
+        dt_table.find('tbody').on('click', '.delete-record', function () {
+            dt.row($(this).parents('tr')).remove().draw();
+        });
+
+        return dt;
+    }
+
+    return null;
+}

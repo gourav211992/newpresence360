@@ -220,96 +220,17 @@
     <!-- END: Content-->
 @endsection
 @section('scripts')
-<script type="text/javascript" src="{{asset('assets/js/modules/finance-table.js')}}"></script>
+    <script type="text/javascript" src="{{ asset('assets/js/modules/finance-table.js') }}"></script>
     <script>
         $(function() {
-            var dt_basic_table = $('.datatables-basic'),
-                assetPath = '../../../app-assets/';
+            // Initialize
+            const dt = initializeBasicDataTable('.datatables-basic', 'Asset_RegistrationReport');
 
-            if ($('body').attr('data-framework') === 'laravel') {
-                assetPath = $('body').attr('data-asset-path');
-            }
-
-            if (dt_basic_table.length) {
-                var dt_basic = dt_basic_table.DataTable({
-                    order: [], // Disable default sorting
-                    columnDefs: [{
-                            orderable: false,
-                            targets: [0, -
-                                1
-                            ] // Disable sorting on the first and last columns (Action and # columns)
-                        },
-                        {
-                            targets: 8, // Adjust this index according to your column number (Status column)
-                            render: function(data, type, row, meta) {
-                                if (type === 'export') {
-                                    var $node = $('<div>').html(data);
-                                    return $node.find('.usernames').text();
-                                }
-                                return data;
-                            }
-                        }
-                    ],
-                    dom: '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-3 withoutheadbuttin dt-action-buttons text-end"B><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
-                    scrollX: true,
-                    displayLength: 7,
-                    lengthMenu: [7, 10, 25, 50, 75, 100],
-                    buttons: [{
-                        extend: 'collection',
-                        className: 'btn btn-outline-secondary dropdown-toggle',
-                        text: feather.icons['share'].toSvg({
-                            class: 'font-small-4 mr-50'
-                        }) + 'Export',
-                        buttons: [{
-                            extend: 'excel',
-                            text: feather.icons['file-text'].toSvg({
-                                class: 'font-small-4 mr-50'
-                            }) + 'Excel',
-                            className: 'dropdown-item',
-                            filename: 'Asset_RegistrationReport', // Set filename as needed
-                            exportOptions: {
-                                columns: ':not(:last-child)' // exclude the last column
-                            },
-
-                        }],
-                        init: function(api, node, config) {
-                            $(node).removeClass('btn-secondary');
-                            $(node).parent().removeClass('btn-group');
-                            setTimeout(function() {
-                                $(node).closest('.dt-buttons').removeClass('btn-group')
-                                    .addClass('d-inline-flex');
-                            }, 50);
-                        }
-                    }],
-                    drawCallback: function() {
-                        feather.replace();
-                    },
-
-                    language: {
-                        paginate: {
-                            previous: '&nbsp;',
-                            next: '&nbsp;'
-                        }
-                    }
-                });
-
-                // Update the label for the table to "Asset Registration"
-                $('div.head-label').html('<h6 class="mb-0">Asset Registration</h6>');
-            }
-
-            // Flat Date picker (if necessary)
-            if (dt_basic_table.length) {
-                dt_basic_table.flatpickr({
-                    monthSelectorType: 'static',
-                    dateFormat: 'm/d/Y'
-                });
-            }
-
-            // Delete Record (if applicable)
-            $('.datatables-basic tbody').on('click', '.delete-record', function() {
-                dt_basic.row($(this).parents('tr')).remove().draw();
-            });
+            // Set label
+            $('div.head-label').html('<h6 class="mb-0">Asset Registration</h6>');
         });
+
+
 
         function showToast(icon, title) {
             const Toast = Swal.mixin({

@@ -6,6 +6,7 @@ use App\Http\Controllers\ErpDriverController;
 use App\Http\Controllers\ErpPlController;
 use App\Http\Controllers\ErpPSVController;
 use App\Http\Controllers\OverheadMasterController;
+use App\Http\Controllers\SaleOrderImportController;
 use App\Http\Controllers\TDSReportController;
 use App\Http\Controllers\DPRTemplateController;
 use App\Http\Controllers\CashflowReportController;
@@ -2643,6 +2644,12 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         Route::get('/pullable-docs', 'getPullableDocuments')->name('pullable.docs');
         Route::post('/pullable-doc-items', 'getDocumentItems')->name('pullable.doc.items');
         Route::post('/item-details', 'getItemDetails')->name('item.details');
+    });
+
+    Route::prefix('sales-order/import')->controller(SaleOrderImportController::class)->name('salesOrder.')->group(function () {
+        Route::get('/{version}', 'import')->name('import.index');
+        Route::post('save/{version}', 'importSave')->name('import.save');
+        Route::post('store/{version}', 'bulkUploadOrders')->name('import.store');
     });
 });
 

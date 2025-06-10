@@ -105,6 +105,20 @@ class FixedAssetSplit extends Model
                     'data' => []
                 );
             }
+            $exitingReg = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('reference_series', $request->book_id)->where('reference_doc_id',$request->id)->first();
+            if ($exitingReg) {
+                return array(
+                    'message' => 'Registration already posted',
+                    'status' => false
+                );
+            }
+            $exitingVoucher = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('document_number', $request->document_number)->where('book_id',$request->book_id)->first();
+            if ($exitingVoucher) {
+                return array(
+                    'message' => 'Registration already posted with same Doc No# '.$request->document_number,
+                    'status' => false
+                );
+            }
 
             $asset = FixedAssetRegistration::find($request->asset_id);
             if (!$asset) {
@@ -124,14 +138,9 @@ class FixedAssetSplit extends Model
                 'company_id' => $request->company_id,
                 'created_by' => $request->created_by,
                 'type' => $request->type,
-                'book_id' => $series->id,
-                'document_number' => $book['document_number'],
+                'book_id' => $request->book_id,
+                'document_number' => $request->document_number,
                 'document_date' => $request->document_date,
-                'doc_number_type' => $book['type'],
-                'doc_reset_pattern' => $book['reset_pattern'],
-                'doc_prefix' => $book['prefix'],
-                'doc_suffix' => $book['suffix'],
-                'doc_no' => $book['doc_no'],
                 'asset_code' => $assetCode,
                 'asset_name' => $firstItem->asset_name,
                 'quantity' => $items->sum('quantity'),
@@ -190,7 +199,7 @@ class FixedAssetSplit extends Model
         $old = FixedAssetSub::find((int)$request->sub_asset_id);
         if ($old){
             if($old->last_dep_date!=$old->capitalize_date){
-                $old->expiry_date = Carbon::parse($request->capitalize_date)->addDay()->format('Y-m-d');
+                $old->expiry_date = Carbon::parse($request->capitalize_date)->subDay()->format('Y-m-d');
                 $old->save();
             }else{
                 $old->expiry_date = $old->last_dep_date;
