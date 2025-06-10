@@ -32,7 +32,7 @@ return new class extends Migration
             $table->text('import_remarks')->nullable();
             $table->string('import_status')->default('Draft')->nullable();
             
-            $table->enum('status', ConstantHelper::STATUS)->default(ConstantHelper::ACTIVE)->index();
+            $table->string('status')->default('active')->nullable()->index();
             $table->unsignedBigInteger('created_by')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->unsignedBigInteger('deleted_by')->nullable();

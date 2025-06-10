@@ -958,7 +958,6 @@ document.addEventListener("click", function (e) {
         $('.preloader').show();
         const btn = e.target.closest(".print-btn");
         const printUrl = btn.getAttribute("data-url");
-// console.log(printUrl);
         $.ajax({
             url: printUrl,
             method: 'GET',
@@ -1285,7 +1284,7 @@ document.addEventListener("click", function (e) {
                 $('.vouchers').prop('checked', this.checked);
                 selectAllVouchers();
             });
-            $(".revisionNumber").change(function() {
+            $("#revisionNumber").change(function() {
                 window.location.href = "{{ route($editUrlString, $data->id) }}?revisionNumber=" +
                     $(this).val();
             });
@@ -1776,24 +1775,9 @@ $('#revisionNumber').prop('disabled', false);
     <script>
 
        function onPostVoucherOpen(type = "not_posted") {
-    const isPostButton = {{ $buttons['post'] ? 'true' : 'false' }};
-            if (isPostButton) {
-                Swal.fire({
-                    title: 'Are you sure?',
-                    text: 'Do you want to proceed with posting the voucher?',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonText: 'Yes, proceed',
-                    cancelButtonText: 'No, cancel'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        proceedWithVoucher(type);
-                    } 
-                });
-            } else {
+   
                 proceedWithVoucher(type);
             }
-        }
 
         function proceedWithVoucher(type = "not_posted") {
             resetPostVoucher();
@@ -1864,6 +1848,16 @@ $('#revisionNumber').prop('disabled', false);
         }
 
         function postVoucher(element) {
+        Swal.fire({
+        title: 'Are you sure?',
+        text: 'Do you want to proceed with posting the voucher?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, proceed',
+        cancelButtonText: 'No, cancel'
+        }).then((result) => {
+        if (result.isConfirmed) {
+            $('.preloader').show();
             const bookId = "{{ $data->book_id }}";
             const type = "{{ $data->document_type }}"
             const documentId = "{{ $data->id }}";
@@ -1886,6 +1880,7 @@ $('#revisionNumber').prop('disabled', false);
 
                     }),
                     success: function(data) {
+                    $('.preloader').hide();
                         const response = data.data;
                         if (response.status) {
                             Swal.fire({
@@ -1908,6 +1903,7 @@ $('#revisionNumber').prop('disabled', false);
                         }
                     },
                     error: function(jqXHR, textStatus, errorThrown) {
+                        $('.preloader').hide();
                         Swal.fire({
                             title: 'Error!',
                             text: 'Some internal error occured',
@@ -1916,7 +1912,12 @@ $('#revisionNumber').prop('disabled', false);
                     }
                 });
 
+                }
             }
+            else{
+                $('#postvoucher').modal('hide');
+            }
+        });
         }
         function bind(){
 

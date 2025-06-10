@@ -26,7 +26,7 @@
                         <a href="{{ route('ledgers.index') }}" class="btn btn-secondary btn-sm mb-50 mb-sm-0">
                             <i data-feather="arrow-left-circle"></i> Back
                         </a>
-                        <a href="{{ asset('templates/ledger_sample_template.xlsx') }}" class="btn btn-secondary btn-sm"
+                        <a href="{{ asset('templates/ledger_sample_template.xlsx') }}" class="btn btn-primary btn-sm"
                             id="download-template-btn" download>
                             <i data-feather="download"></i> Download Template
                         </a>
@@ -126,7 +126,7 @@
                                         </div>
                                         <div class="table-responsive candidates-tables">
                                             <table
-                                                class="datatables-basic datatables-success table table-striped myrequesttablecbox loanapplicationlist">
+                                                class="datatables-basic1 datatables-success table table-striped myrequesttablecbox loanapplicationlist">
                                                 <thead>
                                                     <tr>
                                                         <th>S.No</th>
@@ -183,7 +183,56 @@
 @endsection
 @section('scripts')
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script type="text/javascript" src="{{asset('assets/js/modules/finance-table.js')}}"></script>
     <script>
+         $('.datatables-basic').DataTable({
+                processing: true,
+                scrollX: true,
+                serverSide: false,
+                drawCallback: function () {
+                    feather.replace();
+                },
+                order: [[0, 'asc']],
+                dom:
+                    '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-3 withoutheadbuttin dt-action-buttons text-end"><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+                lengthMenu: [7, 10, 25, 50, 75, 100],
+                columnDefs: [
+                    { "orderable": false, "targets": [5] }
+                ],
+                language: {
+                    paginate: {
+                        previous: '&nbsp;',
+                        next: '&nbsp;'
+                    }
+                }
+            });
+
+            handleRowSelection('.datatables-basic');
+
+       
+            $('.datatables-basic1').DataTable({
+                processing: true,
+                scrollX: true,
+                serverSide: false,
+                drawCallback: function () {
+                    feather.replace();
+                },
+                order: [[0, 'asc']],
+                dom:
+                    '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-3 withoutheadbuttin dt-action-buttons text-end"><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+                lengthMenu: [7, 10, 25, 50, 75, 100],
+                columnDefs: [
+                    { "orderable": false, "targets": [5] }
+                ],
+                language: {
+                    paginate: {
+                        previous: '&nbsp;',
+                        next: '&nbsp;'
+                    }
+                }
+            });
+
+            handleRowSelection('.datatables-basic1');
         $(document).ready(function() {
             feather.replace();
             var fileInput = $("#fileUpload");
@@ -453,29 +502,29 @@
             });
 
             function populateTable(tableBodySelector, items) {
-                const tableBody = $(tableBodySelector);
-                tableBody.empty();
+                const table = $(tableBodySelector).closest('table').DataTable();
+                table.clear();
+
                 if (items.length > 0) {
                     items.forEach((item, index) => {
-                        const row = `
-                    <tr>
-                        <td>${index + 1}</td>
-                        <td class="fw-bolder text-dark">${item.code}</td>
-                        <td>${item.name}</td>
-                        <td>${item.groups}</td>
-                        <td class="${item.status == 'active' ? 'text-success' : 'text-danger'}">
-                            ${item.status}
-                        </td>
-                        <td>${item.remarks}</td>
-                    </tr>
-                `;
-                        tableBody.append(row);
+                        table.row.add([
+                            index + 1,
+                            `<span class="fw-bolder text-dark">${item.code}</span>`,
+                            item.name,
+                            item.groups,
+                            `<span class="badge rounded-pill ${item.status.toLowerCase() === 'active' ? 'badge-light-success' : 'badge-light-danger'}">${item.status}</span>`,
+                            item.remarks
+                        ]);
                     });
                 } else {
-                    const noDataRow = `<tr><td colspan="8" class="text-center">No records found</td></tr>`;
-                    tableBody.append(noDataRow);
+                    table.row.add([
+                        '', '', 'No records found', '', '', ''
+                    ]);
                 }
+
+                table.draw();
             }
+
         });
         $(document).on('click', '.editbtnNew', function(e) {
             e.preventDefault();

@@ -6,6 +6,7 @@ use App\Helpers\ConstantHelper;
 use App\Models\ExpenseHeader;
 use Illuminate\Http\Request;
 use App\Helpers\Helper;
+use App\Helpers\InventoryHelper;
 use App\Models\CostCenterOrgLocations;
 use App\Models\ErpStore;
 use App\Models\ExpenseTed;
@@ -130,7 +131,7 @@ class TDSReportController extends Controller
         $endDate = date('d-m-Y', strtotime($endDate));
         $range = $startDate . ' to ' . $endDate;
         $fy = self::formatWithOrdinal($startDate) . ' to ' . self::formatWithOrdinal($endDate);
-        $locations = ErpStore::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+        $locations = InventoryHelper::getAccessibleLocations();
         return view('tds.index', compact('fy', 'mappings', 'organization_id', 'range', 'vendors', 'vendor_id', 'records', 'taxTypes', 'cost_centers', 'locations', 'cost_center_id', 'location_id'));
     }
     

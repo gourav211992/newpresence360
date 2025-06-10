@@ -198,7 +198,12 @@
     const costCenters = @json($cost_centers);
 </script>
 <script>
+     $(document).ready(function () {
+        $('.preloader').css('display', 'flex');
+    });
+
     $(window).on('load', function() {
+        $('.preloader').fadeOut();
         if (feather) {
             feather.replace({
                 width: 14,
@@ -210,7 +215,7 @@
     $(function() {
         $(".sortable").sortable();
     });
- function updateLocationsDropdown(selectedOrgId) {
+    function updateLocationsDropdown(selectedOrgId) {
         console.log(selectedOrgId,'selected')
         const filteredLocations = locations.filter(loc =>
             // String(loc.organization_id) === String(selectedOrgId)
@@ -289,11 +294,14 @@
             }
             loadCostCenters(locationId);
         });
-            $(".open-job-sectab").click(function() {
-                $(this).parent().parent().next('tr').show();
-                $(this).parent().find('.close-job-sectab').show();
-                $(this).parent().find('.open-job-sectab').hide();
-            });
+        $(".open-job-sectab").click(function() {
+            $(this).parent().parent().next('tr').show();
+            $(this).parent().find('.close-job-sectab').show();
+            $(this).parent().find('.open-job-sectab').hide();
+        });
+         $('.add-new-record').on('submit', function () {
+            $('.preloader').fadeIn(); // show preloader
+        });
     });
     $(function() {
     var dt_basic_table = $('.datatables-basic'),

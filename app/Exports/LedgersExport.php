@@ -39,6 +39,7 @@ class LedgersExport implements FromCollection, WithHeadings, WithMapping, WithSt
             'tcs_percentage',
             'tax_type',
             'tax_percentage',
+            'Remarks',
         ];
 
         return $headings;
@@ -62,6 +63,7 @@ class LedgersExport implements FromCollection, WithHeadings, WithMapping, WithSt
             $item->tcs_percentage ?? 'N/A',
             $taxTypes[$item->tax_type] ?? 'N/A',
             $item->tax_percentage ?? 'N/A',
+            'Success',
         ];
 
         return $data;

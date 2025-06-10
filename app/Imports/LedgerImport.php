@@ -56,7 +56,7 @@ class LedgerImport implements ToModel, WithHeadingRow, WithChunkReading, WithSta
             'tax_type' => $row->tax_type,
             'tax_percentage' => $row->tax_percentage,
             'status_check' => 'success',
-            'remarks' => '',
+            'remarks' => 'Success',
         ];
     }
 

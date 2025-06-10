@@ -1657,7 +1657,7 @@ $(document).on('click', '#amendmentSubmit', (e) => {
 
 
         $(function() {
-            $(".revisionNumber").change(function() {
+            $("#revisionNumber").change(function() {
                 window.location.href =
                     "{{ route('vouchers.edit', ['voucher' => $data->id]) }}?revisionNumber=" + $(this)
                     .val();

@@ -3065,15 +3065,17 @@ return [
 
         //get active location
         public static function getStoreLocation($org_ids){
-            $query = ErpStore::where('status', ConstantHelper::ACTIVE);
+            $query = InventoryHelper::getAccessibleLocations();
 
-            if (is_array($org_ids)) {
-                $query->whereIn('organization_id', $org_ids);
-            } else {
-                $query->where('organization_id', $org_ids);
-            }
+             $filtered = $query->filter(function ($store) use ($org_ids) {
+                if (is_array($org_ids)) {
+                    return in_array($store->organization_id, $org_ids);
+                } else {
+                    return $store->organization_id == $org_ids;
+                }
+            });
 
-            return $query->get();
+            return $filtered->values(); 
         }
 
          public static function uniqueRuleWithConditions(string $table,array $conditions = [],int $ignoreId = null,string $ignoreColumn = 'id',bool $checkDeletedAt = true)
