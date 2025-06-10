@@ -52,6 +52,7 @@ use App\Models\ErpRack;
 use App\Models\Currency;
 use App\Models\ErpStore;
 use App\Models\ErpShelf;
+use App\Models\WhDetail;
 use App\Models\VendorBook;
 use App\Models\ErpAddress;
 use App\Models\PaymentTerm;
@@ -71,6 +72,7 @@ use App\Helpers\ItemHelper;
 use App\Helpers\NumberHelper;
 use App\Helpers\ConstantHelper;
 use App\Helpers\CurrencyHelper;
+use App\Helpers\EInvoiceHelper;
 use App\Helpers\InventoryHelper;
 use App\Helpers\StoragePointHelper;
 use App\Helpers\FinancialPostingHelper;
@@ -126,7 +128,6 @@ class PutAwayController extends Controller
                     'vendor',
                     'erpStore',
                     'erpSubStore',
-                    'costCenters',
                     'currency'
                 ]
             )
@@ -139,7 +140,7 @@ class PutAwayController extends Controller
                 ->addIndexColumn()
                 ->editColumn('document_status', function ($row) {
                     $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->document_status];
-                    $route = route('material-receipt.edit', $row->id);
+                    $route = route('put-away.edit', $row->id);
                     $displayStatus = $row->display_status;
                     return "<div style='text-align:right;'>
                         <span class='badge rounded-pill $statusClasss badgeborder-radius'>$displayStatus</span>
@@ -167,9 +168,6 @@ class PutAwayController extends Controller
                 })
                 ->editColumn('store', function ($row) {
                     return strval($row->erpSubStore?->name) ?? 'N/A';
-                })
-                ->editColumn('cost_center', function ($row) {
-                    return strval($row->costCenters?->name) ?? 'N/A';
                 })
                 ->editColumn('currency', function ($row) {
                     return strval($row->currency->short_name) ?? 'N/A';
@@ -224,7 +222,6 @@ class PutAwayController extends Controller
 
         DB::beginTransaction();
         try {
-            // dd($request->all());
             $parameters = [];
             $response = BookHelper::fetchBookDocNoAndParameters($request->book_id, $request->document_date);
             if ($response['status'] === 200) {
@@ -261,8 +258,6 @@ class PutAwayController extends Controller
             $putaway->store_id = $request->header_store_id;
             $putaway->sub_store_id = $request->sub_store_id;
             $putaway->organization_id = $organization->id;
-            $putaway->bill_to_follow = $request->bill_to_follow;
-            $putaway->is_warehouse_required = $request->is_warehouse_required ?? 0;
             $putaway->group_id = $organization->group_id;
             $putaway->book_code = $request->book_code;
             $putaway->series_id = $request->book_id;
@@ -304,7 +299,7 @@ class PutAwayController extends Controller
 
             $putaway->document_number = $document_number;
             $putaway->document_date = $request->document_date;
-            $putaway->final_remarks = $request->remarks ?? null;
+            $putaway->final_remark = $request->remarks ?? null;
             $putaway->cost_center_id = $request->cost_center_id ?? '';
             $putaway->save();
 
@@ -367,16 +362,16 @@ class PutAwayController extends Controller
                     $mrnDetail = MrnDetail::with('mrnHeader')->find($component['mrn_detail_id']);
                     $putaway_detail_id = null;
                     $so_id = null;
-                    // if (isset($component['mrn_detail_id']) && $component['mrn_detail_id']) {
-                    //     $putawayDetail = MrnDetail::find($component['mrn_detail_id']);
-                    //     $putaway_detail_id = $putawayDetail->id ?? null;
-                    //     $putawayHeaderId = $component['mrn_header_id'];
-                    //     if ($putawayDetail) {
-                    //         $putawayDetail->pr_qty += floatval($component['accepted_qty']);
-                    //         $putawayDetail->save();
-                    //         $so_id = $putawayDetail->so_id;
-                    //     }
-                    // }
+                    if (isset($component['mrn_detail_id']) && $component['mrn_detail_id']) {
+                        $putawayDetail = MrnDetail::find($component['mrn_detail_id']);
+                        $mrn_detail_id = $putawayDetail->id ?? null;
+                        $mrnHeaderId = $component['mrn_header_id'];
+                        if ($putawayDetail) {
+                            // $putawayDetail->pr_qty += floatval($component['accepted_qty']);
+                            // $putawayDetail->save();
+                            // $so_id = $putawayDetail->so_id;
+                        }
+                    }
                     $inventory_uom_id = null;
                     $inventory_uom_code = null;
                     $inventory_uom_qty = 0.00;
@@ -398,7 +393,6 @@ class PutAwayController extends Controller
                     $putawayItemArr[] = [
                         'header_id' => $putaway->id,
                         'mrn_detail_id' => $mrnDetail->id,
-                        'so_id' => $so_id,
                         'item_id' => $component['item_id'] ?? null,
                         'item_code' => $component['item_code'] ?? null,
                         'hsn_id' => $component['hsn_id'] ?? null,
@@ -408,6 +402,7 @@ class PutAwayController extends Controller
                         'store_id' => $putaway->store_id ?? null,
                         'store_code' => $putaway?->erpStore?->store_code ?? null,
                         'sub_store_id' => $putaway->sub_store_id ?? null,
+                        'order_qty' => floatval($component['order_qty']) ?? 0.00,
                         'accepted_qty' => floatval($component['accepted_qty']) ?? 0.00,
                         'inventory_uom_id' => $inventory_uom_id ?? null,
                         'inventory_uom_code' => $inventory_uom_code ?? null,
@@ -421,7 +416,6 @@ class PutAwayController extends Controller
 
                     $putawayDetail->header_id = $putawayItem['header_id'];
                     $putawayDetail->mrn_detail_id = $putawayItem['mrn_detail_id'];
-                    $putawayDetail->so_id = $putawayItem['so_id'];
                     $putawayDetail->item_id = $putawayItem['item_id'];
                     $putawayDetail->item_code = $putawayItem['item_code'];
                     $putawayDetail->hsn_id = $putawayItem['hsn_id'];
@@ -431,6 +425,7 @@ class PutAwayController extends Controller
                     $putawayDetail->store_id = $putawayItem['store_id'];
                     $putawayDetail->store_code = $putawayItem['store_code'];
                     $putawayDetail->sub_store_id = $putawayItem['sub_store_id'];
+                    $putawayDetail->receipt_qty = $putawayItem['order_qty'];
                     $putawayDetail->accepted_qty = $putawayItem['accepted_qty'];
                     $putawayDetail->inventory_uom_id = $putawayItem['inventory_uom_id'];
                     $putawayDetail->inventory_uom_code = $putawayItem['inventory_uom_code'];
@@ -476,9 +471,20 @@ class PutAwayController extends Controller
                                 $storagePoint->status = 'draft';
                                 $storagePoint->save();
 
+                                $packetNumber = '';
+                                $storageNumber = '';
+                                $whDetail = WhDetail::find($storagePoint->wh_detail_id);
                                 // ✅ Generate storage number if not present
-                                $storageNumber = $putaway?->book_code . '-' . $putaway?->document_number . '-' . $putawayDetail->item_code . '-' . $putawayDetail->id . '-STORAGE-' . ($storagePoint->wh_detail_id ?? $i + 1);
-                                
+                                if($whDetail->storage_number){
+                                    $storageNumber = $whDetail->storage_number;    
+                                } else{
+                                    $randomNumber = strtoupper(Str::random(rand(6, 8)));
+                                    $storageNumber = strtoupper(str_replace(' ', '-', $whDetail?->name)) .'-'. $randomNumber;
+                                }
+
+                                $storagePoint->storage_number = $storageNumber;
+                                $storagePoint->save();
+
                                 $mrnItemLocation = MrnItemLocation::find(@$storagePoint->item_id);
                                 if($mrnItemLocation){
                                     $mrnItemLocation->storage_number = $storageNumber;
@@ -496,10 +502,14 @@ class PutAwayController extends Controller
                                     $mrnItemLocation->inventory_uom_qty = $val['quantity'] ?? 0.00;
                                     $mrnItemLocation->status = 'draft';
                                     $mrnItemLocation->save();
+                                    
+                                    // ✅ Generate packet number if not present
+                                    $packetNumber = $mrnDetail?->mrnHeader?->book_code . '-' . $mrnDetail?->mrnHeader?->document_number . '-' . $mrnDetail->item_code . '-' . $mrnDetail->id . '-' . ($mrnItemLocation->id ?? $i + 1);
+
+                                    $mrnItemLocation->packet_number = $val['packet_number'] ?? $packetNumber;
+                                    $mrnItemLocation->save();
                                 }
 
-                                // ✅ Generate packet number if not present
-                                $packetNumber = $mrnDetail?->mrnHeader?->book_code . '-' . $mrnDetail?->mrnHeader?->document_number . '-' . $mrnDetail->item_code . '-' . $mrnDetail->id . '-' . ($storagePoint->id ?? $i + 1);
                                 // $storagePoint->packet_number = $val['packet_number'] ?? strtoupper(Str::random(rand(8, 10)));
                                 $storagePoint->packet_number = $val['packet_number'] ?? $packetNumber;
                                 $storagePoint->save();
@@ -509,69 +519,9 @@ class PutAwayController extends Controller
                         }
                     }
                 }
-
-                /*Header level save discount*/
-                if(isset($request->all()['disc_summary'])) {
-                    foreach($request->all()['disc_summary'] as $dis) {
-                        if (isset($dis['d_amnt']) && $dis['d_amnt']) {
-                            $ted = new MrnExtraAmount;
-                            $ted->mrn_header_id = $putaway->id;
-                            $ted->mrn_detail_id = null;
-                            $ted->ted_type = 'Discount';
-                            $ted->ted_level = 'H';
-                            $ted->ted_id = $dis['ted_d_id'] ?? null;
-                            $ted->ted_name = $dis['d_name'];
-                            $ted->assesment_amount = $itemTotalValue-$itemTotalDiscount;
-                            $ted->ted_percentage = $dis['d_perc'] ?? 0.00;
-                            $ted->ted_amount = $dis['d_amnt'] ?? 0.00;
-                            $ted->applicability_type = 'Deduction';
-                            $ted->save();
-                        }
-                    }
-                }
-
-                /*Header level save discount*/
-                if(isset($request->all()['exp_summary'])) {
-                    foreach($request->all()['exp_summary'] as $dis) {
-                        if(isset($dis['e_amnt']) && $dis['e_amnt']) {
-                            $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $totalTax;
-                            $ted = new MrnExtraAmount;
-                            $ted->mrn_header_id = $putaway->id;
-                            $ted->mrn_detail_id = null;
-                            $ted->ted_type = 'Expense';
-                            $ted->ted_level = 'H';
-                            $ted->ted_id = $dis['ted_e_id'] ?? null;
-                            $ted->ted_name = $dis['e_name'];
-                            $ted->assesment_amount = $totalAfterTax;
-                            $ted->ted_percentage = $dis['e_perc'] ?? 0.00;
-                            $ted->ted_amount = $dis['e_amnt'] ?? 0.00;
-                            $ted->applicability_type = 'Collection';
-                            $ted->save();
-                        }
-                    }
-                }
-
-                /*Update total in main header MRN*/
-                $putaway->total_item_amount = $itemTotalValue ?? 0.00;
-                $totalDiscValue = ($itemTotalHeaderDiscount + $itemTotalDiscount) ?? 0.00;
-                if($itemTotalValue < $totalDiscValue){
-                    DB::rollBack();
-                    return response()->json([
-                        'message' => 'Negative value not allowed'
-                    ], 422);
-                }
-                $putaway->total_discount = $totalDiscValue ?? 0.00;
-                $putaway->taxable_amount = ($itemTotalValue - $totalDiscValue) ?? 0.00;
-                $putaway->total_taxes = $totalTax ?? 0.00;
-                $putaway->total_after_tax_amount = (($itemTotalValue - $totalDiscValue) + $totalTax) ?? 0.00;
-                $putaway->expense_amount = $totalHeaderExpense ?? 0.00;
-                $totalAmount = (($itemTotalValue - $totalDiscValue) + ($totalTax + $totalHeaderExpense)) ?? 0.00;
-                $putaway->total_amount = $totalAmount ?? 0.00;
-                $putaway->save();
-
-                /*Update po header id in main header MRN*/
-                $putaway->purchase_order_id = $purchaseOrderId ?? null;
-                $putaway->is_inspection_completion = $isInspection ?? 0;
+                
+                /*Update po header id in main header Putaway*/
+                $putaway->mrn_header_id = $mrnHeaderId ?? null;
                 $putaway->save();
 
             } else {
@@ -581,20 +531,6 @@ class PutAwayController extends Controller
                     'error' => "",
                 ], 422);
             }
-
-            /*Store currency data*/
-            $currencyExchangeData = CurrencyHelper::getCurrencyExchangeRates($putaway->vendor->currency_id, $putaway->document_date);
-
-            $putaway->org_currency_id = $currencyExchangeData['data']['org_currency_id'];
-            $putaway->org_currency_code = $currencyExchangeData['data']['org_currency_code'];
-            $putaway->org_currency_exg_rate = $currencyExchangeData['data']['org_currency_exg_rate'];
-            $putaway->comp_currency_id = $currencyExchangeData['data']['comp_currency_id'];
-            $putaway->comp_currency_code = $currencyExchangeData['data']['comp_currency_code'];
-            $putaway->comp_currency_exg_rate = $currencyExchangeData['data']['comp_currency_exg_rate'];
-            $putaway->group_currency_id = $currencyExchangeData['data']['group_currency_id'];
-            $putaway->group_currency_code = $currencyExchangeData['data']['group_currency_code'];
-            $putaway->group_currency_exg_rate = $currencyExchangeData['data']['group_currency_exg_rate'];
-            $putaway->save();
 
             /*Create document submit log*/
             if ($request->document_status == ConstantHelper::SUBMITTED) {
@@ -606,37 +542,21 @@ class PutAwayController extends Controller
                 $revisionNumber = $putaway->revision_number ?? 0;
                 $actionType = 'submit'; // Approve // reject // submit
                 $modelName = get_class($putaway);
-                $totalValue = $putaway->total_amount ?? 0;
+                $totalValue = 0;
                 $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
 
             }
 
             $putaway = PutAwayHeader::find($putaway->id);
             if ($request->document_status == 'submitted') {
-                // $totalValue = $po->grand_total_amount ?? 0;
-                // $document_status = Helper::checkApprovalRequired($request->book_id,$totalValue);
                 $putaway->document_status = $approveDocument['approvalStatus'] ?? $putaway->document_status;
             } else {
                 $putaway->document_status = $request->document_status ?? ConstantHelper::DRAFT;
             }
-            // if ($request->document_status == 'submitted') {
-            //     $totalValue = $putaway->total_amount ?? 0;
-            //     $document_status = Helper::checkApprovalRequired($request->book_id,$totalValue);
-            //     $putaway->document_status = $document_status;
-            // } else {
-            //     $putaway->document_status = $request->document_status ?? ConstantHelper::DRAFT;
-            // }
-            /*MRN Attachment*/
-            if ($request->hasFile('attachment')) {
-                $mediaFiles = $putaway->uploadDocuments($request->file('attachment'), 'mrn', false);
+            if(($putaway->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED) || ($putaway->document_status == ConstantHelper::APPROVED) || ($putaway->document_status == ConstantHelper::POSTED)) {
+                $updateStockLedger = self::maintainStockLedger($putaway->mrn);
             }
-            $lotNumber = date('Y/M/d', strtotime($putaway->document_date)) . '/' . $putaway->book_code . '/' . $putaway->document_number;
-            $putaway->lot_number = strtoupper(@$lotNumber);
-            $putaway->save();
-            if($putaway){
-                $invoiceLedger = self::maintainStockLedger($putaway);
-            }
-
+            
             $redirectUrl = '';
             if(($putaway->document_status == ConstantHelper::APPROVED) || ($putaway->document_status == ConstantHelper::POSTED)) {
                 $parentUrl = request() -> segments()[0];
@@ -723,7 +643,6 @@ class PutAwayController extends Controller
             'currency',
             'items',
             'book',
-            'costCenters'
         ])
         ->findOrFail($id);
 
@@ -731,22 +650,15 @@ class PutAwayController extends Controller
         $vendors = Vendor::where('status', ConstantHelper::ACTIVE)->get();
         $revision_number = $putaway->revision_number;
         $userType = Helper::userCheck();
-        $buttons = Helper::actionButtonDisplay($putaway->book_id,$putaway->document_status , $putaway->id, $putaway->total_amount, $putaway->approval_level, $putaway->created_by ?? 0, $userType['type'], $revision_number);
+        $buttons = Helper::actionButtonDisplay($putaway->book_id,$putaway->document_status , $putaway->id, 0, $putaway->approval_level, $putaway->created_by ?? 0, $userType['type'], $revision_number);
         $revNo = $putaway->revision_number;
         if($request->has('revisionNumber')) {
             $revNo = intval($request->revisionNumber);
         } else {
             $revNo = $putaway->revision_number;
         }
-        $approvalHistory = Helper::getApprovalHistory($putaway->book_id, $putaway->id, $revNo, $putaway->total_amount);
+        $approvalHistory = Helper::getApprovalHistory($putaway->book_id, $putaway->id, $revNo, 0);
         $view = 'procurement.put-away.edit';
-        if($request->has('revisionNumber') && $request->revisionNumber != $putaway->revision_number) {
-            $putaway = $putaway->source;
-            $putaway = PutAwayHeaderHistory::where('revision_number', $request->revisionNumber)
-                ->where('mrn_header_id', $putaway->mrn_header_id)
-                ->first();
-            $view = 'procurement.put-away.view';
-        }
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$putaway->document_status] ?? '';
         $locations = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
         $store = $putaway->erpStore;
@@ -761,7 +673,6 @@ class PutAwayController extends Controller
         $erpStores = ErpStore::withDefaultGroupCompanyOrg()
             ->orderBy('id', 'DESC')
             ->get();
-        $dynamicFieldsUI = $putaway -> dynamicfieldsUi();
         return view($view, [
             'deliveryAddress'=> $deliveryAddress,
             'orgAddress'=> $orgAddress,
@@ -778,7 +689,6 @@ class PutAwayController extends Controller
             'servicesBooks' => $servicesBooks,
             'subStoreCount' => $subStoreCount,
             'erpStores' => $erpStores,
-            'dynamicFieldsUI' => $dynamicFieldsUI
         ]);
     }
 
@@ -806,7 +716,6 @@ class PutAwayController extends Controller
 
         DB::beginTransaction();
         try {
-
             $parameters = [];
             $response = BookHelper::fetchBookDocNoAndParameters($request->book_id, $request->document_date);
             if ($response['status'] === 200) {
@@ -830,23 +739,11 @@ class PutAwayController extends Controller
 
             }
 
-            $keys = ['deletedItemDiscTedIds', 'deletedHeaderDiscTedIds', 'deletedHeaderExpTedIds', 'deletedMrnItemIds', 'deletedItemLocationIds'];
+            $keys = ['deletedMrnItemIds', 'deletedItemLocationIds'];
             $deletedData = [];
 
             foreach ($keys as $key) {
                 $deletedData[$key] = json_decode($request->input($key, '[]'), true);
-            }
-
-            if (count($deletedData['deletedHeaderExpTedIds'])) {
-                MrnExtraAmount::whereIn('id',$deletedData['deletedHeaderExpTedIds'])->delete();
-            }
-
-            if (count($deletedData['deletedHeaderDiscTedIds'])) {
-                MrnExtraAmount::whereIn('id',$deletedData['deletedHeaderDiscTedIds'])->delete();
-            }
-
-            if (count($deletedData['deletedItemDiscTedIds'])) {
-                MrnExtraAmount::whereIn('id',$deletedData['deletedItemDiscTedIds'])->delete();
             }
 
             if (count($deletedData['deletedItemLocationIds'])) {
@@ -857,7 +754,6 @@ class PutAwayController extends Controller
                 $putawayItems = MrnDetail::whereIn('id',$deletedData['deletedMrnItemIds'])->get();
                 # all ted remove item level
                 foreach($putawayItems as $putawayItem) {
-                    $putawayItem->teds()->delete();
                     # all attr remove
                     $putawayItem->attributes()->delete();
                     $putawayItem->delete();
@@ -876,7 +772,7 @@ class PutAwayController extends Controller
             $putaway->consignment_no = $request->consignment_no ?? '';
             $putaway->transporter_name = $request->transporter_name ?? '';
             $putaway->vehicle_no = $request->vehicle_no ?? '';
-            $putaway->final_remarks = $request->remarks ?? '';
+            $putaway->final_remark = $request->remarks ?? '';
             $putaway->cost_center_id = $request->cost_center_id ?? '';
             $putaway->document_status = $request->document_status ?? ConstantHelper::DRAFT;
             $putaway->save();
@@ -933,47 +829,15 @@ class PutAwayController extends Controller
                 $storeLocation->save();
             }
 
-            $totalItemValue = 0.00;
-            $totalTaxValue = 0.00;
-            $totalDiscValue = 0.00;
-            $totalExpValue = 0.00;
-            $totalItemLevelDiscValue = 0.00;
-            $totalTax = 0;
-            $isInspection = 1;
-
-            $totalHeaderDiscount = 0;
-            if (isset($request->all()['disc_summary']) && count($request->all()['disc_summary']) > 0)
-            foreach ($request->all()['disc_summary'] as $DiscountValue) {
-                $totalHeaderDiscount += floatval($DiscountValue['d_amnt']) ?? 0.00;
-            }
-
-            $totalHeaderExpense = 0;
-            if (isset($request->all()['exp_summary']) && count($request->all()['exp_summary']) > 0)
-            foreach ($request->all()['exp_summary'] as $expValue) {
-                $totalHeaderExpense += floatval($expValue['e_amnt']) ?? 0.00;
-            }
-
             if (isset($request->all()['components'])) {
-                $poItemArr = [];
-                $totalValueAfterDiscount = 0;
-                $itemTotalValue = 0;
-                $itemTotalDiscount = 0;
-                $itemTotalHeaderDiscount = 0;
-                $itemValueAfterDiscount = 0;
-                $totalItemValueAfterDiscount = 0;
+                $mrnItemArr = [];
                 foreach($request->all()['components'] as $c_key => $component) {
                     $item = Item::find($component['item_id'] ?? null);
-                    $po_detail_id = null;
-                    if($component['is_inspection'] == 1){
-                        $isInspection = 0;
-                    }
-                    if(isset($component['po_detail_id']) && $component['po_detail_id']){
-                        $poDetail =  PoItem::find($component['po_detail_id']);
-                        $po_detail_id = $poDetail->id ?? null;
-                        // if($poDetail){
-                        //     $poDetail->grn_qty += floatval($component['accepted_qty']);
-                        //     $poDetail->save();
-                        // }
+                    $mrnDetail = MrnDetail::with('mrnHeader')->find($component['mrn_detail_id']);
+                    $mrn_detail_id = null;
+                    if(isset($component['mrn_detail_id']) && $component['mrn_detail_id']){
+                        $poDetail =  PoItem::find($component['mrn_detail_id']);
+                        $mrn_detail_id = $poDetail->id ?? null;
                     }
                     $inventory_uom_id = null;
                     $inventory_uom_code = null;
@@ -990,150 +854,79 @@ class PutAwayController extends Controller
                             $inventory_uom_qty = floatval($reqQty) * $alUom->conversion_to_inventory;
                         }
                     }
-                    $itemValue = floatval($reqQty) * floatval($component['rate']);
-                    $itemDiscount = floatval($component['discount_amount']) ?? 0.00;
-
-                    $itemTotalValue += $itemValue;
-                    $itemTotalDiscount += $itemDiscount;
-                    $itemValueAfterDiscount = $itemValue - $itemDiscount;
-                    $totalValueAfterDiscount += $itemValueAfterDiscount;
-                    $totalItemValueAfterDiscount += $itemValueAfterDiscount;
                     $uom = Unit::find($component['uom_id'] ?? null);
                     $putawayItemArr[] = [
-                        'mrn_header_id' => $putaway->id,
-                        'purchase_order_item_id' => $po_detail_id,
+                        'header_id' => $putaway->id,
+                        'mrn_detail_id' => $mrn_detail_id,
                         'item_id' => $component['item_id'] ?? null,
                         'item_code' => $component['item_code'] ?? null,
-                        'item_name' => $component['item_name'] ?? null,
                         'hsn_id' => $component['hsn_id'] ?? null,
                         'hsn_code' => $component['hsn_code'] ?? null,
                         'uom_id' =>  $component['uom_id'] ?? null,
-                        'is_inspection' =>  $component['is_inspection'] ?? 0,
                         'uom_code' => $uom->name ?? null,
-                        'order_qty' => floatval($component['order_qty']) ?? 0.00,
-                        'accepted_qty' => floatval($component['accepted_qty']) ?? 0.00,
-                        'rejected_qty' => floatval($component['rejected_qty']) ?? 0.00,
-                        'inventory_uom_id' => $inventory_uom_id ?? null,
-                        'inventory_uom_code' => $inventory_uom_code ?? null,
-                        'inventory_uom_qty' => $inventory_uom_qty ?? 0.00,
                         'store_id' => $putaway->store_id ?? null,
                         'store_code' => $putaway?->erpStore?->store_code ?? null,
                         'sub_store_id' => $putaway->sub_store_id ?? null,
-                        'rate' => floatval($component['rate']) ?? 0.00,
-                        'discount_amount' => floatval($component['discount_amount']) ?? 0.00,
-                        'header_discount_amount' => 0.00,
-                        'header_exp_amount' => 0.00,
-                        'tax_value' => 0.00,
-                        'company_currency_id' => @$component['company_currency_id'] ?? 0.00,
-                        'company_currency_exchange_rate' => @$component['company_currency_exchange_rate'] ?? 0.00,
-                        'group_currency_id' => @$component['group_currency_id'] ?? 0.00,
-                        'group_currency_exchange_rate' => @$component['group_currency_exchange_rate'] ?? 0.00,
+                        'order_qty' => floatval($component['order_qty']) ?? 0.00,
+                        'accepted_qty' => floatval($component['accepted_qty']) ?? 0.00,
+                        'inventory_uom_id' => $inventory_uom_id ?? null,
+                        'inventory_uom_code' => $inventory_uom_code ?? null,
+                        'inventory_uom_qty' => $inventory_uom_qty ?? 0.00,
                         'remark' => $component['remark'] ?? null,
-                        'taxable_amount' => $itemValueAfterDiscount,
-                        'basic_value' => $itemValue
                     ];
                 }
 
-                $isTax = false;
-                if(isset($parameters['tax_required']) && !empty($parameters['tax_required']))
-                {
-                    if (in_array('yes', array_map('strtolower', $parameters['tax_required']))) {
-                        $isTax = true;
-                    }
-                }
-
-                foreach($putawayItemArr as &$putawayItem) {
-                    /*Header Level Item discount*/
-                    $headerDiscount = 0;
-                    $headerDiscount = ($putawayItem['taxable_amount'] / $totalValueAfterDiscount) * $totalHeaderDiscount;
-                    $valueAfterHeaderDiscount = $putawayItem['taxable_amount'] - $headerDiscount; // after both discount
-                    $putawayItem['header_discount_amount'] = $headerDiscount;
-                    $itemTotalHeaderDiscount += $headerDiscount;
-                    if($isTax) {
-                        //Tax
-                        $itemTax = 0;
-                        $itemPrice = ($putawayItem['basic_value'] - $headerDiscount - $putawayItem['discount_amount']);
-                        $shippingAddress = $putaway->shippingAddress;
-
-                        $partyCountryId = isset($shippingAddress) ? $shippingAddress -> country_id : null;
-                        $partyStateId = isset($shippingAddress) ? $shippingAddress -> state_id : null;
-                        $taxDetails = TaxHelper::calculateTax($putawayItem['hsn_id'], $itemPrice, $companyCountryId, $companyStateId, $partyCountryId ?? $request->shipping_country_id, $partyStateId ?? $request->shipping_state_id, 'collection');
-
-                        if (isset($taxDetails) && count($taxDetails) > 0) {
-                            foreach ($taxDetails as $taxDetail) {
-                                $itemTax += ((double)$taxDetail['tax_percentage'] / 100 * $valueAfterHeaderDiscount);
-                            }
-                        }
-                        $putawayItem['tax_value'] = $itemTax;
-                        $totalTax += $itemTax;
-                    }
-                }
-                unset($putawayItem);
-
                 foreach($putawayItemArr as $_key => $putawayItem) {
-                    $_key = $_key + 1;
-                    $component = $request->all()['components'][$_key] ?? [];
-                    $itemPriceAterBothDis =  $putawayItem['basic_value'] - $putawayItem['discount_amount'] - $putawayItem['header_discount_amount'];
-                    $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $totalTax;
-                    $itemHeaderExp =  $itemPriceAterBothDis / $totalAfterTax * $totalHeaderExpense;
+                    # PutAway Detail Save
+                    $putawayDetail = PutAwayDetail::find($component['putaway_detail_id'] ?? null) ?? new PutAwayDetail;
 
-                    # Mrn Detail Save
-                    $putawayDetail = MrnDetail::find($component['mrn_detail_id'] ?? null) ?? new MrnDetail;
-
-                    if((isset($component['po_detail_id']) && $component['po_detail_id']) || (isset($putawayDetail->purchase_order_item_id) && $putawayDetail->purchase_order_item_id)) {
-                        $poItem = PoItem::find($component['po_detail_id'] ?? $putawayDetail->purchase_order_item_id);
-                        if(isset($poItem) && $poItem) {
-                            if(isset($poItem->id) && $poItem->id) {
+                    if((isset($component['mrn_detail_id']) && $component['mrn_detail_id']) || (isset($putawayDetail->mrn_detail_id) && $putawayDetail->mrn_detail_id)) {
+                        $mrnItem = MrnDetail::find($component['mrn_detail_id'] ?? $putawayDetail->mrn_detail_id);
+                        if(isset($mrnItem) && $mrnItem) {
+                            if(isset($mrnItem->id) && $mrnItem->id) {
                                 $orderQty = floatval($putawayDetail->order_qty);
                                 $componentQty = floatval($component['order_qty'] ?? $component['accepted_qty']);
-                                $qtyDifference = $poItem->order_qty - $orderQty + $componentQty;
+                                $qtyDifference = $mrnItem->order_qty - $orderQty + $componentQty;
                                 if($qtyDifference) {
-                                    $poItem->grn_qty = $qtyDifference;
+                                    $mrnItem->grn_qty = $qtyDifference;
                                 }
                             } else {
-                                $poItem->order_qty += $component['qty'];
+                                $mrnItem->order_qty += $component['qty'];
                             }
-                            $poItem->save();
+                            // $mrnItem->save();
                         }
                     }
 
-                    $putawayDetail->mrn_header_id = $putawayItem['mrn_header_id'];
-                    $putawayDetail->purchase_order_item_id = $putawayItem['purchase_order_item_id'];
+                    $putawayDetail->header_id = $putawayItem['header_id'];
+                    $putawayDetail->mrn_detail_id = $putawayItem['mrn_detail_id'];
                     $putawayDetail->item_id = $putawayItem['item_id'];
                     $putawayDetail->item_code = $putawayItem['item_code'];
-                    $putawayDetail->item_name = $putawayItem['item_name'];
                     $putawayDetail->hsn_id = $putawayItem['hsn_id'];
                     $putawayDetail->hsn_code = $putawayItem['hsn_code'];
                     $putawayDetail->uom_id = $putawayItem['uom_id'];
                     $putawayDetail->uom_code = $putawayItem['uom_code'];
-                    $putawayDetail->is_inspection = $putawayItem['is_inspection'];
+                    $putawayDetail->store_id = $putawayItem['store_id'];
+                    $putawayDetail->store_code = $putawayItem['store_code'];
+                    $putawayDetail->sub_store_id = $putawayItem['sub_store_id'];
+                    $putawayDetail->receipt_qty = $putawayItem['order_qty'];
                     $putawayDetail->accepted_qty = $putawayItem['accepted_qty'];
                     $putawayDetail->inventory_uom_id = $putawayItem['inventory_uom_id'];
                     $putawayDetail->inventory_uom_code = $putawayItem['inventory_uom_code'];
                     $putawayDetail->inventory_uom_qty = $putawayItem['inventory_uom_qty'];
-                    $putawayDetail->store_id = @$putawayItem['store_id'];
-                    $putawayDetail->store_code = @$putawayItem['store_code'];
-                    $putawayDetail->sub_store_id = @$putawayItem['sub_store_id'];
-                    $putawayDetail->rate = $putawayItem['rate'];
-                    $putawayDetail->basic_value = $putawayItem['basic_value'];
-                    $putawayDetail->discount_amount = $putawayItem['discount_amount'];
-                    $putawayDetail->header_discount_amount = $putawayItem['header_discount_amount'];
-                    $putawayDetail->tax_value = $putawayItem['tax_value'];
-                    $putawayDetail->header_exp_amount = $itemHeaderExp;
-                    $putawayDetail->company_currency = $putawayItem['company_currency_id'];
-                    $putawayDetail->group_currency = $putawayItem['group_currency_id'];
-                    $putawayDetail->exchange_rate_to_group_currency = $putawayItem['group_currency_exchange_rate'];
                     $putawayDetail->remark = $putawayItem['remark'];
                     $putawayDetail->save();
+
+                    $_key = $_key + 1;
+                    $component = $request->all()['components'][$_key] ?? [];
 
                     #Save component Attr
                     foreach($putawayDetail->item->itemAttributes as $itemAttribute) {
                         if (isset($component['attr_group_id'][$itemAttribute->attribute_group_id])) {
                         $putawayAttrId = @$component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_id'];
                         $putawayAttrName = @$component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_name'];
-                        $putawayAttr = MrnAttribute::find($putawayAttrId) ?? new MrnAttribute;
-                        $putawayAttr->mrn_header_id = $putaway->id;
-                        $putawayAttr->mrn_detail_id = $putawayDetail->id;
+                        $putawayAttr = PutAwayAttribute::find($putawayAttrId) ?? new PutAwayAttribute;
+                        $putawayAttr->header_id = $putaway->id;
+                        $putawayAttr->detail_id = $putawayDetail->id;
                         $putawayAttr->item_attribute_id = $itemAttribute->id;
                         $putawayAttr->item_code = $component['item_code'] ?? null;
                         $putawayAttr->attr_name = $itemAttribute->attribute_group_id;
@@ -1142,174 +935,77 @@ class PutAwayController extends Controller
                         }
                     }
 
-                    /*Item Level Discount Save*/
-                    if(isset($component['discounts'])) {
-                        foreach($component['discounts'] as $dis) {
-                            if (isset($dis['dis_amount']) && $dis['dis_amount']) {
-                                $ted = MrnExtraAmount::find($dis['id'] ?? null) ?? new MrnExtraAmount;
-                                $ted->mrn_header_id = $putaway->id;
-                                $ted->mrn_detail_id = $putawayDetail->id;
-                                $ted->ted_type = 'Discount';
-                                $ted->ted_level = 'D';
-                                $ted->ted_id = $dis['ted_id'] ?? null;
-                                $ted->ted_name = $dis['dis_name'];
-                                $ted->ted_code = $dis['dis_name'];
-                                $ted->assesment_amount = $putawayItem['basic_value'];
-                                $ted->ted_percentage = $dis['dis_perc'] ?? 0.00;
-                                $ted->ted_amount = $dis['dis_amount'] ?? 0.00;
-                                $ted->applicability_type = 'Deduction';
-                                $ted->save();
-                                $totalItemLevelDiscValue = $totalItemLevelDiscValue+$dis['dis_amount'];
+                    #Save item packets
+                    $inventoryUomQuantity = 0.00;
+                    if (!empty($component['storage_packets'])) {
+                        $storagePoints = is_string($component['storage_packets'])
+                            ? json_decode($component['storage_packets'], true)
+                            : $component['storage_packets'];
+
+                        if (is_array($storagePoints)) {
+                            foreach ($storagePoints as $i => $val) {
+                                $storagePoint = PutAwayItemLocation::find(@$val['id']) ?? new PutAwayItemLocation;
+                                
+                                $storagePoint->header_id = $putaway->id;
+                                $storagePoint->detail_id = $putawayDetail->id;
+                                $storagePoint->store_id = $putawayDetail->store_id;
+                                $storagePoint->sub_store_id = $putawayDetail->sub_store_id;
+                                $storagePoint->item_id = $val['item_location_id'] ?? null;
+                                $storagePoint->wh_detail_id = $val['wh_detail_id'] ?? null;
+                                $storagePoint->quantity = $val['quantity'] ?? 0.00;
+                                $storagePoint->inventory_uom_qty = $val['quantity'] ?? 0.00;
+                                $storagePoint->status = $putaway->document_status;
+                                $storagePoint->save();
+
+                                $packetNumber = '';
+                                $storageNumber = '';
+                                $whDetail = WhDetail::find($storagePoint->wh_detail_id);
+                                // ✅ Generate storage number if not present
+                                if($whDetail->storage_number){
+                                    $storageNumber = $whDetail->storage_number;    
+                                } else{
+                                    $randomNumber = strtoupper(Str::random(rand(6, 8)));
+                                    $storageNumber = strtoupper(str_replace(' ', '-', $whDetail?->name)) .'-'. $randomNumber;
+                                }
+
+                                $storagePoint->storage_number = $storageNumber;
+                                $storagePoint->save();
+
+                                $mrnItemLocation = MrnItemLocation::find(@$storagePoint->item_id);
+                                if($mrnItemLocation){
+                                    $mrnItemLocation->storage_number = $storageNumber;
+                                    $mrnItemLocation->wh_detail_id = $storagePoint->wh_detail_id;
+                                    $mrnItemLocation->status = $putaway?->mrn?->document_status;
+                                    $mrnItemLocation->save();
+                                } else{
+                                    $mrnItemLocation = new MrnItemLocation();
+                                    $mrnItemLocation->mrn_header_id = $putaway->id;
+                                    $mrnItemLocation->mrn_detail_id = $putawayDetail->id;
+                                    $mrnItemLocation->store_id = $putawayDetail->store_id;
+                                    $mrnItemLocation->sub_store_id = $putawayDetail->sub_store_id;
+                                    $mrnItemLocation->item_id = $putawayDetail->item_id;
+                                    $mrnItemLocation->wh_detail_id = $val['wh_detail_id'] ?? null;
+                                    $mrnItemLocation->quantity = $val['quantity'] ?? 0.00;
+                                    $mrnItemLocation->inventory_uom_qty = $val['quantity'] ?? 0.00;
+                                    $mrnItemLocation->status = $putaway?->mrn?->document_status;
+                                    $mrnItemLocation->save();
+                                    
+                                    // ✅ Generate packet number if not present
+                                    $packetNumber = $mrnDetail?->mrnHeader?->book_code . '-' . $mrnDetail?->mrnHeader?->document_number . '-' . $mrnDetail->item_code . '-' . $mrnDetail->id . '-' . ($mrnItemLocation->id ?? $i + 1);
+
+                                    $mrnItemLocation->packet_number = $val['packet_number'] ?? $packetNumber;
+                                    $mrnItemLocation->save();
+                                }
+
+                                // $storagePoint->packet_number = $val['packet_number'] ?? strtoupper(Str::random(rand(8, 10)));
+                                $storagePoint->packet_number = $val['packet_number'] ?? $packetNumber;
+                                $storagePoint->save();
                             }
-                        }
-                    }
-
-                    #Save Component item Tax
-                    if(isset($component['taxes'])) {
-                        foreach($component['taxes'] as $key => $tax) {
-                            $putawayAmountId = null;
-                            $ted = MrnExtraAmount::find(@$tax['id']) ?? new MrnExtraAmount;
-                            $ted->mrn_header_id = $putaway->id;
-                            $ted->mrn_detail_id = $putawayDetail->id;
-                            $ted->ted_type = 'Tax';
-                            $ted->ted_level = 'D';
-                            $ted->ted_id = $tax['t_d_id'] ?? null;
-                            $ted->ted_name = $tax['t_type'] ?? null;
-                            $ted->ted_code = $tax['t_type'] ?? null;
-                            $ted->assesment_amount = $putawayItem['basic_value'] - $putawayItem['discount_amount'] - $putawayItem['header_discount_amount'];
-                            $ted->ted_percentage = $tax['t_perc'] ?? 0.00;
-                            $ted->ted_amount = $tax['t_value'] ?? 0.00;
-                            $ted->applicability_type = $tax['applicability_type'] ?? 'Collection';
-                            $ted->save();
-                        }
-                    }
-
-                    #Save item store locations
-                    // if (isset($component['erp_store']) && $component['erp_store']) {
-                    //     foreach($component['erp_store'] as $val) {
-                    //         if(isset($val['store_qty']) && $val['store_qty'])
-                    //         {
-                    //             $storeLocation = MrnItemLocation::find(@$val['id']) ?? new MrnItemLocation;
-                    //             $storeLocation->mrn_header_id = $putaway->id;
-                    //             $storeLocation->mrn_detail_id = $putawayDetail->id;
-                    //             $storeLocation->item_id = $putawayDetail->item_id;
-                    //             $storeLocation->store_id = $val['erp_store_id'] ?? null;
-                    //             $storeLocation->rack_id = $val['erp_rack_id'] ?? null;
-                    //             $storeLocation->shelf_id = $val['erp_shelf_id'] ?? null;
-                    //             $storeLocation->bin_id = $val['erp_bin_id'] ?? null;
-                    //             $storeLocation->quantity = $val['store_qty'] ?? 0.00;
-                    //             $storeLocation->inventory_uom_qty = $putawayDetail->inventory_uom_qty;
-                    //             // if(@$component['uom_id'] == @$item->uom_id) {
-                    //             //     $storeLocation->inventory_uom_qty = $val['store_qty'] ?? 0.00;
-                    //             // } else {
-                    //             //     $alUom = AlternateUOM::where('item_id', $component['item_id'])->where('uom_id', $component['uom_id'])->first();
-                    //             //     if($alUom) {
-                    //             //         $storeLocation->inventory_uom_qty = intval($val['store_qty']) * $alUom->conversion_to_inventory;
-                    //             //     }
-                    //             // }
-                    //             $storeLocation->save();
-                    //             if (is_null($storeLocation->inventory_uom_qty) || ($storeLocation->inventory_uom_qty) <= 0) {
-                    //                 DB::rollBack();
-                    //                 return response()->json([
-                    //                     'message' => 'Inventory UOM Quantity should not be null or less than or equal to zero'
-                    //                 ], 422);
-                    //             }
-                    //         }
-                    //     }
-                    // } else{
-                    //     $storeLocation = MrnItemLocation::where('mrn_header_id', $putaway->id)
-                    //         ->where('mrn_detail_id', $putawayDetail->id)
-                    //         ->where('store_id', $putawayDetail->store_id)
-                    //         ->first();
-                    //     if(!$storeLocation){
-                    //         $storeLocation = new MrnItemLocation;
-                    //     }
-                    //     $storeLocation->mrn_header_id = $putaway->id;
-                    //     $storeLocation->mrn_detail_id = $putawayDetail->id;
-                    //     $storeLocation->item_id = $putawayDetail->item_id;
-                    //     $storeLocation->store_id = $putawayDetail->store_id;
-                    //     $storeLocation->quantity = $putawayDetail->accepted_qty ?? 0.00;
-                    //     $storeLocation->inventory_uom_qty = $putawayDetail->inventory_uom_qty;
-                    //     // if($component['uom_id'] == $item->uom_id) {
-                    //     //     $storeLocation->inventory_uom_qty = $putawayDetail->accepted_qty ?? 0.00;
-                    //     // } else {
-                    //     //     $alUom = AlternateUOM::where('item_id', $component['item_id'])->where('uom_id', $component['uom_id'])->first();
-                    //     //     if($alUom) {
-                    //     //         $storeLocation->inventory_uom_qty = intval($putawayDetail->accepted_qty) * $alUom->conversion_to_inventory;
-                    //     //     }
-                    //     // }
-                    //     $storeLocation->save();
-                    //     if (is_null($storeLocation->inventory_uom_qty) || ($storeLocation->inventory_uom_qty) <= 0) {
-                    //         DB::rollBack();
-                    //         return response()->json([
-                    //             'message' => 'Inventory UOM Quantity should not be null or less than or equal to zero'
-                    //         ], 422);
-                    //     }
-                    // }
-                }
-
-                /*Header level save discount*/
-                if(isset($request->all()['disc_summary'])) {
-                    foreach($request->all()['disc_summary'] as $dis) {
-                        if (isset($dis['d_amnt']) && $dis['d_amnt']) {
-                            $putawayAmountId = @$dis['d_id'] ?? null;
-                            $ted = MrnExtraAmount::find($putawayAmountId) ?? new MrnExtraAmount;
-                            $ted->mrn_header_id = $putaway->id;
-                            $ted->mrn_detail_id = null;
-                            $ted->ted_type = 'Discount';
-                            $ted->ted_level = 'H';
-                            $ted->ted_id = $dis['ted_d_id'] ?? null;
-                            $ted->ted_name = $dis['d_name'];
-                            $ted->ted_code = @$dis['d_name'];
-                            $ted->assesment_amount = $itemTotalValue-$itemTotalDiscount;
-                            $ted->ted_percentage = $dis['d_perc'] ?? 0.00;
-                            $ted->ted_amount = $dis['d_amnt'] ?? 0.00;
-                            $ted->applicability_type = 'Deduction';
-                            $ted->save();
+                        } else {
+                            \Log::warning("Invalid JSON for storage_points_data: " . print_r($component['storage_packets'], true));
                         }
                     }
                 }
-
-                /*Header level save discount*/
-                if(isset($request->all()['exp_summary'])) {
-                    foreach($request->all()['exp_summary'] as $dis) {
-                        if(isset($dis['e_amnt']) && $dis['e_amnt']) {
-                            $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $totalTax;
-                            $putawayAmountId = @$dis['e_id'] ?? null;
-                            $ted = MrnExtraAmount::find($putawayAmountId) ?? new MrnExtraAmount;
-                            $ted->mrn_header_id = $putaway->id;
-                            $ted->mrn_detail_id = null;
-                            $ted->ted_type = 'Expense';
-                            $ted->ted_level = 'H';
-                            $ted->ted_id = $dis['ted_e_id'] ?? null;
-                            $ted->ted_name = $dis['e_name'];
-                            $ted->ted_code = @$dis['d_name'];
-                            $ted->assesment_amount = $totalAfterTax;
-                            $ted->ted_percentage = $dis['e_perc'] ?? 0.00;
-                            $ted->ted_amount = $dis['e_amnt'] ?? 0.00;
-                            $ted->applicability_type = 'Collection';
-                            $ted->save();
-                        }
-                    }
-                }
-
-                /*Update total in main header MRN*/
-                $putaway->total_item_amount = $itemTotalValue ?? 0.00;
-                $totalDiscValue = ($itemTotalHeaderDiscount + $itemTotalDiscount) ?? 0.00;
-                if($itemTotalValue < $totalDiscValue){
-                    DB::rollBack();
-                    return response()->json([
-                        'message' => 'Negative value not allowed'
-                    ], 422);
-                }
-                $putaway->total_discount = $totalDiscValue ?? 0.00;
-                $putaway->taxable_amount = ($itemTotalValue - $totalDiscValue) ?? 0.00;
-                $putaway->total_taxes = $totalTax ?? 0.00;
-                $putaway->total_after_tax_amount = (($itemTotalValue - $totalDiscValue) + $totalTax) ?? 0.00;
-                $putaway->expense_amount = $totalHeaderExpense ?? 0.00;
-                $totalAmount = (($itemTotalValue - $totalDiscValue) + ($totalTax + $totalHeaderExpense)) ?? 0.00;
-                $putaway->total_amount = $totalAmount ?? 0.00;
-                $putaway->save();
             } else {
                 DB::rollBack();
                 return response()->json([
@@ -1317,20 +1013,6 @@ class PutAwayController extends Controller
                         'error' => "",
                     ], 422);
             }
-
-            /*Store currency data*/
-            $currencyExchangeData = CurrencyHelper::getCurrencyExchangeRates($putaway->vendor->currency_id, $putaway->document_date);
-
-            $putaway->org_currency_id = $currencyExchangeData['data']['org_currency_id'];
-            $putaway->org_currency_code = $currencyExchangeData['data']['org_currency_code'];
-            $putaway->org_currency_exg_rate = $currencyExchangeData['data']['org_currency_exg_rate'];
-            $putaway->comp_currency_id = $currencyExchangeData['data']['comp_currency_id'];
-            $putaway->comp_currency_code = $currencyExchangeData['data']['comp_currency_code'];
-            $putaway->comp_currency_exg_rate = $currencyExchangeData['data']['comp_currency_exg_rate'];
-            $putaway->group_currency_id = $currencyExchangeData['data']['group_currency_id'];
-            $putaway->group_currency_code = $currencyExchangeData['data']['group_currency_code'];
-            $putaway->group_currency_exg_rate = $currencyExchangeData['data']['group_currency_exg_rate'];
-            $putaway->save();
 
             /*Create document submit log*/
             $bookId = $putaway->book_id;
@@ -1351,15 +1033,6 @@ class PutAwayController extends Controller
                 $putaway->approval_level = 1;
                 $putaway->revision_date = now();
                 $amendAfterStatus = $approveDocument['approvalStatus'] ?? $putaway->document_status;
-                // $checkAmendment = Helper::checkAfterAmendApprovalRequired($request->book_id);
-                // if(isset($checkAmendment->approval_required) && $checkAmendment->approval_required) {
-                //     $totalValue = $putaway->grand_total_amount ?? 0;
-                //     $amendAfterStatus = Helper::checkApprovalRequired($request->book_id,$totalValue);
-                // }
-                // if ($amendAfterStatus == ConstantHelper::SUBMITTED) {
-                //     $actionType = 'submit';
-                //     $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType, 0, $modelName);
-                // }
                 $putaway->document_status = $amendAfterStatus;
                 $putaway->save();
 
@@ -1378,15 +1051,9 @@ class PutAwayController extends Controller
                 }
             }
 
-            /*MRN Attachment*/
-            if ($request->hasFile('attachment')) {
-                $mediaFiles = $putaway->uploadDocuments($request->file('attachment'), 'mrn', false);
-            }
-            $putaway->is_inspection_completion = $isInspection;
             $putaway->save();
-
-            if($putaway){
-                $invoiceLedger = self::maintainStockLedger($putaway);
+            if(($putaway->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED) || ($putaway->document_status == ConstantHelper::APPROVED) || ($putaway->document_status == ConstantHelper::POSTED)) {
+                $updateStockLedger = self::maintainStockLedger($putaway->mrn);
             }
 
             $redirectUrl = '';
@@ -1394,17 +1061,6 @@ class PutAwayController extends Controller
                 $parentUrl = request() -> segments()[0];
                 $redirectUrl = url($parentUrl. '/' . $putaway->id . '/pdf');
             }
-            TransactionUploadItem::where('created_by', $user->id)->forceDelete();
-
-            $status = DynamicFieldHelper::saveDynamicFields(ErpMrnDynamicField::class, $putaway -> id, $request -> dynamic_field ?? []);
-            if ($status && !$status['status'] ) {
-                DB::rollBack();
-                return response() -> json([
-                    'message' => $status['message'],
-                    'error' => ''
-                ], 422);
-            }
-
             DB::commit();
 
             return response()->json([
@@ -1808,7 +1464,7 @@ class PutAwayController extends Controller
             $qty = @$alUom->conversion_to_inventory * $qty;
         }
         $remark = $request->remark ?? null;
-        $putaway = MrnHeader::find($request->mrn_header_id);
+        $mrn = MrnHeader::find($request->mrn_header_id);
         $specifications = $item?->specifications()->whereNotNull('value')->get() ?? [];
         $totalStockData = InventoryHelper::totalInventoryAndStock($itemId, $selectedAttr,  $uomId, $storeId, $subStoreId);
         $storagePoints = StoragePointHelper::getStoragePoints($itemId, $qty, $storeId, $subStoreId);
@@ -2346,13 +2002,13 @@ class PutAwayController extends Controller
     }
 
     // Maintain Stock Ledger
-    private static function maintainStockLedger($putaway)
+    private static function maintainStockLedger($mrn)
     {
         $user = Helper::getAuthenticatedUser();
-        $detailIds = $putaway->items->pluck('id')->toArray();
-        InventoryHelper::settlementOfInventoryAndStock($putaway->id, $detailIds, ConstantHelper::MRN_SERVICE_ALIAS, $putaway->document_status);
+        $detailIds = $mrn->items->pluck('id')->toArray();
+        $stockLedgerResponse = StoragePointHelper::saveStoragePoints($mrn, $detailIds, ConstantHelper::MRN_SERVICE_ALIAS, $mrn->document_status);
 
-        return true;
+        return $stockLedgerResponse;
     }
 
     // Update Po Qty
@@ -3237,6 +2893,103 @@ class PutAwayController extends Controller
             'status' => 200,
             "data" => $data,
             'message' => "fetched!"
+        ]);
+    }
+
+    # Putaway Get Labels
+    public function printLabels($id)
+    {
+        $parentUrl = request() -> segments()[0];
+        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
+        if (!$servicesBooks) {
+            return response()->json([
+                'status' => 204,
+                "is_setup" => false,
+                'message' => 'You do not have access to this service.',
+            ], 422);
+        }
+
+        $user = Helper::getAuthenticatedUser();
+        $ptwHeader = PutAwayHeader::withDefaultGroupCompanyOrg()
+            ->where('id', $id)
+            ->first();
+
+        if (!$ptwHeader) {
+            return response()->json([
+                'status' => 204,
+                "is_setup" => false,
+                'message' => 'Put Away not found.',
+            ], 422);
+        }
+        $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$ptwHeader->document_status] ?? '';
+        
+        if (request()->ajax()) {
+            $records = $ptwHeader->itemLocations()
+                ->with([
+                    'header',
+                    'detail',
+                    'detail.item'
+                ])
+                ->latest();
+
+            return DataTables::of($records)
+                ->addIndexColumn()
+                ->editColumn('status', function ($row) {
+                    $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->status];
+                    $displayStatus = $row->status;
+                    return "<div style='text-align:right;'>
+                        <span class='badge rounded-pill $statusClasss badgeborder-radius'>$displayStatus</span>
+                        <div class='dropdown' style='display:inline;'>
+                            <button type='button' class='btn btn-sm dropdown-toggle hide-arrow py-0 p-0' data-bs-toggle='dropdown'>
+                                <i data-feather='more-vertical'></i>
+                            </button>
+                            <div class='dropdown-menu dropdown-menu-end'>
+                                <a class='dropdown-item' href='#'>
+                                    <i data-feather='edit-3' class='me-50'></i>
+                                    <span>Print</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>";
+                })
+                ->addColumn('inventory_uom', function ($row) {
+                    return $row->mrnDetail ? strval($row->mrnDetail?->inventory_uom_code) : 'N/A';
+                })
+                ->editColumn('inventory_uom_quantity', function ($row) {
+                    return number_format($row->inventory_uom_qty, 2) ?? 'N/A';
+                })
+                ->editColumn('packet_number', function ($row) {
+                    return strval($row->packet_number) ?? 'N/A';
+                })
+                ->addColumn('bar_code', function ($row) {
+                    $barCode = EInvoiceHelper::generateQRCodeBase64($row->packet_number);
+                    return "<img class='qr-code' src='{$barCode}' alt='{$row->packet_number}' style='width: 60px; height: 60px;'>";
+                })
+                ->rawColumns(['bar_code', 'status'])
+                ->make(true);
+        }
+        return view('procurement.put-away.print-labels', [
+            'mrn' => $ptwHeader,
+            'servicesBooks' => $servicesBooks,
+            'docStatusClass' => $docStatusClass
+        ]);
+    }
+
+    # Putaway Print Labels
+    public function printBarcodes($id)
+    {
+        $packets = PutAwayItemLocation::with([
+            'header',
+            'detail'
+        ])
+        ->where('header_id', $id)
+        ->get();
+
+        $html = view('procurement.put-away.print-barcodes', compact('packets'))->render();
+
+        return response()->json([
+            'status' => 200,
+            'html' => $html
         ]);
     }
 

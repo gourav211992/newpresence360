@@ -1002,6 +1002,7 @@
                 const $row = $(this).closest('tr');
                 const ledgerId = $(this).val();
                 const $ledgerGroupSelect = $row.find('.ledger-group');
+                
 
 
                 if (ledgerId) {
@@ -1571,6 +1572,7 @@
             </tr>`;
             $('.mrntableselectexcel').append(blank_row);
             initializeCategoryAutocomplete('.category-input');
+            renderLedgerSelects();
 
             if ($('#last_dep_date').val() != "") {
                 console.log("last_dep");

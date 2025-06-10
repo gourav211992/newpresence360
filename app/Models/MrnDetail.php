@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\PO\PoHeader;
 use App\Models\PO\PoDetail;
+use App\Helpers\ItemHelper;
 use App\Helpers\ConstantHelper;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -36,6 +37,7 @@ class MrnDetail extends Model
         'pr_qty',
         'rejected_qty',
         'pr_rejected_qty',
+        'putaway_qty',
         'inventory_uom',
         'inventory_uom_id',
         'inventory_uom_qty',
@@ -307,12 +309,14 @@ class MrnDetail extends Model
     // public function getAvailableStockAttribute()
     // {
     //     $availableStocks = StockLedger::where('document_detail_id', $this->id)
-    //         ->where('mrn_header_id', $this->mrn_header_id)
+    //         ->where('document_header_id', $this->mrn_header_id)
     //         ->where('book_type', '=', ConstantHelper::MRN_SERVICE_ALIAS)
     //         ->where('transaction_type', '=', 'receipt')
     //         ->whereNull('utilized_id')
     //         ->sum('receipt_qty');
 
+
+    //     $availableStocks =  ItemHelper::convertToAltUom($this->item_id, $this->uom_id, $availableStocks);
 
     //     return $availableStocks;
     // }
@@ -320,46 +324,6 @@ class MrnDetail extends Model
     {
         return $this->hasOne(FixedAssetRegistration::class,'mrn_detail_id')->latest();
     }
-
-    // public function item_attributes_array()
-    // {
-    //     $itemId = $this -> getAttribute('item_id');
-    //     if (isset($itemId)) {
-    //         $itemAttributes = ErpItemAttribute::where('item_id', $this -> item_id) -> get();
-    //     } else {
-    //         $itemAttributes = [];
-    //     }
-    //     $processedData = [];
-    //     foreach ($itemAttributes as $attribute) {
-    //         $existingAttribute = MrnAttribute::where('mrn_detail_id', $this -> getAttribute('id')) -> where('item_attribute_id', $attribute -> id) -> first();
-    //         if (!isset($existingAttribute)) {
-    //             continue;
-    //         }
-    //         $attributesArray = array();
-    //         $attribute_ids = [];
-    //         if ($attribute -> all_checked) {
-    //             $attribute_ids = ErpAttribute::where('attribute_group_id', $attribute -> attribute_group_id) -> get() -> pluck('id') -> toArray();
-    //         } else {
-    //             $attribute_ids = $attribute -> attribute_id ? json_decode($attribute -> attribute_id) : [];
-    //         }
-    //         $attribute -> group_name = $attribute -> group ?-> name;
-    //         $attribute -> short_name = $attribute -> group ?-> short_name;
-    //         foreach ($attribute_ids as $attributeValue) {
-    //                 $attributeValueData = ErpAttribute::where('id', $attributeValue) -> select('id', 'value') -> where('status', 'active') -> first();
-    //                 if (isset($attributeValueData))
-    //                 {
-    //                     $isSelected = MrnAttribute::where('mrn_detail_id', $this -> getAttribute('id')) -> where('item_attribute_id', $attribute -> id) -> where('attr_value', $attributeValueData -> id) -> first();
-    //                     $attributeValueData -> selected = $isSelected ? true : false;
-    //                     array_push($attributesArray, $attributeValueData);
-    //                 }
-    //         }
-    //        $attribute -> values_data = $attributesArray;
-    //        $attribute = $attribute -> only(['id','group_name', 'short_name' ,'values_data', 'attribute_group_id']);
-    //        array_push($processedData, ['id' => $attribute['id'], 'group_name' => $attribute['group_name'], 'values_data' => $attributesArray, 'attribute_group_id' => $attribute['attribute_group_id'],'short_name' => $attribute['short_name']]);
-    //     }
-    //     $processedData = collect($processedData);
-    //     return $processedData;
-    // }
 
     public function item_attributes_array()
     {

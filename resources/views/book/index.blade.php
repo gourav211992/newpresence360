@@ -151,7 +151,7 @@
         { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
         { data: 'service_name', name: 'service_name', render: renderData},
         { data: 'book_code', name: 'book_code', render: renderData},
-        { data: 'book_name', name: 'document_number', render: renderData},
+        { data: 'book_name', name: 'book_name', render: renderData},
         { data: 'manual_entry', name: 'manual_entry', render: renderData},
         { data: 'status', name: 'status', render: renderData },
         { data: 'action', name: 'action', orderable: false, searchable: false }

@@ -334,9 +334,9 @@
                         @endif
                         Code : {{ @$val->item_code }}
                         <br />
-                        @if($po->po_items_delivery->count() > 1)
+                        @if(@$val?->itemDelivery?->count() > 1)
                             Delivery Schedule: <br />
-                            @foreach($po->po_items_delivery as  $poItemDelivery)
+                            @foreach(@$val?->itemDelivery as  $poItemDelivery)
                                 {{$poItemDelivery->getFormattedDate('delivery_date')}}:{{$poItemDelivery->qty}} @if(!$loop->last) , @endif 
                             @endforeach
                         @else

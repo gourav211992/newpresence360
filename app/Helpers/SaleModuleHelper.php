@@ -1,7 +1,9 @@
 <?php
 
 namespace App\Helpers;
+use App\Models\Attribute;
 use App\Models\Bom;
+use App\Models\BomDetail;
 use App\Models\Book;
 use App\Models\CashCustomerDetail;
 use App\Models\Compliance;
@@ -15,22 +17,35 @@ use App\Models\ErpPslipItem;
 use App\Models\ErpPslipItemDetail;
 use App\Models\ErpSaleInvoice;
 use App\Models\ErpSaleOrder;
+use App\Models\ErpSaleOrderTed;
+use App\Models\ErpSoDynamicField;
 use App\Models\ErpSoItem;
+use App\Models\ErpSoItemAttribute;
+use App\Models\ErpSoItemBom;
+use App\Models\ErpSoItemDelivery;
 use App\Models\ErpStore;
 use App\Models\Item;
 use App\Models\ItemAttribute;
 use App\Models\Organization;
 use App\Models\OrganizationBookParameter;
 use App\Models\Vendor;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Psy\TabCompletion\Matcher\ConstantsMatcher;
+use stdClass;
 
 class SaleModuleHelper  
 { 
     const SALES_RETURN_DEFAULT_TYPE = "sale-return";
     const SALES_INVOICE_DEFAULT_TYPE = "sale-invoice";
-    const SALES_INVOICE_LEASE_TYPE = "lease-invoice";
+    const SALES_INVOICE_LEASE_TYPE = "lease-invoice"
+    ;public static function getSoImports(): array
+    {
+        return [
+            'v1' => asset('templates/SalesOrderImportV1.xlsx'),
+        ];
+    }
     public static function getAndReturnInvoiceType(string $type) : string
     {
         $invoiceType = isset($type) && in_array($type, ConstantHelper::SALE_INVOICE_DOC_TYPES) ? $type : ConstantHelper::SI_SERVICE_ALIAS;

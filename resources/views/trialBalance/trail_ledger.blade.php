@@ -148,7 +148,7 @@
 
                     </div>
                 </div>
-                <form method="GET" action="{{ route('trailLedger', [$id,$group]) }}">
+                    <form class="add-new-record" method="GET" action="{{ route('trailLedger', [$id,$group]) }}">
                     <div class="modal modal-slide-in fade filterpopuplabel" id="filter">
                         <div class="modal-dialog sidebar-sm">
                             <div class="modal-content pt-0">
@@ -198,4 +198,18 @@
         </div>
     </div>
     <!-- END: Content-->
+@endsection
+@section('scripts')
+<script>
+     $(document).ready(function () {
+        $('.preloader').css('display', 'flex');
+    });
+
+    $(window).on('load', function() {
+        $('.preloader').fadeOut();
+    });
+    $('.add-new-record').on('submit', function () {
+            $('.preloader').fadeIn(); // show preloader
+    });
+</script>
 @endsection

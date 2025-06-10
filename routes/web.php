@@ -6,6 +6,7 @@ use App\Http\Controllers\ErpDriverController;
 use App\Http\Controllers\ErpPlController;
 use App\Http\Controllers\ErpPSVController;
 use App\Http\Controllers\OverheadMasterController;
+use App\Http\Controllers\SaleOrderImportController;
 use App\Http\Controllers\TDSReportController;
 use App\Http\Controllers\DPRTemplateController;
 use App\Http\Controllers\CashflowReportController;
@@ -291,7 +292,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::resource('ledgers', LedgerController::class)->except(['show']);
     Route::get('/ledgers/{ledgerId}/groups', [LedgerController::class, 'getLedgerGroups'])->name('ledgers.groups');;
     Route::get('/search/ledger', [LedgerController::class,'getLedger'])->name('ledger.search');
-    Route::get('/ledger/import', [LedgerController::class,'showImportForm'])->name('ledger.show.import');
+      Route::get('/ledger/import', [LedgerController::class,'showImportForm'])->name('ledger.show.import');
     Route::post('/ledger/import', [LedgerController::class,'import'])->name('ledger.import');
     Route::get('/ledger/export-successful', [LedgerController::class,'exportSuccessfulItems'])->name('ledgers.export.successful');
     Route::get('/ledger/export-failed', [LedgerController::class,'exportFailedItems'])->name('ledgers.export.failed');
@@ -1684,6 +1685,8 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
             Route::get('/report/filter', 'getReportFilter')->name('report.filter');
             Route::post('/add-scheduler', 'addScheduler')->name('add.scheduler');
             Route::get('/order/report', 'purchaseReturnReport')->name('order.report');
+            Route::get('/warehouse/check-setup', 'checkWarehouseSetup')->name('warehouse-setup');
+            Route::get('/warehouse/item-uom-info', 'warehouseItemUomInfo')->name('warehouse-item-uom-info');
             Route::get('/{id}/print-labels', 'printLabels')->name('print-labels');
             Route::get('/{id}/print-barcodes', 'printBarcodes')->name('print-barcodes');
 
@@ -2641,6 +2644,12 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         Route::get('/pullable-docs', 'getPullableDocuments')->name('pullable.docs');
         Route::post('/pullable-doc-items', 'getDocumentItems')->name('pullable.doc.items');
         Route::post('/item-details', 'getItemDetails')->name('item.details');
+    });
+
+    Route::prefix('sales-order/import')->controller(SaleOrderImportController::class)->name('salesOrder.')->group(function () {
+        Route::get('/{version}', 'import')->name('import.index');
+        Route::post('save/{version}', 'importSave')->name('import.save');
+        Route::post('store/{version}', 'bulkUploadOrders')->name('import.store');
     });
 });
 

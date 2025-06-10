@@ -76,7 +76,7 @@ class StatementController extends Controller
                 "message" => "Your Statement has been uploaded successfully."
             ];
         } catch (\Exception $e) {
-            dd($e->getMessage());
+            // dd($e->getMessage());
             throw new ApiGenericException('The system was unable to read the statement from the uploaded file. Please correct the file and upload again.');
         }
     }

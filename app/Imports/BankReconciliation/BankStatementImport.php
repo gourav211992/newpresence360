@@ -19,6 +19,8 @@ use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Validators\Failure;
 use Maatwebsite\Excel\Concerns\SkipsOnFailure;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
+use Carbon\Exceptions\InvalidFormatException;
 
 class BankStatementImport implements ToModel, WithValidation, WithHeadingRow, SkipsEmptyRows, SkipsOnFailure
 {
@@ -49,16 +51,14 @@ class BankStatementImport implements ToModel, WithValidation, WithHeadingRow, Sk
     */
     public function model(array $row)
     {
-        $date = $this->isValidDateFormat($row['date']);
-        if (!$date) {
+        $dateData = $this->isValidDateFormat($row['date']);
+        if(!$dateData['status']) {
             $this->failedRows++;
-            $this->failures[] = [
-                'data' => $row,
-                'errors' => "Invalid date format: {$row['date']}"
-            ];
-            $this->addFailedStatement("Invalid date format: {$row['date']}", $row);
+            $this->addFailedStatement($dateData['message'], $row);
             return null;
         }
+
+        $date = $dateData['date'];
 
         // Duplicate check
         $duplicate = BankStatement::where('ref_no', $row['chqref_no'])
@@ -69,10 +69,10 @@ class BankStatementImport implements ToModel, WithValidation, WithHeadingRow, Sk
 
         if ($duplicate) {
             $this->failedRows++;
-            $this->failures[] = [
-                'data' => $row,
-                'errors' => "The Ref No: {$row['chqref_no']} already exists for the selected account."
-            ];
+            // $this->failures[] = [
+            //     'data' => $row,
+            //     'errors' => "The Ref No: {$row['chqref_no']} already exists for the selected account."
+            // ];
 
 
             $errors = "The Ref No: {$row['chqref_no']} already exists for the selected account.";
@@ -142,10 +142,10 @@ class BankStatementImport implements ToModel, WithValidation, WithHeadingRow, Sk
 
             $this->failedRows++;
 
-            $this->failures[] = [
-                'data' => $rowData,
-                'errors' => implode(', ', $failure->errors())
-            ];
+            // $this->failures[] = [
+            //     'data' => $rowData,
+            //     'errors' => implode(', ', $failure->errors())
+            // ];
 
             $errors = implode(', ', $failure->errors());
             $this->addFailedStatement($errors,$rowData);
@@ -153,9 +153,13 @@ class BankStatementImport implements ToModel, WithValidation, WithHeadingRow, Sk
     }
 
     protected function addFailedStatement($errors,$rowData)
-    {
-        $date = $this->isValidDateFormat($rowData['date']);
+    {        
+        $dateData = $this->isValidDateFormat($rowData['date']);
+        if(!$dateData['status']) {
+            $date = NULL;
+        }
        
+        $date = $dateData['date'];
         FailedBankStatement::create([
                 'group_id' => $this->ledger->group_id,
                 'company_id' => $this->ledger->company_id,
@@ -167,7 +171,7 @@ class BankStatementImport implements ToModel, WithValidation, WithHeadingRow, Sk
                 'account_number' => $this->bank->account_number ?? null,
                 'ref_no' => $rowData['chqref_no'] ?? null,
                 'narration' => $rowData['narration'] ?? null,
-                'date' => $date ? $date : null,
+                'date' => $date,
                 'debit_amount' => $rowData['debit_amount'] ?? 0,
                 'credit_amount' => $rowData['credit_amount'] ?? 0,
                 'balance' => $rowData['balance'] ?? 0,
@@ -207,18 +211,95 @@ class BankStatementImport implements ToModel, WithValidation, WithHeadingRow, Sk
         ];
     }
 
-    protected function isValidDateFormat($value)
+    // protected function isValidDateFormat($value)
+    // {
+    //     $formats = [
+    //         'Y-m-d', 'd-m-Y', 'd/m/Y', 'm/d/Y', 'Y/m/d',
+    //         'd M Y', 'M d, Y', 'd.m.Y', 'Ymd', 'd-m-y',
+    //         'm-d-Y', 'j F, Y', 'F j, Y'
+    //     ];
+    //     try {
+    //         foreach ($formats as $format) {
+    //             // $date = \DateTime::createFromFormat($format, $value);
+    //             $dateValue = trim($value);
+    //             $carbon = \Carbon\Carbon::createFromFormat($format, $dateValue);
+    //             if ($carbon->format($format) === $dateValue) {
+    //                 return $carbon->format('Y-m-d');
+    //             }
+    //             $date = \Carbon\Carbon::createFromFormat($format, $dateValue);
+    //             if ($date && $date->format($format) === $dateValue) {
+    //                 return $date->format('Y-m-d');
+    //             }
+    //         }
+    //     } catch (\Throwable $th) {
+    //         //throw $th;
+    //         dd($th);
+    //     }
+        
+    //     return false;
+    // }
+
+    public static function isValidDateFormat(string $date): array
     {
-        $formats = ['d-m-Y', 'd/m/Y', 'Y-m-d'];
-        foreach ($formats as $format) {
-            $date = \DateTime::createFromFormat($format, $value);
-            $errors = \DateTime::getLastErrors();
-            if ($date && $errors['warning_count'] === 0 && $errors['error_count'] === 0 && $date->format($format) === $value) {
-                // Always return Carbon date in Y-m-d
-                return \Carbon\Carbon::createFromFormat($format, $value)->format('Y-m-d');
-            }
+        $original = $date;
+        $date = trim($date);
+
+        if ($date === '') {
+            return [
+                'status' => false,
+                'date' => null,
+                'message' => 'Empty date input.'
+            ];
         }
-        return false;
+
+        $formats = [
+            'Y-m-d', 'd-m-Y', 'd/m/Y', 'm/d/Y', 'Y/m/d',
+            'd M Y', 'M d, Y', 'd.m.Y', 'Ymd',
+            'm-d-Y', 'j F, Y', 'F j, Y'
+        ];
+
+        foreach ($formats as $format) {
+            try {
+                $carbon = Carbon::createFromFormat($format, $date);
+                if ($carbon && $carbon->format($format) === $date) {
+                    return [
+                        'status' => true,
+                        'date' => $carbon->format('Y-m-d'),
+                        'message' => null
+                    ];
+                }
+            } catch (\Throwable $e) {
+                continue;
+            }
+            // catch (InvalidFormatException $e) {
+            //     dd("Failed format: {$format}", $e->getMessage(), $date);
+            //     continue;
+            // }
+        }
+
+        // Fallback using strtotime
+        // try {
+        //     $timestamp = strtotime($date);
+        //     if ($timestamp !== false) {
+        //         return [
+        //             'status' => true,
+        //             'date' => date('Y-m-d', $timestamp),
+        //             'message' => null
+        //         ];
+        //     }
+        // } catch (\Exception $e) {
+        //     return [
+        //         'status' => false,
+        //         'date' => null,
+        //         'message' => 'Exception during fallback parsing: ' . $e->getMessage()
+        //     ];
+        // }
+
+        return [
+            'status' => false,
+            'date' => null,
+            'message' => "Unrecognized date format: '{$original}'"
+        ];
     }
 
     public function customValidationMessages()

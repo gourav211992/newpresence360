@@ -101,10 +101,13 @@
                                 <div class="tab-content">
                                     <div class="tab-pane active" id="Succeded">
                                         <div class="text-end my-1">
-                                           <button type="button" class="btn btn-warning btn-sm mb-50 mb-sm-0 me-50 exportBtn"><i data-feather="download"></i>Export to Excel</button>
+                                            <button type="button"
+                                                class="btn btn-warning btn-sm mb-50 mb-sm-0 me-50 exportBtn"><i
+                                                    data-feather="download"></i>Export to Excel</button>
                                         </div>
                                         <div class="table-responsive candidates-tables">
-                                            <table class="datatables-basic datatables-success table table-striped myrequesttablecbox loanapplicationlist">
+                                            <table
+                                                class="datatables-basic1 datatables-success table table-striped myrequesttablecbox loanapplicationlist">
                                                 <thead>
                                                     <tr>
                                                         <th>S.No</th>
@@ -113,9 +116,6 @@
                                                         <th>Group</th>
                                                         <th>Status</th>
                                                         <th>Remarks</th>
-                                                        {{-- <th>Type</th>
-                                                        <th>Sub-Type</th>
-                                                         --}}
                                                     </tr>
                                                 </thead>
                                                 <tbody id="success-table-body">
@@ -125,13 +125,18 @@
                                     </div>
                                     <div class="tab-pane" id="Failed">
                                         <div class="text-end my-1">
-                                           <button type="button" class="btn btn-warning btn-sm mb-50 mb-sm-0 me-50 editbtnNew"><i data-feather='upload'></i>Upload Again</button>
+                                            <button type="button"
+                                                class="btn btn-warning btn-sm mb-50 mb-sm-0 me-50 editbtnNew"><i
+                                                    data-feather='upload'></i>Upload Again</button>
                                         </div>
                                         <div class="text-end my-1">
-                                           <button type="button" class="btn btn-warning btn-sm mb-50 mb-sm-0 me-50 exportBtn"><i data-feather="download"></i>Export to Excel</button>
+                                            <button type="button"
+                                                class="btn btn-warning btn-sm mb-50 mb-sm-0 me-50 exportBtn"><i
+                                                    data-feather="download"></i>Export to Excel</button>
                                         </div>
                                         <div class="table-responsive candidates-tables">
-                                            <table class="datatables-basic datatables-failed table table-striped myrequesttablecbox loanapplicationlist">
+                                            <table
+                                                class="datatables-basic datatables-failed table table-striped myrequesttablecbox loanapplicationlist">
                                                 <thead>
                                                     <tr>
                                                         <th>#</th>
@@ -140,9 +145,6 @@
                                                         <th>Group</th>
                                                         <th>Status</th>
                                                         <th>Remarks</th>
-                                                        {{-- <th>Type</th>
-                                                        <th>Sub-Type</th>
-                                                        <th>Remarks</th> --}}
                                                     </tr>
                                                 </thead>
                                                 <tbody id="failed-table-body">
@@ -161,298 +163,360 @@
     <!-- END: Content-->
 @endsection
 @section('scripts')
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script>
-    $(document).ready(function() {
-    feather.replace();
-    var fileInput = $("#fileUpload");
-    var backBtn = $(".btn-secondary"); 
-    const IMPORT_TIMEOUT = 5000; 
-    let timeoutWarningShown = false;
-    let simulateProgress;
-    const ALLOWED_EXTENSIONS = [
-        'xls', 'xlsx'
-    ];
-    const ALLOWED_MIME_TYPES = [
-        'application/vnd.ms-excel', 
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel',
-    ];
-    const MAX_FILE_SIZE = 30 * 1024 * 1024;
-    const MAX_ROW_COUNT = 10000; 
-    $(".drapdroparea").on("dragover", function(event) {
-        event.preventDefault();
-        $(this).addClass("dragging");
-    });
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script type="text/javascript" src="{{asset('assets/js/modules/finance-table.js')}}"></script>
+    <script>
+         $('.datatables-basic').DataTable({
+                processing: true,
+                scrollX: true,
+                serverSide: false,
+                drawCallback: function () {
+                    feather.replace();
+                },
+                order: [[0, 'asc']],
+                dom:
+                    '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-3 withoutheadbuttin dt-action-buttons text-end"><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+                lengthMenu: [7, 10, 25, 50, 75, 100],
+                columnDefs: [
+                    { "orderable": false, "targets": [5] }
+                ],
+                language: {
+                    paginate: {
+                        previous: '&nbsp;',
+                        next: '&nbsp;'
+                    }
+                }
+            });
 
-    $(".drapdroparea").on("dragleave", function(event) {
-        event.preventDefault();
-        $(this).removeClass("dragging");
-    });
+            handleRowSelection('.datatables-basic');
 
-    $(".drapdroparea").on("drop", function(event) {
-        event.preventDefault();
-        $(this).removeClass("dragging");
+       
+            $('.datatables-basic1').DataTable({
+                processing: true,
+                scrollX: true,
+                serverSide: false,
+                drawCallback: function () {
+                    feather.replace();
+                },
+                order: [[0, 'asc']],
+                dom:
+                    '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-3 withoutheadbuttin dt-action-buttons text-end"><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+                lengthMenu: [7, 10, 25, 50, 75, 100],
+                columnDefs: [
+                    { "orderable": false, "targets": [5] }
+                ],
+                language: {
+                    paginate: {
+                        previous: '&nbsp;',
+                        next: '&nbsp;'
+                    }
+                }
+            });
 
-        var files = event.originalEvent.dataTransfer.files;
-        if (files.length) {
-            fileInput[0].files = files;
-            handleFileSelected(files[0]);
-        }
-    });
+            handleRowSelection('.datatables-basic1');
+        $(document).ready(function() {
+            feather.replace();
+            var fileInput = $("#fileUpload");
+            var backBtn = $(".btn-secondary");
+            const IMPORT_TIMEOUT = 5000;
+            let timeoutWarningShown = false;
+            let simulateProgress;
+            const ALLOWED_EXTENSIONS = [
+                'xls', 'xlsx'
+            ];
+            const ALLOWED_MIME_TYPES = [
+                'application/vnd.ms-excel',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel',
+            ];
+            const MAX_FILE_SIZE = 30 * 1024 * 1024;
+            const MAX_ROW_COUNT = 10000;
+            $(".drapdroparea").on("dragover", function(event) {
+                event.preventDefault();
+                $(this).addClass("dragging");
+            });
 
-    fileInput.on('change', function(e) {
-        var file = e.target.files[0];
-        if (!file) {
-            console.warn("No file selected.");
-            return;
-        }
+            $(".drapdroparea").on("dragleave", function(event) {
+                event.preventDefault();
+                $(this).removeClass("dragging");
+            });
 
-        handleFileSelected(file); 
-    });
-    function handleFileSelected(file) {
-        var fileName = file.name;
-        const fileSize = file.size;
-        const fileExtension = fileName.split('.').pop().toLowerCase();
-        $('#upload-error').hide().html('');
+            $(".drapdroparea").on("drop", function(event) {
+                event.preventDefault();
+                $(this).removeClass("dragging");
 
-        if (!ALLOWED_EXTENSIONS.includes(fileExtension)) {
-            displayError(`Invalid file type. Allowed types are: ${ALLOWED_EXTENSIONS.join(', ')}`);
-            fileInput.val(''); 
-            return;
-        }
+                var files = event.originalEvent.dataTransfer.files;
+                if (files.length) {
+                    fileInput[0].files = files;
+                    handleFileSelected(files[0]);
+                }
+            });
 
-        if (!ALLOWED_MIME_TYPES.includes(file.type)) {
-            displayError(`Invalid MIME type for the selected file.`);
-            fileInput.val(''); 
-            return;
-        }
-
-        if (fileSize > MAX_FILE_SIZE) {
-            displayError(`File size exceeds ${MAX_FILE_SIZE / 1024 / 1024} MB (30 MB). Please upload a smaller file.`);
-            fileInput.val('');
-            return;
-        }
-
-        if (fileExtension === 'xlsx' || fileExtension === 'xls') {
-            const reader = new FileReader();
-            reader.onload = function (event) {
-                const data = new Uint8Array(event.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const sheetName = workbook.SheetNames[0];
-                const sheet = workbook.Sheets[sheetName];
-                const range = XLSX.utils.decode_range(sheet['!ref']);
-                const rowCount = range.e.r + 1; 
-                if (rowCount > MAX_ROW_COUNT) {
-                    displayError(`File contains more than ${MAX_ROW_COUNT} rows. Please upload a smaller file.`);
-                    fileInput.val(''); 
+            fileInput.on('change', function(e) {
+                var file = e.target.files[0];
+                if (!file) {
+                    console.warn("No file selected.");
                     return;
                 }
-                $('#selectedFileName').text(fileName);
-                $('#fileNameDisplay').show();
-                $(".default-dragdrop-area-unique").hide();
-                $('#proceedBtn').show();
-            };
-            reader.readAsArrayBuffer(file); 
-        }
-    }
-    function displayError(message) {
-        $(".default-dragdrop-area-unique").hide();
-        $('#fileNameDisplay').hide(); 
-        $('#uploadError').show()
-        $('#upload-error').html(message).show(); 
-    }
 
-    $('#cancelBtn').on('click', function() {
-        clearInterval(simulateProgress); 
-        $('#fileNameDisplay').hide();
-        $(".default-dragdrop-area-unique").show();
-        $("#fileUpload").val('');
-        $('#selectedFileName').text('');  
-        $('#proceedBtn').hide();
-        $('#uploadProgress').hide();
-        $('#uploadSuccess').hide();
-        $('#uploadError').hide();
-    });
-    function showTimeoutMessage() {
-        Swal.fire({
-            title: 'Processing Your Import',
-            html: 'Your file is being processed. This may take some time depending on the file size.<br><br>' +
-                    'You will be notified by email once the import is complete.',
-            icon: 'info',
-            showConfirmButton: true,
-            timer: 10000
-        });
-    }
-    $(document).on('submit', '.importForm', function (e) {
-        e.preventDefault(); 
-        const currentForm = this;
-        var submitButton = (e.originalEvent && e.originalEvent.submitter) || $(this).find(':submit');
-        var submitButtonHtml = submitButton.innerHTML;
-        submitButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i>'; 
-        submitButton.disabled = true;
-        var method = $(this).attr('method');
-        var url = $(this).attr('action');
-        var data = new FormData($(this)[0]); 
-        $('#fileNameDisplay').hide();
-        $('#uploadProgress').show();
-        $('.default-dragdrop-area-unique').hide();
-        const uploadProgressBar = $('#uploadProgressBar');
-        uploadProgressBar.css('width', '0%').text('0%').attr('aria-valuenow', 0);
-        const fileName = $('#fileUpload').val().split('\\').pop();
-        $('#selectedFileName').text(fileName);
-        let simulatedProgress = 0;
-        const simulateProgress = setInterval(() => {
-            if (simulatedProgress < 100) {
-                simulatedProgress += 10; 
-                uploadProgressBar.css('width', simulatedProgress + '%')
-                    .text(simulatedProgress + '%')
-                    .attr('aria-valuenow', simulatedProgress);
-                $('#uploadPercentage').text(`${simulatedProgress}% uploaded`);
-            } else {
-                clearInterval(simulateProgress);
+                handleFileSelected(file);
+            });
+
+            function handleFileSelected(file) {
+                var fileName = file.name;
+                const fileSize = file.size;
+                const fileExtension = fileName.split('.').pop().toLowerCase();
+                $('#upload-error').hide().html('');
+
+                if (!ALLOWED_EXTENSIONS.includes(fileExtension)) {
+                    displayError(`Invalid file type. Allowed types are: ${ALLOWED_EXTENSIONS.join(', ')}`);
+                    fileInput.val('');
+                    return;
+                }
+
+                if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+                    displayError(`Invalid MIME type for the selected file.`);
+                    fileInput.val('');
+                    return;
+                }
+
+                if (fileSize > MAX_FILE_SIZE) {
+                    displayError(
+                        `File size exceeds ${MAX_FILE_SIZE / 1024 / 1024} MB (30 MB). Please upload a smaller file.`
+                        );
+                    fileInput.val('');
+                    return;
+                }
+
+                if (fileExtension === 'xlsx' || fileExtension === 'xls') {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const data = new Uint8Array(event.target.result);
+                        const workbook = XLSX.read(data, {
+                            type: 'array'
+                        });
+                        const sheetName = workbook.SheetNames[0];
+                        const sheet = workbook.Sheets[sheetName];
+                        const range = XLSX.utils.decode_range(sheet['!ref']);
+                        const rowCount = range.e.r + 1;
+                        if (rowCount > MAX_ROW_COUNT) {
+                            displayError(
+                                `File contains more than ${MAX_ROW_COUNT} rows. Please upload a smaller file.`
+                                );
+                            fileInput.val('');
+                            return;
+                        }
+                        $('#selectedFileName').text(fileName);
+                        $('#fileNameDisplay').show();
+                        $(".default-dragdrop-area-unique").hide();
+                        $('#proceedBtn').show();
+                    };
+                    reader.readAsArrayBuffer(file);
+                }
             }
-        }, 200);
-        $.ajax({
-            url: url,
-            type: method,
-            data: data,
-            contentType: false,
-            processData: false,
-            beforeSend: function () {
-                setTimeout(function () {
-                    if (!timeoutWarningShown) {
-                        showTimeoutMessage();
-                        timeoutWarningShown = true;
-                    }
-                }, IMPORT_TIMEOUT);
-            },
-            xhr: function() {
-            const xhr = new window.XMLHttpRequest();
-            xhr.upload.addEventListener('progress', function(e) {
-                if (e.lengthComputable) {
-                    const percent = Math.round((e.loaded / e.total) * 100);
-                    uploadProgressBar.css('width', percent + '%')
-                        .text(percent + '%')
-                        .attr('aria-valuenow', percent);
-                    $('#uploadPercentage').text(`${percent}% uploaded`);
-                } else {
-                    console.log("lengthComputable is false");
-                    uploadProgressBar.css('width', '0%').text('0%').attr('aria-valuenow', 0);
-                    $('#uploadPercentage').text('Uploading...');
-                }
-            }, false);
-            return xhr;
-          },
-            success: function (res) {
-                clearInterval(simulateProgress); 
-                submitButton.disabled = false;
-                submitButton.innerHTML = submitButtonHtml;
-                $('.ajax-validation-error-span').remove();
-                $(".is-invalid").removeClass("is-invalid");
-                $(".help-block").remove();
-                $(".waves-ripple").remove();
-                if (res.status === 'success') {
-                    Swal.fire({
-                        title: 'Success!',
-                        text: res.message,
-                        icon: 'success',  
-                    });
-                } else if (res.status === 'failure') {
-                    Swal.fire({
-                        title: 'Failure!',
-                        text: res.message,
-                        icon: 'error', 
-                    });
-                }
-                populateTable('#success-table-body', res.successful_items);
-                populateTable('#failed-table-body', res.failed_items);
-                $('#success-count-badge').text(`Records Succeeded: ${res.successful_items.length}`);
-                $('#success-count').text(`(${res.successful_items.length})`);
-                $('#failed-count').text(`(${res.failed_items.length})`);
+
+            function displayError(message) {
+                $(".default-dragdrop-area-unique").hide();
+                $('#fileNameDisplay').hide();
+                $('#uploadError').show()
+                $('#upload-error').html(message).show();
+            }
+
+            $('#cancelBtn').on('click', function() {
+                clearInterval(simulateProgress);
+                $('#fileNameDisplay').hide();
+                $(".default-dragdrop-area-unique").show();
+                $("#fileUpload").val('');
+                $('#selectedFileName').text('');
+                $('#proceedBtn').hide();
                 $('#uploadProgress').hide();
-                $('.hide-this-section').show();
-                if (res.failed_items.length > 0) {
-                    $('.editbtnNew').show();  
-                } else {
-                    $('.editbtnNew').hide(); 
-                }
-                $('.exportBtn').on('click', function() {
-                    var activeTab = $('.nav-link.active').attr('href'); 
-                    if (activeTab === '#Succeded') {
-                        window.location.href = `/ledger/export-successful`; 
-                    } else if (activeTab === '#Failed') {
-                        window.location.href = `/ledger/export-failed`; 
+                $('#uploadSuccess').hide();
+                $('#uploadError').hide();
+            });
+
+            function showTimeoutMessage() {
+                Swal.fire({
+                    title: 'Processing Your Import',
+                    html: 'Your file is being processed. This may take some time depending on the file size.<br><br>' +
+                        'You will be notified by email once the import is complete.',
+                    icon: 'info',
+                    showConfirmButton: true,
+                    timer: 10000
+                });
+            }
+            $(document).on('submit', '.importForm', function(e) {
+                e.preventDefault();
+                const currentForm = this;
+                var submitButton = (e.originalEvent && e.originalEvent.submitter) || $(this).find(
+                ':submit');
+                var submitButtonHtml = submitButton.innerHTML;
+                submitButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+                submitButton.disabled = true;
+                var method = $(this).attr('method');
+                var url = $(this).attr('action');
+                var data = new FormData($(this)[0]);
+                $('#fileNameDisplay').hide();
+                $('#uploadProgress').show();
+                $('.default-dragdrop-area-unique').hide();
+                const uploadProgressBar = $('#uploadProgressBar');
+                uploadProgressBar.css('width', '0%').text('0%').attr('aria-valuenow', 0);
+                const fileName = $('#fileUpload').val().split('\\').pop();
+                $('#selectedFileName').text(fileName);
+                let simulatedProgress = 0;
+                const simulateProgress = setInterval(() => {
+                    if (simulatedProgress < 100) {
+                        simulatedProgress += 10;
+                        uploadProgressBar.css('width', simulatedProgress + '%')
+                            .text(simulatedProgress + '%')
+                            .attr('aria-valuenow', simulatedProgress);
+                        $('#uploadPercentage').text(`${simulatedProgress}% uploaded`);
+                    } else {
+                        clearInterval(simulateProgress);
+                    }
+                }, 200);
+                $.ajax({
+                    url: url,
+                    type: method,
+                    data: data,
+                    contentType: false,
+                    processData: false,
+                    beforeSend: function() {
+                        setTimeout(function() {
+                            if (!timeoutWarningShown) {
+                                showTimeoutMessage();
+                                timeoutWarningShown = true;
+                            }
+                        }, IMPORT_TIMEOUT);
+                    },
+                    xhr: function() {
+                        const xhr = new window.XMLHttpRequest();
+                        xhr.upload.addEventListener('progress', function(e) {
+                            if (e.lengthComputable) {
+                                const percent = Math.round((e.loaded / e.total) * 100);
+                                uploadProgressBar.css('width', percent + '%')
+                                    .text(percent + '%')
+                                    .attr('aria-valuenow', percent);
+                                $('#uploadPercentage').text(`${percent}% uploaded`);
+                            } else {
+                                console.log("lengthComputable is false");
+                                uploadProgressBar.css('width', '0%').text('0%').attr(
+                                    'aria-valuenow', 0);
+                                $('#uploadPercentage').text('Uploading...');
+                            }
+                        }, false);
+                        return xhr;
+                    },
+                    success: function(res) {
+                        clearInterval(simulateProgress);
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = submitButtonHtml;
+                        $('.ajax-validation-error-span').remove();
+                        $(".is-invalid").removeClass("is-invalid");
+                        $(".help-block").remove();
+                        $(".waves-ripple").remove();
+                        if (res.status === 'success') {
+                            Swal.fire({
+                                title: 'Success!',
+                                text: res.message,
+                                icon: 'success',
+                            });
+                        } else if (res.status === 'failure') {
+                            Swal.fire({
+                                title: 'Failure!',
+                                text: res.message,
+                                icon: 'error',
+                            });
+                        }
+                        populateTable('#success-table-body', res.successful_items);
+                        populateTable('#failed-table-body', res.failed_items);
+                        $('#success-count-badge').text(
+                            `Records Succeeded: ${res.successful_items.length}`);
+                        $('#success-count').text(`(${res.successful_items.length})`);
+                        $('#failed-count').text(`(${res.failed_items.length})`);
+                        $('#uploadProgress').hide();
+                        $('.hide-this-section').show();
+                        if (res.failed_items.length > 0) {
+                            $('.editbtnNew').show();
+                        } else {
+                            $('.editbtnNew').hide();
+                        }
+                        $('.exportBtn').on('click', function() {
+                            var activeTab = $('.nav-link.active').attr('href');
+                            if (activeTab === '#Succeded') {
+                                window.location.href = `/ledger/export-successful`;
+                            } else if (activeTab === '#Failed') {
+                                window.location.href = `/ledger/export-failed`;
+                            }
+                        });
+                    },
+                    error: function(xhr, status, error) {
+                        $('#fileNameDisplay').hide();
+                        clearInterval(simulateProgress);
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = submitButtonHtml;
+                        $('.ajax-validation-error-span').remove();
+                        $(".is-invalid").removeClass("is-invalid");
+                        $(".help-block").remove();
+                        $(".waves-ripple").remove();
+                        $('#uploadProgress').hide();
+
+                        $('#upload-error').html('');
+                        if (xhr.responseJSON && xhr.responseJSON.errors) {
+
+                            let errorMessage = '';
+                            $.each(xhr.responseJSON.errors, function(key, value) {
+                                $.each(value, function(index, errorMsg) {
+                                    errorMessage += `${errorMsg}<br>`;
+                                });
+                            });
+                            $('#upload-error').html(errorMessage).show();
+                        } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                            $('#upload-error').html(xhr.responseJSON.message).show();
+                        } else {
+                            $('#upload-error').html(
+                                'An error occurred while processing the file. Please try again.'
+                                ).show();
+                        }
+                        $("#uploadError").show();
                     }
                 });
-            },
-            error: function (xhr, status, error) {
-                $('#fileNameDisplay').hide(); 
-                clearInterval(simulateProgress);
-                submitButton.disabled = false;
-                submitButton.innerHTML = submitButtonHtml;
-                $('.ajax-validation-error-span').remove();
-                $(".is-invalid").removeClass("is-invalid");
-                $(".help-block").remove();
-                $(".waves-ripple").remove();
-                $('#uploadProgress').hide();
-
-                $('#upload-error').html(''); 
-                if (xhr.responseJSON && xhr.responseJSON.errors) {
-                  
-                        let errorMessage = ''; 
-                        $.each(xhr.responseJSON.errors, function (key, value) {
-                            $.each(value, function (index, errorMsg) {
-                                errorMessage += `${errorMsg}<br>`; 
-                            });
-                        });
-                        $('#upload-error').html(errorMessage).show();
-                    } else if (xhr.responseJSON && xhr.responseJSON.message) {
-                        $('#upload-error').html(xhr.responseJSON.message).show();
-                } else {
-                    $('#upload-error').html('An error occurred while processing the file. Please try again.').show();
-                }
-                $("#uploadError").show();
-            }
-        });
-    });
-
-    function populateTable(tableBodySelector, items) {
-            const tableBody = $(tableBodySelector);
-            tableBody.empty(); 
-            if (items.length > 0) {
-            items.forEach((item, index) => {
-                const row = `
-                    <tr>
-                        <td>${index + 1}</td>
-                        <td class="fw-bolder text-dark">${item.code}</td>
-                        <td>${item.name}</td>
-                        <td>${item.groups}</td>
-                        <td class="${item.status == 'active' ? 'text-success' : 'text-danger'}">
-                            ${item.status}
-                        </td>
-                        <td>${item.remarks}</td>
-                    </tr>
-                `;
-                tableBody.append(row);
             });
-            } else {
-                const noDataRow = `<tr><td colspan="8" class="text-center">No records found</td></tr>`;
-                tableBody.append(noDataRow); 
-            }
-        }
-    });
-    $(document).on('click', '.editbtnNew', function(e) {
-        e.preventDefault();
-        feather.replace();
-        $('#uploadError').hide();
-        $('#upload-error').hide(); 
-        $('#uploadProgress').hide();
-        $('.default-dragdrop-area-unique').show();
-        $('#fileUpload').val('');
-        $('#fileNameDisplay, #uploadProgress').hide();
-        $('.hide-this-section').hide();
-    });
-</script>
 
+            function populateTable(tableBodySelector, items) {
+                const table = $(tableBodySelector).closest('table').DataTable();
+                table.clear();
+
+                if (items.length > 0) {
+                    items.forEach((item, index) => {
+                        table.row.add([
+                            index + 1,
+                            `<span class="fw-bolder text-dark">${item.code}</span>`,
+                            item.name,
+                            item.groups,
+                            `<span class="badge rounded-pill ${item.status.toLowerCase() === 'active' ? 'badge-light-success' : 'badge-light-danger'}">${item.status}</span>`,
+                            item.remarks
+                        ]);
+                    });
+                } else {
+                    table.row.add([
+                        '', '', 'No records found', '', '', ''
+                    ]);
+                }
+
+                table.draw();
+            }
+
+        });
+        $(document).on('click', '.editbtnNew', function(e) {
+            e.preventDefault();
+            feather.replace();
+            $('#uploadError').hide();
+            $('#upload-error').hide();
+            $('#uploadProgress').hide();
+            $('.default-dragdrop-area-unique').show();
+            $('#fileUpload').val('');
+            $('#fileNameDisplay, #uploadProgress').hide();
+            $('.hide-this-section').hide();
+        });
+    </script>
 @endsection

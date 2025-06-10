@@ -30,10 +30,10 @@ class EditPutAwayRequest extends FormRequest
             'supplier_invoice_date' => 'nullable|date',
             'transporter_name' => 'nullable|max:50',
             'vehicle_no' => [
-                'required',
+                'nullable',
                 'regex:/^[A-Z]{2}[0-9]{2}[A-Z]{0,3}[0-9]{4}$/'
             ],
-            'transportation_mode' => 'required|Integer',
+            'transportation_mode' => 'nullable|Integer',
             'remarks' => 'nullable|max:500',
         ];
 

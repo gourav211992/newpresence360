@@ -138,15 +138,15 @@
                                                 <div class="mt-2">
                                                     <div class="step-custhomapp bg-light">
                                                         <ul class="nav nav-tabs my-25 custapploannav" role="tablist">
-                                                            <li class="nav-item">
+                                                            <li class="nav-item transaction_service_tab">
                                                                 <a class="nav-link active" data-bs-toggle="tab"
                                                                     href="#Pattern">Numbering Pattern</a>
                                                             </li>
-                                                            <li class="nav-item">
+                                                            <li class="nav-item transaction_service_tab">
                                                                 <a class="nav-link" data-bs-toggle="tab"
                                                                     href="#Approval">Approval</a>
                                                             </li>
-                                                            <li class="nav-item">
+                                                            <li class="nav-item transaction_service_tab">
                                                                 <a class="nav-link" data-bs-toggle="tab"
                                                                     href="#Amendment">Amendment</a>
                                                             </li>
@@ -154,7 +154,7 @@
                                                                 <a class="nav-link" data-bs-toggle="tab"
                                                                     href="#Configuration">Common Parameters</a>
                                                             </li>
-                                                            <li class="nav-item" id = "gl_param_tab_header" style = "display:none;">
+                                                            <li class="nav-item transaction_service_tab" id = "gl_param_tab_header" style = "display:none;">
                                                                 <a class="nav-link" data-bs-toggle="tab"
                                                                     href="#gl_params">Financial Parameters</a>
                                                             </li>
@@ -165,7 +165,7 @@
                                                         </ul>
                                                     </div>
                                                     <div class="tab-content ">
-                                                        <div class="tab-pane active" id="Pattern">
+                                                        <div class="tab-pane active transaction_service_tab" id="Pattern">
                                                             <div class="table-responsive-md">
                                                                 <table
                                                                     class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border">
@@ -268,7 +268,7 @@
                                                                 </table>
                                                             </div>
                                                         </div>
-                                                        <div class="tab-pane" id="Approval">
+                                                        <div class="tab-pane transaction_service_tab" id="Approval">
                                                             <div class="table-responsive-md">
                                                                 <table
                                                                     class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail border">
@@ -405,7 +405,7 @@
                                                                 </table>
                                                             </div>
                                                         </div>
-                                                        <div class="tab-pane" id="Amendment">
+                                                        <div class="tab-pane transaction_service_tab" id="Amendment">
                                                             <div class="table-responsive-md">
                                                                 <table
                                                                     class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border">
@@ -502,7 +502,7 @@
                                                         <div class="tab-pane" id="Configuration">
                                                             
                                                         </div>
-                                                        <div class="tab-pane" style = "display:none;" id="gl_params">
+                                                        <div class="tab-pane transaction_service_tab" style = "display:none;" id="gl_params">
                                                             
                                                         </div>
                                                         <div class="tab-pane" id="dynamic_field_section">
@@ -1302,6 +1302,7 @@ $(document).on('change', '.AmendmentCompanySelect', function() {
                                 associateOnChangeForGl();
                                 onreferenceServiceChangeCheck(document.getElementById('reference_from_service'));
                                 glPostingRequiredOnChange(document.getElementById('gl_posting_required'));
+                                transactionTypeServiceTabChange(param.service_type);
                             }
                         } else if (data.status === 'error') {
                             document.getElementById('Configuration').innerHTML = param.common_parameters;
@@ -1541,6 +1542,20 @@ $(document).on('change', '.AmendmentCompanySelect', function() {
                 allowClear: true,
                 closeOnSelect: false // Ensures dropdown stays open for multiple selection
             });
+        }
+
+        function transactionTypeServiceTabChange(type)
+        {
+            let nonMasterElements = document.querySelectorAll('.transaction_service_tab');
+            if (type === "master") {
+                for (let index = 0; index < nonMasterElements.length; index++) {
+                    nonMasterElements[index].classList.add('d-none');
+                }
+            } else {
+                for (let index = 0; index < nonMasterElements.length; index++) {
+                    nonMasterElements[index].classList.remove('d-none');
+                }
+            }
         }
     </script>
 @endsection

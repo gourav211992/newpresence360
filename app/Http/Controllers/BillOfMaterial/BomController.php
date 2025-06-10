@@ -630,13 +630,19 @@ class BomController extends Controller
         $moduleType = $request->type ?? null;
         $customerId = $request->customer_id ?? null;
         /*Check header mandatory*/
-        if ($item['selectedAttrRequired'] && $item['item_code']) {
-            if(!$item['item_code'] || $item['selectedAttrRequired']) {
-                return response()->json(['data' => ['html' => ''], 'status' => 422, 'message' => 'Please fill all the header details before adding components.']);
-            }
+        if (!empty($item['selectedAttrRequired'])) {
+            return response()->json([
+                'data' => ['html' => ''],
+                'status' => 422,
+                'message' => 'Please fill all the header details before adding components.'
+            ]);
         }
-        if(!$item['item_id']) {
-            return response()->json(['data' => ['html' => ''], 'status' => 422, 'message' => 'Please fill all the header details before adding components.']);
+        if (empty($item['item_id'])) {
+            return response()->json([
+                'data' => ['html' => ''],
+                'status' => 422,
+                'message' => 'Please fill all the header details before adding components.'
+            ]);
         }
 
         /*Check last tr in table mandatory*/
@@ -1514,8 +1520,8 @@ class BomController extends Controller
     public function bomReport(Request $request)
     {
         $pathUrl = route('sale.order.index');
-        $orderType = ConstantHelper::SO_SERVICE_ALIAS;
-        $soItems = ::whereHas('header', function ($headerQuery) use($orderType, $pathUrl, $request) {
+        $orderType = ConstantHelper::BOM_SERVICE_ALIAS;
+        $soItems = Bom::whereHas('header', function ($headerQuery) use($orderType, $pathUrl, $request) {
             $headerQuery -> where('document_type', $orderType)-> withDefaultGroupCompanyOrg() -> withDraftListingLogic();
             //Customer Filter
             $headerQuery = $headerQuery -> when($request -> customer_id, function ($custQuery) use($request) {

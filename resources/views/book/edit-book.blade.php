@@ -26,8 +26,10 @@
                         <div class="form-group breadcrumb-right">
                             <a href="javascript: history.go(-1)" class="btn btn-secondary btn-sm"><i
                                     data-feather="arrow-left-circle"></i> Back</a>
+                            @if (!isset($book -> non_edit) || !$book -> non_edit)
                             <button type="submit" form="book-form" class="btn btn-primary btn-sm"><i
                                     data-feather="check-circle"></i>Submit</button>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -138,22 +140,22 @@
                                                     <div class="step-custhomapp bg-light">
                                                         <ul class="nav nav-tabs my-25 custapploannav" role="tablist">
                                                             <li class="nav-item">
-                                                                <a class="nav-link active" data-bs-toggle="tab"
+                                                                <a class="nav-link {{$serviceType === 'transaction' ? 'active' : 'd-none'}}" data-bs-toggle="tab"
                                                                     href="#Pattern">Numbering Pattern</a>
                                                             </li>
-                                                            <li class="nav-item">
+                                                            <li class="nav-item {{$serviceType === 'transaction' ? '' : 'd-none'}}">
                                                                 <a class="nav-link" data-bs-toggle="tab"
                                                                     href="#Approval">Approval</a>
                                                             </li>
-                                                            <li class="nav-item">
+                                                            <li class="nav-item {{$serviceType === 'transaction' ? '' : 'd-none'}}">
                                                                 <a class="nav-link" data-bs-toggle="tab"
                                                                     href="#Amendment">Amendment</a>
                                                             </li>
                                                             <li class="nav-item">
-                                                                <a class="nav-link" data-bs-toggle="tab"
+                                                                <a class="nav-link {{$serviceType === 'transaction' ? '' : 'active'}}" data-bs-toggle="tab"
                                                                     href="#Configuration">Common Parameters</a>
                                                             </li>
-                                                            <li class="nav-item" id = "gl_param_tab_header" style = "display:none;">
+                                                            <li class="nav-item {{$serviceType === 'transaction' ? '' : 'd-none'}}" id = "gl_param_tab_header" style = "display:none;">
                                                                 <a class="nav-link" data-bs-toggle="tab"
                                                                     href="#gl_params">Financial Parameters</a>
                                                             </li>
@@ -164,7 +166,7 @@
                                                         </ul>
                                                     </div>
                                                     <div class="tab-content ">
-                                                        <div class="tab-pane active" id="Pattern">
+                                                        <div class="tab-pane {{$serviceType === 'transaction' ? 'active' : 'd-none'}}" id="Pattern">
                                                             <div class="table-responsive-md">
                                                                 <table
                                                                     class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail border">
@@ -363,7 +365,7 @@
                                                                 </table>
                                                             </div>
                                                         </div>
-                                                        <div class="tab-pane" id="Approval">
+                                                        <div class="tab-pane {{$serviceType === 'transaction' ? '' : 'd-none'}}" id="Approval">
                                                             <div class="table-responsive-md">
                                                                 <table
                                                                     class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail border">
@@ -664,7 +666,7 @@
                                                                 </table>
                                                             </div>
                                                         </div>
-                                                        <div class="tab-pane" id="Amendment">
+                                                        <div class="tab-pane {{$serviceType === 'transaction' ? '' : 'd-none'}}" id="Amendment">
                                                             <div class="table-responsive-md">
                                                                 <table
                                                                     class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border">
@@ -823,7 +825,7 @@
                                                                 </table>
                                                             </div>
                                                         </div>
-                                                        <div class="tab-pane" id="Configuration">
+                                                        <div class="tab-pane {{$serviceType === 'transaction' ? '' : 'active'}}" id="Configuration">
                                                             @forelse ($book -> common_parameters as $serviceParamKey => $serviceParam)
                                                             {!! $serviceParam->param_array_html !!}
                                                             @empty
@@ -834,7 +836,7 @@
                                                             </div>
                                                             @endforelse
                                                         </div>
-                                                        <div class="tab-pane" style = "display:none;" id="gl_params">
+                                                        <div class="tab-pane {{$serviceType === 'transaction' ? '' : 'd-none'}}" style = "display:none;" id="gl_params">
                                                             @forelse ($book -> gl_parameters as $serviceParamKey => $serviceParam)
                                                             {!! $serviceParam->param_array_html !!}
                                                             @empty

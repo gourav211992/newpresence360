@@ -495,46 +495,51 @@
     <script src="https://unpkg.com/feather-icons"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-    const printButton = document.getElementById("printButton");
+        const printButton = document.getElementById("printButton");
 
-    if (printButton) {
-        printButton.addEventListener("click", function (e) {
-            e.preventDefault();
+            if (printButton) {
+                printButton.addEventListener("click", function (e) {
+                    e.preventDefault();
+                    $('.preloader').show();
 
-            const url = printButton.getAttribute("data-url");
+                    const url = printButton.getAttribute("data-url");
 
-            $.ajax({
-                url: url,
-                method: 'GET',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                success: function () {
-                    // ✅ Open new tab if response is OK
-                    window.open(url, '_blank');
-                },
-                error: function (xhr) {
-                    let errorMessage = 'An unexpected error occurred.';
+                    $.ajax({
+                        url: url,
+                        method: 'GET',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        success: function () {
+                        $('.preloader').hide();
+                            window.open(url, '_blank');
+                        },
+                        error: function (xhr) {
+                            $('.preloader').hide();
+                            let errorMessage = 'An unexpected error occurred.';
 
-                    if (xhr.responseJSON && xhr.responseJSON.message) {
-                        errorMessage = xhr.responseJSON.message;
-                    }
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                errorMessage = xhr.responseJSON.message;
+                            }
 
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Print Error',
-                        html: errorMessage,
-                        allowOutsideClick: false,
-                        allowEscapeKey: false,
-                        confirmButtonText: 'OK'
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Print Error',
+                                html: errorMessage,
+                                allowOutsideClick: false,
+                                allowEscapeKey: false,
+                                confirmButtonText: 'OK'
+                            });
+                        }
                     });
-                }
-            });
+                });
+            }
         });
-    }
-});
-
+        $(document).ready(function () {
+            $('.preloader').css('display', 'flex');
+        });
         $(window).on('load', function() {
+            $('.preloader').fadeOut();
             if (feather) {
                 feather.replace({
                     width: 14,
@@ -718,8 +723,8 @@
             $costCenter.trigger('change');
         }
     }
-$(document).ready(function() {
-    // On change of organization
+    $(document).ready(function() {
+       // On change of organization
         $('#organization_id').on('change', function () {
             const selectedOrgId = $(this).val(); 
             console.log('change')
@@ -742,53 +747,57 @@ $(document).ready(function() {
             }
             loadCostCenters(locationId);
         });
-            $(".open-job-sectab").click(function() {
-                $(this).parent().parent().next('tr').show();
-                $(this).parent().find('.close-job-sectab').show();
-                $(this).parent().find('.open-job-sectab').hide();
-            });
+        $(".open-job-sectab").click(function() {
+            $(this).parent().parent().next('tr').show();
+            $(this).parent().find('.close-job-sectab').show();
+            $(this).parent().find('.open-job-sectab').hide();
         });
-
-
-        $(document).ready(function() {
-            $(".close-job-sectab").click(function() {
-                $(this).parent().parent().next('tr').hide();
-                $(this).parent().find('.open-job-sectab').show();
-                $(this).parent().find('.close-job-sectab').hide();
-            });
+        //
+         $('.add-new-record').on('submit', function () {
+            $('.preloader').fadeIn(); // show preloader
         });
-        $('#applyBtn').on('click', function (e) {
+    });
 
-            // Close the modal
-            var filterModal = bootstrap.Modal.getInstance(document.getElementById('addcoulmn'));
 
-            // Optionally handle the response here
-            e.preventDefault();
+    $(document).ready(function() {
+        $(".close-job-sectab").click(function() {
+            $(this).parent().parent().next('tr').hide();
+            $(this).parent().find('.open-job-sectab').show();
+            $(this).parent().find('.close-job-sectab').hide();
+        });
+    });
+    $('#applyBtn').on('click', function (e) {
 
-            // Get the date value
-            const dateValue = $('input[name="date"]').val();
-            const today = new Date().toISOString().split('T')[0];
+        // Close the modal
+        var filterModal = bootstrap.Modal.getInstance(document.getElementById('addcoulmn'));
 
-            var formData = {
-                to:  $('select[name="to"]').val(),
-                type: $('select[name="type"]').val(),
-                cc: $('select[name="cc"]').val(),
-                date: $('input[name="date"]').val(),
-                remarks: $('textarea[name="remarks"]').val(),
-            };
-            let type = $('select[name="type"]').val();
-            let date = $('input[name="date"]').val();
-            let remarks= $('textarea[name="remarks"]').val();
-            let to = $('select[name="to"]').val();
-            let cc = $('select[name="cc"]').val();
+        // Optionally handle the response here
+        e.preventDefault();
 
-            var requiredFields = {
-            "To": to,
-            "CC": cc,
-            "Type": type,
-            "Date": date,
-            "Remarks": remarks,
+        // Get the date value
+        const dateValue = $('input[name="date"]').val();
+        const today = new Date().toISOString().split('T')[0];
+
+        var formData = {
+            to:  $('select[name="to"]').val(),
+            type: $('select[name="type"]').val(),
+            cc: $('select[name="cc"]').val(),
+            date: $('input[name="date"]').val(),
+            remarks: $('textarea[name="remarks"]').val(),
         };
+        let type = $('select[name="type"]').val();
+        let date = $('input[name="date"]').val();
+        let remarks= $('textarea[name="remarks"]').val();
+        let to = $('select[name="to"]').val();
+        let cc = $('select[name="cc"]').val();
+
+        var requiredFields = {
+        "To": to,
+        "CC": cc,
+        "Type": type,
+        "Date": date,
+        "Remarks": remarks,
+    };
 
         // Check for missing values
         // var missingFields = [];
@@ -853,11 +862,13 @@ $(document).ready(function() {
                         '<div class="invalid-feedback">Please select a future date.</div>');
                     return; // Stop form submission
                 }
+                $('.preloader').show();
                 $.ajax({
                     url: "{{ route('finance.cashflow.add.scheduler') }}",
                     method: 'POST',
                     data: formData,
                     success: function (response) {
+                        $('.preloader').hide();
                         // Show success message
                         const Toast = Swal.mixin({
                             toast: true,
@@ -886,6 +897,7 @@ $(document).ready(function() {
                         }
                     },
                     error: function (xhr) {
+                        $('.preloader').hide();
                         if (xhr.status === 422) {
                             var errors = xhr.responseJSON.errors;
 

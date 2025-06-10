@@ -995,4 +995,22 @@ class ConstantHelper
         ['label' => 'List', 'value' => self::DATA_TYPE_LIST],
         ['label' => 'Boolean (Yes/No)', 'value' => self::DATA_TYPE_BOOLEAN],
     ];
+
+     // Excel Export Styling Constants
+    const EXCEL_FONT_COLOR_BLACK = 'FF000000';
+    const EXCEL_FONT_BOLD = true;
+
+    const EXCEL_FILL_TYPE_SOLID = 'solid';
+    const EXCEL_FILL_YELLOW = 'FFFF00';
+    const EXCEL_FILL_GREY = 'D3D3D3';
+
+    const EXCEL_ALIGNMENT_WRAP = true;
+    const EXCEL_ALIGNMENT_WRAP_FALSE = false;
+    const EXCEL_ALIGNMENT_VERTICAL_CENTER = 'center';
+    const EXCEL_ALIGNMENT_HORIZONTAL_CENTER = 'center';
+
+    const EXCEL_BORDER_STYLE_THIN = 'thin';
+    const EXCEL_BORDER_COLOR_BLACK = 'FF000000';
+
+    const EXCEL_COLUMN_WIDTH_DEFAULT = 15;
 }

@@ -139,7 +139,7 @@ class PoController extends Controller
             ->editColumn('total_expense_value', function ($row) {
                 return number_format($row->total_expense_value,2);
             })
-            ->editColumn('grand_total_amount', function ($row) {
+            ->addColumn('grand_total_amount', function ($row) {
                 return number_format($row->grand_total_amount,2);
             })
             ->rawColumns(['document_status'])
@@ -684,14 +684,18 @@ class PoController extends Controller
                         $partyCountryId = isset($shippingAddress) ? $shippingAddress -> country_id : null;
                         $partyStateId = isset($shippingAddress) ? $shippingAddress -> state_id : null;
 
-                        $taxDetails = TaxHelper::calculateTax($poItem['hsn_id'], $itemPrice, $companyCountryId, $companyStateId, $partyCountryId ?? $request -> shipping_country_id, $partyStateId ?? $request -> shipping_state_id, 'collection');
+                        $taxDetails = TaxHelper::calculateTax($poItem['hsn_id'], $itemPrice, $companyCountryId, $companyStateId, $partyCountryId ?? $request -> shipping_country_id, $partyStateId ?? $request -> shipping_state_id, 'purchase');
 
                         if (isset($taxDetails) && count($taxDetails) > 0) {
                             foreach ($taxDetails as $taxDetail) {
-                                $itemTax += ((double)$taxDetail['tax_percentage'] / 100 * $valueAfterHeaderDiscount);
+                                if($taxDetail['applicability_type'] == 'collection') {
+                                    $itemTax += ((double)$taxDetail['tax_percentage'] / 100 * $valueAfterHeaderDiscount);
+                                } else {
+                                    $itemTax -= ((double)$taxDetail['tax_percentage'] / 100 * $valueAfterHeaderDiscount);
+                                }
                             }
                         }
-                        $poItem['tax_amount'] = $itemTax;
+                        $poItem['tax_amount'] = abs($itemTax);
                         $totalTax += $itemTax;
                     }
 
@@ -815,8 +819,7 @@ class PoController extends Controller
                             }
                         }
                     }
-
-                    if($po?->po_items_delivery?->count() < 1) {
+                    if($poDetail?->itemDelivery?->count() < 1) {
                         $poItemDelivery = new PoItemDelivery;
                         $poItemDelivery->purchase_order_id = $po->id;
                         $poItemDelivery->po_item_id = $poDetail->id;
@@ -919,7 +922,7 @@ class PoController extends Controller
 
                 $po->total_item_value = $itemTotalValue ?? 0.00;
                 $po->total_discount_value = ($itemTotalHeaderDiscount + $itemTotalDiscount) ?? 0.00;
-                $po->total_tax_value = $totalTax ?? 0.00;
+                $po->total_tax_value = abs($totalTax) ?? 0.00;
                 $po->total_expense_value =  $totalHeaderExpense ?? 0.00;
                 $po->save();
 
@@ -1312,10 +1315,14 @@ class PoController extends Controller
 
                         if (isset($taxDetails) && count($taxDetails) > 0) {
                             foreach ($taxDetails as $taxDetail) {
-                                $itemTax += ((double)$taxDetail['tax_percentage'] / 100 * $valueAfterHeaderDiscount);
+                                if($taxDetail['applicability_type'] == 'collection') {
+                                    $itemTax += ((double)$taxDetail['tax_percentage'] / 100 * $valueAfterHeaderDiscount);
+                                } else {
+                                    $itemTax -= ((double)$taxDetail['tax_percentage'] / 100 * $valueAfterHeaderDiscount);
+                                }
                             }
                         }
-                        $poItem['tax_amount'] = $itemTax;
+                        $poItem['tax_amount'] = abs($itemTax);
                         $totalTax += $itemTax;
                     }
                 }
@@ -1501,15 +1508,15 @@ class PoController extends Controller
                             }
                         }
                     }
-                    
-                    if($po?->po_items_delivery?->count() < 1) {
+
+                    if($poDetail?->itemDelivery?->count() < 1) {
                         $poItemDelivery = new PoItemDelivery;
                         $poItemDelivery->purchase_order_id = $po->id;
                         $poItemDelivery->po_item_id = $poDetail->id;
                         $poItemDelivery->qty = $poDetail->order_qty ?? 0.00;
                         $poItemDelivery->delivery_date = $poDetail->delivery_date ?? now();
                         $poItemDelivery->save();
-                    }   
+                    }
 
                     /*Item Level Discount Save*/
                     if(isset($component['discounts'])) {
@@ -1606,7 +1613,7 @@ class PoController extends Controller
 
                 $po->total_item_value = $itemTotalValue ?? 0.00;
                 $po->total_discount_value = ($itemTotalHeaderDiscount + $itemTotalDiscount) ?? 0.00;
-                $po->total_tax_value = $totalTax ?? 0.00;
+                $po->total_tax_value = abs($totalTax) ?? 0.00;
                 $po->total_expense_value =  $totalHeaderExpense ?? 0.00;
                 $po->save();
             } else {
@@ -2759,6 +2766,7 @@ class PoController extends Controller
                     'remarks' => $component['remark'],
                     'qty' => $component['qty'],
                     'rate' => $component['rate'],
+                    'delivery_date' => $component['delivery_date'] ?? date('Y-m-d'),
                     'attributes' => $attributes
                 ];
             }    
@@ -2795,6 +2803,7 @@ class PoController extends Controller
                         'remarks' => $piItem['remarks'],
                         'qty' => 0,
                         'rate' => $piItem['rate'],
+                        'delivery_date' => $piItem['delivery_date'] ?? date('Y-m-d'),
                         'attributes' => $piItem['attributes'],
                         'pi_item_ids' => []
                     ];
@@ -2957,6 +2966,7 @@ class PoController extends Controller
                         // $poDetail->group_currency_id = $poItem['group_currency_id'];
                         // $poDetail->group_currency_exchange_rate = $poItem['group_currency_exchange_rate'];
                         $poDetail->remarks = $piItemRow['remarks'];
+                        $poDetail->delivery_date = $piItemRow['delivery_date'];
                         $poDetail->save();
                         if(!$poDetail->hsn_id) {
                             $poDetail->hsn_id = $poDetail?->item?->hsn?->id;
@@ -2982,12 +2992,18 @@ class PoController extends Controller
                             $partyCountryId = isset($shippingAddress) ? $shippingAddress->country_id : null;
                             $partyStateId = isset($shippingAddress) ? $shippingAddress->state_id : null;
                             $taxDetails = TaxHelper::calculateTax($poDetail->hsn_id, $itemPrice, $companyCountryId, $companyStateId, $partyCountryId, $partyStateId, 'collection');
+
                             if (isset($taxDetails) && count($taxDetails) > 0) {
                                 foreach ($taxDetails as $taxDetail) {
-                                    $itemTax += ((double)$taxDetail['tax_percentage'] / 100 * $itemPrice);
+                                    if($taxDetail['applicability_type'] == 'collection') {
+                                        $itemTax += ((double)$taxDetail['tax_percentage'] / 100 * $itemPrice);
+                                    } else {
+                                        $itemTax -= ((double)$taxDetail['tax_percentage'] / 100 * $itemPrice);
+                                    }
                                 }
                             }
-                            $poDetail->tax_amount = $itemTax;
+                            
+                            $poDetail->tax_amount = abs($itemTax);
                             $poDetail->save();
                             $totalTax += $itemTax;
                         }
@@ -3039,6 +3055,16 @@ class PoController extends Controller
                                 break;
                             }
                         }
+
+                        if($poDetail?->itemDelivery?->count() < 1) {
+                            $poItemDelivery = new PoItemDelivery;
+                            $poItemDelivery->purchase_order_id = $po->id;
+                            $poItemDelivery->po_item_id = $poDetail->id;
+                            $poItemDelivery->qty = $poDetail->order_qty ?? 0.00;
+                            $poItemDelivery->delivery_date = $poDetail->delivery_date ?? now();
+                            $poItemDelivery->save();
+                        }  
+
                     }
                 }
                 /*Store currency data*/
@@ -3053,7 +3079,7 @@ class PoController extends Controller
                 $po->group_currency_code = $currencyExchangeData['data']['group_currency_code'];
                 $po->group_currency_exg_rate = $currencyExchangeData['data']['group_currency_exg_rate'];
                 $po->total_item_value = $totalValue;
-                $po->total_tax_value = $totalTax;
+                $po->total_tax_value = abs($totalTax) ?? 0.00;
                 $po->save();
                 
             }

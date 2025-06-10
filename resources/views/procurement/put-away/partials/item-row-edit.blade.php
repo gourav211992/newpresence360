@@ -5,8 +5,8 @@
    <tr id="row_{{$rowCount}}" data-index="{{$rowCount}}" @if($rowCount < 2 ) class="trselected" @endif>
       <input type="hidden" name="components[{{$rowCount}}][mrn_header_id]" value="{{$item->header->mrn_header_id}}">
       <input type="hidden" name="components[{{$rowCount}}][mrn_detail_id]" value="{{$item->mrn_detail_id}}">
-      <input type="hidden" name="components[{{$rowCount}}][putaway_item_id]" value="{{$item->id}}">
-      <input type="hidden" name="components[{{$rowCount}}][putaway_header_id]" value="{{$item->id}}">
+      <input type="hidden" name="components[{{$rowCount}}][putaway_detail_id]" value="{{$item->id}}">
+      <input type="hidden" name="components[{{$rowCount}}][putaway_header_id]" value="{{$item->header_id}}">
       <td class="customernewsection-form">
          <div class="form-check form-check-primary custom-checkbox">
             <input type="checkbox" class="form-check-input" id="Email_{{$rowCount}}" data-id="{{$item->id}}" value="{{$rowCount}}">
@@ -52,7 +52,7 @@
          </select>
       </td>
       <td>
-         <input type="number" class="form-control mw-100 text-end order_qty" name="components[{{$rowCount}}][order_qty]" value="{{$item->order_qty}}" step="any" />
+         <input type="number" class="form-control mw-100 text-end order_qty" name="components[{{$rowCount}}][order_qty]" value="{{$item->receipt_qty}}" step="any" />
       </td>
       <td>
          <input type="number" class="form-control mw-100 text-end accepted_qty checkNegativeVal" name="components[{{$rowCount}}][accepted_qty]" value="{{$item->accepted_qty}}" step="any" />
@@ -64,7 +64,6 @@
                <input type="hidden" name="components[{{$rowCount}}][hidden_packets][{{$over_key+1}}][item_location_id]" value="{{$overhead->item_id}}">
                <input type="hidden" name="components[{{$rowCount}}][hidden_packets][{{$over_key+1}}][quantity]" value="{{@$overhead->inventory_uom_qty}}">
                <input type="hidden" name="components[{{$rowCount}}][hidden_packets][{{$over_key+1}}][packet_number]" value="{{@$overhead->packet_number}}">
-               <input type="hidden" name="components[{{$rowCount}}][hidden_packets][{{$over_key+1}}][storage_number]" value="{{@$overhead->storage_number}}">
                <input type="hidden" name="components[{{$rowCount}}][hidden_packets][{{$over_key+1}}][wh_detail_id]" value="{{@$overhead->wh_detail_id}}">
             @endforeach
             <input type="hidden" id="components_storage_packets_{{ $rowCount }}" name="components[{{$rowCount}}][storage_packets]" value=""/>

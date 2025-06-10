@@ -838,15 +838,11 @@ class AutocompleteController extends Controller
                 }
             } else if ($type === 'customer' || $type === 'customer_list') {
                 $results = Customer::withDefaultGroupCompanyOrg() -> with(['payment_terms', 'currency', 'compliances'])
-                ->where('company_name', 'LIKE', "%$term%")
-                ->where('status', ConstantHelper::ACTIVE)
+                -> when($term, function ($termQuery) use($term) { 
+                    $termQuery -> where('company_name', 'LIKE', '%'.$term.'%');
+                })->where('status', ConstantHelper::ACTIVE)
+                ->limit(10)
                 ->get(['id', 'customer_type', 'email', 'mobile', 'customer_code', 'company_name', 'currency_id', 'payment_terms_id','display_name']);
-                if ($results->isEmpty()) {
-                    $results = Customer::withDefaultGroupCompanyOrg() -> with(['payment_terms', 'currency', 'compliances'])
-                                    ->where('status', ConstantHelper::ACTIVE)
-                                    ->limit(10)
-                                    ->get(['id', 'customer_type', 'email', 'mobile', 'customer_code', 'company_name', 'currency_id', 'payment_terms_id','display_name']);
-                                }
             } else if ($type === 'location') {
                 $results = InventoryHelper::getAccessibleLocations();
             } else if ($type === 'sub_store') {

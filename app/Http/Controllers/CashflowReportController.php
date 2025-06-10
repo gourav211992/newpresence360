@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Models\Voucher;
 use App\Models\CashflowScheduler;
 use App\Helpers\Helper;
+use App\Helpers\InventoryHelper;
 use App\Models\PaymentVoucher;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Response;
@@ -191,8 +192,29 @@ class CashflowReportController extends Controller
                 'location' => $item->costCenter->locations,
             ];
         })->toArray();
-        $locations = ErpStore::where('status','active')->get();
-        return view('cashflow.index', compact('scheduler','users','opening', 'payment_received', 'payment_made','location_id','cost_center_id', 'payment_made_t', 'payment_received_t', 'closing', 'fy', 'mappings', 'organization_id', 'range','locations','cost_centers'));
+        $locations = InventoryHelper::getAccessibleLocations();
+
+
+            return view('cashflow.index',
+                compact(
+                    'scheduler',
+                    'users',
+                    'opening',
+                    'payment_received',
+                    'payment_made',
+                    'location_id',
+                    'cost_center_id',
+                    'payment_made_t',
+                    'payment_received_t',
+                    'closing',
+                    'fy',
+                    'mappings',
+                    'organization_id',
+                    'range',
+                    'locations',
+                    'cost_centers'
+                )
+            );
         }
     }
     public static function print($startDate,$endDate,$organization_id,$createdBy,$location = null, $cost =null)

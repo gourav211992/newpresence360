@@ -355,7 +355,6 @@
                                                                         <option value=""
                                                                             {{ old('ledger') ? '' : 'selected' }}>Select
                                                                         </option>
-
                                                                     </select>
                                                                     <select
                                                                         class="d-none ledger-group form-select mw-100 mb-25"
@@ -947,7 +946,7 @@
                 const $row = $(this).closest('tr');
                 const ledgerId = $(this).val();
                 console.log(ledgerId);
-                const $ledgerGroupSelect = $row.find('.ledger-group');
+                const $ledgerGroupSelect = $('.ledger-group');
 
                 if (ledgerId) {
                     $.ajax({

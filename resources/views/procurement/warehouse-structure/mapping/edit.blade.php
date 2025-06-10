@@ -189,7 +189,6 @@
                                                             <th width="100">Max Volume (CUM)</th>
                                                             <th width="100">Current Weight (Kg)</th>
                                                             <th width="100">Current Volume (CUM)</th>
-                                                            <th width="100">Storage Number</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody class="mrntableselectexcel">

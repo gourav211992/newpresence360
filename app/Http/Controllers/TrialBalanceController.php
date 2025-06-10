@@ -6,6 +6,7 @@ use App\Exports\LedgerReportExport;
 use App\Exports\TrialBalanceReportExport;
 use App\Helpers\Helper;
 use App\Models\Group;
+use App\Helpers\InventoryHelper;
 use App\Models\ItemDetail;
 use App\Models\Ledger;
 use App\Models\Organization;
@@ -441,7 +442,7 @@ class TrialBalanceController extends Controller
 
         $dateRange = \Carbon\Carbon::parse($startDate)->format('d-m-Y') . " to " . \Carbon\Carbon::parse($endDate)->format('d-m-Y');
         $orgname=Organization::where('id',Helper::getAuthenticatedUser()->organization_id)->value('name');
-        $locations = ErpStore::where('status','active')->get();
+        $locations = InventoryHelper::getAccessibleLocations();
         $date2 = \Carbon\Carbon::parse($startDate)->format('jS-F-Y') . ' to ' . \Carbon\Carbon::parse($endDate)->format('jS-F-Y');
         return view('trialBalance.view-trial-balance', compact('orgname','cost_centers', 'companies', 'organizationId', 'id', 'date2', 'dateRange','locations'));
     }
