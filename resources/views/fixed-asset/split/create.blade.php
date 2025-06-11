@@ -1285,6 +1285,9 @@
                         $assetNameInput.val(assetCodeToName[assetCode]);
                         renderLedgerSelects();
                         $row.find('.category-input').val(assetCodeToCategoryId[assetCode]).trigger('change');
+                        //trigger('autocompleteselect', [{ item: { label: assetCodeToCategoryId[assetCode], value: assetCodeToCategoryId[assetCode] } }]);
+
+                        //$row.find('.category-input').val(assetCodeToCategoryId[assetCode]).trigger('change');
                         $row.find('.category').val(assetCodeToCategoryText[assetCode]).trigger('change');
                         $row.find('.ledger').val(assetCodeToLedger[assetCode] || "").trigger('change');
                         $row.find('.ledger-group').val(assetCodeToLedgerGroup[assetCode] || "").trigger('change');

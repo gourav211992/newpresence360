@@ -686,7 +686,6 @@ if ($ref) {
 
         $locations = Helper::getStoreLocation(Helper::getAuthenticatedUser()->organization_id);
         $fyear = Helper::getFinancialYear(date('Y-m-d'));
-        $buttons['amend']=true;
         if ($data->document_status == ConstantHelper::DRAFT)
             return view('paymentVoucher.editPaymentVoucher', compact('cost_centers','books_t', 'data', 'books', 'buttons', 'history', 'banks', 'ledgers', 'currencies', 'orgCurrency', 'revision_number', 'currNumber', 'editUrl', 'indexUrl', 'editUrlString','locations','fyear'));
         else

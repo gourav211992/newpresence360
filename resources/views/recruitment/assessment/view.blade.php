@@ -47,7 +47,7 @@
                                                         @if ($question->is_dropdown)
                                                             <div class="row">
                                                                 <div class="col-md-6 mt-1">
-                                                                    <select class="form-select"
+                                                                    <select class="form-select" name="answerselect"
                                                                         {{ $question->is_required ? 'required' : '' }}>
                                                                         <option>Select</option>
                                                                         @forelse($question->options as $option)
@@ -62,7 +62,6 @@
                                                                 <div class="form-check ansercheckbox pt-1 margin-box">
                                                                     <input class="form-check-input" name="answerselect"
                                                                         type="radio" id="answer4" value="checked"
-                                                                        checked=""
                                                                         {{ $question->is_required ? 'required' : '' }}>
                                                                     <label class="form-check-label"
                                                                         for="answer4">{{ $option->option }}</label>
@@ -74,7 +73,8 @@
                                                         @if ($question->is_dropdown)
                                                             <div class="row">
                                                                 <div class="col-md-6 mt-1">
-                                                                    <select class="form-select select2" multiple
+                                                                    <select class="form-select select2" name="answerselect1"
+                                                                        multiple
                                                                         {{ $question->is_required ? 'required' : '' }}>
                                                                         <option>Select</option>
                                                                         @forelse($question->options as $option)
@@ -88,7 +88,7 @@
                                                             @forelse($question->options as $option)
                                                                 <div class="form-check ansercheckbox pt-1 margin-box">
                                                                     <input class="form-check-input" type="checkbox"
-                                                                        id="answer1" value="checked" checked=""
+                                                                        id="answer1" name="answerselect1" value="checked"
                                                                         {{ $question->is_required ? 'required' : '' }}>
                                                                     <label class="form-check-label"
                                                                         for="answer1">{{ $option->option }}</label>
@@ -99,7 +99,7 @@
                                                     @elseif ($question->type == 'dropdown')
                                                         <div class="row">
                                                             <div class="col-md-6 mt-1">
-                                                                <select class="form-select"
+                                                                <select class="form-select" name="answerselect2"
                                                                     {{ $question->is_required ? 'required' : '' }}>
                                                                     <option>Select</option>
                                                                     @forelse($question->options as $option)
@@ -112,7 +112,8 @@
                                                     @elseif ($question->type == 'short answer')
                                                         <div class="row">
                                                             <div class="col-md-6 mt-1">
-                                                                <input type="text" class="form-control"
+                                                                <input type="text" name="answerselect3"
+                                                                    class="form-control"
                                                                     placeholder="Enter your Short answer"
                                                                     {{ $question->is_required ? 'required' : '' }} />
                                                             </div>
@@ -120,8 +121,8 @@
                                                     @elseif ($question->type == 'file upload')
                                                         <div class="row">
                                                             <div class="col-md-6 mt-1">
-                                                                <input type="file" class="form-control"
-                                                                    placeholder="Choose the file"
+                                                                <input type="file" name="answerselect4"
+                                                                    class="form-control" placeholder="Choose the file"
                                                                     {{ $question->is_required ? 'required' : '' }} />
                                                             </div>
                                                         </div>
@@ -148,9 +149,8 @@
                                                             <div class="mb-1 mt-2 innergroupanser option-preview-section">
                                                                 <div class="row">
                                                                     <div class="col-md-2 mt-1 mt-sm-0">
-                                                                        <input class="form-check-input" name="answerselect"
+                                                                        <input class="form-check-input" name="answerselect5"
                                                                             type="radio" id="answer4" value="checked"
-                                                                            checked=""
                                                                             {{ $question->is_required ? 'required' : '' }}>
                                                                     </div>
                                                                     <div class="col-md-6">

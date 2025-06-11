@@ -151,32 +151,13 @@ function addOptions(el) {
     const optionSection = questionBox.querySelector('.option-preview-section');
     let optionCount = optionSection.querySelectorAll('.row').length;
 
-    if (type === 'dropdown') {
-        let html = `<div class="row">
-            <div class="col-md-6">
-                <div class="form-check ansercheckbox">
-                    <input type="hidden" name="questions[${qIndex}][options][${optionCount}]" value="${optionText}" />
-                    <label class="form-check-label" for="answer${qIndex}_${optionCount}">${optionText}</label>
-                </div>
-            </div>
-            <div class="col-md-2">
-                <span class="text-danger cursor-pointer add-removetxt remove-option">
-                    <i data-feather="x-circle"></i> Remove
-                </span>
-            </div>
-        </div>`;
-
-        optionSection.insertAdjacentHTML('beforeend', html);
-        inputField.value = '';
-        feather.replace();
-        return;
-    }
-
     const inputType = type === 'multiple choice' ? 'checkbox' : 'radio';
+    const correctName = type === 'multiple choice' ? `questions[${qIndex}][correct_options][]` : `questions[${qIndex}][correct_option]`;
+
     let html = `<div class="row">
             <div class="col-md-6">
                 <div class="form-check ansercheckbox">
-                    <input class="form-check-input" type="${inputType}" name="questions[${qIndex}][answerselect]" id="answer${qIndex}_${optionCount}" />
+                    <input class="form-check-input" type="${inputType}" name="${correctName}]" value="${optionCount}" id="answer${qIndex}_${optionCount}" />
                     <input type="hidden" name="questions[${qIndex}][options][${optionCount}]" value="${optionText}" />
                     <label class="form-check-label" for="answer${qIndex}_${optionCount}">${optionText}</label>
                 </div>
@@ -247,6 +228,7 @@ function handleImageOptionAdd(el, qIndex) {
     const previewHtml = `
     <div class="row align-items-center mb-2 image-option-preview" data-option-index="${optionCount}">
         <div class="col-md-6 d-flex align-items-center gap-2">
+            <input class="form-check-input" type="radio" name="questions[${qIndex}][correct_option]" value="${optionCount}" id="answer${qIndex}_${optionCount}" />
             <img src="${imageUrl}" alt="Option Image" style="max-height: 80px; border: 1px solid #ccc; padding: 2px;" />
         </div>
         <div class="col-md-2">

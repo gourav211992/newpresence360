@@ -55,8 +55,8 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-check ansercheckbox">
-                                <input class="form-check-input" type="radio" id="answer4" value="checked"
-                                    checked="" disabled>
+                                <input class="form-check-input" type="radio" id="answer4"
+                                    {{ $option->is_correct == '1' ? 'checked' : '' }} disabled>
                                 <label class="form-check-label" for="answer4">{{ $option->option }}</label>
                             </div>
                         </div>
@@ -79,7 +79,8 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-check ansercheckbox">
-                                <input class="form-check-input" type="checkbox" value="checked" checked="" disabled>
+                                <input class="form-check-input" type="checkbox" id="answer4"
+                                    {{ $option->is_correct == '1' ? 'checked' : '' }} disabled>
                                 <label class="form-check-label">{{ $option->option }}</label>
                             </div>
                         </div>
@@ -102,6 +103,8 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-check ansercheckbox">
+                                <input class="form-check-input" type="radio" id="answer4"
+                                    {{ $option->is_correct == '1' ? 'checked' : '' }} disabled>
                                 <label class="form-check-label">{{ $option->option }}</label>
                             </div>
                         </div>
@@ -164,6 +167,8 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-check ansercheckbox">
+                                <input class="form-check-input" type="radio" id="answer4"
+                                    {{ $option->is_correct == '1' ? 'checked' : '' }} disabled>
                                 <img src="{{ url($option->image) }}" style="height:100px; width:100px;" />
                             </div>
                         </div>

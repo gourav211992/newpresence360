@@ -6,9 +6,11 @@ use App\Helpers\Helper;
 use App\Helpers\InventoryHelper;
 use App\Helpers\Sales\ImportHelper;
 use App\Http\Requests\SaleOrderImportRequest;
+use App\Http\Requests\SaleOrderItemImportRequest;
 use App\Imports\SaleOrderShufabImport;
 use App\Models\SaleOrderImport;
 use App\Models\SaleOrderImportShufab;
+use App\Models\SoItemImport;
 use DB;
 use Exception;
 use Maatwebsite\Excel\Facades\Excel;
@@ -86,7 +88,7 @@ class SaleOrderImportController extends Controller
             DB::rollBack();
             return response()->json([
                 'message' => 'Error occurred while reading the file. Please download the Sample File and try again',
-                'error' => $e -> getFile(),
+                'error' => $e -> getMessage(),
             ], 500);
         }
     }
@@ -117,6 +119,45 @@ class SaleOrderImportController extends Controller
             ], $response['status']);
         } catch (Exception $e) {
             DB::rollBack();
+            return response()->json([
+                'message' => 'Error occurred while uploading documents',
+                'error' => $e -> getMessage(),
+            ], 500);
+        }
+    }
+
+    public function importSaveItem(SaleOrderItemImportRequest $request)
+    {
+        DB::beginTransaction();
+        try {
+            $user = Helper::getAuthenticatedUser();
+            $uploads = [];
+            SoItemImport::where('created_by', $user->auth_user_id)->delete();
+            Excel::import(new \App\Imports\Sales\SalesOrderItemImport($user -> auth_user_id), $request->file('attachment'));
+            $uploads = SoItemImport::where('created_by', $user -> auth_user_id) -> where('is_migrated', "0") -> get();
+            $response = ImportHelper::generateValidInvalidUiItem($uploads);
+            DB::commit();
+            return response() -> json([
+                'data' => $response
+            ], 200);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Error occurred while reading the file. Please download the Sample File and try again',
+                'error' => $e ->getLine(),
+            ], 500);
+        }
+    }
+
+    public function bulkUploadItems(Request $request)
+    {
+        try {
+            $user = Helper::getAuthenticatedUser();
+            $uploads = SoItemImport::with('item.alternateUOMs.uom')->where('created_by', $user -> auth_user_id) -> whereJsonLength('reason', 0) -> where('is_migrated', "0") -> get();
+            return response() -> json([
+                'data' => $uploads
+            ], 200);
+        } catch (Exception $e) {
             return response()->json([
                 'message' => 'Error occurred while uploading documents',
                 'error' => $e -> getMessage(),

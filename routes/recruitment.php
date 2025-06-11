@@ -107,6 +107,7 @@ Route::middleware(['user.auth'])->group(function () {
             Route::post('/recruitment.jobs.scheduled-interview/{id}', 'updateCandidateStatus')->name('recruitment.jobs.scheduled-interview');
             Route::post('/update-status/{id}', 'updateStatus')->name('recruitment.jobs.update-status');
             Route::get('/get-assigned-vendors/{id}', 'getAssignedVendors');
+            Route::post('/get-request-detail', 'getRequestDetail')->name('recruitment.jobs.get-request-detail');
         });
 
         Route::controller(JobInterviewController::class)->prefix('jobs-interviews')->group(function () {

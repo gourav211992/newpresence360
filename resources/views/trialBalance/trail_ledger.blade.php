@@ -201,15 +201,22 @@
 @endsection
 @section('scripts')
 <script>
-     $(document).ready(function () {
-        $('.preloader').css('display', 'flex');
-    });
+    $(document).ready(function () {
+        // Hide preloader after full page load
+        $(window).on('load', function () {
+            $('.preloader').fadeOut();
+        });
 
-    $(window).on('load', function() {
-        $('.preloader').fadeOut();
-    });
-    $('.add-new-record').on('submit', function () {
-            $('.preloader').fadeIn(); // show preloader
+         // Show preloader only on form submit that causes reload
+        $('form.add-new-record').on('submit', function () {
+            $('.preloader').fadeIn();
+        });
+
+        // Failsafe in case load never triggers (e.g. network failure or redirect)
+        setTimeout(function () {
+            $('.preloader').fadeOut();
+        }, 15000);
+
     });
 </script>
 @endsection

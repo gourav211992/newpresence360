@@ -172,6 +172,7 @@
                     <div class="mb-1">
                         <label class="form-label">Vendor Name</label>
                         <select class="form-select select2" name="vendor_filter">
+                        <option value="">Select</option>
                         @foreach($vendors as $org)
                         <option value="{{$org->id}}" @if($org->id===$vendor_id) selected @endif>{{$org->company_name}}</option>
                         @endforeach
@@ -198,11 +199,8 @@
     const costCenters = @json($cost_centers);
 </script>
 <script>
-     $(document).ready(function () {
-        $('.preloader').css('display', 'flex');
-    });
-
     $(window).on('load', function() {
+        $('.preloader').css('display', 'flex');[]
         $('.preloader').fadeOut();
         if (feather) {
             feather.replace({
@@ -211,6 +209,11 @@
             });
         }
     })
+
+    // Failsafe in case load never triggers (e.g. network failure or redirect)
+        setTimeout(function () {
+            $('.preloader').fadeOut();
+        }, 15000);
 
     $(function() {
         $(".sortable").sortable();
