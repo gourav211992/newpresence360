@@ -123,11 +123,11 @@ class SaleOrderShufabImport implements ToArray, WithHeadingRow, SkipsEmptyRows, 
                     }
                     //Customer Addresses
                     $customerAddresses = $customer -> addresses();
-                    $customerBillAddress = $customerAddresses -> where('is_billing', 1) -> first();
+                    $customerBillAddress = $customerAddresses -> whereIn('type', ['billing', 'both']) -> first();
                     if (!isset($customerBillAddress)) {
                         $errors[] =  'Customer Billing Adddress not found';
                     }
-                    $customerShipAddress = $customerAddresses -> where('is_shipping', 1) -> first();
+                    $customerShipAddress = $customerAddresses -> whereIn('type', ['shipping', 'both']) -> first();
                     if (!isset($customerShipAddress)) {
                         $errors[] =  'Customer Shipping Adddress not found';
                     }
@@ -136,6 +136,7 @@ class SaleOrderShufabImport implements ToArray, WithHeadingRow, SkipsEmptyRows, 
                 //Consignee Name
                 $orderDetail -> consignee_name = $row['consignee_name'] ?? null;
                 //Item
+                $totalQty = 0;
                 $orderDetail -> item_code = $row['item_code'];
                 $subTypeIds = SubType::whereIn('name', [ConstantHelper::FINISHED_GOODS, ConstantHelper::TRADED_ITEM, 
                 ConstantHelper::ASSET,ConstantHelper::WIP_SEMI_FINISHED])
@@ -157,7 +158,6 @@ class SaleOrderShufabImport implements ToArray, WithHeadingRow, SkipsEmptyRows, 
                         $errors[] = "UOM not found";
                     }
                 }                
-                $totalQty = 0;
                 //Attribute Size
                 for ($i=1; $i <= 14; $i++) { 
                     $key = 'size_' . $i;
@@ -175,7 +175,7 @@ class SaleOrderShufabImport implements ToArray, WithHeadingRow, SkipsEmptyRows, 
                                 'attribute_value' => $i
                             ];
                             //Check BOM
-                            $bomDetails = ItemHelper::checkItemBomExists($orderDetail -> item_id, $attributesArray);
+                            $bomDetails = ItemHelper::checkItemBomExists($orderDetail -> item_id ?? 0, $attributesArray);
                             if (!isset($bomDetails['bom_id'])) {
                                 $errors[] = "Bom not found";
                             }

@@ -61,7 +61,7 @@ class ImportHelper
             ",
         ];
     }
-    public static function shufabImportDataSave(\Illuminate\Database\Eloquent\Collection $data, int $bookId, int $locationId, $user, string $document_status) : array
+    public static function shufabImportDataSave(Collection $data, int $bookId, int $locationId, $user, string $document_status) : array
     {
         $successfullOrders = 0;
         $failureOrders = 0;
@@ -483,7 +483,7 @@ class ImportHelper
         }
     }
 
-    public static function v2ImportDataSave(\Illuminate\Database\Eloquent\Collection $data, int $bookId, int $locationId, $user, string $document_status) : array
+    public static function v2ImportDataSave(Collection $data, int $bookId, int $locationId, $user, string $document_status) : array
     {
         $successfullOrders = 0;
         $failureOrders = 0;
@@ -1028,5 +1028,64 @@ class ImportHelper
                 'invalidUI' => $invalidUI 
             ];
         }
+    }
+    public static function generateValidInvalidUiItem(Collection $uploadsData) : array
+    {
+        $successRecords = 0;
+        $failedRecords = 0;
+        $validUI = "";
+        $invalidUI = "";
+
+        foreach ($uploadsData as $uploadData) {
+            $totalQty = $uploadData -> qty ?? 0;
+            $itemCode = $uploadData -> item_code ?? "";
+            $uomCode = $uploadData -> uom_code ?? "";
+            $rate = $uploadData -> rate ?? 0;
+            $deliveryDate = Carbon::parse($uploadData -> delivery_date) -> format("d-m-Y");
+            $itemAttributes = "";
+            foreach ($uploadData -> attributes ?? [] as $itemAttr) {
+                $attributeName = $itemAttr['attribute_name'];
+                $attributeValue = $itemAttr['attribute_value'];
+                $itemAttributes .= "<span class='badge rounded-pill badge-light-primary'><strong>$attributeName</strong>: $attributeValue</span>";
+            }
+            //Invalid Rows
+            if ($uploadData -> reason && count($uploadData -> reason) > 0) {
+                $failedRecords += 1;
+                $errors = "";
+                foreach ($uploadData -> reason as $errIndex => $errorReason) {
+                    $errors .= ($errIndex == 0 ? $errorReason : ", " . $errorReason);
+                }
+                $invalidUI .= "
+                <tr>
+                <td class = 'no-wrap'>$itemCode</td>
+                <td class = 'no-wrap'>$uomCode</td>
+                <td class = 'no-wrap'>$itemAttributes</td>
+                <td class = 'numeric-alignment'>$totalQty</td>
+                <td class = 'numeric-alignment'>$rate</td>
+                <td class = 'no-wrap'>$deliveryDate</td>
+                <td class = 'no-wrap text-danger'>$errors</td>
+                </tr>
+                ";
+            } else {
+                $successRecords += 1;
+                $validUI .= "
+                <tr>
+                <td class = 'no-wrap'>$itemCode</td>
+                <td class = 'no-wrap'>$uomCode</td>
+                <td class = 'no-wrap'>$itemAttributes</td>
+                <td class = 'numeric-alignment'>$totalQty</td>
+                <td class = 'numeric-alignment'>$rate</td>
+                <td class = 'no-wrap'>$deliveryDate</td>
+                </tr>
+                ";
+            }
+        }
+        return [
+            'valid_records' => $successRecords,
+            'invalid_records' => $failedRecords,
+            'validUI' => $validUI,
+            'invalidUI' => $invalidUI 
+        ];
+        
     }
 }

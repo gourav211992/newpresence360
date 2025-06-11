@@ -35,9 +35,14 @@
                                     Add
                                     Question</button>
                                 <button type="button" class="btn btn-primary btn-sm mb-50 mb-sm-0"
-                                    data-request="ajax-submit" data-target="[role=post-data]"><i
+                                    data-request="ajax-submit" data-target="[role=post-data]" id="saveBtn"><i
                                         data-feather="check-circle"></i>
-                                    Publish</button>
+                                    Submit</button>
+
+                                <button type="button" class="btn btn-primary btn-sm mb-50 mb-sm-0"
+                                    data-request="ajax-submit" data-target="[role=post-data]" id="saveAsAnotherBtn"><i
+                                        data-feather="check-circle"></i>
+                                    Save as another</button>
                             </div>
                         </div>
                     </div>
@@ -482,4 +487,16 @@
         }
     </script>
     <script src="{{ asset('app-assets/js/assessment.js') }}"></script>
+
+    <script>
+        document.getElementById('saveAsAnotherBtn').addEventListener('click', function() {
+            const form = document.querySelector('form[role="post-data"]');
+            form.setAttribute('redirect', '{{ route('recruitment.assessments.create') }}');
+        });
+
+        document.getElementById('saveBtn').addEventListener('click', function() {
+            const form = document.querySelector('form[role="post-data"]');
+            form.setAttribute('redirect', '{{ route('recruitment.assessments') }}');
+        });
+    </script>
 @endsection

@@ -40,7 +40,7 @@
                                 <button type="button" class="btn btn-primary btn-sm mb-50 mb-sm-0"
                                     data-request="ajax-submit" data-target="[role=post-data]"><i
                                         data-feather="check-circle"></i>
-                                    Publish</button>
+                                    Submit</button>
                             </div>
                         </div>
                     </div>

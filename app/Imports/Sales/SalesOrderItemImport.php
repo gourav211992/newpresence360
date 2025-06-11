@@ -13,6 +13,7 @@ use App\Models\ErpSaleOrder;
 use App\Models\ErpStore;
 use App\Models\Item;
 use App\Models\SaleOrderImport;
+use App\Models\SoItemImport;
 use App\Models\SubType;
 use App\Models\Unit;
 use Carbon\Carbon;
@@ -22,113 +23,26 @@ use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use stdClass;
 
-class SaleOrderImportV2 implements ToArray, WithHeadingRow, SkipsEmptyRows, WithChunkReading
+class SalesOrderItemImport implements ToArray, WithHeadingRow, SkipsEmptyRows, WithChunkReading
 {
-    private $bookId = null;
-    private $locationId = null;
+    // private $bookId = null;
+    // private $locationId = null;
     private $authUserId = null;
-    public function __construct(int $bookId, int $locationId, int $authUserId)
+    public function __construct(int $authUserId)
     {
-        //Assign Book and Location Id
-        $this -> bookId = $bookId;
-        $this -> locationId = $locationId;
+        // //Assign Book and Location Id
+        // $this -> bookId = $bookId;
+        // $this -> locationId = $locationId;
         $this -> authUserId = $authUserId;
     }
     public function array(array $rows)
     {
         //Book and Location Validation
-        $book = Book::find($this -> bookId);
-        //Location Details
-        $location = ErpStore::find($this -> locationId);
-        $companyCountryId = null;
-        $companyStateId = null;
-        $locationAddress = $location ?-> address;
         foreach ($rows as $rowIndex => $row) {
             if ($rowIndex) {
                 $orderDetail = new stdClass();
                 $errors = [];
-                //Book and Location Validation
-                if (!isset($book)) {
-                    $errors[] = 'Invalid Book';
-                }
-                if ($location && isset($locationAddress)) {
-                    $companyCountryId = $location->address?->country_id??null;
-                    $companyStateId = $location->address?->state_id??null;
-                } else {
-                    $errors[] = 'Invalid Location or location address not available';
-                }
-                //Order No Validation
-                $orderDetail -> order_no = $row['order_no'];
-                if (!$orderDetail -> order_no) {
-                    $errors[] = "Document Number not specified";
-                }
-                //Order Date Validation
-                if ($row['order_date']) {
-                    $orderDetail -> document_date = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($row['order_date'])->format('Y-m-d');
-                    if (!$orderDetail -> document_date) {
-                        $orderDetail -> document_date = Carbon::now() -> format("Y-m-d");
-                    }
-                } else {
-                    $orderDetail -> document_date = Carbon::now() -> format("Y-m-d");
-                }
-                //Document Number Validation
-                $numberPatternData = Helper::generateDocumentNumberNew($book->id, $orderDetail -> document_date);
-                if (!isset($numberPatternData)) {
-                    $errors[] = 'Number Pattern for Series not specified';
-                }
-                $document_number = $numberPatternData['document_number'] ? $numberPatternData['document_number'] : $orderDetail -> order_no;
-                $regeneratedDocExist = ErpSaleOrder::withDefaultGroupCompanyOrg() -> where('book_id',$book -> id)
-                ->where('document_number',$document_number)->first();
-                //Again check regenerated doc no
-                if (isset($regeneratedDocExist)) {
-                    $errors[] = "Duplicate Document Number";
-                }
-                $bookParams = BookHelper::fetchBookDocNoAndParameters($this -> bookId, $orderDetail -> document_date);
-                $parameters = $bookParams['data']['parameters'];
-                if (isset($parameters -> future_date_allowed) && $parameters -> future_date_allowed == 'no') {
-                    //Check for Future date
-                    if (Carbon::parse($orderDetail -> document_date) -> gt(Carbon::now())) {
-                        $errors[] = "Future Date is not allowed";
-                    }
-                }
-                if (isset($parameters -> back_date_allowed) && $parameters -> back_date_allowed == 'no') {
-                    //Check for past date
-                    if (Carbon::parse($orderDetail -> document_date) -> lt(Carbon::now())) {
-                        $errors[] = "Past Date is not allowed";
-                    }
-                }
-                //Customer Validation
-                $orderDetail -> customer_code = $row['customer_code'];
-                if (!$orderDetail -> customer_code) {
-                    $errors[] = "Customer not specified";
-                }
-                $customer = Customer::withDefaultGroupCompanyOrg() -> where('status', ConstantHelper::ACTIVE) 
-                -> where('customer_type', ConstantHelper::REGULAR) -> where('company_name', $orderDetail -> customer_code) -> first();
-                if (!isset($customer)) {
-                    $errors[] = "Customer not found or is inactive";
-                } else {
-                    //Customer exchange rate
-                    $currencyExchangeData = CurrencyHelper::getCurrencyExchangeRates($customer -> currency_id, $orderDetail -> document_date);
-                    if ($currencyExchangeData['status'] == false) {
-                        $errors[] =  $currencyExchangeData['message'];
-                    }
-                    //Customer Addresses
-                    $customerAddresses = $customer -> addresses();
-                    $customerBillAddress = $customerAddresses -> whereIn('type', ['billing', 'both']) -> first();
-                    if (!isset($customerBillAddress)) {
-                        $errors[] =  'Customer Billing Adddress not found';
-                    }
-                    $customerShipAddress = $customerAddresses -> whereIn('type', ['shipping', 'both']) -> first();
-                    if (!isset($customerShipAddress)) {
-                        $errors[] =  'Customer Shipping Adddress not found';
-                    }
-                }
-                $orderDetail -> customer_id = $customer ?-> id;
-                //Consignee Name
-                $orderDetail -> consignee_name = $row['consignee_name'] ?? null;
                 //Item
-                $totalQty = 0;
-                $attributesArray = [];
                 $orderDetail -> item_code = $row['item_code'];
                 $subTypeIds = SubType::whereIn('name', [ConstantHelper::FINISHED_GOODS, ConstantHelper::TRADED_ITEM, 
                 ConstantHelper::ASSET,ConstantHelper::WIP_SEMI_FINISHED])
@@ -142,6 +56,7 @@ class SaleOrderImportV2 implements ToArray, WithHeadingRow, SkipsEmptyRows, With
                 } else {
                     //Attributes
                     $actualItemAttributes = $item -> itemAttributes;
+                    $attributesArray = [];
                     //Continue with attribute validation if present
                     if ($actualItemAttributes && count($actualItemAttributes) > 0) {
                         $attributesString = $row['attributes'];
@@ -193,16 +108,16 @@ class SaleOrderImportV2 implements ToArray, WithHeadingRow, SkipsEmptyRows, With
                             }
                         }
                     }
+                    $orderDetail -> attributes = $attributesArray;
                     //Check if Item Bom Exists
                     $bomDetails = ItemHelper::checkItemBomExists($orderDetail -> item_id, $attributesArray);
                     if (!isset($bomDetails['bom_id'])) {
                         $errors[] = "Bom not found";
                     }
-                }
-                $orderDetail -> attributes = $attributesArray;
-                $orderDetail -> qty = floatval($row['qty']);
-                if ($orderDetail -> qty <= 0) {
-                    $errors[] = "Item Quantity not specified";
+                    $orderDetail -> qty = floatval($row['qty']);
+                    if ($orderDetail -> qty <= 0) {
+                        $errors[] = "Item Quantity not specified";
+                    }
                 }
                 //UOM
                 $orderDetail -> uom_code = $row['uom'];
@@ -213,7 +128,7 @@ class SaleOrderImportV2 implements ToArray, WithHeadingRow, SkipsEmptyRows, With
                     if (!$uom) {
                         $errors[] = "UOM not found";
                     }
-                }                
+                }
                 //Rate
                 if ($row['rate']) {
                     $orderDetail -> rate = $row['rate'];
@@ -227,7 +142,7 @@ class SaleOrderImportV2 implements ToArray, WithHeadingRow, SkipsEmptyRows, With
                 if ($row['delivery_date']) {
                     $orderDetail -> delivery_date = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($row['delivery_date'])->format('Y-m-d');;
                 } else {
-                    $orderDetail -> delivery_date = $orderDetail -> document_date;
+                    $orderDetail -> delivery_date = Carbon::now() -> format("Y-m-d");
                 }
                 $orderDetail -> created_by = $this -> authUserId;
                 $orderDetail -> is_migrated = "0";
@@ -235,7 +150,7 @@ class SaleOrderImportV2 implements ToArray, WithHeadingRow, SkipsEmptyRows, With
                 $orderDetail -> updated_at = Carbon::now() -> format('Y-m-d');
                 $orderDetail -> reason = $errors;
                 //Sales Order Insertion
-                SaleOrderImport::create((array) $orderDetail);
+                SoItemImport::create((array) $orderDetail);
             }
         }
         

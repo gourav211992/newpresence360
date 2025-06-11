@@ -2263,33 +2263,6 @@
                 });
             }
         })
-        const startDate = "{{ $current_financial_year['start_date'] }}";
-        const endDate = "{{ $current_financial_year['end_date'] }}";
-        const today = "{{ Carbon\Carbon::now()->format('Y-m-d') }}";
-        $('#order_date_input').on('blur', function() {
-            if(checkDateRange(this)){
-            }
-            else
-            {  
-                Swal.fire({
-                    title: 'Error!',
-                    text: `Date Should Range Between ${startDate} to ${endDate}`,
-                    icon: 'error',
-                });
-            }
-        });
-        function checkDateRange(element) {
-            let date = element.value;
-            if (date > endDate || date < startDate) {
-                console.log("date Checkers");
-
-                element.value = endDate < today ? endDate : today; // Use .value not .val() for DOM input
-                return false;
-            }
-            else{
-                return true;   
-            }
-        }
         function addItemRow()
         {
             var docType = $("#service_id_input").val();
@@ -5272,7 +5245,59 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
         </tr>
         `;
         $('#PacketInfo').modal('show');
-    }   
+    }
+
+    function checkStockData(itemRowId)
+    {
+        let itemAttributes = JSON.parse(document.getElementById(`items_dropdown_${itemRowId}`).getAttribute('attribute-array'));
+                let selectedItemAttr = [];
+                if (itemAttributes && itemAttributes.length > 0) {
+                    itemAttributes.forEach(element => {
+                    element.values_data.forEach(subElement => {
+                        if (subElement.selected) {
+                            selectedItemAttr.push(subElement.id);
+                        }
+                    });
+                });
+                }
+        $.ajax({
+            url: "{{route('get_item_inventory_details')}}",
+            method: 'GET',
+            dataType: 'json',
+            data: {
+                quantity: document.getElementById('item_qty_' + itemRowId).value,
+                item_id: document.getElementById('items_dropdown_'+ itemRowId + '_value').value,
+                uom_id : document.getElementById('uom_dropdown_' + itemRowId).value,
+                selectedAttr : selectedItemAttr,
+                store_id: $("#item_store_" + itemRowId).val(),
+                sub_store_id: $("#item_sub_store_" + itemRowId).val()
+            },
+            success: function(data) {
+                
+                    var inputQtyBox = document.getElementById('item_qty_' + itemRowId);
+                    var actualQty = inputQtyBox.value;
+                    inputQtyBox.setAttribute('max-stock',data.stocks.confirmedStockAltUom);
+                    if (inputQtyBox.getAttribute('max-stock')) {
+                        var maxStock = parseFloat(inputQtyBox.getAttribute('max-stock') ? inputQtyBox.getAttribute('max-stock') : 0);
+                        if (maxStock <= 0) {
+                            inputQtyBox.value = 0;
+                            inputQtyBox.readOnly = true;
+                        } else {
+                            if (actualQty > maxStock) {
+                                inputQtyBox.value = maxStock;
+                                inputQtyBox.readOnly  = false;
+                            } else {
+                                inputQtyBox.readOnly  = false;
+                            }
+                        }
+                    }
+                
+            },
+            error: function(xhr) {
+                console.error('Error fetching customer data:', xhr.responseText);
+            }
+            });
+    }
 
 </script>
 @endsection

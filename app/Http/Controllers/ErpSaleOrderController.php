@@ -185,6 +185,7 @@ class ErpSaleOrderController extends Controller
         $departments = Department::where('organization_id', $organization->id)
                         ->where('status', ConstantHelper::ACTIVE)
                         ->get();
+        $itemImportFile = asset('templates/SalesOrderItemImport.xlsx');
         $data = [
             'series' => $books,
             'countries' => $countries,
@@ -194,7 +195,8 @@ class ErpSaleOrderController extends Controller
             'departments' => $departments,
             'services' => $servicesBooks['services'],
             'selectedService'  => $firstService ?-> id ?? null,
-            'redirectUrl' => $redirectUrl
+            'redirectUrl' => $redirectUrl,
+            'itemImportFile' => $itemImportFile
         ];
         return view('salesOrder.create_edit', $data);
     }
@@ -298,6 +300,7 @@ class ErpSaleOrderController extends Controller
                     $shortClose = 0;
                 }
                 $dynamicFieldsUI = $order -> dynamicfieldsUi();
+                $itemImportFile = asset('templates/SalesOrderItemImport.xlsx');
                 $data = [
                     'user' => $user,
                     'series' => $books,
@@ -314,6 +317,7 @@ class ErpSaleOrderController extends Controller
                     'maxFileCount' => isset($order -> mediaFiles) ? (10 - count($order -> media_files)) : 10,
                     'services' => $servicesBooks['services'],
                     'redirectUrl' => $redirectUrl,
+                    'itemImportFile' => $itemImportFile,
                     'dynamicFieldsUi' => $dynamicFieldsUI
                 ];
                 return view('salesOrder.create_edit', $data);

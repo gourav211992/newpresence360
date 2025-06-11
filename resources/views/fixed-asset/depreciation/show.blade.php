@@ -644,9 +644,8 @@ $(document).on('click', '#reject-button', (e) => {
                                 title: 'Success!',
                                 text: response.message,
                                 icon: 'success',
-                            }).then(() => {
-                                location.reload();
                             });
+                            location.href = '{{route("finance.fixed-asset.depreciation.index")}}';
                         } else {
                             Swal.fire({
                                 title: 'Error!',

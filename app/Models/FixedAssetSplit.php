@@ -59,43 +59,32 @@ class FixedAssetSplit extends Model
     public static function makeRegistration($id)
     {
         $request = FixedAssetSplit::find($id);
+        $exitingReg = FixedAssetRegistration::withDefaultGroupCompanyOrg()
+        ->where('reference_series',$request->book_id)
+        ->where('reference_doc_id',$request->id)->first();
+            if ($exitingReg) {
+                return array(
+                    'message' => 'Registration already posted',
+                    'status' => false
+                );
+            }
+            
+            $exitingVoucher = FixedAssetRegistration::withDefaultGroupCompanyOrg()
+            ->where('document_number',$request->document_number)
+            ->where('book_id',$request->book_id)->first();
+
+            if ($exitingVoucher) {
+                return array(
+                    'message' => 'Registration already posted with same Doc No# '.$request->document_number,
+                    'status' => false
+                );
+            }
+
         $grouped = collect(json_decode($request->sub_assets))->groupBy('asset_code');
-        $parentURL = "fixed-asset_registration";
-
-
-
-        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
-        if (count($servicesBooks['services']) == 0) {
-            return response()->json([
-                'status' => 'exception',
-                'data' => array(
-                    'status' => false,
-                    'message' => 'Service not found',
-                    'data' => []
-                )
-            ]);
-        }
-        $firstService = $servicesBooks['services'][0];
-        $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->first();
-        if (!$series) {
-            return array(
-                'status' => false,
-                'message' => 'Series Not Found',
-                'data' => []
-            );
-        }
 
 
         foreach ($grouped as $assetCode => $items) {
             $firstItem = $items->first();
-            $book = Helper::generateDocumentNumberNew($series->id, date('Y-m-d'));
-            if ($book['document_number'] == null) {
-                return array(
-                    'status' => false,
-                    'message' => 'Document Number Not Found',
-                    'data' => []
-                );
-            }
             $existingAsset = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('asset_code', $assetCode)->first();
 
             if ($existingAsset) {
@@ -105,21 +94,7 @@ class FixedAssetSplit extends Model
                     'data' => []
                 );
             }
-            $exitingReg = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('reference_series', $request->book_id)->where('reference_doc_id',$request->id)->first();
-            if ($exitingReg) {
-                return array(
-                    'message' => 'Registration already posted',
-                    'status' => false
-                );
-            }
-            $exitingVoucher = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('document_number', $request->document_number)->where('book_id',$request->book_id)->first();
-            if ($exitingVoucher) {
-                return array(
-                    'message' => 'Registration already posted with same Doc No# '.$request->document_number,
-                    'status' => false
-                );
-            }
-
+            
             $asset = FixedAssetRegistration::find($request->asset_id);
             if (!$asset) {
                 return array(

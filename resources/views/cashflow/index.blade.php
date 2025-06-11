@@ -535,10 +535,8 @@
                 });
             }
         });
-        $(document).ready(function () {
-            $('.preloader').css('display', 'flex');
-        });
         $(window).on('load', function() {
+            $('.preloader').css('display', 'flex');
             $('.preloader').fadeOut();
             if (feather) {
                 feather.replace({
@@ -547,6 +545,11 @@
                 });
             }
         })
+
+        // Failsafe in case load never triggers (e.g. network failure or redirect)
+        setTimeout(function () {
+            $('.preloader').fadeOut();
+        }, 15000);
 
         $(function() {
             $(".sortable").sortable();

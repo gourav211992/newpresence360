@@ -367,6 +367,36 @@ function show_validation_error(msg) {
             }
         }
 
+        if (index.match(/^questions\.\d+\.correct_option$/)) {
+            let match = index.match(/^questions\.(\d+)\.correct_option$/);
+            if (match) {
+                let qIndex = match[1];
+                let $targetDiv = $(`.innergroupanser.option-preview-section[data-question-index="${qIndex}"]`);
+
+                if ($targetDiv.length) {
+                    $targetDiv.after(
+                        `<span class="help-block text-danger fw-bolder">${value[0]}</span>`
+                    );
+                }
+                return; // Prevent default error appending
+            }
+        }
+
+        if (index.match(/^questions\.\d+\.correct_options$/)) {
+            let match = index.match(/^questions\.(\d+)\.correct_options$/);
+            if (match) {
+                let qIndex = match[1];
+                let $targetDiv = $(`.innergroupanser.option-preview-section[data-question-index="${qIndex}"]`);
+
+                if ($targetDiv.length) {
+                    $targetDiv.after(
+                        `<span class="help-block text-danger fw-bolder">${value[0]}</span>`
+                    );
+                }
+                return; // Prevent default error appending
+            }
+        }
+
         if (name.indexOf("[]") !== -1) {
             // $('form [name="' + name + '"]').last().closest("").addClass("is-invalid error");
             $('form [name="' + name + '"]').last().find("").append('<span class="help-block text-danger fw-bolder">' + value + "</span>");
@@ -433,7 +463,8 @@ function dropdown(url, selected_id, selected_value) {
                 var option_list = response.data;
                 $.each(option_list, function (index, value) {
                     // let selected = parseInt(selected_value) === value.id ? "selected" : "";
-                    let selected = selected_value.includes(value.id.toString()) ? "selected" : "";
+                    // let selected = selected_value.includes(value.id.toString()) ? "selected" : "";
+                    let selected = value.id.toString() === selected_value?.toString() ? "selected" : "";
                     let name = value.name;
                     options += '<option value="' + value.id + '" ' + selected + ">" + name + "</option>";
                 });

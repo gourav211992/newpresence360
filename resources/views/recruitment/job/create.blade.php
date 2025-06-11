@@ -885,7 +885,7 @@
             }
         });
     </script>
-    <script>
+    {{-- <script>
         function updateTotalPositions() {
             let total = 0;
 
@@ -908,5 +908,80 @@
             $('.row-checkbox').prop('checked', $(this).prop('checked'));
             updateTotalPositions();
         });
+    </script> --}}
+    <script>
+        $(document).on('change', '.row-checkbox', function() {
+            fetchSelectedJobRequestDetails();
+        });
+
+        $(document).on('change', '#checkAll', function() {
+            $('.row-checkbox').prop('checked', $(this).prop('checked'));
+            fetchSelectedJobRequestDetails();
+        });
+
+        function fetchSelectedJobRequestDetails() {
+            let selectedIds = [];
+            $('.row-checkbox:checked').each(function() {
+                selectedIds.push($(this).val());
+            });
+
+            if (selectedIds.length === 0) {
+                clearFormFields(); // agar koi select nahi, to form clear kar do
+                return;
+            }
+
+            $.ajax({
+                url: '{{ route('recruitment.jobs.get-request-detail') }}',
+                type: 'POST',
+                data: {
+                    request_ids: selectedIds,
+                    _token: '{{ csrf_token() }}',
+                },
+                success: function(response) {
+                    populateFormWithMergedData(response.data);
+                },
+                error: function(xhr) {
+                    console.error('Error fetching job request details');
+                }
+            });
+        }
+
+        function populateFormWithMergedData(data) {
+            let totalPositions = 0;
+
+            // Use `data.request` instead of `data.requests`
+            data.request.forEach(req => {
+                totalPositions += parseInt(req.no_of_position) || 0;
+            });
+
+            $('#skill').val(data.skills).trigger('change');
+            $('input[name="no_of_position"]').val(totalPositions);
+
+            if (data.request.length > 0) {
+                const first = data.request[0];
+                $('textarea[name="description"]').summernote('code', first.job_description || '');
+                $('select[name="education_id"]').val(first.education_id).trigger('change');
+                $('select[name="employement_type"]').val(first.employment_type).trigger('change');
+                $('#company_id').val(first.company_id).trigger('change');
+
+                dropdown(
+                    '{{ url('recruitment/get-locations/') }}/' + first.company_id,
+                    'location_id',
+                    first.location_id
+                );
+            } else {
+                clearFormFields();
+            }
+        }
+
+        function clearFormFields() {
+            $('#skill').val(null).trigger('change');
+            $('input[name="no_of_position"]').val('');
+            $('textarea[name="description"]').summernote('code', '');
+            $('select[name="education_id"]').val('').trigger('change');
+            $('select[name="employement_type"]').val('').trigger('change');
+            $('#company_id').val('').trigger('change');
+            $('#location_id').empty().trigger('change');
+        }
     </script>
 @endsection

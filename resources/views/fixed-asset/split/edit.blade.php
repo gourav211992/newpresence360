@@ -249,7 +249,7 @@
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label" for="last_dep_date">Last Date of
-                                                                Dep. </label>
+                                                                Dep. <span class="text-danger">*</span></label>
                                                             @php
                                                                 $lastDate = $data?->capitalize_date;
                                                                 $isValid =
@@ -403,16 +403,18 @@
                                                                             value="{{ $subAsset?->salvage_per ?? '' }}" />
                                                                     </td>
                                                                     <td>
-                                                                        <select class="form-control mw-100 mb-25 ledger"
+                                                                        <select class="form-select mw-100 mb-25 ledger"
                                                                             required>
                                                                             <option value=""
                                                                                 {{ old('ledger') ? '' : 'selected' }}>
                                                                                 Select</option>
                                                                             @foreach ($ledgers as $ledger)
+                                                                                @if($ledger->id!=$data?->asset?->ledger_id)
                                                                                 <option value="{{ $ledger->id }}"
                                                                                     {{ isset($subAsset->ledger) && $subAsset->ledger == $ledger->id ? 'selected' : '' }}>
                                                                                     {{ $ledger->name }}
                                                                                 </option>
+                                                                                @endif
                                                                             @endforeach
                                                                         </select>
                                                                         <select
@@ -531,7 +533,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Ledger Group <span
                                                                     class="text-danger">*</span></label>
-                                                            <select class="form-select select2" id="ledger_group"
+                                                            <select class="form-select" id="ledger_group"
                                                                 name="ledger_group_id">
                                                                 @foreach ($groups as $group)
                                                                     <option value="{{ $group->id }}"
@@ -775,15 +777,10 @@
                
               </td>
               <td>
-               <select class="form-control mw-100 mb-25 ledger" required>
+               <select class="form-select mw-100 mb-25 ledger" required>
                                                                 <option value=""
                                                                     {{ old('ledger') ? '' : 'selected' }}>Select</option>
-                                                                @foreach ($ledgers as $ledger)
-                                                                    <option value="{{ $ledger->id }}"
-                                                                        {{ old('ledger') == $ledger->id ? 'selected' : '' }}>
-                                                                        {{ $ledger->name }}
-                                                                    </option>
-                                                                @endforeach
+                                                           
                                                             </select>
                                                                    <select class="d-none ledger-group form-select mw-100 mb-25" required>
                 </select>
@@ -830,9 +827,6 @@
                     '{{ $financialEndDate }}').prop('readonly', false).prop('required', true);
             }
 
-            removeLedger();
-
-            //updateSubAssetCodes();
         }
         $('#Email').on('change', function() {
             let isChecked = $(this).is(':checked');
@@ -1004,12 +998,12 @@
                 $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max',
                     '{{ $financialEndDate }}').prop('readonly', false).prop('required', true);
             }
-            removeLedger();
             $(document).on('change', '.ledger', function() {
                 const $row = $(this).closest('tr');
                 const ledgerId = $(this).val();
                 const $ledgerGroupSelect = $row.find('.ledger-group');
                 
+
 
                 if (ledgerId) {
                     $.ajax({
@@ -1357,6 +1351,7 @@
 
                     } else if (assetCodeToName[assetCode]) {
                         $assetNameInput.val(assetCodeToName[assetCode]);
+                        renderLedgerSelects();
                         $row.find('.category-input').val(assetCodeToCategoryId[assetCode]).trigger('change');
                         $row.find('.category').val(assetCodeToCategoryText[assetCode]).trigger('change');
                         $row.find('.ledger').val(assetCodeToLedger[assetCode]).trigger('change');
@@ -1428,40 +1423,7 @@
 
 
         });
-        $('#category').on('change', function() {
-            $('#ledger').val("").select2();
-            $('#ledger').trigger('change');
-            $('#ledger_group').val("").select2();
-            $('#maintenance_schedule').val("");
-            $('#useful_life').val("");
-
-
-            var category_id = $(this).val();
-            if (category_id) {
-                $.ajax({
-                    type: "GET",
-                    url: "{{ route('finance.fixed-asset.setup.category') }}?category_id=" + category_id,
-                    success: function(res) {
-                        if (res) {
-                            $('#ledger').val(res.ledger_id).select2();
-                            $('#ledger').trigger('change');
-                            $('#ledger_group').val(res.ledger_group_id).select2();
-                            $('#maintenance_schedule').val(res.maintenance_schedule);
-                            $('#useful_life').val(res.expected_life_years);
-                            if (res.salvage_percentage)
-                                $('#depreciation_percentage').val(res.salvage_percentage);
-                            else
-                                $('#depreciation_percentage').val('{{ $dep_percentage }}');
-                            updateSubAssetCodes();
-
-                        }
-                    }
-                });
-            }
-            updateSubAssetCodes();
-
-        });
-
+       
         function collectSubAssetDataToJson() {
             const subAssetData = [];
 
@@ -1579,15 +1541,10 @@
                
               </td>
               <td>
-              <select class="form-control mw-100 mb-25 ledger" required>
+              <select class="form-select mw-100 mb-25 ledger" required>
                                                                 <option value=""
                                                                     {{ old('ledger') ? '' : 'selected' }}>Select</option>
-                                                                @foreach ($ledgers as $ledger)
-                                                                    <option value="{{ $ledger->id }}"
-                                                                        {{ old('ledger') == $ledger->id ? 'selected' : '' }}>
-                                                                        {{ $ledger->name }}
-                                                                    </option>
-                                                                @endforeach
+                                                             
                                                             </select>
                                                                    <select class="d-none ledger-group form-select mw-100 mb-25" required>
                 </select>
@@ -1820,12 +1777,14 @@
                     const row = $(this).closest('tr');
                     row.find('.category').val(ui.item.value);
                     $(this).val(ui.item.label);
-                     if (ledgerSelect.find('option[value="' + ui.item.ledger + '"]').length > 0) {
-                        console.log("ss");
-                        ledgerSelect.val(ui.item.ledger).trigger('change');
-                        } else {
-                        ledgerSelect.val('').trigger('change'); // Clear selection
-                        }
+                    renderLedgerSelects();
+                    let excludedId = parseInt($('#ledger').val());
+                    if (ui.item.ledger !== excludedId) {
+                        row.find('.ledger').val(ui.item.ledger).trigger('change');
+                    } else {
+                        // Option is excluded, so clear the selection or do something else
+                        row.find('.ledger').val('').trigger('change');
+                    }
                     row.find('.life').val(ui.item.life);
                     row.find('.salvage_per').val(ui.item.salvage);
 
@@ -1846,7 +1805,9 @@
                         const row = $(this).closest('tr');
                         row.find('.category').val('');
                         $(this).val('');
-                        row.find('.ledger').val('').trigger('change');
+                        row.find('.ledger').empty().append(
+                            `<option value="">Select</option>`
+                        );
                         row.find('.life').val('');
                         row.find('.salvage_per').val('');
 
@@ -1868,27 +1829,27 @@
         }
         const allLedgers = @json($ledgers);
 
-        function removeLedger() {
-            let excludedLedgerId = $('#ledger').val();
-            $('.ledger').each(function() {
-                $(this).find(`option[value="${excludedLedgerId}"]`).remove();
-                $(this).val('');
-            });
-            
-        }
-
+        
         function renderLedgerSelects() {
+            
             let excludedId = parseInt($('#ledger').val());
-            console.log($('#ledger').val());
+            
+            console.log('Excluded ID:', excludedId);
 
             $('.ledger').each(function() {
                 const $select = $(this);
+                // Get current selected value from this select, convert to int
+                let currentSelected = parseInt($select.val());
+
                 $select.empty().append('<option value="">Select</option>');
+
                 allLedgers.forEach(ledger => {
                     if (ledger.id !== excludedId) {
-                        console.log(ledger.id, excludedId);
+                        // Select only if ledger.id equals currentSelected
+                        const isSelected = (ledger.id === currentSelected) ? 'selected' : '';
                         $select.append(
-                            `<option value="${ledger.id}">${ledger.name}</option>`);
+                            `<option value="${ledger.id}" ${isSelected}>${ledger.name}</option>`
+                        );
                     }
                 });
             });

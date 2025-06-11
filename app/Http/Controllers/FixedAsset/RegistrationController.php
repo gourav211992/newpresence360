@@ -1,5 +1,6 @@
 <?php
 
+
 namespace App\Http\Controllers\FixedAsset;
 
 use App\Helpers\ConstantHelper;
@@ -612,7 +613,10 @@ class RegistrationController extends Controller
         }
 
         $query = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-            ->where('document_status', ConstantHelper::POSTED)
+                ->where(function ($query) {
+                            $query->where('document_status', ConstantHelper::POSTED)
+                                ->orWhereNotNull('reference_doc_id');
+                    })
             //->whereNotNull('capitalize_date')
             ->where('asset_code', 'like', "%$q%")
             ->withWhereHas('subAsset', function ($query) use ($oldAssets) {
@@ -681,7 +685,10 @@ class RegistrationController extends Controller
     public function getCategories(Request $request)
     {
         $query = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-            ->where('document_status', ConstantHelper::POSTED);
+             ->where(function ($query) {
+                            $query->where('document_status', ConstantHelper::POSTED)
+                                ->orWhereNotNull('reference_doc_id');
+                    });
 
         if ($request->location_id) {
             $query->where('location_id', $request->location_id);
@@ -711,7 +718,10 @@ class RegistrationController extends Controller
     {
         $categoryId = $request->input('category_id');
         $locationIds = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-            ->where('document_status', ConstantHelper::POSTED)
+             ->where(function ($query) {
+                            $query->where('document_status', ConstantHelper::POSTED)
+                                ->orWhereNotNull('reference_doc_id');
+                    })
             ->where('category_id', $categoryId)->pluck('location_id')->unique()->toArray();
         $locations = InventoryHelper::getAccessibleLocations()->map(function ($store) {
             return [
@@ -726,7 +736,11 @@ class RegistrationController extends Controller
     {
         $categoryId = $request->input('category_id');
         $locationId =  $request->input('location_id');
-        $locationIds = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('document_status', ConstantHelper::POSTED)
+        $locationIds = FixedAssetRegistration::withDefaultGroupCompanyOrg()
+         ->where(function ($query) {
+                            $query->where('document_status', ConstantHelper::POSTED)
+                                ->orWhereNotNull('reference_doc_id');
+                    })
             ->where('category_id', $categoryId)
             ->where('location_id', $locationId)
             ->pluck('cost_center_id')->unique()->toArray();

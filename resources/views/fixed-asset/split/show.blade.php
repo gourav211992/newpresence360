@@ -1404,40 +1404,7 @@
 
 
         });
-        $('#category').on('change', function() {
-            $('#ledger').val("").select2();
-            $('#ledger').trigger('change');
-            $('#ledger_group').val("").select2();
-            $('#maintenance_schedule').val("");
-            $('#useful_life').val("");
-
-
-            var category_id = $(this).val();
-            if (category_id) {
-                $.ajax({
-                    type: "GET",
-                    url: "{{ route('finance.fixed-asset.setup.category') }}?category_id=" + category_id,
-                    success: function(res) {
-                        if (res) {
-                            $('#ledger').val(res.ledger_id).select2();
-                            $('#ledger').trigger('change');
-                            $('#ledger_group').val(res.ledger_group_id).select2();
-                            $('#maintenance_schedule').val(res.maintenance_schedule);
-                            $('#useful_life').val(res.expected_life_years);
-                            if (res.salvage_percentage)
-                                $('#depreciation_percentage').val(res.salvage_percentage);
-                            else
-                                $('#depreciation_percentage').val('{{ $dep_percentage }}');
-                            updateSubAssetCodes();
-
-                        }
-                    }
-                });
-            }
-            updateSubAssetCodes();
-
-        });
-
+        
         function collectSubAssetDataToJson() {
             const subAssetData = [];
 
@@ -1867,9 +1834,8 @@
                                 title: 'Success!',
                                 text: response.message,
                                 icon: 'success',
-                            }).then(() => {
-                                location.reload();
                             });
+                            location.href = '{{route("finance.fixed-asset.split.index")}}';
                         } else {
                             Swal.fire({
                                 title: 'Error!',

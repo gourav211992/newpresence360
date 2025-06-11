@@ -1052,4 +1052,24 @@ class JobController extends Controller
             "data" => $assignedVendorIds
         ];
     }
+
+    public function getRequestDetail(Request $request){
+        
+        $requests = ErpRecruitmentJobRequests::with('recruitmentSkills')
+                    ->whereIn('id', $request->request_ids)
+                    ->select('id', 'location_id', 'company_id', 'no_of_position', 'job_description', 'education_id')
+                    ->get();
+                
+        $skills = $requests->flatMap(fn($req) => $req->recruitmentSkills->pluck('name'))
+                ->unique()
+                ->values()
+                ->toArray();
+
+        return [
+            "data" => [
+                "request" => $requests,
+                "skills" => $skills,
+            ]
+        ];
+    }
 }
