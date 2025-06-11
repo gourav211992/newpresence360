@@ -752,6 +752,12 @@
             let Current = $('#current_value_asset').val();
             let subAssetId = $('#sub_asset_id').val();
             let assetId = $('#asset_id').val();
+            let formattedDate="";
+            if ($('#last_dep_date').val() != "") {
+                let lastDepDate = new Date($('#last_dep_date').val());
+                lastDepDate.setDate(lastDepDate.getDate() + 1);
+                formattedDate = lastDepDate.toISOString().split('T')[0];
+            }
             let newRow = '';
             newRow = ` <tr class="trselected">
                 <td class="customernewsection-form">
@@ -790,7 +796,7 @@
                 </td>
                 
               <td>
-                <input type="date" required class="form-control mw-100 mb-25 capitalize_date" oninput="syncInputAcrossSameAssets(this)"/>
+                <input type="date" required class="form-control mw-100 mb-25 capitalize_date" value="${formattedDate}" oninput="syncInputAcrossSameAssets(this)"/>
               </td>
                 <td>
                     <input type="text" required disabled value="1" class="form-control mw-100 quantity-input" />
@@ -815,10 +821,11 @@
                 lastDepDate.setDate(lastDepDate.getDate() - 1);
                 let formattedDate = lastDepDate.toISOString().split('T')[0];
                 let today = new Date().toISOString().split('T')[0];
-                $('.capitalize_date')
-                    .removeAttr('min')
-                    .removeAttr('max').prop('readonly', true).prop('required', false);
-                $('#last_dep_date').trigger('change');
+                 depCapitalizeDate();
+                // $('.capitalize_date')
+                //     .removeAttr('min')
+                //     .removeAttr('max').prop('readonly', true).prop('required', false);
+                // //$('#last_dep_date').trigger('change');
 
 
 
@@ -987,10 +994,11 @@
                 lastDepDate.setDate(lastDepDate.getDate() - 1);
                 let formattedDate = lastDepDate.toISOString().split('T')[0];
                 let today = new Date().toISOString().split('T')[0];
-                $('.capitalize_date')
-                    .removeAttr('min')
-                    .removeAttr('max').prop('readonly', true).prop('required', false);
-                $('#last_dep_date').trigger('change');
+                // $('.capitalize_date')
+                //     .removeAttr('min')
+                //     .removeAttr('max').prop('readonly', true).prop('required', false);
+                // $('#last_dep_date').trigger('change');
+                 depCapitalizeDate();
 
 
 
@@ -1189,10 +1197,11 @@
                                 .attr('min', formattedDate)
                                 .attr('max', today)
                                 .prop('readonly', false).prop('required', true);
-                            $('.capitalize_date')
-                                .removeAttr('min')
-                                .removeAttr('max').prop('readonly', true).prop('required',
-                                    false);
+                            // $('.capitalize_date')
+                            //     .removeAttr('min')
+                            //     .removeAttr('max').prop('readonly', true).prop('required',
+                            //         false);
+                             depCapitalizeDate();
                         }
 
                         $('.capitalize_date').val(sub_asset.last_dep_date);
@@ -1580,10 +1589,11 @@
                 lastDepDate.setDate(lastDepDate.getDate() - 1);
                 let formattedDate = lastDepDate.toISOString().split('T')[0];
                 let today = new Date().toISOString().split('T')[0];
-                $('.capitalize_date')
-                    .removeAttr('min')
-                    .removeAttr('max').prop('readonly', true).prop('required', false);
-                $('#last_dep_date').trigger('change');
+                // $('.capitalize_date')
+                //     .removeAttr('min')
+                //     .removeAttr('max').prop('readonly', true).prop('required', false);
+                // $('#last_dep_date').trigger('change');
+                 depCapitalizeDate();
 
 
 
@@ -1632,11 +1642,12 @@
             });
         }
         loadLocation('{{ $data->location_id ?? '' }}');
-        $('#last_dep_date').on('change', function() {
+         $('#last_dep_date').on('change', function() {
             let selectedDate = new Date($(this).val());
             if (!isNaN(selectedDate)) {
                 selectedDate.setDate(selectedDate.getDate() + 1);
                 let nextDate = selectedDate.toISOString().split('T')[0];
+                depCapitalizeDate();
                 $('.capitalize_date').val(nextDate);
                 $('#capitalize_date_old').val(nextDate);
 
@@ -1853,6 +1864,14 @@
                     }
                 });
             });
+        }
+        function depCapitalizeDate() {
+            let lastDepDate = new Date($('#last_dep_date').val());
+            lastDepDate.setDate(lastDepDate.getDate() + 1);
+            let formattedDate = lastDepDate.toISOString().split('T')[0];
+            let today = new Date().toISOString().split('T')[0];
+            $('.capitalize_date').attr('min', formattedDate).attr('max',
+                today).prop('readonly', false).prop('required', true);
         }
     </script>
 

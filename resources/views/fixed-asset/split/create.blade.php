@@ -690,6 +690,12 @@
             let Current = $('#current_value_asset').val();
             let subAssetId = $('#sub_asset_id').val();
             let assetId = $('#asset_id').val();
+            let formattedDate="";
+            if ($('#last_dep_date').val() != "") {
+                let lastDepDate = new Date($('#last_dep_date').val());
+                lastDepDate.setDate(lastDepDate.getDate() + 1);
+                formattedDate = lastDepDate.toISOString().split('T')[0];
+            }
             let newRow = '';
             newRow = ` <tr class="trselected">
                 <td class="customernewsection-form">
@@ -727,7 +733,7 @@
                 <input type="text" required class="form-control mw-100 mb-25 life" oninput="syncInputAcrossSameAssets(this)"> 
                 </td>
               <td>
-                <input type="date" required class="form-control mw-100 mb-25 capitalize_date" oninput="syncInputAcrossSameAssets(this)"/>
+                <input type="date" required class="form-control mw-100 mb-25 capitalize_date" value="${formattedDate}" oninput="syncInputAcrossSameAssets(this)"/>
               </td>
                 <td>
                     <input type="text" required disabled value="1" class="form-control mw-100 quantity-input" />
@@ -752,12 +758,13 @@
                 lastDepDate.setDate(lastDepDate.getDate() - 1);
                 let formattedDate = lastDepDate.toISOString().split('T')[0];
                 let today = new Date().toISOString().split('T')[0];
-                $('.capitalize_date')
-                    .removeAttr('min')
-                    .removeAttr('max')
-                    .prop('readonly', true)
-                    .prop('required', false);
-                $('#last_dep_date').trigger('change');
+                // $('.capitalize_date')
+                //     .removeAttr('min')
+                //     .removeAttr('max')
+                //     .prop('readonly', true)
+                //     .prop('required', false);
+                depCapitalizeDate();
+                //  $('#last_dep_date').trigger('change');
 
 
 
@@ -1120,9 +1127,10 @@
                             .attr('max', today)
                             .prop('readonly', false).prop('required', true);
 
-                        $('.capitalize_date')
-                            .removeAttr('min')
-                            .removeAttr('max').prop('readonly', true).prop('required', false);
+                        // $('.capitalize_date')
+                        //     .removeAttr('min')
+                        //     .removeAttr('max').prop('readonly', true).prop('required', false);
+                        depCapitalizeDate();
                     }
 
                     $('.capitalize_date').val(sub_asset.last_dep_date);
@@ -1275,16 +1283,12 @@
 
                     } else if (assetCodeToName[assetCode]) {
                         $assetNameInput.val(assetCodeToName[assetCode]);
-                        //$row.find('.category-input').autocomplete('search', assetCodeToCategoryId[assetCode]);
                         renderLedgerSelects();
                         $row.find('.category-input').val(assetCodeToCategoryId[assetCode]).trigger('change');
-                        //trigger('autocompleteselect', [{ item: { label: assetCodeToCategoryId[assetCode], value: assetCodeToCategoryId[assetCode] } }]);
-
-                        //$row.find('.category-input').val(assetCodeToCategoryId[assetCode]).trigger('change');
                         $row.find('.category').val(assetCodeToCategoryText[assetCode]).trigger('change');
-                        $row.find('.ledger').val(assetCodeToLedger[assetCode]||"").trigger('change');
-                        $row.find('.ledger-group').val(assetCodeToLedgerGroup[assetCode]||"").trigger('change');
-                        $row.find('.life').val(asstCodeToLife[assetCode]||"");
+                        $row.find('.ledger').val(assetCodeToLedger[assetCode] || "").trigger('change');
+                        $row.find('.ledger-group').val(assetCodeToLedgerGroup[assetCode] || "").trigger('change');
+                        $row.find('.life').val(asstCodeToLife[assetCode] || "");
                         $row.find('.salvage_per').val(assetCodeToSalvage[assetCode]);
                         $row.find('.capitalize_date').val(capitalizeDate[assetCode]);
 
@@ -1505,10 +1509,11 @@
                 lastDepDate.setDate(lastDepDate.getDate() - 1);
                 let formattedDate = lastDepDate.toISOString().split('T')[0];
                 let today = new Date().toISOString().split('T')[0];
-                $('.capitalize_date')
-                    .removeAttr('min')
-                    .removeAttr('max').prop('readonly', true).prop('required', false);
-                $('#last_dep_date').trigger('change');
+                // $('.capitalize_date')
+                //     .removeAttr('min')
+                //     .removeAttr('max').prop('readonly', true).prop('required', false);
+                depCapitalizeDate();
+                //$('#last_dep_date').trigger('change');
 
 
 
@@ -1561,6 +1566,7 @@
             if (!isNaN(selectedDate)) {
                 selectedDate.setDate(selectedDate.getDate() + 1);
                 let nextDate = selectedDate.toISOString().split('T')[0];
+                depCapitalizeDate();
                 $('.capitalize_date').val(nextDate);
                 $('#capitalize_date_old').val(nextDate);
 
@@ -1684,7 +1690,7 @@
                         $target.val(value);
                         if (fieldClass === 'category-input')
                             $target.trigger('change');
-                        }
+                    }
                 }
             });
             calculateTotals();
@@ -1757,12 +1763,12 @@
         initializeCategoryAutocomplete('.category-input');
         const allLedgers = @json($ledgers);
 
-       
+
 
         function renderLedgerSelects() {
-            
+
             let excludedId = parseInt($('#ledger').val());
-            
+
             console.log('Excluded ID:', excludedId);
 
             $('.ledger').each(function() {
@@ -1782,6 +1788,15 @@
                     }
                 });
             });
+        }
+
+        function depCapitalizeDate() {
+            let lastDepDate = new Date($('#last_dep_date').val());
+            lastDepDate.setDate(lastDepDate.getDate() + 1);
+            let formattedDate = lastDepDate.toISOString().split('T')[0];
+            let today = new Date().toISOString().split('T')[0];
+            $('.capitalize_date').attr('min', formattedDate).attr('max',
+                today).prop('readonly', false).prop('required', true);
         }
     </script>
     <!-- END: Content-->

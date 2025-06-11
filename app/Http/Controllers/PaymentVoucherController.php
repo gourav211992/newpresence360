@@ -589,12 +589,11 @@ if ($ref) {
             $editUrlString = 'receipts.edit';
         }
         $currNumber = $r->revisionNumber;
-        if ($currNumber) {
-            $data = PaymentVoucherHistory::with(['details.party'])->where('source_id', $id)->where('revision_number', $currNumber)->first();
+         if ($r->has('revisionNumber')) {
+            $data = PaymentVoucherHistory::with('details.party')->where('source_id', $id)->where('revision_number', $currNumber)->first();
         } else {
             $data = PaymentVoucher::with('details.party')->find($id);
         }
-
 
 
         // $serviceAlias = [ConstantHelper::PAYMENT_VOUCHER_RECEIPT];
@@ -687,7 +686,7 @@ if ($ref) {
 
         $locations = Helper::getStoreLocation(Helper::getAuthenticatedUser()->organization_id);
         $fyear = Helper::getFinancialYear(date('Y-m-d'));
-
+        $buttons['amend']=true;
         if ($data->document_status == ConstantHelper::DRAFT)
             return view('paymentVoucher.editPaymentVoucher', compact('cost_centers','books_t', 'data', 'books', 'buttons', 'history', 'banks', 'ledgers', 'currencies', 'orgCurrency', 'revision_number', 'currNumber', 'editUrl', 'indexUrl', 'editUrlString','locations','fyear'));
         else

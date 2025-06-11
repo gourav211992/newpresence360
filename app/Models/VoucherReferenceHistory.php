@@ -20,6 +20,11 @@ class VoucherReferenceHistory extends Model
 
     public function voucherDetail()
     {
-        return $this->belongsTo(PaymentVoucherDetailsHistory::class);
+        return $this->belongsTo(PaymentVoucherDetailsHistory::class,'voucher_details_id');
+    }
+    public function voucherPayRec(){
+        return $this->belongsTo(PaymentVoucherHistory::class,'payment_voucher_id');
+    
+
     }
 }
