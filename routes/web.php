@@ -2650,6 +2650,8 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         Route::get('/{version}', 'import')->name('import.index');
         Route::post('save/{version}', 'importSave')->name('import.save');
         Route::post('store/{version}', 'bulkUploadOrders')->name('import.store');
+        Route::post('item/save/', 'importSaveItem')->name('import.item.save');
+        Route::post('/item/store', 'bulkUploadItems')->name('import.item.store');
     });
 });
 

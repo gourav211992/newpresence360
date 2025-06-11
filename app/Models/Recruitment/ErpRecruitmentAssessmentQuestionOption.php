@@ -14,6 +14,7 @@ class ErpRecruitmentAssessmentQuestionOption extends Model
         'assessment_id',
         'assessment_question_id',
         'option',
-        'image'
+        'image',
+        'is_correct',
     ];
 }

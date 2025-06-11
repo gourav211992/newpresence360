@@ -82,11 +82,13 @@ class Assessment
 
 			if (!empty($data['questions'])) {
 				foreach ($data['questions'] as $index => $question) {
-					if (in_array($question['type'], ['single choice', 'multiple choice', 'dropdown'])) {
+					$type = $question['type'];
+
+					if (in_array($type, ['single choice', 'multiple choice', 'dropdown'])) {
 
 						// Check if 'options' is missing or not an array
 						if (empty($question['options']) || !is_array($question['options'])) {
-							$validator->errors()->add("questions.$index.options", "Options are required for question type: {$question['type']}");
+							$validator->errors()->add("questions.$index.options", "Options are required for question type: {$type}");
 							continue; // Skip to next question to avoid looping over non-existent options
 						}
 
@@ -98,7 +100,7 @@ class Assessment
 						}
 					}
 
-					if ($question['type'] == 'image') {
+					if ($type == 'image') {
 						if (!isset($this->request['questions'][$index]['options_images']) || !is_array($this->request['questions'][$index]['options_images'])) {
 							$validator->errors()->add("questions.$index.options_images", "Image options are required.");
 							continue;
@@ -120,6 +122,19 @@ class Assessment
 							if ($image->getSize() > 10 * 1024 * 1024) { // 10MB
 								$validator->errors()->add("questions.$index.options_images.$imgIndex", "Image must not exceed 10MB.");
 							}
+						}
+					}
+
+					// ✅ Validate correct option(s) selection
+					if (in_array($type, ['single choice', 'dropdown', 'image'])) {
+						if (!isset($question['correct_option']) || $question['correct_option'] === '') {
+							$validator->errors()->add("questions.$index.correct_option", "Please select the correct option for question: {$question['title']}");
+						}
+					}
+
+					if ($type === 'multiple choice') {
+						if (empty($question['correct_options']) || !is_array($question['correct_options'])) {
+							$validator->errors()->add("questions.$index.correct_options", "Please select at least one correct option for question: {$question['title']}");
 						}
 					}
 
@@ -231,6 +246,19 @@ class Assessment
 							if ($image->getSize() > 10 * 1024 * 1024) { // 10MB
 								$validator->errors()->add("questions.$index.options_images.$imgIndex", "Image must not exceed 10MB.");
 							}
+						}
+					}
+
+					// ✅ Validate correct option(s) selection
+					if (in_array($question['type'], ['single choice', 'dropdown', 'image'])) {
+						if (!isset($question['correct_option']) || $question['correct_option'] === '') {
+							$validator->errors()->add("questions.$index.correct_option", "Please select the correct option for question: {$question['title']}");
+						}
+					}
+
+					if ($question['type'] === 'multiple choice') {
+						if (empty($question['correct_options']) || !is_array($question['correct_options'])) {
+							$validator->errors()->add("questions.$index.correct_options", "Please select at least one correct option for question: {$question['title']}");
 						}
 					}
 

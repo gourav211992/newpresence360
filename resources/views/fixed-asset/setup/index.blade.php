@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 
+
 @section('title', 'Fixed Asset Setup')
 
 @section('content')
@@ -54,6 +55,7 @@
                                                 <th>Ledger</th>
                                                 <th>Ledger Group</th>
                                                 <th>Expected Life</th>
+                                                <th>Salvage %</th>
                                                 {{-- <th>Dep. Method</th>
                                                 <th>Dep. %</th>
                                                 <th>Maint Schedule</th> --}}
@@ -69,6 +71,7 @@
                                                 <td>{{ $asset->ledger->name ?? 'N/A' }}</td>
                                                 <td>{{ $asset->ledgerGroup->name ?? 'N/A' }}</td>
                                                 <td>{{ $asset->expected_life_years }}</td>
+                                                <td>{{ $asset->salvage_percentage??'N/A' }}</td>
                                                 {{-- <td><span class="badge rounded-pill badge-light-secondary badgeborder-radius">{{ $asset->depreciation_method }}</span></td>
                                                 <td>{{ $asset->depreciation_percentage }}</td>
                                                 <td>{{ $asset->maintenance_schedule }}</td> --}}

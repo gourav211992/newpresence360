@@ -331,7 +331,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Ledger Group <span
                                                                     class="text-danger">*</span></label>
-                                                            <select class="form-select select2" name="ledger_group_id"
+                                                            <select class="form-select" name="ledger_group_id"
                                                                 id="ledger_group" required>
                                                                 </select>
                                                         </div>
@@ -1609,7 +1609,7 @@ function showToast(icon, title) {
                         if(res){
                             $('#ledger').val(res.ledger_id);
                             $('#ledger').select2().trigger('change');
-                            $('#ledger_group').val(res.ledger_group_id).select2();
+                            $('#ledger_group').val(res.ledger_group_id);
                             $('#maintenance_schedule').val(res.maintenance_schedule);
                             $('#useful_life').val(res.expected_life_years);
                             if(res.salvage_percentage)

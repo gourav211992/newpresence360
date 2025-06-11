@@ -767,9 +767,8 @@
                                 title: 'Success!',
                                 text: response.message,
                                 icon: 'success',
-                            }).then(() => {
-                                location.reload();
                             });
+                            location.href = '{{route("finance.fixed-asset.merger.index")}}';
                         } else {
                             Swal.fire({
                                 title: 'Error!',

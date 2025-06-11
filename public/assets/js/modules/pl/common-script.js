@@ -1280,7 +1280,7 @@ function setAttributesUI(paramIndex = null) {
         total_atts += 1;
         console.log(attrArr);
 
-        if(attrArr.short_name.length > 0)
+        if(attrArr?.short_name?.length > 0)
         {
             short = true;
         }
@@ -1877,7 +1877,7 @@ function getStoresData(itemRowId, qty = null, callOnClick = true,islocation=fals
         method: 'GET',
         dataType: 'json',
         data : {
-            store_id : $("#item_store_"+itemRowId).val(),
+            store_id : $("#item_store_"+itemRowId).val()??($('#store_id_input').val()??$("#store_from_id_input").val()),
         },
         success: function(data) {
             console.log(data.stores,"store",data?.stores?.store?.length,"length");

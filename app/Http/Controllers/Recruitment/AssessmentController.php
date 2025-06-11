@@ -156,16 +156,25 @@ class AssessmentController extends Controller
                         $question->save();
                     }
 
-                    foreach ($qData['options'] ?? [] as $optionText) {
+                    foreach ($qData['options'] ?? [] as $optionIndex => $optionText) {
                         $option = new ErpRecruitmentAssessmentQuestionOption();
                         $option->organization_id = $user->organization_id;
                         $option->assessment_id = $assessment->id;
                         $option->assessment_question_id = $question->id;
                         $option->option = $optionText;
+
+                        if ($qData['type'] === 'single choice' || $qData['type'] === 'dropdown') {
+                            $option->is_correct = (isset($qData['correct_option']) && $qData['correct_option'] == $optionIndex) ? 1 : 0;
+                        } elseif ($qData['type'] === 'multiple choice') {
+                            $option->is_correct = (isset($qData['correct_options']) && in_array($optionIndex, $qData['correct_options'])) ? 1 : 0;
+                        } else {
+                            $option->is_correct = 0;
+                        }
+
                         $option->save();
                     }
 
-                    foreach ($qData['options_images'] ?? [] as $image) {
+                    foreach ($qData['options_images'] ?? [] as $imageIndex => $image) {
                         if ($image instanceof \Illuminate\Http\UploadedFile) {
                             $documentName = time() . '-' . $image->getClientOriginalName();
                             $image->move(public_path('attachments/assessment/options'), $documentName);
@@ -176,6 +185,9 @@ class AssessmentController extends Controller
                             $option->organization_id = $user->organization_id;
                             $option->assessment_id = $assessment->id;
                             $option->assessment_question_id = $question->id;
+                            if ($qData['type'] === 'image') {
+                                $option->is_correct = isset($qData['correct_option']) && $qData['correct_option'] == $imageIndex ? 1 : 0;
+                            }
                             $option->save();
                         }
                     }
@@ -280,16 +292,25 @@ class AssessmentController extends Controller
                         $question->save();
                     }
     
-                    foreach ($qData['options'] ?? [] as $optionText) {
+                    foreach ($qData['options'] ?? [] as $optionIndex => $optionText) {
                         $option = new ErpRecruitmentAssessmentQuestionOption();
                         $option->organization_id = $user->organization_id;
                         $option->assessment_id = $assessment->id;
                         $option->assessment_question_id = $question->id;
                         $option->option = $optionText;
+
+                        if ($qData['type'] === 'single choice' || $qData['type'] === 'dropdown') {
+                            $option->is_correct = (isset($qData['correct_option']) && $qData['correct_option'] == $optionIndex) ? 1 : 0;
+                        } elseif ($qData['type'] === 'multiple choice') {
+                            $option->is_correct = (isset($qData['correct_options']) && in_array($optionIndex, $qData['correct_options'])) ? 1 : 0;
+                        } else {
+                            $option->is_correct = 0;
+                        }
+
                         $option->save();
                     }
 
-                    foreach ($qData['options_images'] ?? [] as $image) {
+                    foreach ($qData['options_images'] ?? [] as $imageIndex => $image) {
                         if ($image instanceof \Illuminate\Http\UploadedFile) {
                             $documentName = time() . '-' . $image->getClientOriginalName();
                             $image->move(public_path('attachments/assessment/options'), $documentName);
@@ -300,6 +321,9 @@ class AssessmentController extends Controller
                             $option->organization_id = $user->organization_id;
                             $option->assessment_id = $assessment->id;
                             $option->assessment_question_id = $question->id;
+                            if ($qData['type'] === 'image') {
+                                $option->is_correct = isset($qData['correct_option']) && $qData['correct_option'] == $imageIndex ? 1 : 0;
+                            }
                             $option->save();
                         }
                     }
