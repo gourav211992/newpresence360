@@ -473,7 +473,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Ledger Group <span
                                                                     class="text-danger">*</span></label>
-                                                            <select class="form-select select2" id="ledger_group"
+                                                            <select class="form-select" id="ledger_group"
                                                                 name="ledger_group_id">
                                                                 @foreach ($groups as $group)
                                                                     <option value="{{ $group->id }}">
@@ -754,7 +754,9 @@
                 let today = new Date().toISOString().split('T')[0];
                 $('.capitalize_date')
                     .removeAttr('min')
-                    .removeAttr('max').prop('readonly', true).prop('required', false);
+                    .removeAttr('max')
+                    .prop('readonly', true)
+                    .prop('required', false);
                 $('#last_dep_date').trigger('change');
 
 

@@ -1134,9 +1134,8 @@ $(document).on('input change', '[name="document_type"]', function() {
                                 title: 'Success!',
                                 text: response.message,
                                 icon: 'success',
-                            }).then(() => {
-                                location.reload();
                             });
+                            location.href = '{{route("finance.fixed-asset.revaluation-impairement.index")}}';
                         } else {
                             Swal.fire({
                                 title: 'Error!',

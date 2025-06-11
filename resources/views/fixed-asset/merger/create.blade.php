@@ -401,7 +401,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Ledger Group <span
                                                                     class="text-danger">*</span></label>
-                                                            <select class="form-select select2" name="ledger_group_id"
+                                                            <select class="form-select" name="ledger_group_id"
                                                                 id="ledger_group" required>
                                                             </select>
                                                         </div>

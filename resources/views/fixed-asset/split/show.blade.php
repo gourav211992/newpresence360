@@ -1834,9 +1834,8 @@
                                 title: 'Success!',
                                 text: response.message,
                                 icon: 'success',
-                            }).then(() => {
-                                location.reload();
                             });
+                            location.href = '{{route("finance.fixed-asset.split.index")}}';
                         } else {
                             Swal.fire({
                                 title: 'Error!',

@@ -533,7 +533,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Ledger Group <span
                                                                     class="text-danger">*</span></label>
-                                                            <select class="form-select select2" id="ledger_group"
+                                                            <select class="form-select" id="ledger_group"
                                                                 name="ledger_group_id">
                                                                 @foreach ($groups as $group)
                                                                     <option value="{{ $group->id }}"
