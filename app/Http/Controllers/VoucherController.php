@@ -51,7 +51,7 @@ class VoucherController extends Controller
         if ($request->partyID && $request->ledgerGroup) {
             $ledger = (int) $request->partyID;
             $ledger_group = (int)$request->ledgerGroup;
-            $data = Voucher::where("organization_id", Helper::getAuthenticatedUser()->organization_id)
+            $data = Voucher::where("organization_id", Helper::getAuthenticatedUser()->organization_id)->with('ErpLocation', 'organization')
                 ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
                 ->withWhereHas('items', function ($i) use ($ledger, $request, $ledger_group) {
                     $i->where('ledger_id', $ledger)
@@ -62,6 +62,11 @@ class VoucherController extends Controller
                     } else {
                         $i->where('debit_amt_org', '>', 0);
                     }
+                    $i->with([
+                    'ledger',
+                    'ledger_group',
+                    'costCenter',
+                    ]);
                 })
                 ->groupBy('id')  // Assuming 'id' is the primary key or unique field for Voucher
                 ->orderBy('document_date', 'asc')
@@ -732,8 +737,8 @@ class VoucherController extends Controller
         ->toArray();
         $fyear = Helper::getFinancialYear(date('Y-m-d'));
         // pass authenticate user's org locations
-        $locations = Helper::getStoreLocation(Helper::getAuthenticatedUser()->organization_id);
-        return view('voucher.create_voucher', compact('cost_centers','allledgers', 'currencies', 'orgCurrency', 'cost_centers', 'bookTypes', 'lastVoucher','allowedCVGroups','exlucdeJVGroups','locations','fyear'));
+     $locations = InventoryHelper::getAccessibleLocations();
+         return view('voucher.create_voucher', compact('cost_centers','allledgers', 'currencies', 'orgCurrency', 'cost_centers', 'bookTypes', 'lastVoucher','allowedCVGroups','exlucdeJVGroups','locations','fyear'));
     }
 
     function get_series($id)
@@ -823,8 +828,8 @@ class VoucherController extends Controller
         })
         ->toArray();
         $fyear = Helper::getFinancialYear(date('Y-m-d'));
-        $locations = Helper::getStoreLocation(Helper::getAuthenticatedUser()->organization_id);
-      return view('voucher.edit_voucher', compact('cost_centers','groups', 'orgCurrency', 'currencies', 'cost_centers', 'bookTypes', 'data', 'books', 'buttons', 'history', 'revision_number', 'currNumber','approvalHistory','ref_view_route','allowedCVGroups','exlucdeJVGroups','locations','fyear'));
+     $locations = InventoryHelper::getAccessibleLocations();
+       return view('voucher.edit_voucher', compact('cost_centers','groups', 'orgCurrency', 'currencies', 'cost_centers', 'bookTypes', 'data', 'books', 'buttons', 'history', 'revision_number', 'currNumber','approvalHistory','ref_view_route','allowedCVGroups','exlucdeJVGroups','locations','fyear'));
     }
 
     public function store(Request $request)

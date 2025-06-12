@@ -521,9 +521,10 @@
                             `<span class="badge rounded-pill ${item.status?.toLowerCase() === 'active'
                                 ? 'badge-light-success' : 'badge-light-danger'}">${item.status}</span>`
                         );
+                     row.push(`<span class="text-success  fw-bold">${item.remarks || ''}</span>`);
+                    } else {
+                        row.push(`<span class="text-danger  fw-bold">${item.remarks || ''}</span>`);
                     }
-
-                    row.push(item.remarks || '');
                     table.row.add(row);
                 });
             } else {
