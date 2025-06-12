@@ -199,12 +199,16 @@ class RegistrationController extends Controller
         if (count($servicesBooks['services']) == 0) {
             return redirect()->route('/');
         }
-        $currNumber = $r->revisionNumber;
+        $currNumber = $r->has('revisionNumber');
         if ($currNumber) {
-            $data = FixedAssetRegistrationHistory::where('source_id', $id)->first();
+            $currNumber = $r->revisionNumber;
+            $data = FixedAssetRegistrationHistory::where('source_id', $id)
+            ->where('revision_number',$currNumber)->first();
         } else {
             $data = FixedAssetRegistration::withDefaultGroupCompanyOrg()->findorFail($id);
         }
+       
+        
 
         $firstService = $servicesBooks['services'][0];
         $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
@@ -272,6 +276,7 @@ class RegistrationController extends Controller
                     $ref_view_route = Helper::getRouteNameFromServiceAlias($data->reference_series, $data->reference_doc_id);
                     $buttons['reference'] = true;
                     $buttons['post'] = false;
+                    $buttons['amend'] = false;
                 }
             }
         }

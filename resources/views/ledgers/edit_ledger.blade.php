@@ -11,6 +11,9 @@
                 @csrf
                 @method('PUT')
                 <input type="hidden" name="updated_groups" id="updated_groups">
+                <input type="hidden" name="ledger_code_type" value="{{ $data->ledger_code_type }}">
+                <input type="hidden" name="prefix" />
+                
 
                 <div class="content-header pocreate-sticky">
                     <div class="row">
@@ -402,9 +405,14 @@
                 }
                 return true;
             }
+             $('#ledger_group_id').on('change', function(e) {
+                generateItemCode();
+            });
 
             $('#ledger_group_id').on('select2:select', function(e) {
+                generateItemCode();
                 let selectedOptions = $(this).val();
+
                 let newlySelected = e.params.data.id;
 
                 // First validate the selection
@@ -412,6 +420,7 @@
                     // If invalid, remove the last selected option
                     let newOptions = selectedOptions.filter(option => option != newlySelected);
                     $(this).val(newOptions).trigger('change');
+
                     return;
                 }
 
@@ -436,6 +445,7 @@
             });
 
             $('#ledger_group_id').on('select2:unselect', function(e) {
+                generateItemCode();
                 let selectedOptions = $(this).val() || [];
 
                 // Restore original options and re-select the remaining selections
@@ -588,5 +598,59 @@
                 confirmButtonText: 'OK'
             });
         }
+                    const itemInitialInput = $('input[name="prefix"]');
+            const itemCodeType = '{{ $data->ledger_code_type }}';
+            console.log(itemCodeType, "ITEM TYPE");
+            const itemCodeInput = $('input[name="code"]');
+            if (itemCodeType === 'Manual') {
+                itemCodeInput.prop('readonly', false);
+            } else {
+                itemCodeInput.prop('readonly', true);
+            }
+
+            function getItemInitials(itemName) {
+                const cleanedItemName = itemName.replace(/[^a-zA-Z0-9\s]/g, '');
+                const words = cleanedItemName.split(/\s+/).filter(word => word.length > 0);
+                let initials = '';
+                if (words.length === 1) {
+                    initials = words[0].substring(0, 2).toUpperCase();
+                } else if (words.length >= 2) {
+                    initials = words[0][0].toUpperCase() + words[1][0].toUpperCase();
+                } 
+
+                return initials;
+            }
+
+            function generateItemCode() {
+                const selectedData = $('#ledger_group_id').select2('data');
+                const itemName = selectedData.length > 0 ? selectedData[0].text : "";
+                if (itemCodeType === 'Manual' || itemCodeType === "") {
+                    return;
+                }
+                const autoItemInitials = getItemInitials(itemName);
+                const itemInitials = autoItemInitials;
+                itemInitialInput.val(itemInitials);
+                $.ajax({
+                    url: '{{ route('generate-ledger-code') }}',
+                    method: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}',
+                        item_initials: itemInitials,
+                        ledger_id:'{{$data->id}}'
+                    },
+                    success: function(response) {
+                        itemCodeInput.val((response.code || ''));
+                    },
+                    error: function() {
+                        itemCodeInput.val('');
+                    }
+                });
+            }
+            if (itemCodeType === 'Auto') {
+
+                generateItemCode();
+            }
+          
+
     </script>
 @endsection

@@ -12,8 +12,6 @@
                         <div class="col-12">
                             @if(request()->type == 'supplier-invoice')
                                 <h2 class="content-header-title float-start mb-0">Supplier Invoice</h2>
-                            @elseif(request()->type == 'job-order')
-                                <h2 class="content-header-title float-start mb-0">Job Order</h2>
                             @else
                                 <h2 class="content-header-title float-start mb-0">Purchase Orders</h2>
                             @endif
@@ -22,8 +20,6 @@
                                     <li class="breadcrumb-item"><a href="{{ url('/') }}">Home</a></li>
                                     @if(request()->type == 'supplier-invoice')
                                         <li class="breadcrumb-item active">SI List</li>
-                                    @elseif(request()->type == 'job-order')
-                                        <li class="breadcrumb-item active">JO List</li>
                                     @else
                                         <li class="breadcrumb-item active">PO List</li>
                                     @endif
@@ -37,12 +33,10 @@
                         <button class="btn btn-warning btn-sm mb-50 mb-sm-0" data-bs-target="#filter" data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button>
                         @if(count($servicesBooks['services']))
                             @if(request()->type == 'supplier-invoice')
-                            <a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{ url(request()->type) }}/create"><i data-feather="plus-circle"></i> Create SI</a>
-                            @elseif(request()->type == 'job-order')
-                            <a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{ url(request()->type) }}/create"><i data-feather="plus-circle"></i> Create JO</a>
+                                <a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{ url(request()->type) }}/create"><i data-feather="plus-circle"></i> Create SI</a>
                             @else
-                            <a class="btn btn-info btn-sm mb-50 mb-sm-0" href="{{ url(request()->type) }}/bulk-create"><i data-feather="plus-circle"></i> Create Bulk PO</a>
-                            <a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{ url(request()->type) }}/create"><i data-feather="plus-circle"></i> Create PO</a>
+                                <a class="btn btn-info btn-sm mb-50 mb-sm-0" href="{{ url(request()->type) }}/bulk-create"><i data-feather="plus-circle"></i> Create Bulk PO</a>
+                                <a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{ url(request()->type) }}/create"><i data-feather="plus-circle"></i> Create PO</a>
                             @endif
                         @endif
                         <a class="btn btn-dark btn-sm mb-50 mb-sm-0" href="{{ route('transactions.report', ['serviceAlias' => 'po']) }}"><i data-feather="bar-chart-2"></i>Report</a>
@@ -210,7 +204,6 @@ $(document).ready(function() {
         },
     ];
     @endif
-
     // Define your dynamic filters
     var filters = {
         status: '#filter-status',         // Status filter (dropdown)
@@ -221,17 +214,17 @@ $(document).ready(function() {
     let title = '';
     @if(request()->type == 'supplier-invoice')
         title = 'Supplier Invoice';
-        var exportColumns = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]; // Columns to export
+        var exportColumns = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
     @else
         title = 'Purchase Order';
-        var exportColumns = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]; // Columns to export
+        var exportColumns = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
     @endif
     initializeDataTable('.datatables-basic', 
         '{{url(request()->route('type'))}}',
         columns,
-        filters,  // Apply filters
-        title,  // Export title
-        exportColumns,  // Export columns
+        filters,
+        title,
+        exportColumns,
         // [[1, "desc"]] // default order
 
     );

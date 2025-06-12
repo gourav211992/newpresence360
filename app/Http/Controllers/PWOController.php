@@ -235,9 +235,7 @@ class PWOController extends Controller
                     }
                     $pwoSoMapping->bom_id = $checkBomExist['bom_id'];
                     $pwoSoMapping->save();
-
                     $bom = Bom::find($checkBomExist['bom_id']);
-
                     if($pwoSoMapping->bom) {
                         $pwoSoMapping->production_route_id = $pwoSoMapping?->bom?->production_route_id;
                         $pwoSoMapping->save();

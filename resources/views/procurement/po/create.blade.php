@@ -3,23 +3,21 @@
 <style>
 #prModal .table-responsive {
     overflow-y: auto;
-    max-height: 300px; /* Set the height of the scrollable body */
+    max-height: 300px;
     position: relative;
 }
-
 #prModal .po-order-detail {
     width: 100%;
     border-collapse: collapse;
 }
-
 #prModal .po-order-detail thead {
     position: sticky;
-    top: 0; /* Stick the header to the top of the table container */
-    background-color: white; /* Optional: Make sure header has a background */
-    z-index: 1; /* Ensure the header stays above the body content */
+    top: 0;
+    background-color: white;
+    z-index: 1;
 }
 #prModal .po-order-detail th {
-    background-color: #f8f9fa; /* Optional: Background for the header */
+    background-color: #f8f9fa;
     text-align: left;
     padding: 8px;
 }
@@ -27,7 +25,6 @@
 #prModal .po-order-detail td {
     padding: 8px;
 }
-
 </style>
 @endsection
 @section('content')
@@ -1738,7 +1735,6 @@ $(document).on('click', '.prProcess', (e) => {
                         }
                     });
                 } 
-
                 initializeAutocomplete2(".comp_item_code");
                 $("#prModal").modal('hide');
                 $("select[name='currency_id']").prop('disabled', true);
@@ -1779,7 +1775,6 @@ $(document).on('click', '.prProcess', (e) => {
                 } else {
                     $("#f_header_discount_hidden").addClass('d-none');
                 }
-
                 if(finalExpenses.length) {
                     let rows = '';
                     finalExpenses.forEach(function(item,index) {
@@ -1876,7 +1871,6 @@ function initializeAutocompleteTED(selector, idSelector, nameSelector, type, per
             var itemName = ui.item.label;
             var itemId = ui.item.id;
             var itemPercentage = ui.item.percentage;
-
             $input.val(itemName);
             $("#" + idSelector).val(itemId);
             $("#" + nameSelector).val(itemName);
@@ -1896,7 +1890,6 @@ function initializeAutocompleteTED(selector, idSelector, nameSelector, type, per
         }
     });
 } 
-
 // Get Item Rate
 function getItemCostPrice(currentTr)
 {
@@ -1906,7 +1899,6 @@ function getItemCostPrice(currentTr)
     let itemId = $(currentTr).find("input[name*='[item_id]']").val();
     let attributesRaw = $(currentTr).find('td[attribute-array]').attr('attribute-array');
     let parsedAttributes = attributesRaw ? JSON.parse(attributesRaw) : [];
-
     let formattedAttributes = parsedAttributes.map(attr => {
         let selectedValue = attr.values_data.find(val => val.selected);
         return {
@@ -1916,7 +1908,6 @@ function getItemCostPrice(currentTr)
             attr_value: selectedValue ? selectedValue.id : null
         };
     });
-
     let itemQty = $(currentTr).find("input[name*='[qty]']").val() ?? 0;
     let uomId = $(currentTr).find("select[name*='[uom_id]']").val();
     let queryParams = new URLSearchParams({
@@ -1939,7 +1930,6 @@ function getItemCostPrice(currentTr)
         });
     });
 }
-
 $(document).on('click', '.clearPiFilter', (e) => {
     $("#item_name_input_qt").val('');
     $("#item_id_qt_val").val('');
@@ -1958,7 +1948,6 @@ $(document).on('click', '.clearPiFilter', (e) => {
     $("#item_name_search").val('');
     getIndents();
 });
-
 $(document).on("autocompletechange autocompleteselect", "#store_po", function (event, ui) {
     let storeId = ui?.item?.id || '';
     initializeAutocompleteQt("sub_store_po", "sub_store_id_po", "sub_store", "name", "");

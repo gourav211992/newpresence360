@@ -24,7 +24,7 @@
                     <div class="form-group breadcrumb-right">
                         <button class="btn btn-warning btn-sm mb-50 mb-sm-0" data-bs-target="#filter" data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button>
                         <a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{ route('supplier.invoice.create') }}"><i data-feather="plus-circle"></i> Create SI</a>
-                        <a class="btn btn-dark btn-sm mb-50 mb-sm-0" href="{{ route('po.report') }}"><i data-feather="bar-chart-2"></i>Report</a>
+                        {{-- <a class="btn btn-dark btn-sm mb-50 mb-sm-0" href="{{ route('po.report') }}"><i data-feather="bar-chart-2"></i>Report</a> --}}
                     </div>
                 </div>
             </div>

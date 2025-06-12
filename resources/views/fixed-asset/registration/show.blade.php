@@ -65,15 +65,15 @@
                     @endif
                     
                   
-                    @if($buttons['amend'] && $data->mrn_detail_id!=null)
+                    @if($buttons['amend'])
                     <button type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i> Amendment</button>
                     @endif
                      @if ($buttons['reference'])
                                 <a type="button" href="{{$ref_view_route}}"
                                     class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i data-feather="file-text">
                                     </i> View REF</a>
-                            @endif
-                             @if($buttons['post'])
+                    @endif
+                    @if($buttons['post'])
                         <button id="postButton" onclick="onPostVoucherOpen();" type="button" class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i data-feather="check-circle"></i> Post</button>
                     @endif
                     @if ($buttons['voucher'])
@@ -223,12 +223,12 @@
                                                     </div>
                                                 </div>
 
-                                                <div @if($data->mrn_detail_id==null) hidden @endif class="row align-items-center mb-1">
+                                                <div @if($buttons['reference']) hidden @endif class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label" for="reference_from">Reference From
                                                             <span class="text-danger">*</span></label>
                                                     </div>
-                                                    <div @if($data->mrn_detail_id==null) hidden @endif class="col-md-3 action-button">
+                                                    <div @if($buttons['reference']) hidden @endif class="col-md-3 action-button">
                                                         <a data-bs-toggle="modal" data-bs-target="#rescdule"
                                                             class="btn btn-outline-primary btn-sm mb-0 w-100"><i
                                                                 data-feather="plus-square"></i> GRN</a>
@@ -469,7 +469,7 @@
                                     </div>
                                 </div>
 
-                                <div class="row customernewsection-form" @if($data->mrn_detail_id==null) hidden @endif> 
+                                <div class="row customernewsection-form" @if($buttons['reference']) hidden @endif> 
                                     <div class="col-md-12">
                                         <div class="card quation-card">
                                             <div class="card-header newheader">

@@ -180,9 +180,12 @@ class SplitController extends Controller
         if (count($servicesBooks['services']) == 0) {
             return redirect()->route('/');
         }
-        $currNumber = $r->revisionNumber;
+
+        $currNumber = $r->has('revisionNumber');
         if ($currNumber) {
-            $data = FixedAssetSplitHistory::where('source_id',$id)->first();
+            $currNumber = $r->revisionNumber;
+            $data = FixedAssetSplitHistory::where('source_id',$id)
+            ->where('revision_number',$currNumber)->first();
         } else {
             $data = FixedAssetSplit::withDefaultGroupCompanyOrg()->with(['subAsset' => function ($query) {
                 $query->withTrashed();
@@ -201,6 +204,7 @@ class SplitController extends Controller
             $userType['type'],
             $revision_number
         );
+       
 
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$data->document_status] ?? '';
         $revNo = $data->revision_number;
@@ -225,7 +229,7 @@ class SplitController extends Controller
             $dep_type = $organization->dep_type;
             $dep_method = $organization->dep_method;
             $financialEndDate = Helper::getFinancialYear(date('Y-m-d'))['end_date'];
-        $financialStartDate = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
+            $financialStartDate = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
                 $groups = Group::whereIn('id',$allChildIds)->get();
 
         

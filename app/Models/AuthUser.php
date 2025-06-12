@@ -30,6 +30,16 @@ class AuthUser extends Authenticatable
         return User::find($this->authenticable_id);
     }
 
+    public function vendor_portal()
+    {
+        return $this->hasOne(VendorPortalUser::class,'user_id','id');
+    }
+
+    public function vendor_portals()
+    {
+        return $this->hasMany(VendorPortalUser::class,'user_id','id');
+    }
+
     public function access_rights_org()
     {
         if ($this->authenticable_type == 'employee') {

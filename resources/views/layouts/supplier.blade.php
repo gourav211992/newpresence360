@@ -44,11 +44,11 @@ $sessionVendorId = request()->cookie('vendor_id');
                         </ul>
                     </div>
                     <ul class="nav navbar-nav align-items-center ms-auto">
-                        @if(auth()->user()?->vendor_portals->count())
+                        @if(auth()->user()?->auth_user?->vendor_portals->count())
                         <li class="nav-item d-none d-lg-block select-organization-menu">
                             <select class="form-select" name="vendor_id" id="vendor_id">
                                 {{-- <option value="">-- Select Vendor --</option> --}}
-                                @foreach (auth()->user()?->vendor_portals as $vendorPortal)
+                                @foreach (auth()->user()?->auth_user?->vendor_portals as $vendorPortal)
                                     <option value="{{ $vendorPortal?->vendor_id }}"
                                         {{ $vendorPortal?->vendor_id == $sessionVendorId ? 'selected' : '' }}>
                                         {{ $vendorPortal?->vendor?->company_name ?? $vendorPortal?->vendor?->company_name }}

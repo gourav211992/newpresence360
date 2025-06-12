@@ -27,6 +27,8 @@ use App\Models\UploadLedgerMaster;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Services\LedgerImportExportService;
 use Illuminate\Support\Facades\Mail;
+use App\Helpers\ServiceParametersHelper;
+use stdClass;
 
 class LedgerController extends Controller
 {
@@ -35,7 +37,6 @@ class LedgerController extends Controller
     public function __construct(LedgerImportExportService $ledgerImportExportService)
     {
         $this->ledgerImportExportService = $ledgerImportExportService;
-        
     }
     /**
      * Display a listing of the resource.
@@ -144,8 +145,8 @@ class LedgerController extends Controller
     {
         $costCenters = CostCenter::where('status', 'active')->where('organization_id', Helper::getAuthenticatedUser()->organization_id)->get();
         $parentGroupIds = Helper::getGroupsQuery()->whereNotNull('parent_group_id')
-        ->pluck('parent_group_id')
-        ->unique();
+            ->pluck('parent_group_id')
+            ->unique();
 
         $orgId = Helper::getAuthenticatedUser()->organization_id;
 
@@ -156,7 +157,7 @@ class LedgerController extends Controller
                 // Check if the group is in parentGroupIds and if it belongs to the same org or is null
                 return $parentGroupIds->contains($g->id) &&
                     ($g->organization_id === $orgId || $g->organization_id === null);
-        });
+            });
 
         $group_name = "GST";
         $tds_group_name = "TDS";
@@ -167,24 +168,42 @@ class LedgerController extends Controller
         if (isset($gst_group->id))
             $gst_group_id = $gst_group->id;
         else
-            $gst_group_id ="null";
+            $gst_group_id = "null";
         if (isset($gst_group->id))
             $tds_group_id = $tds_group->id;
         else
-            $tds_group_id ="null";
+            $tds_group_id = "null";
         if (isset($tcs_group->id))
             $tcs_group_id = $tcs_group->id;
         else
-            $tcs_group_id ="null";
+            $tcs_group_id = "null";
         $taxTypes = ConstantHelper::getTaxTypes();
         $tdsSections = ConstantHelper::getTdsSections();
         $tcsSections = ConstantHelper::getTcsSections();
-//        $label = ConstantHelper::getTaxTypeLabel(ConstantHelper::TAX_TYPE_IGST);
-          $Existingledgers = Ledger::withDefaultGroupCompanyOrg()
-          ->select('name', 'code')->get();
+        //        $label = ConstantHelper::getTaxTypeLabel(ConstantHelper::TAX_TYPE_IGST);
+        $Existingledgers = Ledger::withDefaultGroupCompanyOrg()
+            ->select('name', 'code')->get();
+        $parentUrl = ConstantHelper::LEDGERS_SERVICE_ALIAS;
+        $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
+        $itemCodeType = 'Manual';
+        if ($services && $services['current_book']) {
+            if (isset($services['current_book'])) {
+                $book = $services['current_book'];
+                if ($book) {
+                    $parameters = new stdClass();
+                    foreach (ServiceParametersHelper::SERVICE_PARAMETERS as $paramName => $paramNameVal) {
+                        $param = ServiceParametersHelper::getBookLevelParameterValue($paramName, $book->id)['data'];
+                        $parameters->{$paramName} = $param;
+                    }
+                    if (isset($parameters->ledger_code_type) && is_array($parameters->ledger_code_type)) {
+                        $itemCodeType = $parameters->ledger_code_type[0] ?? null;
+                    }
+                }
+            }
+        }
 
 
-        return view('ledgers.add_ledger', compact('costCenters', 'groups', 'gst_group_id', 'tds_group_id','tcs_group_id','taxTypes','tdsSections','tcsSections','Existingledgers'));
+        return view('ledgers.add_ledger', compact('itemCodeType', 'costCenters', 'groups', 'gst_group_id', 'tds_group_id', 'tcs_group_id', 'taxTypes', 'tdsSections', 'tcsSections', 'Existingledgers'));
     }
 
     public function showImportForm()
@@ -195,7 +214,6 @@ class LedgerController extends Controller
     public function import(Request $request)
     {
         $user = Helper::getAuthenticatedUser();
-
         try {
             $request->validate([
                 'file' => 'required|mimes:xlsx,xls|max:30720',
@@ -206,7 +224,6 @@ class LedgerController extends Controller
                     'message' => 'No file uploaded.',
                 ], 400);
             }
-
             $file = $request->file('file');
             try {
                 $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load(filename: $file);
@@ -303,8 +320,8 @@ class LedgerController extends Controller
 
         $authOrganization = Helper::getAuthenticatedUser()->organization;
         $organizationId = $authOrganization->id;
-        $companyId = $authOrganization ?-> company_id;
-        $groupId = $authOrganization ?-> group_id;
+        $companyId = $authOrganization?->company_id;
+        $groupId = $authOrganization?->group_id;
 
         // Validate the request data
         $request->validate([
@@ -314,8 +331,8 @@ class LedgerController extends Controller
                 'max:255',
                 Rule::unique('erp_ledgers', 'code')->where(function ($query) use ($organizationId, $companyId, $groupId) {
                     return $query->where('organization_id', $organizationId)
-                                 ->where('company_id', $companyId)
-                                 ->where('group_id', $groupId);
+                        ->where('company_id', $companyId)
+                        ->where('group_id', $groupId);
                 }),
             ],
             'name' => [
@@ -324,8 +341,8 @@ class LedgerController extends Controller
                 'max:255',
                 Rule::unique('erp_ledgers', 'name')->where(function ($query) use ($organizationId, $companyId, $groupId) {
                     return $query->where('organization_id', $organizationId)
-                                 ->where('company_id', $companyId)
-                                 ->where('group_id', $groupId);
+                        ->where('company_id', $companyId)
+                        ->where('group_id', $groupId);
                 }),
             ],
             'tax_type' => [
@@ -358,33 +375,38 @@ class LedgerController extends Controller
                 'numeric',
                 'max:255',
             ],
+            'ledger_code_type' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
         ]);
         $existingName = Ledger::withDefaultGroupCompanyOrg()
-        ->where('code', $request->name)
-        ->first();
+            ->where('code', $request->name)
+            ->first();
 
         $existingCode = Ledger::withDefaultGroupCompanyOrg()
             ->where('code', $request->code)
             ->first();
 
 
-            if ($existingName) {
-                return back()->withErrors(['name' => 'The name has already been taken.'])->withInput();
-            }
+        if ($existingName) {
+            return back()->withErrors(['name' => 'The name has already been taken.'])->withInput();
+        }
 
-            if ($existingCode) {
-                return back()->withErrors(['code' => 'The code has already been taken.'])->withInput();
-            }
+        if ($existingCode) {
+            return back()->withErrors(['code' => 'The code has already been taken.'])->withInput();
+        }
         $request->merge([
             'ledger_group_id' => isset($request->ledger_group_id) ? json_encode($request->ledger_group_id) : null,
         ]);
         $ledgerGroupIds = $request->ledger_group_id ?? [];
         $groupNames = Helper::getGroupsQuery()->whereIn('id', (array) json_decode($ledgerGroupIds))
-        ->pluck('name')
-        ->map(function ($name) {
-            return strtolower(trim($name));
-        })
-        ->toArray();
+            ->pluck('name')
+            ->map(function ($name) {
+                return strtolower(trim($name));
+            })
+            ->toArray();
 
 
         // Clean out unnecessary fields
@@ -408,11 +430,11 @@ class LedgerController extends Controller
 
 
         // Create a new ledger record with organization details
-        Ledger::create(array_merge($request->all(),$validatedData));
+        Ledger::create(array_merge($request->all(), $validatedData));
 
 
 
-         return redirect()->route('ledgers.index')->with('success', 'Ledger created successfully.');
+        return redirect()->route('ledgers.index')->with('success', 'Ledger created successfully.');
     }
 
     /**
@@ -435,15 +457,15 @@ class LedgerController extends Controller
             ->pluck('parent_group_id')
             ->unique();
 
-            $orgId = Helper::getAuthenticatedUser()->organization_id;
+        $orgId = Helper::getAuthenticatedUser()->organization_id;
 
-            $groups = Helper::getGroupsQuery()->select('id', 'name', 'parent_group_id')
-                ->get()
-                ->reject(function ($g) use ($parentGroupIds, $orgId) {
-                    // Check if the group is in parentGroupIds and if it belongs to the same org or is null
-                    return $parentGroupIds->contains($g->id) &&
-                        ($g->organization_id === $orgId || $g->organization_id === null);
-                });
+        $groups = Helper::getGroupsQuery()->select('id', 'name', 'parent_group_id')
+            ->get()
+            ->reject(function ($g) use ($parentGroupIds, $orgId) {
+                // Check if the group is in parentGroupIds and if it belongs to the same org or is null
+                return $parentGroupIds->contains($g->id) &&
+                    ($g->organization_id === $orgId || $g->organization_id === null);
+            });
 
         $groupsModal = $data->group();
 
@@ -468,10 +490,29 @@ class LedgerController extends Controller
             $data->ledger_group_id = json_encode($decoded);
         }
         $existingLedgers = Ledger::withDefaultGroupCompanyOrg()->where('id', '!=', $data->id)
-        ->select('name', 'code')
-        ->get();
+            ->select('name', 'code')
+            ->get();
+        $parentUrl = ConstantHelper::LEDGERS_SERVICE_ALIAS;
+        $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
+        $itemCodeType = 'Manual';
+        if ($services && $services['current_book']) {
+            if (isset($services['current_book'])) {
+                $book = $services['current_book'];
+                if ($book) {
+                    $parameters = new stdClass();
+                    foreach (ServiceParametersHelper::SERVICE_PARAMETERS as $paramName => $paramNameVal) {
+                        $param = ServiceParametersHelper::getBookLevelParameterValue($paramName, $book->id)['data'];
+                        $parameters->{$paramName} = $param;
+                    }
+                    if (isset($parameters->ledger_code_type) && is_array($parameters->ledger_code_type)) {
+                        $itemCodeType = $parameters->ledger_code_type[0] ?? null;
+                    }
+                }
+            }
+        }
         return view('ledgers.edit_ledger', compact(
             'groups',
+            'itemCodeType',
             'data',
             'costCenters',
             'groupsModal',
@@ -489,8 +530,8 @@ class LedgerController extends Controller
     {
         $authOrganization = Helper::getAuthenticatedUser()->organization;
         $organizationId = $authOrganization->id;
-        $companyId = $authOrganization ?-> company_id;
-        $groupId = $authOrganization ?-> group_id;
+        $companyId = $authOrganization?->company_id;
+        $groupId = $authOrganization?->group_id;
 
         $request->validate([
             'code' => [
@@ -511,7 +552,7 @@ class LedgerController extends Controller
                     'organization_id' => $organizationId,
                     'company_id' => $companyId,
                     'group_id' => $groupId
-                ],$id),
+                ], $id),
             ],
             'tax_type' => [
                 'nullable',
@@ -545,23 +586,23 @@ class LedgerController extends Controller
             ],
         ]);
         $existingName = Ledger::withDefaultGroupCompanyOrg()
-        ->where('name', $request->name)
-        ->where('id', '!=', $id)
-        ->first();
+            ->where('name', $request->name)
+            ->where('id', '!=', $id)
+            ->first();
 
 
         $existingCode = Ledger::withDefaultGroupCompanyOrg()
-        ->where('code', $request->code)
-        ->where('id', '!=', $id)
-        ->first();
+            ->where('code', $request->code)
+            ->where('id', '!=', $id)
+            ->first();
 
-            if ($existingName) {
-                return back()->withErrors(['name' => 'The name has already been taken.'])->withInput();
-            }
+        if ($existingName) {
+            return back()->withErrors(['name' => 'The name has already been taken.'])->withInput();
+        }
 
-            if ($existingCode) {
-                return back()->withErrors(['code' => 'The code has already been taken.'])->withInput();
-            }
+        if ($existingCode) {
+            return back()->withErrors(['code' => 'The code has already been taken.'])->withInput();
+        }
 
 
         $request->merge([
@@ -569,11 +610,11 @@ class LedgerController extends Controller
         ]);
         $ledgerGroupIds = $request->ledger_group_id ?? [];
         $groupNames = Helper::getGroupsQuery()->whereIn('id', (array) json_decode($ledgerGroupIds))
-        ->pluck('name')
-        ->map(function ($name) {
-            return strtolower(trim($name));
-        })
-        ->toArray();
+            ->pluck('name')
+            ->map(function ($name) {
+                return strtolower(trim($name));
+            })
+            ->toArray();
 
 
         // Clean out unnecessary fields
@@ -598,8 +639,8 @@ class LedgerController extends Controller
         $update->cost_center_id = $request->cost_center_id;
         $update->ledger_group_id = $request->ledger_group_id;
         $update->status = $request->status;
-        $update->tax_type = $request->tax_type??null;
-        $update->tax_percentage =  $request->tax_percentage??null;
+        $update->tax_type = $request->tax_type ?? null;
+        $update->tax_percentage =  $request->tax_percentage ?? null;
         $update->tds_section = $request->tds_section ?? null;
         $update->tds_percentage = $request->tds_percentage ?? null;
         $update->tcs_section = $request->tcs_section ?? null;
@@ -616,13 +657,13 @@ class LedgerController extends Controller
             foreach ($updatedGroups as $group) {
                 // Ensure it has necessary keys before using
                 if (isset($group['removeGroup'], $group['removeGroupName'], $group['updatedGroup'])) {
-                    if($group['removeGroup']!="0"){
-                        self::updateVoucherGroups((int)$id,(int)$group['removeGroup'],(int)$group['updatedGroup']);
-
+                    if ($group['removeGroup'] != "0") {
+                        self::updateVoucherGroups((int)$id, (int)$group['removeGroup'], (int)$group['updatedGroup']);
                     }
                 }
             }
         }
+
 
         return redirect()->route('ledgers.index')->with('success', 'Ledger updated successfully');
     }
@@ -724,31 +765,58 @@ class LedgerController extends Controller
             ], 500);
         }
     }
-    public static function updateVoucherGroups($ledger_id,$ledger_group,$updated_ledger_group){
+    public static function updateVoucherGroups($ledger_id, $ledger_group, $updated_ledger_group)
+    {
         $organization_id = Helper::getAuthenticatedUser()->organization_id;
-        $vouchers = ItemDetail::withWhereHas('voucher',function($q)use($organization_id){
-            $q->where('organization_id',$organization_id);
-        })->where('ledger_id',$ledger_id)->where('ledger_parent_id',$ledger_group)->get();
+        $vouchers = ItemDetail::withWhereHas('voucher', function ($q) use ($organization_id) {
+            $q->where('organization_id', $organization_id);
+        })->where('ledger_id', $ledger_id)->where('ledger_parent_id', $ledger_group)->get();
 
         foreach ($vouchers as $voucher) {
             $voucher->update([
                 'ledger_parent_id' => $updated_ledger_group, // Replace with actual column names and values
             ]);
         }
-        $payments = PaymentVoucherDetails::withWhereHas('voucher',function($q)use($organization_id){
-            $q->where('organization_id',$organization_id);
-        })->where('ledger_id',$ledger_id)->where('ledger_group_id',$ledger_group)->get();
+        $payments = PaymentVoucherDetails::withWhereHas('voucher', function ($q) use ($organization_id) {
+            $q->where('organization_id', $organization_id);
+        })->where('ledger_id', $ledger_id)->where('ledger_group_id', $ledger_group)->get();
         foreach ($payments as $payment) {
             $payment->update([
                 'ledger_group_id' => $updated_ledger_group, // Replace with actual column names and values
             ]);
         }
-
-
-
-
-
     }
+    public function generateLedgerCode(Request $request)
+    {
+        $itemId = $request->input('ledger_id');
+        $itemInitials = $request->input('item_initials');
+        $baseCode =  $itemInitials;
 
+        $authUser = Helper::getAuthenticatedUser();
+        $organizationId = $authUser->organization_id;
+        if ($itemId) {
+            $existingItem = Ledger::withDefaultGroupCompanyOrg()->find($itemId);
+            if ($existingItem) {
+                $existingItemCode = $existingItem->code;
+                $currentBaseCode = substr($existingItemCode, 0, strlen($baseCode));
+                if ($currentBaseCode === $baseCode) {
+                    return response()->json(['code' => $existingItemCode]);
+                }
+            }
+        }
+        
+        $nextSuffix = '001';
+        $finalItemCode = $baseCode . $nextSuffix;
 
+        while (
+            Ledger::withDefaultGroupCompanyOrg()
+            ->where('code', $finalItemCode)
+            ->exists()
+        ) {
+            $nextSuffix = str_pad(intval($nextSuffix) + 1, 3, '0', STR_PAD_LEFT);
+            $finalItemCode = $baseCode . $nextSuffix;
+        }
+
+        return response()->json(['code' => $finalItemCode]);
+    }
 }

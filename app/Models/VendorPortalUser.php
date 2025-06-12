@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class VendorPortalUser extends Model
 {
+    protected $connection = 'mysql';
     use HasFactory;
 
     public $timestamps = false;

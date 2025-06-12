@@ -35,13 +35,12 @@ $('#order_date_input').on('blur', function() {
 function checkDateRange(element) {
     let date = element.value;
     if (date > endDate || date < startDate) {
-        console.log("date Checkers");
 
         element.value = endDate < today ? endDate : today; // Use .value not .val() for DOM input
         return false;
     }
     else{
-        return true;   
+        return true;  
     }
 }
 
@@ -52,7 +51,6 @@ function resetSeries()
 
 function disableHeader()
 {
-    console.log("header");
     const disabledFields = document.getElementsByClassName('disable_on_edit');
     for (let disabledIndex = 0; disabledIndex < disabledFields.length; disabledIndex++) {
         disabledFields[disabledIndex].disabled = true;
@@ -90,7 +88,7 @@ function disableHeader()
     if (orderButton) {
         orderButton.disabled = true;
     }
-    
+   
 }
 
 function enableHeader()
@@ -133,12 +131,11 @@ function enableHeader()
         orderButton.disabled = false;
     }
 }
-if(order && order.document_status != "draft")
+if((order && order.document_status != "draft" )|| menuAlias != 'pick-list')
 {
     editScript();
 }
 
-//Function to set values for edit form
 function editScript()
 {
     localStorage.setItem('deletedItemDiscTedIds', JSON.stringify([]));
@@ -146,24 +143,87 @@ function editScript()
     localStorage.setItem('deletedHeaderExpTedIds', JSON.stringify([]));
     localStorage.setItem('deletedSiItemIds', JSON.stringify([]));
     localStorage.setItem('deletedAttachmentIds', JSON.stringify([]));
-
     if (order) {
-        console.log(order);
         //Disable header fields which cannot be changed
         disableHeader();
-        if ($("#store_id_input").length) {
-            $("#store_id_input").trigger('change');
-        }
         //Item Discount
         order.items.forEach((item, itemIndex) => {
+            const totalValue = item.item_discount_amount;
+            document.getElementById('discount_main_table').setAttribute('total-value', totalValue);
+            document.getElementById('discount_main_table').setAttribute('item-row', 'item_value_' + itemIndex);
+            document.getElementById('discount_main_table').setAttribute('item-row-index', itemIndex);
+
+            item.discount_ted.forEach((ted, tedIndex) => {
+                addHiddenInput("item_discount_name_" + itemIndex + "_" + tedIndex, ted.ted_name, `item_discount_name[${itemIndex}][${tedIndex}]`, 'discount_names_hidden_' + itemIndex, 'item_value_' + itemIndex, ted.id);
+                addHiddenInput("item_discount_master_id_" + itemIndex + "_" + tedIndex, ted.ted_id, `item_discount_master_id[${itemIndex}][${tedIndex}]`, 'discount_names_hidden_' + itemIndex, 'item_value_' + itemIndex, ted.id);
+                addHiddenInput("item_discount_percentage_" + itemIndex + "_" + tedIndex, ted.ted_percentage ? ted.ted_percentage : '', `item_discount_percentage[${itemIndex}][${tedIndex}]`, 'discount_percentages_hidden_' + itemIndex,  'item_value_' + itemIndex, ted.id);
+                addHiddenInput("item_discount_value_" + itemIndex + "_" + tedIndex, ted.ted_amount, `item_discount_value[${itemIndex}][${tedIndex}]`, 'discount_values_hidden_' + itemIndex, 'item_value_' + itemIndex, ted.id);
+                addHiddenInput("item_discount_id_" + itemIndex + "_" + tedIndex, ted.id, `item_discount_id[${itemIndex}][${tedIndex}]`, 'discount_ids_hidden_' + itemIndex, 'item_value_' + itemIndex);
+            });
+            //Item Locations
+            itemLocations = [];
+            item.item_locations.forEach((itemLoc, itemLocIndex) => {
+                itemLocations.push({
+                    store_id : itemLoc.store_id,
+                    store_code : itemLoc.store_code,
+                    rack_id : itemLoc.rack_id,
+                    rack_code : itemLoc.rack_code,
+                    shelf_id : itemLoc.shelf_id,
+                    shelf_code : itemLoc.shelf_code,
+                    bin_id : itemLoc.bin_id,
+                    bin_code : itemLoc.bin_code,
+                    qty : itemLoc.quantity
+                });
+            });
+            document.getElementById('data_stores_' + itemIndex).setAttribute('data-stores', encodeURIComponent(JSON.stringify(itemLocations)))
+            //Bundles info
+            const bundleDoc = document.getElementById('item_bundles_' + itemIndex);
+            if (bundleDoc && item.bundles && item.bundles.length > 0) {
+                let checkedBundlesArray = [];
+                item.bundles.forEach((bndle) => {
+                    checkedBundlesArray.push({
+                        bundle_id : bndle.id,
+                        checked : true,
+                        qty : bndle.qty
+                    });
+                });
+                bundleDoc.setAttribute('checked-bundle', encodeURIComponent(JSON.stringify(checkedBundlesArray)));
+            }
             itemUomsHTML = ``;
             if (item.item.uom && item.item.uom.id) {
-                itemUomsHTML += `<option selected value = '${item.item.uom.id}' ${item.item.uom.id == item.uom_id ? "selected" : ""}>${item.item.uom.alias}</option>`;
+                itemUomsHTML += `<option value = '${item.item.uom.id}' ${item.item.uom.id == item.uom_id ? "selected" : ""}>${item.item.uom.alias}</option>`;
             }
+            item.item.alternate_uoms.forEach(singleUom => {
+                if (singleUom.is_selling) {
+                    itemUomsHTML += `<option value = '${singleUom.uom.id}' ${singleUom.uom.id == item.uom_id ? "selected" : ""} >${singleUom.uom?.alias}</option>`;
+                }
+            });
             document.getElementById('uom_dropdown_' + itemIndex).innerHTML = itemUomsHTML;
-            onItemClick(itemIndex);
+            getItemTax(itemIndex);
+            if (itemIndex==0){
+                onItemClick(itemIndex);
+            }
             setAttributesUI(itemIndex);
+
         });
+        //Order Discount
+        order.discount_ted.forEach((orderDiscount, orderDiscountIndex) => {
+            document.getElementById('new_order_discount_name').value = orderDiscount.ted_name;
+            document.getElementById('new_order_discount_id').value = orderDiscount.ted_id;
+            document.getElementById('new_order_discount_percentage').value = orderDiscount.ted_percentage ? orderDiscount.ted_percentage : "";
+            document.getElementById('new_order_discount_value').value = orderDiscount.ted_amount;
+            addOrderDiscount(orderDiscount.id, false);
+        });
+        //Order Expense
+        order.expense_ted.forEach((orderExpense, orderExpenseIndex) => {
+            document.getElementById('order_expense_name').value = orderExpense.ted_name;
+            document.getElementById('order_expense_id').value = orderExpense.ted_id;
+            document.getElementById('order_expense_percentage').value = orderExpense.ted_percentage ? orderExpense.ted_percentage : "";
+            document.getElementById('order_expense_value').value = orderExpense.ted_amount;
+            addOrderExpense(orderExpense.id, false);
+        });
+       
+        setAllTotalFields();
         //Disable header fields which cannot be changed
         disableHeader();
         //Set all documents
@@ -172,14 +232,15 @@ function editScript()
         });
     }
     renderIcons();
-    
+   
     let finalAmendSubmitButton = document.getElementById("amend-submit-button");
 
     viewModeScript(finalAmendSubmitButton ? false : true);
 
 }
 
-    
+
+   
 function onSeriesChange(element, reset = true)
 {
     resetSeries();
@@ -200,7 +261,6 @@ function onSeriesChange(element, reset = true)
                     newSeriesHTML += `<option value = "${book.id}" ${bookIndex == 0 ? 'selected' : ''} >${book.book_code}</option>`;
                 });
                 document.getElementById('series_id_input').innerHTML = newSeriesHTML;
-                console.log(document.getElementById('series_id_input').value);
                 getDocNumberByBookId(document.getElementById('series_id_input'), reset);
             } else {
                 document.getElementById('series_id_input').innerHTML = '';
@@ -307,7 +367,7 @@ function resetParametersDependentElements(reset = true)
     });
 }
 
-function getDocNumberByBookId(element, reset = true) 
+function getDocNumberByBookId(element, reset = true)
 {
     resetParametersDependentElements(reset);
     let bookId = element.value;
@@ -364,7 +424,7 @@ function getDocNumberByBookId(element, reset = true)
                 viewModeScript();
             }
         });
-    }); 
+    });
 }
 function enableDisableQtButton()
     {
@@ -372,6 +432,11 @@ function enableDisableQtButton()
         const bookCode = document.getElementById('book_code_input').value;
         const documentDate = document.getElementById('order_date_input').value;
         let siButton = document.getElementById('select_si_button');
+        let miButton = document.getElementById('select_mi_button');
+        let pwoButton = document.getElementById('select_pwo_button');
+        let moButton = document.getElementById('select_mo_button');
+        let joButton = document.getElementById('select_jo_button');
+        let piButton = document.getElementById('select_pi_button');
         let dnButton = document.getElementById('select_dn_button');
         let leaseButton = document.getElementById('select_lease_button');
         let orderButton = document.getElementById('select_order_button');
@@ -381,6 +446,21 @@ function enableDisableQtButton()
         if (bookId && bookCode && documentDate) {
             if (siButton) {
                 siButton.disabled = false;
+            }
+            if (miButton) {
+                miButton.disabled = false;
+            }
+            if (pwoButton) {
+                pwoButton.disabled = false;
+            }
+            if (moButton) {
+                moButton.disabled = false;
+            }
+            if (joButton) {
+                joButton.disabled = false;
+            }
+            if (piButton) {
+                piButton.disabled = false;
             }
             if (dnButton) {
                 dnButton.disabled = false;
@@ -402,6 +482,21 @@ function enableDisableQtButton()
             if (siButton) {
                 siButton.disabled = true;
             }
+            if (miButton) {
+                miButton.disabled = true;
+            }
+            if (pwoButton) {
+                pwoButton.disabled = true;
+            }
+            if (moButton) {
+                moButton.disabled = true;
+            }
+            if (joButton) {
+                joButton.disabled = true;
+            }
+            if (piButton) {
+                piButton.disabled = true;
+            }
             if (dnButton) {
                 dnButton.disabled = true;
             }
@@ -421,7 +516,7 @@ function enableDisableQtButton()
         }
     }
 
-    
+   
 
 function implementBookDynamicFields(html, data)
 {
@@ -489,7 +584,7 @@ function implementBookParameters(paramData)
     var selectedFutureDateOption = paramData.future_date_allowed;
     var invoiceToFollowParam = paramData?.invoice_to_follow;
     var issueTypeParameters = paramData?.issue_type;
-    
+   
     // Reference From
     if (selectedRefFromServiceOption) {
         var selectVal = selectedRefFromServiceOption;
@@ -501,6 +596,17 @@ function implementBookParameters(paramData)
                         selectionSectionElement.style.display = "";
                     }
                     var selectionPopupElement = document.getElementById('sales_invoice_selection');
+                    if (selectionPopupElement)
+                    {
+                        selectionPopupElement.style.display = ""
+                    }
+                }
+                if (selectSingleVal == 'so') {
+                    var selectionSectionElement = document.getElementById('selection_section');
+                    if (selectionSectionElement) {
+                        selectionSectionElement.style.display = "";
+                    }
+                    var selectionPopupElement = document.getElementById('sales_order_selection');
                     if (selectionPopupElement)
                     {
                         selectionPopupElement.style.display = ""
@@ -614,7 +720,7 @@ function implementBookParameters(paramData)
         $("#order_date_input").attr('max', endDate);
         $("#order_date_input").attr('min', startDate);
         $("#order_date_input").off('input');
-    } 
+    }
     if (backDateAllow && !futureDateAllow) { // Allow only back date
         $("#order_date_input").removeAttr('min');
         $("#order_date_input").attr('max', endDate);
@@ -622,7 +728,7 @@ function implementBookParameters(paramData)
         $('#order_date_input').on('input', function() {
             restrictFutureDates(this);
         });
-    } 
+    }
     if (!backDateAllow && futureDateAllow) { // Allow only future date
         $("#order_date_input").removeAttr('max');
         $("#order_date_input").attr('min', startDate);
@@ -702,7 +808,7 @@ $(document).ready(function() {
     $(document).on('input', '.decimal-input', function() {
         // Allow only numbers and a single decimal point
         this.value = this.value.replace(/[^0-9.]/g, ''); // Remove non-numeric characters
-        
+       
         // Prevent more than one decimal point
         if ((this.value.match(/\./g) || []).length > 1) {
             this.value = this.value.substring(0, this.value.length - 1);
@@ -726,9 +832,9 @@ $(document).on('change', '#revisionNumber', (e) => {
 
 $(document).on('submit', '.ajax-submit-2', function (e) {
     e.preventDefault();
-     var submitButton = (e.originalEvent && e.originalEvent.submitter) 
+     var submitButton = (e.originalEvent && e.originalEvent.submitter)
                         || $(this).find(':submit');
-    var submitButtonHtml = submitButton.innerHTML; 
+    var submitButtonHtml = submitButton.innerHTML;
     submitButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
     submitButton.disabled = true;
     var method = $(this).attr('method');
@@ -737,7 +843,7 @@ $(document).on('submit', '.ajax-submit-2', function (e) {
     var data = new FormData($(this)[0]);
 
     var formObj = $(this);
-    
+   
     $.ajax({
         url,
         type: method,
@@ -765,7 +871,7 @@ $(document).on('submit', '.ajax-submit-2', function (e) {
                     location.reload();
                 }
             }, 1500);
-            
+           
         },
         error: function (error) {
             submitButton.disabled = false;
@@ -933,7 +1039,7 @@ document.addEventListener('input', function (e) {
 document.addEventListener('keydown', function (e) {
     if (e.target.classList.contains('text-end')) {
         if ( e.key === 'Tab' ||
-            ['Backspace', 'ArrowLeft', 'ArrowRight', 'Delete', '.'].includes(e.key) || 
+            ['Backspace', 'ArrowLeft', 'ArrowRight', 'Delete', '.'].includes(e.key) ||
             /^[0-9]$/.test(e.key)
         ) {
             // Allow numbers, navigation keys, and a single decimal point
@@ -979,7 +1085,7 @@ $(document).ready(function() {
     $(document).on('input', '.decimal-input', function() {
         // Allow only numbers and a single decimal point
         this.value = this.value.replace(/[^0-9.]/g, ''); // Remove non-numeric characters
-        
+       
         // Prevent more than one decimal point
         if ((this.value.match(/\./g) || []).length > 1) {
             this.value = this.value.substring(0, this.value.length - 1);
@@ -1026,40 +1132,41 @@ function submitForm(status) {
 }
 function onItemClick(itemRowId)
 {
-    if(order && order.document_status != "draft")
+    const docType = $("#service_id_input").val();
+    const invoiceToFollowParam = $("invoice_to_follow_input").val() == "yes";
+
+    const hsn_code = document.getElementById('items_dropdown_'+ itemRowId).getAttribute('hsn_code');
+    const item_name = document.getElementById('items_dropdown_'+ itemRowId).getAttribute('item-name');
+    const attributes = JSON.parse(document.getElementById('items_dropdown_'+ itemRowId).getAttribute('attribute-array'));
+    const specs = JSON.parse(document.getElementById('items_dropdown_'+ itemRowId).getAttribute('specs'));
+    // const locations = JSON.parse(decodeURIComponent(document.getElementById('data_stores_'+ itemRowId).getAttribute('data-stores')));
+
+    const qtDetailsRow = document.getElementById('current_item_qt_no_row');
+    const qtDetails = document.getElementById('current_item_qt_no');
+
+    //Reference From
+    const referenceFromLabels = document.getElementsByClassName("reference_from_label_" + itemRowId);
+    if (referenceFromLabels && referenceFromLabels.length > 0)
     {
-        const docType = $("#service_id_input").val();
-        const invoiceToFollowParam = $("invoice_to_follow_input").val() == "yes";
-
-        const hsn_code = document.getElementById('items_dropdown_'+ itemRowId).getAttribute('hsn_code');
-        const item_name = document.getElementById('items_dropdown_'+ itemRowId).getAttribute('item-name');
-        const attributes = JSON.parse(document.getElementById('items_dropdown_'+ itemRowId).getAttribute('attribute-array'));
-        const specs = JSON.parse(document.getElementById('items_dropdown_'+ itemRowId).getAttribute('specs'));
-        // const locations = JSON.parse(decodeURIComponent(document.getElementById('data_stores_'+ itemRowId).getAttribute('data-stores')));
-
-        const qtDetailsRow = document.getElementById('current_item_qt_no_row');
-        const qtDetails = document.getElementById('current_item_qt_no');
-
-        //Reference From 
-        const referenceFromLabels = document.getElementsByClassName("reference_from_label_" + itemRowId);
-        if (referenceFromLabels && referenceFromLabels.length > 0)
-        {
-            qtDetailsRow.style.display = "table-row";
-            referenceFromLabelsHTML = `<strong style = "font-size:11px; color : #6a6a6a;">Reference From</strong>`;
-            for (let index = 0; index < referenceFromLabels.length; index++) {
-                referenceFromLabelsHTML += `<span class="badge rounded-pill badge-light-primary">${referenceFromLabels[index].value}</span>`
-            }
-            qtDetails.innerHTML = referenceFromLabelsHTML;
+        qtDetailsRow.style.display = "table-row";
+        referenceFromLabelsHTML = `<strong style = "font-size:11px; color : #6a6a6a;">Reference From</strong>`;
+        for (let index = 0; index < referenceFromLabels.length; index++) {
+            referenceFromLabelsHTML += `<span class="badge rounded-pill badge-light-primary">${referenceFromLabels[index].value}</span>`
         }
-        else 
-        {
-            qtDetailsRow.style.display = "none";
-            qtDetails.innerHTML = ``;
-        }
-        
+        qtDetails.innerHTML = referenceFromLabelsHTML;
+    }
+    else
+    {
+        qtDetailsRow.style.display = "none";
+        qtDetails.innerHTML = ``;
+    }
+   
 
-        const leaseAgreementDetailsRow = document.getElementById('current_item_land_lease_agreement_row');
-        const leaseAgreementDetails = document.getElementById('current_item_land_lease_agreement');
+    const leaseAgreementDetailsRow = document.getElementById('current_item_land_lease_agreement_row');
+    const leaseAgreementDetails = document.getElementById('current_item_land_lease_agreement');
+    if(leaseAgreementDetailsRow || leaseAgreementDetails)
+    {
+
         //assign agreement details
         let agreementNo = document.getElementById('land_lease_agreement_no_' + itemRowId)?.value;
         let leaseEndDate = document.getElementById('land_lease_end_date_' + itemRowId)?.value;
@@ -1077,153 +1184,152 @@ function onItemClick(itemRowId)
         let parcelName = document.getElementById('land_lease_land_parcel_' + itemRowId)?.value;
         let plotsName = document.getElementById('land_lease_land_plots_' + itemRowId)?.value;
 
+    }
         let qtDocumentNo = document.getElementById('qt_document_no_'+ itemRowId);
         let qtBookCode = document.getElementById('qt_book_code_'+ itemRowId);
         let qtDocumentDate = document.getElementById('qt_document_date_'+ itemRowId);
-
+   
         qtDocumentNo = qtDocumentNo?.value ? qtDocumentNo.value : '';
         qtBookCode = qtBookCode?.value ? qtBookCode.value : '';
         qtDocumentDate = qtDocumentDate?.value ? qtDocumentDate.value : '';
 
-        if (qtDocumentNo && qtBookCode && qtDocumentDate) {
-            qtDetailsRow.style.display = "table-row";
-            qtDetails.innerHTML = `<strong style = "font-size:11px; color : #6a6a6a;">Reference From</strong>:<span class="badge rounded-pill badge-light-primary"><strong>Document No: </strong>: ${qtBookCode + "-" + qtDocumentNo}</span><span class="badge rounded-pill badge-light-primary"><strong>Document Date: </strong>: ${qtDocumentDate}</span>`;
+    if (qtDocumentNo && qtBookCode && qtDocumentDate) {
+        qtDetailsRow.style.display = "table-row";
+        qtDetails.innerHTML = `<strong style = "font-size:11px; color : #6a6a6a;">Reference From</strong>:<span class="badge rounded-pill badge-light-primary"><strong>Document No: </strong>: ${qtBookCode + "-" + qtDocumentNo}</span><span class="badge rounded-pill badge-light-primary"><strong>Document Date: </strong>: ${qtDocumentDate}</span>`;
 
-            if (parcelName && plotsName) {
-                qtDetails.innerHTML =  qtDetails.innerHTML + `<span class="badge rounded-pill badge-light-primary"><strong>Land Parcel</strong>: ${parcelName}</span><span class="badge rounded-pill badge-light-primary"><strong>Plots</strong>: ${plotsName}</span>`;
-            }
-        } else {
-            qtDetailsRow.style.display = "none";
-            qtDetails.innerHTML = ``;
+        if (parcelName && plotsName) {
+            qtDetails.innerHTML =  qtDetails.innerHTML + `<span class="badge rounded-pill badge-light-primary"><strong>Land Parcel</strong>: ${parcelName}</span><span class="badge rounded-pill badge-light-primary"><strong>Plots</strong>: ${plotsName}</span>`;
         }
-        // document.getElementById('current_item_hsn_code').innerText = hsn_code;
-        var innerHTMLAttributes = ``;
-        attributes.forEach(element => {
-            var currentOption = '';
-            element.values_data.forEach(subElement => {
-                if (subElement.selected) {
-                    currentOption = subElement.value;
-                }
-            });
-            innerHTMLAttributes +=  `<span class="badge rounded-pill badge-light-primary"><strong>${element.group_name}</strong>: ${currentOption}</span>`;
-        });
-        var specsInnerHTML = ``;
-        specs.forEach(spec => {
-            specsInnerHTML +=  `<span class="badge rounded-pill badge-light-primary "><strong>${spec.specification_name}</strong>: ${spec.value}</span>`;
-        });
-
-        document.getElementById('current_item_attributes').innerHTML = `<strong style = "font-size:11px; color : #6a6a6a;">Attributes</strong>:` + innerHTMLAttributes;
-        if (innerHTMLAttributes) {
-            document.getElementById('current_item_attribute_row').style.display = "table-row";
-        } else {
-            document.getElementById('current_item_attribute_row').style.display = "none";
-        }
-        document.getElementById('current_item_specs').innerHTML = `<strong style = "font-size:11px; color : #6a6a6a;">Specifications</strong>:` + specsInnerHTML;
-        if (specsInnerHTML) {
-            document.getElementById('current_item_specs_row').style.display = "table-row";
-        } else {
-            document.getElementById('current_item_specs_row').style.display = "none";
-        }
-        const remarks = document.getElementById('item_remarks_' + itemRowId).value;
-        if (specsInnerHTML) {
-            document.getElementById('current_item_specs_row').style.display = "table-row";
-        } else {
-            document.getElementById('current_item_specs_row').style.display = "none";
-        }
-        document.getElementById('current_item_description').textContent = remarks;
-        if (remarks) {
-            document.getElementById('current_item_description_row').style.display = "table-row";
-        } else {
-            document.getElementById('current_item_description_row').style.display = "none";
-        }
-        let itemAttributes = JSON.parse(document.getElementById(`items_dropdown_${itemRowId}`).getAttribute('attribute-array'));
-        let selectedItemAttr = [];
-        if (itemAttributes && itemAttributes.length > 0) {
-            itemAttributes.forEach(element => {
-            element.values_data.forEach(subElement => {
-                if (subElement.selected) {
-                    selectedItemAttr.push(subElement.id);
-                }
-            });
-        });
-        }
-        const itemId = document.getElementById('items_dropdown_'+ itemRowId + '_value').value;
-        const uomId = document.getElementById('uom_dropdown_'+ itemRowId ).value;
-        const qtyrow = document.getElementById('item_picked_qty_' + itemRowId) ?? document.getElementById('item_qty_' + itemRowId);
-        if (itemId && uomId) {
-            $.ajax({
-                url: invDets,
-                method: 'GET',
-                dataType: 'json',
-                data: {
-                    quantity: qtyrow.value,
-                    item_id: document.getElementById('items_dropdown_'+ itemRowId + '_value').value,
-                    uom_id : document.getElementById('uom_dropdown_' + itemRowId).value,
-                    selectedAttr : selectedItemAttr,
-                    store_id: $("#store_id_input").val(),
-                    sub_store_id : $("#sub_store_id_input").val(),
-                    service_alias : 'psv',
-                    header_id : order ? order.id : null,
-                    detail_id : $("#item_row_" + itemRowId).attr('data-detail-id')
-                },
-                success: function(data) {
-                    
-                    if (data?.item && data?.item?.category && data?.item?.sub_category) {
-                        document.getElementById('current_item_cat_hsn').innerHTML = `
-                        <span class="badge rounded-pill badge-light-primary"><strong>Category</strong>: <span id = "item_category">${ data?.item?.category?.name}</span></span>
-                        <span class="badge rounded-pill badge-light-primary"><strong>Sub Category</strong>: <span id = "item_sub_category">${ data?.item?.sub_category?.name}</span></span>
-                        <span class="badge rounded-pill badge-light-primary"><strong>HSN</strong>: <span id = "current_item_hsn_code">${hsn_code}</span></span>
-                        `;
-                    }
-                    //Stocks
-                    if (data?.stocks) {
-                        document.getElementById('current_item_stocks_row').style.display = "table-row";
-                        document.getElementById('current_item_stocks').innerHTML = `
-                        <span class="badge rounded-pill badge-light-primary"><strong>Confirmed Stock</strong>: <span id = "item_sub_category">${data?.stocks?.confirmedStockAltUom}</span></span>
-                        <span class="badge rounded-pill badge-light-primary"><strong>Unconfirmed Stock</strong>: <span id = "item_category">${data?.stocks?.pendingStockAltUom}</span></span>
-                        `;
-                        } 
-                        else {
-                            // document.getElementById('current_item_stocks_row').style.display = "none";
-                        }
-
-                        if (data?.lot_details) {
-                        document.getElementById('current_item_lot_no_row').style.display = "table-row";
-                        let lotHTML = `<strong style="font-size:11px; color : #6a6a6a;">Lot Number</strong> : `;
-                        let soHTML = `<strong style="font-size:11px; color : #6a6a6a;">SO Number</strong> : `;
-                        const soNoGroups = {};
-                        console.log(data);
-                        data?.lot_details.forEach(lot => {
-                            if (lot.so_no) {
-                                if (!soNoGroups[lot.so_no]) {
-                                    soNoGroups[lot.so_no] = 0;
-                                }
-                                soNoGroups[lot.so_no] += Number(lot.quantity ?? 0);
-                            }
-                            lotHTML += `<span class="badge rounded-pill badge-light-primary"><strong>${lot?.lot_number}</strong>: <span>${lot?.quantity}</span></span>`
-                        });
-
-                        for (const [soNo, totalQty] of Object.entries(soNoGroups)) {
-                            console.log(soNoGroups);
-                            soHTML += `<span class="badge rounded-pill badge-light-primary"><strong>${soNo}</strong> : ${totalQty}</span>`;
-                        }
-
-                        document.getElementById('current_item_lot_no').innerHTML = lotHTML;
-                        document.getElementById('current_item_so_no').innerHTML = soHTML;
-                        } 
-                     else {
-                            document.getElementById('current_item_lot_no_row').style.display = "none";
-                        }
-
-
-                        
-                },
-                error: function(xhr) {
-                    console.error('Error fetching customer data:', xhr.responseText);
-                }
-            });
-        }
+    } else {
+        qtDetailsRow.style.display = "none";
+        qtDetails.innerHTML = ``;
     }
+    // document.getElementById('current_item_hsn_code').innerText = hsn_code;
+    var innerHTMLAttributes = ``;
+    attributes.forEach(element => {
+        var currentOption = '';
+        element.values_data.forEach(subElement => {
+            if (subElement.selected) {
+                currentOption = subElement.value;
+            }
+        });
+        innerHTMLAttributes +=  `<span class="badge rounded-pill badge-light-primary"><strong>${element.group_name}</strong>: ${currentOption}</span>`;
+    });
+    var specsInnerHTML = ``;
+    specs.forEach(spec => {
+        specsInnerHTML +=  `<span class="badge rounded-pill badge-light-primary "><strong>${spec.specification_name}</strong>: ${spec.value}</span>`;
+    });
+
+    document.getElementById('current_item_attributes').innerHTML = `<strong style = "font-size:11px; color : #6a6a6a;">Attributes</strong>:` + innerHTMLAttributes;
+    if (innerHTMLAttributes) {
+        document.getElementById('current_item_attribute_row').style.display = "table-row";
+    } else {
+        document.getElementById('current_item_attribute_row').style.display = "none";
+    }
+    document.getElementById('current_item_specs').innerHTML = `<strong style = "font-size:11px; color : #6a6a6a;">Specifications</strong>:` + specsInnerHTML;
+    if (specsInnerHTML) {
+        document.getElementById('current_item_specs_row').style.display = "table-row";
+    } else {
+        document.getElementById('current_item_specs_row').style.display = "none";
+    }
+    const remarks = document.getElementById('item_remarks_' + itemRowId).value;
+    if (specsInnerHTML) {
+        document.getElementById('current_item_specs_row').style.display = "table-row";
+    } else {
+        document.getElementById('current_item_specs_row').style.display = "none";
+    }
+    document.getElementById('current_item_description').textContent = remarks;
+    if (remarks) {
+        document.getElementById('current_item_description_row').style.display = "table-row";
+    } else {
+        document.getElementById('current_item_description_row').style.display = "none";
+    }
+    let itemAttributes = JSON.parse(document.getElementById(`items_dropdown_${itemRowId}`).getAttribute('attribute-array'));
+    let selectedItemAttr = [];
+    if (itemAttributes && itemAttributes.length > 0) {
+        itemAttributes.forEach(element => {
+        element.values_data.forEach(subElement => {
+            if (subElement.selected) {
+                selectedItemAttr.push(subElement.id);
+            }
+        });
+    });
+    }
+    const itemId = document.getElementById('items_dropdown_'+ itemRowId + '_value').value;
+    const uomId = document.getElementById('uom_dropdown_'+ itemRowId ).value;
+    const qtyrow = document.getElementById('item_picked_qty_' + itemRowId) ?? document.getElementById('item_qty_' + itemRowId);
+    if (itemId && uomId) {
+        $.ajax({
+            url: invDets,
+            method: 'GET',
+            dataType: 'json',
+            data: {
+                quantity: qtyrow.value,
+                item_id: document.getElementById('items_dropdown_'+ itemRowId + '_value').value,
+                uom_id : document.getElementById('uom_dropdown_' + itemRowId).value,
+                selectedAttr : selectedItemAttr,
+                store_id: $("#store_id_input").val(),
+                sub_store_id : $("#sub_store_id_input").val(),
+                service_alias : 'psv',
+                header_id : order ? order.id : null,
+                detail_id : $("#item_row_" + itemRowId).attr('data-detail-id')
+            },
+            success: function(data) {
+               
+                if (data?.item && data?.item?.category && data?.item?.sub_category) {
+                    document.getElementById('current_item_cat_hsn').innerHTML = `
+                    <span class="badge rounded-pill badge-light-primary"><strong>Category</strong>: <span id = "item_category">${ data?.item?.category?.name}</span></span>
+                    <span class="badge rounded-pill badge-light-primary"><strong>Sub Category</strong>: <span id = "item_sub_category">${ data?.item?.sub_category?.name}</span></span>
+                    <span class="badge rounded-pill badge-light-primary"><strong>HSN</strong>: <span id = "current_item_hsn_code">${hsn_code}</span></span>
+                    `;
+                }
+                //Stocks
+                if (data?.stocks) {
+                    document.getElementById('current_item_stocks_row').style.display = "table-row";
+                    document.getElementById('current_item_stocks').innerHTML = `
+                    <span class="badge rounded-pill badge-light-primary"><strong>Confirmed Stock</strong>: <span id = "item_sub_category">${data?.stocks?.confirmedStockAltUom}</span></span>
+                    <span class="badge rounded-pill badge-light-primary"><strong>Unconfirmed Stock</strong>: <span id = "item_category">${data?.stocks?.pendingStockAltUom}</span></span>
+                    `;
+                    }
+                    else {
+                        // document.getElementById('current_item_stocks_row').style.display = "none";
+                    }
+
+                    if (data?.lot_details && data.lot_details.length) {
+                    document.getElementById('current_item_lot_no_row').style.display = "table-row";
+                    let lotHTML = `<strong style="font-size:11px; color : #6a6a6a;">Lot Number</strong> : `;
+                    let soHTML = `<strong style="font-size:11px; color : #6a6a6a;">SO Number</strong> : `;
+                    const soNoGroups = {};
+                    data?.lot_details.forEach(lot => {
+                        if (lot.so_no) {
+                            if (!soNoGroups[lot.so_no]) {
+                                soNoGroups[lot.so_no] = 0;
+                            }
+                            soNoGroups[lot.so_no] += Number(lot.quantity ?? 0);
+                        }
+                        lotHTML += `<span class="badge rounded-pill badge-light-primary"><strong>${lot?.lot_number}</strong>: <span>${lot?.quantity}</span></span>`
+                    });
+
+                    for (const [soNo, totalQty] of Object.entries(soNoGroups)) {
+                        soHTML += `<span class="badge rounded-pill badge-light-primary"><strong>${soNo}</strong> : ${totalQty}</span>`;
+                    }
+
+                    document.getElementById('current_item_lot_no').innerHTML = lotHTML;
+                    document.getElementById('current_item_so_no').innerHTML = soHTML;
+                    }
+                    else {
+                        document.getElementById('current_item_lot_no_row').style.display = "none";
+                    }
+
+
+                   
+            },
+            error: function(xhr) {
+                console.error('Error fetching customer data:', xhr.responseText);
+            }
+        });
+    }
+
 }
 
 function renderIcons()
@@ -1251,7 +1357,6 @@ function setAttributesUI(paramIndex = null) {
     } else {
         currentItemIndex = currentSelectedItemIndex;
     }
-    console.log('current-item-index',currentItemIndex);
     //Attribute modal is closed
     let itemIdDoc = document.getElementById('items_dropdown_' + currentItemIndex);
     if (!itemIdDoc) {
@@ -1278,7 +1383,6 @@ function setAttributesUI(paramIndex = null) {
         }
         let short = false;
         total_atts += 1;
-        console.log(attrArr);
 
         if(attrArr?.short_name?.length > 0)
         {
@@ -1290,7 +1394,6 @@ function setAttributesUI(paramIndex = null) {
         attrArr.values_data.forEach((attrVal) => {
             if (attrVal.selected === true) {
                 total_selected += 1;
-                console.log('in If' , total_selected);
                 // Add character length with selected value
                 currentStringLength += Number(attrVal.value.length);
                 currentSelectedValue = attrVal.value;
@@ -1317,22 +1420,11 @@ function setAttributesUI(paramIndex = null) {
         attrTotalChar += Number(currentStringLength);
     });
     let attributeSection = document.getElementById('attribute_section_' + currentItemIndex);
-    console.log(attributeSection,'section before if');
     if (attributeSection) {
         attributeSection.innerHTML = attributeUI + '</div>';
-        console.log(attributeSection,'section after if');
     }
-    console.log('before If' , total_selected);
     if(total_selected == 0){
         attributeSection.innerHTML = `
-            <button id = "attribute_button_${currentItemIndex}" 
-                ${attributesArray.length > 0 ? '' : 'disabled'} 
-                type = "button" 
-                data-bs-toggle="modal" 
-                onclick = "setItemAttributes('items_dropdown_${currentItemIndex}', '${currentItemIndex}', false);" 
-                data-bs-target="#attribute" 
-                class="btn p-25 btn-sm btn-outline-secondary" 
-                style="font-size: 10px">Attributes</button>
             <input type = "hidden" name = "attribute_value_${currentItemIndex}" />
         `;
     }
@@ -1363,13 +1455,13 @@ $('#series').on('change', function() {
     var request = $('#requestno');
 
     request.val(''); // Clear any existing options
-    
+   
     if (book_id) {
         $.ajax({
             url: getSeries + book_id,
             type: "GET",
             dataType: "json",
-            success: function(data) 
+            success: function(data)
                 {
                     if (data.requestno) {
                     request.val(data.requestno);
@@ -1384,7 +1476,7 @@ function onChangeSeries(element)
 {
     document.getElementById("order_no_input").value = 12345;
 }
-function onChangeCustomer(selectElementId, reset = false) 
+function onChangeCustomer(selectElementId, reset = false)
 {
     const selectedOption = document.getElementById(selectElementId);
     const paymentTermsDropdown = document.getElementById('payment_terms_dropdown');
@@ -1533,7 +1625,7 @@ function changeDropdownOptions(mainDropdownElement, dependentDropdownIds, dataKe
                 document.getElementById('customer_code_input').value = "";
                 return;
             }
-            
+           
         }
         secondDropdowns.forEach((currentElement, idx) => {
             if (Array.isArray(currentElement)) {
@@ -1548,7 +1640,7 @@ function changeDropdownOptions(mainDropdownElement, dependentDropdownIds, dataKe
                     })
                 });
             } else {
-                
+               
                 currentElement.innerHTML = `<option value = '0'>Select</option>`;
                 const response = data.data;
                 response?.[dataKeysForApi[idx]]?.forEach((item, idxx) => {
@@ -1622,7 +1714,7 @@ function itemOnChange(selectedElementId, index, routeUrl) // Retrieve element an
             setItemAttributes('items_dropdown_' + index, index);
 
             onItemClick(index);
-            
+           
         }).catch(error => {
             console.log("Error : ", error);
         })
@@ -1654,7 +1746,7 @@ function setItemAttributes(elementId, index, disabled = false)
             <select ${disabled ? 'disabled' : ''} class="form-select select2" id = "attribute_val_${index}" style = "max-width:100% !important;" onchange = "changeAttributeVal(this, ${elementIdForDropdown}, ${index});">
                 <option>Select</option>
                 ${optionsHtml}
-            </select> 
+            </select>
             </td>
             </tr>
             `
@@ -1758,29 +1850,10 @@ function changeItemRate(element, index)
     //         itemRowCalculation(index);
     //         return;
     //     }
-    // } 
+    // }
     itemRowCalculation(index);
 }
 
-function changeItemQty(element, index)
-{
-    var inputNumValue = parseFloat(element.value ? element.value  : 0);
-    if (element.hasAttribute('max'))
-    {
-        var maxInputVal = parseFloat(element.getAttribute('max'));
-        if (inputNumValue > maxInputVal) {
-            Swal.fire({
-                title: 'Error!',
-                text: 'Quantity cannot be greater than ' + maxInputVal,
-                icon: 'error',
-            });
-            element.value = (parseFloat(maxInputVal ? maxInputVal  : 0)).toFixed(2)
-            return;
-        }
-    }
-    itemRowCalculation(index);
-    getStoresData(index, element.value);
-}
 function changeAllItemsTotal() //All items total value
 {
     const elements = document.getElementsByClassName('item_values_input');
@@ -1880,7 +1953,6 @@ function getStoresData(itemRowId, qty = null, callOnClick = true,islocation=fals
             store_id : $("#item_store_"+itemRowId).val()??($('#store_id_input').val()??$("#store_from_id_input").val()),
         },
         success: function(data) {
-            console.log(data.stores,"store",data?.stores?.store?.length,"length");
             if (data?.stores && data?.stores?.store && data.stores.code == 200) {
                 var storesArray = [];
                 var dataRecords = data?.stores?.store;
@@ -1893,7 +1965,6 @@ function getStoresData(itemRowId, qty = null, callOnClick = true,islocation=fals
                     bin_data : dataRecords.bins?dataRecords.bins:null,
                 });
                 // });
-                console.log(storesArray,"storeArray");
                 if(storeElement)
                 {
                     storeElement.setAttribute('data-stores', encodeURIComponent(JSON.stringify(storesArray)));
@@ -1923,24 +1994,24 @@ function getStoresData(itemRowId, qty = null, callOnClick = true,islocation=fals
                 if (callOnClick) {
                     onItemClick(itemRowId);
                 }
-            }   
+            }  
         },
         error: function(xhr) {
             console.error('Error fetching customer data:', xhr.responseText);
             storeElement.setAttribute('data-stores', encodeURIComponent(JSON.stringify([])));
         }
     });
-    
+   
 }
 function openStoreLocationModal(index)
 {
     const storeElement = document.getElementById('data_stores_' + index);
     const storeTable = document.getElementById('item_from_location_table');
     let storeFooter = `
-    <tr> 
+    <tr>
         <td colspan="3"></td>
         <td class="text-dark"><strong>Total</strong></td>
-        <td class="text-dark" id = "total_item_store_qty"><strong>0.00</strong></td>                                   
+        <td class="text-dark" id = "total_item_store_qty"><strong>0.00</strong></td>                                  
     </tr>
     `;
     if (storeElement) {
@@ -1953,7 +2024,7 @@ function openStoreLocationModal(index)
             storesData.forEach((store, storeIndex) => {
                 storesInnerHtml += `
                 <tr id = "item_store_${storeIndex}">
-                    <td>${storeIndex + 1}</td> 
+                    <td>${storeIndex + 1}</td>
                     <td>${store.rack_code ? store.rack_code : "N/A"}</td>
                     <td>${store.shelf_code ? store.shelf_code : "N/A"}</td>
                     <td>${store.bin_code ? store.bin_code : "N/A"}</td>
@@ -1989,9 +2060,9 @@ $(document).on('change', '#revisionNumber', (e) => {
 
 $(document).on('submit', '.ajax-submit-2', function (e) {
     e.preventDefault();
-     var submitButton = (e.originalEvent && e.originalEvent.submitter) 
+     var submitButton = (e.originalEvent && e.originalEvent.submitter)
                         || $(this).find(':submit');
-    var submitButtonHtml = submitButton.innerHTML; 
+    var submitButtonHtml = submitButton.innerHTML;
     submitButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
     submitButton.disabled = true;
     var method = $(this).attr('method');
@@ -2000,7 +2071,7 @@ $(document).on('submit', '.ajax-submit-2', function (e) {
     var data = new FormData($(this)[0]);
 
     var formObj = $(this);
-    
+   
     $.ajax({
         url,
         type: method,
@@ -2028,7 +2099,7 @@ $(document).on('submit', '.ajax-submit-2', function (e) {
                     location.reload();
                 }
             }, 1500);
-            
+           
         },
         error: function (error) {
             submitButton.disabled = false;
@@ -2101,7 +2172,7 @@ document.addEventListener('input', function (e) {
 document.addEventListener('keydown', function (e) {
     if (e.target.classList.contains('text-end')) {
         if ( e.key === 'Tab' ||
-            ['Backspace', 'ArrowLeft', 'ArrowRight', 'Delete', '.'].includes(e.key) || 
+            ['Backspace', 'ArrowLeft', 'ArrowRight', 'Delete', '.'].includes(e.key) ||
             /^[0-9]$/.test(e.key)
         ) {
             // Allow numbers, navigation keys, and a single decimal point
@@ -2129,11 +2200,11 @@ $(document).on('click','#billAddressEditBtn',(e) => {
             $("#current_billing_state_id").val(data.address.state_id);
             $("#current_billing_address").text(data.address.display_address);
             setTimeout(() => {
-                
+               
                 $('#billing_state_id_input').val(data.address.state_id).trigger('change');
 
                 setTimeout(() => {
-                
+               
                     $('#billing_city_id_input').val(data.address.city_id).trigger('change');
                 }, 1000);
             }, 1000);
@@ -2180,11 +2251,11 @@ $(document).on('click','#shipAddressEditBtn',(e) => {
             $("#current_shipping_state_id").val(data.address.state_id);
             $("#current_shipping_address").text(data.address.display_address);
             setTimeout(() => {
-                
+               
                 $('#shipping_state_id_input').val(data.address.state_id).trigger('change');
 
                 setTimeout(() => {
-                
+               
                     $('#shipping_city_id_input').val(data.address.city_id).trigger('change');
                 }, 1000);
             }, 1000);
@@ -2219,13 +2290,13 @@ function itemRowCalculation(itemRowIndex)
     const mainDiscountInput = document.getElementsByClassName('item_discount_' + itemRowIndex);
     //Multiple Discount
     for (let index = 0; index < discountHiddenPercentageFields.length; index++) {
-        if (discountHiddenPercentageFields[index].value) 
+        if (discountHiddenPercentageFields[index].value)
         {
             let currentDiscountVal = parseFloat(itemValue ? itemValue : 0) * (parseFloat(discountHiddenPercentageFields[index].value ? discountHiddenPercentageFields[index].value : 0)/100);
             discountHiddenValuesFields[index].value = currentDiscountVal.toFixed(2);
             discountAmount+= currentDiscountVal;
         }
-        else 
+        else
         {
             discountAmount+= parseFloat(discountHiddenValuesFields[index].value ? discountHiddenValuesFields[index].value : 0);
         }
@@ -2298,7 +2369,7 @@ function updateHeaderDiscounts()
     let totalAfterItemDiscount = parseFloat(allItemTotalValue ? allItemTotalValue : 0) - parseFloat(totalItemDiscount ? totalItemDiscount : 0);
 
     let discountAmount = 0;
-    
+   
     for (let index = 0; index < headerValues.length; index++) {
         if (headerPercentages[index].value) {
             let currentDiscountVal = totalAfterItemDiscount * (parseFloat(headerPercentages[index].value ? headerPercentages[index].value : 0)/100);
@@ -2323,7 +2394,7 @@ function updateHeaderExpenses()
     var totalAfterTax = parseFloat(document.getElementById('all_items_total_after_tax_summary').textContent);
 
     let expenseAmount = 0;
-    
+   
     for (let index = 0; index < headerValues.length; index++) {
         if (headerPercentages[index].value) {
             let currentExpenseVal = totalAfterTax * (parseFloat(headerPercentages[index].value ? headerPercentages[index].value : 0)/100);
@@ -2340,5 +2411,3 @@ function updateHeaderExpenses()
     getTotalOrderExpenses();
 
 }
-
-

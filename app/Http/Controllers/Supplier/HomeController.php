@@ -19,7 +19,7 @@ class HomeController extends Controller
     {
         $vendorId = $request->vendor_id 
         ?? $request->cookie('vendor_id') 
-        ?? auth()->user()?->vendor_portals[0]->vendor_id 
+        ?? auth()->user()->auth_user?->vendor_portals[0]->vendor_id 
         ?? null;
         if ($vendorId) {
             return response()->json([

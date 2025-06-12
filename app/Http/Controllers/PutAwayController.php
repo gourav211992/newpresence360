@@ -92,7 +92,9 @@ use App\Exports\MaterialReceiptExport;
 use App\Exports\TransactionItemsExport;
 use App\Services\ItemImportExportService;
 use App\Exports\FailedTransactionItemsExport;
-
+use App\Models\ErpSubStore;
+use App\Models\ErpSubStoreParent;
+use App\Models\User;
 
 class PutAwayController extends Controller
 {
@@ -476,7 +478,7 @@ class PutAwayController extends Controller
                                 $whDetail = WhDetail::find($storagePoint->wh_detail_id);
                                 // ✅ Generate storage number if not present
                                 if($whDetail->storage_number){
-                                    $storageNumber = $whDetail->storage_number;    
+                                    $storageNumber = $whDetail->storage_number;
                                 } else{
                                     $randomNumber = strtoupper(Str::random(rand(6, 8)));
                                     $storageNumber = strtoupper(str_replace(' ', '-', $whDetail?->name)) .'-'. $randomNumber;
@@ -502,7 +504,7 @@ class PutAwayController extends Controller
                                     $mrnItemLocation->inventory_uom_qty = $val['quantity'] ?? 0.00;
                                     $mrnItemLocation->status = 'draft';
                                     $mrnItemLocation->save();
-                                    
+
                                     // ✅ Generate packet number if not present
                                     $packetNumber = $mrnDetail?->mrnHeader?->book_code . '-' . $mrnDetail?->mrnHeader?->document_number . '-' . $mrnDetail->item_code . '-' . $mrnDetail->id . '-' . ($mrnItemLocation->id ?? $i + 1);
 
@@ -519,7 +521,7 @@ class PutAwayController extends Controller
                         }
                     }
                 }
-                
+
                 /*Update po header id in main header Putaway*/
                 $putaway->mrn_header_id = $mrnHeaderId ?? null;
                 $putaway->save();
@@ -556,7 +558,7 @@ class PutAwayController extends Controller
             if(($putaway->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED) || ($putaway->document_status == ConstantHelper::APPROVED) || ($putaway->document_status == ConstantHelper::POSTED)) {
                 $updateStockLedger = self::maintainStockLedger($putaway->mrn);
             }
-            
+
             $redirectUrl = '';
             if(($putaway->document_status == ConstantHelper::APPROVED) || ($putaway->document_status == ConstantHelper::POSTED)) {
                 $parentUrl = request() -> segments()[0];
@@ -945,7 +947,7 @@ class PutAwayController extends Controller
                         if (is_array($storagePoints)) {
                             foreach ($storagePoints as $i => $val) {
                                 $storagePoint = PutAwayItemLocation::find(@$val['id']) ?? new PutAwayItemLocation;
-                                
+
                                 $storagePoint->header_id = $putaway->id;
                                 $storagePoint->detail_id = $putawayDetail->id;
                                 $storagePoint->store_id = $putawayDetail->store_id;
@@ -962,7 +964,7 @@ class PutAwayController extends Controller
                                 $whDetail = WhDetail::find($storagePoint->wh_detail_id);
                                 // ✅ Generate storage number if not present
                                 if($whDetail->storage_number){
-                                    $storageNumber = $whDetail->storage_number;    
+                                    $storageNumber = $whDetail->storage_number;
                                 } else{
                                     $randomNumber = strtoupper(Str::random(rand(6, 8)));
                                     $storageNumber = strtoupper(str_replace(' ', '-', $whDetail?->name)) .'-'. $randomNumber;
@@ -989,7 +991,7 @@ class PutAwayController extends Controller
                                     $mrnItemLocation->inventory_uom_qty = $val['quantity'] ?? 0.00;
                                     $mrnItemLocation->status = $putaway?->mrn?->document_status;
                                     $mrnItemLocation->save();
-                                    
+
                                     // ✅ Generate packet number if not present
                                     $packetNumber = $mrnDetail?->mrnHeader?->book_code . '-' . $mrnDetail?->mrnHeader?->document_number . '-' . $mrnDetail->item_code . '-' . $mrnDetail->id . '-' . ($mrnItemLocation->id ?? $i + 1);
 
@@ -1139,15 +1141,15 @@ class PutAwayController extends Controller
             $hiddenHtml .= "<input type='hidden' name='components[$rowCount][attr_group_id][$attribute->attribute_group_id][attr_name]' value=$selected>";
         }
 
-    if(count($selectedAttr)) {
-        foreach ($itemAttributeArray as &$group) {
-            foreach ($group['values_data'] as $attribute) {
-                if (in_array($attribute->id, $selectedAttr)) {
-                    $attribute->selected = true;
+        if(count($selectedAttr)) {
+            foreach ($itemAttributeArray as &$group) {
+                foreach ($group['values_data'] as $attribute) {
+                    if (in_array($attribute->id, $selectedAttr)) {
+                        $attribute->selected = true;
+                    }
                 }
             }
         }
-    }
         return response()->json(['data' => ['attr' => $item->itemAttributes->count(),'html' => $html, 'hiddenHtml' => $hiddenHtml, 'itemAttributeArray' => $itemAttributeArray], 'status' => 200, 'message' => 'fetched.']);
     }
 
@@ -2831,7 +2833,7 @@ class PutAwayController extends Controller
                 ->where('store_id', $request->store_id)
                 ->where('sub_store_id', $request->sub_store_id)
                 ->first();
-        if (!$whStructure) { 
+        if (!$whStructure) {
             return response()->json([
                 'status' => 204,
                 "is_setup" => false,
@@ -2862,7 +2864,7 @@ class PutAwayController extends Controller
         $user = Helper::getAuthenticatedUser();
 
         $item = Item::find($request->item_id);
-        if (!$item) { 
+        if (!$item) {
             return response()->json([
                 'status' => 204,
                 "is_setup" => false,
@@ -2872,7 +2874,7 @@ class PutAwayController extends Controller
         $inventoryUom = Unit::find($item->uom_id ?? null);
         $storageUom = Unit::find($item->storage_uom_id ?? null);
         $inventoryQty = ItemHelper::convertToBaseUom($item->id, $item->uom_id, $request->qty);
-        
+
         if (!$inventoryQty) {
             return response()->json([
                 'status' => 204,
@@ -2922,7 +2924,7 @@ class PutAwayController extends Controller
             ], 422);
         }
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$ptwHeader->document_status] ?? '';
-        
+
         if (request()->ajax()) {
             $records = $ptwHeader->itemLocations()
                 ->with([
@@ -2992,5 +2994,138 @@ class PutAwayController extends Controller
             'html' => $html
         ]);
     }
+
+    public static function locationListing(Request $request)
+    {
+        if (!$request->has('user_id') || empty($request->user_id)) {
+            return response()->json([
+                'status' => 200,
+                'result' => []
+            ]);
+        }
+
+        if ($request->employee_type == "employee") {
+            $employee = Employee::find($request->user_id);
+        } else {
+            $employee = User::find($request->user_id);
+        }
+
+        $storesQuery = ErpStore::where('status', ConstantHelper::ACTIVE);
+
+        if (!empty($request->organization_id)) {
+            $storesQuery->where('organization_id', $request->organization_id);
+        }
+
+        if (!empty($request->group_id)) {
+            $storesQuery->where('group_id', $request->group_id);
+        }
+
+        if (!empty($request->company_id)) {
+            $storesQuery->where('company_id', $request->company_id);
+        }
+
+        if ($request->employee_type == "employee" && $employee) {
+            $storesQuery->whereHas('employees', function ($employeeQuery) use ($employee) {
+                $employeeQuery->where('employee_id', $employee->id);
+            });
+        }
+
+        $stores = $storesQuery->get();
+
+        return array(
+                'message' => 'Records retrieved successfully.',
+                'data' => array(
+                    'stores' => $stores
+                )
+            );
+    }
+
+
+    public static function subLocationListing(Request $request)
+    {
+        if (!$request->filled('store_id')) {
+            return response()->json([
+                'status' => 200,
+                'result' => []
+            ]);
+        }
+
+        $query = ErpSubStoreParent::query();
+
+        $query->where('store_id', $request->store_id);
+
+        if ($request->filled('group_id')) {
+            $query->where('group_id', $request->group_id);
+        }
+
+        if ($request->filled('company_id')) {
+            $query->where('company_id', $request->company_id);
+        }
+
+        if ($request->filled('organization_id')) {
+            $query->where('organization_id', $request->organization_id);
+        }
+
+        $subStoreIds = $query->get()->pluck('sub_store_id')->toArray();
+
+        $subStores = ErpSubStore::select('id', 'name', 'code', 'station_wise_consumption', 'is_warehouse_required')
+            ->whereIn('id', $subStoreIds)
+            ->where(function ($query) {
+                $query->where('status', ConstantHelper::ACTIVE)
+                    ->where('is_warehouse_required', '1');
+            })
+            ->get();
+
+        return array(
+                'message' => 'Records retrieved successfully.',
+                'data' => array(
+                    'sub_stores' => $subStores
+                )
+            );
+    }
+
+
+    public function mrnListing(Request $request)
+    {
+        $query = MrnHeader::with([
+            'items',
+            'vendor',
+            'erpStore',
+            'erpSubStore',
+            'currency',
+            'itemLocations'
+        ])
+        ->withDraftListingLogic()
+        ->where('is_warehouse_required', '1');
+
+        $query->when(!blank($request->company_id), function ($q) use ($request) {
+            $q->where('company_id', $request->company_id);
+        });
+
+        $query->when(!blank($request->organization_id), function ($q) use ($request) {
+            $q->where('organization_id', $request->organization_id);
+        });
+
+        $query->when(!blank($request->store_id), function ($q) use ($request) {
+            $q->where('store_id', $request->store_id);
+        });
+
+        $query->when(!blank($request->group_id), function ($q) use ($request) {
+            $q->where('group_id', $request->group_id);
+        });
+
+        $query->when(!blank($request->sub_store_id), function ($q) use ($request) {
+            $q->where('sub_store_id', $request->sub_store_id);
+        });
+
+        $records = $query->get();
+        return array(
+                'message' => 'Records retrieved successfully.',
+                'data' => array(
+                    'records' => $records
+                )
+            );
+    }
+
 
 }

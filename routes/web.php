@@ -117,6 +117,7 @@ use App\Http\Controllers\MaterialReceiptController;
 use App\Http\Controllers\DocumentApprovalController;
 use App\Http\Controllers\Land\Lease\LeaseController;
 use App\Http\Controllers\PurchaseOrder\PoController;
+use App\Http\Controllers\JobOrder\JoController;
 use App\Http\Controllers\HomeLoan\HomeLoanController;
 use App\Http\Controllers\PurchaseIndent\PiController;
 use App\Http\Controllers\TermLoan\TermLoanController;
@@ -296,6 +297,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::post('/ledger/import', [LedgerController::class,'import'])->name('ledger.import');
     Route::get('/ledger/export-successful', [LedgerController::class,'exportSuccessfulItems'])->name('ledgers.export.successful');
     Route::get('/ledger/export-failed', [LedgerController::class,'exportFailedItems'])->name('ledgers.export.failed');
+    Route::post('/ledger/generate-code', [LedgerController::class,'generateLedgerCode'])->name('generate-ledger-code');
 
     // closefy
     Route::get('/close-fy', [CloseFyController::class,'index'])->name('close-fy');
@@ -455,47 +457,72 @@ Route::middleware(['user.auth'])->group(function () {
     // Route::post('/pos/add-scheduler', [PurchaseOrderReportController::class, 'addScheduler'])->name('po.add.scheduler');
     // Route::get('/pos/report-send/mail', [PurchaseOrderReportController::class, 'sendReportMail'])->name('po.send.report');
 
-    // Route::prefix('purchase-order')
-    //     ->name('po.')
     Route::prefix('{type}')
-    ->where(['type' => 'purchase-order|supplier-invoice|job-order'])
+    ->where(['type' => 'purchase-order|supplier-invoice'])
     ->name('po.')
-        ->controller(PoController::class)
-        ->group(function () {
-            Route::get('revoke-document','revokeDocument')->name('revoke.document');
-            Route::get('/', 'index')->name('index');
-            Route::get('/create', 'create')->name('create');
-            Route::post('/', 'store')->name('store');
-            Route::get('/edit/{id}', 'edit')->name('edit');
-            Route::post('/update/{id}', 'update')->name('update');
-            /*Shobhit Code*/
-            Route::get('add-item-row', 'addItemRow')->name('item.row');
-            Route::get('get-item-attribute', 'getItemAttribute')->name('item.attr');
-            Route::get('add-discount-row', 'addDiscountRow')->name('item.discount.row');
-            Route::get('/tax-calculation', 'taxCalculation')->name('tax.calculation');
-            Route::get('/get-address', 'getAddress')->name('get.address');
-            Route::get('/edit-address', 'editAddress')->name('edit.address');
-            Route::get('/get-itemdetail', 'getItemDetail')->name('get.itemdetail');
-            Route::post('/address-save', 'addressSave')->name('address.save');
-            Route::delete('component-delete', 'componentDelete')->name('comp.delete');
-            Route::get('/{id}/pdf', 'generatePdf')->name('generate-pdf');
-            Route::get('amendment-submit/{id}', 'amendmentSubmit')->name('amendment.submit');
-            Route::get('get-purchase-indent', 'getPi')->name('get.pi');
-            Route::get('get-purchase-indent-bulk', 'getPiBulk')->name('get.pi.bulk');
-            Route::get('process-pi-item', 'processPiItem')->name('process.pi-item');
+    ->controller(PoController::class)
+    ->group(function () {
+        Route::get('revoke-document','revokeDocument')->name('revoke.document');
+        Route::get('/', 'index')->name('index');
+        Route::get('/create', 'create')->name('create');
+        Route::post('/', 'store')->name('store');
+        Route::get('/edit/{id}', 'edit')->name('edit');
+        Route::post('/update/{id}', 'update')->name('update');
+        Route::get('add-item-row', 'addItemRow')->name('item.row');
+        Route::get('get-item-attribute', 'getItemAttribute')->name('item.attr');
+        Route::get('add-discount-row', 'addDiscountRow')->name('item.discount.row');
+        Route::get('/tax-calculation', 'taxCalculation')->name('tax.calculation');
+        Route::get('/get-address', 'getAddress')->name('get.address');
+        Route::get('/edit-address', 'editAddress')->name('edit.address');
+        Route::get('/get-itemdetail', 'getItemDetail')->name('get.itemdetail');
+        Route::post('/address-save', 'addressSave')->name('address.save');
+        Route::delete('component-delete', 'componentDelete')->name('comp.delete');
+        Route::get('/{id}/pdf', 'generatePdf')->name('generate-pdf');
+        Route::get('amendment-submit/{id}', 'amendmentSubmit')->name('amendment.submit');
+        Route::get('get-purchase-indent', 'getPi')->name('get.pi');
+        Route::get('get-purchase-indent-bulk', 'getPiBulk')->name('get.pi.bulk');
+        Route::get('process-pi-item', 'processPiItem')->name('process.pi-item');
+        Route::delete('remove-dis-item-level', 'removeDisItemLevel')->name('remove.item.dis');
+        Route::delete('remove-dis-header-level', 'removeDisHeaderLevel')->name('remove.header.dis');
+        Route::delete('remove-exp-header-level', 'removeExpHeaderLevel')->name('remove.header.exp');
+        Route::post('short-close-submit', 'shortCloseSubmit')->name('short.close.submit');
+        Route::get('bulk-create', 'bulkCreate')->name('bulk.create');
+        Route::post('bulk-store', 'bulkStore')->name('bulk.store');
+        Route::post('send-mail', 'poMail')->name('poMail');
+        Route::get('report','poReport')->name('report');
+    });
 
-            /*Remove data*/
-            Route::delete('remove-dis-item-level', 'removeDisItemLevel')->name('remove.item.dis');
-            Route::delete('remove-dis-header-level', 'removeDisHeaderLevel')->name('remove.header.dis');
-            Route::delete('remove-exp-header-level', 'removeExpHeaderLevel')->name('remove.header.exp');
-            Route::post('short-close-submit', 'shortCloseSubmit')->name('short.close.submit');
-
-            Route::get('bulk-create', 'bulkCreate')->name('bulk.create');
-            Route::post('bulk-store', 'bulkStore')->name('bulk.store');
-
-            Route::post('send-mail', 'poMail')->name('poMail');
-            Route::get('report','poReport')->name('report');
-        });
+    Route::prefix('job-order')
+    ->name('jo.')
+    ->controller(JoController::class)
+    ->group(function () {
+        Route::get('revoke-document','revokeDocument')->name('revoke.document');
+        Route::get('/', 'index')->name('index');
+        Route::get('/create', 'create')->name('create');
+        Route::post('/', 'store')->name('store');
+        Route::get('/edit/{id}', 'edit')->name('edit');
+        Route::post('/update/{id}', 'update')->name('update');
+        Route::get('add-item-row', 'addItemRow')->name('item.row');
+        Route::get('get-item-attribute', 'getItemAttribute')->name('item.attr');
+        Route::get('add-discount-row', 'addDiscountRow')->name('item.discount.row');
+        Route::get('/tax-calculation', 'taxCalculation')->name('tax.calculation');
+        Route::get('/get-address', 'getAddress')->name('get.address');
+        Route::get('/edit-address', 'editAddress')->name('edit.address');
+        Route::get('/get-itemdetail', 'getItemDetail')->name('get.itemdetail');
+        Route::get('/get-itemdetail2', 'getItemDetail2')->name('get.itemdetail2');
+        Route::post('/address-save', 'addressSave')->name('address.save');
+        Route::delete('component-delete', 'componentDelete')->name('comp.delete');
+        Route::get('/{id}/pdf', 'generatePdf')->name('generate-pdf');
+        Route::get('amendment-submit/{id}', 'amendmentSubmit')->name('amendment.submit');
+        Route::get('get-purchase-indent', 'getPi')->name('get.pi');
+        Route::get('process-pi-item', 'processPiItem')->name('process.pi-item');
+        Route::delete('remove-dis-item-level', 'removeDisItemLevel')->name('remove.item.dis');
+        Route::delete('remove-dis-header-level', 'removeDisHeaderLevel')->name('remove.header.dis');
+        Route::delete('remove-exp-header-level', 'removeExpHeaderLevel')->name('remove.header.exp');
+        Route::post('short-close-submit', 'shortCloseSubmit')->name('short.close.submit');
+        Route::post('send-mail', 'poMail')->name('poMail');
+        Route::get('report','poReport')->name('report');
+    });
 
     # Manufacturing Order
     Route::prefix('manufacturing-order')
@@ -1275,6 +1302,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
             Route::post('bom', 'bom')->name('bom');
             Route::post('saleOrder', 'saleOrder')->name('so');
             Route::post('po', 'po')->name('po');
+            Route::post('jo', 'jo')->name('jo');
             Route::post('pi', 'pi')->name('pi');
             Route::post('saleInvoice', 'saleInvoice')->name('saleInvoice');
             Route::post('saleReturn', 'saleReturn')->name('saleReturn');
@@ -1689,6 +1717,9 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
             Route::get('/warehouse/item-uom-info', 'warehouseItemUomInfo')->name('warehouse-item-uom-info');
             Route::get('/{id}/print-labels', 'printLabels')->name('print-labels');
             Route::get('/{id}/print-barcodes', 'printBarcodes')->name('print-barcodes');
+            // Route::post('location-listing', 'locationListing')->name('get.locations');
+            // Route::post('sub-location-listing', 'subLocationListing')->name('get.sub-locations');
+            // Route::post('mrn-listing', 'mrnListing')->name('get.mrn-listing');
 
             /*Remove data*/
             Route::delete('remove-dis-item-level', 'removeDisItemLevel')->name('remove.item.dis');
@@ -1759,16 +1790,6 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     // Production Work Order routes
     Route::prefix('production-work-order')
         ->name('production-work-order.')
-        ->controller(PoController::class)
-        ->group(function () {
-            Route::get('/', 'index')->name('index');
-            Route::get('/create', 'create')->name('create');
-            Route::get('/edit/{id}', 'edit')->name('edit');
-        });
-
-    // Job Order routes
-    Route::prefix('job-order')
-        ->name('job-order.')
         ->controller(PoController::class)
         ->group(function () {
             Route::get('/', 'index')->name('index');
@@ -2126,7 +2147,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::get('/psv/itemList', [ErpPSVController::class, 'itemList'])->name('psv.itemlist');
     Route::get('/psv/getAllItems', [ErpPSVController::class, 'getAllItems'])->name('psv.getAllItems');
      Route::get('/psv/{id}/pdf', [ErpPSVController::class, 'generatePdf'])->name('psv.generate-pdf');
-    
+
     //PL
     Route::get('/pick-list', [ErpPlController::class, 'index'])->name('PL.index');
     Route::get('/pick-list/create', [ErpPlController::class, 'create'])->name('PL.create');

@@ -497,7 +497,6 @@ function setTableCalculation() {
     });
     updateTotalAfterExchangeRate();
 }
-
 /*Edit mode table calculation filled*/
 if($("#itemTable .mrntableselectexcel tr").length) {
    setTimeout(()=> {
@@ -506,12 +505,10 @@ if($("#itemTable .mrntableselectexcel tr").length) {
       setTableCalculation();
    },100);
 }
-
 /*itemDiscountSubmit*/
 $(document).on('click', '.itemDiscountSubmit', (e) => {
     $("#itemRowDiscountModal").modal('hide');
 });
-
 /*Delete deleteItemDiscountRow*/
 $(document).on('click', '.deleteItemDiscountRow', (e) => {
     let rowCount = e.target.closest('a').getAttribute('data-row-count') || 0;
@@ -538,8 +535,6 @@ $(document).on('click', '.deleteItemDiscountRow', (e) => {
     }
     setTableCalculation();
 });
-
-
 // addDeliveryScheduleBtn
 $(document).on('click', '.addDeliveryScheduleBtn', (e) => {
     let rowCount = e.target.closest('div').getAttribute('data-row-count');
@@ -582,7 +577,6 @@ $(document).on('click', '.addDeliveryScheduleBtn', (e) => {
             let id =  $(item).closest('td').find(`[name='components[${rowCount}][delivery][${index+1}][id]']`).val();
             let dQty =  $(item).closest('td').find(`[name='components[${rowCount}][delivery][${index+1}][d_qty]']`).val();
             let dDate =  $(item).closest('td').find(`[name='components[${rowCount}][delivery][${index+1}][d_date]']`).val();
-
             rowHtml+= `<tr class="display_delivery_row">
                         <td>${index+1}</td>
                         <td>
@@ -678,7 +672,6 @@ $(document).on('click', '.addTaxItemRow', (e) => {
     }
     totalScheduleQty();
 });
-
 /*itemDeliveryScheduleSubmit */
 $(document).on('click', '.itemDeliveryScheduleSubmit', (e) => {
     let isValid = true;
@@ -700,7 +693,6 @@ $(document).on('click', '.itemDeliveryScheduleSubmit', (e) => {
         });
         return false;
     }
-
     let rowCount = $('#deliveryScheduleModal .display_delivery_row').find('#row_count').val();    
     let hiddenHtml = '';
     $("#deliveryScheduleTable .display_delivery_row").each(function(index,item){
@@ -739,7 +731,6 @@ $(document).on('click', '.deleteItemDeliveryRow', (e) => {
         },0);
     }
 });
-
 /*Delivery qty on input*/
 $(document).on('change input', '.display_delivery_row [name*="d_qty"]', (e) => {
     let itemQty = Number($('#deliveryScheduleModal #deliveryFooter #total').attr('qty'));
@@ -758,7 +749,6 @@ $(document).on('change input', '.display_delivery_row [name*="d_qty"]', (e) => {
     });
     totalScheduleQty();
 });
-
 /*Open item remark modal*/
 $(document).on('click', '.addRemarkBtn', (e) => {
     let rowCount = e.target.closest('div').getAttribute('data-row-count');
@@ -771,7 +761,6 @@ $(document).on('click', '.addRemarkBtn', (e) => {
     }
     $("#itemRemarkModal").modal('show');
 });
-
 /*Submit item remark modal*/
 $(document).on('click', '.itemRemarkSubmit', (e) => {
     let rowCount = $("#itemRemarkModal #row_count").val();
@@ -786,7 +775,6 @@ $(document).on('click', '.itemRemarkSubmit', (e) => {
     }
     $("#itemRemarkModal").modal('hide');
 });
-
 function summaryDisTotal()
 {
     let total = 0.00;
@@ -795,7 +783,6 @@ function summaryDisTotal()
     });
     $("#disSummaryFooter #total").attr('amount', total.toFixed(2)).text(total.toFixed(2));
 }
-
 /*Open summary discount modal*/
 $(document).on('click', '.summaryDisBtn', (e) => {
     e.stopPropagation();
@@ -811,13 +798,11 @@ $(document).on('click', '.summaryDisBtn', (e) => {
     initializeAutocompleteTED("new_dis_name_select", "new_discount_id", "new_dis_name", "po_module_discount", "new_dis_perc");
     return false;
 });
-
 /*summaryDiscountSubmit*/
 $(document).on('click', '.summaryDiscountSubmit', (e) => {
     $("#summaryDiscountModal").modal('hide');
     return false;
 });
-
 /*delete summary discount row*/
 $(document).on('click', '.deleteSummaryDiscountRow', (e) => {
     let trId = $(e.target).closest('tr').find('[name*="[d_id]"]').val();
@@ -832,7 +817,6 @@ $(document).on('click', '.deleteSummaryDiscountRow', (e) => {
         }
     }
 });
-
 /*Open summary expen modal*/
 $(document).on('click', '.summaryExpBtn', (e) => {
     e.stopPropagation();
@@ -848,7 +832,6 @@ $(document).on('click', '.summaryExpBtn', (e) => {
     initializeAutocompleteTED("new_exp_name_select", "new_exp_id", "new_exp_name", "po_module_expense", "new_exp_perc");
     return false;
 });
-
 /*delete summary exp row*/
 $(document).on('click', '.deleteExpRow', (e) => {
     let trId = $(e.target).closest('tr').find('[name*="[e_id]"]').val();
@@ -857,14 +840,12 @@ $(document).on('click', '.deleteExpRow', (e) => {
         summaryExpTotal();
     }
 });
-
 // summaryExpSubmit
 $(document).on('click', '.summaryExpSubmit', (e) => {
     $("#summaryExpenModal").modal('hide');
     // setTableCalculation();
     return false;
 });
-
 function summaryExpTotal()
 {
     let total = 0.00;
@@ -874,11 +855,9 @@ function summaryExpTotal()
     $("#expSummaryFooter #total").attr('amount', total);
     $("#expSummaryFooter #total").text(total.toFixed(2));
 }
-
 $(document).on('input change', '#itemTable input', (e) => {
     setTableCalculation();
 });
-
 /*Check filled all basic detail*/
 function checkBasicFilledDetail()
 {
@@ -892,7 +871,6 @@ function checkBasicFilledDetail()
     }
     return filled;
 }
-
 /*Check filled vendor detail*/
 function checkVendorFilledDetail()
 {
@@ -907,7 +885,6 @@ function checkVendorFilledDetail()
     }
     return filled;
 } 
-
 /*Check filled component*/
 function checkComponentRowExist()
 {
@@ -918,7 +895,6 @@ function checkComponentRowExist()
     }
     return filled;
 }
-
 // $('input, select, textarea').on('input change blur', function() {
 //     sectionEnabledAndDisabled();
 // });
@@ -963,7 +939,6 @@ $('#attribute').on('hidden.bs.modal', function () {
         $(`[name="components[${rowCount}][qty]"]`).trigger('focus');
     }
 });
-
 /*Vendor change update field*/
 $(document).on('blur', '#vendor_name', (e) => {
     if(!e.target.value) {
@@ -980,7 +955,6 @@ $(document).on('blur', '#vendor_name', (e) => {
         $(".billing_detail").text('-');
     }
 });
-
 $(document).on('input', '.qty-input', function() {
     const maxAmount = Number($(this).attr('maxAmount')) || 0;
     if (Number(this.value) > maxAmount) {
@@ -992,7 +966,6 @@ $(document).on('input', '.qty-input', function() {
         this.value = maxAmount;
     }
 });
-
 //Disable form submit on enter button
 document.querySelector("form").addEventListener("keydown", function(event) {
     if (event.key === "Enter") {
@@ -1009,7 +982,6 @@ $("input[type='number']").on("keydown", function(event) {
         event.preventDefault();
     }
 });
-
 /*Add New Summary Discount*/
 $(document).on('click', '#add_new_item_dis', (e) => {
     e.preventDefault();
@@ -1032,7 +1004,6 @@ $(document).on('click', '#add_new_item_dis', (e) => {
         });
         return false;
     }
-
     if (!new_item_dis_name || (!new_item_dis_perc && !new_item_dis_value)) return;
     const tbl_row_count = $("#eachRowDiscountTable .display_discount_row").length + 1;
     const tr = `
@@ -1071,7 +1042,6 @@ $(document).on('click', '#add_new_item_dis', (e) => {
     });
     $("#disItemFooter #total").text(total_head_dis.toFixed(2));
     $(`[id*='row_${rowCount}']`).find("[name*='[discounts]'").remove();
-
     let hiddenDis = '';
     let totalAmnt = 0;
     $(".display_discount_row").each(function(index,item) {
@@ -1091,7 +1061,6 @@ $(document).on('click', '#add_new_item_dis', (e) => {
     $(`[name*="components[${rowCount}][discount_amount]"]`).after(hiddenDis);
     setTableCalculation();  
 });
-
 /*Header discount perc change*/
 $(document).on('keyup', '#new_item_dis_perc', (e) => {
     e.preventDefault();
@@ -1123,14 +1092,11 @@ $(document).on('keyup', '#new_item_dis_perc', (e) => {
             });
         },0);
     }
-
     totalCost = parseFloat($(`[name*='components[${rowCount}][item_value]']`).val()) || 0;
-
     percAmount = parseFloat((totalCost * value) / 100);
     $("#new_item_dis_value").prop('readonly', Boolean(percAmount)).val(percAmount ? percAmount.toFixed(2) : '');
     return false;
 });
-
 /*Header discount value change*/
 $(document).on('keyup', '#new_item_dis_value', (e) => {
     e.preventDefault();
@@ -1140,7 +1106,6 @@ $(document).on('keyup', '#new_item_dis_value', (e) => {
     $("#new_item_dis_perc").prop('readonly', Boolean(value)).val('');    
     return false;
 });
-
 /*Add New Summary Discount*/
 $(document).on('click', '#add_new_head_dis', (e) => {
     e.preventDefault();
@@ -1148,12 +1113,10 @@ $(document).on('click', '#add_new_head_dis', (e) => {
     const new_dis_name = $("#new_dis_name").val() || '';
     const new_dis_perc = (Number($("#new_dis_perc").val()) || 0).toFixed(2);
     const new_dis_value = (Number($("#new_dis_value").val()) || 0).toFixed(2);
-
     let _total_head_dis = 0;
     $("[name*='[d_amnt]']").each(function(index,item) {
         _total_head_dis+=Number($(item).val());
     });
-
     let totalCost = parseFloat($("#TotalEachRowAmount").attr('amount')) || 0;
     let _total_head_dis_all = _total_head_dis + Number(new_dis_value);
     if(_total_head_dis_all > totalCost) {
@@ -1164,7 +1127,6 @@ $(document).on('click', '#add_new_head_dis', (e) => {
         });
         return false;
     }
-
     if (!new_dis_name || (!new_dis_perc && !new_dis_value)) return;
     const tbl_row_count = $("#summaryDiscountTable .display_summary_discount_row").length + 1;
     const tr = `
@@ -1209,7 +1171,6 @@ $(document).on('click', '#add_new_head_dis', (e) => {
     $("#disSummaryFooter #total").text(total_head_dis.toFixed(2));
     setTableCalculation();  
 });
-
 /*Header discount perc change*/
 $(document).on('keyup', '#new_dis_perc', (e) => {
     e.preventDefault();
@@ -1243,7 +1204,6 @@ $(document).on('keyup', '#new_dis_perc', (e) => {
     $("#new_dis_value").prop('readonly', Boolean(percAmount)).val(percAmount ? percAmount.toFixed(2) : '');
     return false;
 });
-
 /*Header discount value change*/
 $(document).on('keyup', '#new_dis_value', (e) => {
     e.preventDefault();
@@ -1253,7 +1213,6 @@ $(document).on('keyup', '#new_dis_value', (e) => {
     $("#new_dis_perc").prop('readonly', Boolean(value)).val('');    
     return false;
 });
-
 /*Add New Summary Discount*/
 $(document).on('click', '#add_new_head_exp', (e) => {
     e.preventDefault();
@@ -1261,12 +1220,10 @@ $(document).on('click', '#add_new_head_exp', (e) => {
     const new_exp_name = $("#new_exp_name").val() || '';
     const new_exp_perc = (Number($("#new_exp_perc").val()) || 0).toFixed(2);
     const new_exp_value = (Number($("#new_exp_value").val()) || 0).toFixed(2);
-
     let _total_head_exp = 0;
     $("[name*='[e_amnt]']").each(function(index,item) {
         _total_head_exp+=Number($(item).val());
     });
-
     let totalCost = parseFloat($("#f_total_after_tax").attr('amount')) || 0;
     let _total_head_exp_all = _total_head_exp + Number(new_exp_value);
     if(_total_head_exp_all > totalCost) {
@@ -1277,7 +1234,6 @@ $(document).on('click', '#add_new_head_exp', (e) => {
         });
         return false;
     }
-
     if (!new_exp_name || (!new_exp_perc && !new_exp_value)) return;
     const tbl_row_count = $("#summaryExpTable .display_summary_exp_row").length + 1;
     const tr = `
@@ -1317,7 +1273,6 @@ $(document).on('click', '#add_new_head_exp', (e) => {
     $("#expSummaryFooter #total").text(total_head_exp.toFixed(2));
     setTableCalculation();  
 });
-
 /*Header discount perc change*/
 $(document).on('keyup', '#new_exp_perc', (e) => {
     e.preventDefault();
@@ -1351,7 +1306,6 @@ $(document).on('keyup', '#new_exp_perc', (e) => {
     $("#new_exp_value").prop('readonly', Boolean(percAmount)).val(percAmount ? percAmount.toFixed(2) : '');
     return false;
 });
-
 /*Header discount value change*/
 $(document).on('keyup', '#new_exp_value', (e) => {
     e.preventDefault();
@@ -1361,7 +1315,6 @@ $(document).on('keyup', '#new_exp_value', (e) => {
     $("#new_exp_perc").prop('readonly', Boolean(value)).val('');    
     return false;
 });
-
 /*Qty enabled and disabled*/
 function qtyEnabledDisabled() {    
     $("tr[id*='row_']").each(function(index,item) {
@@ -1382,24 +1335,20 @@ function qtyEnabledDisabled() {
     });
 }
 qtyEnabledDisabled();
-
 setTimeout(() => {
     if($("tr[id*='row_']").length) {
         setTableCalculation();
     }
 },0);
-
 $(document).on('blur','[name*="component_item_name"]',(e) => {
     if(!e.target.value) {
         $(e.target).closest('tr').find('[name*="[item_name]"]').val('');
         $(e.target).closest('tr').find('[name*="[item_id]"]').val('');
     }
 });
-
 $(document).on('keyup', "input[name*='[qty]']", function (e) {
     validateItems(e.target, false);
 });
-
 function validateItems(inputEle, itemChange = false) {
     let items = [];
     $("tr[id*='row_']").each(function (index, item) {
@@ -1424,7 +1373,6 @@ function validateItems(inputEle, itemChange = false) {
             });
         }
     });
-
     if (items.length && hasDuplicateObjects(items)) {
         Swal.fire({
             title: 'Error!',
@@ -1438,7 +1386,6 @@ function validateItems(inputEle, itemChange = false) {
         }
     }
 }
-
 function hasDuplicateObjects(arr) {
     let seen = new Set();
     return arr.some(obj => {
@@ -1450,14 +1397,12 @@ function hasDuplicateObjects(arr) {
         return false;
     });
 }
-
 // UOM on change bind rate
 function handleRowChange(tr) {
     console.log(tr,'tr');
     getItemCostPrice(tr);
     setTableCalculation();
 }
-
 // Debounced handler for select/input changes
 let debounceTimer;
 $(document).on('input', 'select[name*="[uom_id]"], input[name*="[qty]"]', function(e){
@@ -1467,18 +1412,15 @@ $(document).on('input', 'select[name*="[uom_id]"], input[name*="[qty]"]', functi
         handleRowChange(tr);
     }, 300);
 });
-
 // Handle attribute button click
 $('.submitAttributeBtn').on('click', function(e) {
     let currentTr = $(e.target).closest('tr');
     let row = $('#attribute tbody tr');
-
     let rowCount = row.find('input[name^="row_count"]').val();
     let tr = $('#row_'+rowCount);
     console.log(tr);
     handleRowChange(tr);
 });
-
 $(document).on('change', "select[name='store_id']", (e) => {
     let vendorName = $("#vendor_name").attr("data-name");
     let vendorId = $("#vendor_id").val() || '';
@@ -1491,7 +1433,6 @@ $(document).on('change', "select[name='store_id']", (e) => {
         $("#vendor_name").val(vendorId).trigger('change');
     }
 });
-
 function getLocation(locationId = '')
 {
     let actionUrl = getLocationUrl+'?location_id='+locationId;
@@ -1515,7 +1456,6 @@ function getLocation(locationId = '')
         });
     });
 }
-
 /*Vendor drop down*/
 function initializeAutocompleteVendor(selector, type) {
     $(selector).autocomplete({
@@ -1568,7 +1508,6 @@ function initializeAutocompleteVendor(selector, type) {
     });
 }
 initializeAutocompleteVendor("#vendor_name");
-
 function clearVendorData() 
 {
     $("#vendor_name").val('');
@@ -1610,10 +1549,8 @@ function vendorOnChange(vendorId) {
                 let termOption = `<option value="${data?.data?.paymentTerm?.id}">${data?.data?.paymentTerm?.name}</option>`;
                 $('[name="currency_id"]').empty().append(curOption);
                 $('[name="payment_term_id"]').empty().append(termOption);
-
                 $("#delivery_address_id").val(data?.data?.location_address?.id);
                 $(".delivery_address").text(data?.data?.location_address?.display_address);
-
                 $("#vendor_address_id").val(data?.data?.vendor_address?.id);
                 $("#billing_address_id").val(data?.data?.location_address?.id);
                 $("#hidden_state_id").val(data?.data?.vendor_address?.state.id);
@@ -1642,7 +1579,6 @@ function vendorOnChange(vendorId) {
         });
     });
 }
-
 // Change rate bind
 function updateTotalAfterExchangeRate() {
     const gt = Number($("#f_total_after_exp").attr('amount')) || 0;
@@ -1650,6 +1586,5 @@ function updateTotalAfterExchangeRate() {
     const total = gt * er;
     $("#f_total_after_exp_rate").text(total.toFixed(2));
 }
-// setTimeout(updateTotalAfterExchangeRate, 0);
 $("#exchange_rate").on('input change', updateTotalAfterExchangeRate);
 

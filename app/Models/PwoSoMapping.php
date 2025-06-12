@@ -32,7 +32,8 @@ class PwoSoMapping extends Model
         'inventory_uom_qty',
         'mo_product_qty',
         'store_id',
-        'main_so_item'
+        'main_so_item',
+        'jo_qty'
     ];
 
     protected $appends = [
