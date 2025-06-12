@@ -183,30 +183,30 @@
                     <div class="card">
                         <div class="card-body customernewsection-form">
                             <div class="border-bottom mb-2 pb-25" id="componentSection">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="newheader ">
-                                        <ul class="nav nav-tabs" id="productTabs" role="tablist">
-                                            <li class="nav-item" role="presentation">
-                                                <button class="nav-link active fs-5" id="product-details-tab" data-bs-toggle="tab" data-bs-target="#product-details" type="button" role="tab" aria-controls="product-details" aria-selected="true">
-                                                    Product Details
-                                                </button>
-                                            </li>
-                                            <li class="nav-item" role="presentation">
-                                                <button class="nav-link fs-5" id="raw-materials-tab" data-bs-toggle="tab" data-bs-target="#raw-materials" type="button" role="tab" aria-controls="raw-materials" aria-selected="false">
-                                                    Raw Materials
-                                                </button>
-                                            </li>
-                                        </ul>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="newheader ">
+                                            <ul class="nav nav-tabs" id="productTabs" role="tablist">
+                                                <li class="nav-item" role="presentation">
+                                                    <button class="nav-link active fs-5" id="product-details-tab" data-bs-toggle="tab" data-bs-target="#product-details" type="button" role="tab" aria-controls="product-details" aria-selected="true">
+                                                        Product Details
+                                                    </button>
+                                                </li>
+                                                <li class="nav-item" role="presentation">
+                                                    <button class="nav-link fs-5" id="raw-materials-tab" data-bs-toggle="tab" data-bs-target="#raw-materials" type="button" role="tab" aria-controls="raw-materials" aria-selected="false">
+                                                        Raw Materials
+                                                    </button>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 text-sm-end">
+                                        <a href="javascript:;" class="btn btn-sm btn-outline-danger me-50" id="deleteBtn">
+                                        <i data-feather="x-circle"></i> Delete</a>
+                                        <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary">
+                                        <i data-feather="plus"></i> Add Items</a>
                                     </div>
                                 </div>
-                                <div class="col-md-6 text-sm-end">
-                                    <a href="javascript:;" class="btn btn-sm btn-outline-danger me-50" id="deleteBtn">
-                                    <i data-feather="x-circle"></i> Delete</a>
-                                    <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary">
-                                    <i data-feather="plus"></i> Add Items</a>
-                                </div>
-                            </div>
                             </div>
 
                             <div class="tab-content mt-3" id="productTabsContent">

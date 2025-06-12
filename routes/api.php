@@ -3,6 +3,7 @@
 use App\Http\Controllers\API\BookController;
 use App\Http\Controllers\API\TransporterRequest\TransporterRequestApiController;
 use App\Http\Controllers\CRM\API\ServiceController;
+use App\Http\Controllers\PutAwayController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -44,6 +45,11 @@ Route::group(['middleware' => ['apiresponse']], function () {
     Route::group(['middleware' => ['sso-api', 'apiresponse']], function () {
         Route::controller(BookController::class)->prefix('book')->group(function(){
             Route::get('get-document-number','generateDocumentNumber')->name('book.get.docNo');
+        });
+        Route::controller(PutAwayController::class)->prefix('put-away')->group(function(){
+            Route::post('location-listing', 'locationListing')->name('get.locations');
+            Route::post('sub-location-listing', 'subLocationListing')->name('get.sub-locations');
+            Route::post('mrn-listing', 'mrnListing')->name('get.mrn-listing');
         });
     });
 });

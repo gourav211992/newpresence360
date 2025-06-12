@@ -143,7 +143,6 @@
                                                         <th>Code</th>
                                                         <th>Name</th>
                                                         <th>Group</th>
-                                                        <th>Status</th>
                                                         <th>Remarks</th>
                                                     </tr>
                                                 </thead>
@@ -178,7 +177,7 @@
                     '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-3 withoutheadbuttin dt-action-buttons text-end"><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
                 lengthMenu: [7, 10, 25, 50, 75, 100],
                 columnDefs: [
-                    { "orderable": false, "targets": [5] }
+                    { "orderable": false, "targets": [4] }
                 ],
                 language: {
                     paginate: {
@@ -482,29 +481,53 @@
                 });
             });
 
-            function populateTable(tableBodySelector, items) {
-                const table = $(tableBodySelector).closest('table').DataTable();
-                table.clear();
+         function populateTable(tableBodySelector, items) {
+            const $table = $(tableBodySelector).closest('table');
+            const table = $table.DataTable();
+            table.clear();
 
-                if (items.length > 0) {
-                    items.forEach((item, index) => {
-                        table.row.add([
-                            index + 1,
-                            `<span class="fw-bolder text-dark">${item.code}</span>`,
-                            item.name,
-                            item.groups,
-                            `<span class="badge rounded-pill ${item.status.toLowerCase() === 'active' ? 'badge-light-success' : 'badge-light-danger'}">${item.status}</span>`,
-                            item.remarks
-                        ]);
-                    });
-                } else {
-                    table.row.add([
-                        '', '', 'No records found', '', '', ''
-                    ]);
-                }
+            const isSuccessTable = tableBodySelector === '#success-table-body';
 
-                table.draw();
+            if (items.length > 0) {
+                items.forEach((item, index) => {
+                    const row = [
+                        index + 1,
+                        `<span class="fw-bolder text-dark">${item.code}</span>`,
+                        item.name,
+                        item.groups
+                    ];
+
+                    if (isSuccessTable) {
+                        row.push(
+                            `<span class="badge rounded-pill ${item.status?.toLowerCase() === 'active'
+                                ? 'badge-light-success' : 'badge-light-danger'}">${item.status}</span>`
+                        );
+                    }
+
+                    row.push(item.remarks || '');
+                    table.row.add(row);
+                });
+            } else {
+                const emptyRow = isSuccessTable
+                    ? ['', '', 'No records found', '', '', '']
+                    : ['', '', 'No records found', '', ''];
+                table.row.add(emptyRow);
             }
+
+            table.draw(false);
+
+            new ResizeObserver(() => {
+                table.columns.adjust().draw(false);
+            }).observe($table[0]);
+        }
+
+        $('a[data-bs-toggle="tab"]').on('shown.bs.tab', function () {
+            $.fn.dataTable
+                .tables({ visible: true, api: true })
+                .columns.adjust()
+                .draw();
+        });
+
 
         });
         $(document).on('click', '.editbtnNew', function(e) {

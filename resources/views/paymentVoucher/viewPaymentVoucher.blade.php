@@ -797,7 +797,7 @@
                                 <select class="form-select select2" id="book_code">
                                     <option value="">Select Type</option>
                                     @foreach ($books_t->unique('alias') as $book)
-                                        <option>{{ $book->name }}</option>
+                                        <option value="{{ $book->alias }}">{{ $book->name }}</option>
                                     @endforeach
                                 </select>
                                 </div>
@@ -1850,11 +1850,11 @@ $('#revisionNumber').prop('disabled', false);
         function postVoucher(element) {
         Swal.fire({
         title: 'Are you sure?',
-        text: 'Do you want to proceed with posting the voucher?',
+        text: "Note: Once Submit the Voucher you are not able to redo the entry",
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonText: 'Yes, proceed',
-        cancelButtonText: 'No, cancel'
+        confirmButtonText: 'Yes, post it!',
+        cancelButtonText: 'Cancel'
         }).then((result) => {
         if (result.isConfirmed) {
             $('.preloader').show();

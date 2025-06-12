@@ -53,16 +53,6 @@ class User extends Authenticatable
         return $this->hasOne(RoleUser::class);
     }
 
-    public function vendor_portal()
-    {
-        return $this->hasOne(VendorPortalUser::class,'user_id');
-    }
-
-    public function vendor_portals()
-    {
-        return $this->hasMany(VendorPortalUser::class,'user_id');
-    }
-
     public function vouchers()
     {
         return $this->morphMany(Voucher::class, 'voucherable');

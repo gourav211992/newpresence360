@@ -66,7 +66,7 @@ class LedgerImport implements ToModel, WithHeadingRow, WithChunkReading, WithSta
             'code' => $uploadedItem->code ?? null,
             'name' => $uploadedItem->name ?? null,
             'groups' => $uploadedItem->ledger_groups ?? null,
-            'status' => $uploadedItem->status,
+            // 'status' => $uploadedItem->status,
             'tds_section' => $uploadedItem->tds_section ?? null,
             'tds_percentage' => $uploadedItem->tds_percentage ?? null,
             'tcs_section' => $uploadedItem->tcs_section ?? null,
@@ -128,9 +128,9 @@ class LedgerImport implements ToModel, WithHeadingRow, WithChunkReading, WithSta
 
 
             // Validate mandatory fields
-            $code = $row['code'] ?? null;
-            $name = $row['name'] ?? null;
-            $group = $row['group'] ?? null;
+            $code = isset($row['code']) ? trim($row['code']) : null;
+            $name = isset($row['name']) ? trim($row['name']) : null;
+            $group = isset($row['group']) ? trim($row['group']) : null;
             $status = 'Success';
 
             try {
@@ -317,11 +317,11 @@ class LedgerImport implements ToModel, WithHeadingRow, WithChunkReading, WithSta
             $validator = Validator::make($item->toArray(), $rules, []);
 
             if ($validator->fails()) {
-                $errors[] = 'Validation errors: ' . implode(', ', $validator->errors()->all());
+                $errors[] = $validator->errors()->all();
 
                 $uploadedItem->update([
                     'import_status' => 'Failed',
-                    'import_remarks' => implode(', ', $errors),
+                    'import_remarks' => $errors,
                 ]);
 
                 $this->onFailure($uploadedItem);
@@ -341,7 +341,7 @@ class LedgerImport implements ToModel, WithHeadingRow, WithChunkReading, WithSta
             $errors[] = "Error fetching: " . $e->getMessage();
             $uploadedItem->update([
                 'import_status' => 'Failed',
-                'import_remarks' => implode(', ', $errors),
+                'import_remarks' =>  $errors,
             ]);
             Log::info("Updated uploaded item status to Failed. Remarks: " . $uploadedItem->import_remarks . ". Status: " . $uploadedItem->status); //Check the status here
             $this->onFailure($uploadedItem);

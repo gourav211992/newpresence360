@@ -8,6 +8,7 @@ use App\Models\Legal;
 class ConstantHelper
 {
     // Vendor Status
+    const IAM_VENDOR_USER = 'IAM-VENDOR';
     const ACTIVE = 'active';
     const INACTIVE = 'inactive';
     const PENDING = 'pending';
@@ -87,6 +88,13 @@ class ConstantHelper
     const DOCUMENT_STATUS_REJECTED = [self::CANCEL,self::REJECTED];
     const DOCUMENT_STATUS_SUBMITTED = [self::SUBMITTED, self::APPROVED, self::APPROVAL_NOT_REQUIRED, self::POSTED, self::PARTIALLY_APPROVED];
 
+    # Job Order
+    const TYPE_JOB_ORDER = 'Job Work';
+    const TYPE_SUBCONTRACTING = 'Subcontracting';
+    const JOB_ORDER_TYPES = [
+        self::TYPE_JOB_ORDER,
+        self::TYPE_SUBCONTRACTING,
+    ];
 
     // Titles
     const MR = 'Mr.';
@@ -474,7 +482,6 @@ class ConstantHelper
     const STOCK_ADJUSTMENT_SERVICE_ALIAS = 'stock-adjustment';
     const PHYSICAL_STOCK_TAKE_SERVICE_ALIAS = 'physical-stock-take';
     const COMMERCIAL_BOM_SERVICE_ALIAS = 'qbom';
-    const JOB_ORDER_SERVICE_ALIAS = 'job-order';
     const PRODUCTION_SLIP_SERVICE_ALIAS = 'pslip';
     const PB_SERVICE_ALIAS = 'pb';
     const SO_SERVICE_ALIAS = 'so';
@@ -638,7 +645,7 @@ class ConstantHelper
         self::MO_SERVICE_ALIAS => 'MfgOrder',
         self::BOM_SERVICE_ALIAS => 'Bom',
         self::PO_SERVICE_ALIAS => 'PurchaseOrder',
-        self::JO_SERVICE_ALIAS => 'PurchaseOrder',
+        self::JO_SERVICE_ALIAS => 'JobOrder\JobOrder', // If model inside sub folder
         self::SUPPLIER_INVOICE_SERVICE_ALIAS => 'PurchaseOrder',
         self::PI_SERVICE_ALIAS => 'PurchaseIndent',
         self::MRN_SERVICE_ALIAS => 'MrnHeader',
@@ -656,7 +663,6 @@ class ConstantHelper
         self::PHYSICAL_STOCK_TAKE_SERVICE_ALIAS => 'MrnHeader',
         self::COMMERCIAL_BOM_SERVICE_ALIAS => 'Bom',
         self::PRODUCTION_SLIP_SERVICE_ALIAS => 'ErpProductionSlip',
-        self::JOB_ORDER_SERVICE_ALIAS => 'PurchaseOrder',
         self::PB_SERVICE_ALIAS => 'PbHeader',
         self::SO_SERVICE_ALIAS => 'ErpSaleOrder',
         self::SQ_SERVICE_ALIAS => 'ErpSaleOrder',
@@ -768,7 +774,7 @@ class ConstantHelper
         self::FIXED_ASSET_DEPRECIATION => 'finance.fixed-asset.depreciation.show',
         self::PI_SERVICE_ALIAS => 'pi.edit',
         self::PO_SERVICE_ALIAS =>'po.edit',
-        self::JOB_ORDER_SERVICE_ALIAS => 'job-order.edit',
+        self::JO_SERVICE_ALIAS => 'jo.edit',
         self::GATE_ENTRY_SERVICE_ALIAS => 'gate-entry.edit',
         self::MRN_SERVICE_ALIAS =>'material-receipt.edit',
         self::PURCHASE_RETURN_SERVICE_ALIAS => 'purchase-return.edit',

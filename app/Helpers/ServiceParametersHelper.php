@@ -1363,8 +1363,8 @@ class ServiceParametersHelper
     const JO_SERVICE_PARAMETERS = [
         [
             "name" => self::REFERENCE_FROM_SERVICE_PARAM,
-            "applicable_values" => ["0", ConstantHelper::PI_SERVICE_ALIAS],
-            "default_value" => ["0", ConstantHelper::PI_SERVICE_ALIAS],
+            "applicable_values" => ["0", ConstantHelper::PWO_SERVICE_ALIAS],
+            "default_value" => ["0", ConstantHelper::PWO_SERVICE_ALIAS],
             'is_multiple' => true,
             'service_level_visibility' => true,
         ],
@@ -2012,43 +2012,6 @@ class ServiceParametersHelper
         ]
     ];
 
-    const JOB_ORDER_SERVICE_PARAMETERS = [
-        [
-            "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
-            "applicable_values" => ["0"], //All possible values
-            "default_value" => ["0"], //Default selected value(s)
-            'is_multiple' => true, // Whether or not to allow multiple selection
-            'service_level_visibility' => true, // Whether or not to show this parameter in UI
-        ],
-        [
-            "name" => self::REFERENCE_FROM_SERIES_PARAM,
-            "applicable_values" => [],
-            "default_value" => [],
-            'is_multiple' => true,
-            'service_level_visibility' => false
-        ],
-        [
-            "name" => self::BACK_DATE_ALLOW_PARAM,
-            "applicable_values" => self::BACK_DATE_ALLOW_PARAM_VALUES,
-            "default_value" => ['yes'],
-            'is_multiple' => false,
-            'service_level_visibility' => true
-        ],
-        [
-            "name" => self::FUTURE_DATE_ALLOW_PARAM,
-            "applicable_values" => self::FUTURE_DATE_ALLOW_PARAM_VALUES,
-            "default_value" => ['yes'],
-            'is_multiple' => false,
-            'service_level_visibility' => true
-        ],
-        [
-            "name" => self::TAX_REQUIRED_PARAM,
-            "applicable_values" => self::TAX_REQUIRED_PARAM_VALUES,
-            "default_value" => ['yes'],
-            'is_multiple' => false,
-            'service_level_visibility' => true
-        ]
-    ];
     const MATERIAL_REQUEST_SERVICE_PARAMETERS = [
         [
             "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
@@ -2315,7 +2278,7 @@ class ServiceParametersHelper
         ConstantHelper::STOCK_ADJUSTMENT_SERVICE_ALIAS => self::STOCK_ADJUSTMENT_SERVICE_PARAMETERS,
         ConstantHelper::PHYSICAL_STOCK_TAKE_SERVICE_ALIAS => self::PHYSICAL_STOCK_TAKE_SERVICE_PARAMETERS,
         ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS => self::COMMERCIAL_BOM_SERVICE_PARAMETERS,
-        ConstantHelper::JOB_ORDER_SERVICE_ALIAS => self::JOB_ORDER_SERVICE_PARAMETERS,
+        ConstantHelper::JO_SERVICE_ALIAS => self::JO_SERVICE_PARAMETERS,
         ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS => self::PSLIP_SERVICE_PARAMTERS,
         ConstantHelper::HOMELOAN => self::LOAN_SERVICE_PARAMETERS,
         ConstantHelper::TERMLOAN => self::LOAN_SERVICE_PARAMETERS,

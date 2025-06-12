@@ -51,6 +51,7 @@ use App\Exports\FailedVendorsExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\ImportComplete;
+use App\Models\AuthUser;
 use Carbon\Carbon;
 use stdClass;
 use Auth;
@@ -231,12 +232,15 @@ class VendorController extends Controller
             $vendorSubTypes = ConstantHelper::VENDOR_SUB_TYPES;
             $addressTypes = ConstantHelper::ADDRESS_TYPES;
             $countries = Country::where('status', 'active')->get();
-            $supplierUsers = User::where('user_type','IAM-SUPPLIER')->get();
+            $user = Helper::getAuthenticatedUser();
+            $supplierUsers = AuthUser::where('organization_id', $user?->organization_id)
+            ->where('status', ConstantHelper::ACTIVE)
+            ->where('user_type',ConstantHelper::IAM_VENDOR_USER)
+            ->get();
             $serviceAlias = ConstantHelper::SUPPLIER_INVOICE_SERVICE_ALIAS;
             $books = Helper::getBookSeries($serviceAlias)->get();
             $parentUrl = ConstantHelper::VENDOR_SERVICE_ALIAS;
             $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
-            $user = Helper::getAuthenticatedUser();
             $organization = $user->organization;
             $groupId = $organization->group_id;
             $groupOrganizations = Organization::where('status', 'active')
@@ -484,7 +488,11 @@ class VendorController extends Controller
             $vendorSubTypes = ConstantHelper::VENDOR_SUB_TYPES;
             $addressTypes = ConstantHelper::ADDRESS_TYPES;
             $countries = Country::where('status', 'active')->get();
-            $supplierUsers = User::where('user_type','IAM-SUPPLIER')->get();
+            $user = Helper::getAuthenticatedUser();
+            $supplierUsers = AuthUser::where('organization_id', $user?->organization_id)
+            ->where('status', ConstantHelper::ACTIVE)
+            ->where('user_type',ConstantHelper::IAM_VENDOR_USER)
+            ->get();
             $serviceAlias = ConstantHelper::SUPPLIER_INVOICE_SERVICE_ALIAS;
             $books = Helper::getBookSeries($serviceAlias)->get();
             $ledgerId = $vendor->ledger_id;
@@ -492,9 +500,8 @@ class VendorController extends Controller
             $ledgerGroups = $ledger ? $ledger->groups() : collect(); 
             $parentUrl = ConstantHelper::VENDOR_SERVICE_ALIAS;
             $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
-            $user = Helper::getAuthenticatedUser();
             $organization = $user->organization;
-           $groupId = $organization->group_id;
+            $groupId = $organization->group_id;
             $groupOrganizations = Organization::where('status', 'active')
             ->where('group_id', $groupId)
             ->where('id', '!=', $organization->id)

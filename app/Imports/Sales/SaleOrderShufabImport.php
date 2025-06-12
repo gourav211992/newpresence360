@@ -122,7 +122,7 @@ class SaleOrderShufabImport implements ToArray, WithHeadingRow, SkipsEmptyRows, 
                         $errors[] =  $currencyExchangeData['message'];
                     }
                     //Customer Addresses
-                    $customerAddresses = $customer -> addresses();
+                    $customerAddresses = $customer -> addresses;
                     $customerBillAddress = $customerAddresses -> whereIn('type', ['billing', 'both']) -> first();
                     if (!isset($customerBillAddress)) {
                         $errors[] =  'Customer Billing Adddress not found';

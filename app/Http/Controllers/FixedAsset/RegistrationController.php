@@ -209,6 +209,8 @@ class RegistrationController extends Controller
         } else {
             $data = FixedAssetRegistration::withDefaultGroupCompanyOrg()->findorFail($id);
         }
+       
+        
 
 
 
