@@ -66,8 +66,8 @@ class FixedAssetSub extends Model
             ]);
         }
         Log::info("Sub Assets", [
-                'Sub Assets' => $subAssets,
-            ]);
+            'Sub Assets' => $subAssets,
+        ]);
 
         return $subAssets;
     }
@@ -107,5 +107,13 @@ class FixedAssetSub extends Model
             });
 
         return $splitSubAssetIds->merge($mergerSubAssetIds)->unique()->values()->all();
+    }
+    public function getInsurancesAttribute()
+    {
+        return FixedAssetInsurance::whereJsonContains('sub_asset', (string) $this->id)->get();
+    }
+    public function getMaintenanceAttribute()
+    {
+        return FixedAssetMaintenance::whereJsonContains('sub_asset', (string) $this->id)->get();
     }
 }

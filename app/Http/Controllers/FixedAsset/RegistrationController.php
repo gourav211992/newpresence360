@@ -29,6 +29,8 @@ use App\Models\CostCenter;
 use Exception;
 use App\Models\ErpStore;
 use App\Helpers\InventoryHelper;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\FixedAssetReportExport;
 use App\Models\Group;
 
 
@@ -203,12 +205,12 @@ class RegistrationController extends Controller
         if ($currNumber) {
             $currNumber = $r->revisionNumber;
             $data = FixedAssetRegistrationHistory::where('source_id', $id)
-            ->where('revision_number',$currNumber)->first();
+                ->where('revision_number', $currNumber)->first();
         } else {
             $data = FixedAssetRegistration::withDefaultGroupCompanyOrg()->findorFail($id);
         }
-       
-        
+
+
 
         $firstService = $servicesBooks['services'][0];
         $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
@@ -329,7 +331,7 @@ class RegistrationController extends Controller
         $financialEndDate = Helper::getFinancialYear(date('Y-m-d'))['end_date'];
         $financialStartDate = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
         $locations = InventoryHelper::getAccessibleLocations();
-        
+
         return view('fixed-asset.registration.edit', compact('locations', 'sub_assets', 'series', 'data', 'ledgers', 'categories', 'grns', 'vendors', 'currencies', 'grn_details', 'financialEndDate', 'dep_type', 'dep_method', 'dep_percentage', 'financialStartDate'));
     }
 
@@ -618,10 +620,10 @@ class RegistrationController extends Controller
         }
 
         $query = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-                ->where(function ($query) {
-                            $query->where('document_status', ConstantHelper::POSTED)
-                                ->orWhereNotNull('reference_doc_id');
-                    })
+            ->where(function ($query) {
+                $query->where('document_status', ConstantHelper::POSTED)
+                    ->orWhereNotNull('reference_doc_id');
+            })
             //->whereNotNull('capitalize_date')
             ->where('asset_code', 'like', "%$q%")
             ->withWhereHas('subAsset', function ($query) use ($oldAssets) {
@@ -690,10 +692,10 @@ class RegistrationController extends Controller
     public function getCategories(Request $request)
     {
         $query = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-             ->where(function ($query) {
-                            $query->where('document_status', ConstantHelper::POSTED)
-                                ->orWhereNotNull('reference_doc_id');
-                    });
+            ->where(function ($query) {
+                $query->where('document_status', ConstantHelper::POSTED)
+                    ->orWhereNotNull('reference_doc_id');
+            });
 
         if ($request->location_id) {
             $query->where('location_id', $request->location_id);
@@ -723,10 +725,10 @@ class RegistrationController extends Controller
     {
         $categoryId = $request->input('category_id');
         $locationIds = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-             ->where(function ($query) {
-                            $query->where('document_status', ConstantHelper::POSTED)
-                                ->orWhereNotNull('reference_doc_id');
-                    })
+            ->where(function ($query) {
+                $query->where('document_status', ConstantHelper::POSTED)
+                    ->orWhereNotNull('reference_doc_id');
+            })
             ->where('category_id', $categoryId)->pluck('location_id')->unique()->toArray();
         $locations = InventoryHelper::getAccessibleLocations()->map(function ($store) {
             return [
@@ -742,10 +744,10 @@ class RegistrationController extends Controller
         $categoryId = $request->input('category_id');
         $locationId =  $request->input('location_id');
         $locationIds = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-         ->where(function ($query) {
-                            $query->where('document_status', ConstantHelper::POSTED)
-                                ->orWhereNotNull('reference_doc_id');
-                    })
+            ->where(function ($query) {
+                $query->where('document_status', ConstantHelper::POSTED)
+                    ->orWhereNotNull('reference_doc_id');
+            })
             ->where('category_id', $categoryId)
             ->where('location_id', $locationId)
             ->pluck('cost_center_id')->unique()->toArray();
@@ -754,5 +756,12 @@ class RegistrationController extends Controller
             ->get(['id', 'name']);
 
         return response()->json($costCenters);
+    }
+    public function export(Request $r)
+    {
+        $data=FixedAssetSub::with('insurance')->get();
+        dd($data);
+        
+        return Excel::download(new FixedAssetReportExport($data), 'FixedAsset.xlsx');
     }
 }
