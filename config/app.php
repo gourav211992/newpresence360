@@ -172,6 +172,7 @@ return [
         Barryvdh\DomPDF\ServiceProvider::class,
         Yajra\DataTables\DataTablesServiceProvider::class,
         Illuminate\Broadcasting\BroadcastServiceProvider::class,
+        App\Providers\ViewServiceProvider::class,
     ])->toArray(),
 
     /*

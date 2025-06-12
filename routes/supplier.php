@@ -1,11 +1,13 @@
 <?php
+
+use App\Http\Controllers\Supplier\HomeController;
 use Illuminate\Support\Facades\Route;
 
 Route::name('supplier.')
         ->middleware(['user.auth'])
         ->controller(HomeController::class)
         ->group(function(){
-            Route::get('dashboard', 'index')->name('dashboard');
+            Route::get('/', 'index')->name('dashboard');
             Route::get('on-change', 'onChangeVendor')->name('change.vendor');
         });
 

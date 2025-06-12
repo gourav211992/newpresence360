@@ -32,7 +32,7 @@ use App\Models\PurchaseIndent;
 use App\Models\PurchaseOrder;
 use App\Models\InspectionHeader;
 use App\Models\InspectionDetail;
-
+use App\Models\JobOrder\JobOrder;
 use Exception;
 use Illuminate\Http\Request;
 class DocumentApprovalController extends Controller
@@ -85,6 +85,43 @@ class DocumentApprovalController extends Controller
         DB::beginTransaction();
         try {
             $po = PurchaseOrder::find($request->id);
+            $bookId = $po->book_id;
+            $docId = $po->id;
+            $docValue = $po->grand_total_amount;
+            $remarks = $request->remarks;
+            $attachments = $request->file('attachment');
+            $currentLevel = $po->approval_level;
+            $revisionNumber = $po->revision_number ?? 0;
+            $actionType = $request->action_type; // Approve or reject
+            $modelName = get_class($po);
+            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
+            $po->approval_level = $approveDocument['nextLevel'];
+            $po->document_status = $approveDocument['approvalStatus'];
+            $po->save();
+
+            DB::commit();
+            return response()->json([
+                'message' => "Document $actionType successfully!",
+                'data' => $po,
+            ]);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => "Error occurred while $actionType po document.",
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+    # Jo Approval
+    public function jo(Request $request)
+    {
+        $request->validate([
+            'remarks' => 'nullable',
+            'attachment' => 'nullable'
+        ]);
+        DB::beginTransaction();
+        try {
+            $po = JobOrder::find($request->id);
             $bookId = $po->book_id;
             $docId = $po->id;
             $docValue = $po->grand_total_amount;

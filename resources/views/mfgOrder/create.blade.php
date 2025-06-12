@@ -262,43 +262,43 @@
                             </div>
                         </div>
                     </div>
-                 <div class="card">
-                    <div class="card-body customernewsection-form">
-                <div class="border-bottom mb-2 pb-25" id="componentSection">
-                   <div class="row">
-                      <div class="col-md-6">
-                         <div class="newheader ">
-                            <h4 class="card-title text-theme">Remarks</h4>
-                            {{-- <p class="card-text">Fill the details</p> --}}
-                         </div>
-                      </div>
-                   </div>
-                </div>
-                <div class="row mt-2">
-                   <div class="col-md-12">
-                         <div class="row">
-                            <div class="col-md-4">
-                           <div class="mb-1">
-                               <label class="form-label">Upload Document</label>
-                               <input type="file" name="attachment[]" class="form-control" onchange = "addFiles(this,'main_bom_file_preview')" multiple>
-                               <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
-                           </div>
-                       </div>
-                       <div class = "col-md-6" style = "margin-top:19px;">
-                           <div class = "row" id = "main_bom_file_preview">
-                           </div>
-                       </div>  
-                         </div>
-                   </div>
-                   <div class="col-md-12">
-                      <div class="mb-1">  
-                         <label class="form-label">Final Remarks</label> 
-                         <textarea maxlength="250" name="remarks" type="text" rows="4" class="form-control" placeholder="Enter Remarks here..."></textarea> 
-                      </div>
-                   </div>
-                </div>
-             </div>
-             </div>
+                    <div class="card">
+                        <div class="card-body customernewsection-form">
+                            <div class="border-bottom mb-2 pb-25" id="componentSection">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="newheader ">
+                                        <h4 class="card-title text-theme">Remarks</h4>
+                                        {{-- <p class="card-text">Fill the details</p> --}}
+                                    </div>
+                                </div>
+                            </div>
+                            </div>
+                            <div class="row mt-2">
+                            <div class="col-md-12">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                    <div class="mb-1">
+                                        <label class="form-label">Upload Document</label>
+                                        <input type="file" name="attachment[]" class="form-control" onchange = "addFiles(this,'main_bom_file_preview')" multiple>
+                                        <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
+                                    </div>
+                                </div>
+                                <div class = "col-md-6" style = "margin-top:19px;">
+                                    <div class = "row" id = "main_bom_file_preview">
+                                    </div>
+                                </div>  
+                                    </div>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="mb-1">  
+                                    <label class="form-label">Final Remarks</label> 
+                                    <textarea maxlength="250" name="remarks" type="text" rows="4" class="form-control" placeholder="Enter Remarks here..."></textarea> 
+                                </div>
+                            </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <!-- Modal to add new record -->

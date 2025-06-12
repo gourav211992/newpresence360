@@ -174,9 +174,11 @@ class MergerController extends Controller
         if (count($servicesBooks['services']) == 0) {
             return redirect()->route('/');
         }
-        $currNumber = $r->revisionNumber;
+        $currNumber = $r->has('revisionNumber');
         if ($currNumber) {
-            $data = FixedAssetMergerHistory::where('source_id',$id)->first();
+            $currNumber = $r->revisionNumber;
+            $data = FixedAssetMergerHistory::where('source_id',$id)
+            ->where('revision_number',$currNumber)->first();
         } else {
             $data = FixedAssetMerger::withDefaultGroupCompanyOrg()->findorFail($id);
         }
@@ -194,6 +196,7 @@ class MergerController extends Controller
             $userType['type'],
             $revision_number
         );
+       
 
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$data->document_status] ?? '';
         $revNo = $data->revision_number;

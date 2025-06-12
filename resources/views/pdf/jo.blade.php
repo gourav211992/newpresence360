@@ -160,13 +160,13 @@
                 <td style="border: 1px solid #000; padding: 6px 8px; vertical-align: top; width: 20%;">
                     <table style="width: 100%; border-collapse: collapse;" cellspacing="0" cellpadding="3">
                         <tr>
-                            <td style="font-weight: bold; white-space: nowrap;">PO No:</td>
+                            <td style="font-weight: bold; white-space: nowrap;">JO No:</td>
                             <td style="font-weight: 900;">{{ $po->document_number ?? '-' }}</td>
                         </tr>
                 
                         @if($po->document_date)
                         <tr>
-                            <td style="font-weight: bold; white-space: nowrap;">PO Date:</td>
+                            <td style="font-weight: bold; white-space: nowrap;">JO Date:</td>
                             <td style="font-weight: 900;">{{ date('d-M-Y', strtotime($po->document_date)) }}</td>
                         </tr>
                         @endif
@@ -300,7 +300,7 @@
                 $totalSGSTValue = 0.00;
                 $totalIGSTValue = 0.00;
             @endphp
-            @foreach($po->po_items as $key => $val)
+            @foreach($po->jo_items as $key => $val)
                 <tr>
 
                     <td
@@ -493,7 +493,7 @@
                         @endforeach
                         <tr>
                             <td style="text-align: right; padding-top: 3px;">
-                                <b>Total PO Value:</b>
+                                <b>Total JO Value:</b>
                             </td>
                             <td style="text-align: right; padding-top: 3px;">
                                 {{ number_format($totalAmount,2) }}
@@ -627,23 +627,14 @@
                     </table>
                 </td>
             </tr>
-
             <tr>
                 <td colspan="2"
                     style=" border: 1px solid #000; padding: 5px; text-align: center; font-size: 12px; border-top: none; text-align: center;">
                     Regd. Office: {{@$organizationAddress->getFullAddressAttribute()}} @if(@$organization?->gst_number), GSTIN NO - {{@$organization?->gst_number}} @endif @if(@$organization?->pan_number), PAN NO - {{@$organization?->pan_number}} @endif<br>
                 </td>
-                <!-- Principal Office to be added later -->
             </tr>
-
-
         </table>
-
         <div style="page-break-before:always"></div>
-
-
-        <!-- Third page Forth page -->
-
         <table style="width: 100%; margin-bottom: 0px; margin-top: 10px; font-size: 13px;" cellspacing="0"
             cellpadding="0">
             <tr>

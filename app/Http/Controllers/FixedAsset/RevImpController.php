@@ -179,9 +179,11 @@ class RevImpController extends Controller
         if (count($servicesBooks['services']) == 0) {
             return redirect()->route('/');
         }
-        $currNumber = $r->revisionNumber;
+        $currNumber = $r->has('revisionNumber');
         if ($currNumber) {
-            $data = FixedAssetRevImpHistory::where('source_id',$id)->first();
+            $currNumber = $r->revisionNumber;
+            $data = FixedAssetRevImpHistory::where('source_id',$id)
+            ->where('revision_number',$currNumber)->first();
         } else {
             $data = FixedAssetRevImp::withDefaultGroupCompanyOrg()->findorFail($id);
         }

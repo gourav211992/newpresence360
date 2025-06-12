@@ -70,12 +70,7 @@
                                                     <td class="text-nowrap">{{ $d?->asset?->asset_code }}</td>
                                                     <td class="text-nowrap">
                                                         @php $min = collect(json_decode($d->sub_assets))->min('capitalize_date'); @endphp
-                                                        @if ($d?->asset?->last_dep_date != $d?->capitalize_date)
-                                                            {{ $d?->capitalize_date ? \Carbon\Carbon::parse($d->capitalize_date)->format('d-m-Y') : '' }}
-                                                        @else
-                                                            {{ $min ? \Carbon\Carbon::parse($min)->format('d-m-Y') : '' }}
-                                                        @endif
-                                                    </td>
+                                                        {{ $min ? \Carbon\Carbon::parse($min)->format('d-m-Y') : '' }}</td>
                                                     <td class="text-nowrap">{{ $d?->quantity }}</td>
 
                                                     <td class="text-nowrap">

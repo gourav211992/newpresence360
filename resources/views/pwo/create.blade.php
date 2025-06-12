@@ -129,108 +129,108 @@
                      </div>
                   </div>
                </div>
-
                 <div class="col-md-12">                                
                     {{-- Append Attribute here  --}}
                     <div class="card">
                         <div class="card-body customernewsection-form">
-                    <div class="border-bottom mb-2 pb-25" id="componentSection">
-                       <div class="row">
-                          <div class="col-md-6">
-                             <div class="newheader ">
-                                <h4 class="card-title text-theme">Product Details</h4>
-                                <p class="card-text">Fill the details</p>
-                             </div>
-                          </div>
-                          <div class="col-md-6 text-sm-end">
-                             <a href="javascript:;" class="btn btn-sm btn-outline-danger me-50" id="deleteBtn">
-                             <i data-feather="x-circle"></i> Delete</a>
-                             <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary">
-                             <i data-feather="plus"></i> Add Items</a>
-                          </div>
-                       </div>
+                            <div class="border-bottom mb-2 pb-25" id="componentSection">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="newheader ">
+                                        <h4 class="card-title text-theme">Product Details</h4>
+                                        <p class="card-text">Fill the details</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 text-sm-end">
+                                    <a href="javascript:;" class="btn btn-sm btn-outline-danger me-50" id="deleteBtn">
+                                    <i data-feather="x-circle"></i> Delete</a>
+                                    <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary">
+                                    <i data-feather="plus"></i> Add Items</a>
+                                </div>
+                            </div>
+                            </div>
+                            <div class="table-responsive pomrnheadtffotsticky">
+                            <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
+                                <thead>
+                                    <tr>
+                                        <th>
+                                        <div class="form-check form-check-primary custom-checkbox">
+                                            <input type="checkbox" class="form-check-input" id="Email">
+                                            <label class="form-check-label" for="Email"></label>
+                                        </div>
+                                        </th>
+                                        <th width="150px">Item Code</th>
+                                        <th width="300px">Item Name</th>
+                                        <th>Attributes</th>
+                                        <th >UOM</th>
+                                        <th class="text-end">Quantity</th>
+                                        <th width="200px">Customer</th>
+                                        <th width="150px">SO No.</th>
+                                        <th width="150px">Location</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="mrntableselectexcel">
+                                </tbody>
+                                <tfoot>
+                                    <tr valign="top">
+                                        <td colspan="10">
+                                        <table class="table border" id="itemDetailTable">
+                                            <tr>
+                                                <td class="p-0">
+                                                    <h6 class="text-dark mb-0 bg-light-primary py-1 px-50"><strong>Item Details</strong></h6>
+                                                </td>
+                                            </tr>
+                                            <tr class="item_detail_row">
+                                                
+                                            </tr>
+                                            <tr class="item_detail_row">
+                                                
+                                            </tr>
+                                        </table>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                            </div>
+                        </div>
                     </div>
-                    <div class="table-responsive pomrnheadtffotsticky">
-                       <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
-                          <thead>
-                             <tr>
-                                <th>
-                                   <div class="form-check form-check-primary custom-checkbox">
-                                      <input type="checkbox" class="form-check-input" id="Email">
-                                      <label class="form-check-label" for="Email"></label>
-                                   </div>
-                                </th>
-                                <th width="150px">Item Code</th>
-                                <th width="300px">Item Name</th>
-                                <th>Attributes</th>
-                                <th >UOM</th>
-                                <th class="text-end">Quantity</th>
-                                <th width="200px">Customer</th>
-                                <th width="150px">SO No.</th>
-                                <th width="150px">Location</th>
-                             </tr>
-                          </thead>
-                          <tbody class="mrntableselectexcel">
-                          </tbody>
-                          <tfoot>
-                             <tr valign="top">
-                                <td colspan="10">
-                                   <table class="table border" id="itemDetailTable">
-                                      <tr>
-                                         <td class="p-0">
-                                            <h6 class="text-dark mb-0 bg-light-primary py-1 px-50"><strong>Item Details</strong></h6>
-                                         </td>
-                                      </tr>
-                                      <tr class="item_detail_row">
-                                         
-                                      </tr>
-                                      <tr class="item_detail_row">
-                                        
-                                      </tr>
-                                   </table>
-                                </td>
-                             </tr>
-                          </tfoot>
-                       </table>
+                    {{-- Remark Sectionf --}}
+                    <div class="card">
+                        <div class="card-body customernewsection-form">
+                            <div class="border-bottom mb-2 pb-25" id="componentSection">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="newheader ">
+                                        <h4 class="card-title text-theme">Remarks</h4>
+                                    </div>
+                                </div>
+                            </div>
+                            </div>
+                            <div class="row mt-2">
+                            <div class="col-md-12">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                    <div class="mb-1">
+                                        <label class="form-label">Upload Document</label>
+                                        <input type="file" name="attachment[]" class="form-control" onchange = "addFiles(this,'main_bom_file_preview')" multiple>
+                                        <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
+                                    </div>
+                                </div>
+                                <div class = "col-md-6" style = "margin-top:19px;">
+                                    <div class = "row" id = "main_bom_file_preview">
+                                    </div>
+                                </div>  
+                                    </div>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="mb-1">  
+                                    <label class="form-label">Final Remarks</label> 
+                                    <textarea maxlength="250" name="remarks" type="text" rows="4" class="form-control" placeholder="Enter Remarks here..."></textarea> 
+                                </div>
+                            </div>
+                            </div>
+                        </div>
                     </div>
-                 </div>
-                 </div>
-                 <div class="card">
-                    <div class="card-body customernewsection-form">
-                <div class="border-bottom mb-2 pb-25" id="componentSection">
-                   <div class="row">
-                      <div class="col-md-6">
-                         <div class="newheader ">
-                            <h4 class="card-title text-theme">Remarks</h4>
-                         </div>
-                      </div>
-                   </div>
-                </div>
-                <div class="row mt-2">
-                   <div class="col-md-12">
-                         <div class="row">
-                            <div class="col-md-4">
-                           <div class="mb-1">
-                               <label class="form-label">Upload Document</label>
-                               <input type="file" name="attachment[]" class="form-control" onchange = "addFiles(this,'main_bom_file_preview')" multiple>
-                               <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
-                           </div>
-                       </div>
-                       <div class = "col-md-6" style = "margin-top:19px;">
-                           <div class = "row" id = "main_bom_file_preview">
-                           </div>
-                       </div>  
-                         </div>
-                   </div>
-                   <div class="col-md-12">
-                      <div class="mb-1">  
-                         <label class="form-label">Final Remarks</label> 
-                         <textarea maxlength="250" name="remarks" type="text" rows="4" class="form-control" placeholder="Enter Remarks here..."></textarea> 
-                      </div>
-                   </div>
-                </div>
-             </div>
-             </div>
                 </div>
             </div>
             <!-- Modal to add new record -->
