@@ -51,7 +51,7 @@ class VoucherController extends Controller
         if ($request->partyID && $request->ledgerGroup) {
             $ledger = (int) $request->partyID;
             $ledger_group = (int)$request->ledgerGroup;
-            $data = Voucher::where("organization_id", Helper::getAuthenticatedUser()->organization_id)
+            $data = Voucher::where("organization_id", Helper::getAuthenticatedUser()->organization_id)->with('ErpLocation', 'organization')
                 ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
                 ->withWhereHas('items', function ($i) use ($ledger, $request, $ledger_group) {
                     $i->where('ledger_id', $ledger)
@@ -62,6 +62,11 @@ class VoucherController extends Controller
                     } else {
                         $i->where('debit_amt_org', '>', 0);
                     }
+                    $i->with([
+                    'ledger',
+                    'ledger_group',
+                    'costCenter',
+                    ]);
                 })
                 ->groupBy('id')  // Assuming 'id' is the primary key or unique field for Voucher
                 ->orderBy('document_date', 'asc')

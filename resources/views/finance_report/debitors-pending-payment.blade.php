@@ -25,7 +25,7 @@
                                         <button data-bs-toggle="modal" data-bs-target="#filter"
                                             class="btn btn-warning me-50 btn-sm mb-0"><i data-feather="filter"></i>
                                             Filter</button>
-                                        <button class="btn btn-primary btn-sm mb-0 waves-effect"><i
+                                        <button class="btn btn-primary btn-sm mb-0 waves-effect" id="proceed"><i
                                                 data-feather="check-circle"></i> Proceed</button>
                                     </div>
                                 </div>
@@ -48,7 +48,8 @@
                                                 <select class="form-select select2" id="book_code">
                                                     <option value="">Select Type</option>
                                                     @foreach ($books_t->unique('alias') as $book)
-                                                        <option value="{{ $book->alias }}">{{ strtoupper($book->name) }}</option>
+                                                        <option value="{{ $book->alias }}">{{ strtoupper($book->name) }}
+                                                        </option>
                                                     @endforeach
                                                 </select>
                                             </div>
@@ -137,24 +138,28 @@
                                                 <th class="text-end text-nowrap">Amount</th>
                                                 <th class="text-end">Balance</th>
                                                 <th width="150px" class="text-end">Settle Amt</th>
-                                                 <th class="text-center">
-                                                 <div class="form-check form-check-inline me-0">
-                                                    <input class="form-check-input" type="checkbox" name="podetail" id="inlineCheckbox1">
-                                                </div>
+                                                <th class="text-center">
+                                                    <div class="form-check form-check-inline me-0">
+                                                        <input class="form-check-input" type="checkbox" name="podetail"
+                                                            id="inlineCheckbox1">
+                                                    </div>
                                                 </th>
                                             </tr>
                                         </thead>
-                                       <tbody id="vouchersBody">
-                                       </tbody>
-                                       <tfoot>
+                                        <tbody id="vouchersBody">
+                                        </tbody>
+                                        <tfoot>
                                             <tr>
-                                                 <td colspan="9" class="text-end">Grand Total</td>
-                                                <td class="fw-bolder text-dark text-end totalAmount">0</td>       <!-- Amount Total -->
-                                                <td class="fw-bolder text-dark text-end totalBalance">0</td>      <!-- Balance Total -->
-                                                <td class="fw-bolder text-dark text-end totalSettle">0</td>       <!-- Settle Amt Total -->
+                                                <td colspan="9" class="text-end">Grand Total</td>
+                                                <td class="fw-bolder text-dark text-end totalAmount">0</td>
+                                                <!-- Amount Total -->
+                                                <td class="fw-bolder text-dark text-end totalBalance">0</td>
+                                                <!-- Balance Total -->
+                                                <td class="fw-bolder text-dark text-end totalSettle">0</td>
+                                                <!-- Settle Amt Total -->
                                                 <td class="text-end"></td>
                                             </tr>
-                                       </tfoot>
+                                        </tfoot>
 
                                     </table>
                                 </div>
@@ -224,18 +229,16 @@
 
     <!-- END: Dashboard Custom Code JS-->
     <script>
+        const voucherMap = {};
+
         function updateLocationsDropdown(selectedOrgIds) {
             const filteredLocations = locations.filter(loc =>
                 selectedOrgIds.includes(String(loc.organization_id))
             );
-
-            const $locationDropdown = $('#location_id');
-            $locationDropdown.empty().append('<option value="">Select</option>');
-
+            const $locationDropdown = $('#location_id').empty().append('<option value="">Select</option>');
             filteredLocations.forEach(loc => {
                 $locationDropdown.append(`<option value="${loc.id}">${loc.store_name}</option>`);
             });
-
             $locationDropdown.trigger('change');
         }
 
@@ -243,132 +246,72 @@
             if (locationId) {
                 const filteredCenters = costCenters.filter(center => {
                     if (!center.location) return false;
-
                     const locationArray = Array.isArray(center.location) ?
                         center.location.flatMap(loc => loc.split(',')) : [];
-
                     return locationArray.includes(String(locationId));
                 });
-                console.log(filteredCenters, costCenters, locationId);
 
-                const $costCenter = $('#cost_center_id');
-                $costCenter.empty();
-
-                if (filteredCenters.length === 0) {
-                    $costCenter.append('<option value="">Select Cost Center</option>');
-                } else {
-                    $costCenter.append('<option value="">Select Cost Center</option>');
+                const $costCenter = $('#cost_center_id').empty().append('<option value="">Select Cost Center</option>');
+                if (filteredCenters.length) {
                     $('.cost_center').show();
-
                     filteredCenters.forEach(center => {
                         $costCenter.append(`<option value="${center.id}">${center.name}</option>`);
                     });
                 }
-
                 $costCenter.trigger('change');
             }
         }
-        $(window).on('load', function() {
-            if (feather) {
-                feather.replace({
-                    width: 14,
-                    height: 14
-                });
-            }
-        })
 
         $(function() {
             $(".sortable").sortable();
-        });
 
-        $(function() {
-
-            var dt_basic_table = $('.datatables-basic'),
-                dt_date_table = $('.dt-date'),
-                dt_complex_header_table = $('.dt-complex-header'),
-                dt_row_grouping_table = $('.dt-row-grouping'),
-                dt_multilingual_table = $('.dt-multilingual'),
-                assetPath = '../../../app-assets/';
-
-            if ($('body').attr('data-framework') === 'laravel') {
-                assetPath = $('body').attr('data-asset-path');
-            }
-
-            // DataTable with buttons
-            // --------------------------------------------------------------------
-
+            const dt_basic_table = $('.datatables-basic');
             if (dt_basic_table.length) {
-                var dt_basic = dt_basic_table.DataTable({
-
+                dt_basic_table.DataTable({
                     order: [
                         [0, 'asc']
                     ],
-                    dom: '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-3"l><"col-sm-12 col-md-6 withoutheadbuttin dt-action-buttons text-end pe-0"B><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+                    dom: '<"d-flex justify-content-between align-items-center mx-2 row"<"col-md-3"l><"col-md-6 dt-action-buttons text-end pe-0"B><"col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-md-6"i><"col-md-6"p>>',
                     displayLength: 8,
                     lengthMenu: [8, 10, 25, 50, 75, 100],
                     buttons: [{
-                            extend: 'collection',
-                            className: 'btn btn-outline-secondary dropdown-toggle',
-                            text: feather.icons['share'].toSvg({
-                                class: 'font-small-3 me-50'
-                            }) + 'Export',
-                            buttons: [
-
-                                {
-                                    extend: 'excel',
-                                    text: feather.icons['file'].toSvg({
-                                        class: 'font-small-4 me-50'
-                                    }) + 'Excel',
-                                    className: 'dropdown-item',
-                                    exportOptions: {
-                                        columns: [3, 4, 5, 6, 7]
-                                    }
-                                },
-
-                            ],
-                            init: function(api, node, config) {
-                                $(node).removeClass('btn-secondary');
-                                $(node).parent().removeClass('btn-group');
-                                setTimeout(function() {
-                                    $(node).closest('.dt-buttons').removeClass('btn-group')
-                                        .addClass('d-inline-flex');
-                                }, 50);
+                        extend: 'collection',
+                        className: 'btn btn-outline-secondary dropdown-toggle',
+                        text: feather.icons['share'].toSvg({
+                            class: 'font-small-3 me-50'
+                        }) + 'Export',
+                        buttons: [{
+                            extend: 'excel',
+                            text: feather.icons['file'].toSvg({
+                                class: 'font-small-4 me-50'
+                            }) + 'Excel',
+                            className: 'dropdown-item',
+                            exportOptions: {
+                                columns: [3, 4, 5, 6, 7]
                             }
-                        },
-                        //        {
-                        //          extend: 'collection',
-                        //          className: 'btn btn-outline-secondary',
-                        //          text: feather.icons['share'].toSvg({ class: 'font-small-4 me-50' }) + 'fd',
-                        //        },
-
-                    ],
-
-
+                        }],
+                        init: function(api, node) {
+                            $(node).removeClass('btn-secondary').closest('.dt-buttons')
+                                .removeClass('btn-group').addClass('d-inline-flex');
+                        }
+                    }],
                     language: {
                         search: '',
                         searchPlaceholder: "Search...",
                         paginate: {
-                            // remove previous & next text from pagination
                             previous: '&nbsp;',
                             next: '&nbsp;'
                         }
                     }
                 });
-                $('div.head-label').html('<h6 class="mb-0">Event List</h6>');
             }
 
-            // Flat Date picker
-            if (dt_date_table.length) {
-                dt_date_table.flatpickr({
-                    monthSelectorType: 'static',
-                    dateFormat: 'm/d/Y'
-                });
-            }
-
+            if (feather) feather.replace({
+                width: 14,
+                height: 14
+            });
         });
-        /**
-         * Collect all filter fields, keeping only keys that have a value
-         */
+
         function buildParams(extra = {}) {
             const map = {
                 date: $('#fp-range').val(),
@@ -379,31 +322,22 @@
                 document_no: $('#document_no').val(),
                 cost_center_id: $('#cost_center_id').val(),
                 location_id: $('#location_id').val(),
-                organization_id: ($('#filter-organization').val() || [])
-                    .filter(v => v && v.trim() !== '')
+                organization_id: ($('#filter-organization').val() || []).filter(v => v?.trim() !== '')
             };
-
-            // keep only entries that are truthy or non-empty arrays
-            const params = Object.fromEntries(
-                Object.entries(map).filter(([k, v]) =>
-                    Array.isArray(v) ? v.length : v !== null && v !== ''
-                )
-            );
-
+            const params = Object.fromEntries(Object.entries(map).filter(([k, v]) =>
+                Array.isArray(v) ? v.length : v !== null && v !== ''
+            ));
             return {
                 ...params,
                 ...extra
-            }; // add/override anything passed in
+            };
         }
 
-        /**
-         * Ajax loader
-         */
         function getLedgers(params = {}, details = null) {
             $('.preloader').show();
-            $('.vouchers:not(:checked)').map(function() {
+            $('.vouchers:not(:checked)').each(function() {
                 $('#' + this.value).remove();
-            }).get();
+            });
             updateVoucherNumbers();
 
             const preSelected = $('.vouchers:checked').map(function() {
@@ -419,270 +353,294 @@
                 dataType: 'json',
                 data: {
                     ...params,
-                    type: 'debit',
+                    type: 'receipts',
                     details_id: details
                 },
                 success: response => {
-                    console.log(response)
                     $('.preloader').hide();
                     if (response.data.length > 0) {
-                        // calculateAmountAndBalanceTotals();
-                        // console.log(response.data)
-                        var html = '';
-                        $.each(response.data, function(index, val) {
-                            if (!preSelected.includes(val['id'].toString())) {
+                        let html = '';
+                        $.each(response.data, function(index, voucher) {
+                            // if (!preSelected.includes(voucher.id.toString())) {
+                            if (!preSelected.includes(voucher.id.toString()) && voucher.balance >= 1) {
+                                const items = voucher.items || [];
 
-                                var amount = 0.00;
-                                var checked = "";
-                                var dataAmount = parseFloat(val['balance']).toFixed(2);
-                                // if (partyData != "" && partyData != undefined) {
-                                //     $.each(JSON.parse(partyData), function(indexP, valP) {
-                                //         if (valP['voucher_id'].toString() == val['id']) {
-                                //             amount = (parseFloat(valP['amount'])).toFixed(2);
-                                //             checked = "checked";
-                                //             dataAmount = (parseFloat(valP['amount'])).toFixed(
-                                //                 2);
-                                //         }
-                                //     });
-                                // }
+                                items.forEach(function(item, i) {
+                                    const uniqueKey = `${voucher.id}_${i}`;
+                                    voucherMap[uniqueKey] = {
+                                        ...voucher,
+                                        item: item // Also attach the specific item
+                                    };
+                                    const amount = parseFloat(item.amount ?? voucher.amount ??
+                                        0).toFixed(2);
+                                    const balance = parseFloat(item.balance ?? voucher
+                                        .balance ?? 0).toFixed(2);
+                                    const dataAmount = balance;
 
-                                if (val['balance'] < 1 && checked == "") {
-                                    console.log('hii' + val['id']);
-                                } else {
-                                    console.log(val);
-                                    html += `<tr id="${val['id']}" class="voucherRows">
-                                            <td>${index+1}</td>
-                                            <td>${val['date']}</td>
-                                            <td>${val['date']}</td>
-                                            <td>${val['date']}</td>
-                                            <td>${val['date']}</td>
-                                            <td>${val['date']}</td>
-                                            <td>${val['date']}</td>
-                                            <td class="fw-bolder text-dark">${val.series?.book_code?.toUpperCase() || '-'}</td>
-                                            <td>${val['voucher_no']}</td>
-                                            <td class="text-end">${formatIndianNumber(val['amount'])}</td>
-                                            <td class="balanceInput text-end">${formatIndianNumber(val['balance'])}</td>
-                                            <td class="text-end">
-                                                <input type="number" class="form-control text-end mw-100 settleInput settleAmount${val['id']}" data-id="${val['id']}" value="${amount}"/>
-                                            </td>
-                                            <td class="text-center">
-                                                <div class="form-check form-check-inline me-0">
-                                                    <input class="form-check-input vouchers voucherCheck${val['id']}" data-id="${val['id']}" type="checkbox" ${checked} name="vouchers" value="${val['id']}" data-amount="${dataAmount}">
-                                                </div>
-                                            </td>
-                                            <td></td> 
-                                        </tr>`;
-                                }
+                                    html += `<tr id="${uniqueKey}" class="voucherRows">
+                                        <td>${index + 1}</td>
+                                        <td>${voucher.date ?? '-'}</td>
+                                        <td data-ledger-id="${item.ledger ?? ''}">${item.ledger?.name ?? '-'}</td>
+                                        <td>${item.ledger_group?.name ?? item.ledger?.ledger_group?.name ?? '-'}</td>
+                                        <td>${voucher.organization?.name ?? '-'}</td>
+                                        <td>${voucher.erp_location?.store_name ?? '-'}</td>
+                                        <td>${item.cost_center?.name ?? '-'}</td>
+                                        <td class="fw-bolder text-dark">${voucher.series?.book_code?.toUpperCase() || '-'}</td>
+                                        <td>${voucher.voucher_no ?? '-'}</td>
+                                        <td class="text-end">${formatIndianNumber(amount)}</td>
+                                        <td class="balanceInput text-end">${formatIndianNumber(balance)}</td>
+                                        <td class="text-end">
+                                            <input type="number" class="form-control text-end mw-100 settleInput settleAmount${uniqueKey}" data-id="${uniqueKey}" value="0"/>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="form-check form-check-inline me-0">
+                                                <input class="form-check-input vouchers voucherCheck${uniqueKey}" data-id="${uniqueKey}" type="checkbox" name="vouchers" value="${uniqueKey}" data-amount="${dataAmount}">
+                                            </div>
+                                        </td>
+                                    </tr>`;
+                                });
                             }
                         });
-                        // $('#LedgerId').val(response.ledgerId);
-                        console.log(html);
-                        if ($.fn.DataTable.isDataTable('.datatables-basic')) {
-                            const table = $('.datatables-basic').DataTable();
-                            const rows = $.parseHTML(html).filter(el => el.nodeName === "TR");
 
-                            table.clear();
-                            rows.forEach(row => table.row.add(row));
-                            table.draw();
-                        }
+                        const table = $('.datatables-basic').DataTable();
+                        const rows = $.parseHTML(html).filter(el => el.nodeName === "TR");
+                        table.clear();
+                        rows.forEach(row => table.row.add(row));
+                        table.draw();
+
                         updateVoucherNumbers();
                         calculateSettle();
                         calculateAmountAndBalanceTotals();
                     }
-                    calculateAmountAndBalanceTotals();
-                    calculateSettle();
-                //     // locate the vouchers array ─ adjust if your key path differs
-                //      const vouchersRaw = Array.isArray(res.data) ? res.data : res;
-                //     const vouchers = vouchersRaw.filter(v => parseFloat(v.balance) !== 0);
-
-                //     // running counters
-                //     let idx = 1;
-                //     let grandAmt = 0;
-                //     let grandBal = 0;
-
-                //     // turn every (voucher → item) pair into one table row
-                //     const builtRows = vouchers.flatMap(voucher => {
-                //         return (voucher.items || []).map(item => {
-                //             const amt = Number(item.amount ?? voucher.amount ??
-                //             0); // or item.credit_amt_org …
-                //             const bal = Number(item.balance ?? voucher.balance ?? 0);
-
-                //             grandAmt += amt;
-                //             grandBal += bal;
-
-                //             return [
-                //                 idx++, // #
-                //                 voucher.date ?? '-', // column: Date   (from voucher)
-                //                 item.ledger?.name ?? '-', // Ledger Name    (item → ledger)
-                //                 item.ledger?.ledger_group
-                //                 ?.name // Ledger Group   (item → ledger → group)
-                //                 ??
-                //                 item.ledger_group?.name ?? '-',
-                //                 voucher.organization?.name ??
-                //                 '-', // Organization   (voucher relation)
-                //                 voucher.ErpLocation
-                //                 ?.store_name // Location       (item relation)
-                //                 ??
-                //                 voucher.erp_location?.store_name ?? '-',
-                //                 item.cost_center?.name ??
-                //                 '-', // Cost Center    (item relation)
-                //                 voucher.series?.book_code ??
-                //                 '-', // Series         (voucher relation)
-                //                 voucher.voucher_no ?? '-', // Document No.   (voucher)
-                //                 formatIndianNumber(amt), // Amount         (helper fn)
-                //                 formatIndianNumber(bal), // Balance
-                //                 `<input type="number"
-                //         class="form-control form-control-sm text-end settle-amt"
-                //         name="settle[${item.id}]"
-                //         min="0" max="${amt}" step="0.01" style="min-width: 150px;">`,
-                //                 `<div class="form-check form-check-inline me-0">
-                //      <input class="form-check-input row-select"
-                //             type="checkbox" data-id="${item.id}">
-                //  </div>`
-                //             ];
-                //         });
-                //     });
-
-                //     /* ---------- render ---------- */
-                //     const $table = $('.datatables-basic');
-
-                //     if ($.fn.DataTable.isDataTable($table)) {
-                //         const dt = $table.DataTable();
-                //         dt.clear().rows.add(builtRows).draw();
-                //     } else {
-                //         const html = builtRows
-                //             .map(cells => `<tr><td text-end text-nowrap>${cells.join('</td><td>')}</td></tr>`)
-                //             .join('');
-                //         $table.find('tbody').html(html);
-                //     }
-
-                //     /* ---------- grand totals ---------- */
-                //     const $tfoot = $table.find('tfoot tr td');
-                //     $tfoot.eq(9).text(formatIndianNumber(grandAmt)); // Amount total
-                //     $tfoot.eq(10).text(formatIndianNumber(grandBal)); // Balance total
-                //     $tfoot.eq(11).text('0.00'); // Settle-total (if you track it)
-
-                //     /* ---------- optional: attach listeners to .settle-amt or .row-select here ---------- */
-                //     $table.on('change', '.row-select', function () {
-                //             const $checkbox = $(this);
-                //             const isChecked = $checkbox.is(':checked');
-
-                //             const $row = $checkbox.closest('tr');
-                //             const $settleInput = $row.find('.settle-amt');
-
-                //             const balanceText = $row.find('td').eq(10).text().replace(/,/g, '');
-                //             const balanceVal = parseFloat(balanceText) || 0;
-
-                //             if (isChecked) {
-                //                 $settleInput.val(balanceVal);
-                //             } else {
-                //                 $settleInput.val('');
-                //             }
-                //         });
-
                 },
                 error: () => $('.preloader').hide()
             });
         }
+        $(document).on('keyup keydown', '.settleInput', function() {
+            let value = parseInt($(this).val());
+            if (value > 0) {
+                $('.voucherCheck' + $(this).attr('data-id')).prop('checked', true);
+            } else {
+                $('.voucherCheck' + $(this).attr('data-id')).prop('checked', false);
+            }
+            let input = $(this);
+            let row = input.closest('.voucherRows');
+            let balanceText = row.find('.balanceInput').text().replace(/,/g, '');
+            let balance = parseFloat(balanceText);
+            let settleAmount = parseFloat(input.val());
 
-        /* ---------- events ---------- */
+            // Remove existing error message span if it exists
+            input.next('.invalid-feedback').remove();
 
-        // click inside modal body (find button)
-        $('#findFilters').on('click', e => {
-            e.preventDefault();
-            getLedgers(buildParams());
+            if (settleAmount > balance) {
+                input.addClass('is-invalid');
+                input.after(
+                    '<span class="invalid-feedback d-block">Settle amount cannot be greater than balance.</span>'
+                    );
+            } else {
+                input.removeClass('is-invalid');
+            }
+            calculateSettle();
         });
+
+        $(document).on('input', '.settleInput', function(e) {
+            let max = parseInt(e.target.max);
+            let value = parseInt(e.target.value);
+
+            if (value > 0) {
+                $('.voucherCheck' + $(this).attr('data-id')).attr('checked', true);
+            } else {
+                $('.voucherCheck' + $(this).attr('data-id')).attr('checked', false);
+            }
+
+            if (value > max) {
+                e.target.value = max;
+            }
+        });
+
+
 
         function updateVoucherNumbers() {
             $('.voucherRows').each(function(index) {
-                var level = index + 1;
-                $(this).find('td:first-child').text(level);
+                $(this).find('td:first-child').text(index + 1);
             });
         }
 
         function calculateSettle() {
-            let settleSum = 0;
-            $('.vouchers:checked').map(function() {
-                const value = parseFloat($('.settleAmount' + this.value).val()) || 0;
+           let settleSum = 0;
+            $('.vouchers:checked').each(function() {
+                               const value = parseFloat($('.settleAmount' + this.value).val()) || 0;
                 settleSum = parseFloat(settleSum) + value;
             }).get();
             $('.totalSettle').text(parseFloat(settleSum).toFixed(2));
+
+
         }
 
-        $(function() {
-            $('#inlineCheckbox1').click(function() {
-                $('.vouchers').prop('checked', this.checked);
-                selectAllVouchers();
+        function calculateAmountAndBalanceTotals() {
+            let totalAmount = 0,
+                totalBalance = 0;
+            $('.voucherRows').each(function() {
+                totalAmount += parseFloat($(this).find('td').eq(9).text().replace(/,/g, '')) || 0;
+                totalBalance += parseFloat($(this).find('td').eq(10).text().replace(/,/g, '')) || 0;
             });
-     
-        });
+            $('.totalAmount').text(formatIndianNumber(totalAmount.toFixed(2)));
+            $('.totalBalance').text(formatIndianNumber(totalBalance.toFixed(2)));
+        }
 
         function selectAllVouchers() {
-            $('.vouchers').each(function () {
-                if (this.checked) {
-                    // Get the balance from the row’s Balance column
-                    const $row = $(this).closest('tr');
-                    const balanceText = $row.find('td').eq(10).text().replace(/,/g, '');
-                    const balanceVal = parseFloat(balanceText) || 0;
+            $('.vouchers').each(function() {
+                const isChecked = $(this).is(':checked');
+                const $row = $(this).closest('tr');
+                const balanceText = $row.find('.balanceInput').text().replace(/,/g, '');
+                const balanceVal = parseFloat(balanceText) || 0;
 
-                    $(".settleAmount" + this.value).val(balanceVal);
-                } else {
-                    $(".settleAmount" + this.value).val('');
-                }
+                $(`.settleAmount${this.value}`).val(isChecked ? balanceVal.toFixed(2) : '0.00');
             });
             calculateSettle();
         }
-        function calculateAmountAndBalanceTotals() {
-            let totalAmount = 0;
-            let totalBalance = 0;
 
-            $('.voucherRows').each(function () {
-                const $amountTd = $(this).find('td').eq(9).text().replace(/,/g, '');
-                const $balanceTd = $(this).find('td').eq(10).text().replace(/,/g, '');
+        function getSelectedVoucherData() {
+            const selectedData = [];
 
-                totalAmount += parseFloat($amountTd) || 0;
-                totalBalance += parseFloat($balanceTd) || 0;
+            $('.vouchers:checked').each(function() {
+                const fullId = this.value; // e.g., "123_0"
+                const $row = $(this).closest('tr');
+                const settleAmt = parseFloat($('.settleAmount' + fullId).val()) || 0;
+
+                const fullVoucher = voucherMap[fullId];
+                if (!fullVoucher || !fullVoucher.item?.id) return;
+
+                selectedData.push({
+                    ...fullVoucher,
+                    settle_amt: settleAmt.toFixed(2),
+                    item_id: fullVoucher.item.id
+                });
             });
 
-            const formattedAmount = formatIndianNumber(totalAmount.toFixed(2));
-            const formattedBalance = formatIndianNumber(totalBalance.toFixed(2));
-
-            const $tfoot = $('.datatables-basic').find('tfoot tr td');
-            $('.totalAmount').text(formattedAmount);
-            $('.totalBalance').text(formattedBalance);
+            return selectedData;
         }
 
-        // full-form submit (Apply button)
+
+
+        $('#inlineCheckbox1').on('click', function() {
+           const table = $('.datatables-basic').DataTable();
+            const isChecked = this.checked;
+
+            table.rows({ search: 'applied' }).nodes().each(function(row) {
+                const $checkbox = $(row).find('.vouchers');
+                $checkbox.prop('checked', isChecked);
+                const balance = parseFloat($(row).find('.balanceInput').text().replace(/,/g, '')) || 0;
+                $(row).find('.settleInput').val(isChecked ? balance.toFixed(2) : '');
+            });
+
+                calculateSettle();
+        });
+
         $('#filterForm').on('submit', e => {
             e.preventDefault();
             $('#filter').modal('hide');
             getLedgers(buildParams());
         });
 
-        // initial load
+        $('#findFilters').on('click', e => {
+            e.preventDefault();
+            getLedgers(buildParams());
+        });
+
+        $(document).on('click', '#proceed', function() {
+            isValid = true;
+             $('.settleInput').each(function() {
+                let input = $(this);
+                let row = input.closest('.voucherRows');
+                let balanceText = row.find('.balanceInput').text().replace(/,/g, '');
+                let balance = parseFloat(balanceText);
+                let settleAmount = parseFloat(input.val());
+
+                // Remove existing error message
+                input.next('.invalid-feedback').remove();
+
+                if (settleAmount > balance) {
+                    input.addClass('is-invalid');
+                    input.after(
+                        '<span class="invalid-feedback d-block">Settle amount cannot be greater than balance.</span>'
+                        );
+                    isValid = false;
+                } else {
+                    input.removeClass('is-invalid');
+                }
+            });
+             if (!isValid) {
+                // Prevent modal close or further processing
+                return false;
+            }
+            $('.preloader').show();
+            const selectedRows = getSelectedVoucherData();
+
+            if (selectedRows.length === 0) {
+                $('.preloader').hide();
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'No Valid Rows',
+                    text: 'Please select at least one valid row with a settle amount.',
+                });
+                return;
+            }
+
+            $.ajax({
+                url: '/report/store-cr-dr-row', // your POST endpoint
+                type: 'POST',
+                data: JSON.stringify({
+                        rows: selectedRows,
+                        type: 'receipts'
+                    }),
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') // Laravel CSRF
+                },
+                success: function(response) {
+                    $('.preloader').hide();
+                    window.location.href = response.redirect;
+                },
+                error: function(xhr) {
+                    $('.preloader').hide();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Failed to submit vouchers. Please try again.'
+                    });
+                }
+            });
+        });
+
+
         $(document).ready(() => {
-            $(document).on('change', '.vouchers', function () {
+           $(document).on('change', '.vouchers', function () {
                 const isChecked = $(this).is(':checked');
                 const $row = $(this).closest('tr');
-                const balanceText = $row.find('td').eq(10).text().replace(/,/g, '');
+                const balanceText = $row.find('.balanceInput').text().replace(/,/g, '');
                 const balanceVal = parseFloat(balanceText) || 0;
 
-                $(".settleAmount" + this.value).val(isChecked ? balanceVal : '');
+                const $input = $row.find('.settleInput');
+                $input.val(isChecked ? balanceVal.toFixed(2) : '0.00');
+
+                // No need to trigger `keyup`, just manually remove error if unchecked
+                if (!isChecked) {
+                    $input.removeClass('is-invalid');
+                    $input.next('.invalid-feedback').remove();
+                }
+
                 calculateSettle();
             });
+
             getLedgers(buildParams());
 
-            // keep location / cost-center dropdowns in sync
-            $('#filter-organization').on('change', e =>
-                updateLocationsDropdown($(e.target).val() || [])
-            );
+            $('#filter-organization').on('change', e => updateLocationsDropdown($(e.target).val() || []));
             $('#location_id').on('change', e => {
                 const loc = $(e.target).val();
                 if (!loc) return $('#cost_center_id').html('<option value="">Select Cost Center</option>');
                 loadCostCenters(loc);
             });
 
-            // auto-populate if org already pre-selected
             updateLocationsDropdown($('#filter-organization').val() || []);
         });
     </script>

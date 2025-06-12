@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Models\PaymentVoucherDetails;
 use App\Console\Commands\GenerateCrDrReport;
+use Illuminate\Support\Facades\Cache;
 use App\Helpers\Helper;
 use App\Helpers\InventoryHelper;
 use App\Models\CostCenterOrgLocations;
@@ -30,6 +31,7 @@ use App\Models\AuthUser;
 use Carbon\Carbon;
 use PDF;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Cookie;
 use App\Exports\DebitorCreditoExcelExport;
 
 
@@ -1576,15 +1578,21 @@ class CrDrReportController extends Controller
         } else {
             $organization_id = Helper::getAuthenticatedUser()->organization_id;
         }
-        $cus_type = $request->type === 'debit' ? 'customer' : 'vendor';
+        $cus_type = $request->type == ConstantHelper::RECEIPTS_SERVICE_ALIAS ? 'customer' : 'vendor';
+        $ledger_account = $request->type == ConstantHelper::RECEIPTS_SERVICE_ALIAS ? ConstantHelper::RECEIVABLE : ConstantHelper::PAYABLE;
+        $ledger_group = Helper::getGroupsQuery()->where('name', $ledger_account)->first();
+
+        $ids = [];
+        $group_id = $ledger_group->getAllChildIds();
+        $group_id[] = $ledger_group->id;
         $data = Voucher::withDefaultGroupCompanyOrg()->with('ErpLocation', 'organization')
             ->whereIn("organization_id", $organization_id)
             ->when($request->location_id, function ($query) use ($request) {
                 $query->where('location', $request->location_id);
             })
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
-            ->withWhereHas('items', function ($i) use ($request) {
-                if ($request->type == 'credit') {
+            ->withWhereHas('items', function ($i) use ($request, $group_id,$cus_type) {
+                if ($request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS) {
                     $i->where('credit_amt_org', '>', 0);
                 } else {
                     $i->where('debit_amt_org', '>', 0);
@@ -1592,11 +1600,29 @@ class CrDrReportController extends Controller
                 if ($request->cost_center_id) {
                     $i->where('cost_center_id', $request->cost_center_id);
                 }
-                if ($request->filter_ledger) {
-                    $i->whereHas('ledger', function ($l) use ($request) {
-                        $l->where('id', $request->filter_ledger);
+                $i->whereHas('ledger', function ($l) use ($request, $group_id, $cus_type) {
+                    // Filter by credit_days from the customer/vendor relation
+                    $l->whereHas($cus_type, function ($q) {
+                        $q->whereNotNull('credit_days')
+                            ->where('credit_days', '!=', 0)
+                            ->where('credit_days', '!=', '');
                     });
-                }
+                    // Always check if ledger belongs to the group (JSON or column)
+                    $l->where(function ($q) use ($group_id) {
+                        foreach ($group_id as $id) {
+                            $q->orWhereJsonContains('ledger_group_id', (string) $id);
+                        }
+                        $q->orWhereIn('ledger_group_id', $group_id);
+                    });
+
+                    // If filter_ledger is provided, match the ID
+                    if ($request->filter_ledger) {
+                        $l->where('id', $request->filter_ledger);
+                    }
+
+                    // Optional status filter
+                    $l->where('status', 1);
+                });
 
                 if ($request->ledgerGroup) {
                     $i->whereHas('ledger_group', function ($lg) use ($request) {
@@ -1649,7 +1675,7 @@ class CrDrReportController extends Controller
                     });
                 $amount = 0;
                 foreach ($voucher->items as $item) {
-                    $amount += $request->type == 'credit' ? $item->credit_amt_org : $item->debit_amt_org;
+                    $amount += $request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS ? $item->credit_amt_org : $item->debit_amt_org;
                 }
                 $voucher->amount = $amount;
 
@@ -1728,5 +1754,82 @@ class CrDrReportController extends Controller
             }
         }
         return response()->json(['data' => $data, 'sum' => $advanceSum]);
+    }
+
+    public function storeCrDrRowData(Request $request)
+    {
+        $payload = json_decode($request->getContent(), true);
+        if (!isset($payload['rows']) || !is_array($payload['rows'])) {
+            return response()->json(['error' => 'Invalid rows data.'], 422);
+        }
+
+        $rows = $payload['rows'];
+        $type = $payload['type'];
+
+        // Flatten items
+        $flattened = collect($rows)->flatMap(function ($voucher) {
+            return collect($voucher['items'])->map(function ($item) use ($voucher) {
+                return [
+                    'voucher_id'         => $voucher['id'],
+                    'item_id'            => $voucher['item_id'] ?? null,
+                    'ledger_id'          => $item['ledger_id'],
+                    'ledger_code'        => $item['ledger']['code'] ?? '-',
+                    'ledger_name'        => $item['ledger']['name'] ?? '-',
+                    'ledger_group_name'  => $item['ledger_group']['name'] ?? $item['ledger']['ledger_group']['name'] ?? '-',
+                    'ledger_parent_id'   => $item['ledger_parent_id'] ?? null,
+                    'amount'             => $item['amount'] ?? $voucher['amount'] ?? 0,
+                    'settle_amt'         => $voucher['settle_amt'] ?? 0,
+                ];
+            });
+        });
+
+        // Grouped by ledger_id
+        $grouped = $flattened
+        ->groupBy('ledger_id')
+        ->map(function ($items, $ledgerId) {
+            $first = $items->first();
+
+            // Group by item_id within the current ledger_id group
+            $itemGroups = $items->groupBy('item_id');
+
+            // Sum of settle_amt per item_id, then total of all
+            $settleAmtSumByItem = $itemGroups->map(function ($itemGroup) {
+                return $itemGroup->sum('settle_amt');
+            });
+
+            return [
+                'ledger_id'         => $ledgerId,
+                'ledger_code'       => $first['ledger_code'],
+                'ledger_name'       => $first['ledger_name'],
+                'ledger_group_name' => $first['ledger_group_name'],
+                'ledger_parent_id'  => $first['ledger_parent_id'],
+                'amount'            => $settleAmtSumByItem->sum(), // ← Use summed settle_amt per item_id
+                'settle_amt'        => $items->sum('settle_amt'),  // ← You can also keep this for reference
+                'voucher_id'        => $first['voucher_id'],
+                'item_id'           => $first['item_id'],
+                'items'             => $items,
+            ];
+        })->values();
+
+        $raw = $flattened->map(function ($item) {
+            return [
+                'ledger_id'   => $item['ledger_id'],
+                'voucher_id'  => $item['voucher_id'],
+                'item_id'     => $item['item_id'],
+                'settle_amt'  => $item['settle_amt'],
+            ];
+        });
+
+        $token = 'selectedRows_' . uniqid();
+        Cache::put($token, [
+            'grouped' => $grouped,
+            'raw'     => $raw,
+        ], 3600);
+
+        $route = $type == ConstantHelper::RECEIPTS_SERVICE_ALIAS
+            ? route('receipts.create', ['token' => $token])
+            : route('payments.create', ['token' => $token]);
+
+        return response()->json(['redirect' => $route]);
     }
 }

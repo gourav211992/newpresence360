@@ -7,6 +7,7 @@ use App\Helpers\Helper;
 use App\Helpers\FinancialPostingHelper;
 use App\Helpers\SaleModuleHelper;
 use App\Models\ErpAddress;
+use Illuminate\Support\Facades\Cache;
 use App\Models\Bank;
 use App\Models\BankDetail;
 use App\Models\ErpStore;
@@ -377,7 +378,29 @@ class PaymentVoucherController extends Controller
         // pass authenticate user's org locations
         $locations = Helper::getStoreLocation(Helper::getAuthenticatedUser()->organization_id);
         $fyear = Helper::getFinancialYear(date('Y-m-d'));
-        return view('paymentVoucher.createPaymentVoucher', compact('cost_centers','books_t', 'books', 'banks', 'ledgers', 'currencies', 'orgCurrency', 'type', 'storeUrl', 'redirectUrl','locations','fyear'));
+        $token = $r->query('token');
+        $cached = Cache::get($token, ['grouped' => [], 'raw' => []]);
+
+        $selectedRows = $cached['grouped'];
+        $rawItemData = $cached['raw']; 
+        return view('paymentVoucher.createPaymentVoucher',
+            compact(
+                'cost_centers',
+                'books_t',
+                'books',
+                'banks',
+                'ledgers',
+                'currencies',
+                'orgCurrency',
+                'type',
+                'storeUrl',
+                'redirectUrl',
+                'locations',
+                'fyear',
+                'selectedRows',
+                'rawItemData',
+            )
+        );
     }
 
     /**
