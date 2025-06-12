@@ -14,6 +14,7 @@ use App\Models\Ledger;
 use App\Models\MrnDetail;
 use App\Models\MrnHeader;
 use App\Models\Vendor;
+use App\Models\FixedAssetInsurance;
 use App\Http\Requests\FixedAssetRegistrationRequest;
 use App\Models\FixedAssetRegistration;
 use App\Models\FixedAssetRegistrationHistory;
@@ -209,8 +210,8 @@ class RegistrationController extends Controller
         } else {
             $data = FixedAssetRegistration::withDefaultGroupCompanyOrg()->findorFail($id);
         }
-       
-        
+
+
 
 
 
@@ -761,9 +762,19 @@ class RegistrationController extends Controller
     }
     public function export(Request $r)
     {
-        $data=FixedAssetSub::with('insurance')->get();
+        // Get all sub_asset_ids from all insurances, flatten them into a single array of IDs
+        $allSubAssetIds = FixedAssetInsurance::pluck('sub_asset')
+            ->map(function ($jsonIds) {
+                return json_decode($jsonIds, true);
+            })
+            ->flatten()
+            ->unique()
+            ->toArray();
+
+        // Filter FixedAssetSubs that have IDs in this list
+        $data = FixedAssetSub::whereIn('id', $allSubAssetIds)->get()->pluck('id');
         dd($data);
-        
+
         return Excel::download(new FixedAssetReportExport($data), 'FixedAsset.xlsx');
     }
 }

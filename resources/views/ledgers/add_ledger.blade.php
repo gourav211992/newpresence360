@@ -56,6 +56,30 @@
                                             </div>
 
                                             <div class="col-md-9">
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Group <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+
+                                                    <div class="col-md-5">
+                                                        <select class="form-select select2" multiple id="ledger_group_id"
+                                                            name="ledger_group_id[]" required>
+                                                            @foreach ($groups as $group)
+                                                                <option value="{{ $group->id }}"
+                                                                    data-ledgergroup="{{ $group->parent_group_id }}"
+                                                                    {{ in_array($group->id, old('ledger_group_id', $selectedValues ?? [])) ? 'selected' : '' }}>
+                                                                    {{ $group->name }}
+                                                                </option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+
+                                                    <div class="col-md-3">
+                                                        <a href="{{ route('ledger-groups.create') }}"
+                                                            class="voucehrinvocetxt mt-0">Add Group</a>
+                                                    </div>
+                                                </div>
 
 
                                                 <div class="row align-items-center mb-1">
@@ -87,30 +111,7 @@
                                                     </div>
                                                 </div>
 
-                                                <div class="row align-items-center mb-1">
-                                                    <div class="col-md-3">
-                                                        <label class="form-label">Group <span
-                                                                class="text-danger">*</span></label>
-                                                    </div>
-
-                                                    <div class="col-md-5">
-                                                        <select class="form-select select2" multiple id="ledger_group_id"
-                                                            name="ledger_group_id[]" required>
-                                                            @foreach ($groups as $group)
-                                                                <option value="{{ $group->id }}"
-                                                                    data-ledgergroup="{{ $group->parent_group_id }}"
-                                                                    {{ in_array($group->id, old('ledger_group_id', $selectedValues ?? [])) ? 'selected' : '' }}>
-                                                                    {{ $group->name }}
-                                                                </option>
-                                                            @endforeach
-                                                        </select>
-                                                    </div>
-
-                                                    <div class="col-md-3">
-                                                        <a href="{{ route('ledger-groups.create') }}"
-                                                            class="voucehrinvocetxt mt-0">Add Group</a>
-                                                    </div>
-                                                </div>
+                                                
 
                                                 <div hidden class="row align-items-center mb-1">
                                                     <div class="col-md-3">
@@ -514,43 +515,28 @@
                 itemCodeInput.prop('readonly', true);
             }
 
-            function getItemInitials(itemName) {
-                const cleanedItemName = itemName.replace(/[^a-zA-Z0-9\s]/g, '').trim();
-                const words = cleanedItemName.split(/\s+/).filter(word => word.length > 0);
-            
-                
-                let initials = '';
-                console.log(words.length);
-                if (words.length === 1) {
-                    initials = words[0].substring(0,2).toUpperCase();
-                } else if (words.length >= 2) {
-                    initials = words[0][0].toUpperCase() + words[1][0].toUpperCase();
-                } 
-
-                return initials;
-            }
-
             function generateItemCode() {
                 const selectedData = $('#ledger_group_id').select2('data');
                 const itemName = selectedData.length > 0 ? selectedData[0].text : "";
+                const groupId = selectedData.length > 0 ? $('#ledger_group_id').val()[0] : "";
                 if (itemCodeType === 'Manual') {
                     return;
                 }
-                const autoItemInitials = getItemInitials(itemName);
-                const itemInitials = autoItemInitials;
-                itemInitialInput.val(itemInitials);
                 $.ajax({
                     url: '{{ route('generate-ledger-code') }}',
                     method: 'POST',
                     data: {
                         _token: '{{ csrf_token() }}',
-                        item_initials: itemInitials,
+                        group_id:groupId,
                     },
                     success: function(response) {
                         itemCodeInput.val((response.code || ''));
+                        itemInitialInput.val(response.prefix ||'');
+               
                     },
                     error: function() {
                         itemCodeInput.val('');
+                        itemInitialInput.val('')
                     }
                 });
             }

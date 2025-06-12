@@ -15,6 +15,7 @@ class FixedAssetSub extends Model
 
     protected $table = 'erp_finance_fixed_asset_sub';
     protected $guarded = ['id'];
+    protected $appends = ['insurance'];
     public function asset()
     {
         return $this->belongsTo(FixedAssetRegistration::class, 'parent_id');
