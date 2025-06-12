@@ -706,6 +706,7 @@ class ConstantHelper
 
 
         self::ITEM_SERVICE_ALIAS => 'Item',
+        self::LEDGERS_SERVICE_ALIAS => 'Ledger',
         self::HSN_SERVICE_ALIAS => 'Hsn',
         self::CATEGORY_SERVICE_ALIAS =>'Category',
         self::ATTRIBUTE_SERVICE_ALIAS =>'Attribute',
@@ -917,7 +918,8 @@ class ConstantHelper
     const ERP_SERVICE_ALIAS_TYPE = [
         self::ITEM_SERVICE_ALIAS => ConstantHelper::ERP_MASTER_SERVICE_TYPE,
         self::CUSTOMER_SERVICE_ALIAS => ConstantHelper::ERP_MASTER_SERVICE_TYPE,
-        self::VENDOR_SERVICE_ALIAS => ConstantHelper::ERP_MASTER_SERVICE_TYPE
+        self::VENDOR_SERVICE_ALIAS => ConstantHelper::ERP_MASTER_SERVICE_TYPE,
+        self::LEDGERS_SERVICE_ALIAS => ConstantHelper::ERP_MASTER_SERVICE_TYPE,
     ];
     const DOC_APPROVAL_STATUS_MAPPING = [
         ConstantHelper::SUBMITTED => 'submit',

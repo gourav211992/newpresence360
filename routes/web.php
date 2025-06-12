@@ -296,6 +296,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::post('/ledger/import', [LedgerController::class,'import'])->name('ledger.import');
     Route::get('/ledger/export-successful', [LedgerController::class,'exportSuccessfulItems'])->name('ledgers.export.successful');
     Route::get('/ledger/export-failed', [LedgerController::class,'exportFailedItems'])->name('ledgers.export.failed');
+    Route::post('/ledger/generate-code', [LedgerController::class,'generateLedgerCode'])->name('generate-ledger-code');
 
     // closefy
     Route::get('/close-fy', [CloseFyController::class,'index'])->name('close-fy');

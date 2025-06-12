@@ -26,6 +26,7 @@ class Ledger extends Model
         'group_id',
         'company_id',
         'organization_id',
+        'ledger_code_type',
         'tax_type',
         'tax_percentage',
         'tds_section',

@@ -60,11 +60,23 @@ class ServiceParametersHelper
     const ISSUE_TYPE_PARAM = "issue_type";
     const REQUESTER_TYPE_PARAM = "requester_type";
     const ITEM_CODE_TYPE_PARAM = "item_code_type";
+    const LEDGER_CODE_TYPE_PARAM = "ledger_code_type";
     const ITEM_CODE_TYPE_PARAM_VALUES = ['Auto', 'Manual'];
+    const LEDGER_CODE_TYPE_PARAM_VALUES = ['Auto', 'Manual'];
       const ITEM_SERVICE_PARAMETERS = [
         [
             "name" => self::ITEM_CODE_TYPE_PARAM,
             "applicable_values" => self::ITEM_CODE_TYPE_PARAM_VALUES,
+            "default_value" => ['Auto'],
+            'is_multiple' => false,
+            'service_level_visibility' => true,
+            'type' => self::COMMON_PARAMETERS
+        ],
+    ];
+    const LEDGER_SERVICE_PARAMETERS = [
+        [
+            "name" => self::LEDGER_CODE_TYPE_PARAM,
+            "applicable_values" => self::LEDGER_CODE_TYPE_PARAM_VALUES,
             "default_value" => ['Auto'],
             'is_multiple' => false,
             'service_level_visibility' => true,
@@ -136,6 +148,7 @@ class ServiceParametersHelper
         self::ITEM_CODE_TYPE_PARAM => 'Item Code',
         self::VENDOR_CODE_TYPE_PARAM => 'Vendor Code',
         self::CUSTOMER_CODE_TYPE_PARAM => 'Customer Code',
+        self::LEDGER_CODE_TYPE_PARAM => 'Ledger Code',
         self::REQUESTER_TYPE_PARAM => 'Requester Type',
         self::SO_TRACKING_REQUIRED => 'SO Tracking Required?',
     ];
@@ -159,6 +172,7 @@ class ServiceParametersHelper
         self::PR_QTY_TYPE_PARAM => self::PR_QTY_TYPE_VALUES,
         self::ISSUE_TYPE_PARAM => self::ISSUE_TYPE_VALUES,
         self::ITEM_CODE_TYPE_PARAM => self::ITEM_CODE_TYPE_PARAM_VALUES,
+        self::LEDGER_CODE_TYPE_PARAM => self::LEDGER_CODE_TYPE_PARAM_VALUES,
         self::VENDOR_CODE_TYPE_PARAM => self::VENDOR_CODE_TYPE_PARAM_VALUES,
         self::CUSTOMER_CODE_TYPE_PARAM => self::CUSTOMER_CODE_TYPE_PARAM_VALUES,
         self::STATION_WISE_CONSUMPTION => self::STATION_WISE_CONSUMPTION_VALUES,
@@ -2320,6 +2334,7 @@ class ServiceParametersHelper
         ConstantHelper::CONTRA_VOUCHER=>self::COMMON_SERVICE_PARAMETERS,
         ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME=>self::MI_SERVICE_PARAMTERS,
         ConstantHelper::ITEM_SERVICE_ALIAS=>self::ITEM_SERVICE_PARAMETERS,
+        ConstantHelper::LEDGERS_SERVICE_ALIAS=>self::LEDGER_SERVICE_PARAMETERS,
         ConstantHelper::VENDOR_SERVICE_ALIAS=>self::VENDOR_SERVICE_PARAMETERS,
         ConstantHelper::CUSTOMER_SERVICE_ALIAS=>self::CUSTOMER_SERVICE_PARAMETERS,
         ConstantHelper::MATERIAL_RETURN_SERVICE_ALIAS_NAME=>self::MR_SERVICE_PARAMETERS,
