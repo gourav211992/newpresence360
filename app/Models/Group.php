@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Helpers\Helper;
 use App\Traits\DefaultGroupCompanyOrg;
-
+use Illuminate\Support\Str;
 
 class Group extends Model
 {
@@ -20,7 +20,8 @@ class Group extends Model
         'status',
         'group_id',
         'company_id',
-        'organization_id'
+        'organization_id',
+        'prefix',
     ];
 
     public function ledgers()
@@ -32,23 +33,23 @@ class Group extends Model
     public function parent()
     {
         return $this->belongsTo(Group::class, 'parent_group_id', 'id')
-       ->where(function ($query) {
-            $query->where(function ($q) {
-                $q->withDefaultGroupCompanyOrg();
-            })->orWhere('edit', 0);
-        });
+            ->where(function ($query) {
+                $query->where(function ($q) {
+                    $q->withDefaultGroupCompanyOrg();
+                })->orWhere('edit', 0);
+            });
     }
 
     // Relationship to get child groups
-   public function children()
-{
-    return $this->hasMany(Group::class, 'parent_group_id', 'id')
-        ->where(function ($query) {
-            $query->where(function ($q) {
-                $q->withDefaultGroupCompanyOrg();
-            })->orWhere('edit', 0);
-        });
-}
+    public function children()
+    {
+        return $this->hasMany(Group::class, 'parent_group_id', 'id')
+            ->where(function ($query) {
+                $query->where(function ($q) {
+                    $q->withDefaultGroupCompanyOrg();
+                })->orWhere('edit', 0);
+            });
+    }
 
 
 
@@ -59,27 +60,26 @@ class Group extends Model
     }
 
     public function getAllChildIds(&$ids = [])
-        {
-            foreach ($this->children as $child) {
-                $ids[] = $child->id;
-                $child->getAllChildIds($ids);
-
-            }
-            return $ids;
+    {
+        foreach ($this->children as $child) {
+            $ids[] = $child->id;
+            $child->getAllChildIds($ids);
         }
-
-public function getAllParentIds()
-{
-    $parentIds = [];
-    $parent = $this->parent;
-
-    while ($parent) {
-        $parentIds[] = $parent->id;
-        $parent = $parent->parent;
+        return $ids;
     }
 
-    return $parentIds;
-}
+    public function getAllParentIds()
+    {
+        $parentIds = [];
+        $parent = $this->parent;
+
+        while ($parent) {
+            $parentIds[] = $parent->id;
+            $parent = $parent->parent;
+        }
+
+        return $parentIds;
+    }
 
 
     public function getGroupLedgerSummary()
@@ -114,5 +114,96 @@ public function getAllParentIds()
             'ledgers' => $ledgers,
             'item_details' => $itemDetails,
         ];
+    }
+    public static function generateuniquePrefix($name)
+{
+    // Clean and prepare name
+    $cleanedName = preg_replace('/[^a-zA-Z\s]/', '', $name); // Keep only letters and spaces
+    $cleanedName = strtoupper(trim($cleanedName));
+    $words = preg_split('/\s+/', $cleanedName); // Split by spaces
+
+    if (count($words) === 0) return null;
+
+    $used = Helper::getGroupsQuery()->pluck('prefix')->map(function ($p) {
+        return strtoupper($p);
+    })->toArray();
+
+    $candidates = [];
+
+    // 1. If 2+ words, try 2-letter (first letters of first two words)
+    if (count($words) >= 2) {
+        $prefix2 = substr($words[0], 0, 1) . substr($words[1], 0, 1);
+        $candidates[] = $prefix2;
+
+        // 2. If 3+ words, try 3-letter (first letters of all three)
+        if (count($words) >= 3) {
+            $prefix3 = substr($words[0], 0, 1) . substr($words[1], 0, 1) . substr($words[2], 0, 1);
+            $candidates[] = $prefix3;
+        }
+    }
+
+    // 3. If only one word or more variations needed
+    $base = str_replace(' ', '', $cleanedName); // Combine name into single string
+    $baseLength = strlen($base);
+
+    // Try all 2 and 3 letter combinations starting with first letter
+    for ($i = 1; $i < $baseLength; $i++) {
+        $prefix2 = $base[0] . $base[$i];
+        if (strlen($prefix2) === 2) {
+            $candidates[] = $prefix2;
+        }
+
+        for ($j = $i + 1; $j < $baseLength; $j++) {
+            $prefix3 = $base[0] . $base[$i] . $base[$j];
+            if (strlen($prefix3) === 3) {
+                $candidates[] = $prefix3;
+            }
+        }
+    }
+
+    // Remove duplicates and check against used
+    $candidates = array_unique($candidates);
+
+    foreach ($candidates as $candidate) {
+        if (!in_array($candidate, $used)) {
+            return $candidate;
+        }
+    }
+
+    return null; // No available prefix
+}
+
+
+
+    public static function getPrefix($id)
+    {
+        $group = Group::find($id);
+        if (!isset($group->prefix)) {
+            $name = $group->name;
+            return Group::generateuniquePrefix($name);
+        } else return $group->prefix;
+    }
+    public static function updatePrefix($ledger_id, $prefix)
+    {
+        $ledger = Ledger::find($ledger_id);
+
+        if (!$ledger || empty($ledger->ledger_group_id)) {
+            return;
+        }
+
+        $groups = json_decode($ledger->ledger_group_id, true);
+
+        if (!is_array($groups) || count($groups) === 0) {
+            return;
+        }
+
+        $group_id = (int) $groups[0];
+        $group = Group::find($group_id);
+
+
+        if ($group->prefix == null) {
+            $group->prefix = $prefix;
+            $group->save();
+        }
     }
 }

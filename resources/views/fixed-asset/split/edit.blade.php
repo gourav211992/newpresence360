@@ -366,7 +366,7 @@
                                                         </thead>
                                                         <tbody class="mrntableselectexcel">
                                                             @foreach (json_decode($data->sub_assets) as $subAsset)
-                                                                <tr class="trselected">
+                                                                <tr >
                                                                     <td class="customernewsection-form">
                                                                         <div
                                                                             class="form-check form-check-primary custom-checkbox">
@@ -423,7 +423,7 @@
                                                                         </select>
                                                                     </td>
                                                                     <td>
-                                                                        <input type="text"
+                                                                        <input type="number"
                                                                             class="form-control mw-100 mb-25 life"
                                                                             oninput="syncInputAcrossSameAssets(this)"
                                                                             value="{{ $subAsset?->life ?? '' }}">
@@ -722,6 +722,8 @@
             } else if (e.which == 40) {
                 $('.trselected').next('tr').addClass('trselected').siblings().removeClass('trselected');
             }
+             var selected = $('.trselected');
+            if (selected.length && selected.offset())
             $('.mrntableselectexcel').scrollTop($('.trselected').offset().top - 40);
         });
 
@@ -759,7 +761,7 @@
                 formattedDate = lastDepDate.toISOString().split('T')[0];
             }
             let newRow = '';
-            newRow = ` <tr class="trselected">
+            newRow = ` <tr >
                 <td class="customernewsection-form">
                     <div class="form-check form-check-primary custom-checkbox">
                     <input type="checkbox" class="form-check-input row-check">
@@ -792,7 +794,7 @@
                 </select>
             </td>
               <td>
-                <input type="text" required class="form-control mw-100 mb-25 life" oninput="syncInputAcrossSameAssets(this)"> 
+                <input type="number" required class="form-control mw-100 mb-25 life" oninput="syncInputAcrossSameAssets(this)"> 
                 </td>
                 
               <td>
@@ -1526,7 +1528,7 @@
 
         function add_blank() {
             $('.mrntableselectexcel').empty();
-            let blank_row = ` <tr class="trselected">
+            let blank_row = ` <tr >
               <td class="customernewsection-form">
                 <div class="form-check form-check-primary custom-checkbox">
                   <input type="checkbox" class="form-check-input row-check">
@@ -1559,7 +1561,7 @@
                 </select>
                                                              </td>
             <td>
-                <input type="text" required class="form-control mw-100 mb-25 life" oninput="syncInputAcrossSameAssets(this)"> 
+                <input type="number" required class="form-control mw-100 mb-25 life" oninput="syncInputAcrossSameAssets(this)"> 
                 </td>
               
               <td>

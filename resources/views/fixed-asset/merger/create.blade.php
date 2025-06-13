@@ -250,7 +250,7 @@
                                                             </tr>
                                                         </thead>
                                                         <tbody class="mrntableselectexcel">
-                                                            <tr class="trselected">
+                                                            <tr >
                                                                 <td class="customernewsection-form">
                                                                     <input type="hidden" class="ledger">
                                                                     <div
@@ -461,7 +461,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Est. Useful Life (yrs) <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" name="useful_life"
+                                                            <input type="number" class="form-control" name="useful_life"
                                                                 id="useful_life" value="{{ old('useful_life') }}"
                                                                 oninput="updateDepreciationValues()" required />
                                                         </div>
@@ -590,6 +590,8 @@
             } else if (e.which == 40) {
                 $('.trselected').next('tr').addClass('trselected').siblings().removeClass('trselected');
             }
+             var selected = $('.trselected');
+            if (selected.length && selected.offset())
             $('.mrntableselectexcel').scrollTop($('.trselected').offset().top - 40);
         });
 
@@ -1167,7 +1169,7 @@
         $('#addNewRowBtn').on('click', function() {
             rowCount++;
             let newRow = `
-    <tr class="trselected">
+    <tr >
         <input type="hidden" class="ledger">
         <td class="customernewsection-form">
             <div class="form-check form-check-primary custom-checkbox">

@@ -8,7 +8,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Models\PaymentVoucherDetails;
 use App\Console\Commands\GenerateCrDrReport;
+use Illuminate\Support\Facades\Cache;
 use App\Helpers\Helper;
+use App\Helpers\InventoryHelper;
+use App\Models\CostCenterOrgLocations;
 use App\Helpers\ConstantHelper;
 use App\Models\Group;
 use App\Models\VoucherReference;
@@ -28,6 +31,7 @@ use App\Models\AuthUser;
 use Carbon\Carbon;
 use PDF;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Cookie;
 use App\Exports\DebitorCreditoExcelExport;
 
 
@@ -36,7 +40,7 @@ class CrDrReportController extends Controller
 {
     public function debit(Request $request)
     {
-    $start = null;
+        $start = null;
         $end = null;
         if ($request->date) {
             $dates = explode(' to ', $request->date);
@@ -87,7 +91,7 @@ class CrDrReportController extends Controller
         }
         $all_groups = Group::whereIn('id', $drp_group->getAllChildIds())->get();
         $date = $request->date;
-        $date2 = $end? \Carbon\Carbon::parse($end)->format('jS-F-Y'):\Carbon\Carbon::parse(date('Y-m-d'))->format('jS-F-Y'); ;
+        $date2 = $end? \Carbon\Carbon::parse($end)->format('jS-F-Y'):\Carbon\Carbon::parse(date('Y-m-d'))->format('jS-F-Y');
             $customers = collect($customers)->reject(function ($item) {
                 return (float) $item->total_outstanding === 0.0;
             });
@@ -122,7 +126,6 @@ class CrDrReportController extends Controller
                 }
             })
             ->get();
-// dd($all_ledgers);
                 if (!is_null($ledger_groups)) $vendors = self::get_ledgers_data($ledger_groups, $ages_all, 'credit', $request->ledger, $start, $end);
             } else if (isset($group->id)) {
                 $ledger_groups = [$group->id];
@@ -143,7 +146,7 @@ class CrDrReportController extends Controller
         }
         $all_groups = Group::whereIn('id', $drp_group->getAllChildIds())->get();
         $date = $request->date;
-        $date2 = $end? \Carbon\Carbon::parse($end)->format('jS-F-Y'):\Carbon\Carbon::parse(date('Y-m-d'))->format('jS-F-Y'); ;
+        $date2 = $end? \Carbon\Carbon::parse($end)->format('jS-F-Y'):\Carbon\Carbon::parse(date('Y-m-d'))->format('jS-F-Y');
             $vendors = collect($vendors)->reject(function ($item) {
                 return (float) $item->total_outstanding === 0.0;
             });
@@ -1408,5 +1411,425 @@ class CrDrReportController extends Controller
             'data' => json_decode(json_encode($data)),
             'credit_days' => $credit_days
         ];
+    }
+
+    public function creditorsPendingPayment(Request $request)
+    {
+        $user = Helper::getAuthenticatedUser();
+        $userId = $user->auth_user_id;
+        $organizationId = $user->organization_id;
+        $organizations = [];
+        $start = null;
+        $end = null;
+        $fyear = Helper::getFinancialYear(date('Y-m-d'));
+        if ($request->date) {
+            $dates = explode(' to ', $request->date);
+            $start = date('Y-m-d', strtotime($dates[0]));
+            $end = date('Y-m-d', strtotime($dates[1]));
+        }else{
+            if ($fyear) {
+            $start = $fyear['start_date'];
+            $today = Carbon::today();
+            $end = Carbon::parse($fyear['end_date']);
+
+            if ($end->greaterThan($today)) {
+                $end = $today;
+            }
+            $end = $end->format('Y-m-d');
+        }
+        }
+        $group_name = Group::find($request->group)->name ?? ConstantHelper::PAYABLE;
+        $vendors = [];
+        $group = Helper::getGroupsQuery()->where('name', $group_name)->first();
+        $drp_group = Helper::getGroupsQuery()->where('name', ConstantHelper::PAYABLE)->first();
+
+        if ($group) {
+            $ledger_groups =  Helper::getGroupsQuery()->where('parent_group_id', $group->id)->pluck('id');
+            if (count($ledger_groups) > 0) {
+                $all_ledgers = Ledger::withDefaultGroupCompanyOrg()
+                    ->where('status', 1)
+                    ->where(function ($query) use ($ledger_groups) {
+                        $query->whereIn('ledger_group_id', $ledger_groups);
+
+                        foreach ($ledger_groups as $child) {
+                            $query->orWhereJsonContains('ledger_group_id', (string)$child);
+                        }
+                    })
+                    ->get();
+            } else if (isset($group->id)) {
+                $ledger_groups = [$group->id];
+                $all_ledgers = Ledger::withDefaultGroupCompanyOrg()
+                    ->where('status', 1)
+                    ->where(function ($query) use ($ledger_groups) {
+                        $query->whereIn('ledger_group_id', $ledger_groups);
+
+                        foreach ($ledger_groups as $child) {
+                            $query->orWhereJsonContains('ledger_group_id', (string)$child);
+                        }
+                    })
+                    ->get();
+            }
+        }
+        $all_groups = Group::whereIn('id', $drp_group->getAllChildIds())->get();
+        $date = $request->date;
+        $date2 = $end ? \Carbon\Carbon::parse($end)->format('jS-F-Y') : \Carbon\Carbon::parse(date('Y-m-d'))->format('jS-F-Y');;
+        $type = 'credit';
+        $books_t = Helper::getAccessibleServicesFromMenuAlias('vouchers')['services'];
+        $mappings = $user->access_rights_org;
+        $organizationId = $user->organization_id;
+        $locations = InventoryHelper::getAccessibleLocations();
+        $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
+            $item->withDefaultGroupCompanyOrg()->where('status', 'active');
+
+            return [
+                'id' => $item->costCenter->id,
+                'name' => $item->costCenter->name,
+                'location' => $item->costCenter->locations,
+            ];
+        })->toArray();
+        return view('finance_report.creditors-pending-payment', compact('date', 'date2', 'type', 'all_ledgers', 'all_groups', 'books_t', 'organizationId', 'mappings', 'locations', 'cost_centers'));
+    }
+    public function debitorsPendingPayment(Request $request)
+    {
+        $user = Helper::getAuthenticatedUser();
+        $userId = $user->auth_user_id;
+        $organizationId = $user->organization_id;
+        $organizations = [];
+        $start = null;
+        $end = null;
+        $fyear = Helper::getFinancialYear(date('Y-m-d'));
+        if ($request->date) {
+            $dates = explode(' to ', $request->date);
+            $start = date('Y-m-d', strtotime($dates[0]));
+            $end = date('Y-m-d', strtotime($dates[1]));
+        }else{
+            if ($fyear) {
+            $start = $fyear['start_date'];
+            $today = Carbon::today();
+            $end = Carbon::parse($fyear['end_date']);
+
+            if ($end->greaterThan($today)) {
+                $end = $today;
+            }
+            $end = $end->format('Y-m-d');
+        }
+        }
+        $group_name = Group::find($request->group)->name ?? ConstantHelper::RECEIVABLE;
+
+        $customers = [];
+        $all_ledgers = [];
+        $group = Helper::getGroupsQuery()->where('name', $group_name)->first();
+        $drp_group = Helper::getGroupsQuery()->where('name', ConstantHelper::RECEIVABLE)->first();
+
+        if ($group) {
+            $ledger_groups =  Helper::getGroupsQuery()->where('parent_group_id', $group->id)->pluck('id');
+
+            if (count($ledger_groups) > 0) {
+                $all_ledgers = Ledger::withDefaultGroupCompanyOrg()
+                    ->where('status', 1)
+                    ->where(function ($query) use ($ledger_groups) {
+                        $query->whereIn('ledger_group_id', $ledger_groups);
+
+                        foreach ($ledger_groups as $child) {
+                            $query->orWhereJsonContains('ledger_group_id', (string)$child);
+                        }
+                    })
+                    ->get();
+            } else if (isset($group->id)) {
+                $ledger_groups = [$group->id];
+                $all_ledgers = Ledger::withDefaultGroupCompanyOrg()
+                    ->where('status', 1)
+                    ->where(function ($query) use ($ledger_groups) {
+                        $query->whereIn('ledger_group_id', $ledger_groups);
+
+                        foreach ($ledger_groups as $child) {
+                            $query->orWhereJsonContains('ledger_group_id', (string)$child);
+                        }
+                    })
+                    ->get();
+            }
+        }
+        $all_groups = Group::whereIn('id', $drp_group->getAllChildIds())->get();
+        $date = $request->date;
+        $date2 = $end ? \Carbon\Carbon::parse($end)->format('jS-F-Y') : \Carbon\Carbon::parse(date('Y-m-d'))->format('jS-F-Y');;
+        $type = 'debit';
+        $books_t = Helper::getAccessibleServicesFromMenuAlias('vouchers')['services'];
+        $mappings = $user->access_rights_org;
+        $organizationId = $user->organization_id;
+        $locations = InventoryHelper::getAccessibleLocations();
+        $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
+            $item->withDefaultGroupCompanyOrg()->where('status', 'active');
+
+            return [
+                'id' => $item->costCenter->id,
+                'name' => $item->costCenter->name,
+                'location' => $item->costCenter->locations,
+            ];
+        })->toArray();
+        return view('finance_report.debitors-pending-payment', compact('date', 'date2', 'type', 'all_ledgers', 'all_groups', 'books_t', 'organizationId', 'mappings', 'locations', 'cost_centers'));
+    }
+
+    public function getInvocies(Request $request)
+    {
+        $organization_id = [];
+        if ($request->organization_id) {
+
+            $organization_id = $request->organization_id;
+        } else {
+            $organization_id = Helper::getAuthenticatedUser()->organization_id;
+        }
+        $cus_type = $request->type == ConstantHelper::RECEIPTS_SERVICE_ALIAS ? 'customer' : 'vendor';
+        $ledger_account = $request->type == ConstantHelper::RECEIPTS_SERVICE_ALIAS ? ConstantHelper::RECEIVABLE : ConstantHelper::PAYABLE;
+        $ledger_group = Helper::getGroupsQuery()->where('name', $ledger_account)->first();
+
+        $ids = [];
+        $group_id = $ledger_group->getAllChildIds();
+        $group_id[] = $ledger_group->id;
+        $data = Voucher::withDefaultGroupCompanyOrg()->with('ErpLocation', 'organization')
+            ->whereIn("organization_id", $organization_id)
+            ->when($request->location_id, function ($query) use ($request) {
+                $query->where('location', $request->location_id);
+            })
+            ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
+            ->withWhereHas('items', function ($i) use ($request, $group_id,$cus_type) {
+                if ($request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS) {
+                    $i->where('credit_amt_org', '>', 0);
+                } else {
+                    $i->where('debit_amt_org', '>', 0);
+                }
+                if ($request->cost_center_id) {
+                    $i->where('cost_center_id', $request->cost_center_id);
+                }
+                $i->whereHas('ledger', function ($l) use ($request, $group_id, $cus_type) {
+                    // Filter by credit_days from the customer/vendor relation
+                    $l->whereHas($cus_type, function ($q) {
+                        $q->whereNotNull('credit_days')
+                            ->where('credit_days', '!=', 0)
+                            ->where('credit_days', '!=', '');
+                    });
+                    // Always check if ledger belongs to the group (JSON or column)
+                    $l->where(function ($q) use ($group_id) {
+                        foreach ($group_id as $id) {
+                            $q->orWhereJsonContains('ledger_group_id', (string) $id);
+                        }
+                        $q->orWhereIn('ledger_group_id', $group_id);
+                    });
+
+                    // If filter_ledger is provided, match the ID
+                    if ($request->filter_ledger) {
+                        $l->where('id', $request->filter_ledger);
+                    }
+
+                    // Optional status filter
+                    $l->where('status', 1);
+                });
+
+                if ($request->ledgerGroup) {
+                    $i->whereHas('ledger_group', function ($lg) use ($request) {
+                        $lg->where('id', $request->ledgerGroup);
+                    });
+                }
+                        $i->with([
+                    'ledger',
+                    'ledger_group',
+                    'costCenter',
+                ]);
+            })
+            ->groupBy('id')  // Assuming 'id' is the primary key or unique field for Voucher
+            ->orderBy('document_date', 'asc')
+            ->orderBy('created_at', 'asc');
+
+
+        if ($request->date != null) {
+            [$startDate, $endDate] = explode(' to ',  $request->date);
+
+            $start = Carbon::parse(trim($startDate))->format('Y-m-d');
+            $end = Carbon::parse(trim($endDate))->format('Y-m-d');
+
+            $data->whereBetween('document_date', [$start, $end]);
+        }
+
+        if ($request->book_code) {
+            $data = $data->whereHas('series', function ($q) use ($request) {
+                $q->whereHas('org_service', function ($subQuery) use ($request) {
+                    $subQuery->where('alias', $request->book_code);
+                });
+            });
+        }
+
+        if ($request->document_no) {
+            $data = $data->where('voucher_no', 'like', "%" . $request->document_no . "%");
+        }
+
+
+        $data = $data->with(['series' => function ($s) {
+            $s->select('id', 'book_code');
+        }])->select('id', 'amount', 'book_id', 'document_date as date', 'created_at', 'voucher_name', 'voucher_no', 'location', 'organization_id')
+            ->orderBy('id', 'desc')->get()->map(function ($voucher) use ($request, $organization_id) {
+                $voucher->date = date('d/m/Y', strtotime($voucher->date));
+                $voucher->document_date = $voucher->document_date;
+                $balance = VoucherReference::where('voucher_id', $voucher->id)
+                    ->withWhereHas('voucherPayRec', function ($query) use ($organization_id) {
+                        $query->whereIn('organization_id', $organization_id);
+                        $query->whereNotIn('document_status', ConstantHelper::DOCUMENT_STATUS_REJECTED);
+                    });
+                $amount = 0;
+                foreach ($voucher->items as $item) {
+                    $amount += $request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS ? $item->credit_amt_org : $item->debit_amt_org;
+                }
+                $voucher->amount = $amount;
+
+                $balance = $balance->sum('amount');
+                $voucher->set = $balance;
+                $voucher->balance = $voucher->amount - $balance;
+
+
+
+                return $voucher;
+            });
+
+
+        $advanceSum = PaymentVoucherDetails::where('type', $cus_type)
+            ->whereIn('reference', ['On Account'])
+            ->withWhereHas('voucher', function ($query) use ($organization_id) {
+                $query->where('organization_id', $organization_id);
+                $query->whereNotIn('document_status', ConstantHelper::DOCUMENT_STATUS_REJECTED);
+            })
+            ->with('partyName')->get()
+            ->sum('orgAmount');
+
+
+
+        foreach ($data as $v) {
+            if ($advanceSum > 0 && isset($v->id)) {
+                $deductAmount = min($advanceSum, $v->balance);
+                $v->balance -= $deductAmount;
+                $advanceSum -= $deductAmount;
+            } else {
+                break; // Stop if advance is fully utilized
+            }
+        }
+        $advanceItems = PaymentVoucherDetails::where('type', $cus_type)
+            ->where('reference', 'Advance')
+            ->withWhereHas('voucher', function ($query) use ($organization_id) {
+                $query->where('organization_id', $organization_id);
+                $query->whereNotIn('document_status', ConstantHelper::DOCUMENT_STATUS_REJECTED);
+            })
+            ->with('partyName')->get();
+        foreach ($advanceItems as $advanceItem) {
+            $bucketTotalDeducted = 0;
+            $remainingAdvanceAmount = $advanceItem->orgAmount;
+
+            // Loop through each customer in the result set
+            foreach ($data as $res) {
+                $documentDate = $advanceItem->voucher->document_date; // e.g. '2025-04-10'
+                $createdAt = $advanceItem->voucher->created_at; // e.g. '2025-04-10 15:30:00'
+
+                // Combine the date from `document_date` and time from `created_at`
+                $combinedDateTime = \DateTime::createFromFormat('Y-m-d H:i:s', $documentDate . ' ' . date('H:i:s', strtotime($createdAt)));
+
+                $vendorDateTimestamp = $combinedDateTime ? $combinedDateTime->getTimestamp() : null;
+                $resDate = $res->date; // e.g. '10/04/2025'
+                $resCreatedAt = $res->created_at; // e.g. '2025-04-10 14:45:00'
+
+                // Extract the time from created_at
+                $resTime = date('H:i:s', strtotime($resCreatedAt));
+
+                // Combine date (converted to Y-m-d) with time
+                $parsedDate = \DateTime::createFromFormat('d/m/Y H:i:s', $resDate . ' ' . $resTime);
+
+                $resDateTimestamp = $parsedDate ? $parsedDate->getTimestamp() : null;
+
+
+
+                if ($vendorDateTimestamp < $resDateTimestamp) {
+                    $bucketTotalDeducted = 0; // Track total amount deducted from all aging buckets
+                    if ($remainingAdvanceAmount > 0) {
+                        $deductAmount = min($remainingAdvanceAmount, $res->balance);
+                        $res->balance -= $deductAmount; // Reduce the bucket value
+                        $remainingAdvanceAmount -= $deductAmount; // Reduce the advance sum
+                        $bucketTotalDeducted += $deductAmount; // Track total deducted
+                    }
+                }
+            }
+        }
+        return response()->json(['data' => $data, 'sum' => $advanceSum]);
+    }
+
+    public function storeCrDrRowData(Request $request)
+    {
+        $payload = json_decode($request->getContent(), true);
+        if (!isset($payload['rows']) || !is_array($payload['rows'])) {
+            return response()->json(['error' => 'Invalid rows data.'], 422);
+        }
+
+        $rows = $payload['rows'];
+        $type = $payload['type'];
+
+        // Flatten items
+        $flattened = collect($rows)->flatMap(function ($voucher) {
+            return collect($voucher['items'])->map(function ($item) use ($voucher) {
+                return [
+                    'voucher_id'         => $voucher['id'],
+                    'item_id'            => $voucher['item_id'] ?? null,
+                    'ledger_id'          => $item['ledger_id'],
+                    'ledger_code'        => $item['ledger']['code'] ?? '-',
+                    'ledger_name'        => $item['ledger']['name'] ?? '-',
+                    'ledger_group_name'  => $item['ledger_group']['name'] ?? $item['ledger']['ledger_group']['name'] ?? '-',
+                    'ledger_parent_id'   => $item['ledger_parent_id'] ?? null,
+                    'amount'             => $item['amount'] ?? $voucher['amount'] ?? 0,
+                    'settle_amt'         => $voucher['settle_amt'] ?? 0,
+                ];
+            });
+        });
+
+        // Grouped by ledger_id
+        $grouped = $flattened
+        ->groupBy('ledger_id')
+        ->map(function ($items, $ledgerId) {
+            $first = $items->first();
+
+            // Group by item_id within the current ledger_id group
+            $itemGroups = $items->groupBy('item_id');
+
+            // Sum of settle_amt per item_id, then total of all
+            $settleAmtSumByItem = $itemGroups->map(function ($itemGroup) {
+                return $itemGroup->sum('settle_amt');
+            });
+
+            return [
+                'ledger_id'         => $ledgerId,
+                'ledger_code'       => $first['ledger_code'],
+                'ledger_name'       => $first['ledger_name'],
+                'ledger_group_name' => $first['ledger_group_name'],
+                'ledger_parent_id'  => $first['ledger_parent_id'],
+                'amount'            => $settleAmtSumByItem->sum(), // ← Use summed settle_amt per item_id
+                'settle_amt'        => $items->sum('settle_amt'),  // ← You can also keep this for reference
+                'voucher_id'        => $first['voucher_id'],
+                'item_id'           => $first['item_id'],
+                'items'             => $items,
+            ];
+        })->values();
+
+        $raw = $flattened->map(function ($item) {
+            return [
+                'ledger_id'   => $item['ledger_id'],
+                'voucher_id'  => $item['voucher_id'],
+                'item_id'     => $item['item_id'],
+                'settle_amt'  => $item['settle_amt'],
+            ];
+        });
+
+        $token = 'selectedRows_' . uniqid();
+        Cache::put($token, [
+            'grouped' => $grouped,
+            'raw'     => $raw,
+        ], 3600);
+
+        $route = $type == ConstantHelper::RECEIPTS_SERVICE_ALIAS
+            ? route('receipts.create', ['token' => $token])
+            : route('payments.create', ['token' => $token]);
+
+        return response()->json(['redirect' => $route]);
     }
 }

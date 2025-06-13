@@ -3,6 +3,7 @@
 use App\Helpers\Helper;
 use App\Http\Controllers\ErpMachineController;
 use App\Http\Controllers\ErpDriverController;
+use App\Http\Controllers\ErpVehicleController;
 use App\Http\Controllers\ErpPlController;
 use App\Http\Controllers\ErpPSVController;
 use App\Http\Controllers\OverheadMasterController;
@@ -286,10 +287,16 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('report/creditors/getDetails', [CrDrReportController::class, 'credit_debit_details'])->name('voucher.credit_details.report');
     Route::get('/report/getLedgerPrint/{type}/{ledger}/{group}/{bill_type?}', [CrDrReportController::class, 'getLedgerDetailsPrint'])->name('crdr.report.ledger.print');
     Route::post('/crdr/report/add-scheduler', [CrDrReportController::class, 'addScheduler'])->name('crdr.add.scheduler');
+     Route::get('/report/creditors/pending-payment', [CrDrReportController::class, 'creditorsPendingPayment'])->name('creditor.pending.payment');
+    Route::get('/report/debitors/pending-payment', [CrDrReportController::class, 'debitorsPendingPayment'])->name('debitor.pending.payment');
+      Route::post('getInvocies', [CrDrReportController::class, 'getInvocies'])->name('getInvocies');
+    Route::post('report/store-cr-dr-row', [CrDrReportController::class, 'storeCrDrRowData'])->name('report.row.data');
     Route::get('vouchers/revoke', [VoucherController::class, 'revokeDocument'])->name('voucher.revoke.document');
     Route::get('vouchers/cancel', [VoucherController::class, 'cancelDocument'])->name('voucher.cancel.document');
     Route::resource('ledger-groups', GroupController::class)->except(['show']);
     Route::get('/search/group', [GroupController::class,'getLedgerGroup'])->name('groups.search');
+    Route::post('/group/generate-prefix', [GroupController::class,'generate_prefix'])->name('generate-group-prefix');
+    Route::post('/group/check-prefix', [GroupController::class,'checkPrefix'])->name('groups-check-prefix');
     Route::resource('ledgers', LedgerController::class)->except(['show']);
     Route::get('/ledgers/{ledgerId}/groups', [LedgerController::class, 'getLedgerGroups'])->name('ledgers.groups');;
     Route::get('/search/ledger', [LedgerController::class,'getLedger'])->name('ledger.search');
@@ -2169,6 +2176,19 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
      //Driver
     Route::get('/driver', [ErpDriverController::class, 'index'])->name('driver.index');
     Route::get('/driver/create', [ErpDriverController::class, 'create'])->name('driver.create');
+    Route::post('/driver/store', [ErpDriverController::class, 'store'])->name('driver.store');
+    Route::put('/driver/update/{id}', [ErpDriverController::class, 'update'])->name('driver.update');
+    Route::get('/driver/edit/{id}', [ErpDriverController::class, 'edit'])->name('driver.edit');
+    Route::delete('/driver/{id}', [ErpDriverController::class, 'destroy'])->name('driver.destroy');
+
+    //Vehicle
+    Route::get('/vehicle', [ErpVehicleController::class, 'index'])->name('vehicle.index');
+    Route::get('/vehicle/create', [ErpVehicleController::class, 'create'])->name('vehicle.create');
+    Route::post('/vehicle/store', [ErpVehicleController::class, 'store'])->name('vehicle.store');
+    Route::put('/vehicle/update/{id}', [ErpVehicleController::class, 'update'])->name('vehicle.update');
+    Route::get('/vehicle/edit/{id}', [ErpVehicleController::class, 'edit'])->name('vehicle.edit');
+    Route::delete('/vehicle/{id}', [ErpVehicleController::class, 'destroy'])->name('vehicle.destroy');
+
 
      //Production Slip
      Route::get('/production-slip', [ErpProductionSlipController::class, 'index'])->name('production.slip.index');
@@ -2409,7 +2429,8 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::get('fixed-asset/get-locations', [RegistrationController::class, 'getLocations'])->name('finance.fixed-asset.get-locations');
     Route::get('fixed-asset/get-cost-centers', [RegistrationController::class, 'getCostCenters'])->name('finance.fixed-asset.get-cost-centers');
     Route::post('fixed-asset/check-code', [RegistrationController::class, 'checkCode'])->name('finance.fixed-asset.check-code');
-
+    Route::get('fixed-asset/get-cost-centers', [RegistrationController::class, 'getCostCenters'])->name('finance.fixed-asset.get-cost-centers');
+    Route::get('fixed-asset/export', [RegistrationController::class, 'export'])->name('finance.fixed-asset.export');
     Route::post('fixed-asset/category-search', [RegistrationController::class, 'categorySearch'])->name('finance.fixed-asset.category-search');
 
     Route::resource('fixed-asset/issue-transfer', IssueTransferController::class)->names([

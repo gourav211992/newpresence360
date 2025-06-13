@@ -380,6 +380,11 @@ class LedgerController extends Controller
                 'string',
                 'max:255',
             ],
+            'prefix' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
         ]);
         $existingName = Ledger::withDefaultGroupCompanyOrg()
             ->where('code', $request->name)
@@ -428,9 +433,11 @@ class LedgerController extends Controller
         $parentUrl = ConstantHelper::LEDGERS_SERVICE_ALIAS;
         $validatedData = Helper::prepareValidatedDataWithPolicy($parentUrl);
 
-
         // Create a new ledger record with organization details
-        Ledger::create(array_merge($request->all(), $validatedData));
+        $ledger = Ledger::create(array_merge($request->all(), $validatedData));
+        if($request->has('prefix') && $request->prefix!="")
+        Group::updatePrefix($ledger->id,$request->prefix);
+    
 
 
 
@@ -528,6 +535,7 @@ class LedgerController extends Controller
      */
     public function update(Request $request, string $id)
     {
+       
         $authOrganization = Helper::getAuthenticatedUser()->organization;
         $organizationId = $authOrganization->id;
         $companyId = $authOrganization?->company_id;
@@ -632,9 +640,11 @@ class LedgerController extends Controller
             $request->request->remove('tax_type');
             $request->request->remove('tax_percentage');
         }
+      
 
         $update = Ledger::find($id);
         $update->name = $request->name;
+        $update->prefix = $request->prefix;
         $update->code = $request->code;
         $update->cost_center_id = $request->cost_center_id;
         $update->ledger_group_id = $request->ledger_group_id;
@@ -663,6 +673,9 @@ class LedgerController extends Controller
                 }
             }
         }
+      
+         if($request->has('prefix') && $request->prefix!="")
+        Group::updatePrefix($update->id,$request->prefix);
 
 
         return redirect()->route('ledgers.index')->with('success', 'Ledger updated successfully');
@@ -786,10 +799,17 @@ class LedgerController extends Controller
             ]);
         }
     }
+
     public function generateLedgerCode(Request $request)
     {
+        if(!$request->has('group_id') || $request->group_id=="")
+        return "";
+
+        $itemInitials = Group::getPrefix($request->group_id);
         $itemId = $request->input('ledger_id');
-        $itemInitials = $request->input('item_initials');
+        $group_id = $request->input('group_id');
+        $group = Group::find($group_id)?->name;
+
         $baseCode =  $itemInitials;
 
         $authUser = Helper::getAuthenticatedUser();
@@ -817,6 +837,6 @@ class LedgerController extends Controller
             $finalItemCode = $baseCode . $nextSuffix;
         }
 
-        return response()->json(['code' => $finalItemCode]);
+        return response()->json(['code' => $finalItemCode,'prefix'=>$baseCode]);
     }
 }

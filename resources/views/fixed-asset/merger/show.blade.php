@@ -268,7 +268,7 @@
                                                                 <td class="indian-number text-end">{{ $assetRow->currentvalue }}</td>
                                                                 <td class="indian-number text-end">{{ $assetRow->salvagevalue ??"" }}</td>
                                                                 
-                                                                <td>{{ $assetRow->last_dep_date }}</td>
+                                                                <td>{{ $assetRow->last_dep_date ? \Carbon\Carbon::parse($assetRow->last_dep_date)->format('d-m-Y') : '' }}</td>
                                                             </tr>
                                                             @endforeach
                                                             </tbody>
@@ -321,7 +321,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Asset Code <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control indian-number" name="asset_code"
+                                                            <input type="text" class="form-control" name="asset_code"
                                                                 id="asset_code" value="{{$data->asset_code}}" readonly
                                                                 required />
                                                         </div>
@@ -332,7 +332,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Quantity <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control indian-number" name="quantity"
+                                                            <input type="text" class="form-control" name="quantity"
                                                                 id="quantity" value="{{$data->quantity}}" readonly />
                                                         </div>
                                                     </div>
@@ -416,7 +416,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Est. Useful Life (yrs) <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control indian-number" name="useful_life"
+                                                            <input type="text" class="form-control" name="useful_life"
                                                                 id="useful_life" value="{{$data->useful_life}}" disabled required />
                                                         </div>
                                                     </div>

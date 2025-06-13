@@ -80,12 +80,30 @@
                                                             class="text-danger">*</span></label>
                                                 </div>
                                                 <div class="col-md-5">
-                                                    <input @if(!$update) disabled @endif type="text" name="name" class="form-control" required value="{{ old('name', $data->name) }}" />
+                                                    <input @if(!$update) disabled @endif type="text" oninput="generatePrefix()" name="name" class="form-control" required value="{{ old('name', $data->name) }}" />
                                                     @error('name')
                                                         <span class="alert alert-danger">{{ $message }}</span>
                                                     @enderror
                                                 </div>
                                             </div>
+                                             <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Prefix <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <input @if(!$update) disabled @endif type="text" name="prefix" required
+                                                            oninput="checkUnique()" class="form-control text-uppercase"
+                                                            maxlength="3" pattern="[A-Z]{1,3}"
+                                                            title="Enter up to 3 uppercase letters"
+                                                            value="{{ $data->prefix }}" required
+                                                            oninput="this.value = this.value.toUpperCase()" />
+                                                        @error('prefix')
+                                                            <span class="alert alert-danger">{{ $message }}</span>
+                                                        @enderror
+                                                        <span id="prefix-feedback" class="text-danger small"></span>
+                                                    </div>
+                                                </div>
 
                                             <div class="row align-items-center mb-1">
                                                 <div class="col-md-3">
@@ -251,6 +269,55 @@
         parentSelect.dataset.selectedParent = "{{ $data->parent_group_id }}";
         updateParents();  // Ensure the options are updated
     });
+        const prefix = $('input[name="prefix"]');
+        const name = $('input[name="name"]');
+
+        function generatePrefix() {
+
+            $.ajax({
+                url: '{{ route('generate-group-prefix') }}',
+                method: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    name: name.val(),
+                },
+                success: function(response) {
+                    prefix.val((response.prefix || ''));
+                },
+                error: function() {
+                    prefix.val('');
+                }
+            });
+        }
+
+        function checkUnique() {
+            var feedback = $('#prefix-feedback');
+
+            $.ajax({
+                url: '{{ route('groups-check-prefix') }}',
+                method: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    prefix: prefix.val(),
+                    id:'{{$data->id}}',
+                },
+                success: function(response) {
+                    if (response.is_unique) {
+                        feedback.text('');
+                    } else {
+                        feedback.text('Prefix is already in use.');
+                    }
+
+                    // Optionally update the field with suggested unique prefix
+                    if (response.prefix) {
+                        prefix.val(response.prefix);
+                    }
+                },
+                error: function() {
+                    feedback.text('Error checking prefix.');
+                }
+            });
+        }
 </script>
 
 @endsection

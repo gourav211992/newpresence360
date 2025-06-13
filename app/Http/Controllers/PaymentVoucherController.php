@@ -7,6 +7,7 @@ use App\Helpers\Helper;
 use App\Helpers\FinancialPostingHelper;
 use App\Helpers\SaleModuleHelper;
 use App\Models\ErpAddress;
+use Illuminate\Support\Facades\Cache;
 use App\Models\Bank;
 use App\Models\BankDetail;
 use App\Models\ErpStore;
@@ -375,9 +376,31 @@ class PaymentVoucherController extends Controller
     })
     ->toArray();
         // pass authenticate user's org locations
-        $locations = Helper::getStoreLocation(Helper::getAuthenticatedUser()->organization_id);
-        $fyear = Helper::getFinancialYear(date('Y-m-d'));
-        return view('paymentVoucher.createPaymentVoucher', compact('cost_centers','books_t', 'books', 'banks', 'ledgers', 'currencies', 'orgCurrency', 'type', 'storeUrl', 'redirectUrl','locations','fyear'));
+         $locations = InventoryHelper::getAccessibleLocations();
+         $fyear = Helper::getFinancialYear(date('Y-m-d'));
+         $token = $r->query('token');
+        $cached = Cache::get($token, ['grouped' => [], 'raw' => []]);
+
+        $selectedRows = $cached['grouped'];
+        $rawItemData = $cached['raw']; 
+        return view('paymentVoucher.createPaymentVoucher',
+            compact(
+                'cost_centers',
+                'books_t',
+                'books',
+                'banks',
+                'ledgers',
+                'currencies',
+                'orgCurrency',
+                'type',
+                'storeUrl',
+                'redirectUrl',
+                'locations',
+                'fyear',
+                'selectedRows',
+                'rawItemData',
+            )
+        );
     }
 
     /**
@@ -684,7 +707,7 @@ if ($ref) {
 
 
 
-        $locations = Helper::getStoreLocation(Helper::getAuthenticatedUser()->organization_id);
+        $locations = InventoryHelper::getAccessibleLocations();
         $fyear = Helper::getFinancialYear(date('Y-m-d'));
         if ($data->document_status == ConstantHelper::DRAFT)
             return view('paymentVoucher.editPaymentVoucher', compact('cost_centers','books_t', 'data', 'books', 'buttons', 'history', 'banks', 'ledgers', 'currencies', 'orgCurrency', 'revision_number', 'currNumber', 'editUrl', 'indexUrl', 'editUrlString','locations','fyear'));

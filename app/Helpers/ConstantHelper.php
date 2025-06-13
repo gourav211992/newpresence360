@@ -1004,6 +1004,25 @@ class ConstantHelper
         ['label' => 'Boolean (Yes/No)', 'value' => self::DATA_TYPE_BOOLEAN],
     ];
 
+      public const VEHICLE_TYPES = [
+        '32 ft'   => '32 FT',
+        '14 ft'   => '14 Ft',
+        '17 ft'   => '17 FT',
+        '16 ft'   => '16 FT',
+    ];
+
+     public const FUEL_TYPES = [
+        'diesel'   => 'Diesel',
+        'petrol'   => 'Petrol',
+        'cng'      => 'CNG',
+        'electric' => 'Electric',
+    ];
+
+      public const OWNERSHIP = [
+        'self'   => 'Self',
+        'contract'   => 'Contract',
+        'hp'      => 'HP',
+    ];
      // Excel Export Styling Constants
     const EXCEL_FONT_COLOR_BLACK = 'FF000000';
     const EXCEL_FONT_BOLD = true;

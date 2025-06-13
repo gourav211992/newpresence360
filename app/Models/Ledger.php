@@ -18,6 +18,7 @@ class Ledger extends Model
     use HasFactory, SoftDeletes, DefaultGroupCompanyOrg;
 
     protected $fillable = [
+        'prefix',
         'ledger_group_id',
         'code',
         'name',

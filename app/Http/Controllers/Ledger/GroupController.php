@@ -29,17 +29,17 @@ class GroupController extends Controller
             }
         ])->get();
 
-        $data = Group::withDefaultGroupCompanyOrg()->orWhere('edit',0)
-        ->with([
-            'parent' => function ($q) {
-                $q->select('id', 'name');
-            }
-        ])
-        ->orderBy('id', 'desc')
-        ->get();
+        $data = Group::withDefaultGroupCompanyOrg()->orWhere('edit', 0)
+            ->with([
+                'parent' => function ($q) {
+                    $q->select('id', 'name');
+                }
+            ])
+            ->orderBy('id', 'desc')
+            ->get();
         $non_editable = ConstantHelper::LEDGER_ACCOUNT_NON_EDITABLE;
 
-        return view('ledgers.groups.view_groups', compact('data', 'parentGroup','non_editable'));
+        return view('ledgers.groups.view_groups', compact('data', 'parentGroup', 'non_editable'));
     }
 
     /**
@@ -51,7 +51,7 @@ class GroupController extends Controller
         $ledgers = Ledger::withDefaultGroupCompanyOrg()->get();
 
         $allLedgerParentIds = [];
-        $allIds=[];
+        $allIds = [];
 
 
         foreach ($ledgers as $ledger) {
@@ -60,29 +60,28 @@ class GroupController extends Controller
         }
 
         $allLedgerParentIds = array_unique($allLedgerParentIds);
-        foreach($allLedgerParentIds as $ledg){
+        foreach ($allLedgerParentIds as $ledg) {
             $parent = Group::find($ledg)?->parent_group_id;
             $chk_og = Group::find($parent);
-                if(!isset($chk_og->organization_id) || $chk_og->organization_id == Helper::getAuthenticatedUser()->organization_id){
-                    $allIds[]=$ledg;
-                }
-
+            if (!isset($chk_og->organization_id) || $chk_og->organization_id == Helper::getAuthenticatedUser()->organization_id) {
+                $allIds[] = $ledg;
+            }
         }
         $allIds = array_unique($allIds);
 
-        $parents = Helper::getGroupsQuery()->whereNotIn('id',$allIds)
-        ->get();
+        $parents = Helper::getGroupsQuery()->whereNotIn('id', $allIds)
+            ->get();
 
 
-         $existingGroupname = Group::where(function ($q) {
-                $q->withDefaultGroupCompanyOrg()
+        $existingGroupname = Group::where(function ($q) {
+            $q->withDefaultGroupCompanyOrg()
                 ->orWhere('edit', 0);
-            })->pluck('name')->map(function ($name) {
-                return strtolower($name);
-            })->values();
+        })->pluck('name')->map(function ($name) {
+            return strtolower($name);
+        })->values();
 
 
-        return view('ledgers.groups.group-create', compact('parents','existingGroupname'));
+        return view('ledgers.groups.group-create', compact('parents', 'existingGroupname'));
     }
 
     /**
@@ -90,39 +89,48 @@ class GroupController extends Controller
      */
     public function store(Request $request)
     {
-         $existingName = Group::where(function ($q) {
+        $existingName = Group::where(function ($q) {
             $q->withDefaultGroupCompanyOrg()
-              ->orWhere('edit', 0);
+                ->orWhere('edit', 0);
         })->where('name', $request->name)
-        ->first();
+            ->first();
 
 
 
-            if ($existingName) {
-                return back()->withErrors(['name' => 'The name has already been taken.'])->withInput();
-            }
+        if ($existingName) {
+            return back()->withErrors(['name' => 'The name has already been taken.'])->withInput();
+        }
+         $existingPrefix = Group::where(function ($q) {
+            $q->withDefaultGroupCompanyOrg()
+                ->orWhere('edit', 0);
+        })->where('prefix', $request->prefix)
+            ->first();
+
+
+
+        if ($existingPrefix) {
+            return back()->withErrors(['prefix' => 'The prefix has already been taken.'])->withInput();
+        }
 
 
         $groups = Helper::getGroupsQuery()->where('name', $request->name)->count();
 
         // Find the organization based on the user's organization_id
         // $organization = Organization::where('id', Helper::getAuthenticatedUser()->organization_id)->first();
-        if($groups==0){
-        // Create a new group record with organization details
-        $parentUrl = ConstantHelper::LEDGER_GROUP_SERVICE_ALIAS;
-        $validatedData = Helper::prepareValidatedDataWithPolicy($parentUrl);
-        Group::create(array_merge($request->all(),$validatedData));
+        if ($groups == 0) {
+            // Create a new group record with organization details
+            $parentUrl = ConstantHelper::LEDGER_GROUP_SERVICE_ALIAS;
+            $validatedData = Helper::prepareValidatedDataWithPolicy($parentUrl);
+            Group::create(array_merge($request->all(), $validatedData));
 
-        // Redirect with a success message
-        return redirect()->route('ledger-groups.index')->with('success', 'Group created successfully');
-}
-else{
-    return redirect()
-        ->route('ledger-groups.create')
-        ->withErrors(['error'=> 'Group Name already taken.'])->withInput();
-}
-
-}
+            // Redirect with a success message
+            return redirect()->route('ledger-groups.index')->with('success', 'Group created successfully');
+        } else {
+            return redirect()
+                ->route('ledger-groups.create')
+                ->withErrors(['error' => 'Group Name already taken.'])->withInput();
+        }
+    }
 
     /**
      * Show the form for editing the specified resource.
@@ -136,7 +144,7 @@ else{
         $ledgers = Ledger::withDefaultGroupCompanyOrg()->get();
 
         $allLedgerParentIds = [];
-        $allIds=[];
+        $allIds = [];
 
 
         foreach ($ledgers as $ledger) {
@@ -145,37 +153,36 @@ else{
         }
 
         $allLedgerParentIds = array_unique($allLedgerParentIds);
-        foreach($allLedgerParentIds as $ledg){
+        foreach ($allLedgerParentIds as $ledg) {
             $parent = Group::find($ledg)?->parent_group_id;
             $chk_og = Group::find($parent);
-                if(!isset($chk_og->organization_id) || $chk_og->organization_id == Helper::getAuthenticatedUser()->organization_id){
-                    $allIds[]=$ledg;
-                }
-
+            if (!isset($chk_og->organization_id) || $chk_og->organization_id == Helper::getAuthenticatedUser()->organization_id) {
+                $allIds[] = $ledg;
+            }
         }
         $allIds = array_unique($allIds);
 
-        $parents = Helper::getGroupsQuery()->whereNotIn('id',$allIds)
-        ->get();
+        $parents = Helper::getGroupsQuery()->whereNotIn('id', $allIds)
+            ->get();
 
 
-        if($data_parent)
-        $parents[] = Group::find($data_parent);
+        if ($data_parent)
+            $parents[] = Group::find($data_parent);
 
         $update = $data->edit;
         $existingGroupname = Group::where(function ($q) {
-        $q->withDefaultGroupCompanyOrg()
-            ->orWhere('edit', 0);
+            $q->withDefaultGroupCompanyOrg()
+                ->orWhere('edit', 0);
         })
-        ->where('id', '!=', $id) // exclude the one being edited
-        ->pluck('name')
-        ->map(function ($name) {
-            return strtolower($name);
-        })
-        ->values();
+            ->where('id', '!=', $id) // exclude the one being edited
+            ->pluck('name')
+            ->map(function ($name) {
+                return strtolower($name);
+            })
+            ->values();
 
 
-        return view('ledgers.groups.edit_group', compact('data', 'parents','update','existingGroupname'));
+        return view('ledgers.groups.edit_group', compact('data', 'parents', 'update', 'existingGroupname'));
     }
 
     /**
@@ -186,34 +193,42 @@ else{
 
         $existingName = Group::where('id', '!=', (int)$id)->where(function ($q) {
             $q->withDefaultGroupCompanyOrg()
-              ->orWhere('edit', 0);
-        })->where('name',$request->name)->exists();
+                ->orWhere('edit', 0);
+        })->where('name', $request->name)->exists();
 
-            if ($existingName) {
-                return back()->withErrors(['name' => 'The name has already been taken.'])->withInput();
-            }
+        if ($existingName) {
+            return back()->withErrors(['name' => 'The name has already been taken.'])->withInput();
+        }
+
+        $existingPrefix = Group::where('id', '!=', (int)$id)->where(function ($q) {
+            $q->withDefaultGroupCompanyOrg()
+                ->orWhere('edit', 0);
+        })->where('prefix', $request->prefix)->exists();
+
+        if ($existingPrefix) {
+            return back()->withErrors(['prefix' => 'The prefix has already been taken.'])->withInput();
+        }
+
+        $groups = Helper::getGroupsQuery()->where('name', $request->name)
+            ->where('id', '!=', $id) // Correcting 'whereNot' to 'where'
+            ->count();
 
 
-     $groups = Helper::getGroupsQuery()->where('name', $request->name)
-    ->where('id', '!=', $id) // Correcting 'whereNot' to 'where'
-    ->count();
 
+        if ($groups == 0) {
+            $update = Group::find($id);
+            $update->name = $request->name;
+            $update->parent_group_id = $request->parent_group_id;
+            $update->status = $request->status;
+            $update->prefix = $request->prefix;
+            $update->save();
 
-
-    if($groups==0){
-        $update = Group::find($id);
-        $update->name = $request->name;
-        $update->parent_group_id = $request->parent_group_id;
-        $update->status = $request->status;
-        $update->save();
-
-        return redirect()->route('ledger-groups.index')->with('success', 'Group updated successfully.');
-    }
-    else{
-        return redirect()
-            ->route('ledger-groups.edit',$id)
-            ->withErrors(['error'=> 'Group Name already taken.'])->withInput();
-    }
+            return redirect()->route('ledger-groups.index')->with('success', 'Group updated successfully.');
+        } else {
+            return redirect()
+                ->route('ledger-groups.edit', $id)
+                ->withErrors(['error' => 'Group Name already taken.'])->withInput();
+        }
     }
 
     public function getLedgerGroup(Request $request)
@@ -223,7 +238,7 @@ else{
         $query = Group::where('status', 1);
 
         if (!empty($searchTerm)) {
-            $query->where(function($q) use ($searchTerm) {
+            $query->where(function ($q) use ($searchTerm) {
                 $q->where('name', 'LIKE', "%$searchTerm%");
             });
         }
@@ -247,6 +262,21 @@ else{
         $record->delete();
         return redirect()->route('groups.view_groups')->with('success', 'Group deleted successfully');
     }
+    public function generate_prefix(Request $req)
+    {
+        $prefix =  Group::generateuniquePrefix($req->name);
+        return response()->json(['prefix' => $prefix]);
+    }
+    public function checkPrefix(Request $req)
+    {
+        $query = Helper::getGroupsQuery()->where('prefix', $req->prefix);
 
+        if (!empty($req->id)) {
+            $query->where('id', '!=', $req->id);
+        }
 
+        $is_not_unique = $query->exists();
+
+        return response()->json(['is_unique' => !$is_not_unique]);
+    }
 }
