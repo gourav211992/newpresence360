@@ -821,6 +821,9 @@
                                          <tr>
                                             <th>#</th>
                                             <th>Date</th>
+                                            <th>Organization</th>
+                                            <th>Location</th>
+                                            <th>Cost Center</th>
                                             <th>Series</th>
                                             <th>Document No.</th>
                                             <th class="text-end">Amount</th>
@@ -837,7 +840,7 @@
                                        </tbody>
                                        <tfoot>
                                             <tr>
-                                                <td colspan="6" class="text-end">Total</td>
+                                                <td colspan="9" class="text-end">Total</td>
                                                 <td class="fw-bolder text-dark text-end settleTotal">0</td>
                                                 <td></td>
                                             </tr>
@@ -1214,6 +1217,7 @@ document.addEventListener("click", function (e) {
                         var html = '';
                         $.each(response.data, function(index, val) {
                             if (!preSelected.includes(val['id'].toString())) {
+                                $.each(val.items || [], function (i, item) {
 
                                 var amount = 0.00;
                                 var checked = "";
@@ -1235,6 +1239,9 @@ document.addEventListener("click", function (e) {
                                     if(val['settle']){
                                     html += `<tr id="${val['id']}" class="voucherRows">
                                             <td>${index+1}</td>
+                                            <td>${val['organization']?.name ?? '-'}</td>
+                                            <td>${item.erp_location?.store_name ?? '-'}</td>
+                                            <td>${item.cost_center?.name ?? '-'}</td>
                                             <td>${val['date']}</td>
                                             <td class="fw-bolder text-dark">${val['series']['book_code'].toUpperCase()}</td>
                                             <td>${val['voucher_no']}</td>
@@ -1251,6 +1258,7 @@ document.addEventListener("click", function (e) {
                                         </tr>`;
                                     }
                                 }
+                            });
                             }
                         });
                         $('#LedgerId').val(response.ledgerId);

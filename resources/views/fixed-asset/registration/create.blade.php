@@ -1735,8 +1735,15 @@
             });
 
         });
+<<<<<<< HEAD
     $('.code_error').css('font-size', '12px');
+=======
+>>>>>>> acc6277a26dcbffb4673aceab858f8ab7978b79b
     </script>
     
 @endsection
 @endsection
+<<<<<<< HEAD
+=======
+@endsection
+>>>>>>> acc6277a26dcbffb4673aceab858f8ab7978b79b

@@ -162,4 +162,9 @@ class Voucher extends Model
     {
         return $this->belongsTo(ErpStore::class, 'location', 'id');
     }
+
+    public function organization()
+    {
+        return $this->belongsTo(Organization::class, 'organization_id', 'id');
+    }
 }
