@@ -25,6 +25,10 @@
             display: block;
             margin-top: 10px;
         }
+    .code_error {
+    font-size: 12px;
+}
+
     </style>
 @endsection
 
@@ -294,7 +298,7 @@
                                                             <input type="text" class="form-control" name="asset_code"
                                                                 id="asset_code" value="{{ $data->asset_code }}" readonly  oninput="this.value = this.value.toUpperCase();"
                                                                 required />
-                                                                 <span class="text-danger code_error"></span>
+                                                                 <span class="text-danger code_error" style="font-size:12px"></span>
                                                         </div>
                                                     </div>
 
