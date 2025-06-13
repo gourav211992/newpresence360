@@ -1,4 +1,9 @@
 @extends('layouts.app')
+<style>
+    .code_error {
+    font-size: 12px;
+}
+</style>
 
 
 @section('content')
@@ -407,7 +412,7 @@
                                                                 oninput="this.value = this.value.toUpperCase();"
                                                                 id="asset_code" value="{{ $data->asset_code }}"
                                                                 required />
-                                                            <span class="text-danger code_error"></span>
+                                                            <span class="text-danger code_error" style="font-size:12px"></span>
                                                         </div>
                                                     </div>
 
@@ -507,8 +512,7 @@
                                                             <label class="form-label">Est. Useful Life (yrs) <span
                                                                     class="text-danger">*</span></label>
                                                             <input type="number" class="form-control" name="useful_life"
-                                                                id="useful_life" value="{{ $data->useful_life }}"
-                                                                oninput="updateDepreciationValues()" required />
+                                                                id="useful_life" value="{{ $data->useful_life }}" required />
                                                         </div>
                                                     </div>
 
@@ -1017,6 +1021,30 @@
         let rowCount = 1;
 
         $('#addNewRowBtn').on('click', function() {
+            let allInputsFilled = true;
+
+            $('.mrntableselectexcel').find('.asset-search-input, .sub_asset_id, .last_dep_date').each(function() {
+                const input = this;
+
+                // Only validate if NOT readonly
+                if (!$(input).prop('readonly')) {
+                    if (!input.checkValidity()) {
+                        allInputsFilled = false;
+                        input.reportValidity(); // Show default error message
+                        return false; // Exit loop after first invalid input
+                    } else {
+                        $(input).removeClass('is-invalid');
+                    }
+                } else {
+                    $(input).removeClass('is-invalid');
+                }
+            });
+
+            if (!allInputsFilled) {
+                // showToast('warning',
+                //     'Please complete all input fields in the existing row(s) before adding a new one.');
+                return;
+            }
             //    $('.select2').each(function () {
             //         if ($.data(this, 'select2')) {
             //             $(this).select2('destroy');
@@ -1474,6 +1502,36 @@
                     .prop('readonly', true);
             });
         });
+        const allLedgers = @json($ledgers);
+
+        function renderLedgerSelects() {
+            // Collect all selected ledger IDs from all .ledger dropdowns
+            const selectedLedgerIds = [];
+            $('.ledger').each(function() {
+                const val = $(this).val();
+                if (val) {
+                    selectedLedgerIds.push(val.toString());
+                }
+            });
+
+            const $thisSelect = $('#ledger');
+            const currentVal = $thisSelect.val(); // not used now since we will exclude everything in selectedLedgerIds
+
+            $thisSelect.empty().append('<option value="">Select</option>');
+
+            allLedgers.forEach(ledger => {
+                const ledgerIdStr = ledger.id.toString();
+
+                // Exclude if this ledger ID is already selected anywhere
+                if (!selectedLedgerIds.includes(ledgerIdStr)) {
+                    $thisSelect.append(`<option value="${ledger.id}">${ledger.name}</option>`);
+                }
+            });
+        }
+           $('#useful_life').on('input', function() {
+            updateSum();
+            updateDepreciationValues();
+           });
         
     </script>
     <!-- END: Content-->
