@@ -375,8 +375,8 @@ class PaymentVoucherController extends Controller
     })
     ->toArray();
         // pass authenticate user's org locations
-        $locations = Helper::getStoreLocation(Helper::getAuthenticatedUser()->organization_id);
-        $fyear = Helper::getFinancialYear(date('Y-m-d'));
+         $locations = InventoryHelper::getAccessibleLocations();
+         $fyear = Helper::getFinancialYear(date('Y-m-d'));
         return view('paymentVoucher.createPaymentVoucher', compact('cost_centers','books_t', 'books', 'banks', 'ledgers', 'currencies', 'orgCurrency', 'type', 'storeUrl', 'redirectUrl','locations','fyear'));
     }
 
@@ -684,7 +684,7 @@ if ($ref) {
 
 
 
-        $locations = Helper::getStoreLocation(Helper::getAuthenticatedUser()->organization_id);
+        $locations = InventoryHelper::getAccessibleLocations();
         $fyear = Helper::getFinancialYear(date('Y-m-d'));
         if ($data->document_status == ConstantHelper::DRAFT)
             return view('paymentVoucher.editPaymentVoucher', compact('cost_centers','books_t', 'data', 'books', 'buttons', 'history', 'banks', 'ledgers', 'currencies', 'orgCurrency', 'revision_number', 'currNumber', 'editUrl', 'indexUrl', 'editUrlString','locations','fyear'));

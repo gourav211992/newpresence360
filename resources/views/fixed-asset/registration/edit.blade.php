@@ -25,6 +25,10 @@
             display: block;
             margin-top: 10px;
         }
+    .code_error {
+    font-size: 12px;
+}
+
     </style>
 @endsection
 
@@ -294,6 +298,7 @@
                                                             <input type="text" class="form-control" name="asset_code"
                                                                 id="asset_code" value="{{ $data->asset_code }}" readonly  oninput="this.value = this.value.toUpperCase();"
                                                                 required />
+                                                                 <span class="text-danger code_error" style="font-size:12px"></span>
                                                         </div>
                                                     </div>
 
@@ -372,7 +377,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Est. Useful Life (yrs) <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" name="useful_life" oninput="updateDepreciationValues()"
+                                                            <input type="number" class="form-control" name="useful_life" oninput="updateDepreciationValues()"
                                                                 id="useful_life" value="{{ $data->useful_life }}"
                                                                 required />
                                                         </div>
@@ -1350,8 +1355,18 @@
 
         document.getElementById('save-draft-btn').addEventListener('click', function() {
             document.getElementById('document_status').value = 'draft';
-            document.getElementById('fixed-asset-registration-form').submit();
+             if (!($('#asset_code').hasClass('is-invalid'))) {
+                document.getElementById('fixed-asset-registration-form').submit();
+            }else{
+                showToast('error','Please correct the errors before submitting.');
+            }
         });
+                $('#fixed-asset-registration-form').on('submit', function (e) {
+    if ($(this).find('.is-invalid').length > 0) {
+        e.preventDefault(); // Prevent form submission
+        showToast('error','Please correct the errors before submitting.');
+    }
+});
 
         document.getElementById('submit-btn').addEventListener('click', function() {
             document.getElementById('document_status').value = 'submitted';
@@ -1659,6 +1674,30 @@ $('#location').on('change', function () {
         $('#cost_center').empty();
     }
 });
+$('#asset_code').on('input', function() {
+            $.ajax({
+                url: '{{ route('finance.fixed-asset.check-code') }}',
+                method: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    edit_id:'{{$data->id}}',
+                    code: $('#asset_code').val(),
+                },
+                success: function(response) {
+                    const $input = $('#asset_code');
+                    const $errorEl = $('.code_error'); // Use class instead of ID
+
+                    if (response.exists) {
+                        $errorEl.text('Code already exists.');
+                        $input.addClass('is-invalid');
+                    } else {
+                        $errorEl.text('');
+                        $input.removeClass('is-invalid');
+                    }
+                }
+            });
+
+        });
 
 $('#location').trigger('change');
 

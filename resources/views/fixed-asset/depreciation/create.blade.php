@@ -434,23 +434,31 @@
     });
 
 
-     function showToast(icon, title) {
-            const Toast = Swal.mixin({
-                toast: true,
-                position: "top-end",
-                showConfirmButton: false,
-                timer: 3000,
-                timerProgressBar: true,
-                didOpen: (toast) => {
-                    toast.onmouseenter = Swal.stopTimer;
-                    toast.onmouseleave = Swal.resumeTimer;
-                },
-            });
-            Toast.fire({
-                icon,
-                title
-            });
-        }
+    function showToast(icon, title) {
+    const capitalizedIcon = icon.charAt(0).toUpperCase() + icon.slice(1);
+    Swal.fire({
+        title: capitalizedIcon,
+        text: title,
+        icon: icon, // Keep the original icon lowercase for Swal
+    });
+}
+
+            // const Toast = Swal.mixin({
+            //     toast: true,
+            //     position: "top-end",
+            //     showConfirmButton: false,
+            //     timer: 3000,
+            //     timerProgressBar: true,
+            //     didOpen: (toast) => {
+            //         toast.onmouseenter = Swal.stopTimer;
+            //         toast.onmouseleave = Swal.resumeTimer;
+            //     },
+            // });
+            // Toast.fire({
+            //     icon,
+            //     title
+            // });
+        
 
         @if (session('success'))
             showToast("success", "{{ session('success') }}");
@@ -477,9 +485,20 @@ document.getElementById("process_btn").addEventListener("click", function () {
     let period = document.getElementById("period").value;
 
     if (!period) {
-        alert("Please select period.");
+        $('#assetTableBody').empty();
+         document.getElementById("grand_total_current_value_after_dep").value =  0;
+            document.getElementById("grand_total_current_value").value =  0;
+            document.getElementById("grand_total_dep_amount").value = 0;
+            document.getElementById("grand_total_after_dep_value").value = 0;
+            document.getElementById("grand_total_current").textContent = 0;
+            document.getElementById("grand_total_current_after_dep").textContent = 0;
+            document.getElementById("grand_total_dep").textContent = 0;
+            document.getElementById("grand_total_after_dep").textContent = 0;
+            document.getElementById("asset_json").value = "";
+        showToast('error',"Please select period.");
         return;
     }
+
 
     // Example: Fetch data from the backend using AJAX (replace with actual data source)
     fetch(`{{route('finance.fixed-asset.depreciation.assets')}}?date_range=${period}`)

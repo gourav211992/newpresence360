@@ -1,5 +1,9 @@
 @extends('layouts.app')
-
+<style>
+    .code_error {
+        font-size: 12px;
+    }
+</style>
 
 
 @section('content')
@@ -250,7 +254,7 @@
                                                             </tr>
                                                         </thead>
                                                         <tbody class="mrntableselectexcel">
-                                                            <tr class="trselected">
+                                                            <tr>
                                                                 <td class="customernewsection-form">
                                                                     <input type="hidden" class="ledger">
                                                                     <div
@@ -364,7 +368,8 @@
                                                                 oninput="this.value = this.value.toUpperCase();"
                                                                 id="asset_code" value="{{ old('asset_code') }}"
                                                                 required />
-                                                            <span class="text-danger code_error"></span>
+                                                            <span class="text-danger code_error"
+                                                                style="font-size:12px"></span>
                                                         </div>
                                                     </div>
 
@@ -461,9 +466,9 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Est. Useful Life (yrs) <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" name="useful_life"
+                                                            <input type="number" class="form-control" name="useful_life"
                                                                 id="useful_life" value="{{ old('useful_life') }}"
-                                                                oninput="updateDepreciationValues()" required />
+                                                                 required />
                                                         </div>
                                                     </div>
 
@@ -590,7 +595,9 @@
             } else if (e.which == 40) {
                 $('.trselected').next('tr').addClass('trselected').siblings().removeClass('trselected');
             }
-            $('.mrntableselectexcel').scrollTop($('.trselected').offset().top - 40);
+            var selected = $('.trselected');
+            if (selected.length && selected.offset())
+                $('.mrntableselectexcel').scrollTop($('.trselected').offset().top - 40);
         });
 
         $('#add_new_sub_asset').on('click', function() {
@@ -1157,7 +1164,8 @@
                 let dd = String(nextDate.getDate()).padStart(2, '0');
                 let formattedDate = `${yyyy}-${mm}-${dd}`;
 
-                $('#capitalize_date').val(formattedDate).removeAttr('min').removeAttr('max').prop('readonly', true).prop('required', false);
+                $('#capitalize_date').val(formattedDate).removeAttr('min').removeAttr('max').prop('readonly', true).prop(
+                    'required', false);
             }
             updateDepreciationValues();
         }
@@ -1165,9 +1173,35 @@
         let rowCount = 1;
 
         $('#addNewRowBtn').on('click', function() {
+            let allInputsFilled = true;
+
+            $('.mrntableselectexcel').find('.asset-search-input, .sub_asset_id, .last_dep_date').each(function() {
+                const input = this;
+
+                // Only validate if NOT readonly
+                if (!$(input).prop('readonly')) {
+                    if (!input.checkValidity()) {
+                        allInputsFilled = false;
+                        input.reportValidity(); // Show default error message
+                        return false; // Exit loop after first invalid input
+                    } else {
+                        $(input).removeClass('is-invalid');
+                    }
+                } else {
+                    $(input).removeClass('is-invalid');
+                }
+            });
+
+            if (!allInputsFilled) {
+                // showToast('warning',
+                //     'Please complete all input fields in the existing row(s) before adding a new one.');
+                return;
+            }
+
+
             rowCount++;
             let newRow = `
-    <tr class="trselected">
+    <tr >
         <input type="hidden" class="ledger">
         <td class="customernewsection-form">
             <div class="form-check form-check-primary custom-checkbox">
@@ -1469,6 +1503,12 @@
                 }
             });
         }
+         $('#useful_life').on('input', function() {
+            updateSum();
+            updateDepreciationValues();
+           });
+        
+        $('.code_error').css('font-size', '12px');
     </script>
     <!-- END: Content-->
 @endsection

@@ -1,8 +1,13 @@
 @extends('layouts.app')
+<style>
+    .code_error {
+    font-size: 12px;
+}
+</style>
 
 
 @section('content')
-    <div class="app-content content ">
+<div class="app-content content ">
         <div class="content-overlay"></div>
         <div class="header-navbar-shadow"></div>
         <div class="content-wrapper container-xxl p-0">
@@ -26,6 +31,9 @@
                     </div>
                     <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
                         <div class="form-group breadcrumb-right">
+                            <a href="{{ route('finance.fixed-asset.merger.index') }}"> <button
+                                    class="btn btn-secondary btn-sm"><i data-feather="arrow-left-circle"></i> Back</button>
+                            </a>
                             @if ($data->document_status == 'draft')
                                 <button class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" type="button"
                                     id="save-draft-btn">
@@ -271,7 +279,7 @@
                                                                             ->format('Y-m-d')
                                                                         : '';
                                                                 @endphp
-                                                                <tr class="trselected">
+                                                                <tr >
                                                                     <td class="customernewsection-form">
                                                                         <input type="hidden" class="ledger">
                                                                         <div
@@ -404,7 +412,7 @@
                                                                 oninput="this.value = this.value.toUpperCase();"
                                                                 id="asset_code" value="{{ $data->asset_code }}"
                                                                 required />
-                                                            <span class="text-danger code_error"></span>
+                                                            <span class="text-danger code_error" style="font-size:12px"></span>
                                                         </div>
                                                     </div>
 
@@ -503,9 +511,8 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Est. Useful Life (yrs) <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" name="useful_life"
-                                                                id="useful_life" value="{{ $data->useful_life }}"
-                                                                oninput="updateDepreciationValues()" required />
+                                                            <input type="number" class="form-control" name="useful_life"
+                                                                id="useful_life" value="{{ $data->useful_life }}" required />
                                                         </div>
                                                     </div>
 
@@ -524,7 +531,7 @@
                                                             <label class="form-label">Dep % <span
                                                                     class="text-danger">*</span></label>
                                                             <input type="number" class="form-control"
-                                                                id="depreciation_rate" name="depreciation_percentage"
+                                                                id="depreciation_rate" name="depreciation_percentage" 
                                                                 value="{{ $data->depreciation_percentage }}" readonly />
                                                             <input type="hidden" value="{{ $dep_percentage }}"
                                                                 id="depreciation_percentage" />
@@ -635,6 +642,8 @@
             } else if (e.which == 40) {
                 $('.trselected').next('tr').addClass('trselected').siblings().removeClass('trselected');
             }
+           var selected = $('.trselected');
+            if (selected.length && selected.offset())
             $('.mrntableselectexcel').scrollTop($('.trselected').offset().top - 40);
         });
 
@@ -934,7 +943,7 @@
             }
 
             let salvageValue = (parseFloat($('#salvage_value').val())).toFixed(2);
-
+            
             let depreciationRate = 0;
             if (method === "SLM") {
                 depreciationRate = ((((currentValue - salvageValue) / usefulLife) / currentValue) * 100).toFixed(2);
@@ -944,7 +953,6 @@
 
             let totalDepreciation = 0;
             document.getElementById("salvage_value").value = salvageValue;
-            console.log("dep_rate" + depreciationRate + "devidend" + devidend);
             document.getElementById("depreciation_rate").value = depreciationRate;
             document.getElementById("depreciation_rate_year").value = depreciationRate;
             document.getElementById("total_depreciation").value = totalDepreciation;
@@ -1013,6 +1021,30 @@
         let rowCount = 1;
 
         $('#addNewRowBtn').on('click', function() {
+            let allInputsFilled = true;
+
+            $('.mrntableselectexcel').find('.asset-search-input, .sub_asset_id, .last_dep_date').each(function() {
+                const input = this;
+
+                // Only validate if NOT readonly
+                if (!$(input).prop('readonly')) {
+                    if (!input.checkValidity()) {
+                        allInputsFilled = false;
+                        input.reportValidity(); // Show default error message
+                        return false; // Exit loop after first invalid input
+                    } else {
+                        $(input).removeClass('is-invalid');
+                    }
+                } else {
+                    $(input).removeClass('is-invalid');
+                }
+            });
+
+            if (!allInputsFilled) {
+                // showToast('warning',
+                //     'Please complete all input fields in the existing row(s) before adding a new one.');
+                return;
+            }
             //    $('.select2').each(function () {
             //         if ($.data(this, 'select2')) {
             //             $(this).select2('destroy');
@@ -1020,7 +1052,7 @@
             //     });
             rowCount++;
             let newRow = `
-     <tr class="trselected">
+     <tr >
         <td class="customernewsection-form">
              <input type="hidden" class="ledger">
             <div class="form-check form-check-primary custom-checkbox">
@@ -1470,6 +1502,36 @@
                     .prop('readonly', true);
             });
         });
+        const allLedgers = @json($ledgers);
+
+        function renderLedgerSelects() {
+            // Collect all selected ledger IDs from all .ledger dropdowns
+            const selectedLedgerIds = [];
+            $('.ledger').each(function() {
+                const val = $(this).val();
+                if (val) {
+                    selectedLedgerIds.push(val.toString());
+                }
+            });
+
+            const $thisSelect = $('#ledger');
+            const currentVal = $thisSelect.val(); // not used now since we will exclude everything in selectedLedgerIds
+
+            $thisSelect.empty().append('<option value="">Select</option>');
+
+            allLedgers.forEach(ledger => {
+                const ledgerIdStr = ledger.id.toString();
+
+                // Exclude if this ledger ID is already selected anywhere
+                if (!selectedLedgerIds.includes(ledgerIdStr)) {
+                    $thisSelect.append(`<option value="${ledger.id}">${ledger.name}</option>`);
+                }
+            });
+        }
+           $('#useful_life').on('input', function() {
+            updateSum();
+            updateDepreciationValues();
+           });
         
     </script>
     <!-- END: Content-->

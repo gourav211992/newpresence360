@@ -1,4 +1,9 @@
 @extends('layouts.app')
+<style>
+    .code_error {
+    font-size: 12px;
+}
+</style>
 
 @section('content')
     <div class="app-content content ">
@@ -317,7 +322,7 @@
                                                             </tr>
                                                         </thead>
                                                         <tbody class="mrntableselectexcel">
-                                                            <tr class="trselected">
+                                                            <tr >
                                                                 <td class="customernewsection-form">
                                                                     <div
                                                                         class="form-check form-check-primary custom-checkbox">
@@ -330,7 +335,7 @@
                                                                     <input type="text" required placeholder="Enter"
                                                                         class="form-control mw-100 mb-25 asset-code-input"
                                                                         oninput="this.value = this.value.toUpperCase();" />
-                                                                    <span class="text-danger code_error"></span>
+                                                                    <span class="text-danger code_error" style="font-size:12px"></span>
                                                                 </td>
                                                                 <td class="poprod-decpt">
                                                                     <input type="text" required placeholder="Enter"
@@ -364,7 +369,7 @@
 
                                                                 </td>
                                                                 <td>
-                                                                    <input type="text" required
+                                                                    <input type="number" required
                                                                         class="form-control mw-100 mb-25 life"
                                                                         oninput="syncInputAcrossSameAssets(this)">
                                                                 </td>
@@ -661,6 +666,8 @@
             } else if (e.which == 40) {
                 $('.trselected').next('tr').addClass('trselected').siblings().removeClass('trselected');
             }
+             var selected = $('.trselected');
+            if (selected.length && selected.offset())
             $('.mrntableselectexcel').scrollTop($('.trselected').offset().top - 40);
         });
 
@@ -697,7 +704,7 @@
                 formattedDate = lastDepDate.toISOString().split('T')[0];
             }
             let newRow = '';
-            newRow = ` <tr class="trselected">
+            newRow = ` <tr >
                 <td class="customernewsection-form">
                     <div class="form-check form-check-primary custom-checkbox">
                     <input type="checkbox" class="form-check-input row-check">
@@ -706,7 +713,7 @@
                 </td>
                 <td class="poprod-decpt">
                     <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-code-input" oninput="this.value = this.value.toUpperCase();" />
-                    <span class="text-danger code_error"></span>
+                    <span class="text-danger code_error" style="font-size:12px"></span>
                 </td>
                 <td class="poprod-decpt">
                     <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-name-input" oninput="syncInputAcrossSameAssets(this)" />
@@ -730,7 +737,7 @@
                 </select>
                                                             </td>
               <td>
-                <input type="text" required class="form-control mw-100 mb-25 life" oninput="syncInputAcrossSameAssets(this)"> 
+                <input type="number" required class="form-control mw-100 mb-25 life" oninput="syncInputAcrossSameAssets(this)"> 
                 </td>
               <td>
                 <input type="date" required class="form-control mw-100 mb-25 capitalize_date" value="${formattedDate}" oninput="syncInputAcrossSameAssets(this)"/>
@@ -1447,7 +1454,7 @@
 
         function add_blank() {
             $('.mrntableselectexcel').empty();
-            let blank_row = ` <tr class="trselected">
+            let blank_row = ` <tr >
               <td class="customernewsection-form">
                 <div class="form-check form-check-primary custom-checkbox">
                   <input type="checkbox" class="form-check-input row-check">
@@ -1456,7 +1463,7 @@
               </td>
               <td class="poprod-decpt">
                 <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-code-input" oninput="this.value = this.value.toUpperCase();" />
-                <span class="text-danger code_error"></span>
+                <span class="text-danger code_error" style="font-size:12px"></span>
               </td>
               <td class="poprod-decpt">
                 <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-name-input" oninput="syncInputAcrossSameAssets(this)"/>
@@ -1481,7 +1488,7 @@
              
                                                              </td>
               <td>
-                <input type="text" required class="form-control mw-100 mb-25 life" oninput="syncInputAcrossSameAssets(this)"> 
+                <input type="number" required class="form-control mw-100 mb-25 life" oninput="syncInputAcrossSameAssets(this)"> 
                 </td>
               <td>
                 <input type="date" required class="form-control mw-100 mb-25 capitalize_date" oninput="syncInputAcrossSameAssets(this)"/>

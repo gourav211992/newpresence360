@@ -762,19 +762,7 @@ class RegistrationController extends Controller
     }
     public function export(Request $r)
     {
-        // Get all sub_asset_ids from all insurances, flatten them into a single array of IDs
-        $allSubAssetIds = FixedAssetInsurance::pluck('sub_asset')
-            ->map(function ($jsonIds) {
-                return json_decode($jsonIds, true);
-            })
-            ->flatten()
-            ->unique()
-            ->toArray();
-
-        // Filter FixedAssetSubs that have IDs in this list
-        $data = FixedAssetSub::whereIn('id', $allSubAssetIds)->get()->pluck('id');
-        dd($data);
-
+        $data = FixedAssetRegistration::withDefaultGroupCompanyOrg()->get();
         return Excel::download(new FixedAssetReportExport($data), 'FixedAsset.xlsx');
     }
 }
