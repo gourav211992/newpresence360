@@ -136,7 +136,7 @@ class TrialBalanceController extends Controller
                         if ($groupLedger->name == "Reserves & Surplus") {
                             $data[] = ['', '', 'Profit & Loss', Helper::formatIndianNumber($profitLoss['closingFinal']) . $profitLoss['closing_type'], 0, 0, Helper::formatIndianNumber($profitLoss['closingFinal']) . $profitLoss['closing_type']];
                         } else {
-                            $subGroupLedgers = Helper::getTrialBalanceGroupLedgers($groupLedger->id, $startDate, $endDate, $organizations, $currency, $r->cost_center_id,$r->location);
+                            $subGroupLedgers = Helper::getTrialBalanceGroupLedgers($groupLedger->id, $startDate, $endDate, $organizations, $currency,$r->cost_center_id,$r->location_id);
                             $subGroupLedgersData = $subGroupLedgers['data'];
                             foreach ($subGroupLedgersData as $subGroupLedger) {
                                 if ($subGroupLedgers['type'] == 'group') {
@@ -192,7 +192,7 @@ class TrialBalanceController extends Controller
             $carry = 0;
         else
             $carry = 1;
-        $ledgerData = Helper::getLedgerData($r->ledger_id, $startDate, $endDate, $r->company_id, $r->organization_id, $r->ledger_group, $currency, $r->cost_center_id);
+        $ledgerData = Helper::getLedgerData($r->ledger_id, $startDate, $endDate, $r->company_id, $r->organization_id, $r->ledger_group, $currency, $r->cost_center_id,$r->location_id);
         $totalDebit = 0;
         $totalCredit = 0;
         $data = [['', '', '', '', '', '', '']];
@@ -343,7 +343,7 @@ class TrialBalanceController extends Controller
         $fy = Helper::getFinancialYear($startDate);
 
 
-        $data = Helper::getLedgerData($r->ledger_id, $startDate, $endDate, $r->company_id, $r->organization_id, $r->ledger_group, $currency, $r->cost_center_id);
+        $data = Helper::getLedgerData($r->ledger_id, $startDate, $endDate, $r->company_id, $r->organization_id, $r->ledger_group, $currency, $r->cost_center_id,$r->location_id);
         $id = $r->ledger_id;
         $group = $r->ledger_group;
 
@@ -514,7 +514,7 @@ class TrialBalanceController extends Controller
             $organizations[] = Helper::getAuthenticatedUser()->organization_id;
         }
 
-        $groupLedgers = Helper::getTrialBalanceGroupLedgers($r->id, $startDate, $endDate, $organizations, $currency, $r->cost_center_id);
+        $groupLedgers = Helper::getTrialBalanceGroupLedgers($r->id, $startDate, $endDate, $organizations, $currency,$r->cost_center_id,$r->location_id);
 
         return response()->json($groupLedgers);
     }
@@ -597,7 +597,7 @@ class TrialBalanceController extends Controller
 
 
 
-        $data = Helper::getLedgerData($id, $startDate, $endDate, $r->company_id, Helper::getAuthenticatedUser()->organization_id, $group, $currency, $r->cost_center_id);
+        $data = Helper::getLedgerData($id, $startDate, $endDate, $r->company_id, Helper::getAuthenticatedUser()->organization_id, $group, $currency, $r->cost_center_id,$r->location_id);
 
         $fy = Helper::getFinancialYear($startDate);
         if (in_array($group, Helper::getNonCarryGroups()))

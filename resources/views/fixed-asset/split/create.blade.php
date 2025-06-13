@@ -317,7 +317,7 @@
                                                             </tr>
                                                         </thead>
                                                         <tbody class="mrntableselectexcel">
-                                                            <tr class="trselected">
+                                                            <tr >
                                                                 <td class="customernewsection-form">
                                                                     <div
                                                                         class="form-check form-check-primary custom-checkbox">
@@ -364,7 +364,7 @@
 
                                                                 </td>
                                                                 <td>
-                                                                    <input type="text" required
+                                                                    <input type="number" required
                                                                         class="form-control mw-100 mb-25 life"
                                                                         oninput="syncInputAcrossSameAssets(this)">
                                                                 </td>
@@ -661,6 +661,8 @@
             } else if (e.which == 40) {
                 $('.trselected').next('tr').addClass('trselected').siblings().removeClass('trselected');
             }
+             var selected = $('.trselected');
+            if (selected.length && selected.offset())
             $('.mrntableselectexcel').scrollTop($('.trselected').offset().top - 40);
         });
 
@@ -697,7 +699,7 @@
                 formattedDate = lastDepDate.toISOString().split('T')[0];
             }
             let newRow = '';
-            newRow = ` <tr class="trselected">
+            newRow = ` <tr >
                 <td class="customernewsection-form">
                     <div class="form-check form-check-primary custom-checkbox">
                     <input type="checkbox" class="form-check-input row-check">
@@ -730,7 +732,7 @@
                 </select>
                                                             </td>
               <td>
-                <input type="text" required class="form-control mw-100 mb-25 life" oninput="syncInputAcrossSameAssets(this)"> 
+                <input type="number" required class="form-control mw-100 mb-25 life" oninput="syncInputAcrossSameAssets(this)"> 
                 </td>
               <td>
                 <input type="date" required class="form-control mw-100 mb-25 capitalize_date" value="${formattedDate}" oninput="syncInputAcrossSameAssets(this)"/>
@@ -1447,7 +1449,7 @@
 
         function add_blank() {
             $('.mrntableselectexcel').empty();
-            let blank_row = ` <tr class="trselected">
+            let blank_row = ` <tr >
               <td class="customernewsection-form">
                 <div class="form-check form-check-primary custom-checkbox">
                   <input type="checkbox" class="form-check-input row-check">
@@ -1481,7 +1483,7 @@
              
                                                              </td>
               <td>
-                <input type="text" required class="form-control mw-100 mb-25 life" oninput="syncInputAcrossSameAssets(this)"> 
+                <input type="number" required class="form-control mw-100 mb-25 life" oninput="syncInputAcrossSameAssets(this)"> 
                 </td>
               <td>
                 <input type="date" required class="form-control mw-100 mb-25 capitalize_date" oninput="syncInputAcrossSameAssets(this)"/>

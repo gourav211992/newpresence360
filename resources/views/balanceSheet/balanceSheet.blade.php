@@ -479,9 +479,16 @@
 
                 const date = $('#fp-range').val()?.trim();
                 const costCenterId = $('#cost_center_id').val()?.trim();
+                const locId = $('#location_id').val()?.trim();
 
-                if (date) params.push(`date=${encodeURIComponent(date)}`);
-                if (costCenterId) params.push(`cost_center_id=${encodeURIComponent(costCenterId)}`);
+                                        if (date) params.push(
+                                            `date=${encodeURIComponent(date)}`);
+                                        if (costCenterId) params.push(
+                                            `cost_center_id=${encodeURIComponent(costCenterId)}`
+                                            );
+                                        if (locId) params.push(
+                                            `location_id=${encodeURIComponent(locId)}`
+                                            );
                 let updatedUrl = params.length > 0 ? `${baseUrl}?${params.join('&')}` : baseUrl;
                 // let updatedUrl = `${baseUrl}?date=${encodeURIComponent($('#fp-range').val())}&cost_center_id=${encodeURIComponent($('#cost_center_id').val())}`;
                 $(this).attr('href', updatedUrl);
@@ -556,9 +563,16 @@
 
                 const date = $('#fp-range').val()?.trim();
                 const costCenterId = $('#cost_center_id').val()?.trim();
+                const locId = $('#location_id').val()?.trim();
 
-                if (date) params.push(`date=${encodeURIComponent(date)}`);
-                if (costCenterId) params.push(`cost_center_id=${encodeURIComponent(costCenterId)}`);
+                                        if (date) params.push(
+                                            `date=${encodeURIComponent(date)}`);
+                                        if (costCenterId) params.push(
+                                            `cost_center_id=${encodeURIComponent(costCenterId)}`
+                                            );
+                                        if (locId) params.push(
+                                            `location_id=${encodeURIComponent(locId)}`
+                                            );
                 let updatedUrl = params.length > 0 ? `${baseUrl}?${params.join('&')}` : baseUrl;
                 // let updatedUrl = `${baseUrl}?date=${encodeURIComponent($('#fp-range').val())}&cost_center_id=${encodeURIComponent($('#cost_center_id').val())}`;
                 $(this).attr('href', updatedUrl);

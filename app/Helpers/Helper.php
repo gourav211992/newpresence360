@@ -553,7 +553,7 @@ class Helper
 
             $allChildIds = $master->getAllChildIds();
             $allChildIds[] = $master->id;
-            $allChildIds = Helper::getGroupsQuery($organizations)
+            $allChildIds = Helper::getGroupsQuery(organizations: $organizations)
             ->whereIn('id',$allChildIds)->pluck('id')->toArray();
             $non_carry = Helper::getNonCarryGroups();
             if(in_array($master->id,$non_carry))
@@ -585,7 +585,7 @@ class Helper
                         $query->whereIn('organization_id', $organizations);
                     });
                     $query->when(!empty($location), function ($query) use ($location) {
-                        $query->where('location', $location);
+                        $query->where('location',(int)$location);
                     });
 
                 })
@@ -609,7 +609,7 @@ class Helper
                     $query->where('cost_center_id', $cost);
                 })
                 ->whereIn('ledger_id',$ledgers)
-                ->whereHas('voucher', function ($query) use($organizations,$startDate,$endDate,$fy,$carry,$cost) {
+                ->whereHas('voucher', function ($query) use($organizations,$startDate,$endDate,$fy,$carry,$cost,$location) {
                     $query->where('document_date', '<', $startDate);
                     if(!$carry)
                     $query->where('document_date', '>=', $fy['start_date']);
@@ -617,6 +617,9 @@ class Helper
                     $query->withDefaultGroupCompanyOrg();
                     $query->when(!empty($organizations), function ($query) use ($organizations) {
                         $query->whereIn('organization_id', $organizations);
+                    });
+                    $query->when(!empty($location), function ($query) use ($location) {
+                        $query->where('location',(int)$location);
                     });
                  })
                 ->selectRaw("SUM(debit_amt_{$currency}) as total_debit, SUM(credit_amt_{$currency}) as total_credit")
@@ -809,7 +812,7 @@ class Helper
         return $input;
     }
 
-    public static function getLedgerData($ledger_id, $startDate, $endDate, $companyId, $organization_id, $ledger_parent,$currency = "org",$cost=null)
+    public static function getLedgerData($ledger_id, $startDate, $endDate, $companyId, $organization_id, $ledger_parent,$currency = "org",$cost=null,$location=null)
     {
 
             $itemVouchers = ItemDetail::where('ledger_id', $ledger_id)
@@ -817,11 +820,14 @@ class Helper
                 $query->where('cost_center_id', $cost);
             })
         ->where('ledger_parent_id',$ledger_parent)
-        ->whereHas('voucher', function ($query) use ($organization_id,$startDate,$endDate){
+        ->whereHas('voucher', function ($query) use ($organization_id,$startDate,$endDate,$location){
             $query->withDefaultGroupCompanyOrg();
             $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
             $query->where('organization_id', $organization_id);
             $query->whereBetween('document_date', [$startDate, $endDate]);
+            $query->when(!empty($location), function ($query) use ($location) {
+                        $query->where('location',(int)$location);
+            });
 
         })->pluck('voucher_id')
             ->toArray();
@@ -833,8 +839,14 @@ class Helper
             ->where('organization_id', $organization_id)
             ->whereNotNull('approvalStatus')
             ->whereBetween('document_date', [$startDate, $endDate])
+            ->when(!empty($location), function ($query) use ($location) {
+                        $query->where('location',(int)$location);
+            })
             ->with([
-                'items' => function ($it) use ($currency) {
+                'items' => function ($it) use ($currency,$cost) {
+                    $it->when($cost, function ($query) use ($cost) {
+                        $query->where('cost_center_id', $cost);
+                    });
                     $it->select('id', "debit_amt_{$currency} as debit_amt", "credit_amt_{$currency} as credit_amt", 'voucher_id', 'ledger_id','ledger_parent_id')->with([
                         'ledger' => function ($l) {
                             $l->select('id', 'name');

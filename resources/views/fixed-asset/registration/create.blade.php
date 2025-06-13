@@ -25,13 +25,13 @@
             display: block;
             margin-top: 10px;
         }
-    .disabled-select {
-        pointer-events: none;
-        background-color: #e9ecef;
-        color: #6c757d;
-        border: 1px solid #ced4da;
-    }
 
+        .disabled-select {
+            pointer-events: none;
+            background-color: #e9ecef;
+            color: #6c757d;
+            border: 1px solid #ced4da;
+        }
     </style>
 @endsection
 
@@ -96,7 +96,7 @@
                             <input type="hidden" name="document_status" id="document_status" value="">
                             <input type="hidden" name="mrn_detail_id" id="mrn_detail_id" value="">
                             <input type="hidden" name="mrn_header_id" id="mrn_header_id" value="">
-                            <input type="hidden" name="dep_type" id="depreciation_type" value="{{$dep_type}}">
+                            <input type="hidden" name="dep_type" id="depreciation_type" value="{{ $dep_type }}">
                             <input type="hidden" name="days" id="days" value="0">
 
 
@@ -163,7 +163,7 @@
                                                                 class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        
+
                                                         <input type="date" class="form-control" name="document_date"
                                                             id="document_date"
                                                             value="{{ old('document_date') ?? date('Y-m-d') }}" required>
@@ -176,8 +176,8 @@
                                                     </div>
 
                                                     <div class="col-md-5">
-                                                        <select id="location" class="form-select"
-                                                            name="location_id" required>
+                                                        <select id="location" class="form-select" name="location_id"
+                                                            required>
                                                             @foreach ($locations as $location)
                                                                 <option value="{{ $location->id }}">
                                                                     {{ $location->store_name }}</option>
@@ -199,14 +199,14 @@
                                                     </div>
 
                                                 </div>
-                                           
+
 
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label" for="reference_no">Reference No.</label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="text" class="form-control" name="reference_no" 
+                                                        <input type="text" class="form-control" name="reference_no"
                                                             id="reference_no" value="{{ old('reference_no') }}">
                                                     </div>
                                                 </div>
@@ -274,27 +274,28 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Category <span
                                                                     class="text-danger">*</span></label>
-                                                             <select class="form-select select2" name="category_id"
-                                                            id="category" required>
-                                                            <option value="" {{ old('category') ? '' : 'selected' }}>
-                                                                Select</option>
-                                                            @foreach ($categories as $category)
-                                                                <option value="{{ $category->id }}"
-                                                                    {{ old('category') == $category->id ? 'selected' : '' }}>
-                                                                    {{ $category->name }}
-                                                                </option>
-                                                            @endforeach
-                                                        </select>
+                                                            <select class="form-select select2" name="category_id"
+                                                                id="category" required>
+                                                                <option value=""
+                                                                    {{ old('category') ? '' : 'selected' }}>
+                                                                    Select</option>
+                                                                @foreach ($categories as $category)
+                                                                    <option value="{{ $category->id }}"
+                                                                        {{ old('category') == $category->id ? 'selected' : '' }}>
+                                                                        {{ $category->name }}
+                                                                    </option>
+                                                                @endforeach
+                                                            </select>
                                                         </div>
                                                     </div>
-                                                    
+
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Asset Name <span
                                                                     class="text-danger">*</span></label>
                                                             <input type="text" class="form-control" name="asset_name"
-                                                                id="asset_name"
-                                                                value="{{ old('asset_name') }}" required />
+                                                                id="asset_name" value="{{ old('asset_name') }}"
+                                                                required />
                                                         </div>
                                                     </div>
 
@@ -303,8 +304,10 @@
                                                             <label class="form-label">Asset Code <span
                                                                     class="text-danger">*</span></label>
                                                             <input type="text" class="form-control" name="asset_code"
-                                                                id="asset_code" value="{{ old('asset_code') }}"  oninput="this.value = this.value.toUpperCase();"
+                                                                id="asset_code" value="{{ old('asset_code') }}"
+                                                                oninput="this.value = this.value.toUpperCase();"
                                                                 required />
+                                                            <span class="text-danger code_error"></span>
                                                         </div>
                                                     </div>
 
@@ -314,8 +317,7 @@
                                                             <label class="form-label">Quantity <span
                                                                     class="text-danger">*</span></label>
                                                             <input type="text" class="form-control" name="quantity"
-                                                                id="quantity" value="{{ old('quantity') }}"
-                                                                readonly />
+                                                                id="quantity" value="{{ old('quantity') }}" readonly />
                                                         </div>
                                                     </div>
 
@@ -344,7 +346,7 @@
                                                                     class="text-danger">*</span></label>
                                                             <select class="form-select" name="ledger_group_id"
                                                                 id="ledger_group" required>
-                                                                </select>
+                                                            </select>
                                                         </div>
                                                     </div>
 
@@ -353,7 +355,9 @@
                                                             <label class="form-label">Capitalize Date </label>
                                                             <input type="date" class="form-control"
                                                                 name="capitalize_date" id="capitalize_date"
-                                                                value="{{ old('capitalize_date') }}" min="{{$financialStartDate}}" max="{{$financialEndDate}}"/>
+                                                                value="{{ old('capitalize_date') }}"
+                                                                min="{{ $financialStartDate }}"
+                                                                max="{{ $financialEndDate }}" />
                                                         </div>
                                                     </div>
 
@@ -363,30 +367,45 @@
                                                                     class="text-danger">*</span></label>
                                                             <select class="form-select" name="maintenance_schedule"
                                                                 id="maintenance_schedule" required>
-                                                                <option value="" {{ old('maintenance_schedule') == '' ? 'selected' : '' }}>Select</option>
-                                                                <option value="weekly" {{ old('maintenance_schedule') == 'Weekly' ? 'selected' : '' }}>Weekly</option>
-                                                                <option value="monthly" {{ old('maintenance_schedule') == 'Monthly' ? 'selected' : '' }}>Monthly</option>
-                                                                <option value="quarterly" {{ old('maintenance_schedule') == 'Quarterly' ? 'selected' : '' }}>Quarterly</option>
-                                                                <option value="semi-annually" {{ old('maintenance_schedule') == 'Semi-Annually' ? 'selected' : '' }}>Semi-Annually</option>
-                                                                <option value="annually" {{ old('maintenance_schedule') == 'Annually' ? 'selected' : '' }}>Annually</option>
+                                                                <option value=""
+                                                                    {{ old('maintenance_schedule') == '' ? 'selected' : '' }}>
+                                                                    Select</option>
+                                                                <option value="weekly"
+                                                                    {{ old('maintenance_schedule') == 'Weekly' ? 'selected' : '' }}>
+                                                                    Weekly</option>
+                                                                <option value="monthly"
+                                                                    {{ old('maintenance_schedule') == 'Monthly' ? 'selected' : '' }}>
+                                                                    Monthly</option>
+                                                                <option value="quarterly"
+                                                                    {{ old('maintenance_schedule') == 'Quarterly' ? 'selected' : '' }}>
+                                                                    Quarterly</option>
+                                                                <option value="semi-annually"
+                                                                    {{ old('maintenance_schedule') == 'Semi-Annually' ? 'selected' : '' }}>
+                                                                    Semi-Annually</option>
+                                                                <option value="annually"
+                                                                    {{ old('maintenance_schedule') == 'Annually' ? 'selected' : '' }}>
+                                                                    Annually</option>
                                                             </select>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Dep. Method <span class="text-danger">*</span></label>
-                                                            <input type="text" name="depreciation_method" id="depreciation_method" class="form-control" value="{{$dep_method}}" readonly /> 
+                                                            <label class="form-label">Dep. Method <span
+                                                                    class="text-danger">*</span></label>
+                                                            <input type="text" name="depreciation_method"
+                                                                id="depreciation_method" class="form-control"
+                                                                value="{{ $dep_method }}" readonly />
                                                         </div>
                                                     </div>
-                                                    
+
 
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Est. Useful Life (yrs) <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" name="useful_life"
-                                                                id="useful_life" value="{{ old('useful_life') }}" oninput="updateDepreciationValues()"
-                                                                required />
+                                                            <input type="number" class="form-control" name="useful_life"
+                                                                id="useful_life" value="{{ old('useful_life') }}"
+                                                                oninput="updateDepreciationValues()" required />
                                                         </div>
                                                     </div>
 
@@ -402,15 +421,20 @@
 
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Dep % <span class="text-danger">*</span></label>
-                                                            <input type="number" class="form-control" id="depreciation_rate" name="depreciation_percentage" readonly /> 
-                                                            <input type="hidden" value="{{$dep_percentage}}" id="depreciation_percentage" /> 
-                                                            <input type="hidden" id="depreciation_rate_year" name="depreciation_percentage_year" /> 
-                                                     
+                                                            <label class="form-label">Dep % <span
+                                                                    class="text-danger">*</span></label>
+                                                            <input type="number" class="form-control"
+                                                                id="depreciation_rate" name="depreciation_percentage"
+                                                                readonly />
+                                                            <input type="hidden" value="{{ $dep_percentage }}"
+                                                                id="depreciation_percentage" />
+                                                            <input type="hidden" id="depreciation_rate_year"
+                                                                name="depreciation_percentage_year" />
+
                                                         </div>
-                                                    </div>  
-                                                    
-                                                   
+                                                    </div>
+
+
 
 
                                                     <div class="col-md-3">
@@ -424,11 +448,14 @@
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Total Dep. <span class="text-danger">*</span></label>
-                                                            <input type="number" id="total_depreciation" name="total_depreciation" class="form-control" value="0" readonly /> 
+                                                            <label class="form-label">Total Dep. <span
+                                                                    class="text-danger">*</span></label>
+                                                            <input type="number" id="total_depreciation"
+                                                                name="total_depreciation" class="form-control"
+                                                                value="0" readonly />
                                                         </div>
                                                     </div>
-                                                    
+
                                                 </div>
                                             </div>
                                         </div>
@@ -449,15 +476,18 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Vendor <span
                                                                     class="text-danger">*</span></label>
-                                                                    <select class="form-select" disabled style="pointer-events: none;" id="vendor" required>
-                                                                        <option value="">Select</option>
-                                                                        @foreach ($vendors as $vendor)
-                                                                            <option value="{{ $vendor->id }}" {{ old('vendor') ? 'selected' : '' }}>
-                                                                                {{ $vendor->name }}
-                                                                            </option>
-                                                                        @endforeach
-                                                                    </select>
-                                                                    <input type="hidden" name="vendor_id" id="vendor_id" value="{{old('vendor')}}">
+                                                            <select class="form-select" disabled
+                                                                style="pointer-events: none;" id="vendor" required>
+                                                                <option value="">Select</option>
+                                                                @foreach ($vendors as $vendor)
+                                                                    <option value="{{ $vendor->id }}"
+                                                                        {{ old('vendor') ? 'selected' : '' }}>
+                                                                        {{ $vendor->name }}
+                                                                    </option>
+                                                                @endforeach
+                                                            </select>
+                                                            <input type="hidden" name="vendor_id" id="vendor_id"
+                                                                value="{{ old('vendor') }}">
 
                                                         </div>
                                                     </div>
@@ -465,20 +495,22 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Currency <span
                                                                     class="text-danger">*</span></label>
-                                                                    <select class="form-select" disabled id="currency" required>
-                                                                        <option value="">Select</option>
-                                                                        @foreach ($currencies as $currency)
-                                                                            <option value="{{ $currency->id }}" {{ old('currency') ? 'selected' : '' }}>
-                                                                                {{ $currency->name }}
-                                                                            </option>
-                                                                        @endforeach
-                                                                    </select>
-                                                                <input type="hidden" name="currency_id" id="currency_id" value="{{old('currency')}}">
+                                                            <select class="form-select" disabled id="currency" required>
+                                                                <option value="">Select</option>
+                                                                @foreach ($currencies as $currency)
+                                                                    <option value="{{ $currency->id }}"
+                                                                        {{ old('currency') ? 'selected' : '' }}>
+                                                                        {{ $currency->name }}
+                                                                    </option>
+                                                                @endforeach
+                                                            </select>
+                                                            <input type="hidden" name="currency_id" id="currency_id"
+                                                                value="{{ old('currency') }}">
 
-                                                                     </div>
+                                                        </div>
                                                     </div>
                                                     <div class="col-md-3 d-none">
-                                                        <div class="mb-1" >
+                                                        <div class="mb-1">
                                                             <label class="form-label">Supplier Invoice No. </label>
                                                             <input type="text" class="form-control"
                                                                 name="supplier_invoice_no" id="supplier_invoice_no"
@@ -490,7 +522,7 @@
                                                             <label class="form-label">Supplier Invoice Date </label>
                                                             <input type="date" class="form-control"
                                                                 name="supplier_invoice_date" id="supplier_invoice_date"
-                                                                 readonly />
+                                                                readonly />
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
@@ -590,7 +622,7 @@
                         <div class="col">
                             <div class="mb-1">
                                 <label class="form-label">GRN No. </label>
-                                <select class="form-select filter" name="grn_no" id="grn_no" >
+                                <select class="form-select filter" name="grn_no" id="grn_no">
                                     <option value="">Select</option>
                                     @foreach ($grns->unique('document_number') as $grn)
                                         <option value="{{ $grn->document_number }}">{{ $grn->document_number }}</option>
@@ -605,9 +637,9 @@
                                 <select class="form-select filter" name="vendor_code" id="vendor_code">
                                     <option value="">Select</option>
                                     @foreach ($grns->unique('vendor_code') as $grn)
-                                    <option value="{{ $grn->vendor_code }}">{{ $grn->vendor_code }}</option>
-                                @endforeach
-                           </select>
+                                        <option value="{{ $grn->vendor_code }}">{{ $grn->vendor_code }}</option>
+                                    @endforeach
+                                </select>
                             </div>
                         </div>
 
@@ -617,8 +649,9 @@
                                 <select class="form-select filter" id="vendor_name" name="vendor_name">
                                     <option value="">Select</option>
                                     @foreach ($grns->unique('vendor_id') as $grn)
-                                    <option value="{{ $grn->vendor->company_name }}">{{ $grn->vendor->company_name }}</option>
-                                @endforeach
+                                        <option value="{{ $grn->vendor->company_name }}">{{ $grn->vendor->company_name }}
+                                        </option>
+                                    @endforeach
                                 </select>
                             </div>
                         </div>
@@ -629,22 +662,24 @@
                                 <select class="form-select filter" id="item_name" name="item_name">
                                     <option value="">Select</option>
                                     @foreach ($grn_details->unique('item_id') as $item)
-                                    <option value="{{ $item->item->id }}">{{ $item->item->item_name }}</option>
-                                @endforeach
+                                        <option value="{{ $item->item->id }}">{{ $item->item->item_name }}</option>
+                                    @endforeach
                                 </select>
                             </div>
                         </div>
 
                         <div class="col  mb-1">
                             <label class="form-label">&nbsp;</label><br />
-                            <button class="btn btn-warning btn-sm" id="searchButton"><i data-feather="search"></i> Search</button>
+                            <button class="btn btn-warning btn-sm" id="searchButton"><i data-feather="search"></i>
+                                Search</button>
                         </div>
 
                         <div class="col-md-12">
 
 
                             <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                                <table id="grn_table" class="mt-1 table myrequesttablecbox table-striped po-order-detail table-hover">
+                                <table id="grn_table"
+                                    class="mt-1 table myrequesttablecbox table-striped po-order-detail table-hover">
                                     <thead class="sticky-top bg-white">
                                         <tr>
                                             <th>
@@ -658,7 +693,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                      
+
                                     </tbody>
 
 
@@ -672,7 +707,8 @@
                 <div class="modal-footer text-end">
                     <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"><i
                             data-feather="x-circle"></i> Cancel</button>
-                    <button id="submit_grns" class="btn btn-primary btn-sm" data-bs-dismiss="modal"><i data-feather="check-circle"></i>
+                    <button id="submit_grns" class="btn btn-primary btn-sm" data-bs-dismiss="modal"><i
+                            data-feather="check-circle"></i>
                         Process</button>
                 </div>
             </div>
@@ -788,8 +824,8 @@
                     <p class="text-center">Enter the details below.</p>
 
 
-                    <div class="text-end"><a href="#" class="text-primary add-contactpeontxt mt-50"><i
-                                data-feather='plus'></i> Add Discount</a></div>
+                    <sdiv class="text-end"><a href="#" class="text-primary add-contactpeontxt mt-50"><i
+                                data-feather='plus'></i> Add Discount</a></sdiv>
 
                     <div class="table-responsive-md customernewsection-form">
                         <table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail">
@@ -1154,8 +1190,8 @@
                                     <td class="sub_total"></td>
                                     <td id="sgst_per"></td>
                                     <td id="sgst_tax"></td>
-                                 </tr>
-                             </tbody>
+                                </tr>
+                            </tbody>
                         </table>
                     </div>
                 </div>
@@ -1233,21 +1269,21 @@
 
 @section('scripts')
     <script>
-         $.ajax({
-        url: '{{ route("finance.fixed-asset.fetch.grn.data") }}',
-        type: 'GET',
-        success: function(response) {
-            $('#grn_table tbody').html(response.html);
-        },
-        error: function(xhr) {
-            console.log(xhr.responseText);
-        }
-    });
-  $('#rescdule').on('show.bs.modal', function (e) {
-   
-});
+        $.ajax({
+            url: '{{ route('finance.fixed-asset.fetch.grn.data') }}',
+            type: 'GET',
+            success: function(response) {
+                $('#grn_table tbody').html(response.html);
+            },
+            error: function(xhr) {
+                console.log(xhr.responseText);
+            }
+        });
+        $('#rescdule').on('show.bs.modal', function(e) {
 
-    
+        });
+
+
         function resetParametersDependentElements(data) {
             let backDateAllowed = false;
             let futureDateAllowed = false;
@@ -1280,18 +1316,18 @@
             const today = moment().format("YYYY-MM-DD");
 
             if (backDateAllowed && futureDateAllowed) {
-                dateInput.setAttribute("min","{{$financialStartDate}}");
-                dateInput.setAttribute("max","{{$financialEndDate}}");
+                dateInput.setAttribute("min", "{{ $financialStartDate }}");
+                dateInput.setAttribute("max", "{{ $financialEndDate }}");
             } else if (backDateAllowed) {
                 dateInput.setAttribute("max", today);
-                dateInput.setAttribute("min","{{$financialStartDate}}");
+                dateInput.setAttribute("min", "{{ $financialStartDate }}");
             } else if (futureDateAllowed) {
                 dateInput.setAttribute("min", today);
-                dateInput.setAttribute("max","{{$financialEndDate}}");
+                dateInput.setAttribute("max", "{{ $financialEndDate }}");
             } else {
                 dateInput.setAttribute("min", today);
                 dateInput.setAttribute("max", today);
-            
+
             }
         }
 
@@ -1336,7 +1372,7 @@
                         $('#doc_prefix').val('');
                         $('#doc_suffix').val('');
                         $('#doc_no').val('');
-                        showToast('error',data.message);
+                        showToast('error', data.message);
                     }
                 });
             });
@@ -1346,8 +1382,18 @@
 
         document.getElementById('save-draft-btn').addEventListener('click', function() {
             document.getElementById('document_status').value = 'draft';
-            document.getElementById('fixed-asset-registration-form').submit();
+            if (!($('#asset_code').hasClass('is-invalid'))) {
+                document.getElementById('fixed-asset-registration-form').submit();
+            }else{
+                showToast('error','Please correct the errors before submitting.');
+            }
         });
+        $('#fixed-asset-registration-form').on('submit', function (e) {
+    if ($(this).find('.is-invalid').length > 0) {
+        e.preventDefault(); // Prevent form submission
+        showToast('error','Please correct the errors before submitting.');
+    }
+});
 
         document.getElementById('submit-btn').addEventListener('click', function() {
             document.getElementById('document_status').value = 'submitted';
@@ -1381,103 +1427,107 @@
 
                 },
                 error: function() {
-                    showToast('error','Error fetching group items.');
+                    showToast('error', 'Error fetching group items.');
                 }
             });
 
         });
-       
 
-        $('#searchButton').on('click', function (e) {
-        e.preventDefault();
 
-        let grn_no = $('#grn_no').val();
-        let vendor_code = $('#vendor_code').val();
-        let vendor_name = $('#vendor_name').val();
-        let item_name = $('#item_name').val();
+        $('#searchButton').on('click', function(e) {
+            e.preventDefault();
 
-        $.ajax({
-            url: "{{ route('finance.fixed-asset.fetch.grn.data') }}",
-            method: "GET",
-            data: {
-                grn_no: grn_no,
-                vendor_code: vendor_code,
-                vendor_name: vendor_name,
-                item_name: item_name
-            },
-            success: function (res) {
-                $('#grn_table tbody').html(res.html);
-            },
-            error: function (xhr) {
-                console.error(xhr.responseText);
-            }
+            let grn_no = $('#grn_no').val();
+            let vendor_code = $('#vendor_code').val();
+            let vendor_name = $('#vendor_name').val();
+            let item_name = $('#item_name').val();
+
+            $.ajax({
+                url: "{{ route('finance.fixed-asset.fetch.grn.data') }}",
+                method: "GET",
+                data: {
+                    grn_no: grn_no,
+                    vendor_code: vendor_code,
+                    vendor_name: vendor_name,
+                    item_name: item_name
+                },
+                success: function(res) {
+                    $('#grn_table tbody').html(res.html);
+                },
+                error: function(xhr) {
+                    console.error(xhr.responseText);
+                }
+            });
         });
-    });
-    $('#infoBtn').hide();
-document.addEventListener('DOMContentLoaded', function () {
-    const processButton = document.querySelector('#submit_grns');
-    const radioButtons = document.querySelectorAll('input[name="grn_id"]');
+        $('#infoBtn').hide();
+        document.addEventListener('DOMContentLoaded', function() {
+            const processButton = document.querySelector('#submit_grns');
+            const radioButtons = document.querySelectorAll('input[name="grn_id"]');
 
-    processButton.addEventListener('click', function (event) {
-        // Check if any radio button is selected
-        const selectedRadio = document.querySelector('input[name="grn_id"]:checked');
+            processButton.addEventListener('click', function(event) {
+                // Check if any radio button is selected
+                const selectedRadio = document.querySelector('input[name="grn_id"]:checked');
 
-        //console.log(selectedRadio);
+                //console.log(selectedRadio);
 
-        if (!selectedRadio) {
-            event.preventDefault(); // Prevent further processing
-            showToast('error','Please select a GRN before proceeding.');
-        } else {
-            // Retrieve and log the data-grn attribute of the selected radio button
-            const grnData = selectedRadio.dataset.grn;
-            const nearestTr = selectedRadio.closest('tr'); // Find the nearest <tr>
-                if (nearestTr) {
-                    const tds = nearestTr.querySelectorAll('td'); // Get all <td> elements in the row
-                    if (tds.length > 1) { // Ensure there are at least two columns
-                        $('#asset_name').val(tds[tds.length - 2].textContent); // Get the second last column
-                    }
-                } // Access the data-grn attribute
+                if (!selectedRadio) {
+                    event.preventDefault(); // Prevent further processing
+                    showToast('error', 'Please select a GRN before proceeding.');
+                } else {
+                    // Retrieve and log the data-grn attribute of the selected radio button
+                    const grnData = selectedRadio.dataset.grn;
+                    const nearestTr = selectedRadio.closest('tr'); // Find the nearest <tr>
+                    if (nearestTr) {
+                        const tds = nearestTr.querySelectorAll('td'); // Get all <td> elements in the row
+                        if (tds.length > 1) { // Ensure there are at least two columns
+                            $('#asset_name').val(tds[tds.length - 2]
+                            .textContent); // Get the second last column
+                        }
+                    } // Access the data-grn attribute
 
-            // Make sure grnData is available
-            if (grnData) {
-                $('#mrn_detail_id').val(selectedRadio.value);
-                const parsedGrnData = JSON.parse(grnData); // Parse the JSON data
-                $('#mrn_header_id').val(parsedGrnData?.header?.id || '');
-                $('#supplier_invoice_no').val(parsedGrnData?.header?.supplier_invoice_no || '');
-                $('#quantity').val(parsedGrnData?.accepted_qty || 0); // Log the parsed data
-                $('#vendor').val(parsedGrnData?.header?.vendor?.id || '');
-                $('#currency').val(parsedGrnData?.header?.vendor?.currency_id || '');
-                $('#vendor_id').val(parsedGrnData?.header?.vendor?.id || '');
-                $('#currency_id').val(parsedGrnData?.header?.vendor?.currency_id || '');
-                $('#sub_total').val(parsedGrnData?.basic_value || 0);
-                //$('.sub_total').html(parsedGrnData?.basic_value || 0);
-                $('#tax').val(parsedGrnData?.tax_value || 0);
-                $('#purchase_amount').val(
-                    (parseFloat(parsedGrnData?.tax_value || 0) + parseFloat(parsedGrnData?.basic_value || 0)).toFixed(2)
-                );
-                $('#current_value').val(parsedGrnData?.basic_value || 0);
-                const invoiceDate = parsedGrnData?.header?.supplier_invoice_date || '';
-                const formattedInvoiceDate = invoiceDate && invoiceDate !== '0000-00-00' ? invoiceDate.split('T')[0] : '';
-                $('#supplier_invoice_date').val(formattedInvoiceDate);
-                const createdAt = parsedGrnData?.created_at || '';
-                const formattedCreatedAt = createdAt && createdAt !== '0000-00-00' ? createdAt.split('T')[0] : '';
-                $('#book_date').val(formattedCreatedAt);
-                // let igstData = parsedGrnData?.igst_value;
-                // let cgstData = parsedGrnData?.cgst_value;
-                // let sgstData = parsedGrnData?.sgst_value;
-                // $('#igst_per').html(parseFloat((igstData['value']/parsedGrnData?.basic_value)*100).toFixed(2) || 0);
-                // $('#cgst_per').html(parseFloat((cgstData['value']/parsedGrnData?.basic_value)*100).toFixed(2) || 0);
-                // $('#sgst_per').html(parseFloat((sgstData['value']/parsedGrnData?.basic_value)*100).toFixed(2) || 0);
-                // $('#sgst_tax').html(sgstData['value']||0);
-                // $('#cgst_tax').html(cgstData['value']||0);
-                // $('#igst_tax').html(igstData['value']||0);
-                $('#extraAmountsTable').empty();
+                    // Make sure grnData is available
+                    if (grnData) {
+                        $('#mrn_detail_id').val(selectedRadio.value);
+                        const parsedGrnData = JSON.parse(grnData); // Parse the JSON data
+                        $('#mrn_header_id').val(parsedGrnData?.header?.id || '');
+                        $('#supplier_invoice_no').val(parsedGrnData?.header?.supplier_invoice_no || '');
+                        $('#quantity').val(parsedGrnData?.accepted_qty || 0); // Log the parsed data
+                        $('#vendor').val(parsedGrnData?.header?.vendor?.id || '');
+                        $('#currency').val(parsedGrnData?.header?.vendor?.currency_id || '');
+                        $('#vendor_id').val(parsedGrnData?.header?.vendor?.id || '');
+                        $('#currency_id').val(parsedGrnData?.header?.vendor?.currency_id || '');
+                        $('#sub_total').val(parsedGrnData?.basic_value || 0);
+                        //$('.sub_total').html(parsedGrnData?.basic_value || 0);
+                        $('#tax').val(parsedGrnData?.tax_value || 0);
+                        $('#purchase_amount').val(
+                            (parseFloat(parsedGrnData?.tax_value || 0) + parseFloat(parsedGrnData
+                                ?.basic_value || 0)).toFixed(2)
+                        );
+                        $('#current_value').val(parsedGrnData?.basic_value || 0);
+                        const invoiceDate = parsedGrnData?.header?.supplier_invoice_date || '';
+                        const formattedInvoiceDate = invoiceDate && invoiceDate !== '0000-00-00' ?
+                            invoiceDate.split('T')[0] : '';
+                        $('#supplier_invoice_date').val(formattedInvoiceDate);
+                        const createdAt = parsedGrnData?.created_at || '';
+                        const formattedCreatedAt = createdAt && createdAt !== '0000-00-00' ? createdAt
+                            .split('T')[0] : '';
+                        $('#book_date').val(formattedCreatedAt);
+                        // let igstData = parsedGrnData?.igst_value;
+                        // let cgstData = parsedGrnData?.cgst_value;
+                        // let sgstData = parsedGrnData?.sgst_value;
+                        // $('#igst_per').html(parseFloat((igstData['value']/parsedGrnData?.basic_value)*100).toFixed(2) || 0);
+                        // $('#cgst_per').html(parseFloat((cgstData['value']/parsedGrnData?.basic_value)*100).toFixed(2) || 0);
+                        // $('#sgst_per').html(parseFloat((sgstData['value']/parsedGrnData?.basic_value)*100).toFixed(2) || 0);
+                        // $('#sgst_tax').html(sgstData['value']||0);
+                        // $('#cgst_tax').html(cgstData['value']||0);
+                        // $('#igst_tax').html(igstData['value']||0);
+                        $('#extraAmountsTable').empty();
 
-// Check if taxes exist and are not empty
-if (parsedGrnData?.taxes?.length > 0) {
-    let snno = 1;
-    parsedGrnData.taxes.forEach(item => {
-        $('#extraAmountsTable').append(`
+                        // Check if taxes exist and are not empty
+                        if (parsedGrnData?.taxes?.length > 0) {
+                            let snno = 1;
+                            parsedGrnData.taxes.forEach(item => {
+                                $('#extraAmountsTable').append(`
             <tr>
                 <td>${snno}</td>
                 <td>${item.ted_name}</td>
@@ -1486,83 +1536,84 @@ if (parsedGrnData?.taxes?.length > 0) {
                 <td class="indian-number">${item.ted_amount}</td>
             </tr>
         `);
-        snno++;
-    });
+                                snno++;
+                            });
 
-    // Show info button
-    $('#infoBtn').show();
-} else {
-    // Hide info button if no taxes
-    $('#infoBtn').hide();
-}
-                updateDepreciationValues();
-              
-
+                            // Show info button
+                            $('#infoBtn').show();
+                        } else {
+                            // Hide info button if no taxes
+                            $('#infoBtn').hide();
+                        }
+                        updateDepreciationValues();
 
 
-            } else {
-                console.error('data-grn attribute not found on the selected radio button');
+
+
+                    } else {
+                        console.error('data-grn attribute not found on the selected radio button');
+                    }
+                }
+            });
+        });
+
+        function updateDepreciationValues() {
+            let purchaseDate = document.getElementById("supplier_invoice_date").value;
+            let depreciationType = document.getElementById("depreciation_type").value;
+            let currentValue = parseFloat(document.getElementById("current_value").value) || 0;
+            let depreciationPercentage = parseFloat(document.getElementById("depreciation_percentage").value) || 0;
+            let usefulLife = parseFloat(document.getElementById("useful_life").value) || 0;
+            let method = document.getElementById("depreciation_method").value;
+
+            // Ensure all required values are provided
+            if (!depreciationType || !currentValue || !depreciationPercentage || !usefulLife || !method) {
+                return;
             }
+
+
+            // Determine financial date based on depreciation type
+            let financialDate;
+            let financialEnd = new Date("{{ $financialEndDate }}");
+
+
+            // Extract the financial year-end month and day
+            let financialEndMonth = financialEnd.getMonth();
+            let financialEndDay = financialEnd.getDate();
+            let devidend = 1;
+
+            switch (depreciationType) {
+                case 'half_yearly':
+                    devidend = 2; // Adjust dividend for half-yearly
+                    break;
+
+                case 'quarterly':
+                    devidend = 4; // Adjust dividend for quarterly
+                    break;
+
+                case 'monthly':
+                    devidend = 12; // Adjust dividend for monthly
+                    break;
+
+            }
+
+            let salvageValue = (currentValue * (depreciationPercentage / 100)).toFixed(2);
+
+            let depreciationRate = 0;
+            if (method === "SLM") {
+                depreciationRate = ((((currentValue - salvageValue) / usefulLife) / currentValue) * 100).toFixed(2);
+            } else if (method === "WDV") {
+                depreciationRate = ((1 - Math.pow(salvageValue / currentValue, 1 / usefulLife)) * 100).toFixed(2);
+            }
+
+            let totalDepreciation = 0;
+            document.getElementById("salvage_value").value = salvageValue;
+            console.log("dep_rate" + depreciationRate + "devidend" + devidend);
+            document.getElementById("depreciation_rate").value = depreciationRate;
+            document.getElementById("depreciation_rate_year").value = depreciationRate;
+            document.getElementById("total_depreciation").value = totalDepreciation;
         }
-    });
-});
-function updateDepreciationValues() {
-    let purchaseDate = document.getElementById("supplier_invoice_date").value;
-    let depreciationType = document.getElementById("depreciation_type").value;
-    let currentValue = parseFloat(document.getElementById("current_value").value) || 0;
-    let depreciationPercentage = parseFloat(document.getElementById("depreciation_percentage").value) || 0;
-    let usefulLife = parseFloat(document.getElementById("useful_life").value) || 0;
-    let method = document.getElementById("depreciation_method").value;
 
-    // Ensure all required values are provided
-    if (!depreciationType || !currentValue || !depreciationPercentage || !usefulLife || !method) {
-        return;
-    }
-    
-
-    // Determine financial date based on depreciation type
-    let financialDate;
-    let financialEnd = new Date("{{$financialEndDate}}");
-    
-    
-    // Extract the financial year-end month and day
-    let financialEndMonth = financialEnd.getMonth(); 
-    let financialEndDay = financialEnd.getDate();
-    let devidend = 1; 
-
-    switch (depreciationType) {
-       case 'half_yearly':
-            devidend = 2; // Adjust dividend for half-yearly
-            break;
-
-        case 'quarterly':
-            devidend = 4; // Adjust dividend for quarterly
-            break;
-
-        case 'monthly':
-            devidend = 12; // Adjust dividend for monthly
-            break;
-
-    }
-
-    let salvageValue = (currentValue * (depreciationPercentage / 100)).toFixed(2);
-
-    let depreciationRate = 0;
-    if (method === "SLM") {
-        depreciationRate = ((((currentValue - salvageValue) / usefulLife) / currentValue)*100).toFixed(2);
-    } else if (method === "WDV") {
-        depreciationRate = ((1 - Math.pow(salvageValue / currentValue, 1 / usefulLife))*100).toFixed(2);
-    }
-
-    let totalDepreciation = 0;
-    document.getElementById("salvage_value").value = salvageValue;
-    console.log("dep_rate"+depreciationRate+"devidend"+devidend);
-    document.getElementById("depreciation_rate").value = depreciationRate;
-    document.getElementById("depreciation_rate_year").value = depreciationRate;
-    document.getElementById("total_depreciation").value = totalDepreciation;
-}
-
-function showToast(icon, title) {
+        function showToast(icon, title) {
             const Toast = Swal.mixin({
                 toast: true,
                 position: "top-end",
@@ -1594,70 +1645,93 @@ function showToast(icon, title) {
             );
         @endif
 
-        $('#category').on('change',function(){
-           
+        $('#category').on('change', function() {
+
             var category_id = $(this).val();
-            if(category_id){
+            if (category_id) {
                 $.ajax({
-                    type:"GET",
-                    url:"{{route('finance.fixed-asset.setup.category')}}?category_id="+category_id,
-                    success:function(res){
-                        if(res){
+                    type: "GET",
+                    url: "{{ route('finance.fixed-asset.setup.category') }}?category_id=" + category_id,
+                    success: function(res) {
+                        if (res) {
                             $('#ledger').val(res.ledger_id).select2();
                             $('#ledger').trigger('change');
                             $('#ledger_group').val(res.ledger_group_id);
                             $('#maintenance_schedule').val(res.maintenance_schedule);
                             $('#useful_life').val(res.expected_life_years);
-                            if(res.salvage_percentage)
-                            $('#depreciation_percentage').val(res.salvage_percentage);
+                            if (res.salvage_percentage)
+                                $('#depreciation_percentage').val(res.salvage_percentage);
                             else
-                             $('#depreciation_percentage').val('{{$dep_percentage}}');
-                           
+                                $('#depreciation_percentage').val('{{ $dep_percentage }}');
 
-                            
+
+
                             updateDepreciationValues();
-                           
+
                         }
                     }
                 });
             }
         });
-        $('#location').on('change', function () {
-    var locationId = $(this).val();
+        $('#location').on('change', function() {
+            var locationId = $(this).val();
 
-    if (locationId) {
-        // Build the route manually
-        var url = '{{ route("cost-center.get-cost-center", ":id") }}'.replace(':id', locationId);
+            if (locationId) {
+                // Build the route manually
+                var url = '{{ route('cost-center.get-cost-center', ':id') }}'.replace(':id', locationId);
 
-        $.ajax({
-            url: url,
-            type: 'GET',
-            dataType: 'json',
-            success: function (data) {
-                if(data.length==0){
-                    $('#cost_center').empty(); 
-                $('#cost_center').prop('required', false);
-                $('.cost_center').hide();
-                }
-                else{
-                    $('.cost_center').show();
-                    $('#cost_center').prop('required', true);
-                $('#cost_center').empty(); // Clear previous options
-                $.each(data, function (key, value) {
-                    $('#cost_center').append('<option value="' + value.id + '">' + value.name + '</option>');
+                $.ajax({
+                    url: url,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(data) {
+                        if (data.length == 0) {
+                            $('#cost_center').empty();
+                            $('#cost_center').prop('required', false);
+                            $('.cost_center').hide();
+                        } else {
+                            $('.cost_center').show();
+                            $('#cost_center').prop('required', true);
+                            $('#cost_center').empty(); // Clear previous options
+                            $.each(data, function(key, value) {
+                                $('#cost_center').append('<option value="' + value.id + '">' +
+                                    value.name + '</option>');
+                            });
+                        }
+                    },
+                    error: function() {
+                        $('#cost_center').empty();
+                    }
                 });
-            }
-            },
-            error: function () {
+            } else {
                 $('#cost_center').empty();
             }
         });
-    } else {
-        $('#cost_center').empty();
-    }
-});
 
-$('#location').trigger('change');
+        $('#location').trigger('change');
+        $('#asset_code').on('input', function() {
+            $.ajax({
+                url: '{{ route('finance.fixed-asset.check-code') }}',
+                method: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    code: $('#asset_code').val(),
+                },
+                success: function(response) {
+                    const $input = $('#asset_code');
+                    const $errorEl = $('.code_error'); // Use class instead of ID
+
+                    if (response.exists) {
+                        $errorEl.text('Code already exists.');
+                        $input.addClass('is-invalid');
+                    } else {
+                        $errorEl.text('');
+                        $input.removeClass('is-invalid');
+                    }
+                }
+            });
+
+        });
     </script>
 @endsection
 @endsection
