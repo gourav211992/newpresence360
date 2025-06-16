@@ -783,6 +783,13 @@
                                                                                     </div>
                                                                                 </td> 
                                                                             </tr> 
+                                                                            <tr id = "current_item_so_no"> 
+                                                                                <td class="poprod-decpt">
+                                                                                    <div id ="current_item_so_no_details">
+
+                                                                                    </div>
+                                                                                </td> 
+                                                                            </tr> 
 
                                                                             
 
@@ -2252,7 +2259,7 @@
     let requesterTypeParam = "{{isset($order) ? $order -> requester_type : 'Department'}}";
     let redirect = "{{$redirect_url}}";   
 </script>
-@include('PL.common-js-route',["order" => isset($order) ? $order : null, "route_prefix" => "material.issue"])
+@include('PL.common-js-route',["order" => isset($order) ? $order : null, "route_prefix" => "sale.invoice"])
 <script src="{{ asset("assets\\js\\modules\\pl\\common-script.js") }}"></script>
 <script>
         $(window).on('load', function() {
@@ -3175,169 +3182,6 @@
     {
         let addRow = $('#series_id_input').val &&  $('#order_no_input').val && $('#order_date_input').val && $('#customer_code_input').val;
         return addRow;
-    }
-
-    var taxInputs = [];
-
-    function getItemTax(itemIndex)
-    {
-        const itemId = document.getElementById(`items_dropdown_${itemIndex}_value`).value;
-        const itemQty = document.getElementById('item_qty_' + itemIndex).value;
-        const itemValue = document.getElementById('item_value_' + itemIndex).value;
-        const discountAmount = document.getElementById('item_discount_' + itemIndex).value;
-        const headerDiscountAmount = document.getElementById('header_discount_' + itemIndex).value;
-        const totalItemDiscount = parseFloat(discountAmount ? discountAmount : 0) + parseFloat(headerDiscountAmount ? headerDiscountAmount : 0);
-        const shipToCountryId = $("#current_shipping_country_id").val();
-        const shipToStateId = $("#current_shipping_state_id").val();
-        let itemPrice = 0;
-        if (itemQty > 0) {
-            itemPrice = (parseFloat(itemValue ? itemValue : 0) + parseFloat(totalItemDiscount ? totalItemDiscount : 0)) / parseFloat(itemQty);
-        }
-        var headerBookId = "{{isset($order) ? $order -> book_id : ''}}";
-        $.ajax({
-            url: "{{route('tax.calculate.sales', ['alias' => 'si'])}}",
-            method: 'GET',
-            dataType: 'json',
-            data : {
-                item_id : itemId,
-                price : itemPrice,
-                transaction_type : 'sale',
-                party_country_id : shipToCountryId,
-                party_state_id : shipToStateId,
-                customer_id : $("#customer_id_input").val(),
-                header_book_id : headerBookId ? headerBookId : $("#series_id_input").val(),
-                store_id : $("#store_id_input").val(),
-                document_id : "{{isset($order) ? $order -> id : ''}}"
-            },
-            success: function(data) {
-                const taxInput = document.getElementById('item_tax_' + itemIndex);
-                const valueAfterDiscount = document.getElementById('value_after_discount_' + itemIndex).value;
-                const valueAfterHeaderDiscount = document.getElementById('value_after_header_discount_' + itemIndex).value;
-                let TotalItemTax = 0;
-                let taxDetails = [];
-                data.forEach((tax, taxIndex) => {
-                    const currentTaxValue = ((parseFloat(tax.tax_percentage ? tax.tax_percentage : 0)/100) * parseFloat(valueAfterHeaderDiscount ? valueAfterHeaderDiscount : 0));
-                    TotalItemTax = TotalItemTax + currentTaxValue;
-                    taxDetails.push({
-                        'tax_index' : taxIndex,
-                        'tax_name' : tax.tax_type,
-                        'tax_group' : tax.tax_group,
-                        'tax_type' : tax.tax_type,
-                        'taxable_value' : valueAfterHeaderDiscount,
-                        'tax_percentage' : tax.tax_percentage,
-                        'tax_value' : (currentTaxValue).toFixed(2)
-                    });
-                });
-                taxInput.setAttribute('tax_details', JSON.stringify(taxDetails))
-                taxInput.value = (TotalItemTax).toFixed(2);
-                const itemTotalInput = document.getElementById('item_total_' + itemIndex);
-                itemTotalInput.value = parseFloat(valueAfterHeaderDiscount ? valueAfterHeaderDiscount : 0) +  parseFloat(TotalItemTax ? TotalItemTax : 0);
-                //Get All Total Values
-                setAllTotalFields();
-                updateHeaderExpenses();
-            },
-            error: function(xhr) {
-                console.error('Error fetching customer data:', xhr.responseText);
-                const taxInput = document.getElementById('item_tax_' + itemIndex);
-                const valueAfterDiscount = document.getElementById('value_after_discount_' + itemIndex).value;
-                // const valueAfterHeaderDiscount = parseFloat(valueAfterDiscount ? valueAfterDiscount : 0) - parseFloat(headerDiscountAmount ? headerDiscountAmount : 0);
-                const valueAfterHeaderDiscount = document.getElementById('value_after_header_discount_' + itemIndex).value;
-                let TotalItemTax = 0;
-                let taxDetails = [];
-                taxInput.setAttribute('tax_details', JSON.stringify(taxDetails))
-                taxInput.value = (TotalItemTax).toFixed(2);
-                const itemTotalInput = document.getElementById('item_total_' + itemIndex);
-                itemTotalInput.value = parseFloat(valueAfterHeaderDiscount ? valueAfterHeaderDiscount : 0) +  parseFloat(TotalItemTax ? TotalItemTax : 0);
-                setAllTotalFields();
-                updateHeaderExpenses();
-            }
-        });
-    }
-    
-    function setAllTotalFields()
-    {
-        //Item value
-        const itemTotalInputs = document.getElementsByClassName('item_values_input');
-        let totalValue = 0;
-        for (let index = 0; index < itemTotalInputs.length; index++) {
-            totalValue += parseFloat(itemTotalInputs[index].value ? itemTotalInputs[index].value : 0);
-        }
-        document.getElementById('all_items_total_value').textContent = (totalValue).toFixed(2);
-        document.getElementById('all_items_total_value_summary').textContent = (totalValue).toFixed(2);
-        if (totalValue < 0) {
-            document.getElementById('all_items_total_value_summary').setAttribute('style', 'color : red !important;');
-        } else {
-            document.getElementById('all_items_total_value_summary').setAttribute('style', '');
-        }
-        //Item Discount
-        const itemTotalDiscounts = document.getElementsByClassName('item_discounts_input');
-        let totalDiscount = 0;
-        for (let index = 0; index < itemTotalDiscounts.length; index++) {
-            totalDiscount += parseFloat(itemTotalDiscounts[index].value ? itemTotalDiscounts[index].value : 0);
-        }
-        document.getElementById('all_items_total_discount').textContent = (totalDiscount).toFixed(2);
-        document.getElementById('all_items_total_discount_summary').textContent = (totalDiscount).toFixed(2);
-        if (totalDiscount < 0) {
-            document.getElementById('all_items_total_discount_summary').setAttribute('style', 'color : red !important;');
-        } else {
-            document.getElementById('all_items_total_discount_summary').setAttribute('style', '');
-        }
-        //Item Tax
-        const itemTotalTaxes = document.getElementsByClassName('item_taxes_input');
-        let totalTaxes = 0;
-        for (let index = 0; index < itemTotalTaxes.length; index++) {
-            totalTaxes += parseFloat(itemTotalTaxes[index].value ? itemTotalTaxes[index].value : 0);
-        }
-        document.getElementById('all_items_total_tax').value = (totalTaxes).toFixed(2);
-        document.getElementById('all_items_total_tax_summary').textContent = (totalTaxes).toFixed(2);
-        if (totalTaxes < 0) {
-            document.getElementById('all_items_total_tax_summary').setAttribute('style', 'color : red !important;')
-        } else {
-            document.getElementById('all_items_total_tax_summary').setAttribute('style', '');
-        }
-        //Item Total Value After Discount
-        const itemDiscountTotal = document.getElementsByClassName('item_val_after_header_discounts_input');
-        let itemDiscountTotalValue = 0;
-        for (let index = 0; index < itemDiscountTotal.length; index++) {
-            itemDiscountTotalValue += parseFloat(itemDiscountTotal[index].value ? itemDiscountTotal[index].value : 0);
-        }
-        //Item Total Value 
-        const itemValueAfterDiscount = document.getElementsByClassName('item_val_after_discounts_input');
-        let itemValueAfterDiscountValue = 0;
-        for (let index = 0; index < itemValueAfterDiscount.length; index++) {
-            itemValueAfterDiscountValue += parseFloat(itemValueAfterDiscount[index].value ? itemValueAfterDiscount[index].value : 0);
-        }
-        //Order Discount
-        const orderDiscountContainer = document.getElementById('order_discount_summary');
-        let orderDiscount = orderDiscountContainer ? orderDiscountContainer.textContent : null;
-        orderDiscount = parseFloat(orderDiscount ? orderDiscount : 0);
-        let taxableValue = itemValueAfterDiscountValue - orderDiscount;
-        document.getElementById('all_items_total_total').textContent = (itemValueAfterDiscountValue).toFixed(2);
-        document.getElementById('all_items_total_total_summary').textContent = (taxableValue).toFixed(2);
-        if (taxableValue < 0) {
-            document.getElementById('all_items_total_total_summary').setAttribute('style', 'color : red !important;')
-        } else {
-            document.getElementById('all_items_total_total_summary').setAttribute('style', '');
-        }
-        //Taxable total value 
-        const totalAfterTax = (totalTaxes + itemDiscountTotalValue).toFixed(2);
-        document.getElementById('all_items_total_after_tax_summary').textContent = totalAfterTax;
-        if (totalAfterTax < 0) {
-            document.getElementById('all_items_total_after_tax_summary').setAttribute('style', 'color : red !important;')
-        } else {
-            document.getElementById('all_items_total_after_tax_summary').setAttribute('style', '')
-        }
-        //Expenses
-        const expensesInput = document.getElementById('all_items_total_expenses_summary');
-        const expense = parseFloat(expensesInput.textContent ? expensesInput.textContent : 0);
-        //Grand Total
-        const grandTotalContainer = document.getElementById('grand_total');
-        grandTotalContainer.textContent = (parseFloat(totalAfterTax) + parseFloat(expense)).toFixed(2);
-        if (grandTotalContainer.textContent < 0) {
-            document.getElementById('grand_total').setAttribute('style', 'color : red !important;')
-        } else {
-            document.getElementById('grand_total').setAttribute('style', '')
-        }
     }
 
     // function changeAllItemsTotal() //All items total
@@ -5245,6 +5089,58 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
         </tr>
         `;
         $('#PacketInfo').modal('show');
+    }
+
+    function checkStockData(itemRowId)
+    {
+        let itemAttributes = JSON.parse(document.getElementById(`items_dropdown_${itemRowId}`).getAttribute('attribute-array'));
+                let selectedItemAttr = [];
+                if (itemAttributes && itemAttributes.length > 0) {
+                    itemAttributes.forEach(element => {
+                    element.values_data.forEach(subElement => {
+                        if (subElement.selected) {
+                            selectedItemAttr.push(subElement.id);
+                        }
+                    });
+                });
+                }
+        $.ajax({
+            url: "{{route('get_item_inventory_details')}}",
+            method: 'GET',
+            dataType: 'json',
+            data: {
+                quantity: document.getElementById('item_qty_' + itemRowId).value,
+                item_id: document.getElementById('items_dropdown_'+ itemRowId + '_value').value,
+                uom_id : document.getElementById('uom_dropdown_' + itemRowId).value,
+                selectedAttr : selectedItemAttr,
+                store_id: $("#item_store_" + itemRowId).val(),
+                sub_store_id: $("#item_sub_store_" + itemRowId).val()
+            },
+            success: function(data) {
+                
+                    var inputQtyBox = document.getElementById('item_qty_' + itemRowId);
+                    var actualQty = inputQtyBox.value;
+                    inputQtyBox.setAttribute('max-stock',data.stocks.confirmedStockAltUom);
+                    if (inputQtyBox.getAttribute('max-stock')) {
+                        var maxStock = parseFloat(inputQtyBox.getAttribute('max-stock') ? inputQtyBox.getAttribute('max-stock') : 0);
+                        if (maxStock <= 0) {
+                            inputQtyBox.value = 0;
+                            inputQtyBox.readOnly = true;
+                        } else {
+                            if (actualQty > maxStock) {
+                                inputQtyBox.value = maxStock;
+                                inputQtyBox.readOnly  = false;
+                            } else {
+                                inputQtyBox.readOnly  = false;
+                            }
+                        }
+                    }
+                
+            },
+            error: function(xhr) {
+                console.error('Error fetching customer data:', xhr.responseText);
+            }
+            });
     }
 
     function checkStockData(itemRowId)

@@ -10,9 +10,11 @@ use App\Models\NumberPattern;
 use App\Models\PwoSoMapping;
 use Illuminate\Foundation\Http\FormRequest;
 use Spatie\FlareClient\Flare;
+use App\Traits\ProcessesComponentJson;
 
 class JoRequest extends FormRequest
 {
+    use ProcessesComponentJson;
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -26,6 +28,11 @@ class JoRequest extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
+
+    protected function prepareForValidation(): void
+    {
+        $this->processComponentJson('components_json');
+    }
 
     public function rules(): array
     {

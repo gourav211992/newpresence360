@@ -27,7 +27,7 @@
 </style>
 @endsection
 @section('content')
-<form class="ajax-input-form" method="POST" action="{{ route('pwo.store') }}" data-redirect="{{ route('pwo.index') }}" enctype='multipart/form-data'>
+<form class="ajax-input-form" data-module="pwo" method="POST" action="{{ route('pwo.store') }}" data-redirect="{{ route('pwo.index') }}" enctype='multipart/form-data'>
     @csrf
 <input type="hidden" name="show_attribute" value="0" id="show_attribute">
 <input type="hidden" name="so_item_ids" id="so_item_ids">
@@ -150,7 +150,9 @@
                             </div>
                             </div>
                             <div class="table-responsive pomrnheadtffotsticky">
-                            <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
+                            <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"
+                            data-json-key="components_json"
+                            data-row-selector="tr[id^='row_']">
                                 <thead>
                                     <tr>
                                         <th>

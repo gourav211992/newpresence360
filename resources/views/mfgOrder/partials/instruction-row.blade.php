@@ -10,30 +10,30 @@
        </div>
     </td> --}}
     <td>
-        <input type="text" value="{{$bomInstruction?->station?->name}}" placeholder="Select" class="form-control mw-100 ledgerselecct" name="instruction_station" />
+        <input disabled type="text" value="{{$bomInstruction?->station?->name}}" placeholder="Select" class="form-control mw-100 ledgerselecct" name="instruction_station" />
         <input type="hidden" value="{{$bomInstruction->station_id}}" name="instructions[{{$rowCount}}][station_id]">
            <input type="hidden" value="{{$bomInstruction?->station?->name}}" name="instructions[{{$rowCount}}][station_name]">
      </td>
      @if(isset($sectionRequired) && $sectionRequired)
     <td>
-        <input type="text" value="{{$bomInstruction?->section?->name}}" placeholder="Select" class="form-control mw-100 ledgerselecct" name="instruction_section" />
+        <input disabled type="text" value="{{$bomInstruction?->section?->name}}" placeholder="Select" class="form-control mw-100 ledgerselecct" name="instruction_section" />
         <input type="hidden" value="{{$bomInstruction?->section_id}}" name="instructions[{{$rowCount}}][section_id]">
            <input type="hidden" value="{{$bomInstruction?->section?->name}}" name="instructions[{{$rowCount}}][section_name]">
      </td>
      @endif
      @if(isset($subSectionRequired) && $subSectionRequired)
     <td>
-        <input type="text" value="{{$bomInstruction?->subSection?->name}}" placeholder="Select" class="form-control mw-100 ledgerselecct" name="instruction_sub_section" />
+        <input disabled type="text" value="{{$bomInstruction?->subSection?->name}}" placeholder="Select" class="form-control mw-100 ledgerselecct" name="instruction_sub_section" />
         <input type="hidden" value="{{$bomInstruction?->sub_section_id}}" name="instructions[{{$rowCount}}][sub_section_id]">
            <input type="hidden" value="{{$bomInstruction?->subSection?->name}}" name="instructions[{{$rowCount}}][sub_section_name]">
      </td>
      @endif
     <td>
-        <textarea class="form-control mw-100" rows="1" name="instructions[{{$rowCount}}][instructions]">{!! $bomInstruction?->instructions !!}</textarea>
+        <textarea disabled class="form-control mw-100" rows="1" name="instructions[{{$rowCount}}][instructions]">{!! $bomInstruction?->instructions !!}</textarea>
     </td>
     <td>
         <div class="d-flex justify-content-center align-items-center w-100">
-           <input type="file" name="instructions[{{$rowCount}}][attachment][]"  class="d-none"  id="file_input_{{$rowCount}}"  onchange="addFiles(this, 'instruction_file_preview_{{$rowCount}}')" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"> 
+           <input disabled type="file" name="instructions[{{$rowCount}}][attachment][]"  class="d-none"  id="file_input_{{$rowCount}}"  onchange="addFiles(this, 'instruction_file_preview_{{$rowCount}}')" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"> 
            <div class="d-flex align-items-center file-preview-container"  id="instruction_file_preview_{{$rowCount}}">
             @if($bomInstruction->getDocuments()?->count())
                 <div class="row" id = "instruction_file_preview_{{$rowCount}}">

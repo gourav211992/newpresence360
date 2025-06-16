@@ -1797,13 +1797,14 @@
             });
         }
 
+        
         function depCapitalizeDate() {
             let lastDepDate = new Date($('#last_dep_date').val());
             lastDepDate.setDate(lastDepDate.getDate() + 1);
             let formattedDate = lastDepDate.toISOString().split('T')[0];
             let today = new Date().toISOString().split('T')[0];
-            $('.capitalize_date').attr('min', formattedDate).attr('max',
-                today).prop('readonly', false).prop('required', true);
+            $('.capitalize_date').removeAttr('min').removeAttr('max').prop('readonly',true).prop('required', false);
+            $('.capitalize_date').val(formattedDate);
         }
     </script>
     <!-- END: Content-->

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
+use App\Models\JobOrder\JobOrder;
 use App\Traits\DateFormatTrait;
 use App\Traits\DefaultGroupCompanyOrg;
 use App\Traits\DynamicFieldsTrait;
@@ -111,6 +112,11 @@ class GateEntryHeader extends Model
     public function purchaseOrder()
     {
         return $this->belongsTo(PurchaseOrder::class, 'purchase_order_id');
+    }
+
+    public function jobOrder()
+    {
+        return $this->belongsTo(JobOrder::class, 'job_order_id');
     }
 
     public function items()

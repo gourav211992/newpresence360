@@ -265,44 +265,44 @@ class PWOController extends Controller
                             $pwoStationConsum->save();
                         }
                     }
-                    $customizableType = $bom->customizable;
-                    if(!$pwoSoMapping?->so_id) {
-                        $customizableType = 'no';
-                    }
-                    if($customizableType === 'no') {
+
+                    $bomDetails = (strtolower($bom->customizable) === 'no')
+                        ? BomDetail::where('bom_id', $checkBomExist['bom_id'])->get()
+                        : ErpSoItemBom::where('bom_id', $checkBomExist['bom_id'])
+                            ->where('sale_order_id', $pwoSoMapping?->so_id)
+                            ->where('so_item_id', $pwoSoMapping?->so_item_id)
+                            ->get();
+                    if (strtolower($bom->customizable) === 'yes' && $bomDetails->isEmpty()) {
                         $bomDetails = BomDetail::where('bom_id', $checkBomExist['bom_id'])->get();
-                    } else {
-                        $bomDetails = ErpSoItemBom::where("bom_id", $checkBomExist['bom_id'])
-                                    ->where('sale_order_id', $pwoSoMapping->so_id)
-                                    ->where('so_item_id', $pwoSoMapping->so_item_id)
-                                    ->get();
                     }
+
                     foreach ($bomDetails as $bomDetail) {
                         $bomDetailId = null;
                         $sectionId = null;
                         $subSectionId = null;
-                        if($customizableType === 'no') {
+
+                        if ($bomDetail instanceof \App\Models\BomDetail) {
                             $bomAttributes = $bomDetail->attributes->map(fn($attribute) => [
-                                'attribute_id' => $attribute->item_attribute_id,
+                                'attribute_id' => intval($attribute->item_attribute_id),
                                 'attribute_value' => intval($attribute->attribute_value),
                                 'attribute_name' => intval($attribute->attribute_name),
                             ])->toArray();
                             $bomDetailId = $bomDetail->id;
-                            $sectionId = $bomDetail->section_id;
-                            $subSectionId = $bomDetail->sub_section_id;
-                        } else {
+                            $sectionId = $bomDetail?->section_id;
+                            $subSectionId = $bomDetail?->sub_section_id;
+                        } elseif ($bomDetail instanceof \App\Models\ErpSoItemBom) {
                             $bomAttributes = array_map(function ($attribute) {
                                 return [
-                                    'attribute_id' => $attribute['attribute_id'],
+                                    'attribute_id' => intval($attribute['attribute_id']),
                                     'attribute_value' => intval($attribute['attribute_value_id']),
-                                    'attribute_name' => intval($attribute['attribute_group_id']),
+                                    'attribute_name' => intval($attribute['attribute_group_id'])
                                 ];
                             }, $bomDetail->item_attributes ?? []);
-                            $bomDetailId = $bomDetail?->bom_detail_id;
+                            $bomDetailId = $bomDetail->bom_detail_id;
                             $sectionId = $bomDetail?->bomDetail?->section_id;
                             $subSectionId = $bomDetail?->bomDetail?->sub_section_id;
                         }
-                        
+
                         $moBomMapping = new PwoBomMapping;
                         $moBomMapping->pwo_id = $mo->id;
                         $moBomMapping->so_id = $pwoSoMapping->so_id ?? null;
@@ -327,7 +327,6 @@ class PWOController extends Controller
                  ->where('pwo_id', $mo->id)
                  ->groupBy('pwo_id', 'so_id', 'item_id', 'item_code', 'uom_id', 'attributes')
                  ->get();
-
                  foreach($groupedDatas as $groupedData) {
                      # PWO Item Save                  
                      $moItem = new ErpPwoItem;
@@ -887,41 +886,39 @@ class PWOController extends Controller
                             $pwoStationConsum->save();
                         }
                     }
-                    $customizableType = $bom->customizable;
-                    if(!$pwoSoMapping?->so_id) {
-                        $customizableType = 'no';
-                    }
-                    if($customizableType === 'no') {
+
+                    $bomDetails = (strtolower($bom->customizable) === 'no')
+                        ? BomDetail::where('bom_id', $checkBomExist['bom_id'])->get()
+                        : ErpSoItemBom::where('bom_id', $checkBomExist['bom_id'])
+                            ->where('sale_order_id', $pwoSoMapping?->so_id)
+                            ->where('so_item_id', $pwoSoMapping?->so_item_id)
+                            ->get();
+                    if (strtolower($bom->customizable) === 'yes' && $bomDetails->isEmpty()) {
                         $bomDetails = BomDetail::where('bom_id', $checkBomExist['bom_id'])->get();
-                    } else {
-                        $bomDetails = ErpSoItemBom::where("bom_id", $checkBomExist['bom_id'])
-                                    ->where('sale_order_id', $pwoSoMapping->so_id)
-                                    ->where('so_item_id', $pwoSoMapping->so_item_id)
-                                    ->get();
                     }
 
                     foreach ($bomDetails as $bomDetail) {
                         $bomDetailId = null;
                         $sectionId = null;
                         $subSectionId = null;
-                        if($customizableType === 'no') {
+                        if ($bomDetail instanceof \App\Models\BomDetail) {
                             $bomAttributes = $bomDetail->attributes->map(fn($attribute) => [
-                                'attribute_id' => $attribute->item_attribute_id,
+                                'attribute_id' => intval($attribute->item_attribute_id),
                                 'attribute_value' => intval($attribute->attribute_value),
                                 'attribute_name' => intval($attribute->attribute_name),
                             ])->toArray();
                             $bomDetailId = $bomDetail->id;
-                            $sectionId = $bomDetail->section_id;
-                            $subSectionId = $bomDetail->sub_section_id;
-                        } else {
+                            $sectionId = $bomDetail?->section_id;
+                            $subSectionId = $bomDetail?->sub_section_id;
+                        } elseif ($bomDetail instanceof \App\Models\ErpSoItemBom) {
                             $bomAttributes = array_map(function ($attribute) {
                                 return [
-                                    'attribute_id' => $attribute['attribute_id'],
+                                    'attribute_id' => intval($attribute['attribute_id']),
                                     'attribute_value' => intval($attribute['attribute_value_id']),
                                     'attribute_name' => intval($attribute['attribute_group_id']),
                                 ];
                             }, $bomDetail->item_attributes ?? []);
-                            $bomDetailId = $bomDetail?->bom_detail_id;
+                            $bomDetailId = $bomDetail->bom_detail_id;
                             $sectionId = $bomDetail?->bomDetail?->section_id;
                             $subSectionId = $bomDetail?->bomDetail?->sub_section_id;
                         }

@@ -8,8 +8,10 @@ use App\Helpers\CurrencyHelper;
 use App\Helpers\Helper;
 use App\Helpers\InventoryHelper;
 use App\Helpers\ItemHelper;
+use App\Helpers\NumberHelper;
 use App\Helpers\ServiceParametersHelper;
 use App\Http\Requests\PslipRequest;
+use App\Models\Address;
 use App\Models\ErpProductionSlip;
 use App\Models\ErpPslipItem;
 use App\Models\ErpPslipItemAttribute;
@@ -32,6 +34,7 @@ use App\Models\Shift;
 use App\Models\StockLedger;
 use App\Models\StockLedgerReservation;
 use App\Models\Unit;
+use PDF;
 use DB;
 use Exception;
 use Illuminate\Http\Request;
@@ -1011,6 +1014,56 @@ class ErpProductionSlipController extends Controller
         $specifications = $item?->specifications()->whereNotNull('value')->get() ?? [];
         $html = view('productionSlip.partials.item-detail', compact('item', 'selectedAttr', 'specifications'))->render();
         return response()->json(['data' => ['html' => $html, 'status' => 200, 'message' => 'fetched.']]);
+    }
+    public function generatePdf(Request $request, $id)
+    {
+        $user = Helper::getAuthenticatedUser();
+        $organization = Organization::where('id', $user->organization_id)->first();
+        $organizationAddress = Address::with(['city', 'state', 'country'])
+            ->where('addressable_id', $user->organization_id)
+            ->where('addressable_type', Organization::class)
+            ->first();
+        $pslip = ErpProductionSlip::findOrFail($id);
+        $specifications = collect();
+        $products = collect();
+        $items = collect();
+        if(isset($pslip -> items) && $pslip -> items) {
+            $items = $pslip -> items;
+        }
+        if(isset($pslip->consumptions))
+        {
+            $products = $pslip -> consumptions;            
+        }
+
+        $totalAmount = 0;
+        $amountInWords = NumberHelper::convertAmountToWords($totalAmount);
+        // Path to your image (ensure the file exists and is accessible)
+        $imagePath = public_path('assets/css/midc-logo.jpg'); // Store the image in the public directory
+        $approvedBy = Helper::getDocStatusUser(get_class($pslip), $pslip -> id, $pslip -> document_status);
+        $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$pslip->document_status] ?? '';
+        $dynamicFields = $pslip -> dynamic_fields ?? [];
+        $pdf = PDF::loadView(
+        // return view(
+        'pdf.pslip',
+        [
+            'order'=> $pslip,
+            'items' => $items,
+            'user'=>$user,
+            'products' => $products,
+            'organization' => $organization,
+            'organizationAddress' => $organizationAddress,
+            'totalAmount'=>$totalAmount,
+            'amountInWords'=>$amountInWords,
+            'approvedBy' => $approvedBy,
+            'imagePath' => $imagePath,
+            'specifications' => $specifications,
+            'docStatusClass' => $docStatusClass,
+            'dynamicFields' => $dynamicFields
+        ]
+        );
+        // $pdf->setPaper('a4', 'landscape');
+        // $pdf->setOption('isHtml5ParserEnabled', true);
+        return $pdf->stream('ProductionSlip-' . date('Y-m-d') . '.pdf');
     }
 
 }

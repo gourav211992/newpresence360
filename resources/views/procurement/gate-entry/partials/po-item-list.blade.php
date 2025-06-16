@@ -2,11 +2,17 @@
         @php
             $orderQty = (($poItem->order_qty ?? 0) - ($poItem->short_close_qty ?? 0));
             $invOrderQty = (($poItem->po_item?->order_qty ?? 0) - ($poItem->short_close_qty ?? 0));
+            if (isset($poItem->po->type) && ($poItem->po->type == 'supplier-invoice')) {
+                $ref_no = ($poItem->po_item?->po?->book?->book_code ?? 'NA') . '-' . ($poItem->po_item?->po?->document_number ?? 'NA');
+            } else {
+                $ref_no = ($poItem->po?->book?->book_code ?? 'NA') . '-' . ($poItem->po?->document_number ?? 'NA');
+            }
         @endphp
     <tr>
         <td>
             <div class="form-check form-check-inline me-0">
                 <input class="form-check-input po_item_checkbox" type="checkbox" name="po_item_check" value="{{$poItem->id}}" data-current-po="{{ $poItem ? $poItem->purchase_order_id : 'null' }}" data-existing-po="{{ $poData ? $poData->purchase_order_id : 'null' }}"  @if ($poData && $poData->purchase_order_id !=  $poItem->purchase_order_id)  disabled="disabled" @endif>
+                <input type="hidden" name="reference_no" id="reference_no" value={{ $ref_no }}>
             </div>
         </td>
         <!-- <td class="fw-bolder text-dark">

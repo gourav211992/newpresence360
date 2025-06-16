@@ -434,7 +434,7 @@
             if (settleAmount > balance) {
                 input.addClass('is-invalid');
                 input.after(
-                    '<span class="invalid-feedback d-block">Settle amount cannot be greater than balance.</span>'
+                    '<span class="invalid-feedback d-block"  style="font-size:12px">Settle amount cannot be greater than balance.</span>'
                     );
             } else {
                 input.removeClass('is-invalid');
@@ -562,7 +562,7 @@
                 if (settleAmount > balance) {
                     input.addClass('is-invalid');
                     input.after(
-                        '<span class="invalid-feedback d-block">Settle amount cannot be greater than balance.</span>'
+                        '<span class="invalid-feedback d-block"  style="font-size:12px">Settle amount cannot be greater than balance.</span>'
                         );
                     isValid = false;
                 } else {

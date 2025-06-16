@@ -13,9 +13,11 @@ use App\Models\ItemAttribute;
 use Auth;
 use Illuminate\Foundation\Http\FormRequest;
 use App\Models\PiPoMapping;
+use App\Traits\ProcessesComponentJson;
 
 class PoRequest extends FormRequest
 {
+    use ProcessesComponentJson;
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -29,6 +31,17 @@ class PoRequest extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
+
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     */
+
+    protected function prepareForValidation(): void
+    {
+        $this->processComponentJson('components_json');
+    }
 
     public function rules(): array
     {

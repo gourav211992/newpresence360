@@ -1,7 +1,40 @@
 @extends('layouts.app')
+@section('styles')
+<style>
 
+.dataTables_wrapper {
+    position: relative;
+}
+
+.dataTables_processing {
+    z-index: 10000 !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%);
+    background: white; /* optional */
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: bold;
+    color: #333;
+}
+.item-name-wrapper {
+            min-width: 100px;
+            max-width: 150px;
+            display: block;
+            white-space: normal;
+        }
+
+        .wrap-if-too-long {
+            display: inline-block;
+            white-space: normal;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+</style>
+
+@endsection
 @section('content')
-
     <!-- BEGIN: Content-->
     <form method="POST" data-completionFunction = "disableHeader" class="ajax-input-form sales_module_form material_issue" action = "{{route('material.issue.store')}}" data-redirect="{{ $redirect_url }}" id = "sale_invoice_form" enctype='multipart/form-data'>
 
@@ -25,7 +58,7 @@
                             @if (isset($order))
                                 @php
                                     $printOption = 'Material Issue';
-                                    if ($order -> issue_type === 'Location Transfer')
+                                    if ($order -> issue_type === 'Location Transfer' || $order -> issue_type === 'Sub Contracting' || $order -> issue_type === 'Job Work')
                                     {
                                         $printOption = 'Delivery Challan';
                                     }
@@ -301,7 +334,7 @@
     <!-- Vendor Location -->
     <div class="col-md-2 mb-2 sub_contracting d-none">
         <label class="form-label">Vendor Store<span class="text-danger">*</span></label>
-        <select class="form-select disable_on_edit" name="vendor_store_id" id="vendor_store_id_input">
+        <select class="form-select disable_on_edit" name="vendor_store_id" id="vendor_store_id_input" oninput = "enableDisableQtButton();">
             <option value="" disabled selected>Select</option>
         </select>
     </div>
@@ -394,7 +427,7 @@
     <!-- Vendor Location -->
     <div class="col-md-2 mb-2 sub_contracting {{$order -> issue_type === 'Sub Contracting' ? '' : 'd-none'}}">
         <label class="form-label">Vendor Store<span class="text-danger">*</span></label>
-        <select class="form-select disable_on_edit" name="vendor_store_id" id="vendor_store_id_input">
+        <select class="form-select disable_on_edit" name="vendor_store_id" id="vendor_store_id_input" oninput = "enableDisableQtButton();">
             <option value="{{$order -> to_sub_store_id}}" >{{$order -> to_sub_store ?-> name}}</option>
         </select>
     </div>
@@ -424,16 +457,25 @@
 <!-- Buttons Row -->
 <div class="row align-items-center" id="selection_section">
     <div class="col-auto action-button" id="mfg_order_selection">
+        <input type="hidden" id="mo_header_pull" value ="{{ App\Helpers\ConstantHelper::MO_SERVICE_ALIAS }}">
         <button onclick="openHeaderPullModal();" disabled type="button" id="select_mfg_button" class="btn btn-outline-primary btn-sm mb-0">
             <i data-feather="plus-square"></i> MFG Order
         </button>
     </div>
+    <div class="col-auto action-button" id="jo_selection">
+        <input type="hidden" id="jo_header_pull" value ="{{ App\Helpers\ConstantHelper::JO_SERVICE_ALIAS }}">
+        <button onclick="openHeaderPullModal('jo');" disabled type="button" id="select_jo_button" class="btn btn-outline-primary btn-sm mb-0">
+            <i data-feather="plus-square"></i> Job Order
+        </button>
+    </div>
     <div class="col-auto action-button d-none" id="pwo_order_selection">
+        <input type="hidden" id="pwo_header_pull" value ="{{ App\Helpers\ConstantHelper::PWO_SERVICE_ALIAS }}">
         <button onclick="openHeaderPullModal('pwo');" disabled type="button" id="select_pwo_button" class="btn btn-outline-primary btn-sm mb-0">
             <i data-feather="plus-square"></i> PWO
         </button>
     </div>
     <div class="col-auto action-button" id="pi_order_selection">
+        <input type="hidden" id="pi_header_pull" value ="{{ App\Helpers\ConstantHelper::PI_SERVICE_ALIAS }}">
         <button onclick="openHeaderPullModal('pi');" disabled type="button" id="select_pi_button" class="btn btn-outline-primary btn-sm mb-0">
             <i data-feather="plus-square"></i> Purchase Indent
         </button>
@@ -868,6 +910,7 @@
 </div>
 
 @include('materialIssue.partials.mo_pull_modal');
+@include('materialIssue.partials.jo_pull_modal');
 @include('materialIssue.partials.pwo_pull_modal');
 @include('materialIssue.partials.pi_pull_modal');
 
@@ -877,10 +920,10 @@
     var currentfy = JSON.stringify({!! isset($order) ? $order : " " !!});
     let requesterTypeParam = "{{isset($order) ? $order -> requester_type : 'Department'}}";
     let redirect = "{{$redirect_url}}";   
-    </script>
-    @include('PL.common-js-route',["order" => isset($order) ? $order : null, "route_prefix" => "material.issue"])
-    <script src="{{ asset("assets\\js\\modules\\pl\\common-script.js") }}"></script>
-    
+</script>
+@include('PL.common-js-route',["order" => isset($order) ? $order : null, "route_prefix" => "material.issue"])
+<script src="{{ asset("assets\\js\\modules\\pl\\common-script.js") }}"></script>
+<script type="text/javascript" src="{{asset('assets/js/modules/pull-popup-datatable.js')}}"></script>
 <script>
         $(window).on('load', function() {
             if (feather) {
@@ -1297,6 +1340,17 @@
                             selectionPopupElement.style.display = ""
                         }
                     }
+                    if (selectSingleVal == 'jo') {
+                        var selectionSectionElement = document.getElementById('selection_section');
+                        if (selectionSectionElement) {
+                            selectionSectionElement.style.display = "";
+                        }
+                        var selectionPopupElement = document.getElementById('jo_selection');
+                        if (selectionPopupElement)
+                        {
+                            selectionPopupElement.style.display = ""
+                        }
+                    }
                     if (selectSingleVal == 'pwo') {
                         var selectionSectionElement = document.getElementById('selection_section');
                         if (selectionSectionElement) {
@@ -1411,16 +1465,17 @@
         const documentDate = document.getElementById('order_date_input').value;
         const fromLocation = document.getElementById('store_from_id_input').value;
         const fromLocationStore = document.getElementById('sub_store_from_id_input').value;
-        const otherField = (($("#vendor_id_input").val() && $("#vendor_store_id_input").val()) || ($("#issue_type_input").val() == 'Consumption' ) || ($("#issue_type_input").val() == 'Location Transfer') || ($("#issue_type_input").val() == 'Sub Location Transfer'));
-
+        let issueType = $("#issue_type_input").val();
+        const otherField = (($("#vendor_id_input").val() && $("#vendor_store_id_input").val()) || ($("#issue_type_input").val() == 'Consumption') || ($("#issue_type_input").val() == 'Location Transfer') || ($("#issue_type_input").val() == 'Sub Location Transfer'));
         if (bookId && bookCode && documentDate && fromLocation && fromLocationStore && otherField) {
-        //     let siButton = document.getElementById('select_si_button');
-        //     if (siButton) {
-        //         siButton.disabled = false;
-        //     }
+            
             let piButton = document.getElementById('select_pi_button');
             if (piButton) {
-                piButton.disabled = false;
+                if (issueType == "Sub Contracting" || issueType == "Job Work") {
+                    piButton.disabled = true;
+                } else {
+                    piButton.disabled = false;
+                }
             }
             let leaseButton = document.getElementById('select_pwo_button');
             if (leaseButton) {
@@ -1428,7 +1483,19 @@
             }
             let orderButton = document.getElementById('select_mfg_button');
             if (orderButton) {
-                orderButton.disabled = false;
+                if (issueType == "Sub Contracting" || issueType == "Job Work") {
+                    orderButton.disabled = true;
+                } else {
+                    orderButton.disabled = false;
+                }
+            }
+            let joButton = document.getElementById('select_jo_button');
+            if (joButton) {
+                if (issueType == "Sub Contracting" || issueType == "Job Work") {
+                    joButton.disabled = false;
+                } else {
+                    joButton.disabled = true;
+                }
             }
         // } else {
         //     let siButton = document.getElementById('select_si_button');
@@ -1459,169 +1526,376 @@
             });
             return;
         }
+        console.log('openHeaderPullModal called with type:', type);
         if (type === 'mo') {
+            openPullType = "mo";
             $("#rescdule").modal('show');
         } else if (type === 'pwo') {
+            openPullType = "pwo";
             $("#rescdulePwo").modal('show');
-        } else {
+        } else if (type === 'jo') {
+            openPullType = "jo";
+            $("#rescduleJo").modal('show');
+        }else {
+            openPullType = "pi";
             $("#rescdulePi").modal('show');
         }
-        document.getElementById('qts_data_table').innerHTML = '';
-        document.getElementById('qts_data_table_pwo').innerHTML = '';
-        if (type == "pwo") {
-            openPullType = "pwo";
-            initializeAutocompleteQt("book_code_input_pwo", "book_id_pwo_val", "book_pwo", "book_code", "book_name");
-            initializeAutocompleteQt("document_no_input_pwo", "document_id_pwo_val", "pwo_document", "document_number", "document_number");
-            initializeAutocompleteQt("item_name_input_pwo", "item_id_pwo_val", "pwo_items", "item_code", "item_name");
-            initializeAutocompleteQt("location_code_input_qt", "location_id_qt_val", "location", "store_name");
-        } else if (type == 'mo') {
-            openPullType = "mo";
-            initializeAutocompleteQt("book_code_input_mo", "book_id_mo_val", "book_mo", "book_code", "book_name");
-            initializeAutocompleteQt("document_no_input_qt", "document_id_mo_val", "mo_document", "document_number", "document_number");
-            initializeAutocompleteQt("item_name_input_mo", "item_id_mo_val", "mo_items", "item_code", "item_name");
-            initializeAutocompleteQt("location_code_input_qt", "location_id_qt_val", "location", "store_name");
-        }  else if (type == 'pi') {
-            openPullType = "pi";
-            initializeAutocompleteQt("book_code_input_pi", "book_id_pi_val", "book_pi", "book_code", "book_name");
-            initializeAutocompleteQt("document_no_input_qt", "document_id_pi_val", "pi_document", "document_number", "document_number");
-            initializeAutocompleteQt("item_name_input_pi", "item_id_pi_val", "pi_items", "item_code", "item_name");
-            initializeAutocompleteQt("department_code_input_qt", "department_id_qt_val", "department", "name");
-        } 
-        // // else if (type === "dnote") {
-        // //     openPullType = "so";
-        // //     initializeAutocompleteQt("book_code_input_qt", "book_id_qt_val", "book_so", "book_code", "book_name");
-        // //     initializeAutocompleteQt("document_no_input_qt", "document_id_qt_val", "sale_order_document", "document_number", "document_number");
-        // // } 
-        // else if (type === 'land-lease') {
-        //     openPullType = "land-lease";
-        //     initializeAutocompleteQt("book_code_input_qt_land", "book_id_qt_val_land", "book_land_lease", "book_code", "book_name");
-        //     initializeAutocompleteQt("document_no_input_qt_land", "document_id_qt_val_land", "land_lease_document", "document_number", "document_number");
-        //     initializeAutocompleteQt("land_parcel_input_qt_land", "land_parcel_id_qt_val_land", "land_lease_parcel", "name", "name");
-        //     initializeAutocompleteQt("land_plot_input_qt_land", "land_plot_id_qt_val_land", "land_lease_plots", "plot_name", "plot_name");
-        // } else {
-        //     openPullType = "so";
-        //     initializeAutocompleteQt("book_code_input_qt", "book_id_qt_val", "book_so", "book_code", "book_name");
-        //     initializeAutocompleteQt("document_no_input_qt", "document_id_qt_val", "sale_order_document", "document_number", "document_number");
-        // initializeAutocompleteQt("book_code_input_mo", "book_id_mo_val", "book_mo", "book_code", "book_name");
-        // initializeAutocompleteQt("document_no_input_mo", "document_id_mo_val", "mo_document", "document_number", "document_number");
-        // if (type === 'land-lease') {
-        //     getOrders('land-lease');
-        // } else {
-        getOrders(openPullType);
-        // }
+        // document.getElementById('qts_data_table').innerHTML = '';
+        // document.getElementById('qts_data_table_pwo').innerHTML = '';
+            initializeAutocompleteQt(`book_code_input_${type}`, `book_id_${type}_val`, `book_${type}`, "book_code", "book_name",type);
+            initializeAutocompleteQt(`document_no_input_${type}`, `document_id_${type}_val`, `${type}_document`, "book_code", "document_number",type);
+            initializeAutocompleteQt(`so_no_input_${type}`, `so_id_${type}_val`, `sale_order_document_${type}`, "book_code" ,"document_number",type);
+            initializeAutocompleteQt(`item_name_input_${type}`, `item_id_${type}_val`, `inventory_items`, "item_code", "item_name",type);
+            initializeAutocompleteQt(`location_code_input_${type}`, `location_id_${type}_val`, `location`, "store_name","",type);
+            initializeAutocompleteQt(`sub_location_code_input_${type}`, `sub_location_id_${type}_val`, `sub_store`, "name","",type);
+            initializeAutocompleteQt(`department_code_input_${type}`, `department_id_${type}_val`, `department_${type}`, "name","",type);
+        getOrders(type);
+    }
+    
+    // function getOrders(type = "mo")
+    // {
+    //     var qtsHTML = ``;
+    //     let departmentOrStoreKey = 'store_location_code';
+    //     let targetTable = document.getElementById('qts_data_table');
+    //     let requesterHTML = ``;
+    //     let stationHTML = ``;
+    //     let soNoHTML = ``;
+    //     let subStoreHTML = ``;
+    //     if (type == 'pwo') {
+    //         targetTable = document.getElementById('qts_data_table_pwo');
+    //     } else if (type == "pi") {
+    //         departmentOrStoreKey = 'department_code';
+    //         targetTable = document.getElementById('qts_data_table_pi');
+    //     }
+    //     const location_id = $("#location_id_qt_val").val();
+    //     const departmentId = $("#department_id_qt_val").val();
+    //     const book_id = $(`#book_id_${type}_val`).val();
+    //     const document_id = $(`#document_id_${type}_val`).val();
+    //     const item_id = $(`#item_id_${type}_val`).val();
+    //     const apiUrl = "{{route('material.issue.pull.items')}}";
+    //     var selectedIds = [];
+        
+    //     var headerRows = document.getElementsByClassName("item_header_rows");
+    //     for (let index = 0; index < headerRows.length; index++) {
+    //         if (type == "mo") {
+    //             var referedId = document.getElementById('mo_id_' + index).value;
+    //         } else if (type == "pwo") {
+    //             var referedId = document.getElementById('pwo_id_' + index).value;
+    //         } else if (type == "pi") {
+    //             var referedId = document.getElementById('pi_id_' + index).value;
+    //         } else {
+    //             var referedId = [];
+    //         }
+    //         selectedIds.push(referedId);
+    //     }
+    //     $.ajax({
+    //         url: apiUrl,
+    //         method: 'GET',
+    //         dataType: 'json',
+    //         data : {
+    //             location_id : location_id,
+    //             department_id : departmentId,
+    //             book_id : book_id,
+    //             document_id : document_id,
+    //             item_id : item_id,
+    //             doc_type : type,
+    //             header_book_id : $("#series_id_input").val(),
+    //             store_id: $("#store_to_id_input").val(),
+    //             sub_store_id : $("#sub_store_to_id_input").val(),
+    //             store_id_from: $("#store_from_id_input").val(),
+    //             sub_store_id_from: $("#sub_store_from_id_input").val(),
+    //             selected_ids : selectedIds,
+    //             requester_type : $("#requester_type_input").val(),
+    //             requester_department_id : $("#department_id_input").val(),
+    //             requester_user_id : $("#user_id_input").val(),
+    //             station_id : $("#station_to_id_input").val()
+    //         },
+    //         success: function(data) {
+    //             if (Array.isArray(data.data) && data.data.length > 0) {
+    //                     data.data.forEach((qt, qtIndex) => {
+    //                         if (qt?.header?.requester_name) {
+    //                             requesterHTML = `<td>${qt?.header?.requester_name}</td>`;
+    //                         }
+    //                         if (qt?.station_name || type == 'mo') {
+    //                             stationHTML = `<td>${qt?.station_name ? qt?.station_name : ''}</td>`;
+    //                         }
+    //                         if (qt?.sub_store_code) {
+    //                             subStoreHTML = `<td>${qt?.sub_store_code}</td>`;
+    //                         }
+                            
+    //                         soNoHTML = `<td>${qt?.so_no}</td>`;
+                            
+    //                         var attributesHTML = ``;
+    //                         qt.attributes.forEach(attribute => {
+    //                             attributesHTML += `<span class="badge rounded-pill badge-light-primary" > ${attribute.attribute_name} : ${attribute.attribute_value} </span>`;
+    //                         });
+    //                         qtsHTML += `
+    //                             <tr>
+    //                                 <td>
+    //                                     <div class="form-check form-check-inline me-0">
+    //                                         <input ${qt?.avl_stock > 0 ? '' : 'disabled'} class="form-check-input pull_checkbox" type="checkbox" name="po_check" id="po_checkbox_${qtIndex}"  doc-id = "${qt?.header.id}" current-doc-id = "0" document-id = "${qt?.header?.id}" so-item-id = "${qt.id}" balance_qty = "${qt?.avl_stock}">
+    //                                     </div> 
+    //                                 </td>   
+    //                                 <td>${qt?.header?.book_code}</td>
+    //                                 <td>${qt?.header?.document_number}</td>
+    //                                 <td>${qt?.header?.document_date}</td>
+    //                                 <td>${qt?.[departmentOrStoreKey]}</td>
+    //                                 ${subStoreHTML}
+    //                                 ${requesterHTML}
+    //                                 ${stationHTML}
+    //                                 <td>${qt?.so_no ? qt?.so_no : ''}</td>
+    //                                 <td>${qt?.item_code}</td>
+    //                                 <td>${qt?.item_name}</td>
+    //                                 <td>${attributesHTML}</td>
+    //                                 <td>${qt?.uom?.name}</td>
+    //                                 <td>${qt?.qty}</td>
+    //                                 <td>${qt?.mi_balance_qty}</td>
+    //                                 <td>${qt?.avl_stock}</td>
+    //                             </tr>
+    //                         `
+    //                     });
+    //             }
+    //             targetTable.innerHTML = qtsHTML;
+    //         },
+    //         error: function(xhr) {
+    //             console.error('Error fetching customer data:', xhr.responseText);
+    //             targetTable.innerHTML = '';
+    //         }
+    //     });
+     
+    // }
+
+    function showTableLoadingRow(tableSelector, colspan = 10, message = "Loading...") {
+        const loadingRow = `
+            <tr class="loading-row">
+                <td colspan="${colspan}" class="text-center">
+                    <div class="spinner-border text-primary" role="status" style="margin-right: 10px;"></div>
+                    ${message}
+                </td>
+            </tr>`;
+        $(tableSelector + ' tbody').fadeOut(150, function () {
+            $(this).html(loadingRow).fadeIn(150);
+        });
     }
 
-    function getOrders(type = "mo")
-    {
+    function getOrders(type = "mo") {
         var qtsHTML = ``;
-        let departmentOrStoreKey = 'store_location_code';
-        let targetTable = document.getElementById('qts_data_table');
         let requesterHTML = ``;
         let stationHTML = ``;
         let soNoHTML = ``;
         let subStoreHTML = ``;
-        if (type == 'pwo') {
-            targetTable = document.getElementById('qts_data_table_pwo');
-        } else if (type == "pi") {
+        let departmentOrStoreKey = 'store_location_code';
+        let tableSelector = '#mo_orders_table';
+        let docType = `#${type}_header_pull`;
+        if (type === 'pwo') {
+            tableSelector = '#pwo_orders_table'; // this should match actual table ID/class in modal
+        } else if (type === 'pi') {
             departmentOrStoreKey = 'department_code';
-            targetTable = document.getElementById('qts_data_table_pi');
+            tableSelector = '#pi_orders_table';
+        } else if (type == "jo") {
+            tableSelector = '#jo_orders_table';
         }
-        const location_id = $("#location_id_qt_val").val();
-        const departmentId = $("#department_id_qt_val").val();
+
+        const location_id = $(`#location_id_${type}_val`).val();
+        const departmentId = $(`#department_id_${type}_val`).val();
         const book_id = $(`#book_id_${type}_val`).val();
         const document_id = $(`#document_id_${type}_val`).val();
+        const so_id = $(`#so_id_${type}_val`).val();
         const item_id = $(`#item_id_${type}_val`).val();
-        const apiUrl = "{{route('material.issue.pull.items')}}";
+        const apiUrl = "{{ route('material.issue.pull.items') }}";
         var selectedIds = [];
-        
+
         var headerRows = document.getElementsByClassName("item_header_rows");
         for (let index = 0; index < headerRows.length; index++) {
+            let referedId = '';
             if (type == "mo") {
-                var referedId = document.getElementById('mo_id_' + index).value;
+                referedId = document.getElementById('mo_id_' + index).value;
             } else if (type == "pwo") {
-                var referedId = document.getElementById('pwo_id_' + index).value;
+                referedId = document.getElementById('pwo_id_' + index).value;
             } else if (type == "pi") {
-                var referedId = document.getElementById('pi_id_' + index).value;
+                referedId = document.getElementById('pi_id_' + index).value;
+            } else if (type == "jo") {
+                referedId = document.getElementById('jo_id_' + index).value;
             } else {
-                var referedId = [];
+                referedId = '';
             }
             selectedIds.push(referedId);
         }
+        // showTableLoadingRow(tableSelector, 15, "Loading Items..."); // Use correct column count
+
         $.ajax({
             url: apiUrl,
-            method: 'GET',
+            method: 'POST',
             dataType: 'json',
-            data : {
-                location_id : location_id,
-                department_id : departmentId,
-                book_id : book_id,
-                document_id : document_id,
-                item_id : item_id,
-                doc_type : type,
-                header_book_id : $("#series_id_input").val(),
+            data: {
+                location_id,
+                department_id: departmentId,
+                book_id,
+                document_id,
+                item_id,
+                so_id,
+                doc_type: type,
+                mi_type: $("#issue_type_input").val(),
+                header_book_id: $("#series_id_input").val(),
                 store_id: $("#store_to_id_input").val(),
-                sub_store_id : $("#sub_store_to_id_input").val(),
+                sub_store_id: $("#sub_store_to_id_input").val(),
                 store_id_from: $("#store_from_id_input").val(),
                 sub_store_id_from: $("#sub_store_from_id_input").val(),
-                selected_ids : selectedIds,
-                requester_type : $("#requester_type_input").val(),
-                requester_department_id : $("#department_id_input").val(),
-                requester_user_id : $("#user_id_input").val(),
-                station_id : $("#station_to_id_input").val()
+                selected_ids: selectedIds,
+                requester_type: $("#requester_type_input").val(),
+                requester_department_id: $("#department_id_input").val(),
+                requester_user_id: $("#user_id_input").val(),
+                station_id: $("#station_to_id_input").val(),
+                vendor_id : $("#vendor_id_input").val()
             },
             success: function(data) {
                 if (Array.isArray(data.data) && data.data.length > 0) {
-                        data.data.forEach((qt, qtIndex) => {
-                            if (qt?.header?.requester_name) {
-                                requesterHTML = `<td>${qt?.header?.requester_name}</td>`;
-                            }
-                            if (qt?.station_name || type == 'mo') {
-                                stationHTML = `<td>${qt?.station_name ? qt?.station_name : ''}</td>`;
-                            }
-                            if (qt?.sub_store_code) {
-                                subStoreHTML = `<td>${qt?.sub_store_code}</td>`;
-                            }
-                            
-                            soNoHTML = `<td>${qt?.so_no}</td>`;
-                            
-                            var attributesHTML = ``;
-                            qt.attributes.forEach(attribute => {
-                                attributesHTML += `<span class="badge rounded-pill badge-light-primary" > ${attribute.attribute_name} : ${attribute.attribute_value} </span>`;
-                            });
-                            qtsHTML += `
-                                <tr>
-                                    <td>
-                                        <div class="form-check form-check-inline me-0">
-                                            <input ${qt?.avl_stock > 0 ? '' : 'disabled'} class="form-check-input pull_checkbox" type="checkbox" name="po_check" id="po_checkbox_${qtIndex}"  doc-id = "${qt?.header.id}" current-doc-id = "0" document-id = "${qt?.header?.id}" so-item-id = "${qt.id}" balance_qty = "${qt?.avl_stock}">
-                                        </div> 
-                                    </td>   
-                                    <td>${qt?.header?.book_code}</td>
-                                    <td>${qt?.header?.document_number}</td>
-                                    <td>${qt?.header?.document_date}</td>
-                                    <td>${qt?.[departmentOrStoreKey]}</td>
-                                    ${subStoreHTML}
-                                    ${requesterHTML}
-                                    ${stationHTML}
-                                    <td>${qt?.so_no ? qt?.so_no : ''}</td>
-                                    <td>${qt?.item_code}</td>
-                                    <td>${qt?.item_name}</td>
-                                    <td>${attributesHTML}</td>
-                                    <td>${qt?.uom?.name}</td>
-                                    <td>${qt?.qty}</td>
-                                    <td>${qt?.mi_balance_qty}</td>
-                                    <td>${qt?.avl_stock}</td>
-                                </tr>
-                            `
+                    data.data.forEach((qt, qtIndex) => {
+                        requesterHTML = qt?.header?.requester_name ? `<td>${qt?.header?.requester_name}</td>` : '';
+                        stationHTML = (qt?.station_name || type == 'mo') ? `<td>${qt?.station_name || ''}</td>` : '';
+                        subStoreHTML = qt?.sub_store_code ? `<td>${qt?.sub_store_code}</td>` : '';
+                        soNoHTML = `<td>${qt?.so_no}</td>`;
+
+                        var attributesHTML = ``;
+                        qt.attributes.forEach(attribute => {
+                            attributesHTML += `<span class="badge rounded-pill badge-light-primary">${attribute.attribute_name} : ${attribute.attribute_value}</span>`;
                         });
+                    });
                 }
-                targetTable.innerHTML = qtsHTML;
+
+                // Define column setup same as you shared
+                const renderData = data => data || 'N/A';
+                const columns = [
+                    {
+                        data: null,
+                        name: 'checkbox',
+                        orderable: false,
+                        searchable: false,
+                        render: (data, type, row) => {
+                            return `<div class="form-check form-check-inline me-0">
+                                <input class="form-check-input pull_checkbox" type="checkbox"
+                                    ${row.avl_stock > 0 ? '' : 'disabled'}
+                                    doc-id="${row.id}"
+                                    current-doc-id="0"
+                                    document-id="${row.id}"
+                                    so-item-id="${row.id}"
+                                    balance_qty="${row.avl_stock}">
+                            </div>`;
+                        }
+                    },
+                    { data: 'book_code', name: 'book_code', render: renderData, className: 'no-wrap' },
+                    { data: 'document_number', name: 'document_number', render: renderData, className: 'no-wrap' },
+                    { data: 'document_date', name: 'document_date', render: renderData, className: 'no-wrap' }
+                ];
+
+                // Add conditionally based on type
+                if (type === 'pi') {
+                    columns.push(
+                        { data: 'department_code', name: 'department_code', render: renderData, className: 'no-wrap' },
+                        { data: 'requester_name', name: 'requester_name', render: renderData, className: 'no-wrap' }
+                    );
+                } else if (type === 'mo') {
+                    columns.push(
+                        { data: 'store_location_code', name: 'store_location_code', render: renderData, className: 'no-wrap' },
+                        { data: 'sub_store_code', name: 'sub_store_code', render: renderData, className: 'no-wrap' },
+                        { data: 'station_name', name: 'station_name', render: renderData, className: 'no-wrap' },
+                    );
+                }
+                else if (type === "jo")
+                {
+                    columns.push(
+                    { data: 'store_location_code', name: 'store_location_code', render: renderData, className: 'no-wrap' },
+                    );
+                }
+
+                // Add remaining shared columns
+                columns.push(
+                    { data: 'so_no', name: 'so_no', render: renderData, className: 'no-wrap' },
+                    { data: 'item_code', name: 'item_code', render: renderData, className: 'no-wrap' },
+                    {
+                        data: 'item_name',
+                        name: 'item_name',
+                        render: renderData => {
+                            return `<div class="item-name-cell text-wrap" style="width: 150px; word-break: break-word">${renderData}</div>`;
+                        }
+                    },
+                    {
+                        data: 'attributes_array',
+                        name: 'attributes_array',
+                        className: '',
+                        render: attributes_array => {
+                            if (!attributes_array) return '';
+                            attributes_array = typeof attributes_array === 'string' ? JSON.parse(attributes_array) : attributes_array;
+
+                            return `
+                                <div class="item-name-wrapper" style="display: flex; flex-wrap: wrap; gap: 4px; width: 200px;">
+                                    ${attributes_array.map(attr =>
+                                        `<span class="badge wrap-if-too-long rounded-pill badge-light-primary" style="
+                                            margin-bottom: 4px;
+                                            flex: 0 0 auto;
+                                        ">
+                                            ${attr.attribute_name} : ${attr.attribute_value}
+                                        </span>`
+                                    ).join('')}
+                                </div>
+                            `;
+                        }
+                    },
+                    { data: 'uom.name', name: 'uom.name', render: renderData, className: 'no-wrap' },
+                    { data: 'qty', name: 'qty', render: renderData, className: 'no-wrap numeric-alignment' },
+                    { data: 'mi_balance_qty', name: 'mi_balance_qty', render: renderData, className: 'no-wrap numeric-alignment' },
+                    { data: 'avl_stock', name: 'avl_stock', render: renderData, className: 'no-wrap numeric-alignment' }
+                );
+
+
+                const filters = {
+                    location_id:`#location_id_${type}_val`,
+                    department_id:`#department_id_${type}_val`,
+                    book_id:`#book_id_${type}_val`,
+                    document_id:`#document_id_${type}_val`,
+                    so_id:`#so_id_${type}_val`,
+                    item_id:`#item_id_${type}_val`,
+                    doc_type: docType,
+                    mi_type: $("#issue_type_input"),
+                    header_book_id: "#series_id_input",
+                    store_id: "#store_to_id_input",
+                    sub_store_id: "#sub_store_to_id_input",
+                    store_id_from: "#store_from_id_input",
+                    sub_store_id_from: "#sub_store_from_id_input",
+                    selected_ids: selectedIds,
+                    requester_type: "#requester_type_input",
+                    requester_department_id: "#department_id_input",
+                    requester_user_id: "#user_id_input",
+                    station_id: "#station_to_id_input",
+                    vendor_id : $("#vendor_id_input"),
+
+                };
+
+                const exportColumns = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+                $(tableSelector).find('tbody').html('');
+                if ($.fn.DataTable.isDataTable(tableSelector)) {
+                    $(tableSelector).DataTable().clear().destroy();
+                }
+                // Initialize your DataTable with your function
+                initializeDataTable(
+                    tableSelector,
+                    apiUrl,
+                    columns,
+                    filters,
+                    "Order Items - " + type.toUpperCase(),
+                    [],
+                    [], // default order
+                    'landscape',
+                    'POST',
+                    false,
+                    false
+                );
             },
             error: function(xhr) {
-                console.error('Error fetching customer data:', xhr.responseText);
-                targetTable.innerHTML = '';
+                console.error('Error fetching data:', xhr.responseText);
+                $(tableSelector).find('tbody').html(`<tr><td colspan="16" class="text-center text-danger">No data found</td></tr>`);
             }
         });
-     
     }
 
     let current_doc_id = 0;
@@ -1664,6 +1938,7 @@
 
     function processOrder()
     {
+        console.log(openPullType, "IPE");
         const allCheckBoxes = document.getElementsByClassName('pull_checkbox');
         const docType = $("#service_id_input").val();
         const apiUrl = "{{route('material.issue.process.items')}}";
@@ -1694,7 +1969,8 @@
                     items_id: soItemsId,
                     doc_type: openPullType,
                     document_details : JSON.stringify(documentDetails),
-                    store_id : $("#store_from_id_input").val()
+                    store_id : $("#store_from_id_input").val(),
+                    mi_type : $("#issue_type_input").val()
                 },
                 success: function(data) {
                     const currentOrders = data.data;
@@ -1758,6 +2034,15 @@
                                         itemIdKeyName = "pi_item_id";
                                         itemIdKeyId = "pi_id";
                                     }
+                                    if (openPullType == "jo") {
+                                        if ($("#issue_type_input").val() == "Sub Contracting") {
+                                            itemIdKeyName = "jo_item_id";
+                                            itemIdKeyId = "jo_id";
+                                        } else if ($("#issue_type_input").val() == "Job Work") {
+                                            itemIdKeyName = "jo_product_id";
+                                            itemIdKeyId = "jo_id";
+                                        }
+                                    }
                                     // var avl_qty = item.balance_qty;
                                     // item.balance_qty = avl_qty;
                                     // item.max_qty = avl_qty;
@@ -1814,11 +2099,11 @@
                                             <input type = "hidden" name = "attribute_value_${currentOrderIndexVal}" />
                                             </td>
                                         <td>
-                                            <select class="form-select" name = "uom_id[]" id = "uom_dropdown_${currentOrderIndexVal}">
+                                            <select class="form-select" name = "uom_id[]" id = "uom_dropdown_${currentOrderIndexVal}" style = "pointer-events:none;">
                                             </select> 
                                         </td>
                                         <td>
-                                            <select class="form-select" name = "stock_type[]" id = "stock_type_${currentOrderIndexVal}" readonly> 
+                                            <select class="form-select" name = "stock_type[]" id = "stock_type_${currentOrderIndexVal}" style = "pointer-events:none;"> 
                                                 ${stockTypeHTML}
                                             </select> 
                                         </td>
@@ -1905,7 +2190,7 @@
     }
 
 
-    function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "") {
+    function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "",type='mo') {
             $("#" + selector).autocomplete({
                 source: function(request, response) {
                     $.ajax({
@@ -1922,7 +2207,7 @@
                             response($.map(data, function(item) {
                                 return {
                                     id: item.id,
-                                    label: `${item[labelKey1]} ${item[labelKey2] ? '(' + item[labelKey2] + ')' : ''}`,
+                                    label: `${item[labelKey1]} ${item[labelKey2] ? '-' + item[labelKey2]  : ''}`,
                                     code: item[labelKey1] || '', 
                                 };
                             }));
@@ -1937,6 +2222,7 @@
                     var $input = $(this);
                     $input.val(ui.item.label);
                     $("#" + selectorSibling).val(ui.item.id);
+                    getOrders(type);
                     return false;
                 },
                 change: function(event, ui) {
@@ -2272,7 +2558,7 @@ function onHeaderStoreChange(element, type)
             implementIssueTypeChange('.location_transfer','.sub_contracting, .consumption, .sub_loc_transfer');
         } else if (selectedType == 'Sub Location Transfer') {
             implementIssueTypeChange('.sub_loc_transfer, .sub_location','.location_transfer, .consumption, .sub_contracting');
-        } else if (selectedType == 'Sub Contracting') {
+        } else if (selectedType == 'Sub Contracting' || 'Job Work') {
             implementIssueTypeChange('.sub_contracting, .sub_location','.location_transfer, .consumption, .sub_loc_transfer');
         } else if (selectedType == 'Consumption') {
             implementIssueTypeChange('.consumption','.location_transfer, .sub_contracting, .sub_loc_transfer');
@@ -2364,9 +2650,11 @@ function onHeaderStoreChange(element, type)
                             }
                         });
                         vendorInput.innerHTML = vendorIdInputHTML;
+                        enableDisableQtButton();
                     } else {
                         vendorInput.innerHTML = vendorIdInputHTML;
                         element.value = "";
+                        enableDisableQtButton();
                         Swal.fire({
                             title: 'Error!',
                             text: 'No Stores found',
@@ -2377,6 +2665,7 @@ function onHeaderStoreChange(element, type)
                     
                 },
                 error : function(xhr){
+                    enableDisableQtButton();
                     console.error('Error fetching customer data:', xhr.responseText);
                     vendorInput.innerHTML = vendorIdInputHTML;
                     element.value = "";
@@ -2401,6 +2690,15 @@ function onHeaderStoreChange(element, type)
                 // if (element.checked) {
                 //     checkQuotation(selectableElements[index]);
                 // }
+            }
+        }
+    }
+    function checkAllJo(element)
+    {
+        const selectableElements = document.getElementsByClassName('pull_checkbox');
+        for (let index = 0; index < selectableElements.length; index++) {
+            if (!selectableElements[index].disabled) {
+                selectableElements[index].checked = element.checked;
             }
         }
     }
@@ -2615,6 +2913,36 @@ function onHeaderStoreChange(element, type)
         if (issueType === 'Sub Contracting') {
             $("#sub_store_to_id_input").val($("#vendor_store_id_input").val());
         }
+    }
+    function clearFilters(type = 'mo') {
+        const fields = [
+            `location_code_input_${type}`,
+            `location_id_${type}_val`,
+            `department_code_input_${type}`,
+            `department_id_${type}_val`,
+            `book_code_input_${type}`,
+            `book_id_${type}_val`,
+            `document_no_input_${type}`,
+            `document_id_${type}_val`,
+            `so_no_input_${type}`,
+            `so_id_${type}_val`,
+            `item_name_input_${type}`,
+            `item_id_${type}_val`
+        ];
+
+        fields.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                if ('value' in el) {
+                    el.value = '';
+                } else {
+                    el.textContent = '';
+                }
+            }
+        });
+
+        selectedValues = {};
+        getOrders(type);
     }
 
 </script>

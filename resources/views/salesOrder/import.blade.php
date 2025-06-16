@@ -18,8 +18,6 @@
                                 <button onClick="javascript: history.go(-1)"
                                     class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i>
                                     Back</button>
-                                <button type="button" onclick = "uploadFile();" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0"
-                                    name="action" ><i data-feather='upload-cloud'></i> Upload</button>
                                 <button type="button" id = "draft-button" onclick = "uploadOrders('draft');" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 d-none"
                                     name="action" ><i data-feather='save'></i> Draft</button>
                                 <button type="button" id = "submit-button" onclick = "uploadOrders('submitted');"  class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 d-none"
@@ -94,9 +92,9 @@
                                                             <input type="file" id = "attachment_input" accept=".xlsx, .xls, .csv" name="attachment" class="form-control">
                                                             <span class="text-primary small">{{__("(Allowed formats: .xlsx, .xls, .csv)")}}</span>
                                                         </div>
-                                                        <div class="col-md-4">
-                                                            <div class="row" id="main_bom_file_preview">
-                                                            </div>
+                                                        <div class="col-md-4 mb-2">
+                                                        <button type="button" onclick = "uploadFile();" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0"
+                                                            name="action" ><i data-feather='upload-cloud'></i> Upload</button>
                                                         </div> 
                                                     </div>
                                                 </div>

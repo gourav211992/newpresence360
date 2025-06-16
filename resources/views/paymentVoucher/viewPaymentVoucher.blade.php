@@ -210,7 +210,7 @@
                                                             name="voucher_no" required value="{{ $data->voucher_no }}"
                                                             readonly />
                                                         @error('voucher_no')
-                                                            <span class="text-danger">{{ $message }}</span>
+                                                            <span class="text-danger" style="font-size:12px">{{ $message }}</span>
                                                         @enderror
                                                     </div>
                                                 </div>
@@ -318,11 +318,11 @@
                                                                 Cheque</option>
                                                         </select>
                                                     </div>
-                                                    <div class="col-md-2">
+                                                    <div class="col-md-2" style="display: none;">
                                                         <label class="form-label">Ref No. <span
                                                                 class="text-danger">*</span></label>
                                                     </div>
-                                                    <div class="col-md-3">
+                                                    <div class="col-md-3" style="display: none;">
                                                         <input type="text" class="form-control bankInput"
                                                             name="reference_no" value="{{ $data->reference_no }}"
                                                             @if ($data->payment_type == 'Bank') required @endif />
@@ -531,7 +531,9 @@
                                                                 <th width="300px">Ledger Code</th>
                                                                 <th width="300px">Ledger Name</th>
                                                                 <th width="300px">Ledger Group</th>
+                                                                <th width="300px">Organization</th>
                                                                 <th width="300px">Reference</th>
+                                                                <th width="200px" class="ref-no-header">Ref No.</th>
                                                                 <th width="200px" class="text-end">Amount (<span
                                                                         id="selectedCurrencyName">{{ $data->currencyCode }}</span>)
                                                                 </th>
@@ -572,6 +574,13 @@
                                                                         </select>
                                                                     </td>
                                                                     <td>
+                                                                        <input type="text" disabled
+                                                                            placeholder="Select"
+                                                                            class="form-control mw-100 mb-25 organization"
+                                                                            id="organization{{$no}}"
+                                                                            value="{{ $item?->ledger?->organization?->name ?? $item?->party?->ledger?->organization?->name }}"  />
+                                                                    </td>
+                                                                    <td>
                                                                         <div class="position-relative d-flex align-items-center">
                                                                             <select class="form-select mw-100 invoiceDrop drop{{ $no }}" data-id="{{ $no }}" name="reference[]">
                                                                                 {{-- <option value="">Selecvoucht</option> --}}
@@ -583,6 +592,12 @@
                                                                                 <button type="button" class="btn p-25 btn-sm btn-outline-secondary invoice{{ $no }}" style="font-size: 10px" onclick="openInvoice({{ $no }},{{$data->id}},{{$item->id}})" @if($item->reference!="Invoice") disabled @endif>Invoice</button>
                                                                             </div>
                                                                         </div>
+                                                                    </td>
+                                                                    <td>
+                                                                            <input type="text" class="form-control mw-100 text-end bankInput reference_no" 
+                                                                                name="reference_no[]" data-row="{{ $no }}" id="reference_no{{ $no }}" 
+                                                                                @if($item->reference_no) value="{{ $item->reference_no }}" @endif />
+                                                                            <span class="text-danger bankInput" id="reference_error{{ $no }}" style="font-size:12px"></span>
                                                                     </td>
                                                                     <td><input type="number"
                                                                             class="form-control mw-100 text-end amount"
@@ -604,7 +619,7 @@
                                                         </tbody>
                                                         <tfoot>
                                                             <tr class="totalsubheadpodetail">
-                                                                <td colspan="5" class="text-end">Total</td>
+                                                                <td colspan="7" class="text-end">Total</td>
                                                                 <td class="text-end currentCurrencySum">0</td>
                                                                 <td class="text-end orgCurrencySum">0</td>
                                                                 <td></td>
@@ -821,11 +836,10 @@
                                          <tr>
                                             <th>#</th>
                                             <th>Date</th>
-                                            <th>Organization</th>
-                                            <th>Location</th>
-                                            <th>Cost Center</th>
                                             <th>Series</th>
                                             <th>Document No.</th>
+                                            <th>Location</th>
+                                            <th>Cost Center</th>
                                             <th class="text-end">Amount</th>
                                             <th class="text-end">Balance</th>
                                             <th class="text-end" width="150px">Settle Amt</th>
@@ -842,7 +856,6 @@
                                             <tr>
                                                 <td colspan="9" class="text-end">Total</td>
                                                 <td class="fw-bolder text-dark text-end settleTotal">0</td>
-                                                <td></td>
                                             </tr>
                                        </tfoot>
                                 </table>
@@ -1239,12 +1252,11 @@ document.addEventListener("click", function (e) {
                                     if(val['settle']){
                                     html += `<tr id="${val['id']}" class="voucherRows">
                                             <td>${index+1}</td>
-                                            <td>${val['organization']?.name ?? '-'}</td>
-                                            <td>${item.erp_location?.store_name ?? '-'}</td>
-                                            <td>${item.cost_center?.name ?? '-'}</td>
                                             <td>${val['date']}</td>
                                             <td class="fw-bolder text-dark">${val['series']['book_code'].toUpperCase()}</td>
                                             <td>${val['voucher_no']}</td>
+                                            <td>${item.erp_location?.store_name ?? '-'}</td>
+                                            <td>${item.cost_center?.name ?? '-'}</td>
                                             <td class="text-end">${formatIndianNumber(val['amount'])}</td>
                                             <td class="text-end">${formatIndianNumber(val['balance'])}</td>
                                             <td class="text-end">
@@ -1413,13 +1425,20 @@ $('#revisionNumber').prop('disabled', false);
                 if ($("#Bank").is(":checked")) {
                     $(".bankfield").show();
                     $(".cashfield").hide();
-                    $('.bankInput').attr('required', true);
+                    $('.bankInput').prop('required', true);
+                    $('.reference_no').prop('required', true).removeClass('is-invalid');
+                    $('.ref-no-header').show(); // Show the header
+                    $('.reference_no').closest('td').show(); // Show the Ref No. column
                     $('#ledger_id').attr('required', false);
                 } else {
                     $(".cashfield").show();
                     $(".bankfield").hide();
-                    $('.bankInput').attr('required', false);
-                    $('#ledger_id').attr('required', true);
+                    $('.bankInput').prop('required', false);
+                    $('.reference_no').prop('required', false).val('').removeClass('is-invalid');
+                    $('.ref-no-header').hide(); // Hide the header
+                    $('.reference_no').closest('td').hide(); // Hide the Ref No. column
+                    $('.reference_no').next('.text-danger').text(''); // Clear error messages
+                    $('#ledger_id').prop('required', true);
                 }
             });
         });
@@ -1499,6 +1518,7 @@ $('#revisionNumber').prop('disabled', false);
                         $("#party_id" + id).val(ui.item.value);
                         $("#party_vouchers" + id).val("");
                         $("#excAmount" + id).val("0.00");
+                        $("#organization" + id).val(ui.item.organization.name);
                         $(".drop" + id).val("");
                         $(".excAmount" + id).val("0.00");
                         $("#vouchersBody").empty();
@@ -1552,41 +1572,63 @@ $('#revisionNumber').prop('disabled', false);
                         <td class="poprod-decpt">
                             <input type="text" placeholder="Select" class="form-control mw-100 ledgerselect partyCode${rowCount} mb-25" required data-id="${rowCount}"/>
                             <input type="hidden" name="party_id[]" type="hidden" id="party_id${rowCount}" class="ledgers"/>
-                             <input type="hidden" name="party_vouchers[]" type="hidden" id="party_vouchers${rowCount}" class="party_vouchers"/>
-
-                            </td>
+                            <input type="hidden" name="party_vouchers[]" type="hidden" id="party_vouchers${rowCount}" class="party_vouchers"/>
+                        </td>
                         <td class="poprod-decpt"><input type="text" disabled placeholder="Select" class="form-control mw-100 mb-25 partyName" id="party_name${rowCount}"/></td>
-                       <td>
+                        <td>
+                            <select required id="groupSelect${rowCount}"
+                                name="parent_ledger_id[]"
+                                class="ledgerGroup form-select mw-100">
+                            </select>
+                        </td>
+                        <td>
+                            <input type="text" disabled
+                                placeholder="Select"
+                                class="form-control mw-100 mb-25 organization"
+                                id="organization${rowCount}"
+                                    />
+                        </td>
+                        <td>
                             <div class="position-relative d-flex align-items-center">
-                                <select class="form-select mw-100 invoiceDrop drop${rowCount}" data-id="${rowCount}" name="reference[]">
+                                <select
+                                    class="form-select mw-100 invoiceDrop drop${rowCount}"
+                                    data-id="${rowCount}" name="reference[]">
                                     <option value="">Select</option>
                                     <option>Invoice</option>
                                     <option>Advance</option>
                                     <option>On Account</option>
                                 </select>
                                 <div class="ms-50 flex-shrink-0">
-                                    <button type="button" class="btn p-25 btn-sm btn-outline-secondary invoice${rowCount}" style="font-size: 10px" onclick="openInvoice(${rowCount})">Invoice</button>
+                                    <button type="button"
+                                        class="btn p-25 btn-sm btn-outline-secondary invoice${rowCount}" style="font-size: 10px" onclick="openInvoice(${rowCount})">Invoice</button>
                                 </div>
                             </div>
                         </td>
-
+                        <td>
+                            <input type="text" class="form-control mw-100 text-end bankInput reference_no" 
+                                name="reference_no[]" data-row="${rowCount}" id="reference_no${rowCount}" />
+                            <span class="text-danger bankInput" id="reference_error${rowCount}" style="font-size:12px"></span>
+                        </td>
                         <td><input type="number" value="0" class="form-control mw-100 text-end amount" name="amount[]" id="excAmount${rowCount}" required/></td>
-
                         <td><input type="number" value="0" readonly class="form-control mw-100 text-end amount_exc excAmount${rowCount}" name="amount_exc[]" required/></td>
                         <td><a href="#" class="text-danger deleteRow"><i data-feather="trash-2"></i></a></td>
                     </tr>`;
                 $('.mrntableselectexcel').append(newRow);
+                
+                // Set visibility based on payment type
+                if ($("#Bank").is(":checked")) {
+                    $('#reference_no' + rowCount).prop('required', true).closest('td').show();
+                } else {
+                    $('#reference_no' + rowCount).prop('required', false).closest('td').hide();
+                }
+                
                 bind();
-
-
                 initializeAutocomplete();
-
                 updateLevelNumbers();
                 feather.replace({
                     width: 14,
                     height: 14
                 });
-
                 $('.select2').select2();
                 count++;
             });

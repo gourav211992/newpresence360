@@ -1630,7 +1630,7 @@ class CrDrReportController extends Controller
                     });
                 }
                         $i->with([
-                    'ledger',
+                    'ledger.organization',
                     'ledger_group',
                     'costCenter',
                 ]);
@@ -1779,6 +1779,7 @@ class CrDrReportController extends Controller
                     'ledger_parent_id'   => $item['ledger_parent_id'] ?? null,
                     'amount'             => $item['amount'] ?? $voucher['amount'] ?? 0,
                     'settle_amt'         => $voucher['settle_amt'] ?? 0,
+                    'organization'         => $item['ledger']['organization']['name'] ?? '-',
                 ];
             });
         });
@@ -1808,6 +1809,7 @@ class CrDrReportController extends Controller
                 'voucher_id'        => $first['voucher_id'],
                 'item_id'           => $first['item_id'],
                 'items'             => $items,
+                'organization'      =>$first['organization'],
             ];
         })->values();
 

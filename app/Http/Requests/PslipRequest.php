@@ -4,10 +4,17 @@ namespace App\Http\Requests;
 
 use App\Helpers\InventoryHelper;
 use App\Models\MoBomMapping;
+use App\Models\PslipBomConsumption;
+use App\Traits\ProcessesComponentJson;
 use Illuminate\Foundation\Http\FormRequest;
 
 class PslipRequest extends FormRequest
 {
+    use ProcessesComponentJson;
+    protected function prepareForValidation(): void
+    {
+        $this->processComponentJson('components_json');
+    }
     public function rules(): array
     {
         $rules = [
@@ -63,15 +70,19 @@ class PslipRequest extends FormRequest
 
     protected function withValidator($validator)
     {
-        $validator->after(function ($validator) {
+        $id = $this->input('id');
+        $validator->after(function ($validator) use ($id) {
             foreach ($this->input('cons', []) as $index => $component) {
                 $selectedAttributeIds = [];
                 $moBomMappingId = $component['mo_bom_cons_id'] ?? null;
-                $moBomMapping = MoBomMapping::find($moBomMappingId);
-
+                if($id) {
+                    $moBomMapping = PslipBomConsumption::find($moBomMappingId);
+                } else {
+                    $moBomMapping = MoBomMapping::find($moBomMappingId);
+                }
                 $rm_type = 'R';
                 $itemWipStationId = null;
-                if($moBomMapping->rm_type =='sf') {
+                if($moBomMapping?->rm_type =='sf') {
                     $rm_type = 'W';
                     $itemWipStationId = $moBomMapping->station_id;
                 }
@@ -81,13 +92,13 @@ class PslipRequest extends FormRequest
                 foreach ($itemAttributes as $itemAttr) {
                     $selectedAttributeIds[] = $itemAttr['attribute_value'];
                 }
-                $storeId = $moBomMapping->mo_product->mo->store_id ?? null;
-                $subStoreId = $moBomMapping->mo_product->mo->sub_store_id ?? null;
-                $stationId = $moBomMapping->mo_product->mo->station_id ?? null;
+                $storeId = $moBomMapping?->mo_product?->mo?->store_id ?? null;
+                $subStoreId = $moBomMapping?->mo_product?->mo?->sub_store_id ?? null;
+                $stationId = $moBomMapping?->mo_product?->mo?->station_id ?? null;
                 $stocks = InventoryHelper::totalInventoryAndStock(
-                    $moBomMapping->item_id,
+                    $moBomMapping?->item_id,
                     $selectedAttributeIds,
-                    $moBomMapping->uom_id,
+                    $moBomMapping?->uom_id,
                     $storeId,
                     $subStoreId,
                     null,

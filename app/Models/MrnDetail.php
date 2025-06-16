@@ -18,6 +18,7 @@ class MrnDetail extends Model
         'mrn_header_id',
         'purchase_order_item_id',
         'gate_entry_detail_id',
+        'job_order_item_id',
         'so_id',
         'item_id',
         'item_code',

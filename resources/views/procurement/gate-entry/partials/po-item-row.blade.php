@@ -124,7 +124,7 @@
             </div>
         </td>
         <input type="hidden" name="components[{{$rowCount}}][po_item_hidden_ids]" value="{{$item->id}}">
-        <input type="hidden" name="components[{{$rowCount}}][po_hidden_ids]" value="{{$item->po->id}}">
+        <input type="hidden" name="components[{{$rowCount}}][po_hidden_ids]" value="{{$item->$type->id}}">
         <input type="hidden" name="components[{{$rowCount}}][ge_qty]" value="{{$item->ge_qty}}">
     </tr>
 @endforeach

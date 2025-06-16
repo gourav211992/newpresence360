@@ -1246,14 +1246,14 @@ class JoController extends Controller
             ->where('addressable_id', $user->organization_id)
             ->where('addressable_type', Organization::class)
             ->first();
-        $po = JobOrder::with(['vendor', 'currency', 'jo_items', 'book', 'headerExpenses', 'TermsCondition'])
+        $po = JobOrder::with(['vendor', 'currency', 'joProducts', 'book', 'headerExpenses', 'TermsCondition'])
             ->findOrFail($id);
-        $totalItemValue = $po->jo_items()
+        $totalItemValue = $po->joProducts()
                 ->selectRaw('SUM(order_qty * rate) as total')
                 ->value('total') ?? 0.00;
-        $totalItemDiscount = $po->jo_items()->sum('item_discount_amount') ?? 0.00;
-        $totalHeaderDiscount = $po->jo_items()->sum('header_discount_amount') ?? 0.00;
-        $totalTaxes = $po->jo_items()->sum('tax_amount') ?? 0.00;
+        $totalItemDiscount = $po->joProducts()->sum('item_discount_amount') ?? 0.00;
+        $totalHeaderDiscount = $po->joProducts()->sum('header_discount_amount') ?? 0.00;
+        $totalTaxes = $po->joProducts()->sum('tax_amount') ?? 0.00;
         $totalTaxableValue = ($totalItemValue - ($totalItemDiscount + $totalHeaderDiscount));
         $totalAfterTax = ($totalTaxableValue + $totalTaxes);
         $totalAmount = ($totalAfterTax + $po->total_expense_value ?? 0.00);
@@ -1272,7 +1272,7 @@ class JoController extends Controller
         $sellerBillingAddress = $po->latestBillingAddress();
         $buyerAddress = $po->latestDeliveryAddress();
         
-        $findSo = $po->jo_items()
+        $findSo = $po->joProducts()
                     ->whereNotNull('so_id')
                     ->count();
         if($findSo) {

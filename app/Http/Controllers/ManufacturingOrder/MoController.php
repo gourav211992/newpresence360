@@ -1509,8 +1509,10 @@ class MoController extends Controller
        })
        ->whereColumn('qty', '>', 'mo_product_qty')
        ->where(function ($query) use ($customerId, $itemId, $soSeriesId, $soSocNumber, $storeId) {
-            $query->where('item_id', $itemId)
-            ->where('store_id', $storeId);
+            if($itemId){
+                $query->where('item_id', $itemId);
+            }
+            $query->where('store_id', $storeId);
             if($soSeriesId) {
                 $query->whereHas('so', function ($soQuery) use ($soSeriesId) {
                     $soQuery->where('book_id', $soSeriesId);

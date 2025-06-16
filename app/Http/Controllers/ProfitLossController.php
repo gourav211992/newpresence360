@@ -169,11 +169,33 @@ class ProfitLossController extends Controller
             $data[] = ['Opening Stock', Helper::formatIndianNumber($openingAmount),'','Sales Accounts', Helper::formatIndianNumber($saleAmount)];
             $data[] = ['Purchase Accounts', Helper::formatIndianNumber($purchaseAmount),'','Direct Income', Helper::formatIndianNumber($directIncomeAmount)];
             $data[] = ['Direct Expenses', Helper::formatIndianNumber($directExpenseAmount),'','Closing Stock', Helper::formatIndianNumber($closingAmount)];
-            $data[] = ['Gross Profit c/o', Helper::formatIndianNumber($grossProfit),'','Gross Loss c/o', Helper::formatIndianNumber($grossLoss)];
+            $data[] = [
+                $grossProfit ? 'Gross Profit c/o' : '',
+                $grossProfit ? Helper::formatIndianNumber($grossProfit) : '',
+                '',
+                $grossLoss ? 'Gross Loss c/o' : '',
+                $grossLoss ? Helper::formatIndianNumber($grossLoss) : ''
+            ];
+
+            // $data[] = ['Gross Profit c/o', Helper::formatIndianNumber($grossProfit),'','Gross Loss c/o', Helper::formatIndianNumber($grossLoss)];
             $data[] = ['', Helper::formatIndianNumber($subTotal),'','', Helper::formatIndianNumber($subTotal)];
-            $data[] = ['Gross Loss b/f', Helper::formatIndianNumber($grossLoss),'','Gross Profit b/f', Helper::formatIndianNumber($grossProfit)];
+            // $data[] = ['Gross Loss b/f', Helper::formatIndianNumber($grossLoss),'','Gross Profit b/f', Helper::formatIndianNumber($grossProfit)];
+            $data[] = [
+                $grossLoss ? 'Gross Loss b/f' : '',
+                $grossLoss ? Helper::formatIndianNumber($grossLoss) : '',
+                '',
+                $grossProfit ? 'Gross Profit b/f' : '',
+                $grossProfit ? Helper::formatIndianNumber($grossProfit) : ''
+            ];
             $data[] = ['Indirect Expenses', Helper::formatIndianNumber($indirectExpenseAmount),'','Indirect Income', Helper::formatIndianNumber($indirectIncomeAmount)];
-            $data[] = ['Net Profit', Helper::formatIndianNumber($netProfit),'','Net Loss', Helper::formatIndianNumber($netLoss)];
+            // $data[] = ['Net Profit', Helper::formatIndianNumber($netProfit),'','Net Loss', Helper::formatIndianNumber($netLoss)];
+            $data[] = [
+                $netProfit ? 'Net Profit' : '',
+                $netProfit ? Helper::formatIndianNumber($netProfit) : '',
+                '',
+                $netLoss ? 'Net Loss' : '',
+                $netLoss ? Helper::formatIndianNumber($netLoss) : ''
+            ];
             $data[] = ['Total', Helper::formatIndianNumber($overAllTotal),'','Total', Helper::formatIndianNumber($overAllTotal)];
             if($r->type=="pdf")
             return Excel::download(new PLLevel1ReportExport($organizationName, $dateRange, $data), 'plLevel1Report.pdf',\Maatwebsite\Excel\Excel::DOMPDF);
@@ -185,43 +207,85 @@ class ProfitLossController extends Controller
             $data[] = ['Opening Stock','', Helper::formatIndianNumber($openingAmount),'','Sales Accounts','', Helper::formatIndianNumber($saleAmount)];
             $loopLength=Helper::checkCount($openingLedgers)>Helper::checkCount($saleLedgers) ? Helper::checkCount($openingLedgers) : Helper::checkCount($saleLedgers);
             for ($i=0; $i <$loopLength ; $i++) {
-                $secName1=$openingLedgers->get($i)->name ?? '';
-                $secAmount1=$openingLedgers->get($i)->closing ?? 0;
-                $secName2=$saleLedgers->get($i)->name ?? '';
-                $secAmount2=$saleLedgers->get($i)->closing ?? 0;
-                $data[] = ['',$secName1, Helper::formatIndianNumber($secAmount1),'','',$secName2, Helper::formatIndianNumber($secAmount2)];
+                $secName1 = $openingLedgers->get($i)->name ?? '';
+                $secAmount1 = $openingLedgers->get($i)->closing ?? 0;
+                $secName2 = $saleLedgers->get($i)->name ?? '';
+                $secAmount2 = $saleLedgers->get($i)->closing ?? 0;
+                
+                $amount1 = ($secAmount1 == 0 && $secName1 == '') ? '' : Helper::formatIndianNumber($secAmount1);
+                $amount2 = ($secAmount2 == 0 && $secName2 == '') ? '' : Helper::formatIndianNumber($secAmount2);
+                
+                $data[] = ['', $secName1, $amount1, '', '', $secName2, $amount2];
             }
             $data[] = ['Purchase Accounts','', Helper::formatIndianNumber($purchaseAmount),'','Direct Income','', Helper::formatIndianNumber($directIncomeAmount)];
             $loopLength=Helper::checkCount($purchaseLedgers)>Helper::checkCount($directIncomeLedgers) ? Helper::checkCount($purchaseLedgers) : Helper::checkCount($directIncomeLedgers);
             for ($i=0; $i <$loopLength ; $i++) {
-                $secName1=$purchaseLedgers->get($i)->name ?? '';
-                $secAmount1=$purchaseLedgers->get($i)->closing ?? 0;
-                $secName2=$directIncomeLedgers->get($i)->name ?? '';
-                $secAmount2=$directIncomeLedgers->get($i)->closing ?? 0;
-                $data[] = ['',$secName1, Helper::formatIndianNumber($secAmount1),'','',$secName2, Helper::formatIndianNumber($secAmount2)];
+                $secName1 = $purchaseLedgers->get($i)->name ?? '';
+                $secAmount1 = $purchaseLedgers->get($i)->closing ?? 0;
+                $secName2 = $directIncomeLedgers->get($i)->name ?? '';
+                $secAmount2 = $directIncomeLedgers->get($i)->closing ?? 0;
+                
+                $amount1 = ($secAmount1 == 0 && $secName1 == '') ? '' : Helper::formatIndianNumber($secAmount1);
+                $amount2 = ($secAmount2 == 0 && $secName2 == '') ? '' : Helper::formatIndianNumber($secAmount2);
+                
+                $data[] = ['', $secName1, $amount1, '', '', $secName2, $amount2];
             }
             $data[] = ['Direct Expenses','', Helper::formatIndianNumber($directExpenseAmount),'','Closing Stock','', Helper::formatIndianNumber($closingAmount)];
             $loopLength=Helper::checkCount($directExpenseLedgers)>Helper::checkCount($closingLedgers) ? Helper::checkCount($directExpenseLedgers) : Helper::checkCount($closingLedgers);
             for ($i=0; $i <$loopLength ; $i++) {
-                $secName1=$directExpenseLedgers->get($i)->name ?? '';
-                $secAmount1=$directExpenseLedgers->get($i)->closing ?? 0;
-                $secName2='';
-                $secAmount2=0;
-                $data[] = ['',$secName1, Helper::formatIndianNumber($secAmount1),'','',$secName2, Helper::formatIndianNumber($secAmount2)];
+                $secName1 = $directExpenseLedgers->get($i)->name ?? '';
+                $secAmount1 = $directExpenseLedgers->get($i)->closing ?? 0;
+                $secName2 = '';
+                $secAmount2 = 0;
+                
+                $amount1 = ($secAmount1 == 0 && $secName1 == '') ? '' : Helper::formatIndianNumber($secAmount1);
+                
+                $data[] = ['', $secName1, $amount1, '', '', $secName2, ''];
             }
-            $data[] = ['Gross Profit c/o','', Helper::formatIndianNumber($grossProfit),'','Gross Loss c/o','', Helper::formatIndianNumber($grossLoss)];
+            // $data[] = ['Gross Profit c/o','', Helper::formatIndianNumber($grossProfit),'','Gross Loss c/o','', Helper::formatIndianNumber($grossLoss)];
+            $data[] = [
+                $grossProfit ? 'Gross Profit c/o' : '',
+                '',
+                $grossProfit ? Helper::formatIndianNumber($grossProfit) : '',
+                '',
+                $grossLoss ? 'Gross Loss c/o' : '',
+                '',
+                $grossLoss ? Helper::formatIndianNumber($grossLoss) : ''
+            ];
             $data[] = ['','', Helper::formatIndianNumber($subTotal),'','','', Helper::formatIndianNumber($subTotal)];
-            $data[] = ['Gross Loss b/f','', Helper::formatIndianNumber($grossLoss),'','Gross Profit b/f','', Helper::formatIndianNumber($grossProfit)];
+            $data[] = [
+                $grossLoss ? 'Gross Loss b/f' : '',
+                '',
+                $grossLoss ? Helper::formatIndianNumber($grossLoss) : '',
+                '',
+                $grossProfit ? 'Gross Profit b/f' : '',
+                '',
+                $grossProfit ? Helper::formatIndianNumber($grossProfit) : ''
+            ];
+            // $data[] = ['Gross Loss b/f','', Helper::formatIndianNumber($grossLoss),'','Gross Profit b/f','', Helper::formatIndianNumber($grossProfit)];
             $data[] = ['Indirect Expenses','', Helper::formatIndianNumber($indirectExpenseAmount),'','Indirect Income','', Helper::formatIndianNumber($indirectIncomeAmount)];
             $loopLength=Helper::checkCount($indirectExpenseLedgers)>Helper::checkCount($indirectIncomeLedgers) ? Helper::checkCount($indirectExpenseLedgers) : Helper::checkCount($indirectIncomeLedgers);
             for ($i=0; $i <$loopLength ; $i++) {
-                $secName1=$indirectExpenseLedgers->get($i)->name ?? '';
-                $secAmount1=$indirectExpenseLedgers->get($i)->details_sum_debit_amt ?? 0;
-                $secName2=$indirectIncomeLedgers->get($i)->name ?? 0;
-                $secAmount2=$indirectIncomeLedgers->get($i)->details_sum_debit_amt ?? 0;
-                $data[] = ['',$secName1, Helper::formatIndianNumber($secAmount1),'','',$secName2, Helper::formatIndianNumber($secAmount2)];
+                $secName1 = $indirectExpenseLedgers->get($i)->name ?? '';
+                $secAmount1 = $indirectExpenseLedgers->get($i)->details_sum_debit_amt ?? 0;
+                $secName2 = $indirectIncomeLedgers->get($i)->name ?? '';
+                $secAmount2 = $indirectIncomeLedgers->get($i)->details_sum_debit_amt ?? 0;
+                
+                $amount1 = ($secAmount1 == 0 && $secName1 == '') ? '' : Helper::formatIndianNumber($secAmount1);
+                $amount2 = ($secAmount2 == 0 && $secName2 == '') ? '' : Helper::formatIndianNumber($secAmount2);
+                
+                $data[] = ['', $secName1, $amount1, '', '', $secName2, $amount2];
             }
-            $data[] = ['Net Profit','', Helper::formatIndianNumber($netProfit),'','Net Loss','', Helper::formatIndianNumber($netLoss)];
+            // $data[] = ['Net Profit','', Helper::formatIndianNumber($netProfit),'','Net Loss','', Helper::formatIndianNumber($netLoss)];
+            $data[] = [
+                $netProfit ? 'Net Profit' : '',
+                '',
+                $netProfit ? Helper::formatIndianNumber($netProfit) : '',
+                '',
+                $netLoss ? 'Net Loss' : '',
+                '',
+                $netLoss ? Helper::formatIndianNumber($netLoss) : ''
+            ];
             $data[] = ['Total','', Helper::formatIndianNumber($overAllTotal),'','Total','', Helper::formatIndianNumber($overAllTotal)];
             if($r->type=="pdf")
             return Excel::download(new PLLevel2ReportExport($organizationName, $dateRange, $data), 'plLevel2Report.pdf',\Maatwebsite\Excel\Excel::DOMPDF,);

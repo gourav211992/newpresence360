@@ -5,6 +5,7 @@
     @endphp
     @foreach ($slip->consumptions as $psBomConsIndex => $psBomCons)
         <tr id = "item_row_{{$psBomConsIndex}}" class = "item_header_rows" data-detail-id = "{{$psBomCons -> id}}" data-id = "{{$psBomCons -> id}}">
+            <input type = 'hidden' name = "cons[{{$psBomConsIndex}}][mo_bom_cons_id]" value = "{{$psBomCons -> id}}">
         <input type = 'hidden' name = "cons[{{$psBomConsIndex}}][pslip_bom_cons_id]" value = "{{$psBomCons -> id}}">
         <td class="poprod-decpt">
             <input type="text" id="so_doc_{{$psBomConsIndex}}" name="cons[{{$psBomConsIndex}}][so_doc]" class="form-control mw-100 disabled-input"  value="{{$psBomCons?->so?->document_number}}">

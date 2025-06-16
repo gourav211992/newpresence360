@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Helpers\InventoryHelper;
+use App\Models\JobOrder\JoItem;
+use App\Models\JobOrder\JoProduct;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -14,6 +16,8 @@ class ErpMiItem extends Model
 
     protected $fillable = [
         'material_issue_id',
+        'jo_item_id',
+        'jo_product_id',
         'mi_item_id',
         'mo_item_id',
         'pwo_item_id',
@@ -195,5 +199,13 @@ class ErpMiItem extends Model
     public function toErpSubStore()
     {
         return $this -> belongsTo(ErpSubStore::class, 'to_sub_store_id');
+    }
+    public function jo_item()
+    {
+        return $this -> belongsTo(JoItem::class, 'jo_item_id');
+    }
+    public function jo_product()
+    {
+        return $this -> belongsTo(JoProduct::class, 'jo_product_id');
     }
 }

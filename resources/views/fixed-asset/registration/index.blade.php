@@ -169,6 +169,70 @@
                         </div>
                     </div>
                     <!-- Modal to add new record -->
+                        <div class="modal modal-slide-in fade filterpopuplabel" id="filter">
+        <div class="modal-dialog sidebar-sm">
+            <form class="add-new-record modal-content pt-0" method="POST"
+                action="{{ route('finance.fixed-asset.registration.filter') }}" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-header mb-1">
+                    <h5 class="modal-title" id="exampleModalLabel">Apply Filter</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">×</button>
+                </div>
+                <div class="modal-body flex-grow-1">
+                    <div class="mb-1">
+                        <label class="form-label" for="fp-range">Select Date</label>
+                        <input type="text" id="fp-range" name="date" value="{{ request('date') }}"
+                            class="form-control flatpickr-range bg-white" placeholder="YYYY-MM-DD to YYYY-MM-DD" />
+                    </div>
+
+                    <div class="mb-1">
+                        <label class="form-label">Asset Code</label>
+                        <select class="form-select" name="filter_asset">
+                            <option value="">Select</option>
+                            @foreach ($assetCodes as $assetCode)
+                                <option value="{{ $assetCode->id }}"
+                                    {{ request('filter_asset') == $assetCode->id ? 'selected' : '' }}>
+                                    {{ $assetCode->asset_code }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="mb-1">
+                        <label class="form-label">Ledger Name</label>
+                        <select class="form-select" name="filter_ledger">
+                            <option value="">Select</option>
+                            @foreach ($ledgers as $ledger)
+                                <option value="{{ $ledger->id }}"
+                                    {{ request('filter_ledger') == $ledger->id ? 'selected' : '' }}>
+                                    {{ $ledger->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="mb-1">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" name="filter_status">
+                            <option value="">Select</option>
+                            @foreach (App\Helpers\ConstantHelper::DOCUMENT_STATUS as $key => $status)
+                                <option value="{{ $status }}"
+                                    {{ request('filter_status') == $status ? 'selected' : '' }}>
+                                    {{ ucfirst($status) }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+
+                <div class="modal-footer justify-content-start">
+                    <button type="submit" class="btn btn-primary data-submit mr-1">Apply</button>
+                    <button type="reset" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
                     <div class="modal modal-slide-in fade" id="modals-slide-in">
                         <div class="modal-dialog sidebar-sm">
                             <form class="add-new-record modal-content pt-0">
@@ -222,13 +286,20 @@
 @section('scripts')
     <script type="text/javascript" src="{{ asset('assets/js/modules/finance-table.js') }}"></script>
     <script>
-        $(function() {
-            // Initialize
-            const dt = initializeBasicDataTable('.datatables-basic', 'Asset_RegistrationReport');
+       $(function() {
+        // Get all request parameters from Laravel and convert to query string
+        const requestParams = @json(request()->all());
+        const queryString = new URLSearchParams(requestParams).toString();
 
-            // Set label
-            $('div.head-label').html('<h6 class="mb-0">Asset Registration</h6>');
-        });
+        // Compose the export URL with query params
+        const exportUrl = '{{ route("finance.fixed-asset.export") }}' + (queryString ? '?' + queryString : '');
+
+        // Initialize DataTable
+        const dt = initializeBasicDataTable('.datatables-basic', 'Asset_RegistrationReport', exportUrl);
+
+        // Set label
+        $('div.head-label').html('<h6 class="mb-0">Asset Registration</h6>');
+    });
 
 
 

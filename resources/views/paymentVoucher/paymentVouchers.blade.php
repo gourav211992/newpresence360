@@ -65,7 +65,6 @@
                                                 };
                                             @endphp
                                             <tr>
-                                                {{-- {{ dd($item->series) }} --}}
                                                 <td>{{ $index+1 }}</td>
                                                 <td class="fw-bolder text-dark text-nowrap">{{ date('d-m-Y',strtotime($item->document_date)) }}</td>
                                                 {{-- <td>{{ ucfirst($item->document_type) }}</td> --}}

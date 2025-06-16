@@ -2,7 +2,8 @@
 
 namespace App\Models\JobOrder;
 
-use App\Http\Requests\ErpSaleOrder;
+use App\Helpers\InventoryHelper;
+use App\Models\ErpSaleOrder;
 use App\Models\Hsn;
 use App\Models\Item;
 use App\Models\ItemAttribute;
@@ -53,10 +54,15 @@ class JoProduct extends Model
     protected $appends = [
         'cgst_value',
         'sgst_value',
-        'igst_value'
+        'igst_value',
+        'mi_balance_qty'
     ];
 
     public function jo()
+    {
+        return $this->belongsTo(JobOrder::class, 'jo_id');
+    }
+    public function header()
     {
         return $this->belongsTo(JobOrder::class, 'jo_id');
     }
@@ -269,4 +275,31 @@ class JoProduct extends Model
         }
         return collect($processedData);
     }
+
+    public function getAvlStock($storeId, $subStoreId = null)
+    {
+        $selectedAttributeIds = [];
+        $itemAttributes = $this -> item_attributes_array();
+        foreach ($itemAttributes as $itemAttr) {
+            foreach ($itemAttr['values_data'] as $valueData) {
+                if ($valueData['selected']) {
+                    array_push($selectedAttributeIds, $valueData['id']);
+                }
+            }
+        }
+        $stocks = InventoryHelper::totalInventoryAndStock($this -> item_id, $selectedAttributeIds,$this -> uom_id,$storeId, $subStoreId, null);
+        $stockBalanceQty = 0;
+        if (isset($stocks) && isset($stocks['confirmedStocks'])) {
+            $stockBalanceQty = $stocks['confirmedStocks'];
+        }
+        return min($stockBalanceQty, $this -> order_qty - $this -> short_close_qty);
+    }
+
+    public function getMiBalanceQtyAttribute()
+    {
+        $currentQty = $this -> getAttribute('order_qty') - $this -> getAttribute('short_close_qty');
+        $miQty = $this -> getAttribute('mi_qty');
+        return $currentQty - $miQty;
+    }
+
 }

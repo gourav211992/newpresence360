@@ -8,7 +8,9 @@
             <h1 class="text-center mb-1" id="shareProjectTitle">Overheads</h1>
             <h4 class="text-center mb-1">Total : <span id="itemLevelSubTotalPrice">0</span></h4>
             <div class="table-responsive-md">
-               <table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail border" id="headerOverheadTbl">
+               <table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail border" id="headerOverheadTbl"
+               data-json-key="header_overhead_json"
+               data-row-selector=".display_overhead_row">
                   <thead>
                      <tr>
                         <th width="50px">S.No</th>

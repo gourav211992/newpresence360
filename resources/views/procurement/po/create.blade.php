@@ -1,34 +1,44 @@
 @extends('layouts.app')
 @section('styles')
 <style>
-#prModal .table-responsive {
-    overflow-y: auto;
-    max-height: 300px;
-    position: relative;
+td .form-select {
+    width: 100% !important;
+    min-width: 100% !important;
+    box-sizing: border-box;
 }
-#prModal .po-order-detail {
-    width: 100%;
-    border-collapse: collapse;
-}
-#prModal .po-order-detail thead {
-    position: sticky;
-    top: 0;
-    background-color: white;
-    z-index: 1;
-}
-#prModal .po-order-detail th {
-    background-color: #f8f9fa;
-    text-align: left;
-    padding: 8px;
+.datatable-footer-fixed {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 15px;
+  background-color: #fff;
+  border-top: 1px solid #dee2e6;
+  position: sticky;
+  bottom: 0;
+  z-index: 100;
+  gap: 10px;
+}  
+#custom_length {
+  text-align: left;
+  white-space: nowrap;
 }
 
-#prModal .po-order-detail td {
-    padding: 8px;
+#custom_length label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+
+#custom_length select {
+  width: auto;
+  display: inline-block;
 }
 </style>
 @endsection
 @section('content')
-<form class="ajax-input-form" method="POST" action="{{ url(request()->route('type')) }}" data-redirect="/{{ request()->route('type') }}"  enctype="multipart/form-data">
+<form class="ajax-input-form" method="POST" data-module="po" action="{{ url(request()->route('type')) }}" data-redirect="/{{ request()->route('type') }}"  enctype="multipart/form-data">
     @csrf
     <input type="hidden" name="tax_required" id="tax_required">
     <input type="hidden" name="pi_item_ids" id="pi_item_ids">
@@ -259,7 +269,9 @@
                 <div class="row"> 
                    <div class="col-md-12">
                        <div class="table-responsive pomrnheadtffotsticky">
-                           <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"> 
+                           <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"
+                            data-json-key="components_json"
+                            data-row-selector="tr[id^='row_']"> 
                             <thead>
                                <tr>
                                 <th class="customernewsection-form">
@@ -620,6 +632,7 @@
  var getLocationUrl = '{{ route("store.get") }}';
  var getAddressOnVendorChangeUrl = "{{ route('po.get.address', ['type' => ':type']) }}".replace(':type', type); 
 </script>
+<script type="text/javascript" src="{{asset('assets/js/modules/common-datatable.js')}}"></script>
 <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
 <script type="text/javascript" src="{{asset('assets/js/modules/po.js')}}"></script>
 <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
@@ -1306,16 +1319,24 @@ $(document).on('click', '.submitAttributeBtn', (e) => {
 });
 
 /*Open Pr model*/
-$(document).on('click', '.prSelect', (e) => {
+let poOrderTable;
+
+$(document).on('click', '.prSelect', function (e) {
     $("#prModal").modal('show');
-    openPurchaseRequest();
-    getIndents();
+    $('#prModal').one('shown.bs.modal', function () {
+        openPurchaseRequest();
+        const tableSelector = '#prModal .po-order-detail';
+        if ($(tableSelector).length) {
+            if ($.fn.DataTable.isDataTable(tableSelector)) {
+                poOrderTable = $(tableSelector).DataTable();
+                poOrderTable.ajax.reload();
+            } else {
+                getIndents();
+            }
+        }
+    });
 });
 
-/*searchPiBtn*/
-$(document).on('click', '.searchPiBtn', (e) => {
-    getIndents();
-});
 
 function openPurchaseRequest()
 {
@@ -1361,26 +1382,26 @@ function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1,
             var $input = $(this);
             $input.val(ui.item.label);
             $("#" + selectorSibling).val(ui.item.id);
-            getIndents();
+            $('#prModal .po-order-detail').DataTable().ajax.reload();
             return false;
         },
         change: function(event, ui) {
             if (!ui.item) {
                 $(this).val("");
                 $("#" + selectorSibling).val("");
-                getIndents();
+                $('#prModal .po-order-detail').DataTable().ajax.reload();
             }
         }
     }).focus(function() {
         if (this.value === "") {
             $("#" + selectorSibling).val("");
-            getIndents();
+            $('#prModal .po-order-detail').DataTable().ajax.reload();
             $(this).autocomplete("search", "");
         }
     }).blur(function() {
         if (this.value === "") {
             $("#" + selectorSibling).val("");
-            getIndents();
+            $('#prModal .po-order-detail').DataTable().ajax.reload();
         }
     })
 }
@@ -1389,43 +1410,90 @@ window.onload = function () {
     localStorage.removeItem('selectedPiIds');
 };
 
-function getIndents() 
-{
+function renderData(data) {
+    return data ? data : ''; 
+}
+
+function getDynamicParams() {
     let selectedPiIds = localStorage.getItem('selectedPiIds') ?? '[]';
     selectedPiIds = JSON.parse(selectedPiIds);
     selectedPiIds = encodeURIComponent(JSON.stringify(selectedPiIds));
+    return {
+        document_date: $("[name='document_date']").val() || '',
+        header_book_id: $("#book_id").val() || '',
+        series_id: $("#book_id_qt_val").val() || '',
+        document_number: $("#document_id_qt_val").val() || '',
+        item_id: $("#item_id_qt_val").val() || '',
+        vendor_id: $("#vendor_id_qt_val").val(),
+        department_id: $("#department_id_po").val() || '',
+        store_id: $("#store_id").val() || '',
+        sub_store_id: $("#sub_store_id_po").val() || '',
+        so_id: $("#pi_so_qt_val").val() || '',
+        item_search: $("#item_name_search").val(),
+        selected_pi_ids: encodeURIComponent(selectedPiIds)
+    };
+}
 
-    let document_date = $("[name='document_date']").val() || '';
-    let header_book_id = $("#book_id").val() || '';
-    let series_id = $("#book_id_qt_val").val() || '';
-    // let document_number = $("#document_no_input_qt").val() || '';
-    let document_number = $("#document_id_qt_val").val() || '';
-    let item_id = $("#item_id_qt_val").val() || '';
-    @if(request()->type == 'supplier-invoice')
-        let vendor_id = $("#vendor_id_qt_val").val() || $("#vendor_id").val() || '';
-    @else
-        let vendor_id = $("#vendor_id_qt_val").val() || '';
-    @endif
-    let department_id = $("#department_id_po").val() || '';
-    let store_id = $("#store_id").val() || '';
-    let sub_store_id = $("#sub_store_id_po").val() || '';
-    let so_id = $("#pi_so_qt_val").val() || '';
-    let type = '{{ request()->route("type") }}';
-    let actionUrl = '{{ route("po.get.pi", ["type" => ":type"]) }}'.replace(':type', type);
-    let item_search = $("#item_name_search").val();
-    let fullUrl = `${actionUrl}?series_id=${encodeURIComponent(series_id)}&document_number=${encodeURIComponent(document_number)}&item_id=${encodeURIComponent(item_id)}&vendor_id=${encodeURIComponent(vendor_id)}&header_book_id=${encodeURIComponent(header_book_id)}&department_id=${encodeURIComponent(department_id)}&store_id=${encodeURIComponent(store_id)}&sub_store_id=${encodeURIComponent(sub_store_id)}&selected_pi_ids=${selectedPiIds}&document_date=${document_date}&item_search=${item_search}&so_id=${so_id}`;
-    fetch(fullUrl).then(response => {
-        return response.json().then(data => {
-            $(".po-order-detail #prDataTable").empty().append(data.data.pis);
-            $('.select2').select2({
-                dropdownParent: $('#prModal')
-            });
-        });
-    });
+function getIndents() 
+{
+    const type = '{{ request()->route("type") }}';
+    const ajaxUrl = '{{ route("po.get.pi", ["type" => ":type"]) }}'.replace(':type', type);
+    var columns = [];
+    if(type == 'purchase-order') {
+        columns = [
+            { data: 'select_checkbox', name: 'select_checkbox', orderable: false, searchable: false },
+            { data: 'book_name', name: 'book_name', render: renderData },
+            { data: 'doc_no', name: 'doc_no', render: renderData, createdCell: (td) => $(td).addClass('no-wrap') },
+            { data: 'doc_date', name: 'doc_date', render: renderData, createdCell: (td) => $(td).addClass('no-wrap') },
+            { data: 'item_code', name: 'item_code', render: renderData, createdCell: (td) => $(td).addClass('no-wrap') },
+            { data: 'item_name', name: 'item_name', render: renderData },
+            { data: 'attributes', name: 'attributes', render: renderData },
+            { data: 'uom', name: 'uom', render: renderData },
+            { data: 'balance_qty', name: 'balance_qty', render: renderData },
+            { data: 'vendor_select', name: 'vendor_select', render: renderData },
+            { data: 'so_no', name: 'so_no', render: renderData },
+            { data: 'location', name: 'location', render: renderData },
+            { data: 'requester', name: 'requester', render: renderData },
+            { data: 'remarks', name: 'remarks', render: renderData },
+        ];
+    } else {
+        var columns = [
+            { data: 'select_checkbox', name: 'select_checkbox', orderable: false, searchable: false },
+            { data: 'book_name', name: 'book_name', render: renderData },
+            { data: 'doc_no', name: 'doc_no', render: renderData, createdCell: (td) => $(td).addClass('no-wrap') },
+            { data: 'doc_date', name: 'doc_date', render: renderData, createdCell: (td) => $(td).addClass('no-wrap') },
+            { data: 'item_code', name: 'item_code', render: renderData, createdCell: (td) => $(td).addClass('no-wrap') },
+            { data: 'item_name', name: 'item_name', render: renderData },
+            { data: 'attributes', name: 'attributes', render: renderData },
+            { data: 'uom', name: 'uom', render: renderData },
+            { data: 'balance_qty', name: 'balance_qty', render: renderData },
+            { data: 'vendor_select', name: 'vendor_select', render: renderData },
+            { data: 'location', name: 'location', render: renderData },
+            { data: 'requester', name: 'requester', render: renderData },
+        ];
+    }
+    let filters = [];
+    var exportColumns = [];
+    for (let i = 0; i < columns.length; i++) {
+        if (columns[i].name !== 'check_box' && columns[i].name !== 'actions') {
+            exportColumns.push(i);
+        }
+    }
+    initializeDataTableCustom('#prModal .po-order-detail', 
+        ajaxUrl,
+        columns,
+        filters,
+        "PO",
+        exportColumns,
+        [],
+        enableExport = false,
+        enableExport = false 
+
+    );
 }
 
 $(document).on('keyup', '#item_name_search', (e) => {
-    getIndents();
+    $('#prModal .po-order-detail').DataTable().ajax.reload();
 });
 
 /*Checkbox for pi item list*/
@@ -1946,7 +2014,7 @@ $(document).on('click', '.clearPiFilter', (e) => {
     $("#pi_so_no_input_qt").val('');
     $("#pi_so_qt_val").val('');
     $("#item_name_search").val('');
-    getIndents();
+    $('#prModal .po-order-detail').DataTable().ajax.reload();
 });
 $(document).on("autocompletechange autocompleteselect", "#store_po", function (event, ui) {
     let storeId = ui?.item?.id || '';

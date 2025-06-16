@@ -37,7 +37,7 @@
                                  <th>Location</th>
                                  <th>Items</th>
                                  <th>SO No.</th>
-                                 <th style="text-align: right">Status</th>
+                                 <th style="text-align: right">Status</th> 
                               </tr>
                            </thead>
                            

@@ -12,6 +12,7 @@
         }
     @endphp
     <tr data-group-item="{{json_encode($item)}}" id="row_{{$rowCount}}" data-index="{{$rowCount}}" @if($rowCount < 2 ) class="trselected" @endif>
+        <input type="hidden" name="components[{{$rowCount}}][ref_type]" value="{{$type}}">
         <input type="hidden" name="components[{{$rowCount}}][purchase_order_id]" value="{{$item->purchase_order_id}}">
         @if($item->po?->type == 'supplier-invoice')
             <input type="hidden" name="components[{{$rowCount}}][po_detail_id]" value="{{$item->po_item?->id}}">

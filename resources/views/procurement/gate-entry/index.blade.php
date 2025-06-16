@@ -53,6 +53,7 @@
                                                 <th>Series</th>
                                                 <th>Document No.</th>
                                                 <th>Document Date</th>
+                                                <th>PO No.</th>
                                                 <th>Location</th>
                                                 <th>Vendor</th>
                                                 <th>Currency</th>
@@ -158,6 +159,10 @@
                         }
                     },
                     { data: 'document_date', name: 'document_date', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('no-wrap');
+                        }
+                    },
+                    { data: 'reference_number', name: 'reference_number', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('no-wrap');
                         }
                     },

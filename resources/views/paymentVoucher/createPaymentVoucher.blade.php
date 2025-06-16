@@ -140,7 +140,7 @@
                                                             name="voucher_no" required value="{{ old('voucher_no') }}"
                                                             readonly />
                                                         @error('voucher_no')
-                                                            <span class="text-danger">{{ $message }}</span>
+                                                            <span class="text-danger" style="font-size:12px">{{ $message }}</span>
                                                         @enderror
                                                     </div>
                                                 </div>
@@ -244,14 +244,6 @@
                                                             <option>By Cheque</option>
                                                         </select>
                                                     </div>
-                                                    <div class="col-md-1">
-                                                        <label class="form-label">Ref No. <span
-                                                                class="text-danger">*</span></label>
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                    <input type="text" class="form-control bankInput" name="reference_no" id="reference_no" required />
-                                                    <span class="text-danger bankInput" id="reference_error"></span>
-                                                </div>
 
                                                 </div>
 
@@ -417,7 +409,9 @@
                                                                 <th width="300px">Ledger Code</th>
                                                                 <th width="300px">Ledger Name</th>
                                                                 <th width="300px">Ledger Group</th>
+                                                                <th width="300px">Organization</th>
                                                                 <th width="200px">Reference</th>
+                                                                <th width="200px" class="ref-no-header">Ref No.</th>
                                                                 <th width="200px" class="text-end">Amount (<span
                                                                         id="selectedCurrencyName"></span>)</th>
                                                                 <th width="200px" class="text-end">Amount (<span
@@ -467,7 +461,13 @@
                                                                                 </option>
                                                                             </select>
                                                                         </td>
-
+                                                                        <td>
+                                                                            <input type="text" disabled
+                                                                                placeholder="Select"
+                                                                                class="form-control mw-100 mb-25 organization"
+                                                                                id="organization{{ $no }}"
+                                                                                value="{{ $voucher['organization'] }}" />
+                                                                        </td>
                                                                         <td>
                                                                             <div
                                                                                 class="position-relative d-flex align-items-center">
@@ -489,6 +489,12 @@
                                                                                     </button>
                                                                                 </div>
                                                                             </div>
+                                                                        </td>
+                                                                       <td>
+                                                                            <input type="text" class="form-control mw-100 text-end bankInput reference_no" 
+                                                                                name="reference_no[]" data-row="{{ $no }}" id="reference_no{{ $no }}" 
+                                                                                 />
+                                                                            <span class="text-danger bankInput" id="reference_error{{ $no }}" style="font-size:12px"></span>
                                                                         </td>
 
                                                                         <td>
@@ -545,6 +551,13 @@
                                                                         </select>
                                                                     </td>
                                                                     <td>
+                                                                        <input type="text" disabled
+                                                                            placeholder="Select"
+                                                                            class="form-control mw-100 mb-25 organization"
+                                                                            id="organization1"
+                                                                                />
+                                                                    </td>
+                                                                    <td>
 
                                                                         <div
                                                                             class="position-relative d-flex align-items-center">
@@ -564,7 +577,11 @@
                                                                             </div>
                                                                         </div>
                                                                     </td>
-
+                                                                    <td>
+                                                                        <input type="text" class="form-control mw-100 text-end bankInput reference_no" 
+                                                                            name="reference_no[]" data-row="1" id="reference_no1" />
+                                                                        <span class="text-danger bankInput" id="reference_error1" style="font-size:12px"></span>
+                                                                    </td>
                                                                     <td><input type="number" value="0"
                                                                             class="form-control mw-100 text-end amount"
                                                                             name="amount[]" id="excAmount1" required />
@@ -578,7 +595,7 @@
                                                         </tbody>
                                                         <tfoot>
                                                             <tr class="totalsubheadpodetail">
-                                                                <td colspan="5" class="text-end">Total</td>
+                                                                <td colspan="7" class="text-end">Total</td>
                                                                 <td class="text-end currentCurrencySum">0</td>
                                                                 <td class="text-end orgCurrencySum">0</td>
                                                                 <td></td>
@@ -672,11 +689,10 @@
                                         <tr>
                                             <th>#</th>
                                             <th>Date</th>
-                                            <th>Organization</th>
-                                            <th>Location</th>
-                                            <th>Cost Center</th>
                                             <th>Series</th>
                                             <th>Document No.</th>
+                                            <th>Location</th>
+                                            <th>Cost Center</th>
                                             <th class="text-end">Amount</th>
                                             <th class="text-end">Balance</th>
                                             <th class="text-end" width="150px">Settle Amt</th>
@@ -694,7 +710,7 @@
                                         <tr>
                                             <td colspan="9" class="text-end">Total</td>
                                             <td class="fw-bolder text-dark text-end settleTotal">0</td>
-                                            <td></td>
+                                            {{-- <td></td> --}}
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -747,7 +763,7 @@
                 if (settleAmount > balance) {
                     input.addClass('is-invalid');
                     input.after(
-                        '<span class="invalid-feedback d-block">Settle amount cannot be greater than balance.</span>'
+                        '<span class="invalid-feedback d-block" style="font-size:12px">Settle amount cannot be greater than balance.</span>'
                         );
                     isValid = false;
                 } else {
@@ -882,11 +898,10 @@
                                     html += `<tr id="${val['id']}" class="voucherRows">
                                         <td>${index + 1}</td>
                                         <td>${val['date']}</td>
-                                        <td>${val['organization']?.name ?? '-'}</td>
-                                        <td>${item.erp_location?.store_name ?? '-'}</td>
-                                        <td>${item.cost_center?.name ?? '-'}</td>
                                         <td class="fw-bolder text-dark">${val['series']?.book_code?.toUpperCase() ?? '-'}</td>
                                         <td>${val['voucher_no'] ?? '-'}</td>
+                                        <td class="text-end">${item.erp_location?.store_name ?? '-'}</td>
+                                        <td class="text-end">${item.cost_center?.name ?? '-'}</td>
                                             <td class="text-end">${formatIndianNumber(val['amount'])}</td>
                                             <td class="balanceInput text-end">${formatIndianNumber(val['balance'])}</td>
                                             <td class="text-end">
@@ -1031,15 +1046,46 @@
                 $('#submitted').attr('disabled', false);
                 return false;
             }
-            if ($('#reference_no').hasClass('is-invalid') && $("#Bank").is(":checked")) {
-                $('.preloader').hide();
-                showToast('error', 'Reference no. Already exist');
-                $('#draft').attr('disabled', false);
-                $('#submitted').attr('disabled', false);
-                return false;
+
+             if ($("#Bank").is(":checked")) {
+                    let refError = false;
+                    $('.reference_no').each(function() {
+                        if ($(this).val().trim() === '') {
+                            $(this).addClass('is-invalid');
+                            $('#reference_error' + $(this).data('row')).text('Reference number is required');
+                            refError = true;
+                        } else if ($(this).hasClass('is-invalid')) {
+                            refError = true;
+                        }
+                    });
+                    
+                    if (refError) {
+                        $('.preloader').hide();
+                        showToast('error', 'Please fix reference number errors');
+                        $('#draft').attr('disabled', false);
+                        $('#submitted').attr('disabled', false);
+                        return false;
+                    }
+                }
+                
+                return true;
+
+            //  $('input[name="reference_no[]"]').each(function () {
+            //     if (!$(this).is(':visible')) {
+            //         $(this).prop('required', false);
+            //     } else {
+            //         $(this).prop('required', true);
+            //     }
+            // });
+            // if ($('input[name="reference_no[]"]').hasClass('is-invalid') && $("#Bank").is(":checked")) {
+            //     $('.preloader').hide();
+            //     showToast('error', 'Reference no. Already exist');
+            //     $('#draft').attr('disabled', false);
+            //     $('#submitted').attr('disabled', false);
+            //     return false;
 
 
-            }
+            // }
         }
 
 
@@ -1053,13 +1099,20 @@
                 if ($("#Bank").is(":checked")) {
                     $(".bankfield").show();
                     $(".cashfield").hide();
-                    $('.bankInput').attr('required', true);
-                    $('#ledger_id').attr('required', false);
+                    $('.bankInput').prop('required', true);
+                    $('.reference_no').prop('required', true).removeClass('is-invalid');
+                    $('.ref-no-header').show(); // Show the header
+                    $('.reference_no').closest('td').show(); // Show the Ref No. column
+                    $('#ledger_id').prop('required', false);
                 } else {
                     $(".cashfield").show();
                     $(".bankfield").hide();
-                    $('.bankInput').attr('required', false);
-                    $('#ledger_id').attr('required', true);
+                    $('.bankInput').prop('required', false);
+                    $('.reference_no').prop('required', false).val('').removeClass('is-invalid');
+                    $('.ref-no-header').hide(); // Hide the header
+                    $('.reference_no').closest('td').hide(); // Hide the Ref No. column
+                    $('.reference_no').next('.text-danger').text(''); // Clear error messages
+                    $('#ledger_id').prop('required', true);
                 }
             });
         });
@@ -1116,7 +1169,7 @@
             if (settleAmount > balance) {
                 input.addClass('is-invalid');
                 input.after(
-                    '<span class="invalid-feedback d-block">Settle amount cannot be greater than balance.</span>'
+                    '<span class="invalid-feedback d-block" style="font-size:12px">Settle amount cannot be greater than balance.</span>'
                     );
             } else {
                 input.removeClass('is-invalid');
@@ -1200,6 +1253,7 @@
                         $("#party_id" + id).val(ui.item.value);
                         $("#party_vouchers" + id).val("");
                         $("#excAmount" + id).val("0.00");
+                        $("#organization" + id).val(ui.item.organization.name);
                         $(".drop" + id).val("");
                         $(".excAmount" + id).val("0.00");
                         $("#vouchersBody").empty();
@@ -1288,47 +1342,63 @@
                         <td class="poprod-decpt">
                             <input type="text" placeholder="Select" class="form-control mw-100 ledgerselect partyCode${rowCount} mb-25" required data-id="${rowCount}"/>
                             <input type="hidden" name="party_id[]" type="hidden" id="party_id${rowCount}" class="ledgers"/>
-                             <input type="hidden" name="party_vouchers[]" type="hidden" id="party_vouchers${rowCount}" class="party_vouchers"/>
-
-                            </td>
+                            <input type="hidden" name="party_vouchers[]" type="hidden" id="party_vouchers${rowCount}" class="party_vouchers"/>
+                        </td>
                         <td class="poprod-decpt"><input type="text" disabled placeholder="Select" class="form-control mw-100 mb-25 partyName" id="party_name${rowCount}"/></td>
                         <td>
-                                                                        <select required id="groupSelect${rowCount}"
-                                                                            name="parent_ledger_id[]"
-                                                                            class="ledgerGroup form-select mw-100">
-                                                                        </select>
-                                                                    </td>
+                            <select required id="groupSelect${rowCount}"
+                                name="parent_ledger_id[]"
+                                class="ledgerGroup form-select mw-100">
+                            </select>
+                        </td>
+                        <td>
+                            <input type="text" disabled
+                                placeholder="Select"
+                                class="form-control mw-100 mb-25 organization"
+                                id="organization${rowCount}"
+                                    />
+                        </td>
                         <td>
                             <div class="position-relative d-flex align-items-center">
-                                <select class="form-select mw-100 invoiceDrop drop${rowCount}" data-id="${rowCount}" name="reference[]">
+                                <select
+                                    class="form-select mw-100 invoiceDrop drop${rowCount}"
+                                    data-id="${rowCount}" name="reference[]">
                                     <option value="">Select</option>
                                     <option>Invoice</option>
                                     <option>Advance</option>
                                     <option>On Account</option>
                                 </select>
                                 <div class="ms-50 flex-shrink-0">
-                                    <button type="button" class="btn p-25 btn-sm btn-outline-secondary invoice${rowCount}" style="font-size: 10px" onclick="openInvoice(${rowCount})">Invoice</button>
+                                    <button type="button"
+                                        class="btn p-25 btn-sm btn-outline-secondary invoice${rowCount}" style="font-size: 10px" onclick="openInvoice(${rowCount})">Invoice</button>
                                 </div>
                             </div>
                         </td>
-
+                        <td>
+                            <input type="text" class="form-control mw-100 text-end bankInput reference_no" 
+                                name="reference_no[]" data-row="${rowCount}" id="reference_no${rowCount}" />
+                            <span class="text-danger bankInput" id="reference_error${rowCount}" style="font-size:12px"></span>
+                        </td>
                         <td><input type="number" value="0" class="form-control mw-100 text-end amount" name="amount[]" id="excAmount${rowCount}" required/></td>
-
                         <td><input type="number" value="0" readonly class="form-control mw-100 text-end amount_exc excAmount${rowCount}" name="amount_exc[]" required/></td>
                         <td><a href="#" class="text-danger deleteRow"><i data-feather="trash-2"></i></a></td>
                     </tr>`;
                 $('.mrntableselectexcel').append(newRow);
+                
+                // Set visibility based on payment type
+                if ($("#Bank").is(":checked")) {
+                    $('#reference_no' + rowCount).prop('required', true).closest('td').show();
+                } else {
+                    $('#reference_no' + rowCount).prop('required', false).closest('td').hide();
+                }
+                
                 bind();
-
-
                 initializeAutocomplete();
-
                 updateLevelNumbers();
                 feather.replace({
                     width: 14,
                     height: 14
                 });
-
                 $('.select2').select2();
                 count++;
             });
@@ -1460,13 +1530,17 @@
             if ($("#Bank").is(":checked")) {
                 $(".bankfield").show();
                 $(".cashfield").hide();
-                $('.bankInput').attr('required', true);
-                $('#ledger_id').attr('required', false);
+                $('.bankInput').prop('required', true);
+                $('.ref-no-header').show(); // Show the header
+                $('.reference_no').prop('required', true).closest('td').show();
+                $('#ledger_id').prop('required', false);
             } else {
                 $(".cashfield").show();
                 $(".bankfield").hide();
-                $('.bankInput').attr('required', false);
-                $('#ledger_id').attr('required', true);
+                $('.bankInput').prop('required', false);
+                $('.reference_no').prop('required', false).closest('td').hide();
+                $('.ref-no-header').hide(); // Hide the header
+                $('#ledger_id').prop('required', true);
             }
             if ($('#book_id').val())
                 $('#book_id').trigger('change');
@@ -1759,14 +1833,22 @@
         });
         let timer;
 
-        $('#reference_no').on('input', function() {
+       $(document).on('input', '.reference_no', function() {
             clearTimeout(timer);
-            const refNo = $(this).val();
-
+            
+            let $input = $(this);
+            let refNo = $input.val();
+            let row = $input.data('row');
+            let $errorSpan = $('#reference_error' + row);
+            
+            // Clear previous validation
+            $input.removeClass('is-invalid');
+            $errorSpan.text('');
+            
             if (refNo.length > 0) {
                 timer = setTimeout(function() {
                     $.ajax({
-                        url: '{{ route('voucher.checkReference') }}', // route defined below
+                        url: '{{ route('voucher.checkReference') }}',
                         method: 'POST',
                         data: {
                             _token: '{{ csrf_token() }}',
@@ -1774,19 +1856,16 @@
                         },
                         success: function(response) {
                             if (response.exists) {
-                                $('#reference_error').text(
-                                    'This reference number already exists.');
-                                $('#reference_no').addClass('is-invalid');
-                            } else {
-                                $('#reference_error').text('');
-                                $('#reference_no').removeClass('is-invalid');
+                                $errorSpan.text('This reference number already exists.');
+                                $input.addClass('is-invalid');
                             }
+                        },
+                        error: function() {
+                            $errorSpan.text('Error validating reference number.');
+                            $input.addClass('is-invalid');
                         }
                     });
-                }, 500); // debounce
-            } else {
-                $('#reference_error').text('');
-                $('#reference_no').removeClass('is-invalid');
+                }, 500);
             }
         });
     </script>

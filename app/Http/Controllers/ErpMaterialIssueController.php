@@ -10,10 +10,13 @@ use App\Helpers\InventoryHelper;
 use App\Helpers\ItemHelper;
 use App\Helpers\NumberHelper;
 use App\Helpers\ServiceParametersHelper;
+use App\Helpers\TransactionReportHelper;
 use App\Helpers\UserHelper;
 use App\Http\Requests\ErpMaterialIssueRequest;
 use App\Models\Address;
 use App\Helpers\DynamicFieldHelper;
+use App\Models\AttributeGroup;
+use App\Models\Category;
 use App\Models\ErpMiDynamicField;
 use App\Models\AuthUser;
 use App\Models\Country;
@@ -32,10 +35,14 @@ use App\Models\ErpProductionSlip;
 use App\Models\ErpProductionWorkOrder;
 use App\Models\ErpPwoItem;
 use App\Models\ErpRack;
+use App\Models\ErpSaleOrder;
 use App\Models\ErpStore;
 use App\Models\ErpSubStore;
 use App\Models\ErpVendor;
 use App\Models\Item;
+use App\Models\JobOrder\JobOrder;
+use App\Models\JobOrder\JoItem;
+use App\Models\JobOrder\JoProduct;
 use App\Models\MfgOrder;
 use App\Models\MoItem;
 use App\Models\Organization;
@@ -65,10 +72,62 @@ class ErpMaterialIssueController extends Controller
         $selectedfyYear = Helper::getFinancialYear(Carbon::now()->format('Y-m-d'));
         $createRoute = route('material.issue.create');
         $typeName = ConstantHelper::MATERIAL_ISSUE_SERVICE_NAME;
+        $autoCompleteFilters = self::getBasicFilters();
         if ($request -> ajax()) {
             try {
+                $accessible_locations = InventoryHelper::getAccessibleLocations()->pluck('id')->toArray();
+                $selectedfyYear = Helper::getFinancialYear(Carbon::now()->format('Y-m-d'));
+                //Date Filters
+                $dateRange = $request -> date_range ??  null;
                 $docs = ErpMaterialIssueHeader::withDefaultGroupCompanyOrg() ->  bookViewAccess($pathUrl) ->  
-                withDraftListingLogic() ->whereBetween('document_date', [$selectedfyYear['start_date'], $selectedfyYear['end_date']]) -> orderByDesc('id');
+                withDraftListingLogic() ->whereBetween('document_date', [$selectedfyYear['start_date'], $selectedfyYear['end_date']]) -> whereIn('from_store_id',$accessible_locations) ->  when($request -> customer_id, function ($custQuery) use($request) {
+                    $custQuery -> where('customer_id', $request -> customer_id);
+                }) -> when($request -> book_id, function ($bookQuery) use($request) {
+                    $bookQuery -> where('book_id', $request -> book_id);
+                }) -> when($request -> document_number, function ($docQuery) use($request) {
+                    $docQuery -> where('document_number', 'LIKE', '%' . $request -> document_number . '%');
+                }) -> when($request -> location_id, function ($docQuery) use($request) {
+                    $docQuery -> where('from_store_id', $request -> location_id);
+                }) -> when($request -> company_id, function ($docQuery) use($request) {
+                    $docQuery -> where('from_store_id', $request -> company_id);
+                }) -> when($request -> organization_id, function ($docQuery) use($request) {
+                    $docQuery -> where('organization_id', $request -> organization_id);
+                }) -> when($request -> status, function ($docStatusQuery) use($request) {
+                    $searchDocStatus = [];
+                    if ($request -> status === ConstantHelper::DRAFT) {
+                        $searchDocStatus = [ConstantHelper::DRAFT];
+                    } else if ($request -> status === ConstantHelper::SUBMITTED) {
+                        $searchDocStatus = [ConstantHelper::SUBMITTED, ConstantHelper::PARTIALLY_APPROVED];
+                    } else {
+                        $searchDocStatus = [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED];
+                    }
+                    $docStatusQuery -> whereIn('document_status', $searchDocStatus);
+                }) -> when($dateRange, function ($dateRangeQuery) use($request, $dateRange) {
+                    $dateRanges = explode('to', $dateRange);
+                    if (count($dateRanges) == 2) {
+                            $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
+                            $toDate = Carbon::parse(trim($dateRanges[1])) -> format('Y-m-d');
+                            $dateRangeQuery -> whereDate('document_date', ">=" , $fromDate) -> where('document_date', '<=', $toDate);
+                    }
+                    else{
+                        $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
+                        $dateRangeQuery -> whereDate('document_date', $fromDate);
+                    }
+                }) -> when($request -> item_id, function ($itemQuery) use($request) {
+                    $itemQuery -> withWhereHas('items', function ($itemSubQuery) use($request) {
+                        $itemSubQuery -> where('item_id', $request -> item_id)
+                        //Compare Item Category
+                        -> when($request -> item_category_id, function ($itemCatQuery) use($request) {
+                            $itemCatQuery -> whereHas('item', function ($itemRelationQuery) use($request) {
+                                $itemRelationQuery -> where('category_id', $request -> category_id)
+                                //Compare Item Sub Category
+                                -> when($request -> item_sub_category_id, function ($itemSubCatQuery) use($request) {
+                                    $itemSubCatQuery -> where('subcategory_id', $request -> item_sub_category_id);
+                                });
+                            });
+                        });
+                    });
+                })  -> orderByDesc('id');
                 return DataTables::of($docs) ->addIndexColumn()
                 ->editColumn('document_status', function ($row) use($orderType) {
                     $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->document_status ?? ConstantHelper::DRAFT];    
@@ -157,9 +216,30 @@ class ErpMaterialIssueController extends Controller
         }
         $parentURL = request() -> segments()[0];
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
-        return view('materialIssue.index', ['typeName' => $typeName, 'redirect_url' => $redirectUrl, 'create_route' => $createRoute, 'create_button' => count($servicesBooks['services'])]);
+        return view('materialIssue.index', ['typeName' => $typeName, 'redirect_url' => $redirectUrl, 'create_route' => $createRoute, 'create_button' => count($servicesBooks['services']),'filterArray' => TransactionReportHelper::FILTERS_MAPPING[ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME],
+            'autoCompleteFilters' => $autoCompleteFilters,]);
     }
-
+    public function getBasicFilters()
+    {
+        //Get the common filters
+        $user = Helper::getAuthenticatedUser();
+        $categories = Category::select('id AS value', 'name AS label') -> withDefaultGroupCompanyOrg() 
+        -> whereNull('parent_id') -> get();
+        $subCategories = Category::select('id AS value', 'name AS label') -> withDefaultGroupCompanyOrg() 
+        -> whereNotNull('parent_id') -> get();
+        $items = Item::select('id AS value', 'item_name AS label') -> withDefaultGroupCompanyOrg()->get();
+        $users = AuthUser::select('id AS value', 'name AS label') -> where('organization_id', $user -> organization_id)->get();
+        $attributeGroups = AttributeGroup::select('id AS value', 'name AS label')->withDefaultGroupCompanyOrg()->get();
+        //Custom filters (to be restr)
+        return array(
+            'itemCategories' => $categories,
+            'itemSubCategories' => $subCategories,
+            'items' => $items,
+            'users' => $users,
+            'attributeGroups' => $attributeGroups 
+        );
+    }
+    
     public function create(Request $request)
     {
         //Get the menu 
@@ -253,7 +333,7 @@ class ErpMaterialIssueController extends Controller
             $typeName = ConstantHelper::MATERIAL_ISSUE_SERVICE_NAME;
             $vendors = Vendor::select('id', 'company_name') -> withDefaultGroupCompanyOrg()->where('status', ConstantHelper::ACTIVE) 
             -> get();
-            $selectedfyYear = Helper::getFinancialYear($order->document_date ?? Carbon::now()->format('Y-m-d'));
+            $selectedfyYear = Helper::getFinancialYear($doc->document_date ?? Carbon::now()->format('Y-m-d'));
             $stations = Station::withDefaultGroupCompanyOrg()
             ->where('status', ConstantHelper::ACTIVE)
             ->get();
@@ -309,7 +389,7 @@ class ErpMaterialIssueController extends Controller
     }
     public function store(ErpMaterialIssueRequest $request)
     {
-        
+        // dd($request -> all());
         try {
             //Reindex
             $request -> item_qty =  array_values($request -> item_qty);
@@ -355,7 +435,7 @@ class ErpMaterialIssueController extends Controller
             $materialIssue = null;
             $fromStore = ErpStore::find($request -> store_from_id);
             $toStoreId = ($request->store_to_id);
-            $toSubStoreId = ($request -> issue_type === 'Sub Contracting' ? $request -> vendor_store_id : $request -> sub_store_to_id);
+            $toSubStoreId = ($request -> issue_type === 'Sub Contracting' || $request -> issue_type === ConstantHelper::TYPE_JOB_ORDER ? $request -> vendor_store_id : $request -> sub_store_to_id);
             $toStore = ErpStore::find($toStoreId);
             $vendor = Vendor::find($request -> vendor_id);
             if($request -> requester_type == 'User') {
@@ -427,6 +507,22 @@ class ErpMaterialIssueController extends Controller
                                 $piItem -> save();
                             }
                         }
+                        if (isset($miItem -> jo_item_id)) {
+                            //Back update in JO ITEM
+                            $joItem = JoItem::find($miItem -> jo_item_id);
+                            if (isset($joItem)) {
+                                $joItem -> mi_qty = $joItem -> mi_qty - $miItem -> issue_qty;
+                                $joItem -> save();
+                            }
+                        }
+                        if (isset($miItem -> jo_product_id)) {
+                            //Back update in JO ITEM
+                            $joProduct = JoProduct::find($miItem -> jo_product_id);
+                            if (isset($joProduct)) {
+                                $joProduct -> mi_qty = $joProduct -> mi_qty - $miItem -> issue_qty;
+                                $joProduct -> save();
+                            }
+                        }
                         # all attr remove
                         $miItem->attributes()->delete();
                         $miItem->delete();
@@ -485,18 +581,27 @@ class ErpMaterialIssueController extends Controller
                     'total_expense_value' => 0,
                 ]);
                 // Shipping Address
-                $vendorShippingAddress = ErpAddress::find($request -> vendor_address_id);
-                if (isset($vendorShippingAddress)) {
-                    $shippingAddress = $materialIssue -> vendor_shipping_address() -> create([
-                        'address' => $vendorShippingAddress -> address,
-                        'country_id' => $vendorShippingAddress -> country_id,
-                        'state_id' => $vendorShippingAddress -> state_id,
-                        'city_id' => $vendorShippingAddress -> city_id,
-                        'type' => 'shipping',
-                        'pincode' => $vendorShippingAddress -> pincode,
-                        'phone' => $vendorShippingAddress -> phone,
-                        'fax_number' => $vendorShippingAddress -> fax_number
-                    ]);
+                if ($materialIssue -> issue_type === "Sub Contracting" || $materialIssue -> issue_type === "Job Work") {
+                    if ($materialIssue -> issue_type === "Sub Contracting" && isset($request -> jo_item_id[0])) {
+                        $joItem = JoItem::find($request -> jo_item_id[0]);
+                    } else {
+                        $joItem = JoProduct::find($request -> jo_product_id[0]);
+                    }
+                    if (isset($joItem)) {
+                        $vendorShippingAddress = $joItem ?-> header ?-> ship_address;
+                        if (isset($vendorShippingAddress)) {
+                            $vendorShippingAddress = $materialIssue -> vendor_shipping_address() -> create([
+                                'address' => $vendorShippingAddress -> address,
+                                'country_id' => $vendorShippingAddress -> country_id,
+                                'state_id' => $vendorShippingAddress -> state_id,
+                                'city_id' => $vendorShippingAddress -> city_id,
+                                'type' => 'shipping',
+                                'pincode' => $vendorShippingAddress -> pincode,
+                                'phone' => $vendorShippingAddress -> phone,
+                                'fax_number' => $vendorShippingAddress -> fax_number
+                            ]);
+                        }
+                    }
                 }
             }
             //Dynamic Fields
@@ -511,7 +616,7 @@ class ErpMaterialIssueController extends Controller
                 //Get Header Discount
                 $totalHeaderDiscount = 0;
                 $totalHeaderDiscountArray = [];
-                //Initialize item discount to 0
+                //'Initialize' item discount to 0
                 $itemTotalDiscount = 0;
                 $itemTotalValue = 0;
                 $totalTax = 0;
@@ -551,6 +656,8 @@ class ErpMaterialIssueController extends Controller
                                 'mo_item_id' => isset($request -> mo_item_id[$itemKey]) ? $request -> mo_item_id[$itemKey] : null,
                                 'pwo_item_id' => isset($request -> pwo_item_id[$itemKey]) ? $request -> pwo_item_id[$itemKey] : null,
                                 'pi_item_id' => isset($request -> pi_item_id[$itemKey]) ? $request -> pi_item_id[$itemKey] : null,
+                                'jo_item_id' => isset($request -> jo_item_id[$itemKey]) ? $request -> jo_item_id[$itemKey] : null,
+                                'jo_product_id' => isset($request -> jo_product_id[$itemKey]) ? $request -> jo_product_id[$itemKey] : null,
                                 'user_id' => isset($request -> item_user_id[$itemKey]) ? $request -> item_user_id[$itemKey] : null,
                                 'department_id' => isset($request -> item_department_id[$itemKey]) ? $request -> item_department_id[$itemKey] : null,
                                 'item_code' => $item -> item_code,
@@ -613,6 +720,8 @@ class ErpMaterialIssueController extends Controller
                             'mo_item_id' => $itemDataValue['mo_item_id'],
                             'pwo_item_id' => $itemDataValue['pwo_item_id'],
                             'pi_item_id' => $itemDataValue['pi_item_id'],
+                            'jo_item_id' => $itemDataValue['jo_item_id'],
+                            'jo_product_id' => $itemDataValue['jo_product_id'],
                             'item_code' => $itemDataValue['item_code'],
                             'item_name' => $itemDataValue['item_name'],
                             'hsn_id' => $itemDataValue['hsn_id'],
@@ -649,28 +758,44 @@ class ErpMaterialIssueController extends Controller
                             $miItem = ErpMiItem::create($itemRowData);
                         }
                         //Order Pulling condition 
-                        if (isset($request -> mo_item_id[$itemKey])) {
+                        if (isset($request -> mo_item_id[$itemDataKey])) {
                             //Back update in MO item
-                            $moItem = MoItem::find($request -> mo_item_id[$itemKey]);
+                            $moItem = MoItem::find($request -> mo_item_id[$itemDataKey]);
                             if (isset($moItem)) {
                                 $moItem -> mi_qty = ($moItem -> mi_qty - (isset($oldMiItem) ? $oldMiItem -> issue_qty : 0)) + $itemDataValue['issue_qty'];
                                 $moItem -> save();
                             }
                         }
-                        if (isset($request -> pwo_item_id[$itemKey])) {
+                        if (isset($request -> pwo_item_id[$itemDataKey])) {
                             //Back update in PWO item
-                            $pwoItem = ErpPwoItem::find($request -> pwo_item_id[$itemKey]);
+                            $pwoItem = ErpPwoItem::find($request -> pwo_item_id[$itemDataKey]);
                             if (isset($pwoItem)) {
                                 $pwoItem -> mi_qty = ($pwoItem -> mi_qty - (isset($oldMiItem) ? $oldMiItem -> issue_qty : 0)) + $itemDataValue['issue_qty'];
                                 $pwoItem -> save();
                             }
                         }
-                        if (isset($request -> pi_item_id[$itemKey])) {
+                        if (isset($request -> pi_item_id[$itemDataKey])) {
                             //Back update in PI item
-                            $piItem = PiItem::find($request -> pi_item_id[$itemKey]);
+                            $piItem = PiItem::find($request -> pi_item_id[$itemDataKey]);
                             if (isset($piItem)) {
                                 $piItem -> mi_qty = ($piItem -> mi_qty - (isset($oldMiItem) ? $oldMiItem -> issue_qty : 0)) + $itemDataValue['issue_qty'];
                                 $piItem -> save();
+                            }
+                        }
+                        if (isset($request -> jo_item_id[$itemDataKey])) {
+                            //Back update in JO item
+                            $joItem = JoItem::find($request -> jo_item_id[$itemDataKey]);
+                            if (isset($joItem)) {
+                                $joItem -> mi_qty = ($joItem -> mi_qty - (isset($oldMiItem) ? $oldMiItem -> issue_qty : 0)) + $itemDataValue['issue_qty'];
+                                $joItem -> save();
+                            }
+                        }
+                        if (isset($request -> jo_product_id[$itemDataKey])) {
+                            //Back update in JO product
+                            $joProduct = JoProduct::find($request -> jo_product_id[$itemDataKey]);
+                            if (isset($joProduct)) {
+                                $joProduct -> mi_qty = ($joProduct -> mi_qty - (isset($oldMiItem) ? $oldMiItem -> issue_qty : 0)) + $itemDataValue['issue_qty'];
+                                $joProduct -> save();
                             }
                         }
                         //Item Attributes
@@ -906,7 +1031,7 @@ class ErpMaterialIssueController extends Controller
     }
 
     private static function maintainStockLedger(ErpMaterialIssueHeader $materialIssue)
-    {
+    {        
         $items = $materialIssue->items;
         $issueDetailIds = $items -> pluck('id') -> toArray();
         $receiptDetailIds = [];
@@ -932,7 +1057,7 @@ class ErpMaterialIssueController extends Controller
             }
         }
         $issueRecords = InventoryHelper::settlementOfInventoryAndStock($materialIssue->id, $issueDetailIds, ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME, $materialIssue->document_status, 'issue');
-        if ($materialIssue -> issue_type == "Location Transfer" || $materialIssue -> issue_type == "Sub Location Transfer" || $materialIssue -> issue_type == "Sub Contracting") { //Only in case of location transfer
+        if ($materialIssue -> issue_type == "Location Transfer" || $materialIssue -> issue_type == "Sub Location Transfer" || $materialIssue -> issue_type == "Sub Contracting" || $materialIssue -> issue_type == ConstantHelper::TYPE_JOB_ORDER) { //Only in case of location transfer
             InventoryHelper::settlementOfInventoryAndStock($materialIssue->id, $receiptDetailIds, ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME, $materialIssue->document_status, 'receipt');
         }
         if(!empty($issueRecords['data']) && count($issueRecords['data']) > 0){
@@ -942,7 +1067,6 @@ class ErpMaterialIssueController extends Controller
                 ->delete();
 
             foreach($issueRecords['data'] as $val){
-
                 $miItem = ErpMiItem::where('id', @$val->issuedBy->document_detail_id) -> first();
 
                 ErpMiItemLocation::create([
@@ -973,7 +1097,6 @@ class ErpMaterialIssueController extends Controller
 
             foreach($stockLedgers as $stockLedger) {
                 $miItem = ErpMiItem::find($stockLedger->document_detail_id);
-                // dd(floatval($stockLedger->cost) , floatval($miItem->issue_qty));
                 $miItem->rate = floatval($stockLedger->cost) / floatval($miItem->inventory_uom_qty);
                 $miItem->total_item_amount = floatval($stockLedger->cost);
                 $miItem->save();
@@ -1034,112 +1157,221 @@ class ErpMaterialIssueController extends Controller
     public function getMoItemsForPulling(Request $request)
     {
         try {
-            $selectedIds = $request -> selected_ids ?? [];
-            $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request -> header_book_id);
-            if ($request -> doc_type === ConstantHelper::MO_SERVICE_ALIAS) {
-                $referedHeaderId = MfgOrder::whereIn('id', $selectedIds) -> first() ?-> header ?-> id;
-                $order = MoItem::withWhereHas('header', function ($subQuery) use($request, $applicableBookIds, $referedHeaderId) {
-                    $subQuery -> when($referedHeaderId, function ($refQuery) use($referedHeaderId) {
-                        $refQuery -> where('id', $referedHeaderId);
-                    })-> when($request -> store_id, function ($storeQuery) use($request) {
-                        $storeQuery -> where('store_id', $request -> store_id);
-                    }) -> whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]) -> whereIn('book_id', $applicableBookIds) 
-                    -> when($request -> book_id, function ($bookQuery) use($request) {
-                        $bookQuery -> where('book_id', $request -> book_id);
-                    }) -> when($request -> document_id, function ($docQuery) use($request) {
-                        $docQuery -> where('id', $request -> document_id);
-                    }) -> when($request -> location_id, function ($docQuery) use($request) {
-                        $docQuery -> where('store_id', $request -> location_id);
-                    }) -> when($request -> station_id, function ($docQuery) use($request) {
-                        $docQuery -> where('station_id', $request -> station_id);
-                    }) -> when($request -> sub_store_id, function ($docQuery) use($request) {
-                        $docQuery -> where('sub_store_id', $request -> sub_store_id);
-                    });
-                }) -> with('attributes') -> with('uom') -> with('mo') -> when(count($selectedIds) > 0, function ($refQuery) use($selectedIds) {
-                    $refQuery -> whereNotIn('id', $selectedIds);
-                }) -> whereColumn('qty', ">", 'mi_qty');
-            } else if ($request -> doc_type === ConstantHelper::PWO_SERVICE_ALIAS) {
-                $referedHeaderId = ErpProductionSlip::whereIn('id', $selectedIds) -> first() ?-> header ?-> id;
-                $order = ErpPwoItem::withWhereHas('header', function ($subQuery) use($request, $applicableBookIds, $referedHeaderId) {
-                    $subQuery -> when($referedHeaderId, function ($refQuery) use($referedHeaderId) {
-                        $refQuery -> where('id', $referedHeaderId);
-                    })-> when($request -> store_id, function ($storeQuery) use($request) {
-                        $storeQuery -> where('location_id', $request -> store_id);
-                    })-> whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]) -> whereIn('book_id', $applicableBookIds) 
-                    -> when($request -> book_id, function ($bookQuery) use($request) {
-                        $bookQuery -> where('book_id', $request -> book_id);
-                    }) -> when($request -> document_id, function ($docQuery) use($request) {
-                        $docQuery -> where('id', $request -> document_id);
-                    });
-                }) -> with('attributes') -> with('uom') -> when(count($selectedIds) > 0, function ($refQuery) use($selectedIds) {
-                    $refQuery -> whereNotIn('id', $selectedIds);
-                }) -> whereColumn('order_qty', ">", 'mi_qty');
-            }  else if ($request -> doc_type === ConstantHelper::PI_SERVICE_ALIAS || $request -> doc_type === "pi") {
-                $requesterType = $request -> requester_type ?? 'Department';
-                $referedHeaderId = PurchaseIndent::whereIn('id', $selectedIds) -> first() ?-> header ?-> id;
-                $order = PiItem::withWhereHas('header', function ($subQuery) use($request, $applicableBookIds, $referedHeaderId, $requesterType) {
-                    $subQuery -> when($referedHeaderId, function ($refQuery) use($referedHeaderId) {
-                        $refQuery -> where('id', $referedHeaderId);
-                    }) -> where('requester_type', $request -> requester_type ?? 'Department')
-                    -> when($requesterType == 'Department', function ($storeQuery) use($request) {
-                        $storeQuery -> when($request -> requester_department_id, function ($departQuery) use($request) {
-                            $departQuery -> where('department_id', $request -> requester_department_id);
-                        });
+            $selectedIds = $request->selected_ids ?? [];
+            $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request->header_book_id);
+
+            // Build the base query
+            $baseQuery = match ($request->doc_type) {
+                ConstantHelper::MO_SERVICE_ALIAS => MoItem::with(['header.store_location', 'header.sub_store', 'header.station', 'item', 'so', 'station', 'attributes', 'uom', 'mo'])
+                    ->whereHas('header', function ($query) use ($request, $applicableBookIds, $selectedIds) {
+                        $referedHeaderId = MfgOrder::whereIn('id', $selectedIds)->first()?->header?->id;
+                        $query->when($referedHeaderId, fn($q) => $q->where('id', $referedHeaderId))
+                            // ->when($request->location_id, fn($q) => $q->where('store_id', $request->location_id))
+                            ->when($request->book_id, fn($q) => $q->where('book_id', $request->book_id))
+                            ->when($request->document_id, fn($q) => $q->where('id', $request->document_id))
+                            ->when($request->store_id, fn($q) => $q->where('store_id', $request->store_id))
+                            ->when($request->station_id, fn($q) => $q->where('station_id', $request->station_id))
+                            ->when($request->sub_store_id, fn($q) => $q->where('sub_store_id', $request->sub_store_id))
+                            ->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
+                            ->whereIn('book_id', $applicableBookIds);
                     })
-                    -> when($requesterType == 'User', function ($storeQuery) use($request) {
-                        $storeQuery -> when($request -> requester_user_id, function ($userQuery) use($request) {
-                            $userQuery -> where('user_id', $request -> requester_user_id);
-                        });
+                    ->when($request->item_id, fn($q) => $q->where('item_id', $request->item_id))
+                    ->when($request->so_id, fn($q) => $q->where('so_id', $request->so_id))
+                    ->whereColumn('qty', '>', 'mi_qty')
+                    ->when(count($selectedIds) > 0, fn($q) => $q->whereNotIn('id', $selectedIds)),
+
+                ConstantHelper::PWO_SERVICE_ALIAS => ErpPwoItem::with(['header', 'attributes', 'uom'])
+                    ->whereHas('header', function ($query) use ($request, $applicableBookIds, $selectedIds) {
+                        $referedHeaderId = ErpProductionSlip::whereIn('id', $selectedIds)->first()?->header?->id;
+                        $query->when($referedHeaderId, fn($q) => $q->where('id', $referedHeaderId))
+                            ->when($request->store_id, fn($q) => $q->where('location_id', $request->store_id))
+                            ->when($request->book_id, fn($q) => $q->where('book_id', $request->book_id))
+                            ->when($request->document_id, fn($q) => $q->where('id', $request->document_id))
+                            ->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
+                            ->whereIn('book_id', $applicableBookIds);
                     })
-                    -> whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]) -> whereIn('book_id', $applicableBookIds) 
-                    -> when($request -> book_id, function ($bookQuery) use($request) {
-                        $bookQuery -> where('book_id', $request -> book_id);
-                    }) -> when($request -> document_id, function ($docQuery) use($request) {
-                        $docQuery -> where('id', $request -> document_id);
-                    });
-                }) -> with('attributes') -> with('uom') -> when(count($selectedIds) > 0, function ($refQuery) use($selectedIds) {
-                    $refQuery -> whereNotIn('id', $selectedIds);
-                }) -> whereColumn('indent_qty', '>', 'mi_qty');
+                    ->whereColumn('order_qty', '>', 'mi_qty')
+                    ->when(count($selectedIds) > 0, fn($q) => $q->whereNotIn('id', $selectedIds)),
+
+                ConstantHelper::PI_SERVICE_ALIAS, 'pi' => PiItem::with(['header', 'attributes', 'uom'])
+                    ->whereHas('header', function ($query) use ($request, $applicableBookIds, $selectedIds) {
+                        $requesterType = $request->requester_type ?? 'Department';
+                        $referedHeaderId = PurchaseIndent::whereIn('id', $selectedIds)->first()?->header?->id;
+                        $query->when($referedHeaderId, fn($q) => $q->where('id', $referedHeaderId))
+                            ->where('requester_type', $requesterType)
+                            ->when($requesterType === 'Department', fn($q) => $q->when($request->requester_department_id, fn($d) => $d->where('department_id', $request->requester_department_id)))
+                            ->when($requesterType === 'User', fn($q) => $q->when($request->requester_user_id, fn($u) => $u->where('user_id', $request->requester_user_id)))
+                            ->when($request->book_id, fn($q) => $q->where('book_id', $request->book_id))
+                            ->when($request->document_id, fn($q) => $q->where('id', $request->document_id))
+                            ->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
+                            ->whereIn('book_id', $applicableBookIds);
+                    })
+                    ->whereColumn('indent_qty', '>', 'mi_qty')
+                    ->when(count($selectedIds) > 0, fn($q) => $q->whereNotIn('id', $selectedIds)),
+
+                ConstantHelper::JO_SERVICE_ALIAS => match ($request->mi_type ?? ConstantHelper::TYPE_SUBCONTRACTING) {
+                    ConstantHelper::TYPE_SUBCONTRACTING, 'Sub Contracting' => JoItem::with(['attributes', 'uom', 'jo'])
+                        ->whereHas('header', function ($subQuery) use ($request, $applicableBookIds, $selectedIds) {
+                            $referedHeaderId = JobOrder::whereIn('id', $selectedIds)->first()?->header?->id;
+                            $subQuery->when($referedHeaderId, fn($q) => $q->where('id', $referedHeaderId))
+                                ->when($request->store_id, fn($q) => $q->where('store_id', $request->store_id))
+                                ->when($request->location_id, fn($q) => $q->where('store_id', $request->location_id))
+                                ->when($request->vendor_id, fn($q) => $q->where('vendor_id', $request->vendor_id))
+                                ->when($request->book_id, fn($q) => $q->where('book_id', $request->book_id))
+                                ->when($request->document_id, fn($q) => $q->where('id', $request->document_id))
+                                ->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
+                                ->whereIn('book_id', $applicableBookIds);
+                        })
+                        ->whereColumn('qty', '>', 'mi_qty')
+                        ->when(count($selectedIds) > 0, fn($q) => $q->whereNotIn('id', $selectedIds)),
+
+                    ConstantHelper::TYPE_JOB_ORDER => JoProduct::with(['attributes', 'uom', 'jo'])
+                        ->whereHas('header', function ($subQuery) use ($request, $applicableBookIds, $selectedIds) {
+                            $referedHeaderId = JobOrder::whereIn('id', $selectedIds)->first()?->header?->id;
+                            $subQuery->when($referedHeaderId, fn($q) => $q->where('id', $referedHeaderId))
+                                ->when($request->store_id, fn($q) => $q->where('store_id', $request->store_id))
+                                ->when($request->location_id, fn($q) => $q->where('store_id', $request->location_id))
+                                ->when($request->vendor_id, fn($q) => $q->where('vendor_id', $request->vendor_id))
+                                ->when($request->book_id, fn($q) => $q->where('book_id', $request->book_id))
+                                ->when($request->document_id, fn($q) => $q->where('id', $request->document_id))
+                                ->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
+                                ->whereIn('book_id', $applicableBookIds);
+                        })
+                        ->whereRaw('mi_qty < order_qty - short_close_qty')
+                        ->when(count($selectedIds) > 0, fn($q) => $q->whereNotIn('id', $selectedIds)),
+
+                    default => null,
+                },
+
+                default => null,
+            };
+
+            if (!$baseQuery) {
+                return DataTables::of(collect())->make(true);
             }
-            else {
-                $order = null;
-            }
-            if ($request -> item_id && isset($order)) {
-                $order = $order -> where('item_id', $request -> item_id);
-            }
-            $order = isset($order) ? $order -> get() : new Collection();
-            foreach ($order as $currentOrder) {
-                $currentOrder -> store_location_code = $currentOrder -> header -> store_location ?-> store_name;
-                $currentOrder -> sub_store_code = $currentOrder ?-> header ?-> sub_store ?-> name;
-                $currentOrder -> avl_stock = $currentOrder -> getAvlStock($request -> store_id_from, $request -> sub_store_id_from ?? null, $request -> station_id_from ?? null);
-                $currentOrder -> department_code = $currentOrder ?-> header ?-> department ?-> name;
-                $currentOrder -> station_name = $currentOrder ?-> header ?-> station ?-> name;
-                $currentOrder -> item_name = $currentOrder ?-> item ?-> item_name;
-                $currentOrder -> so_no = $currentOrder ?-> so ?  $currentOrder ?-> so -> book_code . '-' . $currentOrder ?-> so -> document_number : '';
-                if ($request -> doc_type === ConstantHelper::MO_SERVICE_ALIAS) {
-                    if ($currentOrder -> rm_type === 'sf') {
-                        $currentOrder -> item_name .= ('-' . $currentOrder -> station ?-> name);
-                    }
+
+            if ($request->doc_type === ConstantHelper::JO_SERVICE_ALIAS && isset($baseQuery)) {
+                if ($request->item_id) {
+                    $baseQuery = $baseQuery->where('item_id', $request->item_id);
                 }
-                if ($request -> doc_type === ConstantHelper::MO_SERVICE_ALIAS || $request -> doc_type === ConstantHelper::PI_SERVICE_ALIAS 
-                || $request -> doc_type === 'pi') {
-                    foreach ($currentOrder -> attributes as $itemAttr) {
-                        $itemAttr -> attribute_value = $itemAttr -> attr_value;
-                        $itemAttr -> attribute_name = $itemAttr -> attr_name;
-                    }
+                $baseQuery = $baseQuery->get();
+
+                foreach ($baseQuery as &$currentOrder) {
+                    // $currentOrder->store_location_code = $currentOrder->header?->store_location?->store_name;
+                    // $currentOrder->sub_store_code = $currentOrder->header?->sub_store?->name;
+                    // $currentOrder->department_code = $currentOrder->header?->department?->name;
+                    // $currentOrder->station_name = $currentOrder->header?->station?->name;
+                    // $currentOrder->item_name = $currentOrder->item?->item_name;
+                    // $currentOrder->avl_stock = $currentOrder->getAvlStock(
+                    //     $request->store_id_from,
+                    //     $request->sub_store_id_from ?? null,
+                    //     $request->station_id_from ?? null
+                    // );
+
+                    // SO Number for JO
+                    // if ($request->doc_type === ConstantHelper::JO_SERVICE_ALIAS) {
+                    //     $so = ErpSaleOrder::withDefaultGroupCompanyOrg()->where('id', $currentOrder->so_id)->first();
+                    //     if ($so) {
+                    //         $currentOrder->so_no = $so ? $so->book_code . '-' . $so->document_number : '';
+                    //     } else {
+                    //         $currentOrder->so_no = "";
+                    //     }
+                    // }
+                    // // Adjust qty for Job Order
+                    // if ($request->mi_type === ConstantHelper::TYPE_JOB_ORDER) {
+                    //     $currentOrder->qty = $currentOrder->order_qty;
+                    // }
+
+                    // Append station name for 'sf' RM type
+                    // if ($request->doc_type === ConstantHelper::MO_SERVICE_ALIAS || ($request->doc_type === ConstantHelper::JO_SERVICE_ALIAS && $request->mi_type === "Sub Contracting")) {
+                    //     if ($currentOrder->rm_type === 'sf') {
+                    //         $currentOrder->item_name .= '-' . ($currentOrder->station?->name ?? '');
+                    //     }
+                    // }
+
+                    // Add attribute_name/value mapping
+                    // if (in_array($request->doc_type, [ConstantHelper::MO_SERVICE_ALIAS, ConstantHelper::PI_SERVICE_ALIAS, ConstantHelper::JO_SERVICE_ALIAS, 'pi'])) {
+                    //     foreach ($currentOrder->attributes as $itemAttr) {
+                    //         $itemAttr->attribute_name = $itemAttr->attr_name;
+                    //         $itemAttr->attribute_value = $itemAttr->attr_value;
+                    //     }
+                    // }
                 }
+
+                // return DataTable?s::of($baseQuery)->make(true);
             }
-            $order = $order -> values();
-            return response() -> json([
-                'data' => $order
-            ]);
-        } catch(Exception $ex) {
-            return response() -> json([
-                'message' => 'Some internal error occurred',
-                'error' => $ex -> getMessage() . $ex -> getFile() . $ex -> getLine()
-            ]);
+
+            // For all other doc_types using $baseQuery
+            if ($request->item_id) {
+                $baseQuery->where('item_id', $request->item_id);
+            }
+            return DataTables::of($baseQuery)
+                ->addColumn('book_code', fn($item) => $item?->header?->book_code ?? ($item->header->book?->book_code ?? ''))
+                ->addColumn('document_number', fn($item) => $item?->header?->document_number)
+                ->addColumn('document_date', fn($item) => $item->header->getFormattedDate("document_date"))
+                ->addColumn('so_no', fn($item) => $item?->so?->book_code . '-' . $item?->so?->document_number)
+                ->addColumn('item_name', function ($item) use ($request) {
+                    $name = $item->item->item_name ?? '';
+                    if (
+                        $request->doc_type === ConstantHelper::MO_SERVICE_ALIAS ||
+                        ($request->doc_type === ConstantHelper::JO_SERVICE_ALIAS && $request->mi_type === "Sub Contracting")
+                    ) {
+                        if ($item->rm_type === 'sf') {
+                            $name .= '-' . ($item->station?->name ?? '');
+                        }
+                    }
+                    return $name;
+                })
+                ->addColumn('store_location_code', fn($item) => $item->header?->store_location?->store_name ?? '')
+                ->addColumn('sub_store_code', fn($item) => $item->header?->sub_store?->name ?? '')
+                ->addColumn('department_code', fn($item) => $item->header?->department?->name ?? '')
+                ->addColumn('requester_name', fn($item) => $item?->header && method_exists($item->header, 'requester_name') ? $item->header->requester_name() : '')
+                ->addColumn('station_name', function ($item) use($request) {
+                    if ($request->doc_type === ConstantHelper::MO_SERVICE_ALIAS) {
+                        if ($item?->rm_type === 'sf') {
+                            return ($item->item_name . '-' . ($item->station?->name ?? ''));
+                        }
+                    }
+                    return $item->header?->station?->name ?? '';
+                })
+                ->addColumn('avl_stock', function ($item) use ($request) {
+                    return number_format($item->getAvlStock(
+                        $request->store_id_from,
+                        $request->sub_store_id_from ?? null,
+                        $request->station_id_from ?? null
+                    ),2);
+                })
+                ->editColumn('qty', function ($item) use ($request) {
+                    if ($request->mi_type === ConstantHelper::TYPE_JOB_ORDER) {
+                        return number_format($item->order_qty, 2);
+                    } else {
+                        return (number_format($item->qty,2));
+                    }
+                })
+                ->editColumn('mi_balance_qty', function ($item) use ($request) {
+                    return (number_format($item->mi_balance_qty,2));
+                })
+                ->addColumn('attributes_array', function ($item) use ($request) {
+                    if(in_array($request->doc_type, [ConstantHelper::JO_SERVICE_ALIAS])){
+                        return $item->attributes->map(fn($attr) => [
+                            'attribute_name' => $attr->headerAttribute?->name,
+                            'attribute_value' => $attr->headerAttributeValue?->value,
+                        ])->values();
+                    }
+                    return $item->attributes->map(fn($attr) => [
+                        'attribute_name' => $attr->attr_name,
+                        'attribute_value' => $attr->attr_value,
+                    ])->values();
+                })
+                ->make(true);
+            } catch (\Exception $ex) {
+            return response()->json([
+                'message' => 'Internal error occurred.',
+                'error' => $ex->getMessage() . ' in ' . $ex->getFile() . ':' . $ex->getLine(),
+            ], 500);
         }
     }
+
     //Function to get all items of pwo module
     public function processPulledItems(Request $request)
     {
@@ -1157,6 +1389,23 @@ class ErpMaterialIssueController extends Controller
                         $itemQuery -> with(['specifications', 'alternateUoms.uom', 'uom', 'hsn']);
                     }]);
                 }]) -> get();
+            } else if ($request -> doc_type === ConstantHelper::JO_SERVICE_ALIAS) {
+                if ($request -> mi_type === "Sub Contracting") {
+                    $headers = JobOrder::with(['joItems' => function ($mappingQuery) use($request) {
+                        $mappingQuery -> whereIn('id', $request -> items_id) -> with(['item' => function ($itemQuery) {
+                            $itemQuery -> with(['specifications', 'alternateUoms.uom', 'uom', 'hsn']);
+                        }]);
+                    }]) -> get();
+                } else if ($request -> mi_type === ConstantHelper::TYPE_JOB_ORDER) {
+                    $headers = JobOrder::with(['joProducts' => function ($mappingQuery) use($request) {
+                        $mappingQuery -> whereIn('id', $request -> items_id) -> with(['item' => function ($itemQuery) {
+                            $itemQuery -> with(['specifications', 'alternateUoms.uom', 'uom', 'hsn']);
+                        }]);
+                    }]) -> get();
+                } else {
+                    $headers = [];
+                }
+                
             } else if ($request -> doc_type === ConstantHelper::PI_SERVICE_ALIAS || $request -> doc_type === "pi") {
                 $headers = PurchaseIndent::with(['items' => function ($mappingQuery) use($request) {
                     $mappingQuery -> whereIn('id', $request -> items_id) -> with(['item' => function ($itemQuery) {
@@ -1165,6 +1414,13 @@ class ErpMaterialIssueController extends Controller
                 }]) -> get();
             }
             foreach ($headers as &$header) {
+                if ($request -> doc_type === ConstantHelper::JO_SERVICE_ALIAS) {
+                    if ($request -> mi_type === "Sub Contracting") {
+                        $header -> items = $header -> joItems;
+                    } else if ($request -> mi_type === ConstantHelper::TYPE_JOB_ORDER) {
+                        $header -> items = $header -> joProducts;
+                    }
+                }
                 foreach ($header -> items as &$item) {
                     $item -> item_attributes_array = $item -> item_attributes_array();
                     $item -> avl_stock = $item -> getAvlStock($request -> store_id);
@@ -1210,20 +1466,32 @@ class ErpMaterialIssueController extends Controller
                 })
                 ->find($id);
             // $creator = AuthUser::with(['authUser'])->find($mx->created_by);
-            // dd($creator,$mx->created_by);
             $shippingAddress = $mx?->from_store?->address;
-            $billingAddress = $mx?->to_store?->address;
+            $jobOrderNos = "";
+            if ($mx -> issue_type === "Sub Contracting" || $mx -> issue_type === "Job Work") {
+                $billingAddress = $mx?->vendor_shipping_address;
+                foreach ($mx -> items as $mxItemIndex => $mxItem) {
+                    $joItemHeader = $mxItem ?-> jo_item ?-> header;
+                    $joProductHeader = $mxItem ?-> jo_product ?-> header;
+                    if ($joItemHeader) {
+                        $jobOrderNos .= ($mxItemIndex == 0 ? "" : ", ") . $joItemHeader -> book_code . "-" . $joItemHeader -> document_number;
+                    }
+                    if ($joProductHeader) {
+                        $jobOrderNos .= ($mxItemIndex == 0 ? "" : ", ") . $joProductHeader -> book_code . "-" . $joProductHeader -> document_number;
+                    }
+                }
+            } else {
+                $billingAddress = $mx?->to_store?->address;
+            }
 
             $approvedBy = Helper::getDocStatusUser(get_class($mx), $mx -> id, $mx -> document_status);
 
-            // dd($user);
             // $type = ConstantHelper::SERVICE_LABEL[$mx->document_type];
             $totalItemValue = $mx->total_item_value ?? 0.00;
             $totalTaxes = $mx->total_tax_value ?? 0.00;
             $totalAmount = ($totalItemValue + $totalTaxes);
             $amountInWords = NumberHelper::convertAmountToWords($totalAmount);
             // $storeAddress = ErpStore::with('address')->where('id',$mx->store_id)->get();
-            // dd($mx->location->address);
             // Path to your image (ensure the file exists and is accessible)
             $approvedBy = Helper::getDocStatusUser(get_class($mx), $mx -> id, $mx -> document_status);
             $imagePath = public_path('assets/css/midc-logo.jpg'); // Store the image in the public directory
@@ -1240,6 +1508,7 @@ class ErpMaterialIssueController extends Controller
                 'totalTaxes' => $totalTaxes,
                 'totalAmount' => $totalAmount,
                 'imagePath' => $imagePath,
+                'jobOrderNos' => $jobOrderNos,
                 'approvedBy' => $approvedBy,
             ];
             $pdf = PDF::loadView(

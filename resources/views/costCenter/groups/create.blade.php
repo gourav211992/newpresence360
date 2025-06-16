@@ -82,7 +82,7 @@
                                                         <input type="text" name="name" class="form-control" required
                                                             value="{{ old('name') }}" />
                                                         @error('name')
-                                                            <span class="alert alert-danger">{{ $message }}</span>
+                                                            <span class="alert alert-danger" style="font-size:12px">{{ $message }}</span>
                                                         @enderror
                                                     </div>
                                                 </div>

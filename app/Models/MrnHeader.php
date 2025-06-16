@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\InvoiceBook;
 use App\Models\Organization;
 use App\Helpers\ConstantHelper;
+use App\Models\JobOrder\JobOrder;
 use App\Traits\DateFormatTrait;
 use App\Traits\FileUploadTrait;
 use App\Traits\DefaultGroupCompanyOrg;
@@ -26,6 +27,7 @@ class MrnHeader extends Model
         'company_id',
         'vendor_id',
         'purchase_order_id',
+        'job_order_id',
         'cost_center_id',
         'mrn_date',
         'document_date',
@@ -148,6 +150,16 @@ class MrnHeader extends Model
     public function po()
     {
         return $this->belongsTo(PurchaseOrder::class, 'purchase_order_id');
+    }
+
+    public function purchaseOrder()
+    {
+        return $this->belongsTo(PurchaseOrder::class, 'purchase_order_id');
+    }
+
+    public function jobOrder()
+    {
+        return $this->belongsTo(JobOrder::class, 'job_order_id');
     }
 
     public function group()

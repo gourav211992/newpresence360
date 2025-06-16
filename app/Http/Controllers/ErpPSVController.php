@@ -12,6 +12,7 @@ use App\Helpers\ItemHelper;
 use App\Helpers\NumberHelper;
 use App\Helpers\SaleModuleHelper;
 use App\Helpers\ServiceParametersHelper;
+use App\Helpers\TransactionReportHelper;
 use App\Helpers\UserHelper;
 use App\Http\Requests\ErpPSVRequest;
 use App\Models\Address;
@@ -19,6 +20,7 @@ use App\Models\Attribute;
 use App\Models\AttributeGroup;
 use App\Models\AuthUser;
 use App\Helpers\DynamicFieldHelper;
+use App\Models\Category;
 use App\Models\ErpPsvDynamicField;
 use App\Models\Country;
 use App\Models\Department;
@@ -73,10 +75,65 @@ class ErpPSVController extends Controller
         $redirectUrl = route('psv.index');
         $createRoute = route('psv.create');
         $typeName = "Physical Stock Verification ";
+         $accessible_locations = InventoryHelper::getAccessibleLocations()->pluck('id')->toArray();
+        $selectedfyYear = Helper::getFinancialYear(Carbon::now()->format('Y-m-d'));
+        $autoCompleteFilters = self::getBasicFilters();
+        //Date Filters
+        $dateRange = $request -> date_range ?? null;
         if ($request -> ajax()) {
             try {
-                $docs = ErpPsvHeader::withDefaultGroupCompanyOrg() ->  bookViewAccess($pathUrl) ->  
-                withDraftListingLogic()->whereBetween('document_date', [$selectedfyYear['start_date'], $selectedfyYear['end_date']])->orderByDesc('id');
+                $docs = ErpPsvHeader::withDefaultGroupCompanyOrg() -> whereIn('store_id',$accessible_locations) -> bookViewAccess($pathUrl) ->  withDraftListingLogic()->whereBetween('document_date', [$selectedfyYear['start_date'], $selectedfyYear['end_date']]) -> when($request -> vendor_id, function ($custQuery) use($request) {
+                    $custQuery -> where('vendor_id', $request -> vendor_id);
+                }) -> when($request -> book_id, function ($bookQuery) use($request) {
+                    $bookQuery -> where('book_id', $request -> book_id);
+                }) -> when($request -> document_number, function ($docQuery) use($request) {
+                    $docQuery -> where('document_number', 'LIKE', '%' . $request -> document_number . '%');
+                }) -> when($request -> type, function ($docQuery) use($request) {
+                    $docQuery -> where('issue_type', 'LIKE', "%".$request -> type . "%");
+                })-> when($request -> location_id, function ($docQuery) use($request) {
+                    $docQuery -> where('from_store_id', $request -> location_id);
+                })-> when($request -> to_location_id, function ($docQuery) use($request) {
+                    $docQuery -> where('to_store_id', $request -> to_location_id);
+                })-> when($request -> company_id, function ($docQuery) use($request) {
+                    $docQuery -> where('from_store_id', $request -> company_id);
+                })-> when($request -> organization_id, function ($docQuery) use($request) {
+                    $docQuery -> where('organization_id', $request -> organization_id);
+                })-> when($request -> status, function ($docStatusQuery) use($request) {
+                    $searchDocStatus = [];
+                    if ($request -> status === ConstantHelper::DRAFT) {
+                        $searchDocStatus = [ConstantHelper::DRAFT];
+                    } else if ($request -> status === ConstantHelper::SUBMITTED) {
+                        $searchDocStatus = [ConstantHelper::SUBMITTED, ConstantHelper::PARTIALLY_APPROVED];
+                    } else {
+                        $searchDocStatus = [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED];
+                    }
+                    $docStatusQuery -> whereIn('document_status', $searchDocStatus);
+                }) -> when($dateRange, function ($dateRangeQuery) use($request, $dateRange) {
+                $dateRanges = explode('to', $dateRange);
+                if (count($dateRanges) == 2) {
+                        $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
+                        $toDate = Carbon::parse(trim($dateRanges[1])) -> format('Y-m-d');
+                        $dateRangeQuery -> whereDate('document_date', ">=" , $fromDate) -> where('document_date', '<=', $toDate);
+                }
+                else{
+                        $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
+                        $dateRangeQuery -> whereDate('document_date', $fromDate);
+                    }
+                }) -> when($request -> item_id, function ($itemQuery) use($request) {
+                    $itemQuery -> withWhereHas('items', function ($itemSubQuery) use($request) {
+                        $itemSubQuery -> where('item_id', $request -> item_id)
+                        //Compare Item Category
+                        -> when($request -> item_category_id, function ($itemCatQuery) use($request) {
+                            $itemCatQuery -> whereHas('item', function ($itemRelationQuery) use($request) {
+                                $itemRelationQuery -> where('category_id', $request -> category_id)
+                                //Compare Item Sub Category
+                                -> when($request -> item_sub_category_id, function ($itemSubCatQuery) use($request) {
+                                    $itemSubCatQuery -> where('subcategory_id', $request -> item_sub_category_id);
+                                });
+                            });
+                        });
+                    });
+                }) -> orderByDesc('id');
                 return DataTables::of($docs) ->addIndexColumn()
                 ->editColumn('document_status', function ($row) use($orderType) {
                     $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->document_status ?? ConstantHelper::DRAFT];    
@@ -128,9 +185,32 @@ class ErpPSVController extends Controller
         }
         $parentURL = request() -> segments()[0];
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
-        return view('PSV.index', ['typeName' => $typeName, 'redirect_url' => $redirectUrl,'create_route' => $createRoute, 'create_button' => count($servicesBooks['services'])]);
+        return view('PSV.index', ['typeName' => $typeName, 'redirect_url' => $redirectUrl,'create_route' => $createRoute, 'create_button' => count($servicesBooks['services']), 'filterArray' => TransactionReportHelper::FILTERS_MAPPING[ConstantHelper::PSV_SERVICE_ALIAS],
+            'autoCompleteFilters' => $autoCompleteFilters,]);
     }
 
+    public function getBasicFilters()
+    {
+        //Get the common filters
+        $user = Helper::getAuthenticatedUser();
+        $categories = Category::select('id AS value', 'name AS label') -> withDefaultGroupCompanyOrg() 
+        -> whereNull('parent_id') -> get();
+        $subCategories = Category::select('id AS value', 'name AS label') -> withDefaultGroupCompanyOrg() 
+        -> whereNotNull('parent_id') -> get();
+        $items = Item::select('id AS value', 'item_name AS label') -> withDefaultGroupCompanyOrg()->get();
+        $users = AuthUser::select('id AS value', 'name AS label') -> where('organization_id', $user -> organization_id)->get();
+        $attributeGroups = AttributeGroup::select('id AS value', 'name AS label')->withDefaultGroupCompanyOrg()->get();
+
+        //Custom filters (to be restr)
+
+        return array(
+            'itemCategories' => $categories,
+            'itemSubCategories' => $subCategories,
+            'items' => $items,
+            'users' => $users,
+            'attributeGroups' => $attributeGroups 
+        );
+    }
     public function create(Request $request)
     {
         //Get the menu 
@@ -1208,6 +1288,7 @@ class ErpPSVController extends Controller
             'data' => $items,
         ]);
     }
+
     public function getAllItems(Request $request){
         $user = Helper::getAuthenticatedUser();
         if($request?->generated)
@@ -1243,85 +1324,92 @@ class ErpPSVController extends Controller
             ->withDefaultGroupCompanyOrg()
             ->get();
         $index=0;
-        $itemCombinations = $items->flatMap(function ($item) use ($request, &$index) {
-            $combinations = [];
-            $attributes = json_decode($item->itemAttributes, true) ?? [];
+        $ledgerReport = self::getCurrentLedgerReport();
+        $itemCombinations = $ledgerReport;
+        // Code to get all item attribute combination 
+        // $itemCombinations = $items->flatMap(function ($item) use ($request, &$index) {
+        //     $combinations = [];
+        //     $attributes = json_decode($item->itemAttributes, true) ?? [];
         
-            $groupedAttributes = collect($attributes)->groupBy('attribute_group_id');
-            $attributeCombinations = [[]]; // Start with a base empty combination
+        //     $groupedAttributes = collect($attributes)->groupBy('attribute_group_id');
+        //     $attributeCombinations = [[]]; // Start with a base empty combination
         
-            foreach ($groupedAttributes as $groupId => $groupAttributes) {
-                $attgroup = AttributeGroup::find($groupId);
+        //     foreach ($groupedAttributes as $groupId => $groupAttributes) {
+        //         $attgroup = AttributeGroup::find($groupId);
         
-                // Resolve actual attributes for this group
-                $attributeOptions = collect();
+        //         // Resolve actual attributes for this group
+        //         $attributeOptions = collect();
         
-                $attributeOptions = collect();
+        //         $attributeOptions = collect();
 
-                foreach ($groupAttributes as $attribute) {
-                    // Get all attributes from the group, based on all_checked or specific ids
-                    if (!empty($attribute['all_checked'])) {
-                        $options = Attribute::where('attribute_group_id', $groupId)
-                            ->get(['id', 'value']);
-                    } else {
-                        $options = Attribute::whereIn('id', $attribute['attribute_id'] ?? [])
-                            ->get(['id', 'value']);
-                    }
-                    // Get the item_attribute_id for the current group
-                    $options = $options->map(function ($option) use ($attribute) {
-                        return [
-                            'id' => $option->id,
-                            'value' => $option->value,
-                            'item_attribute_id' => $attribute['id'] ?? null,
-                        ];
-                    });
-                    $attributeOptions = $attributeOptions->merge($options);
-                }
+        //         foreach ($groupAttributes as $attribute) {
+        //             // Get all attributes from the group, based on all_checked or specific ids
+        //             if (!empty($attribute['all_checked'])) {
+        //                 $options = Attribute::where('attribute_group_id', $groupId)
+        //                     ->get(['id', 'value']);
+        //             } else {
+        //                 $options = Attribute::whereIn('id', $attribute['attribute_id'] ?? [])
+        //                     ->get(['id', 'value']);
+        //             }
+        //             // Get the item_attribute_id for the current group
+        //             $options = $options->map(function ($option) use ($attribute) {
+        //                 return [
+        //                     'id' => $option->id,
+        //                     'value' => $option->value,
+        //                     'item_attribute_id' => $attribute['id'] ?? null,
+        //                 ];
+        //             });
+        //             $attributeOptions = $attributeOptions->merge($options);
+        //         }
 
-                $newCombinations = [];
-                foreach ($attributeCombinations as $combination) {
-                    foreach ($attributeOptions as $attr) {
-                        $newCombinations[] = array_merge($combination, [
-                            [
-                                'group_id' => $groupId,
-                                'attribute_id' => $attr['id'],
-                                'attribute_value' => $attr['value'],
-                                'attribute_name' => $attgroup?->name,
-                                'short_name' => $attgroup?->short_name,
-                                'item_attribute_id' => $attr['item_attribute_id'] ?? null,
-                            ]
-                        ]);
-                    }
-                }
+        //         $newCombinations = [];
+        //         foreach ($attributeCombinations as $combination) {
+        //             foreach ($attributeOptions as $attr) {
+        //                 $newCombinations[] = array_merge($combination, [
+        //                     [
+        //                         'group_id' => $groupId,
+        //                         'attribute_id' => $attr['id'],
+        //                         'attribute_value' => $attr['value'],
+        //                         'attribute_name' => $attgroup?->name,
+        //                         'short_name' => $attgroup?->short_name,
+        //                         'item_attribute_id' => $attr['item_attribute_id'] ?? null,
+        //                     ]
+        //                 ]);
+        //             }
+        //         }
         
-                $attributeCombinations = $newCombinations;
-            }
-            foreach ($attributeCombinations as $combination) {
-                $attributeIds = array_column($combination, 'attribute_id');
-                $stock = InventoryHelper::totalInventoryAndStock($item->id, $attributeIds, $item->uom_id, $request->store_id, $request->sub_store_id);
+        //         $attributeCombinations = $newCombinations;
+        //     }
+        //     foreach ($attributeCombinations as $combination) {
+        //         $attributeIds = array_column($combination, 'attribute_id');
+        //         $stock = InventoryHelper::totalInventoryAndStock($item->id, $attributeIds, $item->uom_id, $request->store_id, $request->sub_store_id);
                 
-                $combinations[] = [
-                    'item_id' => $item->id,
-                    'item_name' => $item->item_name,
-                    'item_code' => $item->item_code,
-                    'item_attributes' => $combination,
-                    'selected' => $attributeIds,
-                    'item' => $item,
-                    'uom_id' => $item->uom_id,
-                    'inventory_uom_id' => $item->uom_id,
-                    'inventory_uom' => $item->uom->name,
-                    'confirmed_qty'=> $stock['confirmedStocks'] ?? 0,
-                    'unconfirmed_qty'=> $stock['pendingStocks'] ?? 0,
-                    'reserve_qty'=> $stock['reserve_qty'] ?? 0,
-                    'rate' => $stock['rate'] ?? null,
-                ];
-            }
+        //         $combinations[] = [
+        //             'item_id' => $item->id,
+        //             'item_name' => $item->item_name,
+        //             'item_code' => $item->item_code,
+        //             'item_attributes' => $combination,
+        //             'selected' => $attributeIds,
+        //             'item' => $item,
+        //             'uom_id' => $item->uom_id,
+        //             'inventory_uom_id' => $item->uom_id,
+        //             'inventory_uom' => $item->uom->name,
+        //             'confirmed_qty'=> $stock['confirmedStocks'] ?? 0,
+        //             'unconfirmed_qty'=> $stock['pendingStocks'] ?? 0,
+        //             'reserve_qty'=> $stock['reserve_qty'] ?? 0,
+        //             'rate' => $stock['rate'] ?? null,
+        //         ];
+        //     }
             
-            $index++;
-            return $combinations;
-        });
+        //     $index++;
+        //     return $combinations;
+        // });
         $paginatedCombinations = collect($itemCombinations);
         return $paginatedCombinations->toArray();
+
+    }
+    public function getCurrentLedgerReport()
+    {
 
     }
     public function pullItems($doc)

@@ -1351,7 +1351,9 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
             Route::get('/get-stock-detail', 'getStockDetail')->name('get.stock-detail');
             Route::get('amendment-submit/{id}', 'amendmentSubmit')->name('amendment.submit');
             Route::get('get-purchase-orders', 'getPo')->name('get.po');
+            Route::get('get-job-orders', 'getJo')->name('get.jo');
             Route::get('process-po-item', 'processPoItem')->name('process.po-item');
+            Route::get('process-jo-item', 'processJoItem')->name('process.jo-item');
             Route::get('/posting/get', 'getPostingDetails')->name('posting.get');
             Route::post('/post', 'postMrn')->name('post');
             Route::get('revoke-document','revokeDocument')->name('revoke.document');
@@ -1405,7 +1407,9 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         Route::get('/get-stock-detail', 'getStockDetail')->name('get.stock-detail');
         Route::get('amendment-submit/{id}', 'amendmentSubmit')->name('amendment.submit');
         Route::get('get-purchase-orders', 'getPo')->name('get.po');
+        Route::get('get-job-orders', 'getJo')->name('get.jo');
         Route::get('process-po-item', 'processPoItem')->name('process.po-item');
+        Route::get('process-jo-item', 'processJoItem')->name('process.jo-item');
         Route::get('/posting/get', 'getPostingDetails')->name('posting.get');
         Route::post('/post', 'postMrn')->name('post');
         Route::get('revoke-document','revokeDocument')->name('revoke.document');
@@ -2116,7 +2120,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::post('/material-issue/revoke', [ErpMaterialIssueController::class, 'revokeMaterialIssue'])->name('material.issue.revoke');
     Route::get('/material-issue/vendor/stores', [ErpMaterialIssueController::class, 'getVendorStores'])->name('material.issue.vendor.stores');
     Route::get('/material-issue/mo/process/mo', [ErpMaterialIssueController::class, 'processPulledItems'])->name('material.issue.process.items');
-    Route::get('/material-issue/mo/get/items', [ErpMaterialIssueController::class, 'getMoItemsForPulling'])->name('material.issue.pull.items');
+    Route::post('/material-issue/mo/get/items', [ErpMaterialIssueController::class, 'getMoItemsForPulling'])->name('material.issue.pull.items');
     Route::get('/material-issue/{id}/pdf/{pattern}', [ErpMaterialIssueController::class, 'generatePdf'])->name('material.issue.generate-pdf');
     Route::get('/material-issue/multi-stores-location', [ErpMaterialIssueController::class, 'getLocationsWithMultipleStores'])->name('material.issue.multi-store-location');
     Route::get('/mireport', [ErpMaterialIssueController::class, 'materialIssueReport'])->name('mi.report');
@@ -2200,6 +2204,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
      Route::get('/production-slip/pwo/get/items', [ErpProductionSlipController::class, 'getPwoItemsForPulling'])->name('production.slip.pull.items');
      #get item detail for the consumption
      Route::get('/production-slip/get-item-detail', [ErpProductionSlipController::class, 'getItemDetail'])->name('production.slip.item.detail');
+     Route::get('/production-slip/{id}/pdf', [ErpProductionSlipController::class, 'generatepdf'])->name('production.slip.generate-pdf');
 
     Route::prefix('stores')->controller(StoreController::class)->group(function () {
         # Get Store Address Ajax
@@ -2432,7 +2437,8 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::get('fixed-asset/get-cost-centers', [RegistrationController::class, 'getCostCenters'])->name('finance.fixed-asset.get-cost-centers');
     Route::get('fixed-asset/export', [RegistrationController::class, 'export'])->name('finance.fixed-asset.export');
     Route::post('fixed-asset/category-search', [RegistrationController::class, 'categorySearch'])->name('finance.fixed-asset.category-search');
-
+     Route::post('fixed-asset/registration/filter', [RegistrationController::class, 'index'])->name('finance.fixed-asset.registration.filter');
+   
     Route::resource('fixed-asset/issue-transfer', IssueTransferController::class)->names([
         'index' => 'finance.fixed-asset.issue-transfer.index',
         'create' => 'finance.fixed-asset.issue-transfer.create',

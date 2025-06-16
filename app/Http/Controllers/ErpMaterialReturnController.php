@@ -12,7 +12,10 @@ use App\Helpers\ItemHelper;
 use App\Helpers\NumberHelper;
 use App\Helpers\SaleModuleHelper;
 use App\Helpers\ServiceParametersHelper;
+use App\Helpers\TransactionReportHelper;
 use App\Helpers\UserHelper;
+use App\Models\AttributeGroup;
+use App\Models\Category;
 use App\Models\ErpMrDynamicField;
 use App\Http\Requests\ErpMaterialReturnRequest;
 use App\Models\Address;
@@ -66,9 +69,63 @@ class ErpMaterialReturnController extends Controller
         $selectedfyYear = Helper::getFinancialYear(Carbon::now()->format('Y-m-d'));
         $createRoute = route('material.return.create');
         $typeName = ConstantHelper::MATERIAL_RETURN_SERVICE_NAME;
+        $autoCompleteFilters = self::getBasicFilters();
         if ($request -> ajax()) {
             try {
-            $docs = ErpMaterialReturnHeader::withDefaultGroupCompanyOrg() ->  bookViewAccess($pathUrl) ->  withDraftListingLogic() ->whereBetween('document_date', [$selectedfyYear['start_date'], $selectedfyYear['end_date']]) -> orderByDesc('id');
+            $accessible_locations = InventoryHelper::getAccessibleLocations()->pluck('id')->toArray();
+            $selectedfyYear = Helper::getFinancialYear(Carbon::now()->format('Y-m-d'));
+            //Date Filters
+            $dateRange = $request -> date_range ??  null;
+            $docs = ErpMaterialReturnHeader::withDefaultGroupCompanyOrg() ->  bookViewAccess($pathUrl) ->  withDraftListingLogic() ->whereBetween('document_date', [$selectedfyYear['start_date'], $selectedfyYear['end_date']]) -> whereIn('store_id',$accessible_locations) ->  when($request -> customer_id, function ($custQuery) use($request) {
+                    $custQuery -> where('customer_id', $request -> customer_id);
+                }) -> when($request -> book_id, function ($bookQuery) use($request) {
+                    $bookQuery -> where('book_id', $request -> book_id);
+                }) -> when($request -> document_number, function ($docQuery) use($request) {
+                    $docQuery -> where('document_number', 'LIKE', '%' . $request -> document_number . '%');
+                }) -> when($request -> from_location_id, function ($docQuery) use($request) {
+                    $docQuery -> where('store_id', $request -> from_location_id);
+                }) -> when($request -> to_location_id, function ($docQuery) use($request) {
+                    $docQuery -> where('to_store_id', $request -> to_location_id);
+                }) -> when($request -> company_id, function ($docQuery) use($request) {
+                    $docQuery -> where('company_id', $request -> company_id);
+                }) -> when($request -> organization_id, function ($docQuery) use($request) {
+                    $docQuery -> where('organization_id', $request -> organization_id);
+                }) -> when($request -> status, function ($docStatusQuery) use($request) {
+                    $searchDocStatus = [];
+                    if ($request -> status === ConstantHelper::DRAFT) {
+                        $searchDocStatus = [ConstantHelper::DRAFT];
+                    } else if ($request -> status === ConstantHelper::SUBMITTED) {
+                        $searchDocStatus = [ConstantHelper::SUBMITTED, ConstantHelper::PARTIALLY_APPROVED];
+                    } else {
+                        $searchDocStatus = [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED];
+                    }
+                    $docStatusQuery -> whereIn('document_status', $searchDocStatus);
+                }) -> when($dateRange, function ($dateRangeQuery) use($request, $dateRange) {
+                $dateRanges = explode('to', $dateRange);
+                if (count($dateRanges) == 2) {
+                        $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
+                        $toDate = Carbon::parse(trim($dateRanges[1])) -> format('Y-m-d');
+                        $dateRangeQuery -> whereDate('document_date', ">=" , $fromDate) -> where('document_date', '<=', $toDate);
+                }
+                else{
+                    $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
+                    $dateRangeQuery -> whereDate('document_date', $fromDate);
+                }
+                }) -> when($request -> item_id, function ($itemQuery) use($request) {
+                    $itemQuery -> withWhereHas('items', function ($itemSubQuery) use($request) {
+                        $itemSubQuery -> where('item_id', $request -> item_id)
+                        //Compare Item Category
+                        -> when($request -> item_category_id, function ($itemCatQuery) use($request) {
+                            $itemCatQuery -> whereHas('item', function ($itemRelationQuery) use($request) {
+                                $itemRelationQuery -> where('category_id', $request -> category_id)
+                                //Compare Item Sub Category
+                                -> when($request -> item_sub_category_id, function ($itemSubCatQuery) use($request) {
+                                    $itemSubCatQuery -> where('subcategory_id', $request -> item_sub_category_id);
+                                });
+                            });
+                        });
+                    });
+                })  -> orderByDesc('id');
             return DataTables::of($docs) ->addIndexColumn()
             ->editColumn('document_status', function ($row) use($orderType) {
                 $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->document_status ?? ConstantHelper::DRAFT];    
@@ -135,9 +192,33 @@ class ErpMaterialReturnController extends Controller
         }
         $parentURL = request() -> segments()[0];
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
-        return view('materialReturn.index', ['typeName' => $typeName, 'redirect_url' => $redirectUrl, 'create_route' => $createRoute, 'create_button' => count($servicesBooks['services'])]);
+        return view('materialReturn.index', ['typeName' => $typeName, 'redirect_url' => $redirectUrl, 'create_route' => $createRoute, 'create_button' => count($servicesBooks['services']),'filterArray' => TransactionReportHelper::FILTERS_MAPPING[ConstantHelper::MATERIAL_RETURN_SERVICE_ALIAS_NAME],
+            'autoCompleteFilters' => $autoCompleteFilters,]);
+    
     }
+    public function getBasicFilters()
+    {
+        //Get the common filters
+        $user = Helper::getAuthenticatedUser();
+        $categories = Category::select('id AS value', 'name AS label') -> withDefaultGroupCompanyOrg() 
+        -> whereNull('parent_id') -> get();
+        $subCategories = Category::select('id AS value', 'name AS label') -> withDefaultGroupCompanyOrg() 
+        -> whereNotNull('parent_id') -> get();
+        $items = Item::select('id AS value', 'item_name AS label') -> withDefaultGroupCompanyOrg()->get();
+        $users = AuthUser::select('id AS value', 'name AS label') -> where('organization_id', $user -> organization_id)->get();
+        $attributeGroups = AttributeGroup::select('id AS value', 'name AS label')->withDefaultGroupCompanyOrg()->get();
 
+        //Custom filters (to be restr)
+
+        return array(
+            'itemCategories' => $categories,
+            'itemSubCategories' => $subCategories,
+            'items' => $items,
+            'users' => $users,
+            'attributeGroups' => $attributeGroups 
+        );
+    }
+    
     public function create(Request $request)
     {
         //Get the menu 
