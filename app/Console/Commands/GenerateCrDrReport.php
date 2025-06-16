@@ -112,7 +112,7 @@ class GenerateCrDrReport extends Command
                 }
 
                 $filePath = 'crdr-report/' . $fileName;
-                $pdf = CrDrReportController::getLedgerDetailsPrint($report_type, $ledger,$group,'outstanding',$organization,$created_by);
+                $pdf = CrDrReportController::getLedgerDetailsPrint(null,$report_type, $ledger,$group,'outstanding',$organization,$created_by);
                 Storage::disk('public')->put($filePath, $pdf);
                 $fileUrl = Storage::url($filePath);
 
