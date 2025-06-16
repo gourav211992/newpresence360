@@ -46,4 +46,10 @@ class SaleOrderImportShufab extends Model
     protected $casts = [
         'reason' => 'array'
     ];
+
+    
+    public function dynamic_fields()
+    {
+        return $this -> hasMany(SoImportShufabDynField::class, 'import_id');
+    }
 }

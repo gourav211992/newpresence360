@@ -662,7 +662,7 @@ class TaxController extends Controller
                     } else {
                         $document = ErpSaleReturn::find($request -> document_id);
                     }
-                } else if ($alias === ConstantHelper::SI_SERVICE_ALIAS) {
+                } else if ($alias === ConstantHelper::SI_SERVICE_ALIAS || $alias === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS) {
                     if ($modelType == 'history') {
                         $document = ErpSaleInvoiceHistory::find($request -> document_id);
                     } else {

@@ -1,39 +1,45 @@
 <div class="modal fade text-start" id="rescdule" tabindex="-1" aria-labelledby="header_pull_label" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 1250px">
+    <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 1250px;">
         <div class="modal-content">
             <div class="modal-header">
-                <div>
+                <div class="col-md-9">
                     <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="header_pull_label">Select
                         Document</h4>
                     <p class="mb-0">Select from the below list</p>
+                </div>
+                <div class="text-end col-md-3 text-end">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"><i
+                        data-feather="x-circle"></i> Cancel</button>
+                    <button type="button" class="ml-1 btn btn-primary btn-sm" onclick="processOrder();"
+                        data-bs-dismiss="modal"><i data-feather="check-circle"></i> Process</button>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="row">
 
-                    <div class="col">
-                        <div class="mb-1">
-                            <label class="form-label">Location Name <span class="text-danger">*</span></label>
-                            <input type="text" id="location_code_input_qt" placeholder="Select"
-                                class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off"
-                                value="">
-                            <input type="hidden" id="location_id_qt_val"></input>
-                        </div>
+                <!-- <div class="col">
+                    <div class="mb-1">
+                        <label class="form-label">Location Name </label>
+                        <input type="text" id="location_code_input_mo" placeholder="Select"
+                            class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off"
+                            value="">
+                        <input type="hidden" id="location_id_mo_val"></input>
                     </div>
+                </div>
 
-                    <div class="col">
-                        <div class="mb-1">
-                            <label class="form-label">Series <span class="text-danger">*</span></label>
-                            <input type="text" id="book_code_input_mo" placeholder="Select"
-                                class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off"
-                                value="">
-                            <input type="hidden" id="book_id_mo_val"></input>
-                        </div>
+                <div class="col">
+                    <div class="mb-1">
+                        <label class="form-label">Sub Location </label>
+                        <input type="text" id="sub_location_code_input_mo" placeholder="Select"
+                            class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off"
+                            value="">
+                        <input type="hidden" id="sub_location_id_mo_val"></input>
                     </div>
+                </div> -->
                     <div class="col">
                         <div class="mb-1">
-                            <label class="form-label">Document No. <span class="text-danger">*</span></label>
+                            <label class="form-label">MO No. </label>
                             <input type="text" id="document_no_input_mo" placeholder="Select"
                                 class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off"
                                 value="">
@@ -42,7 +48,16 @@
                     </div>
                     <div class="col">
                         <div class="mb-1">
-                            <label class="form-label">Item Name <span class="text-danger">*</span></label>
+                            <label class="form-label">SO No. </label>
+                            <input type="text" id="so_no_input_mo" placeholder="Select"
+                                class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off"
+                                value="">
+                            <input type="hidden" id="so_id_mo_val"></input>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="mb-1">
+                            <label class="form-label">Item Name/Code </label>
                             <input type="text" id="item_name_input_mo" placeholder="Select"
                                 class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off"
                                 value="">
@@ -51,12 +66,12 @@
                     </div>
                     <div class="col  mb-1">
                         <label class="form-label">&nbsp;</label><br />
-                        <button onclick="getOrders('mo');" type="button" class="btn btn-warning btn-sm"><i
-                                data-feather="search"></i> Search</button>
+                        <button onclick="clearFilters('mo');" type="button" class="btn btn-danger btn-sm"><i
+                                data-feather="trash"></i> Clear</button>
                     </div>
                     <div class="col-md-12">
                         <div class="table-responsive">
-                            <table class="mt-1 table myrequesttablecbox table-striped po-order-detail">
+                            <table class="dataTables_scroll datatables-basic table-sm table-bordered table myrequesttablecbox pomrnheadtffotsticky" id="mo_orders_table"> 
                                 <thead>
                                     <tr>
                                         <th>
@@ -66,8 +81,8 @@
                                             </div>
                                         </th>
                                         <th>Series</th>
-                                        <th>Document No.</th>
-                                        <th>Document Date</th>
+                                        <th>Doc No.</th>
+                                        <th>Doc Date</th>
                                         <th>Location</th>
                                         <th>Store</th>
                                         <th>Station</th>
@@ -76,24 +91,18 @@
                                         <th>Item Name</th>
                                         <th>Attributes</th>
                                         <th>UOM</th>
-                                        <th>Quantity</th>
-                                        <th>Balance Qty</th>
-                                        <th>Avl Stock</th>
+                                        <th>Qty</th>
+                                        <th>Bal Qty</th>
+                                        <th>Avl Stk</th>
                                     </tr>
                                 </thead>
-                                <tbody id="qts_data_table">
+                                <tbody>
 
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="modal-footer text-end">
-                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"><i
-                        data-feather="x-circle"></i> Cancel</button>
-                <button type="button" class="btn btn-primary btn-sm" onclick="processOrder();"
-                    data-bs-dismiss="modal"><i data-feather="check-circle"></i> Process</button>
             </div>
         </div>
     </div>

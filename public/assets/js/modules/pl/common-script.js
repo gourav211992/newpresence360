@@ -9,6 +9,7 @@ const endDate = window.pageData.endDate;
 const today = window.pageData.today;
 let csrfToken = window.pageData.csrf_token;
 const menuAlias = window.pageData.menu_alias;
+const calTaxUrl = window.routes.calTax;
 // Assume bookId is already defined
 
 let actionUrl = `${window.routes.docParams}?book_id=${$("#series_id_input").val()}&document_date=${$("#order_date_input").val()}`;
@@ -32,6 +33,199 @@ $('#order_date_input').on('blur', function() {
         });
     }
 });
+
+var taxInputs = [];
+
+function getItemTax(itemIndex)
+{
+    const itemId = document.getElementById(`items_dropdown_${itemIndex}_value`).value;
+    const itemQty = document.getElementById('item_qty_' + itemIndex).value;
+    const itemValue = document.getElementById('item_value_' + itemIndex).value;
+    let discountAmount = document.getElementById('item_discount_' + itemIndex);
+    let headerDiscountAmount = document.getElementById('header_discount_' + itemIndex);
+    if(discountAmount && headerDiscountAmount)
+    {
+        discountAmount = discountAmount.value;
+        headerDiscountAmount = headerDiscountAmount.value;
+    } else {
+        discountAmount = 0;
+        headerDiscountAmount = 0;
+    }
+    const totalItemDiscount = parseFloat(discountAmount ? discountAmount : 0) + parseFloat(headerDiscountAmount ? headerDiscountAmount : 0);
+    const shipToCountryId = $("#current_shipping_country_id").val();
+    const shipToStateId = $("#current_shipping_state_id").val();
+    let itemPrice = 0;
+    if (itemQty > 0) {
+        itemPrice = (parseFloat(itemValue ? itemValue : 0) + parseFloat(totalItemDiscount ? totalItemDiscount : 0)) / parseFloat(itemQty);
+    }
+    var headerBookId = order ? order.book_id : null;
+    $.ajax({
+        url: calTaxUrl,
+        method: 'GET',
+        dataType: 'json',
+        data : {
+            item_id : itemId,
+            price : itemPrice,
+            transaction_type : 'sale',
+            party_country_id : shipToCountryId,
+            party_state_id : shipToStateId,
+            customer_id : $("#customer_id_input").val(),
+            header_book_id : headerBookId ? headerBookId : $("#series_id_input").val(),
+            store_id : $("#store_id_input").val(),
+            document_id : order ? order.id : ''
+        },
+        success: function(data) {
+            const taxInput = document.getElementById('item_tax_' + itemIndex);
+            const valueAfterDiscount = document.getElementById('value_after_discount_' + itemIndex).value;
+            const valueAfterHeaderDiscount = document.getElementById('value_after_header_discount_' + itemIndex).value;
+            let TotalItemTax = 0;
+            let taxDetails = [];
+            data.forEach((tax, taxIndex) => {
+                let currentTaxValue = ((parseFloat(tax.tax_percentage ? tax.tax_percentage : 0)/100) * parseFloat(valueAfterHeaderDiscount ? valueAfterHeaderDiscount : 0));
+                TotalItemTax = TotalItemTax + currentTaxValue;
+                taxDetails.push({
+                    'tax_index' : taxIndex,
+                    'tax_name' : tax.tax_type,
+                    'tax_group' : tax.tax_group,
+                    'tax_type' : tax.tax_type,
+                    'taxable_value' : valueAfterHeaderDiscount,
+                    'tax_percentage' : tax.tax_percentage,
+                    'tax_value' : (currentTaxValue).toFixed(2),
+                    'tax_applicability_type' : tax.applicability_type,
+
+                });
+            });
+            taxInput.setAttribute('tax_details', JSON.stringify(taxDetails))
+            taxInput.value = (TotalItemTax).toFixed(2);
+            const itemTotalInput = document.getElementById('item_total_' + itemIndex);
+            itemTotalInput.value = parseFloat(valueAfterHeaderDiscount ? valueAfterHeaderDiscount : 0) +  parseFloat(TotalItemTax ? TotalItemTax : 0);
+            //Get All Total Values
+            setAllTotalFields();
+            updateHeaderExpenses();
+        },
+        error: function(xhr) {
+            console.error('Error fetching customer data:', xhr.responseText);
+            const taxInput = document.getElementById('item_tax_' + itemIndex);
+            const valueAfterDiscount = document.getElementById('value_after_discount_' + itemIndex).value;
+            // const valueAfterHeaderDiscount = parseFloat(valueAfterDiscount ? valueAfterDiscount : 0) - parseFloat(headerDiscountAmount ? headerDiscountAmount : 0);
+            const valueAfterHeaderDiscount = document.getElementById('value_after_header_discount_' + itemIndex).value;
+            let TotalItemTax = 0;
+            let taxDetails = [];
+            taxInput.setAttribute('tax_details', JSON.stringify(taxDetails))
+            taxInput.value = (TotalItemTax).toFixed(2);
+            const itemTotalInput = document.getElementById('item_total_' + itemIndex);
+            itemTotalInput.value = parseFloat(valueAfterHeaderDiscount ? valueAfterHeaderDiscount : 0) +  parseFloat(TotalItemTax ? TotalItemTax : 0);
+            setAllTotalFields();
+            updateHeaderExpenses();
+        }
+    });
+}
+
+function setAllTotalFields() {
+    // Item Value
+    const itemTotalInputs = document.getElementsByClassName('item_values_input');
+    let totalValue = 0;
+    for (let input of itemTotalInputs) {
+        totalValue += parseFloat(input.value || 0);
+    }
+
+    const totalValueEl = document.getElementById('all_items_total_value');
+    const totalValueSummaryEl = document.getElementById('all_items_total_value_summary');
+    if (totalValueEl) totalValueEl.textContent = totalValue.toFixed(2);
+    if (totalValueSummaryEl) {
+        totalValueSummaryEl.textContent = totalValue.toFixed(2);
+        totalValueSummaryEl.setAttribute('style', totalValue < 0 ? 'color: red !important;' : '');
+    }
+
+    // Item Discount
+    const itemTotalDiscounts = document.getElementsByClassName('item_discounts_input');
+    let totalDiscount = 0;
+    for (let input of itemTotalDiscounts) {
+        totalDiscount += parseFloat(input.value || 0);
+    }
+
+    const totalDiscountEl = document.getElementById('all_items_total_discount');
+    const totalDiscountSummaryEl = document.getElementById('all_items_total_discount_summary');
+    if (totalDiscountEl) totalDiscountEl.textContent = totalDiscount.toFixed(2);
+    if (totalDiscountSummaryEl) {
+        totalDiscountSummaryEl.textContent = totalDiscount.toFixed(2);
+        totalDiscountSummaryEl.setAttribute('style', totalDiscount < 0 ? 'color: red !important;' : '');
+    }
+
+    // Item Tax
+    const itemTotalTaxes = document.getElementsByClassName('item_taxes_input');
+    let totalTaxes = 0;
+    for (let input of itemTotalTaxes) {
+        const taxDetails = input.getAttribute('tax_details');
+        let tax_detail = taxDetails ? JSON.parse(taxDetails) : null;
+
+        if (tax_detail) {
+            for (let tax of tax_detail) {
+                let value = parseFloat(tax.tax_value || 0);
+                totalTaxes += (tax.tax_applicability_type === "collection") ? value : -value;
+            }
+        } else {
+            totalTaxes += parseFloat(input.value || 0);
+        }
+    }
+
+    const totalTaxEl = document.getElementById('all_items_total_tax');
+    const totalTaxSummaryEl = document.getElementById('all_items_total_tax_summary');
+    if (totalTaxEl) totalTaxEl.value = totalTaxes.toFixed(2);
+    if (totalTaxSummaryEl) {
+        totalTaxSummaryEl.textContent = Math.abs(totalTaxes).toFixed(2);
+        totalTaxSummaryEl.setAttribute('style', '');
+    }
+
+    // Item Total After Header Discount
+    const itemDiscountTotalInputs = document.getElementsByClassName('item_val_after_header_discounts_input');
+    let itemDiscountTotalValue = 0;
+    for (let input of itemDiscountTotalInputs) {
+        itemDiscountTotalValue += parseFloat(input.value || 0);
+    }
+
+    // Item Value After Discount
+    const itemValueAfterDiscountInputs = document.getElementsByClassName('item_val_after_discounts_input');
+    let itemValueAfterDiscountValue = 0;
+    for (let input of itemValueAfterDiscountInputs) {
+        itemValueAfterDiscountValue += parseFloat(input.value || 0);
+    }
+
+    // Order Discount
+    const orderDiscountContainer = document.getElementById('order_discount_summary');
+    let orderDiscount = orderDiscountContainer ? parseFloat(orderDiscountContainer.textContent || 0) : 0;
+    let taxableValue = itemValueAfterDiscountValue - orderDiscount;
+
+    const totalTotalEl = document.getElementById('all_items_total_total');
+    const totalTotalSummaryEl = document.getElementById('all_items_total_total_summary');
+    if (totalTotalEl) totalTotalEl.textContent = itemValueAfterDiscountValue.toFixed(2);
+    if (totalTotalSummaryEl) {
+        totalTotalSummaryEl.textContent = taxableValue.toFixed(2);
+        totalTotalSummaryEl.setAttribute('style', taxableValue < 0 ? 'color: red !important;' : '');
+    }
+
+    // Total After Tax
+    const totalAfterTax = (totalTaxes + itemDiscountTotalValue).toFixed(2);
+    const totalAfterTaxSummaryEl = document.getElementById('all_items_total_after_tax_summary');
+    if (totalAfterTaxSummaryEl) {
+        totalAfterTaxSummaryEl.textContent = totalAfterTax;
+        totalAfterTaxSummaryEl.setAttribute('style', totalAfterTax < 0 ? 'color: red !important;' : '');
+    }
+
+    // Expenses
+    const expensesInput = document.getElementById('all_items_total_expenses_summary');
+    const expense = expensesInput ? parseFloat(expensesInput.textContent || 0) : 0;
+
+    // Grand Total
+    const grandTotalContainer = document.getElementById('grand_total');
+    if (grandTotalContainer) {
+        const grandTotal = (parseFloat(totalAfterTax) + expense).toFixed(2);
+        grandTotalContainer.textContent = grandTotal;
+        grandTotalContainer.setAttribute('style', grandTotal < 0 ? 'color: red !important;' : '');
+    }
+}
+
+
 function checkDateRange(element) {
     let date = element.value;
     if (date > endDate || date < startDate) {
@@ -131,10 +325,11 @@ function enableHeader()
         orderButton.disabled = false;
     }
 }
-if((order && order.document_status != "draft" )|| menuAlias != 'pick-list')
-{
-    editScript();
-}
+document.addEventListener('DOMContentLoaded', function() {
+    if ((order && order.document_status != "draft") || menuAlias != 'pick-list') {
+        editScript();
+    }
+});
 
 function editScript()
 {
@@ -149,11 +344,14 @@ function editScript()
         //Item Discount
         order.items.forEach((item, itemIndex) => {
             const totalValue = item.item_discount_amount;
-            document.getElementById('discount_main_table').setAttribute('total-value', totalValue);
-            document.getElementById('discount_main_table').setAttribute('item-row', 'item_value_' + itemIndex);
-            document.getElementById('discount_main_table').setAttribute('item-row-index', itemIndex);
+            const table = document.getElementById('discount_main_table');
+            if (table) {
+                table.setAttribute('total-value', totalValue);
+                table.setAttribute('item-row', 'item_value_' + itemIndex);
+                table.setAttribute('item-row-index', itemIndex);
+            }
 
-            item.discount_ted.forEach((ted, tedIndex) => {
+            item?.discount_ted?.forEach((ted, tedIndex) => {
                 addHiddenInput("item_discount_name_" + itemIndex + "_" + tedIndex, ted.ted_name, `item_discount_name[${itemIndex}][${tedIndex}]`, 'discount_names_hidden_' + itemIndex, 'item_value_' + itemIndex, ted.id);
                 addHiddenInput("item_discount_master_id_" + itemIndex + "_" + tedIndex, ted.ted_id, `item_discount_master_id[${itemIndex}][${tedIndex}]`, 'discount_names_hidden_' + itemIndex, 'item_value_' + itemIndex, ted.id);
                 addHiddenInput("item_discount_percentage_" + itemIndex + "_" + tedIndex, ted.ted_percentage ? ted.ted_percentage : '', `item_discount_percentage[${itemIndex}][${tedIndex}]`, 'discount_percentages_hidden_' + itemIndex,  'item_value_' + itemIndex, ted.id);
@@ -162,7 +360,7 @@ function editScript()
             });
             //Item Locations
             itemLocations = [];
-            item.item_locations.forEach((itemLoc, itemLocIndex) => {
+            item?.item_locations?.forEach((itemLoc, itemLocIndex) => {
                 itemLocations.push({
                     store_id : itemLoc.store_id,
                     store_code : itemLoc.store_code,
@@ -175,7 +373,10 @@ function editScript()
                     qty : itemLoc.quantity
                 });
             });
-            document.getElementById('data_stores_' + itemIndex).setAttribute('data-stores', encodeURIComponent(JSON.stringify(itemLocations)))
+            const dataStoresElement = document.getElementById('data_stores_' + itemIndex);
+            if (dataStoresElement) {
+                dataStoresElement.setAttribute('data-stores', encodeURIComponent(JSON.stringify(itemLocations)));
+            }            
             //Bundles info
             const bundleDoc = document.getElementById('item_bundles_' + itemIndex);
             if (bundleDoc && item.bundles && item.bundles.length > 0) {
@@ -199,7 +400,12 @@ function editScript()
                 }
             });
             document.getElementById('uom_dropdown_' + itemIndex).innerHTML = itemUomsHTML;
-            getItemTax(itemIndex);
+            const taxesHiddenFields = document.getElementsByClassName('item_taxes_input');
+
+            if (taxesHiddenFields && taxesHiddenFields.length > 0) {
+                console.log('yeh to phat gyi ');
+                getItemTax(itemIndex);
+            }
             if (itemIndex==0){
                 onItemClick(itemIndex);
             }
@@ -207,7 +413,7 @@ function editScript()
 
         });
         //Order Discount
-        order.discount_ted.forEach((orderDiscount, orderDiscountIndex) => {
+        order?.discount_ted?.forEach((orderDiscount, orderDiscountIndex) => {
             document.getElementById('new_order_discount_name').value = orderDiscount.ted_name;
             document.getElementById('new_order_discount_id').value = orderDiscount.ted_id;
             document.getElementById('new_order_discount_percentage').value = orderDiscount.ted_percentage ? orderDiscount.ted_percentage : "";
@@ -215,7 +421,7 @@ function editScript()
             addOrderDiscount(orderDiscount.id, false);
         });
         //Order Expense
-        order.expense_ted.forEach((orderExpense, orderExpenseIndex) => {
+        order?.expense_ted?.forEach((orderExpense, orderExpenseIndex) => {
             document.getElementById('order_expense_name').value = orderExpense.ted_name;
             document.getElementById('order_expense_id').value = orderExpense.ted_id;
             document.getElementById('order_expense_percentage').value = orderExpense.ted_percentage ? orderExpense.ted_percentage : "";
@@ -223,7 +429,9 @@ function editScript()
             addOrderExpense(orderExpense.id, false);
         });
        
-        setAllTotalFields();
+        if (typeof window.setAllTotalFields === 'function') {
+            setAllTotalFields();
+        }
         //Disable header fields which cannot be changed
         disableHeader();
         //Set all documents
@@ -243,6 +451,7 @@ function editScript()
    
 function onSeriesChange(element, reset = true)
 {
+    console.log("series change");
     resetSeries();
     implementSeriesChange(element.value);
     $.ajax({
@@ -579,6 +788,7 @@ function onDocDateChange()
 
 function implementBookParameters(paramData)
 {
+    console.log("Implementing Book Parameters", paramData);
     var selectedRefFromServiceOption = paramData.reference_from_service;
     var selectedBackDateOption = paramData.back_date_allowed;
     var selectedFutureDateOption = paramData.future_date_allowed;
@@ -1909,6 +2119,19 @@ function changeItemQty(element, index)
             return;
         }
     }
+    if (element.hasAttribute('max-stock'))
+    {
+        var maxInputVal = parseFloat(element.getAttribute('max-stock'));
+        if (inputNumValue > maxInputVal) {
+            Swal.fire({
+                title: 'Error!',
+                text: 'Qty cannot be greater than confirmed stock',
+                icon: 'error',
+            });
+            element.value = (parseFloat(maxInputVal ? maxInputVal  : 0)).toFixed(4)
+            // return;
+        }
+    }
     itemRowCalculation(index);
     getStoresData(index, element.value);
 }
@@ -2347,8 +2570,12 @@ function itemRowCalculation(itemRowIndex)
     updateHeaderDiscounts();
 
     //Tax
-    getItemTax(itemRowIndex);
+    const taxesHiddenFields = document.getElementsByClassName('item_taxes_input');
+
+    if (taxesHiddenFields && taxesHiddenFields.length > 0) {
+        getItemTax(itemRowIndex);
     }
+}
 
 }
 

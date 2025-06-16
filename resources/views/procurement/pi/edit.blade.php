@@ -32,9 +32,9 @@
 @endsection
 @section('content')
 @if($buttons['approve'])
-    <form id="piEditForm" class="ajax-input-form" action="{{ route('pi.update.approve', $pi->id) }}" method="POST" data-redirect="/purchase-indent" enctype="multipart/form-data">
+    <form id="piEditForm" data-module="pi" class="ajax-input-form" action="{{ route('pi.update.approve', $pi->id) }}" method="POST" data-redirect="/purchase-indent" enctype="multipart/form-data">
 @else
-    <form id="piEditForm" class="ajax-input-form" action="{{ route('pi.update', $pi->id) }}" method="POST" data-redirect="/purchase-indent" enctype="multipart/form-data">
+    <form id="piEditForm" data-module="pi" class="ajax-input-form" action="{{ route('pi.update', $pi->id) }}" method="POST" data-redirect="/purchase-indent" enctype="multipart/form-data">
 @endif
 @csrf
 <input type="hidden" name="so_item_ids" id="so_item_ids">
@@ -247,7 +247,9 @@
                             <div class="row">
                                 <div class="col-md-12">
                                     <div class="table-responsive pomrnheadtffotsticky">
-                                        <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
+                                        <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"
+                                        data-json-key="components_json"
+                                        data-row-selector="tr[id^='row_']">
                                         <thead>
                                         <tr>
                                             <th class="customernewsection-form">

@@ -25,6 +25,31 @@
             padding: 8px;
         }
         .tooltip-inner { text-align: left}
+
+        #joModal .table-responsive {
+            overflow-y: auto;
+            max-height: 300px; /* Set the height of the scrollable body */
+            position: relative;
+        }
+        #joModal .po-order-detail {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        #joModal .po-order-detail thead {
+            position: sticky;
+            top: 0; /* Stick the header to the top of the table container */
+            background-color: white; /* Optional: Make sure header has a background */
+            z-index: 1; /* Ensure the header stays above the body content */
+        }
+        #joModal .po-order-detail th {
+            background-color: #f8f9fa; /* Optional: Background for the header */
+            text-align: left;
+            padding: 8px;
+        }
+        #joModal .po-order-detail td {
+            padding: 8px;
+        }
+        .tooltip-inner { text-align: left}
     </style>
 @endsection
 @section('content')
@@ -132,14 +157,6 @@
                                                         </select>
                                                     </div>
                                                 </div>
-                                                <!-- <div class="row align-items-center mb-1">
-                                                    <div class="col-md-3">
-                                                        <label class="form-label">Reference No </label>
-                                                    </div>
-                                                    <div class="col-md-5">
-                                                        <input type="text" name="reference_number" class="form-control">
-                                                    </div>
-                                                </div> -->
                                                 <div class="row align-items-center mb-1 d-none" id="reference_from">
                                                     <div class="col-md-3">
                                                         <label class="form-label">
@@ -151,6 +168,19 @@
                                                             <i data-feather="plus-square"></i>
                                                             Outstanding PO
                                                         </button>
+                                                        <button type="button" class="btn btn-outline-primary btn-sm mb-0 joSelect">
+                                                            <i data-feather="plus-square"></i>
+                                                            Outstanding JO
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div class="row align-items-center mb-1" id="referenceNoDiv" style="display: none;">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Reference No <span class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <input type="text" name="reference_number" class="form-control" id="reference_number_input" readonly>
+                                                        <input type="hidden" name="reference_type" class="form-control" id="reference_type_input" readonly>
                                                     </div>
                                                 </div>
                                             </div>
@@ -510,6 +540,8 @@
         @include('procurement.gate-entry.partials.summary-exp-modal')
         {{-- Add Outstanding PO modal--}}
         @include('procurement.gate-entry.partials.outstanding-po-modal')
+        {{-- Add Outstanding JO modal--}}
+        @include('procurement.gate-entry.partials.outstanding-jo-modal')
         {{-- Edit Address --}}
         <div class="modal fade" id="edit-address" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
             <div class="modal-dialog  modal-dialog-centered" style="max-width: 700px">
@@ -654,6 +686,7 @@
     <script type="text/javascript" src="{{asset('assets/js/modules/gate-entry.js')}}"></script>
     <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
     <script>
+        let currentProcessType = null;
         $(document).on('change','#book_id',(e) => {
             let bookId = e.target.value;
             if (bookId) {
@@ -760,6 +793,7 @@
             let reference_from_service = parameters.reference_from_service;
             if(reference_from_service.length) {
                 let po = '{{\App\Helpers\ConstantHelper::PO_SERVICE_ALIAS}}';
+                let jo = '{{\App\Helpers\ConstantHelper::JO_SERVICE_ALIAS}}';
                 if(reference_from_service.includes(po)) {
                     $("#reference_from").removeClass('d-none');
                 } else {
@@ -769,6 +803,11 @@
                     $("#addNewItemBtn").removeClass('d-none');
                 } else {
                     $("#addNewItemBtn").addClass('d-none');
+                }
+                if(reference_from_service.includes(jo)) {
+                    $("#reference_from").removeClass('d-none');
+                } else {
+                    $("#reference_from").addClass('d-none');
                 }
             } else {
                 Swal.fire({
@@ -1055,7 +1094,8 @@
                         }
                         initializeAutocomplete2(".comp_item_code");
                         focusAndScrollToLastRowInput();
-                        $(".poSelect").prop('disabled',true);
+                        $(".poSelect").hide();
+                        $(".joSelect").hide();
                         $("#vendor_name").prop('readonly',true);
                         $(".editAddressBtn").addClass('d-none');
                     } else if(data.status == 422) {
@@ -1107,6 +1147,11 @@
                 });
             }
             if(!$("tr[id*='row_']").length) {
+                $(".poSelect").show();
+                $(".joSelect").show();
+                $("#referenceNoDiv").hide();
+                $("#reference_number_input").val('');
+                $("#addNewItemBtn").show();
                 $("#itemTable > thead .form-check-input").prop('checked',false);
                 $("select[name='currency_id']").prop('disabled', false);
                 $("select[name='payment_term_id']").prop('disabled', false);
@@ -1272,10 +1317,10 @@
         /*Display item detail*/
         $(document).on('input change focus', '#itemTable tr input ', function(e){
             let currentTr = e.target.closest('tr');
-            getItemDetail(currentTr);
+            getItemDetail(currentTr, currentProcessType);
         });
 
-        function getItemDetail(currentTr) {
+        function getItemDetail(currentTr, type=null) {
             let pName = $(currentTr).find("[name*='component_item_name']").val();
             let itemId = $(currentTr).find("[name*='item_id']").val();
             let poHeaderId = $(currentTr).find("[name*='purchase_order_id']").val();
@@ -1297,12 +1342,21 @@
                 let headerId = $(currentTr).find("[name*='mrn_header_id']").val() ?? '';
                 let detailId = $(currentTr).find("[name*='mrn_detail_id']").val() ?? '';
                 let itemStoreData = JSON.parse($(currentTr).find("[id*='components_stores_data']").val() || "[]");
-                let actionUrl = '{{route("gate-entry.get.itemdetail")}}'+'?item_id='+itemId+'&purchase_order_id='+poHeaderId+'&po_detail_id='+poDetailId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&itemStoreData='+JSON.stringify(itemStoreData)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&headerId='+headerId+'&detailId='+detailId;
+                if(currentProcessType == 'po')
+                {
+                    actionUrl = '{{route("gate-entry.get.itemdetail")}}'+'?item_id='+itemId+'&purchase_order_id='+poHeaderId+'&po_detail_id='+poDetailId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&itemStoreData='+JSON.stringify(itemStoreData)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&headerId='+headerId+'&detailId='+detailId;
+                }
+                else if(currentProcessType == 'jo')
+                {
+                    actionUrl = '{{route("gate-entry.get.itemdetail")}}'+'?item_id='+itemId+'&job_order_id='+poHeaderId+'&jo_detail_id='+poDetailId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&itemStoreData='+JSON.stringify(itemStoreData)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&headerId='+headerId+'&detailId='+detailId;
+                }
+                else
+                {
+                    actionUrl = '{{route("gate-entry.get.itemdetail")}}'+'?item_id='+itemId+'&purchase_order_id='+poHeaderId+'&po_detail_id='+poDetailId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&itemStoreData='+JSON.stringify(itemStoreData)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&headerId='+headerId+'&detailId='+detailId;
+                }
                 fetch(actionUrl).then(response => {
                     return response.json().then(data => {
                         if(data.status == 200) {
-                            // let itemStoreData = JSON.parse($(currentTr).find("[id*='components_stores_data']").val() || "[]");
-                            // ledgerStock(currentTr, itemId, selectedAttr, itemStoreData);
                             $("#itemDetailDisplay").html(data.data.html);
                         }
                     });
@@ -1372,132 +1426,6 @@
             });
 
         });
-
-        // addDeliveryScheduleBtn
-        // $(document).on('click', '.addDeliveryScheduleBtn', (e) => {
-        //     let rowCount = e.target.closest('div').getAttribute('data-row-count');
-        //     $('#store-row-id').val(rowCount);
-        //     let qty = Number($("#itemTable #row_"+rowCount).find("[name*='[accepted_qty]']").val());
-        //     if(!qty) {
-        //         Swal.fire({
-        //             title: 'Error!',
-        //             text: 'Please enter quanity then you can add store location.',
-        //             icon: 'error',
-        //         });
-        //         return false;
-        //     }
-        //     let store_id = Number($("#itemTable #row_"+rowCount).find("[name*='[store_id]']").val());
-        //     let store_code = $("#itemTable #row_"+rowCount).find("[name*='[erp_store_code]']").val();
-        //     $("#deliveryScheduleModal").find("#row_count").val(rowCount);
-        //     let rowHtml = '';
-        //     let curDate = new Date().toISOString().split('T')[0];
-        //     if(!$("#itemTable #row_"+rowCount).find("[name*='[store_qty]']").length) {
-        //         let rowHtml = `<tr class="display_delivery_row">
-        //                             <td>1</td>
-        //                             <td>
-        //                                 <input type="hidden" name="row_count" value="${rowCount}" id="row_count">
-        //                                 <select class="form-select mw-100 select2 item_store_code" id="erp_store_id_1" name="components[${rowCount}][erp_store][1][erp_store_id]" data-id="1">
-        //                                     <option value="${store_id}">${store_code}</option>
-        //                                 </select>
-        //                             </td>
-        //                             <td>
-        //                                 <select class="form-select mw-100 select2 item_rack_code" id="erp_rack_id_1" name="components[${rowCount}][erp_store][1][erp_rack_id]" data-id="1">
-        //                                 <option value="">Select</option>
-        //                                 </select>
-        //                             </td>
-        //                             <td>
-        //                                 <select class="form-select mw-100 select2 item_shelf_code" id="erp_shelf_id_1" name="components[${rowCount}][erp_store][1][erp_shelf_id]" data-id="1">
-        //                                 <option value="">Select</option>
-        //                                 </select>
-        //                             </td>
-        //                             <td>
-        //                                 <select class="form-select mw-100 select2 item_bin_code" id="erp_bin_id_1" name="components[${rowCount}][erp_store][1][erp_bin_id]" data-id="1">
-        //                                 <option value="">Select</option>
-        //                                 </select>
-        //                             </td>
-        //                             <td>
-        //                                 <input type="number" name="components[${rowCount}][erp_store][1][store_qty]" id="store_qty_1" class="form-control mw-100" value="${qty}"  data-id="1" />
-        //                             <td>
-        //                             <a data-row-count="${rowCount}" data-index="1" href="javascript:;" class="text-danger deleteItemDeliveryRow"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></a>
-        //                         </td>
-        //                         </tr>`;
-        //         $("#deliveryScheduleModal").find('.display_delivery_row').remove();
-        //         $("#deliveryScheduleModal").find('#deliveryFooter').before(rowHtml);
-        //         $('[name="components[1][erp_store][1][erp_store_id]"').trigger('change');
-        //     } else {
-        //         if($("#itemTable #row_"+rowCount).find("[name*=store_qty]").length) {
-        //             $(".display_delivery_row").remove(); // Remove all rows if present
-        //         } else {
-        //             // Remove all rows except the first one, and reset the quantity
-        //             $('.display_delivery_row').not(':first').remove();
-        //             $(".display_delivery_row").find("[name*=store_qty]").val('');
-        //         }
-
-        //         // Iterate over each store_qty field to build dynamic rows
-        //         $("#itemTable #row_" + rowCount).find("[name*=store_qty]").each(function(index, item) {
-        //             let storeVal = $(item).closest('td').find(`[name="components[${rowCount}][erp_store][${index+1}][erp_store_id]"]`).val();
-        //             let rackVal = $(item).closest('td').find(`[name="components[${rowCount}][erp_store][${index+1}][erp_rack_id]"]`).val();
-        //             let shelfVal = $(item).closest('td').find(`[name="components[${rowCount}][erp_store][${index+1}][erp_shelf_id]"]`).val();
-        //             let binVal = $(item).closest('td').find(`[name="components[${rowCount}][erp_store][${index+1}][erp_bin_id]"]`).val();
-        //             let storeQty = $(item).closest('td').find(`[name="components[${rowCount}][erp_store][${index+1}][store_qty]"]`).val();
-        //             // Trigger the change event after setting values to ensure racks, shelves, etc. are updated
-        //             $(`#erp_store_id_${index+1}`).val(storeVal).trigger('change');
-        //             $(`#erp_rack_id_${index+1}`).val(rackVal);
-        //             $(`#erp_shelf_id_${index+1}`).val(shelfVal);
-        //             $(`#erp_bin_id_${index+1}`).val(binVal);
-
-        //             // Generate HTML for the new row with dynamic data
-        //             rowHtml += `<tr class="display_delivery_row">
-        //                             <td>${index + 1}</td>
-        //                             <td>
-        //                                 <input type="hidden" name="row_count" value="${rowCount}" id="row_count">
-        //                                 <select class="form-select mw-100 select2 item_store_code" id="erp_store_id_${index+1}" name="components[${rowCount}][erp_store][${index+1}][erp_store_id]" data-id="${index+1}">
-        //                                     <option value="${store_id}">${store_code}</option>
-        //                                 </select>
-        //                             </td>
-        //                             <td>
-        //                                 <select class="form-select mw-100 select2 item_rack_code" id="erp_rack_id_${index+1}" name="components[${rowCount}][erp_store][${index+1}][erp_rack_id]" data-id="${index+1}">
-        //                                     <!-- Dynamically populated racks -->
-        //                                 </select>
-        //                             </td>
-        //                             <td>
-        //                                 <select class="form-select mw-100 select2 item_shelf_code" id="erp_shelf_id_${index+1}" name="components[${rowCount}][erp_store][${index+1}][erp_shelf_id]" data-id="${index+1}">
-        //                                     <!-- Dynamically populated shelves -->
-        //                                 </select>
-        //                             </td>
-        //                             <td>
-        //                                 <select class="form-select mw-100 select2 item_bin_code" id="erp_bin_id_${index+1}" name="components[${rowCount}][erp_store][${index+1}][erp_bin_id]" data-id="${index+1}">
-        //                                     <!-- Dynamically populated bins -->
-        //                                 </select>
-        //                             </td>
-        //                             <td>
-        //                                 <input type="number" name="components[${rowCount}][erp_store][${index+1}][store_qty]" id="store_qty_${index+1}" class="form-control mw-100" value="${storeQty}" data-id="${index+1}" />
-        //                             </td>
-        //                             <td>
-        //                                 <a data-row-count="${rowCount}" data-index="${index+1}" href="javascript:;" class="text-danger deleteItemDeliveryRow">
-        //                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2">
-        //                                         <polyline points="3 6 5 6 21 6"></polyline>
-        //                                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-        //                                         <line x1="10" y1="11" x2="10" y2="17"></line>
-        //                                         <line x1="14" y1="11" x2="14" y2="17"></line>
-        //                                     </svg>
-        //                                 </a>
-        //                             </td>
-        //                         </tr>`;
-        //         });
-
-        //         // Append the dynamically created rows
-        //         $("#deliveryScheduleTable").find('#deliveryFooter').before(rowHtml);
-
-        //         // Trigger change event to re-populate dependent dropdowns after the rows are added
-        //         $("#itemTable #row_" + rowCount).find("[name*=store_qty]").each(function(index, item) {
-        //             $(`#erp_store_id_${index+1}`).trigger('change');
-        //         });
-        //     }
-        //     $("#deliveryScheduleTable").find('#deliveryFooter #total').attr('qty',qty);
-        //     $("#deliveryScheduleModal").modal('show');
-        //     totalScheduleQty();
-        // });
 
         $(document).on('click', '.addDeliveryScheduleBtn', (e) => {
             let rowCount = e.target.closest('div').getAttribute('data-row-count');
@@ -1879,7 +1807,6 @@
         $(document).on('change', '.item_store_code', function() {
             var rowKey = $(this).data('id');
             var store_code_id = $(this).val();
-            // console.log('rowKey', rowKey);
             $('#erp_store_id_'+rowKey).val(store_code_id).select2();
             let erp_rack_id = $(`#erp_rack_id_${rowKey}`).val();
             let erp_shelf_id = $(`#erp_shelf_id_${rowKey}`).val();
@@ -1938,9 +1865,12 @@
         /*submit attribute*/
         $(document).on('click', '.submitAttributeBtn', (e) => {
             let rowCount = $("[id*=row_].trselected").attr('data-index');
-            $(`[name="components[${rowCount}][order_qty]"]`).focus();
             $("#attribute").modal('hide');
-            getItemDetail(rowCount);
+            $('#attribute').one('hidden.bs.modal', () => {
+                const $input = $(`[name="components[${rowCount}][accepted_qty]"]`);
+                $input.focus();
+                getItemDetail(rowCount);
+            });
         });
 
         /*Open Po model*/
@@ -1949,10 +1879,19 @@
             openPurchaseRequest();
             getPurchaseOrders();
         });
+        $(document).on('click', '.joSelect', (e) => {
+            $("#joModal").modal('show');
+            openJobRequest();
+            getJobOrders();
+        });
 
         /*searchPiBtn*/
         $(document).on('click', '.searchPoBtn', (e) => {
             getPurchaseOrders();
+        });
+
+        $(document).on('click', '.searchJoBtn', (e) => {
+            getJobOrders();
         });
 
         function openPurchaseRequest()
@@ -2011,6 +1950,62 @@
             });
         }
 
+        function openJobRequest()
+        {
+            initializeAutocomplete3("vendor_code_input_qt", "vendor_id_qt_val", "vendor_list", "vendor_code", "company_name");
+            initializeAutocomplete3("book_code_input_qt", "book_id_qt_val", "book_po", "book_code", "");
+            initializeAutocomplete3("document_no_input_qt", "document_id_qt_val", "po_document_qt", "document_number", "");
+            initializeAutocomplete3("item_name_input_qt", "item_id_qt_val", "goods_item_list", "item_code", "item_name");
+        }
+        function initializeAutocomplete3(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "")
+        {
+            $("#" + selector).autocomplete({
+                source: function(request, response) {
+                    $.ajax({
+                        url: '/search',
+                        method: 'GET',
+                        dataType: 'json',
+                        data: {
+                            q: request.term,
+                            type: typeVal,
+                            vendor_id : $("#vendor_id_qt_val").val(),
+                            header_book_id : $("#book_id").val(),
+                        },
+                        success: function(data) {
+                            response($.map(data, function(item) {
+                                return {
+                                    id: item.id,
+                                    label: `${item[labelKey1]} ${labelKey2 ? (item[labelKey2] ? '(' + item[labelKey2] + ')' : '') : ''}`,
+                                    code: item[labelKey1] || '',
+                                };
+                            }));
+                        },
+                        error: function(xhr) {
+                            console.error('Error fetching customer data:', xhr.responseText);
+                        }
+                    });
+                },
+                appendTo : '#joModal',
+                minLength: 0,
+                select: function(event, ui) {
+                    var $input = $(this);
+                    $input.val(ui.item.label);
+                    $("#" + selectorSibling).val(ui.item.id);
+                    return false;
+                },
+                change: function(event, ui) {
+                    if (!ui.item) {
+                        $(this).val("");
+                        $("#" + selectorSibling).val("");
+                    }
+                }
+            }).focus(function() {
+                if (this.value === "") {
+                    $(this).autocomplete("search", "");
+                }
+            });
+        }
+
         window.onload = function () {
             localStorage.removeItem('selectedPoIds');
         };
@@ -2028,10 +2023,9 @@
             let document_number = $("#document_no_input_qt").val() || '';
             let item_id = $("#item_id_qt_val").val() || '';
             let vendor_id = $("#vendor_id_qt_val").val() || '';
-            let type = '{{ request()->route("type") }}';
             let item_search = $("#item_name_search").val();
-            let actionUrl = '{{ route("gate-entry.get.po", ["type" => ":type"]) }}'.replace(':type', type);
-            let fullUrl = `${actionUrl}?series_id=${encodeURIComponent(series_id)}
+            let actionUrl = '{{ route("gate-entry.get.po", ["type" => "create"]) }}';
+            let fullUrl = `${actionUrl}&series_id=${encodeURIComponent(series_id)}
             &document_number=${encodeURIComponent(document_number)}
             &item_id=${encodeURIComponent(item_id)}
             &vendor_id=${encodeURIComponent(vendor_id)}
@@ -2044,6 +2038,42 @@
                     $(".po-order-detail #poDataTable").empty().append(data.data.pis);
                     $('.select2').select2({
                         dropdownParent: $('#poModal') // Ensure dropdown is rendered inside the modal
+                    });
+                });
+            });
+        }
+
+
+        function getJobOrders()
+        {
+            let selectedJoIds = localStorage.getItem('selectedPoIds') ?? '[]';
+
+            selectedJoIds = JSON.parse(selectedJoIds);
+            selectedJoIds = encodeURIComponent(JSON.stringify(selectedJoIds));
+
+            let document_date = $("[name='document_date']").val() || '';
+            let header_book_id = $("#book_id").val() || '';
+            let series_id = $("#book_id_qt_val").val() || '';
+            let document_number = $("#document_no_input_qt").val() || '';
+            let item_id = $("#item_id_qt_val").val() || '';
+            let vendor_id = $("#vendor_id_qt_val").val() || '';
+            let type = 'create';
+            let item_search = $("#item_name_search").val();
+            let actionUrl = '{{ route("gate-entry.get.jo", ["type" => "create"]) }}';
+            let fullUrl = `${actionUrl}&series_id=${encodeURIComponent(series_id)}
+            &document_number=${encodeURIComponent(document_number)}
+            &item_id=${encodeURIComponent(item_id)}
+            &vendor_id=${encodeURIComponent(vendor_id)}
+            &header_book_id=${encodeURIComponent(header_book_id)}
+            &selected_jo_ids=${selectedJoIds}
+            &document_date=${document_date}
+            &item_search=${item_search}`;
+
+            fetch(fullUrl).then(response => {
+                return response.json().then(data => {
+                    $(".po-order-detail #joDataTable").empty().append(data.data.pis);
+                    $('.select2').select2({
+                        dropdownParent: $('#joModal') // Ensure dropdown is rendered inside the modal
                     });
                 });
             });
@@ -2065,14 +2095,25 @@
         function getSelectedPoIDS()
         {
             let ids = [];
+            let referenceNos = [];
             $('.po_item_checkbox:checked').each(function() {
                 ids.push($(this).val());
+                referenceNo = $(this).siblings("input[type='hidden'][name='reference_no']").val();
+                if (referenceNo) {
+                    referenceNos.push(referenceNo);
+                }
             });
-            return ids;
+            return {
+                ids: ids,
+                referenceNos: referenceNos
+            };
         }
 
         $(document).on('click', '.poProcess', (e) => {
-            let ids = getSelectedPoIDS();
+            let result = getSelectedPoIDS();
+            let ids = result.ids;
+            let referenceNo = result.referenceNos[0];
+            currentProcessType = 'po';
             if (!ids.length) {
                 $("#poModal").modal('hide');
                 Swal.fire({
@@ -2084,6 +2125,16 @@
             }
 
             $("[name='po_item_ids']").val(ids);
+            $(".joSelect").hide();
+            $("#addNewItemBtn").hide();
+            if (referenceNo) {
+                $("#referenceNoDiv").show();
+                $("#reference_number_input").val(referenceNo);
+            } else {
+                $("#referenceNoDiv").hide();
+                $("#reference_number_input").val('');
+            }
+            $("#reference_type_input").val('po');
 
             // for component item code
             function initializeAutocomplete2(selector, type) {
@@ -2163,7 +2214,7 @@
                                 $input.closest('tr').find('[name*="[accepted_qty]"]').val('').focus();
                             }
                         }, 100);
-                        getItemDetail($input.closest('tr'));
+                        getItemDetail($input.closest('tr'), currentProcessType);
                         getItemCostPrice($input.closest('tr'));
                         return false;
                     },
@@ -2206,7 +2257,8 @@
                 return response.json().then(data => {
                     if(data.status == 200) {
                         vendorOnChange(data?.data?.vendor?.id);
-                        let newIds = getSelectedPoIDS();
+                        let result = getSelectedPoIDS();
+                        let newIds = result.ids;
                         let existingIds = localStorage.getItem('selectedPoIds');
                         if (existingIds) {
                             existingIds = JSON.parse(existingIds);
@@ -2231,7 +2283,289 @@
                         }
                         initializeAutocomplete2(".comp_item_code");
                         $("#poModal").modal('hide');
-                        // $(".poSelect").prop('disabled',true);
+                        $("select[name='currency_id']").prop('disabled', true);
+                        $("select[name='payment_term_id']").prop('disabled', true);
+                        $("#vendor_name").prop('readonly',true);
+                        $(".editAddressBtn").addClass('d-none');
+                        $("#vendor_name").prop('readonly',true);
+                        if(poOrder.type == 'supplier-invoice'){
+                            $("[name='supplier_invoice_no']").val(poOrder.document_number);
+                            $("[name='supplier_invoice_date']").val(poOrder.document_date);
+                        } else{
+                            $("[name='supplier_invoice_no']").val();
+                            $("[name='supplier_invoice_date']").val();
+                        }
+                        let locationId = $("[name='header_store_id']").val();
+                        getLocation(locationId);
+
+                        if(finalDiscounts.length) {
+                            let rows = '';
+                            finalDiscounts.forEach(function(item,index) {
+                                index = index + 1;
+                                rows+= `<tr class="display_summary_discount_row">
+                                        <td>${index}</td>
+                                        <td>${item.ted_name}
+                                            <input type="hidden" value="${item.ted_id}" name="disc_summary[${index}][ted_d_id]">
+                                            <input type="hidden" value="" name="disc_summary[${index}][d_id]">
+                                            <input type="hidden" value="${item.ted_name}" name="disc_summary[${index}][d_name]">
+                                        </td>
+                                        <td class="text-end">${typeof item.ted_perc === "number" ? '0' : item.ted_perc}
+                                            <input type="hidden" value="${typeof item.ted_perc === "number" ? '0' : item.ted_perc}" name="disc_summary[${index}][d_perc]">
+                                            <input type="hidden" value="${item.ted_perc}" name="disc_summary[${index}][hidden_d_perc]">
+                                        </td>
+                                        <td class="text-end">
+                                        <input type="hidden" value="" name="disc_summary[${index}][d_amnt]">
+                                        </td>
+                                        <td>
+                                            <a href="javascript:;" class="text-danger deleteSummaryDiscountRow">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                            </a>
+                                        </td>
+                                    </tr>`
+                            });
+
+                            $("#summaryDiscountTable tbody").find('.display_summary_discount_row').remove();
+                            $("#summaryDiscountTable tbody").find('#disSummaryFooter').before(rows);
+                            $("#f_header_discount_hidden").removeClass('d-none');
+                        } else {
+                            $("#f_header_discount_hidden").addClass('d-none');
+                        }
+
+                        if(finalExpenses.length) {
+                            let rows = '';
+                            finalExpenses.forEach(function(item,index) {
+                                index = index + 1;
+                                rows+=`<tr class="display_summary_exp_row">
+                                        <td>${index}</td>
+                                        <td>${item.ted_name}
+                                            <input type="hidden" value="${item.ted_id}" name="exp_summary[${index}][ted_e_id]">
+                                            <input type="hidden" value="" name="exp_summary[${index}][e_id]">
+                                            <input type="hidden" value="${item.ted_name}" name="exp_summary[${index}][e_name]">
+                                        </td>
+                                        <td class="text-end">${typeof item.ted_perc === "number" ? '0' : item.ted_perc}
+                                            <input type="hidden" value="${typeof item.ted_perc === "number" ? '0' : item.ted_perc}" name="exp_summary[${index}][e_perc]">
+                                            <input type="hidden" value="${item.ted_perc}" name="exp_summary[${index}][hidden_e_perc]">
+                                        </td>
+                                        <td class="text-end">
+                                        <input type="hidden" value="" name="exp_summary[${index}][e_amnt]">
+                                        </td>
+                                        <td>
+                                            <a href="javascript:;" class="text-danger deleteExpRow">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                            </a>
+                                        </td>
+                                    </tr>`;
+
+                            });
+                            $("#summaryExpTable tbody").find('.display_summary_exp_row').remove();
+                            $("#summaryExpTable tbody").find('#expSummaryFooter').before(rows);
+                        }
+                        initializeAutocomplete2(".comp_item_code");
+                        focusAndScrollToLastRowInput();
+                        setTimeout(() => {
+                            setTableCalculation();
+                            $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+                                let currentIndex = index + 1;
+                                setAttributesUIHelper(currentIndex,"#itemTable");
+                            });
+                        },500);
+                    }
+                    if(data.status == 422) {
+                        $(".editAddressBtn").removeClass('d-none');
+                        $("#vendor_name").val('').prop('readonly',false);
+                        $("#vendor_id").val('');
+                        $("#vendor_code").val('');
+                        $("#hidden_state_id").val('');
+                        $("#hidden_country_id").val('');
+                        $("select[name='currency_id']").empty().append('<option value="">Select</option>').prop('readonly',false);
+                        $("select[name='payment_term_id']").empty().append('<option value="">Select</option>').prop('readonly',false);
+                        $(".shipping_detail").text('-');
+                        $(".billing_detail").text('-');
+                        Swal.fire({
+                            title: 'Error!',
+                            text: data.message,
+                            icon: 'error',
+                        });
+                        return false;
+                    }
+                });
+            });
+        });
+
+        $(document).on('click', '.joProcess', (e) => {
+            let result = getSelectedPoIDS();
+            let ids = result.ids;
+            let referenceNo = result.referenceNos[0];
+            currentProcessType = 'jo';
+            if (!ids.length) {
+                $("#joModal").modal('hide');
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Please select at least one one jo',
+                    icon: 'error',
+                });
+                return false;
+            }
+            $(".poSelect").hide();
+            $("#addNewItemBtn").hide();
+            $("[name='jo_item_ids']").val(ids);
+            if (referenceNo) {
+                $("#referenceNoDiv").show();
+                $("#reference_number_input").val(referenceNo);
+            } else {
+                $("#referenceNoDiv").hide();
+                $("#reference_number_input").val('');
+            }
+            $("#reference_type_input").val('jo');
+
+            // for component item code
+            function initializeAutocomplete2(selector, type) {
+                $(selector).autocomplete({
+                    minLength: 0,
+                    source: function(request, response) {
+                        let selectedAllItemIds = [];
+                        $("#itemTable tbody [id*='row_']").each(function(index,item) {
+                            if(Number($(item).find('[name*="[item_id]"]').val())) {
+                                selectedAllItemIds.push(Number($(item).find('[name*="[item_id]"]').val()));
+                            }
+                        });
+                        $.ajax({
+                            url: '/search',
+                            method: 'GET',
+                            dataType: 'json',
+                            data: {
+                                q: request.term,
+                                type:'goods_item_list',
+                                selectedAllItemIds : JSON.stringify(selectedAllItemIds)
+                            },
+                            success: function(data) {
+                                response($.map(data, function(item) {
+                                    return {
+                                        id: item.id,
+                                        label: `${item.item_name} (${item.item_code})`,
+                                        code: item.item_code || '',
+                                        item_id: item.id,
+                                        item_name:item.item_name,
+                                        uom_name:item.uom?.name,
+                                        uom_id:item.uom_id,
+                                        hsn_id:item.hsn?.id,
+                                        hsn_code:item.hsn?.code,
+                                        alternate_u_o_ms:item.alternate_u_o_ms,
+                                        is_attr:item.item_attributes_count,
+                                    };
+                                }));
+                            },
+                            error: function(xhr) {
+                                console.error('Error fetching customer data:', xhr.responseText);
+                            }
+                        });
+                    },
+                    select: function(event, ui) {
+                        let $input = $(this);
+                        let itemCode = ui.item.code;
+                        let itemName = ui.item.value;
+                        let itemN = ui.item.item_name;
+                        let itemId = ui.item.item_id;
+                        let uomId = ui.item.uom_id;
+                        let uomName = ui.item.uom_name;
+                        let hsnId = ui.item.hsn_id;
+                        let hsnCode = ui.item.hsn_code;
+                        $input.attr('data-name', itemName);
+                        $input.attr('data-code', itemCode);
+                        $input.attr('data-id', itemId);
+                        $input.closest('tr').find('[name*="[item_id]"]').val(itemId);
+                        $input.closest('tr').find('[name*=item_code]').val(itemCode);
+                        $input.closest('tr').find('[name*=item_name]').val(itemN);
+                        $input.closest('tr').find('[name*=hsn_id]').val(hsnId);
+                        $input.closest('tr').find('[name*=hsn_code]').val(hsnCode);
+                        $input.closest('tr').find("td[id*='itemAttribute_']").html(defautAttrBtn);
+                        $input.val(itemCode);
+                        let uomOption = `<option value=${uomId}>${uomName}</option>`;
+                        if(ui.item?.alternate_u_o_ms) {
+                            for(let alterItem of ui.item.alternate_u_o_ms) {
+                            uomOption += `<option value="${alterItem.uom_id}" ${alterItem.is_purchasing ? 'selected' : ''}>${alterItem.uom?.name}</option>`;
+                            }
+                        }
+                        $input.closest('tr').find('[name*=uom_id]').append(uomOption);
+                        $input.closest('tr').find("input[name*='attr_group_id']").remove();
+                        setTimeout(() => {
+                            if(ui.item.is_attr) {
+                                $input.closest('tr').find('.attributeBtn').trigger('click');
+                            } else {
+                                $input.closest('tr').find('.attributeBtn').trigger('click');
+                                $input.closest('tr').find('[name*="[accepted_qty]"]').val('').focus();
+                            }
+                        }, 100);
+
+                        getItemDetail($input.closest('tr'), currentProcessType);
+                        getItemCostPrice($input.closest('tr'));
+                        return false;
+                    },
+                    change: function(event, ui) {
+                        if (!ui.item) {
+                            $(this).val("");
+                                // $('#itemId').val('');
+                            $(this).attr('data-name', '');
+                            $(this).attr('data-code', '');
+                        }
+                    }
+                }).focus(function() {
+                    if (this.value === "") {
+                        $(this).autocomplete("search", "");
+                    }
+                });
+            }
+
+            let currencyId = $("select[name='currency_id']").val();
+            let transactionDate = $("input[name='document_date']").val() || '';
+            let groupItems = [];
+            $('tr[data-group-item]').each(function () {
+                let groupItemData = $(this).data('group-item');
+                groupItems.push(groupItemData);
+            });
+
+            groupItems = JSON.stringify(groupItems);
+            let current_row_count = $("tbody tr[id*='row_']").length;
+            ids = JSON.stringify(ids);
+            let type = '{{ request()->route("type") }}'; // Dynamically fetch the `type` from the current route
+            let actionUrl = '{{ route("gate-entry.process.jo-item") }}'
+            .replace(':type', type)
+            + '?ids=' + encodeURIComponent(ids)
+            + '&currency_id=' + encodeURIComponent(currencyId)
+            + '&d_date=' + encodeURIComponent(transactionDate)
+            + '&groupItems=' + encodeURIComponent(groupItems)
+            + '&current_row_count='+current_row_count;
+
+            fetch(actionUrl).then(response => {
+                return response.json().then(data => {
+                    if(data.status == 200) {
+                        vendorOnChange(data?.data?.vendor?.id);
+                        let result = getSelectedPoIDS();
+                        let newIds = result.ids;
+                        let existingIds = localStorage.getItem('selectedPoIds');
+                        if (existingIds) {
+                            existingIds = JSON.parse(existingIds);
+                            const mergedIds = Array.from(new Set([...existingIds, ...newIds]));
+                            localStorage.setItem('selectedPoIds', JSON.stringify(mergedIds));
+                        } else {
+                            localStorage.setItem('selectedPoIds', JSON.stringify(newIds));
+                        }
+
+                        let existingIdsUpdate = JSON.parse(localStorage.getItem('selectedPoIds'));
+                        $("[name='po_item_ids']").val(existingIdsUpdate.join(','));
+
+                        let vendor = data?.data?.vendor || '';
+                        let finalDiscounts = data?.data?.finalDiscounts;
+                        let finalExpenses = data?.data?.finalExpenses;
+                        let poOrder = data?.data?.purchaseOrder;
+
+                        if ($("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length) {
+                            $("#itemTable .mrntableselectexcel tr[id*='row_']:last").after(data.data.pos);
+                        } else {
+                            $("#itemTable .mrntableselectexcel").empty().append(data.data.pos);
+                        }
+                        initializeAutocomplete2(".comp_item_code");
+                        $("#joModal").modal('hide');
                         $("select[name='currency_id']").prop('disabled', true);
                         $("select[name='payment_term_id']").prop('disabled', true);
                         $("#vendor_name").prop('readonly',true);

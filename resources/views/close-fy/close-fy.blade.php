@@ -449,11 +449,11 @@
 
                 if (uniquePermissions.length) {
                     const badgesHtml = uniquePermissions.map(p =>
-                        `<span class="badge rounded-pill badge-light-primary badgeborder-radius me-25">${p}</span>`
+                        `<span class="badge rounded-pill badge-light-primary badgeborder-radius me-25" style="font-size:12px">${p}</span>`
                     ).join('');
                     $badgeTd.html(badgesHtml);
                 } else {
-                    $badgeTd.html(`<span class="text-muted">No Permissions</span>`);
+                    $badgeTd.html(`<span class="text-muted" style="font-size:12px">No Permissions</span>`);
                 }
 
                 updateDisabledUsers();
@@ -572,11 +572,11 @@
 
                 if (uniquePermissions.length) {
                     const badgesHtml = uniquePermissions.map(p =>
-                        `<span class="badge rounded-pill badge-light-primary badgeborder-radius me-25">${p}</span>`
+                        `<span class="badge rounded-pill badge-light-primary badgeborder-radius me-25" style="font-size:12px">${p}</span>`
                     ).join('');
                     $badgeTd.html(badgesHtml);
                 } else {
-                    $badgeTd.html(`<span class="text-muted">No Permissions</span>`);
+                    $badgeTd.html(`<span class="text-muted" style="font-size:12px">No Permissions</span>`);
                 }
             }
 

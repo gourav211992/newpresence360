@@ -48,6 +48,10 @@ class Ledger extends Model
     {
         return $this->hasOne(Customer::class);
     }
+    public function organization()
+    {
+        return $this->belongsTo(Organization::class, 'organization_id', 'id');
+    }
     public function deleteWithReferences($referenceTables)
     {
         $referencedTables = [];

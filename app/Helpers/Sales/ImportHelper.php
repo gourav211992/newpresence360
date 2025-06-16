@@ -91,6 +91,10 @@ class ImportHelper
         $addedOrders = [];
         $createdOrderIds = [];
         foreach ($data as $uploadData) {
+            $existingError = ($uploadData -> reason);
+            if (isset($existingError) && count($existingError) > 0) {
+                continue;
+            }
             $errors = [];
             $currentOrder = $uploadData -> order_no;
             if (!in_array($currentOrder, $addedOrders)) {
@@ -182,8 +186,8 @@ class ImportHelper
                     'total_expense_value' => 0,
                 ]);
                 //Addresses
-                $customerAddresses = $customer -> addresses();
-                $customerBillingAddress = $customerAddresses -> where('is_billing', 1) -> first();
+                $customerAddresses = $customer -> addresses;
+                $customerBillingAddress = $customerAddresses -> whereIn('type', ['billing', 'both']) -> first();
                 if (isset($customerBillingAddress)) {
                     $billingAddress = $saleOrder -> billing_address_details() -> create([
                         'address' => $customerBillingAddress -> address,
@@ -202,7 +206,7 @@ class ImportHelper
                     continue;
                 }
                 // Shipping Address
-                $customerShippingAddress =$customerAddresses -> where('is_shipping', 1) -> first();
+                $customerShippingAddress = $customerAddresses -> whereIn('type', ['shipping', 'both']) -> first();
                 if (isset($customerShippingAddress)) {
                     $shippingAddress = $saleOrder -> shipping_address_details() -> create([
                         'address' => $customerShippingAddress -> address,
@@ -239,25 +243,24 @@ class ImportHelper
                 //Add the Sales Order to tracking Array
                 array_push($addedOrders, $uploadData -> order_no);
                 $createdOrderIds[$uploadData -> order_no] = $saleOrder;
+
+                //Now check for any dynamic fields
+                $bookDynamicFields = $uploadData -> dynamic_fields;
+                foreach ($bookDynamicFields as $dynamicField) {
+                        ErpSoDynamicField::create([
+                            'header_id' => $saleOrder -> id,
+                            'dynamic_field_id' => $dynamicField -> dyn_header_id,
+                            'dynamic_field_detail_id' => $dynamicField -> dyn_detail_id,
+                            'name' => $dynamicField -> name,
+                            'value' => $dynamicField -> value,
+                        ]);
+                }
             }
             //Check if the current order has been created
             if (!isset($createdOrderIds[$uploadData -> order_no] -> id)) {
                 continue;
             }
-            //Now check for any dynamic fields
-            $bookDynamicFields = $book -> dynamic_fields;
-            foreach ($bookDynamicFields as $bookDynamicField) {
-                $dynamicField = $bookDynamicField -> dynamic_field;
-                foreach ($dynamicField -> details as $dynamicFieldDetail) {
-                    ErpSoDynamicField::create([
-                        'header_id' => $saleOrder -> id,
-                        'dynamic_field_id' => $dynamicField -> id,
-                        'dynamic_field_detail_id' => $dynamicFieldDetail -> id,
-                        'name' => $dynamicFieldDetail -> name,
-                        'value' => null
-                    ]);
-                }
-            }
+            
             //Now move to item (For Shufab loop through 14 sizes)
             $item = Item::find($uploadData -> item_id);
             if (!isset($item)) {
@@ -513,6 +516,11 @@ class ImportHelper
         $addedOrders = [];
         $createdOrderIds = [];
         foreach ($data as $uploadData) {
+            //Skip if error is found
+            $existingError = ($uploadData -> reason);
+            if (isset($existingError) && count($existingError) > 0) {
+                continue;
+            }
             $errors = [];
             $currentOrder = $uploadData -> order_no;
             if (!in_array($currentOrder, $addedOrders)) {
@@ -604,8 +612,8 @@ class ImportHelper
                     'total_expense_value' => 0,
                 ]);
                 //Addresses
-                $customerAddresses = $customer -> addresses();
-                $customerBillingAddress = $customerAddresses -> where('is_billing', 1) -> first();
+                $customerAddresses = $customer -> addresses;
+                $customerBillingAddress = $customerAddresses -> whereIn('type', ['billing', 'both']) -> first();
                 if (isset($customerBillingAddress)) {
                     $billingAddress = $saleOrder -> billing_address_details() -> create([
                         'address' => $customerBillingAddress -> address,
@@ -624,7 +632,7 @@ class ImportHelper
                     continue;
                 }
                 // Shipping Address
-                $customerShippingAddress =$customerAddresses -> where('is_shipping', 1) -> first();
+                $customerShippingAddress = $customerAddresses -> whereIn('type', ['shipping', 'both']) -> first();
                 if (isset($customerShippingAddress)) {
                     $shippingAddress = $saleOrder -> shipping_address_details() -> create([
                         'address' => $customerShippingAddress -> address,

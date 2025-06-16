@@ -3,7 +3,6 @@
 namespace App\Http\Requests;
 
 use App\Helpers\BookHelper;
-use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
 use App\Models\ErpSoItem;
 use App\Models\Item;
@@ -12,11 +11,12 @@ use App\Models\PiItem;
 use App\Models\ItemAttribute;
 use App\Models\PiSoMapping;
 use App\Models\PiSoMappingItem;
-use Auth;
 use Illuminate\Foundation\Http\FormRequest;
+use App\Traits\ProcessesComponentJson;
 
 class PiRequest extends FormRequest
 {
+    use ProcessesComponentJson;
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -30,6 +30,11 @@ class PiRequest extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
+
+    protected function prepareForValidation(): void
+    {
+        $this->processComponentJson('components_json');
+    }
 
     public function rules(): array
     {

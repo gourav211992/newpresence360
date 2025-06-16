@@ -27,7 +27,7 @@
     </style>
 @endsection
 @section('content')
-<form id="poEditForm" class="ajax-input-form" action="{{ route('jo.update', $po->id) }}" method="POST" data-redirect="{{ route('jo.index') }}" enctype="multipart/form-data">
+<form id="poEditForm" data-module="jo" class="ajax-input-form" action="{{ route('jo.update', $po->id) }}" method="POST" data-redirect="{{ route('jo.index') }}" enctype="multipart/form-data">
 @csrf
 <input type="hidden" name="tax_required" id="tax_required" value="">
 <input type="hidden" name="short_close_ids" id="short_close_ids">
@@ -318,7 +318,9 @@
                             <div class="tab-content" id="productTabsContent">
                                 <div class="tab-pane fade show active" id="product-details" role="tabpanel" aria-labelledby="product-details-tab">
                                     <div class="table-responsive pomrnheadtffotsticky">
-                                        <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
+                                        <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"
+                                        data-json-key="components_json"
+                                        data-row-selector="tr[id^='row_']">
                                          <thead>
                                             <tr>
                                              <th class="customernewsection-form">
@@ -439,7 +441,9 @@
                                 @if(isset($isRawMaterial) && $isRawMaterial)
                                 <div class="tab-pane fade" id="raw-materials" role="tabpanel" aria-labelledby="raw-materials-tab">
                                     <div class="table-responsive pomrnheadtffotsticky">
-                                        <table id="itemTable2" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
+                                        <table id="itemTable2" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"
+                                        data-json-key="component_json"
+                                        data-row-selector="tr[id^='row_']">
                                          <thead>
                                             <tr>
                                              {{-- <th class="customernewsection-form">

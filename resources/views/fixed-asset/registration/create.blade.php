@@ -1735,8 +1735,7 @@
             });
 
         });
-    $('.code_error').css('font-size', '12px');
-    </script>
+        </script>
     
 @endsection
 @endsection

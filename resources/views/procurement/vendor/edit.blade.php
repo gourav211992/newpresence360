@@ -1275,7 +1275,7 @@
 
                                                          <div class="row align-items-center mb-1">
                                                              <div class="col-md-2"> 
-                                                                 <label for="book" class="form-label">Invoice Series</label>  
+                                                                 <label for="book" class="form-label">ASN Series</label>  
                                                              </div>  
                                                              <div class="col-md-5"> 
                                                                  <select name="book_id[]" multiple class="form-select select2">

@@ -14,7 +14,7 @@ function handleRowSelection(tableSelector) {
         }
     });
 }
-        function initializeBasicDataTable(selector, exportFileName = 'Data_Export') {
+function initializeBasicDataTable(selector, exportFileName = 'Data_Export', link = null) {
     var dt_table = $(selector),
         assetPath = '../../../app-assets/';
 
@@ -65,6 +65,15 @@ function handleRowSelection(tableSelector) {
                         setTimeout(function () {
                             $(node).closest('.dt-buttons').removeClass('btn-group').addClass('d-inline-flex');
                         }, 50);
+                    },
+                    action: function (e, dt, button, config) {
+                        if (link) {
+                            // If a link is provided, redirect to it or fetch data from it
+                            window.open(link);
+                        } else {
+                            // Default excel export action
+                            $.fn.dataTable.ext.buttons.excelHtml5.action.call(this, e, dt, button, config);
+                        }
                     }
                 }
             ],

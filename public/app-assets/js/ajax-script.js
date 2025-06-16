@@ -160,44 +160,18 @@ $(document).on('submit', '.ajax-input-form', function (e) {
     //     });
     // }
 
-    // Component Items for BOM
-    const componentBlocks = document.querySelectorAll('.bom_form #itemTable tr[id*="row_"]');
-    if(componentBlocks.length) {
-        const components = [];
-        componentBlocks.forEach(block => {
-            const component = {};
-            const inputs = block.querySelectorAll('input, select, textarea');
-            inputs.forEach(input => {
-                const key = input.name;
-                const value = input.value;
-                component[key] = value;
+    // This is for use convert form data to json for all module common
+    if($(e.target).find('[data-json-key]').length) {
+        $(e.target).find('[data-json-key]').each(function () {
+            const container = $(this);
+            const jsonKey = container.data('json-key');
+            const rowSelector = container.data('row-selector') || 'tr';
+            const dataModule = $(e.target).data('module');
+            appendSerializedFormRows(data, container, jsonKey, {
+                rowSelector,
+                dataModule
             });
-            components.push(component);
         });
-        data.append('components_json', JSON.stringify(components));
-        for (let [key, value] of Array.from(data.entries())) {
-            if (key.startsWith('components[')) {
-                data.delete(key);
-            }
-        }  
-    }
-    // Header Overheads For BOM
-    const overheadRows = document.querySelectorAll('.display_overhead_row');
-    if(overheadRows.length) {
-        const headerOverheads = [];
-        overheadRows.forEach(row => {
-            const overhead = {};
-            row.querySelectorAll('input, select, textarea').forEach(input => {
-                overhead[input.name] = input.value;
-            });
-            headerOverheads.push(overhead);
-        });
-        data.append('header_overhead_json', JSON.stringify(headerOverheads));
-        for (let [key] of Array.from(data.entries())) {
-            if (/^header\[\d+\]\[overhead\]\[\d+\]\[.*\]$/.test(key)) {
-                data.delete(key);
-            }
-        }
     }
 
     $.ajax({
@@ -343,6 +317,121 @@ $(document).on('submit', '.ajax-input-form', function (e) {
         }
     });
 });
+
+/**
+ * Serialize form rows (table or divs) into a JSON blob and append to FormData.
+ *
+ * @param {FormData} formData - The FormData object to append to.
+ * @param {string} containerSelector - Selector for the parent container or table (e.g., '.bom_form #itemTable' or '.overhead-container').
+ * @param {string} jsonKey - The key under which to store the JSON blob (e.g., 'components_json').
+ * @param {object} options - Optional parameters:
+ *                           - rowSelector: override for row elements inside the container.
+ *                           - cleanupRegex: RegExp to remove related keys from FormData.
+ */
+function appendSerializedFormRows(formData, containerSelector, jsonKey, options = {}) {
+    const {
+        rowSelector = 'tr[id^="row_"], .display_overhead_row',
+        dataModule = null,
+    } = options;
+    const $container = $(containerSelector);
+    const $rows = $container.find(rowSelector);
+    if ($rows.length) {
+        const jsonArray = [];
+        $rows.each(function () {
+            const obj = {};
+            $(this).find('input, select, textarea').each(function () {
+                const name = $(this).attr('name');
+                const value = $(this).val();
+                if (name) {
+                    obj[name] = value;
+                }
+            });
+            jsonArray.push(obj);
+        });
+        let cleanupRegex = null;
+        let cleanupRegex2 = null;
+        let cleanupPatterns = [];
+        switch (dataModule) {
+            case 'pi':
+                cleanupRegex = '^components\\[\\d+\\]\\[.*\\]$';
+                break;
+            case 'po':
+                cleanupRegex = '^components\\[\\d+\\]\\[.*\\]$';
+                break;
+            case 'jo':
+                cleanupRegex = '^components\\[\\d+\\]\\[.*\\]$';
+                cleanupRegex2 = '^component\\[\\d+\\]\\[.*\\]$';
+                break;
+            case 'bom':
+                cleanupRegex = '^components\\[\\d+\\]\\[.*\\]$';
+                cleanupRegex2 = "^header\[\d+\]\[overhead\]\[\d+\]\[.*\]$";
+            case 'pwo':
+                cleanupRegex = '^components\\[\\d+\\]\\[.*\\]$';
+                break;
+            case 'mo':
+                cleanupPatterns.push(
+                    /^components\\[\\d+\\]\\[.*\\]$/,  
+                    /^component\\[\\d+\\]\\[.*\\]$/,  
+                    /^instructions\[\d+](\[[^\]]+])+$/,        
+                );
+                break;
+            case 'pslip':
+                cleanupPatterns.push(
+                    /^cons\[\d+\]\[[^\]]+\]$/,
+                    /^instructions\[\d+\]\[[^\]]+\]$/,
+                    /^so_doc\d+$/,       
+                    /^customer\d+$/,       
+                    /^customer_id\d+$/,       
+                    /^item_code\d+$/,       
+                    /^item_name\d+$/,       
+                    /^uom_id\d+$/,       
+                    /^mo_product_id\d+$/,       
+                    /^mo_id\d+$/,       
+                    /^so_id\d+$/,       
+                    /^so_item_id\d+$/,       
+                    /^station_id\d+$/,       
+                    /^station_id\d+$/,       
+                    /^item_so_qty_\d+$/,       
+                    /^item_qty\d+$/,       
+                    /^item_remarks\d+$/,       
+                    /^item_id\\[\\]$/
+                    // /^.*_\d+$/                         
+                );
+                break;
+            default:
+                console.warn("No cleanup regex defined for module:", dataModule);
+        }
+        if(cleanupRegex || cleanupRegex2 || cleanupPatterns.length) {
+            removeKeysByRegex(formData, cleanupRegex,cleanupRegex2,cleanupPatterns);
+        }
+        formData.append(jsonKey, JSON.stringify(jsonArray));
+    }
+}
+
+function removeKeysByRegex(formData, pattern, pattern2 = '', cleanupPatterns = []) {
+    const regex = new RegExp(pattern);
+    for (let [key] of Array.from(formData.entries())) {
+        if (regex.test(key)) {
+            formData.delete(key);
+        }
+    }
+    if(pattern2) {
+        const regex2 = new RegExp(pattern2);
+        for (let [key2] of Array.from(formData.entries())) {
+            if (regex2.test(key2)) {
+                formData.delete(key2);
+            }
+        }
+    }
+
+    if(cleanupPatterns.length) {
+        Object.keys(formData).forEach(key => {
+            if (cleanupPatterns.some(pattern => pattern.test(key))) {
+                delete formData[key];
+            }
+        });
+    }
+}
 
 $(document).on('click', '.submit-button', (e) => {
     let status = e.target.closest('button').value;

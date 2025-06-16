@@ -1,6 +1,6 @@
 @extends('layouts.app')
 @section('content')
-<form class="ajax-input-form" method="POST" action="{{ route('mo.store') }}" data-redirect="{{ route('mo.index') }}" enctype='multipart/form-data'>
+<form class="ajax-input-form" data-module="mo" method="POST" action="{{ route('mo.store') }}" data-redirect="{{ route('mo.index') }}" enctype='multipart/form-data'>
     @csrf
 <input type="hidden" name="so_item_ids" id="so_item_ids">
 <input type="hidden" name="station_wise_consumption" id="station_wise_consumption">
@@ -211,7 +211,9 @@
                             </div>
                             </div>
                             <div class="table-responsive pomrnheadtffotsticky">
-                            <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
+                            <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"
+                            data-json-key="components_json"
+                            data-row-selector="tr[id^='row_']">
                                 <thead>
                                     <tr>
                                         <th>
@@ -727,6 +729,7 @@ function getPwo()
         });
     });
 }
+getPwo();
 
 $(document).on('change',"#store_id", (e) => {
     getPwo();

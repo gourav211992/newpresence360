@@ -4,8 +4,14 @@
         $balanceQty = (($item->accepted_qty ?? 0) - ($item->mrn_qty ?? 0));
     @endphp
     <tr data-group-item="{{json_encode($item)}}" id="row_{{$rowCount}}" data-index="{{$rowCount}}" @if($rowCount < 2 ) class="trselected" @endif>
+        <input type="hidden" name="components[{{$rowCount}}][ref_type]" value="{{$type}}">
+        @if($type == 'jo')
+        <input type="hidden" name="components[{{$rowCount}}][purchase_order_id]" value="{{$item->joItem->jo_id}}">
+        <input type="hidden" name="components[{{$rowCount}}][po_detail_id]" value="{{$item->job_order_item_id}}">
+        @else
         <input type="hidden" name="components[{{$rowCount}}][purchase_order_id]" value="{{$item->poItem->purchase_order_id}}">
         <input type="hidden" name="components[{{$rowCount}}][po_detail_id]" value="{{$item->purchase_order_item_id}}">
+        @endif
         <input type="hidden" name="components[{{$rowCount}}][gate_entry_header_id]" value="{{$item->header_id}}">
         <input type="hidden" name="components[{{$rowCount}}][gate_entry_detail_id]" value="{{$item->id}}">
         <td class="customernewsection-form">

@@ -4,58 +4,64 @@
         <div class="modal-content">
             <div class="modal-header">
                 <div>
-                    <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="header_pull_label">Select
-                        Document</h4>
+                    <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="header_pull_label">
+                        Select Document
+                    </h4>
                     <p class="mb-0">Select from the below list</p>
+                </div>
+                <div class="text-end col-md-3 text-end">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"><i
+                        data-feather="x-circle"></i> Cancel</button>
+                    <button type="button" class="ml-1 btn btn-primary btn-sm" onclick="processOrder();"
+                        data-bs-dismiss="modal"><i data-feather="check-circle"></i> Process</button>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="row">
+                    <!-- Form Filters -->
                     <div class="col">
                         <div class="mb-1">
                             <label class="form-label">Location Name <span class="text-danger">*</span></label>
-                            <input type="text" id="location_code_input_qt" placeholder="Select"
-                                class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off"
-                                value="">
-                            <input type="hidden" id="location_id_qt_val"></input>
+                            <input type="text" id="location_code_input_pwo" placeholder="Select"
+                                class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off">
+                            <input type="hidden" id="location_id_pwo_val">
                         </div>
                     </div>
                     <div class="col">
                         <div class="mb-1">
                             <label class="form-label">Series <span class="text-danger">*</span></label>
                             <input type="text" id="book_code_input_pwo" placeholder="Select"
-                                class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off"
-                                value="">
-                            <input type="hidden" id="book_id_pwo_val"></input>
+                                class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off">
+                            <input type="hidden" id="book_id_pwo_val">
                         </div>
                     </div>
                     <div class="col">
                         <div class="mb-1">
                             <label class="form-label">Document No. <span class="text-danger">*</span></label>
                             <input type="text" id="document_no_input_pwo" placeholder="Select"
-                                class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off"
-                                value="">
-                            <input type="hidden" id="document_id_pwo_val"></input>
+                                class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off">
+                            <input type="hidden" id="document_id_pwo_val">
                         </div>
                     </div>
                     <div class="col">
                         <div class="mb-1">
                             <label class="form-label">Item Name <span class="text-danger">*</span></label>
                             <input type="text" id="item_name_input_pwo" placeholder="Select"
-                                class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off"
-                                value="">
-                            <input type="hidden" id="item_id_pwo_val"></input>
+                                class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off">
+                            <input type="hidden" id="item_id_pwo_val">
                         </div>
                     </div>
                     <div class="col  mb-1">
                         <label class="form-label">&nbsp;</label><br />
-                        <button onclick="getOrders('pwo');" type="button" class="btn btn-warning btn-sm"><i
-                                data-feather="search"></i> Search</button>
+                        <button onclick="clearFilter('pwo');" type="button" class="btn btn-danger btn-sm"><i
+                                data-feather="trash"></i> Clear</button>
                     </div>
+
+                    <!-- Table -->
                     <div class="col-md-12">
                         <div class="table-responsive">
-                            <table class="mt-1 table myrequesttablecbox table-striped po-order-detail">
+                            <table id="pwo_orders_table" class="dataTables_scroll datatables-basic table-sm table-bordered table myrequesttablecbox pomrnheadtffotsticky">
                                 <thead>
                                     <tr>
                                         <th>
@@ -78,20 +84,16 @@
                                         <th>Avl Stock</th>
                                     </tr>
                                 </thead>
-                                <tbody id="qts_data_table_pwo">
-
+                                <tbody>
+                                    <!-- Rows will be filled via JS -->
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="modal-footer text-end">
-                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"><i
-                        data-feather="x-circle"></i> Cancel</button>
-                <button type="button" class="btn btn-primary btn-sm" onclick="processOrder();"
-                    data-bs-dismiss="modal"><i data-feather="check-circle"></i> Process</button>
-            </div>
+
+            <!-- Footer -->
         </div>
     </div>
 </div>

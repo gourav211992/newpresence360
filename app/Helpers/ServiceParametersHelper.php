@@ -12,6 +12,7 @@ use App\Models\ServiceParameter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use App\Helpers\PackingList\Constants as PackingListConstants;
+use App\Helpers\ASN\Constants as ASNConstants;
 /**
  * Helper Class containing all logics related to Parameters Functionality in the project.
  */
@@ -27,7 +28,7 @@ class ServiceParametersHelper
     const BACK_DATE_ALLOW_PARAM_VALUES = ['yes', 'no'];
     const ON_ACCOUNT_REQUIRED_PARAM = 'on_account_required';
     const ON_ACCOUNT_REQUIRED_PARAM_VALUES = ['yes', 'no'];
-   
+
     const FUTURE_DATE_ALLOW_PARAM = 'future_date_allowed';
     const FUTURE_DATE_ALLOW_PARAM_VALUES = ['yes', 'no'];
     const GOODS_SERVICES_PARAM = 'goods_or_services';
@@ -113,7 +114,7 @@ class ServiceParametersHelper
     const GATE_ENTRY_REQUIRED_VALUES = ['yes', 'no'];
     const PARTIAL_DELIVERY_ALLOWED = "partial_delivery_allowed";
     const PARTIAL_DELIVERY_ALLOWED_VALUES = ['yes', 'no'];
-    const ISSUE_TYPE_VALUES = ["Location Transfer", "Sub Location Transfer", "Sub Contracting", "Consumption"];
+    const ISSUE_TYPE_VALUES = ["Location Transfer", "Sub Location Transfer", "Job Work", "Sub Contracting", "Consumption"];
     const REQUESTER_TYPE_VALUES = ["Department", "User"];
     const STATION_WISE_CONSUMPTION = 'station_wise_consumption';
     const STATION_WISE_CONSUMPTION_VALUES = ["yes", "no"];
@@ -238,7 +239,7 @@ class ServiceParametersHelper
             'is_multiple' => false,
             'service_level_visibility' => true
         ],
-      
+
     ];
     const RC_SERVICE_PARAMETERS = [
         [
@@ -255,7 +256,7 @@ class ServiceParametersHelper
             'is_multiple' => true,
             'service_level_visibility' => false
         ],
-        
+
         [
             "name" => self::BACK_DATE_ALLOW_PARAM,
             "applicable_values" => self::BACK_DATE_ALLOW_PARAM_VALUES,
@@ -277,7 +278,7 @@ class ServiceParametersHelper
             'is_multiple' => false,
             'service_level_visibility' => true
         ],
-        
+
     ];
     const PSV_SERVICE_PARAMETERS = [
         [
@@ -294,7 +295,7 @@ class ServiceParametersHelper
             'is_multiple' => true,
             'service_level_visibility' => false
         ],
-        
+
         [
             "name" => self::BACK_DATE_ALLOW_PARAM,
             "applicable_values" => self::BACK_DATE_ALLOW_PARAM_VALUES,
@@ -340,7 +341,7 @@ class ServiceParametersHelper
             'service_level_visibility' => true,
             'type' => self::GL_PARAMETERS
         ]
-        
+
     ];
     const SR_SERVICE_PARAMETERS = [
         [
@@ -479,7 +480,7 @@ class ServiceParametersHelper
         //     'type' => self::GL_PARAMETERS
         // ]
     ];
-    
+
     const SQ_SERVICE_PARAMETERS = [
         [
             "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
@@ -1161,7 +1162,7 @@ class ServiceParametersHelper
             'is_multiple' => false,
             'service_level_visibility' => true
         ],
-        
+
         [
             "name" => self::FUTURE_DATE_ALLOW_PARAM,
             "applicable_values" => self::FUTURE_DATE_ALLOW_PARAM_VALUES,
@@ -1298,7 +1299,7 @@ class ServiceParametersHelper
             'is_multiple' => false,
             'service_level_visibility' => true
         ]
-       
+
     ];
     const PO_SERVICE_PARAMETERS = [
         [
@@ -1454,7 +1455,7 @@ class ServiceParametersHelper
     const GATE_ENTRY_SERVICE_PARAMETERS = [
         [
             "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
-            "applicable_values" => ["0", ConstantHelper::PO_SERVICE_ALIAS], //All possible values
+            "applicable_values" => ["0", ConstantHelper::PO_SERVICE_ALIAS, ConstantHelper::JO_SERVICE_ALIAS], //All possible values
             "default_value" => ["0", ConstantHelper::PO_SERVICE_ALIAS], //Default selected value(s)
             'is_multiple' => true, // Whether or not to allow multiple selection
             'service_level_visibility' => true, // Whether or not to show this parameter in UI
@@ -1492,7 +1493,7 @@ class ServiceParametersHelper
     const MRN_SERVICE_PARAMETERS = [
         [
             "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
-            "applicable_values" => ["0", ConstantHelper::PO_SERVICE_ALIAS], //All possible values
+            "applicable_values" => ["0", ConstantHelper::PO_SERVICE_ALIAS, ConstantHelper::JO_SERVICE_ALIAS], //All possible values
             "default_value" => ["0", ConstantHelper::PO_SERVICE_ALIAS], //Default selected value(s)
             'is_multiple' => true, // Whether or not to allow multiple selection
             'service_level_visibility' => true, // Whether or not to show this parameter in UI
@@ -2107,8 +2108,8 @@ class ServiceParametersHelper
     const MI_SERVICE_PARAMTERS = [
         [
             "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
-            "applicable_values" => ["0", ConstantHelper::MO_SERVICE_ALIAS, ConstantHelper::PI_SERVICE_ALIAS], //All possible values
-            "default_value" => ["0", ConstantHelper::MO_SERVICE_ALIAS, ConstantHelper::PI_SERVICE_ALIAS], //Default selected value(s)
+            "applicable_values" => ["0", ConstantHelper::MO_SERVICE_ALIAS, ConstantHelper::PI_SERVICE_ALIAS, ConstantHelper::JO_SERVICE_ALIAS], //All possible values
+            "default_value" => ["0", ConstantHelper::MO_SERVICE_ALIAS, ConstantHelper::PI_SERVICE_ALIAS, ConstantHelper::JO_SERVICE_ALIAS], //Default selected value(s)
             'is_multiple' => true, // Whether or not to allow multiple selection
             'service_level_visibility' => true, // Whether or not to show this parameter in UI
         ],
@@ -2301,7 +2302,8 @@ class ServiceParametersHelper
         ConstantHelper::VENDOR_SERVICE_ALIAS=>self::VENDOR_SERVICE_PARAMETERS,
         ConstantHelper::CUSTOMER_SERVICE_ALIAS=>self::CUSTOMER_SERVICE_PARAMETERS,
         ConstantHelper::MATERIAL_RETURN_SERVICE_ALIAS_NAME=>self::MR_SERVICE_PARAMETERS,
-        PackingListConstants::SERVICE_ALIAS => PackingListConstants::PARAMETERS
+        PackingListConstants::SERVICE_ALIAS => PackingListConstants::PARAMETERS,
+        ASNConstants::SERVICE_ALIAS => ASNConstants::PARAMETERS
     ];
     /* Parameter Types*/
     const COMMON_PARAMETERS = 'co';
@@ -2588,7 +2590,7 @@ class ServiceParametersHelper
             }
             //Financial Service Book Setup (If Required)
             if ($service -> financial_service_alias) {
-                //Check if the Financial Service Alias is setup or not 
+                //Check if the Financial Service Alias is setup or not
                 $financialService = Service::where('alias', $service -> financial_service_alias) -> first();
                 if (!isset($financialService)) {
                     return [
@@ -2597,7 +2599,7 @@ class ServiceParametersHelper
                     ];
                 }
                 //Check if the financial service is assigned to the organization
-                $orgFinancialService = OrganizationService::where('alias', $service -> financial_service_alias) 
+                $orgFinancialService = OrganizationService::where('alias', $service -> financial_service_alias)
                 -> where('group_id', $organization -> group_id) -> first();
                 if (!isset($orgFinancialService)) {
                     return [
@@ -2707,7 +2709,7 @@ class ServiceParametersHelper
                 -> when($editBookId, function ($editQuery) use($editBookId) {
                     $editQuery -> where('book_id', '!=', $editBookId);
                 }) -> where('org_service_id', $sourceService -> id) -> whereJsonContains('parameter_value', (string)$bookId) -> first();
-                if (!isset($isReferenced)) { 
+                if (!isset($isReferenced)) {
                     array_push($nonReferencedBookIds, $bookId);
                     //Check for sales invoice
                     // if ($sourceService -> alias === ConstantHelper::SI_SERVICE_ALIAS) {

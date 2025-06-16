@@ -9,7 +9,7 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
    $routeAlias = 'quotation-bom';
 }
 @endphp
-<form id="BomEditForm"  class="ajax-input-form bom_form" method="POST" action="{{ route('bill.of.material.update', $bom->id) }}" data-redirect="{{ url($routeAlias) }}" enctype='multipart/form-data'>
+<form id="BomEditForm" data-module="bom"  class="ajax-input-form bom_form" method="POST" action="{{ route('bill.of.material.update', $bom->id) }}" data-redirect="{{ url($routeAlias) }}" enctype='multipart/form-data'>
     @csrf
     <input type="hidden" name="orverhead_level_count"/>
     <input type="hidden" name="consumption_method" id="consumption_method" value=""/>
@@ -271,7 +271,9 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                                 <div class="tab-content mt-1" id="productTabsContent">
                                     <div class="tab-pane fade show active" id="raw-materials" role="tabpanel" aria-labelledby="raw-materials-tab">
                                         <div class="table-responsive pomrnheadtffotsticky">
-                                            <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
+                                            <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"
+                                            data-json-key="components_json"
+                                            data-row-selector="tr[id^='row_']">
                                                 <thead>
                                                     <tr>
                                                         <th>

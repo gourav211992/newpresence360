@@ -120,6 +120,7 @@ class MoItem extends Model
                 'group_name' => $attribute->group_name,
                 'values_data' => $valuesData,
                 'attribute_group_id' => $attribute->attribute_group_id,
+                'short_name' => $attribute->short_name
             ];
         }
         return collect($processedData);

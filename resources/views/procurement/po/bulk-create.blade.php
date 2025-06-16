@@ -21,7 +21,7 @@
 </style>
 @endsection
 @section('content')
-<form class="ajax-input-form" method="POST" action="{{ url(request()->route('type')) }}/bulk-store" data-redirect="/{{ request()->route('type') }}"  enctype="multipart/form-data">
+<form class="ajax-input-form" data-module="po" method="POST" action="{{ url(request()->route('type')) }}/bulk-store" data-redirect="/{{ request()->route('type') }}"  enctype="multipart/form-data">
     @csrf
     <input type="hidden" name="pi_item_ids" id="pi_item_ids">
     <div class="app-content content ">
@@ -183,7 +183,9 @@
                         
                     <div class="col-md-12">
                         <div class="table-responsive pomrnheadtffotsticky" style="height: 450px">
-                            <table id="itemTable"  class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"> 
+                            <table id="itemTable"  class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"
+                            data-json-key="components_json"
+                            data-row-selector="tr[id^='row_']"> 
                                 <thead>
                                     <tr>
                                         <th class="customernewsection-form">
