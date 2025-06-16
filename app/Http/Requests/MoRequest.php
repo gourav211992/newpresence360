@@ -13,9 +13,11 @@ use App\Models\PwoSoMapping;
 use App\Models\PwoStationConsumption;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use App\Traits\ProcessesComponentJson;
 
 class MoRequest extends FormRequest
 {
+    use ProcessesComponentJson;
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -29,7 +31,11 @@ class MoRequest extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
-
+    protected function prepareForValidation(): void
+    {
+        $this->processComponentJson('components_json');
+    }
+    
     public function rules(): array
     {
         $moId = $this->route('id');

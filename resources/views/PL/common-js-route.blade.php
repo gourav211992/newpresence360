@@ -7,7 +7,6 @@ window.pageData = {
     orderId: {!! json_encode(isset($order) ? $order -> id : null) !!},
     Stock_store : {!! json_encode(App\Helpers\ConstantHelper::STOCKK) !!},
     Shop_store : {!! json_encode(App\Helpers\ConstantHelper::SHOP_FLOOR) !!},
-
     startDate:{!! $current_financial_year['start_date'] ? json_encode($current_financial_year['start_date']) : 'null'  !!},
     endDate:{!! $current_financial_year['end_date'] ? json_encode($current_financial_year['end_date']) : 'null' !!},
     today: "{!! Carbon\Carbon::now()->format('Y-m-d') !!}",
@@ -15,6 +14,8 @@ window.pageData = {
 };
 </script>
 <script>
+    console.log("Page Data: ", window.pageData);
+    console.log("order: ", "{{$order?->book?->service?->alias}}");
     window.routes = {
         docParams: "{{ route('book.get.doc_no_and_parameters') }}",
         serviceSeries: "{{ route('book.service-series.get') }}",
@@ -24,6 +25,7 @@ window.pageData = {
         storeData : "{{route('get_store_data')}}",
         bookDetails : "{{route('book.service-series.get')}}",
         amend :  "{{ route('sale.order.amend', isset($order) ? $order -> id : 0) }}",
+        calTax : "{!!route('tax.calculate.sales', ['alias' => $order?->book?->service?->alias??" "]) !!}",
         getSeries : "{{ url('get-series') }}/",
     };
 </script>

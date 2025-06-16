@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('content')
 @use(App\Helpers\ConstantHelper)
-<form class="ajax-input-form" method="POST" action="{{ route('mo.update', $bom->id) }}" data-redirect="{{ route('mo.index') }}" enctype='multipart/form-data'>
+<form class="ajax-input-form" data-module="mo" method="POST" action="{{ route('mo.update', $bom->id) }}" data-redirect="{{ route('mo.index') }}" enctype='multipart/form-data'>
     @csrf
 <input type="hidden" name="so_item_ids" id="so_item_ids">
 <div class="app-content content ">
@@ -239,7 +239,9 @@
                             <div class="tab-content mt-1" id="productTabsContent">
                                 <div class="tab-pane fade show active" id="product-details" role="tabpanel" aria-labelledby="product-details-tab">
                                     <div class="table-responsive pomrnheadtffotsticky">
-                                    <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
+                                    <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"
+                                    data-json-key="components_json"
+                                    data-row-selector="tr[id^='row_']">
                                         <thead>
                                             <tr>
                                                 <th>
@@ -292,7 +294,9 @@
                                 </div>
                                 <div class="tab-pane fade" id="raw-materials" role="tabpanel" aria-labelledby="raw-materials-tab">
                                     <div class="table-responsive pomrnheadtffotsticky">
-                                        <table id="itemTable2" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
+                                        <table id="itemTable2" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"
+                                        data-json-key="component_json"
+                                        data-row-selector="tr[id^='row_']">
                                             <thead>
                                                 <tr>
                                                     <th>Order No.</th>
@@ -337,7 +341,9 @@
                                 @if($productionBomInstructions?->count())
                                 <div class="tab-pane fade" id="instructions-items" role="tabpanel" aria-labelledby="instructions-items-tab">
                                     <div class="table-responsive pomrnheadtffotsticky">
-                                    <table id="itemTable4" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
+                                    <table id="itemTable4" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"
+                                        data-json-key="instruction_json"
+                                        data-row-selector="tr[id^='row_']">
                                         <thead>
                                             <tr>
                                                 {{-- <th>

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\JobOrder\JoProduct;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -15,6 +16,7 @@ class GateEntryDetail extends Model
     protected $fillable = [
         'header_id',
         'purchase_order_item_id',
+        'job_order_item_id',
         'so_id',
         'item_id',
         'item_code',
@@ -104,6 +106,11 @@ class GateEntryDetail extends Model
     public function poItem()
     {
         return $this->belongsTo(PoItem::class, 'purchase_order_item_id');
+    }
+
+    public function joItem()
+    {
+        return $this->belongsTo(JoProduct::class, 'job_order_item_id');
     }
 
     public function item()

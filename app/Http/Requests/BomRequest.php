@@ -10,12 +10,13 @@ use App\Models\Bom;
 use App\Models\Item;
 use App\Models\NumberPattern;
 use App\Models\ItemAttribute;
-use Auth;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use App\Traits\ProcessesComponentJson;
 
 class BomRequest extends FormRequest
 {
+    use ProcessesComponentJson;
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -30,40 +31,21 @@ class BomRequest extends FormRequest
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
 
+     protected function prepareForValidation(): void
+     {
+         $this->processComponentJson('components_json');
+     }
+
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     */
+
     public function rules(): array
     {
-        if ($this->filled('components_json')) {
-            $decoded = json_decode($this->input('components_json'), true);
-            // $decoded = array_filter($decoded, fn($item) => is_array($item) && count($item) > 0);
-            $decoded = array_filter($decoded, function ($item) {
-                if (!is_array($item)) return false;
-                return collect($item)
-                    ->filter(fn($v, $k) => $k !== '' && $v !== null && $v !== '')
-                    ->isNotEmpty();
-            });
-
-            $components = [];
-            foreach ($decoded as $index => $component) {
-                $normalized = [];
-                foreach ($component as $key => $value) {
-                    if ($key === "") {
-                        continue;
-                    }
-                    $this->arraySetByPath($normalized, $this->parseKeyToPath($key), $value);
-                }
-                if (isset($normalized['components']) && is_array($normalized['components'])) {
-                    $nestedComp = reset($normalized['components']);
-                    unset($normalized['components']);
-                    unset($normalized['component_item_name'], $normalized['product_station'], $normalized['product_vendor']);
-                    $merged = array_merge($nestedComp, $normalized);
-                    if (isset($merged['remark']) && $merged['remark'] === '') {
-                        $merged['remark'] = null;
-                    }
-                    $components[$index + 1] = $merged;
-                } else {
-                    $components[$index + 1] = $normalized;
-                }
-            }
+        $components = $this->processComponentJson();
+        if (!is_null($components)) {
             $this->merge(['components' => $components]);
         }
         $bomId = $this->route('id');
@@ -155,29 +137,7 @@ class BomRequest extends FormRequest
         }
         return $rules;
     }
-
-    protected function parseKeyToPath(string $key): array
-    {
-        $parts = [];
-        preg_match_all('/([^\[\]]+)/', $key, $matches);
-        if (isset($matches[1])) {
-            $parts = $matches[1];
-        }
-        return $parts;
-    }
-
-    protected function arraySetByPath(array &$arr, array $path, $value)
-    {
-        $temp = &$arr;
-        foreach ($path as $key) {
-            if (!isset($temp[$key]) || !is_array($temp[$key])) {
-                $temp[$key] = [];
-            }
-            $temp = &$temp[$key];
-        }
-        $temp = $value;
-    }
-
+    
     public function withValidator(Validator $validator)
     {
         $validator->after(function ($validator) {

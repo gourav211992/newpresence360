@@ -44,18 +44,17 @@
     <div style="width:700px; font-size: 11px; font-family:Arial;">
         <table style="width: 100%; margin-bottom: 10px;" cellspacing="0" cellpadding="0">
             <tr>
-                <td style="text-align: left;">
+                <td style="text-align: left; width:30%;">
                     @if (isset($orgLogo) && $orgLogo)
                         <img src="{!! $orgLogo !!}" alt="" height="50px" />
                     @else
                         <img src="{{$imagePath}}" height="50px" alt="">
                     @endif
                 </td>
-                <td style="align-content: center; font-weight: bold; font-size: 22px;">
+                <td style="text-align:center;font-weight: bold; font-size: 22px;  width:40%;">
                     {{$print_type}}
                 </td>
-                <td style="text-align: right; font-weight: bold; font-size: 18px;">
-                    {{ Str::ucfirst(@$organization->name) }}
+                <td style = "width:30%;">
                 </td>
             </tr>
         </table>
@@ -65,9 +64,8 @@
                     style="border: 1px solid #000; padding: 3px;  vertical-align: top; width: 40%;">
                     <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
                         <tr>
-                            <td colspan="2"
-                                style="font-weight: 900; font-size: 13px; padding-bottom: 3px; vertical-align: top;">
-                                Issue From:
+                            <td colspan="3" style="font-weight: 700; font-size: 13px; padding-top: 3px;">
+                                <b>{{ Str::ucfirst(@$organization->name) }}</b>
                             </td>
                         </tr>
                         <tr>
@@ -121,6 +119,12 @@
                                 {{ @$shippingAddress->contact_email }}
                             </td>
                         </tr>
+                        <tr>
+                            <td style="padding-top: 3px;">PAN NO:</td>
+                            <td style="padding-top: 3px;">
+                                {{ @$organization?->pan_no }}
+                            </td>
+                        </tr>
                         <!-- <tr>
                             <td style="padding-top: 3px;">PAN NO. :</td>
                             <td style="padding-top: 3px;"></td>
@@ -133,25 +137,36 @@
                         @if($mx->issue_type != "Consumption")
                         <tr>
                             <td colspan="3" style="font-weight: 900; font-size: 13px; padding-bottom: 3px;">
-                                Receiver :
+                                {{@$mx -> issue_type === "Sub Contracting" || @$mx -> issue_type === "Job Work" ? 'Supplier Details:' : 'Customer Details:'}}
                             </td>
                         </tr>
-                        @if($mx->issue_type == "Sub Contracting")
+                        @if($mx->issue_type == "Sub Contracting" || @$mx -> issue_type === "Job Work" )
                         <tr>
-                            <td colspan="2" style="padding-top: 3px;">
+                            <td colspan="3" style="padding-top: 3px;">
                                 <span style="font-weight: 700; font-size: 13px;">
                                 <b>{{ Str::ucfirst(@$mx?->vendor?->company_name ?? "") }}</b>
                                 </span>
                             </td>
                         </tr>
                         @endif
+                        @if($mx->issue_type == "Sub Contracting" || @$mx -> issue_type === "Job Work" )
                         <tr>
-                            <td colspan="1" style="padding-top: 3px;">
+                            <td colspan="3" style="padding-top: 3px;">
                                 <span style="font-weight: 700; font-size: 13px;">
-                                <b>{{ Str::ucfirst(@$mx?->to_store?->store_name ?? "Receiving Store Not Required") }}</b>
+                                <b>{{ Str::ucfirst(@$mx?->to_sub_store?->name ?? "") }}</b>
                                 </span>
                             </td>
                         </tr>
+                        @else
+                        <tr>
+                            <td colspan="3" style="padding-top: 3px;">
+                                <span style="font-weight: 700; font-size: 13px;">
+                                <b>{{ Str::ucfirst(@$mx?->to_store?->store_name ?? "") }}</b>
+                                </span>
+                            </td>
+                        </tr>
+                        @endif
+                        
                         <tr>
                             <td style="padding-top: 15px;">Address: </td>
                             <td style="padding-top: 15px;">
@@ -185,6 +200,18 @@
                             <td style="padding-top: 3px;">PHONE:</td>
                             <td style="padding-top: 3px;">
                                 {{ @$billingAddress->contact_phone_no }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding-top: 3px;">GSTIN NO:</td>
+                            <td style="padding-top: 3px;">
+                                {{ @$mx ?-> vendor ?-> compliances ?-> gstin_no }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding-top: 3px;">PAN NO:</td>
+                            <td style="padding-top: 3px;">
+                                {{ @$mx?-> vendor ?-> pan_number }}
                             </td>
                         </tr>
                         @else
@@ -245,6 +272,19 @@
                             <td><b>Approved by:</b></td>
                             <td>{{ $approvedBy }}</td>
                         </tr>
+
+                        <tr>
+                            <td><b>Type of Challan:</b></td>
+                            <td>{{ @$mx->issue_type }}</td>
+                        </tr>
+
+                        @if ($jobOrderNos)
+                        <tr>
+                            <td><b>Job Order No:</b></td>
+                            <td>{{ @$jobOrderNos }}</td>
+                        </tr>
+                    
+                        @endif
                         
                     </table>
                 </td>

@@ -16,7 +16,7 @@
          </div>
       </td>
       <td>
-         <input type="text" name="component_item_name[{{$rowCount}}]" placeholder="Select" class="form-control mw-100 ledgerselecct comp_item_code" value="{{$item->item_code}}" />
+         <input type="text" name="component_item_name[{{$rowCount}}]" placeholder="Select" class="form-control mw-100 ledgerselecct comp_item_code" value="{{$item->item_code}}" readonly/>
          <input type="hidden" name="components[{{$rowCount}}][item_id]" value="{{@$item->item_id}}" />
          <input type="hidden" name="components[{{$rowCount}}][item_code]" value="{{@$item->item_code}}" />
          <input type="hidden" name="components[{{$rowCount}}][item_name]" value="{{@$item->item->item_name}}" />

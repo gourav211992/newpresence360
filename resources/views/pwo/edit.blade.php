@@ -27,7 +27,7 @@
 </style>
 @endsection
 @section('content')
-<form class="ajax-input-form" method="POST" action="{{ route('pwo.update', $bom->id) }}" data-redirect="{{ route('pwo.index') }}" enctype='multipart/form-data'>
+<form class="ajax-input-form" data-module="pwo" method="POST" action="{{ route('pwo.update', $bom->id) }}" data-redirect="{{ route('pwo.index') }}" enctype='multipart/form-data'>
     @csrf
     <input type="hidden" name="show_attribute" value="0" id="show_attribute">
 <input type="hidden" name="so_item_ids" id="so_item_ids">
@@ -212,7 +212,9 @@
                             <div class="tab-content mt-3" id="productTabsContent">
                                 <div class="tab-pane fade show active" id="product-details" role="tabpanel" aria-labelledby="product-details-tab">
                                     <div class="table-responsive pomrnheadtffotsticky">
-                                        <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
+                                        <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"
+                                        data-json-key="components_json"
+                                        data-row-selector="tr[id^='row_']">
                                             <thead>
                                                 <tr>
                                                     <th>

@@ -129,7 +129,7 @@ class ErpProductionWorkOrder extends Model
     {
         return $this -> hasMany(ErpPwoDynamicField::class, 'header_id');
     }
-     public function createdBy()
+    public function createdBy()
     {
         return $this->belongsTo(AuthUser::class,'created_by','id');
     }

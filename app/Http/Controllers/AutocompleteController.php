@@ -17,6 +17,7 @@ use App\Models\Employee;
 use App\Models\ErpBin;
 use App\Models\ErpCustomer;
 use App\Models\ErpMaterialIssueHeader;
+use App\Models\ErpMaterialReturnHeader;
 use App\Models\ErpMiItem;
 use App\Models\ErpMrItem;
 use App\Models\ErpProductionSlip;
@@ -32,12 +33,14 @@ use App\Models\ErpVendor;
 use App\Models\ExpenseMaster;
 use App\Models\Hsn;
 use App\Models\Item;
+use App\Models\JobOrder\JobOrder;
 use App\Models\LandLease;
 use App\Models\LandParcel;
 use App\Models\LandPlot;
 use App\Models\Ledger;
 use App\Models\Group;
 use App\Models\MfgOrder;
+use App\Models\MoItem;
 use App\Models\Organization;
 use App\Models\OrganizationCompany;
 use App\Models\OrganizationService;
@@ -298,7 +301,6 @@ class AutocompleteController extends Controller
                     ->withCount('itemAttributes')
                     ->limit(10)
                     ->get(['id', 'item_name', 'item_code', 'uom_id']);
-
             } elseif ($type === 'material_issue_items') {
                 $results = Item::withDefaultGroupCompanyOrg()
                     ->searchByKeywords($term)
@@ -663,6 +665,20 @@ class AutocompleteController extends Controller
                         ->limit(10)
                         ->get(['id', 'book_name', 'book_code']);
                 }
+            }  elseif ($type === 'book_jo') {
+                $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request -> header_book_id);
+                $subQuery = Helper::getBookSeries(ConstantHelper::JO_SERVICE_ALIAS);
+                $results = $subQuery->where('book_name', 'LIKE', "%$term%")
+                    ->when($request -> header_book_id, function ($applicableQuery) use($applicableBookIds) {
+                        $applicableQuery -> whereIn('id', $applicableBookIds);
+                    })
+                    ->get(['id', 'book_name', 'book_code']);
+
+                if ($results->isEmpty()) {
+                    $results = $subQuery
+                        ->limit(10)
+                        ->get(['id', 'book_name', 'book_code']);
+                }
             }  elseif ($type === 'book_mi') {
                 $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request -> header_book_id);
                 $subQuery = Helper::getBookSeries(ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME);
@@ -879,6 +895,72 @@ class AutocompleteController extends Controller
                     -> whereIn('document_status', [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED])
                     ->get(['id', 'document_number']);
                 }
+            } else if ($type === "sale_order_document_mo") {
+                $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request -> header_book_id??0);
+                $so_ids = MoItem::whereHas('header', function ($query) {
+                    $query->withDefaultGroupCompanyOrg();
+                })->pluck('so_id')->unique()->toArray();
+                $results = ErpSaleOrder::query()
+                    ->whereIn(
+                        'id', $so_ids)
+                    ->when($term, function ($query) use ($term) {
+                        if (preg_match('/^(.*?)\s*\((.*?)\)$/', $term, $matches)) {
+                            $bookCode = trim($matches[1]);
+                            $documentNumber = trim($matches[2]);
+
+                            $query->where('book_code', $bookCode)
+                                ->where('document_number', $documentNumber);
+                        } else {
+                            $query->where(function ($q) use ($term) {
+                                $q->where('document_number', 'LIKE', "%$term%")
+                                ->orWhere('book_code', 'LIKE', "%$term%");
+                            });
+                        }
+                    })
+                    ->get(['id', 'book_code', 'document_number']);
+
+
+                if ($results->isEmpty()) {
+                    $results = ErpSaleOrder::query()
+                        ->whereIn('id', $so_ids)
+                        ->get(['id', 'book_code', 'document_number']);
+
+
+
+                }
+            } else if ($type === "sale_order_document_pi") {
+                $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request -> header_book_id??0);
+                $so_ids = PiItem::whereHas('header', function ($query) {
+                    $query->withDefaultGroupCompanyOrg();
+                })->pluck('so_id')->unique()->toArray();
+                $results = ErpSaleOrder::query()
+                    ->whereIn(
+                        'id', $so_ids)
+                    ->when($term, function ($query) use ($term) {
+                        if (preg_match('/^(.*?)\s*\((.*?)\)$/', $term, $matches)) {
+                            $bookCode = trim($matches[1]);
+                            $documentNumber = trim($matches[2]);
+
+                            $query->where('book_code', $bookCode)
+                                ->where('document_number', $documentNumber);
+                        } else {
+                            $query->where(function ($q) use ($term) {
+                                $q->where('document_number', 'LIKE', "%$term%")
+                                ->orWhere('book_code', 'LIKE', "%$term%");
+                            });
+                        }
+                    })
+                    ->get(['id', 'book_code', 'document_number']);
+
+
+                if ($results->isEmpty()) {
+                    $results = ErpSaleOrder::query()
+                        ->whereIn('id', $so_ids)
+                        ->get(['id', 'book_code', 'document_number']);
+
+
+
+                }
             } else if ($type === 'packing_list_so') {
                 $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request -> header_book_id);
                 $results = ErpSaleOrder::select('id', 'book_code', 'document_number', 'customer_code', 'document_date') -> when($term, function ($termQuery) use($term) {
@@ -967,6 +1049,27 @@ class AutocompleteController extends Controller
                         ->get(['id', 'name'])
                         ->unique('name');
                 }
+            }else if ($type === "department_pi") {
+                $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request->header_book_id);
+                $department = PurchaseIndent::whereNotNull('department_id')
+                    ->pluck('department_id')
+                    ->unique()
+                    ->toArray();
+
+                $results = Department::whereNotNull('name')
+                    ->whereIn('id', $department)
+                    ->where('organization_id', $authUser->organization_id)
+                    ->where('name', 'LIKE', "%$term%")
+                    ->get(['id', 'name'])
+                    ->unique('name');
+
+                if ($results->isEmpty()) {
+                    $results = Department::whereNotNull('name')
+                        ->whereIn('id', $department)
+                        ->where('organization_id', $authUser->organization_id)
+                        ->get(['id', 'name'])
+                        ->unique('name');
+                }
             }
              else if ($type === "pi_document_qt") {
                 if($request->module_type == 'supplier-invoice') {
@@ -991,6 +1094,43 @@ class AutocompleteController extends Controller
                         ->limit(10)
                         ->get(['id', 'document_number','book_code','book_id']);
                     }
+                }
+            }
+            else if ($type === "pi_document") {
+                $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request -> header_book_id);
+                $results = PurchaseIndent::where('document_number', 'LIKE', "%$term%")
+                    -> withDefaultGroupCompanyOrg()
+                    -> when($request -> header_book_id, function ($applicableQuery) use($applicableBookIds) {
+                        $applicableQuery -> whereIn('book_id', $applicableBookIds);
+                    })
+                    -> whereIn('document_status', [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED])
+                    ->get(['id', 'book_code' ,'document_number']);
+                if ($results->isEmpty()) {
+                    $results = PurchaseIndent::limit(10)
+                    -> withDefaultGroupCompanyOrg()
+                    -> when($request -> header_book_id, function ($applicableQuery) use($applicableBookIds) {
+                        $applicableQuery -> whereIn('book_id', $applicableBookIds);
+                    })
+                    -> whereIn('document_status', [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED])
+                        ->get(['id', 'book_code' , 'document_number']);
+                }
+            }else if ($type === "jo_document") {
+                $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request -> header_book_id);
+                $results = JobOrder::where('document_number', 'LIKE', "%$term%")
+                    -> withDefaultGroupCompanyOrg()
+                    -> when($request -> header_book_id, function ($applicableQuery) use($applicableBookIds) {
+                        $applicableQuery -> whereIn('book_id', $applicableBookIds);
+                    })
+                    -> whereIn('document_status', [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED])
+                    ->get(['id', 'book_code' ,'document_number']);
+                if ($results->isEmpty()) {
+                    $results = JobOrder::limit(10)
+                    -> withDefaultGroupCompanyOrg()
+                    -> when($request -> header_book_id, function ($applicableQuery) use($applicableBookIds) {
+                        $applicableQuery -> whereIn('book_id', $applicableBookIds);
+                    })
+                    -> whereIn('document_status', [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED])
+                        ->get(['id', 'book_code' , 'document_number']);
                 }
             } else if ($type === "document_book") {
                 $serviceAlias = $request->service_alias ?? '';
@@ -1127,9 +1267,27 @@ class AutocompleteController extends Controller
                         $applicableQuery -> whereIn('book_id', $applicableBookIds);
                     })
                     -> whereIn('document_status', [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED])
-                    ->get(['id', 'document_number']);
+                    ->get(['id', 'document_number','book_code']);
                 if ($results->isEmpty()) {
                     $results = MfgOrder::limit(10)
+                    -> withDefaultGroupCompanyOrg()
+                    -> when($request -> header_book_id, function ($applicableQuery) use($applicableBookIds) {
+                        $applicableQuery -> whereIn('book_id', $applicableBookIds);
+                    })
+                    -> whereIn('document_status', [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED])
+                        ->get(['id', 'document_number','book_code']);
+                    }
+            }  else if ($type === "jo_document") {
+                $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request -> header_book_id);
+                $results = JobOrder::where('document_number', 'LIKE', "%$term%")
+                    -> withDefaultGroupCompanyOrg()
+                    -> when($request -> header_book_id, function ($applicableQuery) use($applicableBookIds) {
+                        $applicableQuery -> whereIn('book_id', $applicableBookIds);
+                    })
+                    -> whereIn('document_status', [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED])
+                    ->get(['id', 'document_number']);
+                if ($results->isEmpty()) {
+                    $results = JobOrder::limit(10)
                     -> withDefaultGroupCompanyOrg()
                     -> when($request -> header_book_id, function ($applicableQuery) use($applicableBookIds) {
                         $applicableQuery -> whereIn('book_id', $applicableBookIds);
@@ -1432,6 +1590,87 @@ class AutocompleteController extends Controller
                 $service = Service::where('alias', ConstantHelper::SO_SERVICE_ALIAS) -> first();
 
                 $query = Book::withDefaultGroupCompanyOrg() -> where('service_id', $service ?-> id);
+                $results = $query->when($term, function ($q) use ($term) {
+                    return $q->where(function($query) use ($term) {
+                        $query->where('book_code', 'LIKE', "%$term%")
+                        ->orWhere('book_name', 'LIKE', "%$term%");
+                    });
+                }) -> get(['id', 'book_code']);
+                if ($results->isEmpty()) {
+                    $results = Book::withDefaultGroupCompanyOrg() -> where('service_id', $service ?-> id)
+                        ->limit(10)
+                        ->get(['id', 'book_code']);
+                }
+            } else if ($type === 'report_mr_documents') {
+                $query = ErpMaterialReturnHeader::withDefaultGroupCompanyOrg();
+                $results = $query->when($term, function ($q) use ($term) {
+                    return $q->where(function($query) use ($term) {
+                        $query->where('document_number', 'LIKE', "%$term%");
+                    });
+                }) -> get(['id', 'document_number']);
+                if ($results->isEmpty()) {
+                    $results = ErpMaterialReturnHeader::withDefaultGroupCompanyOrg()
+                        ->limit(10)
+                        ->get(['id', 'document_number']);
+                }
+            } else if ($type === 'report_mr_book') {
+                $service = Service::where('alias', ConstantHelper::MATERIAL_RETURN_SERVICE_ALIAS_NAME) -> first();
+
+                $query = Book::withDefaultGroupCompanyOrg() -> where('service_id', $service ?-> id);
+                $results = $query->when($term, function ($q) use ($term) {
+                    return $q->where(function($query) use ($term) {
+                        $query->where('book_code', 'LIKE', "%$term%")
+                        ->orWhere('book_name', 'LIKE', "%$term%");
+                    });
+                }) -> get(['id', 'book_code']);
+                if ($results->isEmpty()) {
+                    $results = Book::withDefaultGroupCompanyOrg() -> where('service_id', $service ?-> id)
+                        ->limit(10)
+                        ->get(['id', 'book_code']);
+                }
+            } else if ($type === 'report_mi_documents') {
+                $query = ErpMaterialIssueHeader::withDefaultGroupCompanyOrg();
+                $results = $query->when($term, function ($q) use ($term) {
+                    return $q->where(function($query) use ($term) {
+                        $query->where('document_number', 'LIKE', "%$term%");
+                    });
+                }) -> get(['id', 'document_number']);
+                if ($results->isEmpty()) {
+                    $results = ErpMaterialIssueHeader::withDefaultGroupCompanyOrg()
+                        ->limit(10)
+                        ->get(['id', 'document_number']);
+                }
+            } else if ($type === 'report_mi_book') {
+                $service = Service::where('alias', ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME) -> first();
+
+                $query = Book::withDefaultGroupCompanyOrg() -> where('service_id', $service ?-> id);
+                $results = $query->when($term, function ($q) use ($term) {
+                    return $q->where(function($query) use ($term) {
+                        $query->where('book_code', 'LIKE', "%$term%")
+                        ->orWhere('book_name', 'LIKE', "%$term%");
+                    });
+                }) -> get(['id', 'book_code']);
+                if ($results->isEmpty()) {
+                    $results = Book::withDefaultGroupCompanyOrg() -> where('service_id', $service ?-> id)
+                        ->limit(10)
+                        ->get(['id', 'book_code']);
+                }
+            } else if ($type === 'report_si_documents') {
+                $query = ErpSaleInvoice::withDefaultGroupCompanyOrg();
+                $results = $query->when($term, function ($q) use ($term) {
+                    return $q->where(function($query) use ($term) {
+                        $query->where('document_number', 'LIKE', "%$term%");
+                    });
+                }) -> get(['id', 'document_number']);
+                if ($results->isEmpty()) {
+                    $results = ErpSaleInvoice::withDefaultGroupCompanyOrg()
+                        ->limit(10)
+                        ->get(['id', 'document_number']);
+                }
+            } else if ($type === 'report_si_book') {
+                $service = Service::whereIn('alias', [ConstantHelper::SI_SERVICE_ALIAS,ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS]) -> get();
+
+                $query = Book::withDefaultGroupCompanyOrg() -> whereIn('service_id', $service->pluck('id'));
                 $results = $query->when($term, function ($q) use ($term) {
                     return $q->where(function($query) use ($term) {
                         $query->where('book_code', 'LIKE', "%$term%")

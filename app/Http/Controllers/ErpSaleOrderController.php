@@ -14,12 +14,17 @@ use App\Helpers\SaleModuleHelper;
 use App\Helpers\ServiceParametersHelper;
 use App\Helpers\TaxHelper;
 use App\Helpers\NumberHelper;
+use App\Helpers\TransactionReportHelper;
+use App\Http\Controllers\Report\TransactionReportController;
 use App\Http\Requests\ErpSaleOrderRequest;
 use App\Models\Attribute;
+use App\Models\AttributeGroup;
+use App\Models\AuthUser;
 use App\Models\Bom;
 use App\Models\BomDetail;
 use App\Models\Book;
 use App\Models\CashCustomerDetail;
+use App\Models\Category;
 use App\Models\Country;
 use App\Models\Customer;
 use App\Models\Address;
@@ -47,10 +52,12 @@ use App\Models\ErpVendor;
 use App\Models\ItemSpecification;
 use App\Models\NumberPattern;
 use App\Models\Organization;
+use App\Models\OrganizationGroup;
 use App\Models\ProductionLevel;
 use App\Models\ProductionRouteDetail;
 use App\Models\ServiceParameter;
 use App\Models\State;
+use App\Services\Reports\TransactionReport;
 use Carbon\Carbon;
 use DB;
 use Illuminate\Support\Facades\Storage;
@@ -76,11 +83,73 @@ class ErpSaleOrderController extends Controller
             $createRoute = route('sale.order.create');
 
         }
+        $autoCompleteFilters = self::getBasicFilters();
         request() -> merge(['type' => $orderType]);
-        
+        $authUser = Helper::getAuthenticatedUser();
+        $organization = Organization::find($authUser ?-> organization_id);
+        $salesOrderBulkUploadVersion = "v2";
+        //Shufab special case for custom import
+        $userGroup = OrganizationGroup::find($organization ?-> group_id);
+        if ($userGroup) {
+            $groupName = strtolower($userGroup -> name);
+            if (str_contains($groupName, 'shufab')) {
+                $salesOrderBulkUploadVersion = "v1";
+            }
+        }
         if ($request -> ajax()) {
-
-            $salesOrder = ErpSaleOrder::where('document_type', $orderType) -> bookViewAccess($pathUrl) -> withDefaultGroupCompanyOrg() -> withDraftListingLogic() -> orderByDesc('id');
+            $accessible_locations = InventoryHelper::getAccessibleLocations()->pluck('id')->toArray();
+            $selectedfyYear = Helper::getFinancialYear(Carbon::now()->format('Y-m-d'));
+            //Date Filters
+            $dateRange = $request -> date_range ??  null;
+            
+            $salesOrder = ErpSaleOrder::where('document_type', $orderType) -> whereIn('store_id',$accessible_locations) -> bookViewAccess($pathUrl) -> withDefaultGroupCompanyOrg() -> withDraftListingLogic() -> when($request -> customer_id, function ($custQuery) use($request) {
+                $custQuery -> where('customer_id', $request -> customer_id);
+            }) -> when($request -> book_id, function ($bookQuery) use($request) {
+                $bookQuery -> where('book_id', $request -> book_id);
+            }) -> when($request -> document_number, function ($docQuery) use($request) {
+                $docQuery -> where('document_number', 'LIKE', '%' . $request -> document_number . '%');
+            }) -> when($request -> location_id, function ($docQuery) use($request) {
+                $docQuery -> where('store_id', $request -> location_id);
+            }) -> when($request -> company_id, function ($docQuery) use($request) {
+                $docQuery -> where('store_id', $request -> company_id);
+            }) -> when($request -> organization_id, function ($docQuery) use($request) {
+                $docQuery -> where('organization_id', $request -> organization_id);
+            }) -> when($request -> status, function ($docStatusQuery) use($request) {
+                $searchDocStatus = [];
+                if ($request -> status === ConstantHelper::DRAFT) {
+                    $searchDocStatus = [ConstantHelper::DRAFT];
+                } else if ($request -> status === ConstantHelper::SUBMITTED) {
+                    $searchDocStatus = [ConstantHelper::SUBMITTED, ConstantHelper::PARTIALLY_APPROVED];
+                } else {
+                    $searchDocStatus = [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED];
+                }
+                $docStatusQuery -> whereIn('document_status', $searchDocStatus);
+            }) -> when($dateRange, function ($dateRangeQuery) use($request, $dateRange) {
+            $dateRanges = explode('to', $dateRange);
+            if (count($dateRanges) == 2) {
+                    $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
+                    $toDate = Carbon::parse(trim($dateRanges[1])) -> format('Y-m-d');
+                    $dateRangeQuery -> whereDate('document_date', ">=" , $fromDate) -> where('document_date', '<=', $toDate);
+            }
+            else{
+                $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
+                $dateRangeQuery -> whereDate('document_date', $fromDate);
+            }
+            }) -> when($request -> item_id, function ($itemQuery) use($request) {
+                $itemQuery -> withWhereHas('items', function ($itemSubQuery) use($request) {
+                    $itemSubQuery -> where('item_id', $request -> item_id)
+                    //Compare Item Category
+                    -> when($request -> item_category_id, function ($itemCatQuery) use($request) {
+                        $itemCatQuery -> whereHas('item', function ($itemRelationQuery) use($request) {
+                            $itemRelationQuery -> where('category_id', $request -> category_id)
+                            //Compare Item Sub Category
+                            -> when($request -> item_sub_category_id, function ($itemSubCatQuery) use($request) {
+                                $itemSubCatQuery -> where('subcategory_id', $request -> item_sub_category_id);
+                            });
+                        });
+                    });
+                });
+            }) -> orderByDesc('id');
             return DataTables::of($salesOrder) ->addIndexColumn()
             ->editColumn('document_status', function ($row) use($orderType) {
                 $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->document_status ?? ConstantHelper::DRAFT];    
@@ -134,7 +203,7 @@ class ErpSaleOrderController extends Controller
                 return number_format($row->total_discount_value,2);
             })
             ->editColumn('total_tax_value', function ($row) {
-                return number_format($row->total_tax_value,2);
+                return number_format(abs($row->total_tax_value),2);
             })
             ->editColumn('total_expense_value', function ($row) {
                 return number_format($row->total_expense_value,2);
@@ -150,8 +219,34 @@ class ErpSaleOrderController extends Controller
         return view('salesOrder.index', [
             'redirect_url' => $redirectUrl,
             'create_route' => $createRoute,
+            'create_button' => count($servicesBooks['services']),
+            'filterArray' => TransactionReportHelper::FILTERS_MAPPING[ConstantHelper::SO_SERVICE_ALIAS],
+            'autoCompleteFilters' => $autoCompleteFilters,
+            'bulk_upload_version' => $salesOrderBulkUploadVersion,
             'create_button' => count($servicesBooks['services'])
         ]);
+    }
+    public function getBasicFilters()
+    {
+        //Get the common filters
+        $user = Helper::getAuthenticatedUser();
+        $categories = Category::select('id AS value', 'name AS label') -> withDefaultGroupCompanyOrg() 
+        -> whereNull('parent_id') -> get();
+        $subCategories = Category::select('id AS value', 'name AS label') -> withDefaultGroupCompanyOrg() 
+        -> whereNotNull('parent_id') -> get();
+        $items = Item::select('id AS value', 'item_name AS label') -> withDefaultGroupCompanyOrg()->get();
+        $users = AuthUser::select('id AS value', 'name AS label') -> where('organization_id', $user -> organization_id)->get();
+        $attributeGroups = AttributeGroup::select('id AS value', 'name AS label')->withDefaultGroupCompanyOrg()->get();
+
+        //Custom filters (to be restr)
+
+        return array(
+            'itemCategories' => $categories,
+            'itemSubCategories' => $subCategories,
+            'items' => $items,
+            'users' => $users,
+            'attributeGroups' => $attributeGroups 
+        );
     }
     public function create(Request $request)
     {
@@ -699,6 +794,7 @@ class ErpSaleOrderController extends Controller
                             $totalItemValueAfterDiscount += $itemValueAfterDiscount;
                             //Check if discount exceeds item value
                             if ($totalItemValueAfterDiscount < 0) {
+                                DB::rollBack();
                                 return response() -> json([
                                     'message' => '',
                                     'errors' => array(
@@ -760,9 +856,16 @@ class ErpSaleOrderController extends Controller
                         if (isset($taxDetails) && count($taxDetails) > 0) {
                             foreach ($taxDetails as $taxDetail) {
                                 $itemTax += ((double)$taxDetail['tax_percentage'] / 100 * $valueAfterHeaderDiscount);
+                                if($taxDetail['applicability_type']=="collection")
+                                {
+                                    $totalTax -= $itemTax;
+                                }
+                                else
+                                {
+                                    $totalTax += $itemTax;
+                                }
                             }
                         }
-                        $totalTax += $itemTax;
                         //Check if update or create
                         $itemRowData = [
                             'sale_order_id' => $saleOrder -> id,
@@ -882,7 +985,7 @@ class ErpSaleOrderController extends Controller
                                         'assessment_amount' => $valueAfterHeaderDiscount,
                                         'ted_percentage' => (double)$taxDetail['tax_percentage'],
                                         'ted_amount' => ((double)$taxDetail['tax_percentage'] / 100 * $valueAfterHeaderDiscount),
-                                        'applicable_type' => 'Collection',
+                                        'applicable_type' => $taxDetail['applicability_type'],
                                     ]
                                 );
                                 array_push($itemTaxIds,$soItemTedForDiscount -> id);
@@ -928,6 +1031,17 @@ class ErpSaleOrderController extends Controller
                         //Item Deliveries
                         if (isset($request -> item_delivery_schedule_qty[$itemDataKey])) {
                             foreach ($request -> item_delivery_schedule_qty[$itemDataKey] as $itemDeliveryKey => $itemDeliveryQty) {
+                                if (isset($request -> item_delivery_schedule_date[$itemDataKey][$itemDeliveryKey])) {
+                                    if (Carbon::parse($request -> item_delivery_schedule_date[$itemDataKey][$itemDeliveryKey]) -> lt(Carbon::parse($saleOrder -> created_at))) {
+                                        DB::rollBack();
+                                        return response() -> json([
+                                            'message' => '',
+                                            'errors' => array(
+                                                'item_name.' . $itemKey => "Past Delivery Date is not allowed"
+                                            )
+                                        ], 422);
+                                    }
+                                }
                                 $itemDeliveryRowData = [
                                     'sale_order_id' => $saleOrder -> id,
                                     'so_item_id' => $soItem -> id,
@@ -944,6 +1058,15 @@ class ErpSaleOrderController extends Controller
                             }
                         } 
                         else {
+                            if (Carbon::parse($soItem -> delivery_date) -> lt(Carbon::parse($saleOrder -> created_at))) {
+                                DB::rollBack();
+                                return response() -> json([
+                                    'message' => '',
+                                    'errors' => array(
+                                        'item_name.' . $itemKey => "Past Delivery Date is not allowed"
+                                    )
+                                ], 422);
+                            }
                             $itemDeliveryRowData = [
                                 'sale_order_id' => $saleOrder -> id,
                                 'so_item_id' => $soItem -> id,

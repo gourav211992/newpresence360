@@ -890,7 +890,7 @@ class TransactionReportHelper
             'label' => 'Series',
             'id' => 'book_filter',
             'requestName' => 'book_id',
-            'term' => 'report_so_book',
+            'term' => 'report_si_book',
             'value_key' => 'id',
             'label_key' => 'book_code',
             'type' => 'auto_complete'
@@ -900,7 +900,7 @@ class TransactionReportHelper
             'label' => 'Doc No',
             'id' => 'doc_number_filter',
             'requestName' => 'document_number',
-            'term' => 'report_so_documents',
+            'term' => 'report_si_documents',
             'value_key' => 'id',
             'label_key' => 'document_number',
             'type' => 'input_text'
@@ -1590,7 +1590,7 @@ class TransactionReportHelper
             'label' => 'Series',
             'id' => 'book_filter',
             'requestName' => 'book_id',
-            'term' => 'report_so_book',
+            'term' => 'report_mr_book',
             'value_key' => 'id',
             'label_key' => 'book_code',
             'type' => 'auto_complete'
@@ -1600,7 +1600,7 @@ class TransactionReportHelper
             'label' => 'Doc No',
             'id' => 'doc_number_filter',
             'requestName' => 'document_number',
-            'term' => 'report_so_documents',
+            'term' => 'report_mr_documents',
             'value_key' => 'id',
             'label_key' => 'document_number',
             'type' => 'input_text'
@@ -1617,8 +1617,8 @@ class TransactionReportHelper
         ],
         [
             'colSpan' => 'auto',
-            'label' => 'issue Dt',
-            'id' => 'issue_dt_filter',
+            'label' => 'Return Dt',
+            'id' => 'return_dt_filter',
             'requestName' => 'mi_dt',
             'term' => '',
             'value_key' => '',

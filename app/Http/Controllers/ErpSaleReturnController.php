@@ -15,9 +15,12 @@ use App\Helpers\NumberHelper;
 use App\Helpers\SaleModuleHelper;
 use App\Helpers\ServiceParametersHelper;
 use App\Helpers\TaxHelper;
+use App\Helpers\TransactionReportHelper;
 use App\Http\Requests\ErpSaleReturnRequest;
 use App\Jobs\SendEmailJob;
+use App\Models\AttributeGroup;
 use App\Models\AuthUser;
+use App\Models\Category;
 use App\Models\Country;
 use App\Models\Address;
 use App\Models\ErpAddress;
@@ -73,14 +76,67 @@ class ErpSaleReturnController extends Controller
         $redirectUrl = route('sale.return.index');
         $createRoute = route('sale.return.create');
         request()->merge(['type' => $orderType]);
-
         $typeName = SaleModuleHelper::getAndReturnReturnTypeName($orderType);
-
-        if ($request->ajax()) {
+        $autoCompleteFilters = self::getBasicFilters();
+        request() -> merge(['type' => $orderType]);
+        if ($request -> ajax()) {
+            $accessible_locations = InventoryHelper::getAccessibleLocations()->pluck('id')->toArray();
+            $selectedfyYear = Helper::getFinancialYear(Carbon::now()->format('Y-m-d'));
+            //Date Filters
+            $dateRange = $request -> date_range ??  null;
+            
             $returns = ErpSaleReturn::withDefaultGroupCompanyOrg()
+                -> whereIn('store_id',$accessible_locations)
                 ->whereBetween('document_date', [$selectedfyYear['start_date'], $selectedfyYear['end_date']])
                 ->withDraftListingLogic()
-                ->orderByDesc('id');
+                -> when($request -> customer_id, function ($custQuery) use($request) {
+                    $custQuery -> where('customer_id', $request -> customer_id);
+                }) -> when($request -> book_id, function ($bookQuery) use($request) {
+                    $bookQuery -> where('book_id', $request -> book_id);
+                }) -> when($request -> document_number, function ($docQuery) use($request) {
+                    $docQuery -> where('document_number', 'LIKE', '%' . $request -> document_number . '%');
+                }) -> when($request -> location_id, function ($docQuery) use($request) {
+                    $docQuery -> where('store_id', $request -> location_id);
+                }) -> when($request -> company_id, function ($docQuery) use($request) {
+                    $docQuery -> where('store_id', $request -> company_id);
+                }) -> when($request -> organization_id, function ($docQuery) use($request) {
+                    $docQuery -> where('organization_id', $request -> organization_id);
+                }) -> when($request -> status, function ($docStatusQuery) use($request) {
+                    $searchDocStatus = [];
+                    if ($request -> status === ConstantHelper::DRAFT) {
+                        $searchDocStatus = [ConstantHelper::DRAFT];
+                    } else if ($request -> status === ConstantHelper::SUBMITTED) {
+                        $searchDocStatus = [ConstantHelper::SUBMITTED, ConstantHelper::PARTIALLY_APPROVED];
+                    } else {
+                        $searchDocStatus = [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED];
+                    }
+                    $docStatusQuery -> whereIn('document_status', $searchDocStatus);
+                }) -> when($dateRange, function ($dateRangeQuery) use($request, $dateRange) {
+                $dateRanges = explode('to', $dateRange);
+                if (count($dateRanges) == 2) {
+                        $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
+                        $toDate = Carbon::parse(trim($dateRanges[1])) -> format('Y-m-d');
+                        $dateRangeQuery -> whereDate('document_date', ">=" , $fromDate) -> where('document_date', '<=', $toDate);
+                }
+                else{
+                    $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
+                    $dateRangeQuery -> whereDate('document_date', $fromDate);
+                }
+                }) -> when($request -> item_id, function ($itemQuery) use($request) {
+                    $itemQuery -> withWhereHas('items', function ($itemSubQuery) use($request) {
+                        $itemSubQuery -> where('item_id', $request -> item_id)
+                        //Compare Item Category
+                        -> when($request -> item_category_id, function ($itemCatQuery) use($request) {
+                            $itemCatQuery -> whereHas('item', function ($itemRelationQuery) use($request) {
+                                $itemRelationQuery -> where('category_id', $request -> category_id)
+                                //Compare Item Sub Category
+                                -> when($request -> item_sub_category_id, function ($itemSubCatQuery) use($request) {
+                                    $itemSubCatQuery -> where('subcategory_id', $request -> item_sub_category_id);
+                                });
+                            });
+                        });
+                    });
+                }) -> orderByDesc('id');
 
             return DataTables::of($returns)
                 ->addIndexColumn()
@@ -160,10 +216,33 @@ class ErpSaleReturnController extends Controller
         return view('salesReturn.index', [
             'typeName' => $typeName,
             'redirect_url' => $redirectUrl,
-            'create_route' => $createRoute
+            'create_route' => $createRoute,
+            'filterArray' => TransactionReportHelper::FILTERS_MAPPING[ConstantHelper::SR_SERVICE_ALIAS],
+            'autoCompleteFilters' => $autoCompleteFilters,
         ]);
     }
+    public function getBasicFilters()
+    {
+        //Get the common filters
+        $user = Helper::getAuthenticatedUser();
+        $categories = Category::select('id AS value', 'name AS label') -> withDefaultGroupCompanyOrg() 
+        -> whereNull('parent_id') -> get();
+        $subCategories = Category::select('id AS value', 'name AS label') -> withDefaultGroupCompanyOrg() 
+        -> whereNotNull('parent_id') -> get();
+        $items = Item::select('id AS value', 'item_name AS label') -> withDefaultGroupCompanyOrg()->get();
+        $users = AuthUser::select('id AS value', 'name AS label') -> where('organization_id', $user -> organization_id)->get();
+        $attributeGroups = AttributeGroup::select('id AS value', 'name AS label')->withDefaultGroupCompanyOrg()->get();
 
+        //Custom filters (to be restr)
+
+        return array(
+            'itemCategories' => $categories,
+            'itemSubCategories' => $subCategories,
+            'items' => $items,
+            'users' => $users,
+            'attributeGroups' => $attributeGroups 
+        );
+    }
 
     public function create(Request $request)
     {
@@ -789,10 +868,17 @@ class ErpSaleReturnController extends Controller
                     if (isset($taxDetails) && count($taxDetails) > 0) {
                         foreach ($taxDetails as $taxDetail) {
                             $itemTax += ((double) $taxDetail['tax_percentage'] / 100 * $valueAfterHeaderDiscount);
+                            if($taxDetail['applicability_type']=="collection")
+                            {
+                                $totalTax -= $itemTax;
+                            }
+                            else
+                            {
+                                $totalTax += $itemTax;
+                            }
                         }
                     }
                     // dd($itemDataValue);
-                    $totalTax += $itemTax;
                     $itemRowData = [
                         'sale_return_id' => $saleInvoice->id,
                         'item_id' => $itemDataValue['item_id'],
@@ -899,7 +985,7 @@ class ErpSaleReturnController extends Controller
                                     'assessment_amount' => $valueAfterHeaderDiscount,
                                     'ted_percentage' => (double) $taxDetail['tax_percentage'],
                                     'ted_amount' => ((double) $taxDetail['tax_percentage'] / 100 * $valueAfterHeaderDiscount),
-                                    'applicable_type' => 'Collection',
+                                    'applicable_type' => $taxDetail['applicability_type'],
                                 ]
                             );
                             array_push($itemTaxIds, $soItemTedForDiscount->id);

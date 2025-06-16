@@ -43,7 +43,10 @@ class TrialBalanceReportExport implements FromArray, WithHeadings, WithTitle, Sh
         $sheet->getStyle('A1')->getFont()->setBold(true);  
         $sheet->getStyle('A3')->getFont()->setBold(true); 
         $sheet->getStyle('A5:G5')->getFont()->setBold(true);
-
+        $sheet->getStyle('D')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
+        $sheet->getStyle('E')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
+        $sheet->getStyle('F')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
+        $sheet->getStyle('G')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
         // Apply bold formatting to the last row only  
         $lastRow = $sheet->getHighestRow(); // Get the highest row number with data  
         //$sheet->getStyle('A' . $lastRow . ':G' . $lastRow)->getFont()->setBold(true); // Last row only

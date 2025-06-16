@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 use App\Exceptions\ApiGenericException;
+use App\Helpers\ASN\Constants as ASNConstants;
 use App\Helpers\GstStatusChecker;
 use App\Helpers\StoreHelper;
 use App\Models\ErpStore;
@@ -232,12 +233,12 @@ class VendorController extends Controller
             $vendorSubTypes = ConstantHelper::VENDOR_SUB_TYPES;
             $addressTypes = ConstantHelper::ADDRESS_TYPES;
             $countries = Country::where('status', 'active')->get();
+            $serviceAlias = ASNConstants::SERVICE_ALIAS;
             $user = Helper::getAuthenticatedUser();
             $supplierUsers = AuthUser::where('organization_id', $user?->organization_id)
             ->where('status', ConstantHelper::ACTIVE)
             ->where('user_type',ConstantHelper::IAM_VENDOR_USER)
             ->get();
-            $serviceAlias = ConstantHelper::SUPPLIER_INVOICE_SERVICE_ALIAS;
             $books = Helper::getBookSeries($serviceAlias)->get();
             $parentUrl = ConstantHelper::VENDOR_SERVICE_ALIAS;
             $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
@@ -488,12 +489,12 @@ class VendorController extends Controller
             $vendorSubTypes = ConstantHelper::VENDOR_SUB_TYPES;
             $addressTypes = ConstantHelper::ADDRESS_TYPES;
             $countries = Country::where('status', 'active')->get();
+            $serviceAlias = ASNConstants::SERVICE_ALIAS;
             $user = Helper::getAuthenticatedUser();
             $supplierUsers = AuthUser::where('organization_id', $user?->organization_id)
             ->where('status', ConstantHelper::ACTIVE)
             ->where('user_type',ConstantHelper::IAM_VENDOR_USER)
             ->get();
-            $serviceAlias = ConstantHelper::SUPPLIER_INVOICE_SERVICE_ALIAS;
             $books = Helper::getBookSeries($serviceAlias)->get();
             $ledgerId = $vendor->ledger_id;
             $ledger = Ledger::find($ledgerId);

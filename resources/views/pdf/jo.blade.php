@@ -300,7 +300,7 @@
                 $totalSGSTValue = 0.00;
                 $totalIGSTValue = 0.00;
             @endphp
-            @foreach($po->jo_items as $key => $val)
+            @foreach($po->joProducts as $key => $val)
                 <tr>
 
                     <td

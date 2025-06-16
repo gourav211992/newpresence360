@@ -1197,6 +1197,7 @@ class PiController extends Controller
        if($checkBomExist['bom_id']) {
             $bom = Bom::find($checkBomExist['bom_id']);
             $bufferPerc = ItemHelper::getBomSafetyBufferPerc($bom->id);
+            
             $bomDetails = (strtolower($bom->customizable) === 'no')
                 ? BomDetail::where('bom_id', $checkBomExist['bom_id'])->get()
                 : ErpSoItemBom::where('bom_id', $checkBomExist['bom_id'])

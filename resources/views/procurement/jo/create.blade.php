@@ -31,7 +31,7 @@
 </style>
 @endsection
 @section('content')
-<form class="ajax-input-form" method="POST" action="{{ route('jo.store') }}" data-redirect="/job-order"  enctype="multipart/form-data">
+<form class="ajax-input-form" data-module="jo" method="POST" action="{{ route('jo.store') }}" data-redirect="/job-order"  enctype="multipart/form-data">
     @csrf
     <input type="hidden" name="tax_required" id="tax_required">
     <div class="app-content content ">
@@ -261,7 +261,9 @@
                     <div class="tab-content" id="productTabsContent">
                         <div class="tab-pane fade show active" id="product-details" role="tabpanel" aria-labelledby="product-details-tab">
                             <div class="table-responsive pomrnheadtffotsticky">
-                                <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"> 
+                                <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"
+                                data-json-key="components_json"
+                                data-row-selector="tr[id^='row_']"> 
                                     <thead>
                                     <tr>
                                         <th class="customernewsection-form">

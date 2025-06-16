@@ -3,6 +3,7 @@
 namespace App\Helpers;
 
 use App\Helpers\PackingList\Constants as PackingListConstants;
+use App\Helpers\ASN\Constants as ASNConstant;
 use App\Models\Legal;
 
 class ConstantHelper
@@ -747,8 +748,8 @@ class ConstantHelper
         self::RC_SERVICE_ALIAS => 'ErpRateContract',
         self::PSV_SERVICE_ALIAS => 'ErpPsvHeader',
         self::PL_SERVICE_ALIAS => 'ErpPlHeader',
-        PackingListConstants::SERVICE_ALIAS => 'PackingList'
-
+        PackingListConstants::SERVICE_ALIAS => 'PackingList',
+        ASNConstant::SERVICE_ALIAS => 'VendorAsn',
     ];
     const CV_ALLOWED_GROUPS=['Cash-in-Hand', 'Bank Accounts', 'Bank OD A/c', 'Bank OCC A/c'];
     const JV_EXCLUDE_GROUPS=[

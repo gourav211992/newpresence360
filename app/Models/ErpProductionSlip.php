@@ -151,5 +151,8 @@ class ErpProductionSlip extends Model
     {
         return $this -> hasMany(ErpPslipDynamicField::class, 'header_id');
     }
-
+    public function createdBy()
+    {
+        return $this->belongsTo(AuthUser::class,'created_by','id');
+    }
 }

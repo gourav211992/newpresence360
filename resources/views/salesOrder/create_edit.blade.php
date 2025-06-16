@@ -423,6 +423,8 @@
                                                                 <i data-feather="x-circle"></i> Delete</a>
                                                                 <a style = "display:none;" id = "add_item_section" href="#" onclick = "addItemRow();" class="btn btn-sm btn-outline-primary">
                                                                 <i data-feather="plus"></i> Add Item</a>
+                                                                <a href="#" id = "import_item_section" onclick = "uploadItems();" style = "display:none;" class="btn btn-sm btn-outline-primary d-none">
+                                                                <i data-feather="upload-cloud"></i> Upload Item</a>
                                                                 <a href="#" onclick = "copyItemRow();" id = "copy_item_section" style = "display:none;" class="btn btn-sm btn-outline-primary">
                                                                 <i data-feather="copy"></i> Copy Item</a>
                                                          </div>
@@ -1609,6 +1611,98 @@
        </div>
     </div>
  </div>
+
+ <div class="modal fade" id="item_upload" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style = "min-width:90%;">
+       <div class="modal-content">
+          <div class="modal-header">
+             <div>
+                <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="uploadItemTitle">Import item</h4>
+             </div>
+             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body pb-2">
+             <div class="row mt-1">
+                <div class="col-md-4">
+                   <div class="mb-2">
+                      <label class="form-label">Upload Document</label>
+                      <input type="file"  id = "import_attachment_input" class="form-control" />
+                      <span class="text-primary small">{{__("(Allowed formats: .xlsx, .xls, .csv)")}}</span>
+                   </div>
+                </div>
+                <div class="col-md-8 d-flex align-items-center justify-content-end mb-2">
+                    <a download href="{{$itemImportFile}}" class="btn btn-outline-primary">
+                        <i class="fas fa-download me-1"></i> Download Sample
+                    </a>
+                </div>
+                <div class="col-md-12 col-12 d-none" id = "upload-status-section">
+                    <div class="card  new-cardbox"> 
+                        <ul class="nav nav-tabs border-bottom" role="tablist">
+                            <li class="nav-item">
+                                <a class="nav-link active" data-bs-toggle="tab" href="#Succeded">Valid Records &nbsp;<span id="success-count">(0)</span></a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-bs-toggle="tab" href="#Failed">Invalid Records &nbsp;<span id="failed-count">(0)</span></a>
+                            </li>
+                        </ul>
+                        <div class="tab-content">
+                            <div class="tab-pane active" id="Succeded">
+                                <div class="table-responsive">
+                                    <table class="datatables-basic table myrequesttablecbox"> 
+                                        <thead>
+                                            <tr>
+                                            <th class = "no-wrap">Item Code</th>
+                                            <th class = "no-wrap">UOM</th>
+                                            <th class = "no-wrap">Attributes</th>
+                                            <th class = "numeric-alignment">Qty</th>
+                                            <th class = "numeric-alignment">Rate</th>
+                                            <th class = "no-wrap">Delivery Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="success-table-body">
+                                            <tr>
+                                                <td colspan = "9">No records found</td>
+                                            <tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="tab-pane" id="Failed">
+                                <div class="table-responsive">
+                                    <table class="datatables-basic table myrequesttablecbox"> 
+                                        <thead>
+                                            <tr>
+                                                <th class = "no-wrap">Item Code</th>
+                                                <th class = "no-wrap">UOM</th>
+                                                <th class = "no-wrap">Attributes</th>
+                                                <th class = "numeric-alignment">Qty</th>
+                                                <th class = "numeric-alignment">Rate</th>
+                                                <th class = "no-wrap">Delivery Date</th>
+                                                <th class = "no-wrap">Errors</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="failed-table-body">
+                                            <tr>
+                                                <td colspan = "10">No records found</td>
+                                            <tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+             </div>
+          </div>
+          <div class="modal-footer justify-content-center">  
+             <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button> 
+             <button type="button" onclick = "uploadItemImportFile();" class="btn btn-outline-primary"
+                        name="action" ><i data-feather='upload-cloud'></i> Upload</button>
+             <button type="button" id="item_upload_submit" class="btn btn-primary d-none" onclick = "uploadAndRenderItems();" >Submit</button>
+          </div>
+       </div>
+    </div>
+ </div>
     
 @section('scripts')
 
@@ -2095,6 +2189,35 @@
             renderIcons();
             disableHeader();
             assignBomConditions(newIndex);
+        }
+
+        function uploadItems()
+        {
+            const tableElementBody = document.getElementById('item_header');
+            const previousElements = document.getElementsByClassName('item_header_rows');
+            const newIndex = previousElements.length ? previousElements.length : 0;
+            if (newIndex == 0) {
+                let addRow = $('#series_id_input').val() &&  $('#order_no_input').val() && $('#order_date_input').val() && $('#customer_code_input').val();
+                if (!addRow) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Please fill all the header details first',
+                    icon: 'error',
+                });
+                return;
+                }
+            } else {
+                let addRow = $('#items_dropdown_' + (newIndex - 1)).val() &&  $('#item_qty_' + (newIndex - 1)).val() && $('#item_rate_' + (newIndex - 1)).val();
+                if (!addRow) {
+                    Swal.fire({
+                    title: 'Error!',
+                    text: 'Please fill all the previous item details first',
+                    icon: 'error',
+                });
+                return;
+                }
+            }
+            $("#item_upload").modal("show");
         }
 
         function deleteItemRows()
@@ -3159,6 +3282,19 @@
             const updatedQty = totalDeliveryQty + parseFloat(deliveryQty? deliveryQty : 0);
             const itemQty = parseFloat(document.getElementById('item_qty_' + ItemRowIndexVal).value ? document.getElementById('item_qty_' + ItemRowIndexVal).value : 0);
 
+            const currentDeliveryDate = new Date(deliverySchedule);
+            const todayDate = new Date();
+            todayDate.setHours(0, 0, 0, 0);
+
+            if (currentDeliveryDate < todayDate) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: "Past Delivery Schedule Date is not allowed",
+                    icon: 'error',
+                });
+                return;
+            }
+
             if (updatedQty > itemQty) {
                 Swal.fire({
                     title: 'Error!',
@@ -3624,6 +3760,7 @@
             selectionSection.style.display = "none";
         }
         document.getElementById('add_item_section').style.display = "none";
+        document.getElementById('import_item_section').style.display = "none";
         document.getElementById('copy_item_section').style.display = "none";
         $("#order_date_input").attr('max', "<?php echo date('Y-m-d'); ?>");
         $("#order_date_input").attr('min', "<?php echo date('Y-m-d'); ?>");
@@ -3750,6 +3887,7 @@
                     if (selectSingleVal == 'd') {
                         document.getElementById('add_item_section').style.display = "";
                         document.getElementById('copy_item_section').style.display = "";
+                        document.getElementById('import_item_section').style.display = "";
                     }
                 });
             }
@@ -3953,7 +4091,13 @@
                             let TotalItemTax = 0;
                             let taxDetails = [];
                             data.forEach((tax, taxIndex) => {
-                                const currentTaxValue = ((parseFloat(tax.tax_percentage ? tax.tax_percentage : 0)/100) * parseFloat(valueAfterHeaderDiscount ? valueAfterHeaderDiscount : 0));
+                                let currentTaxValue = ((parseFloat(tax.tax_percentage ? tax.tax_percentage : 0)/100) * parseFloat(valueAfterHeaderDiscount ? valueAfterHeaderDiscount : 0));
+                                // console.log(tax.applicabilty_type);
+                                // if(tax.applicability_type == 'collection')
+                                // {
+                                //     console.log('check pass');
+                                //     currentTaxValue = -currentTaxValue;
+                                // }
                                 TotalItemTax = TotalItemTax + currentTaxValue;
                                 taxDetails.push({
                                     'tax_index' : taxIndex,
@@ -3962,7 +4106,8 @@
                                     'tax_type' : tax.tax_type,
                                     'taxable_value' : valueAfterHeaderDiscount,
                                     'tax_percentage' : tax.tax_percentage,
-                                    'tax_value' : (currentTaxValue).toFixed(2)
+                                    'tax_value' : (currentTaxValue).toFixed(2),
+                                    'tax_applicability_type' : tax.applicability_type,
                                 });
                             });
 
@@ -4166,15 +4311,34 @@
         const itemTotalTaxes = document.getElementsByClassName('item_taxes_input');
         let totalTaxes = 0;
         for (let index = 0; index < itemTotalTaxes.length; index++) {
-            totalTaxes += parseFloat(itemTotalTaxes[index].value ? itemTotalTaxes[index].value : 0);
+            let tax_detail = itemTotalTaxes[index].getAttribute('tax_details') ? JSON.parse(itemTotalTaxes[index].getAttribute('tax_details')) : null;
+            console.log(tax_detail,itemTotalTaxes[index]);
+            if(tax_detail)
+            {
+                console.log(tax_detail);
+                for(let i = 0; i < tax_detail.length; i++)
+                {
+                    if(tax_detail[i].tax_applicability_type == "collection")
+                    {
+                        totalTaxes += parseFloat(tax_detail[i].tax_value ? tax_detail[i].tax_value : 0);
+                    }
+                    else
+                    {
+                        totalTaxes -= parseFloat(tax_detail[i].tax_value ? tax_detail[i].tax_value : 0);
+                    }
+                }
+            }
+            else{
+                totalTaxes += parseFloat(itemTotalTaxes[index].value ? itemTotalTaxes[index].value : 0);
+            }
         }
         document.getElementById('all_items_total_tax').value = (totalTaxes).toFixed(2);
-        document.getElementById('all_items_total_tax_summary').textContent = (totalTaxes).toFixed(2);
-        if (totalTaxes < 0) {
-            document.getElementById('all_items_total_tax_summary').setAttribute('style', 'color : red !important;')
-        } else {
+        document.getElementById('all_items_total_tax_summary').textContent = Math.abs((totalTaxes).toFixed(2));
+        // if (totalTaxes < 0) {
+        //     document.getElementById('all_items_total_tax_summary').setAttribute('style', 'color : red !important;')
+        // } else {
             document.getElementById('all_items_total_tax_summary').setAttribute('style', '');
-        }
+        // }
         //Item Total Value After Discount
         const itemDiscountTotal = document.getElementsByClassName('item_val_after_header_discounts_input');
         let itemDiscountTotalValue = 0;
@@ -5804,6 +5968,243 @@ $('#attribute').on('hidden.bs.modal', function () {
             `;
         }
         
+    }
+
+    function uploadItemImportFile()
+    {
+        //Build Form Data
+        let formData = new FormData();
+        let file = $("#import_attachment_input");
+        //Table Ids
+        let successTable = document.getElementById('success-table-body');
+        let failTable = document.getElementById('failed-table-body');
+        let importSection = document.getElementById('upload-status-section');
+        let successSectionCount = document.getElementById('success-count');
+        let failCountSection = document.getElementById('failed-count');
+        let submitButton = document.getElementById('item_upload_submit');
+        let successCount = 0;
+        let errorCount = 0;
+        //Check for Attachment
+        if (!file || file.length <= 0) {
+            Swal.fire({
+                title: 'Error!',
+                text: 'Please select a file first',
+                icon: 'error',
+            });
+            return;
+        }
+        //Check if atlease one attachment is attached
+        if (!file[0]?.files || file[0]?.files.length <= 0) {
+            Swal.fire({
+                title: 'Error!',
+                text: 'Please select a file first',
+                icon: 'error',
+            });
+            return;
+        }
+        formData.append('attachment', file[0].files[0]);
+        //Hit the AJAX
+        $.ajax({
+            url: "{{route('salesOrder.import.item.save')}}",
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            beforeSend: function () {
+                //Loader
+                document.getElementById('erp-overlay-loader').style.display = "flex";
+            },
+            success: function (response) {
+                let data = response.data;
+                let dataSuccessHTML = ``;
+                let dataErrorHTML = ``;
+                if (data && (data.valid_records > 0 || data.invalid_records > 0)) {
+                    successTable.innerHTML = data.validUI;
+                    failTable.innerHTML = data.invalidUI;
+                    successSectionCount.innerHTML = `(${data.valid_records})`;
+                    failCountSection.innerHTML = `(${data.invalid_records})`;
+                    if (data.valid_records > 0) {
+                        submitButton.classList.remove('d-none');
+                    }
+                    importSection.classList.remove('d-none');
+                } else {
+                    successTable.innerHTML = `
+                    <tr>
+                        <td colspan = "9">No records found</td>
+                    <tr>
+                    `;
+                    failTable.innerHTML = `
+                    <tr>
+                        <td colspan = "10">No records found</td>
+                    <tr>
+                    `;
+                    successSectionCount.innerHTML = `(0)`;
+                    failCountSection.innerHTML = `(0)`;
+                    submitButton.classList.add('d-none');
+                    importSection.classList.add('d-none');
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'No items found from excel',
+                        icon: 'error',
+                    });
+                }
+            },
+            error: function (xhr) {
+                let errorResponse = xhr.responseJSON;
+                document.getElementById('erp-overlay-loader').style.display = "none";
+                successTable.innerHTML = `
+                <tr>
+                    <td colspan = "9">No records found</td>
+                <tr>
+                `;
+                failTable.innerHTML = `
+                <tr>
+                    <td colspan = "10">No records found</td>
+                <tr>
+                `;
+                successSectionCount.innerHTML = `(0)`;
+                failCountSection.innerHTML = `(0)`;
+                submitButton.classList.add('d-none');
+                importSection.classList.add('d-none');
+                Swal.fire({
+                    title: 'Error!',
+                    text: errorResponse?.message ? errorResponse?.message : 'Some internal error occured. Please try again later.',
+                    icon: 'error',
+                });
+            },
+            complete: function () {
+                document.getElementById('erp-overlay-loader').style.display = "none";
+            }
+        });
+    }
+
+    function uploadAndRenderItems()
+    {    
+        //Hit the AJAX
+        $.ajax({
+            url: "{{route('salesOrder.import.item.store')}}",
+            type: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            beforeSend: function () {
+                //Loader
+                document.getElementById('erp-overlay-loader').style.display = "flex";
+            },
+            success: function (response) {
+                if (response.data) {
+                    addUploadedItemsToUI(response.data);
+                    $("#item_upload").modal("hide");
+                    document.getElementById('erp-overlay-loader').style.display = "none";
+                } else {
+                    document.getElementById('erp-overlay-loader').style.display = "none";
+                    Swal.fire({
+                        title: 'Error!',
+                        text: response.message ? response.message : 'Some internal error occured, Please try again after some time.',
+                        icon: 'error',
+                    });
+                }
+            },
+            error: function (xhr) {
+                let errorResponse = xhr.responseJSON;
+                document.getElementById('erp-overlay-loader').style.display = "none";
+                Swal.fire({
+                        title: 'Error!',
+                        text: errorResponse?.message ? errorResponse?.message : 'Some internal error occured, Please try again after some time.',
+                        icon: 'error',
+                });
+            },
+            complete: function () {
+                document.getElementById('erp-overlay-loader').style.display = "none";
+            }
+        });
+    }
+
+    function addUploadedItemsToUI(data)
+    {
+        const mainTableItem = document.getElementById('item_header');
+        const tableElementBody = document.getElementById('item_header');
+        const previousElements = document.getElementsByClassName('item_header_rows');
+        let newIndex = previousElements.length ? previousElements.length : 0;
+        data.forEach(item => {
+            mainTableItem.innerHTML += `
+                <tr id = "item_row_${newIndex}" class = "item_header_rows" onclick = "onItemClick('${newIndex}');" data-index = "${newIndex}">
+                    <td class="customernewsection-form">
+                        <div class="form-check form-check-primary custom-checkbox">
+                            <input type="checkbox" class="form-check-input item_row_checks" id="item_row_check_${newIndex}" del-index = "${newIndex}">
+                            <label class="form-check-label" for="item_row_check_${newIndex}"></label>
+                        </div> 
+                    </td>
+                    <td class="poprod-decpt"> 
+
+                        <input type="text" id = "items_dropdown_${newIndex}" name="item_code[${newIndex}]" placeholder="Select" class="form-control mw-100 ledgerselecct comp_item_code ui-autocomplete-input" autocomplete="off" data-name="${item?.item?.item_name}" data-code="${item?.item?.item_code}" data-id="${item?.item?.id}" hsn_code = "${item?.item?.hsn?.code}" item-name = "${item?.item?.item_name}" specs = '${JSON.stringify(item?.item?.specifications)}' attribute-array = '${JSON.stringify([])}'  value = "${item?.item?.item_code}" readonly>
+                        <input type = "hidden" name = "item_id[]" id = "items_dropdown_${newIndex}_value" value = "${item?.item_id}"></input>
+                                                            </td>
+                                                            <td class="poprod-decpt">
+                                                                <input type="text" id = "items_name_${newIndex}" class="form-control mw-100" name = "item_name[${newIndex}]" value = "${item?.item?.item_name}" readonly>
+                                                            </td>
+                                                            <td class="poprod-decpt" id = "attribute_section_${newIndex}"> 
+                        <button id = "attribute_button_${newIndex}" type = "button" data-bs-toggle="modal" onclick = "setItemAttributes('items_dropdown_${newIndex}', '${newIndex}', true);" data-bs-target="#attribute" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px" >Attributes</button>
+                        <input type = "hidden" name = "attribute_value_${newIndex}" />
+                    </td>
+                    
+                                                            <td>
+                        <select class="form-select" name = "uom_id[]" id = "uom_dropdown_${newIndex}">
+
+                        </select> 
+                        </td>
+                        <td><input type="text" data-index = '${newIndex}' id = "item_qty_${newIndex}" name = "item_qty[${newIndex}]" oninput = "changeItemQty(this, '${newIndex}');" onchange = "itemQtyChange(this, '${newIndex}')" value = "${item?.qty}" class="form-control mw-100 text-end item_qty_input" onblur = "setFormattedNumericValue(this);" max = "${item?.qty}" /></td>
+                        <td><input type="text" id = "item_rate_${newIndex}" onkeydown = "openDeliveryScheduleFromTab(${newIndex})" name = "item_rate[${newIndex}]" oninput = "changeItemRate(this, '${newIndex}');" value = "${item?.rate}" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" /></td> 
+                        <td><input type="text" id = "item_value_${newIndex}" disabled class="form-control mw-100 text-end item_values_input" value = "${(item?.qty ) * (item?.rate)}" /></td>
+                        <input type = "hidden" id = "header_discount_${newIndex}" value = "0" ></input>
+                        <input type = "hidden" id = "header_expense_${newIndex}" value = "0"></input>
+                    <td>
+                        <div class="position-relative d-flex align-items-center">
+                            <input type="text" id = "item_discount_${newIndex}" disabled class="form-control mw-100 text-end item_discounts_input" style="width: 70px" value = "0"/>
+                            <div class="ms-50">
+                                <button type = "button" onclick = "onDiscountClick('item_value_${newIndex}', '${newIndex}')" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">Add</button>
+                            </div>
+                        </div>
+                    </td>
+                        <input type="hidden" id = "item_tax_${newIndex}" value = "0" class="form-control mw-100 text-end item_taxes_input" style="width: 70px" />
+                        <td><input type="text" id = "value_after_discount_${newIndex}" value = "${(item?.qty * item?.rate)}" disabled class="form-control mw-100 text-end item_val_after_discounts_input" /></td>
+                        <td style = "{{request() -> type === 'so' ? '' : 'display:none;'}}"><input type="date" id = "delivery_date_${newIndex}" name = "delivery_date[${newIndex}]" class="form-control mw-100" value = "{{Carbon\Carbon::now() -> format('Y-m-d')}}"/></td>
+                        <input type = "hidden" id = "value_after_header_discount_${newIndex}" class = "item_val_after_header_discounts_input" value = "${(item?.qty * item?.rate)}" ></input>
+                        <input type="hidden" id = "item_total_${newIndex}" value = "${(item?.qty * item?.rate)}" disabled class="form-control mw-100 text-end item_totals_input" />
+                    <td>
+                        <div class="d-flex">
+                            @if(request() -> type === 'so')
+                                <div class="me-50 cursor-pointer" onclick = "openDeliverySchedule('${newIndex}');">    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Delivery Schedule" class="text-primary"><i data-feather="calendar"></i></span></div>
+                                <div class="me-50 cursor-pointer dynamic_bom_div" id = "dynamic_bom_div_${newIndex}" onclick = "getCustomizableBOM(${newIndex})" style = "display:none;"> <span data-bs-toggle="tooltip" data-bs-placement="top" title="BOM" class="text-primary"><i data-feather="table"></i></span></div>
+                            @endif
+                            <div class="me-50 cursor-pointer" data-bs-toggle="modal" data-bs-target="#Remarks" onclick = "setItemRemarks('item_remarks_${newIndex}');">        <span data-bs-toggle="tooltip" data-bs-placement="top" title="Remarks" class="text-primary"><i data-feather="file-text"></i></span></div>
+                        </div>
+                    </td>
+                    <input type="hidden" id = "item_remarks_${newIndex}" name = "item_remarks[]" value = ""/>
+
+                </tr>
+                            `;
+                            renderIcons();
+                            const totalValue = item.qty * item.rate;
+                            document.getElementById('discount_main_table').setAttribute('total-value', totalValue);
+                            document.getElementById('discount_main_table').setAttribute('item-row', 'item_value_' + newIndex);
+                            document.getElementById('discount_main_table').setAttribute('item-row-index', newIndex);
+
+                            itemUomsHTML = ``;
+                            if (item.item.uom && item.item.uom.id) {
+                                itemUomsHTML += `<option value = '${item.item.uom.id}' ${item.item.uom.id == item.uom_id ? "selected" : ""}>${item.item.uom.alias}</option>`;
+                            }
+                            item.item.alternate_u_o_ms.forEach(singleUom => {
+                                    itemUomsHTML += `<option value = '${singleUom.uom.id}' ${singleUom.uom.id == item.uom_id ? "selected" : ""} >${singleUom.uom?.alias}</option>`;
+                            });
+                            document.getElementById('uom_dropdown_' + newIndex).innerHTML = itemUomsHTML;
+                            getItemTax(newIndex);
+                            setAttributesUI(newIndex);
+                            newIndex += 1;
+                        });                    
     }
     </script>
 @endsection

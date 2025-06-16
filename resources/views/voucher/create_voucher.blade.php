@@ -177,7 +177,7 @@
                                                             id="voucher_name" required value="{{ old('voucher_name') }}"
                                                             readonly />
                                                         @error('voucher_name')
-                                                            <span class="text-danger">{{ $message }}</span>
+                                                            <span class="text-danger" style="font-size:12px">{{ $message }}</span>
                                                         @enderror
                                                     </div>
                                                 </div>
@@ -193,7 +193,7 @@
                                                             name="voucher_no" required value="{{ old('voucher_no') }}"
                                                             readonly />
                                                         @error('voucher_no')
-                                                            <span class="text-danger">{{ $message }}</span>
+                                                            <span class="text-danger" style="font-size:12px">{{ $message }}</span>
                                                         @enderror
                                                     </div>
 
@@ -525,7 +525,7 @@
                                                                             <td class="poprod-decpt">
                                                                                 <span
                                                                                     class="badge rounded-pill badge-light-secondary"><strong>Remarks:</strong>
-                                                                                    <span id="remarks">Description will
+                                                                                    <span id="remarks" style="font-size:12px">Description will
                                                                                         come here for items...</span></span>
                                                                             </td>
                                                                         </tr>

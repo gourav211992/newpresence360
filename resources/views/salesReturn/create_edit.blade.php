@@ -682,16 +682,22 @@
                                                                                     </div>
                                                                                 </td> 
                                                                             </tr> 
-                                                                            
-                                                                            <tr> 
+                            
+
+                                                                            <tr id = "current_item_lot_no_row">
                                                                                 <td class="poprod-decpt">
-                                                                                    <div id ="current_item_inventory_details">
+                                                                                    <div id ="current_item_lot_no">
 
                                                                                     </div>
-                                                                                </td> 
-                                                                            </tr> 
+                                                                                 </td>
+                                                                            </tr>
+                                                                            <tr id = "current_item_so_no_row">
+                                                                                <td class="poprod-decpt">
+                                                                                    <div id ="current_item_so_no">
 
-                                                                            
+                                                                                    </div>
+                                                                                 </td>
+                                                                            </tr>
 
                                                                             <tr id = "current_item_qt_no_row"> 
                                                                                 <td class="poprod-decpt">
@@ -2020,9 +2026,7 @@
     let requesterTypeParam = "{{isset($order) ? $order -> requester_type : 'Department'}}";
     let redirect = "{{$redirect_url}}";   
 </script>
-@include('PL.common-js-route',["order" => isset($order) ? $order : null, "route_prefix" => "material.issue"])
-<script src="{{ asset("assets\\js\\modules\\pl\\common-script.js") }}"></script>
-
+@include('PL.common-js-route',["order" => isset($order) ? $order : null, "route_prefix" => "sale.return"])
 <script>
         $(window).on('load', function() {
             if (feather) {
@@ -2921,14 +2925,6 @@
     }
 
     initializeAutocompleteCustomer('customer_code_input');
-
-   
-    
-    
-
-    editScript();
-
-       
       
     function checkItemAddValidation()
     {
@@ -2986,7 +2982,8 @@
                                     'tax_type' : tax.tax_type,
                                     'taxable_value' : valueAfterHeaderDiscount,
                                     'tax_percentage' : tax.tax_percentage,
-                                    'tax_value' : (currentTaxValue).toFixed(2)
+                                    'tax_value' : (currentTaxValue).toFixed(2),
+                                    'tax_applicability_type' : tax.applicability_type,
                                 });
                             });
 
@@ -3190,15 +3187,34 @@
         const itemTotalTaxes = document.getElementsByClassName('item_taxes_input');
         let totalTaxes = 0;
         for (let index = 0; index < itemTotalTaxes.length; index++) {
-            totalTaxes += parseFloat(itemTotalTaxes[index].value ? itemTotalTaxes[index].value : 0);
+            let tax_detail = itemTotalTaxes[index].getAttribute('tax_details') ? JSON.parse(itemTotalTaxes[index].getAttribute('tax_details')) : null;
+            console.log(tax_detail,itemTotalTaxes[index]);
+            if(tax_detail)
+            {
+                console.log(tax_detail);
+                for(let i = 0; i < tax_detail.length; i++)
+                {
+                    if(tax_detail[i].tax_applicability_type == "collection")
+                    {
+                        totalTaxes += parseFloat(tax_detail[i].tax_value ? tax_detail[i].tax_value : 0);
+                    }
+                    else
+                    {
+                        totalTaxes -= parseFloat(tax_detail[i].tax_value ? tax_detail[i].tax_value : 0);
+                    }
+                }
+            }
+            else{
+                totalTaxes += parseFloat(itemTotalTaxes[index].value ? itemTotalTaxes[index].value : 0);
+            }
         }
         document.getElementById('all_items_total_tax').value = (totalTaxes).toFixed(2);
-        document.getElementById('all_items_total_tax_summary').textContent = (totalTaxes).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        if (totalTaxes < 0) {
-            document.getElementById('all_items_total_tax_summary').setAttribute('style', 'color : red !important;')
-        } else {
+        document.getElementById('all_items_total_tax_summary').textContent = Math.abs((totalTaxes).toFixed(2));
+// if (totalTaxes < 0) {
+        //     document.getElementById('all_items_total_tax_summary').setAttribute('style', 'color : red !important;')
+        // } else {
             document.getElementById('all_items_total_tax_summary').setAttribute('style', '');
-        }
+        // }
         //Item Total Value After Discount
         const itemDiscountTotal = document.getElementsByClassName('item_val_after_header_discounts_input');
         let itemDiscountTotalValue = 0;
@@ -4864,5 +4880,7 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
     }
    
     </script>
+<script src="{{ asset("assets\\js\\modules\\pl\\common-script.js") }}"></script>
+
 @endsection
 @endsection

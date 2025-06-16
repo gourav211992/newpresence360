@@ -49,9 +49,11 @@ use App\Models\Department;
 use App\Models\ErpStore;
 use App\Models\PurchaseIndent;
 use App\Models\State;
+use App\Traits\DatatableRenderTrait;
 
 class PoController extends Controller
 {
+    use DatatableRenderTrait;
     protected $type;
 
     public function __construct(Request $request)
@@ -1953,6 +1955,136 @@ class PoController extends Controller
     # Get PI Item List
     public function getPi(Request $request)
     {
+        $query = $this->buildPiQuery($request);
+        if($this->type == 'po') {
+            return DataTables::of($query)
+            ->addColumn('select_checkbox', function ($row) {
+                return '
+                    <div class="form-check form-check-inline me-0">
+                        <input class="form-check-input pi_item_checkbox" 
+                               type="checkbox" 
+                               name="pi_item_check[]" 
+                               value="' . $row->id . '">
+                    </div>';
+            })
+            ->addColumn('book_name', fn($r) => $this->renderDatatableColumn('display-text', ['value' => $r->pi?->book?->book_name ?? '']))
+            ->addColumn('doc_no', fn($r) => $this->renderDatatableColumn('display-text', ['value' => $r->pi?->document_number ?? '']))
+            ->addColumn('doc_date', fn($r) => $this->renderDatatableColumn('display-text', ['value' => $r->pi?->document_date ?? '']))
+            ->addColumn('item_code', fn($r) => $this->renderDatatableColumn('display-text', ['value' => $r->item_code]))
+            ->addColumn('item_name', fn($r) => $this->renderDatatableColumn('display-text', ['value' => $r->item?->item_name]))
+            ->addColumn('attributes', function ($row) {
+                $attributes = $row->attributes;
+                $html = '';
+                foreach($attributes as $attribute) {
+                $attr = AttributeGroup::where('id', intval($attribute->attribute_name))->first();
+                $attrValue = Attribute::where('id', intval($attribute->attribute_value))->first();
+                    if ($attr && $attrValue) { 
+                         $html .= "<span class='badge rounded-pill badge-light-primary'><strong>{$attr->name}</strong>: {$attrValue->value}</span>";
+                    }
+                }
+                return $html;
+             })
+            ->addColumn('uom', fn($r) => $this->renderDatatableColumn('display-text', ['value' => $r->uom?->name]))
+            ->addColumn('balance_qty', fn($r) => $this->renderDatatableColumn('display-text', ['value' => $request->type=='supplier-invoice' ? ($r->indent_qty - $r->order_qty) : ($r->indent_qty - $r->order_qty)]))
+            ->addColumn('vendor_select', fn($r) => $this->renderDatatableColumn('display-text', ['value' => $r->pi?->book?->book_name ?? '']))
+            ->addColumn('vendor_select', function ($row) use ($request) {
+                $documentDate = $request->get('document_date');
+                $approvedVendorIds = ItemHelper::getItemApprovedVendors($row->item_id, $documentDate) ?? [];
+                $html = '<select class="form-select vendor-select" name="vend_name">';
+                if (count($approvedVendorIds)) {
+                    $approvedVendors = Vendor::whereIn('id', $approvedVendorIds)->get();
+                    $firstVendorId = $row->vendor_id ?? $approvedVendors->first()?->id;
+                } else {
+                    $approvedVendors = Vendor::withDefaultGroupCompanyOrg()
+                    ->where('status', ConstantHelper::ACTIVE)
+                    ->get();
+                    $firstVendorId = $row->vendor_id;
+                    $html.="<option value=''></option>";
+                }
+    
+                foreach ($approvedVendors as $vendor) {
+                    $selected = $vendor->id == $firstVendorId ? 'selected' : '';
+                    $html .= '<option value="' . $vendor->id . '" ' . $selected . '>' . e($vendor->company_name) . '</option>';
+                }
+                $html .= '</select>';
+    
+                return $html;
+            })
+            ->addColumn('so_no', fn($r) => $this->renderDatatableColumn('display-text', ['value' => $r->pi?->so?->book_code ?? '']))
+            ->addColumn('location', fn($r) => $this->renderDatatableColumn('display-text', ['value' => $r->pi?->sub_store_id ? $r->pi?->sub_store?->name : $r->pi?->requester?->name]))
+            ->addColumn('requester', fn($r) => $this->renderDatatableColumn('display-text', ['value' => $r?->po?->department?->name ?? '']))
+            ->addColumn('remarks', fn($r) => $this->renderDatatableColumn('display-text', ['value' => $r?->remarks ?? '']))
+            ->rawColumns([
+                'book_name',
+                'doc_no',
+                'doc_date',
+                'item_code',
+                'item_name',
+                'attributes',
+                'uom',
+                'balance_qty',
+                'vendor_select',
+                'so_no',
+                'location',
+                'requester',
+                'remarks',
+                'select_checkbox'
+                ])
+            ->make(true);
+        } else {
+            return DataTables::of($query)
+            ->addColumn('select_checkbox', function ($row) {
+                return '
+                    <div class="form-check form-check-inline me-0">
+                        <input class="form-check-input pi_item_checkbox" 
+                               type="checkbox" 
+                               name="pi_item_check[]" 
+                               value="' . $row->id . '">
+                    </div>';
+            })
+            ->addColumn('book_name', fn($r) => $this->renderDatatableColumn('display-text', ['value' => $r->po?->book?->book_name ?? '']))
+            ->addColumn('doc_no', fn($r) => $this->renderDatatableColumn('display-text', ['value' => $r->po?->document_number ?? '']))
+            ->addColumn('doc_date', fn($r) => $this->renderDatatableColumn('display-text', ['value' => $r->po?->document_date ?? '']))
+            ->addColumn('item_code', fn($r) => $this->renderDatatableColumn('display-text', ['value' => $r->item_code]))
+            ->addColumn('item_name', fn($r) => $this->renderDatatableColumn('display-text', ['value' => $r->item?->item_name]))
+            ->addColumn('attributes', function ($row) {
+                $attributes = $row->attributes;
+                $html = '';
+                foreach($attributes as $attribute) {
+                $attr = AttributeGroup::where('id', intval($attribute->attribute_name))->first();
+                $attrValue = Attribute::where('id', intval($attribute->attribute_value))->first();
+                    if ($attr && $attrValue) { 
+                         $html .= "<span class='badge rounded-pill badge-light-primary'><strong>{$attr->name}</strong>: {$attrValue->value}</span>";
+                    }
+                }
+                return $html;
+             })
+            ->addColumn('uom', fn($r) => $this->renderDatatableColumn('display-text', ['value' => $r->uom?->name]))
+            ->addColumn('balance_qty', fn($r) => $this->renderDatatableColumn('display-text', ['value' => $r->order_qty]))
+            ->addColumn('vendor_select', fn($r) => $this->renderDatatableColumn('display-text', ['value' => $r?->po?->vendor?->company_name ?? '']))
+            ->addColumn('location', fn($r) => $this->renderDatatableColumn('display-text', ['value' => $r->po?->store_location?->store_name]))
+            ->addColumn('requester', fn($r) => $this->renderDatatableColumn('display-text', ['value' => $r?->po?->department?->name ?? '']))
+            ->rawColumns([
+                'book_name',
+                'doc_no',
+                'doc_date',
+                'item_code',
+                'item_name',
+                'attributes',
+                'uom',
+                'balance_qty',
+                'vendor_select',
+                'location',
+                'requester',
+                'select_checkbox'
+                ])
+            ->make(true);
+        }
+    }
+
+    protected function buildPiQuery(Request $request) 
+    {
+        \Log::info(json_encode($request->all(), JSON_PRETTY_PRINT));
         $documentDate = $request->document_date ?? null;
         $seriesId = $request->series_id ?? null;
         // $docNumber = $request->document_number ?? null;
@@ -1965,6 +2097,7 @@ class PoController extends Controller
         $departmentId = $request->department_id ?? null;
         $itemSearch = $request->item_search ?? null;
         $soId= $request->so_id ?? null;
+        $piItems = null;
         $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
         if($this->type == 'supplier-invoice') {
             $piItems = PoItem::where(function($query) use ($seriesId,$applicableBookIds,$itemId,$vendorId, $departmentId,$itemSearch) {
@@ -1998,70 +2131,64 @@ class PoController extends Controller
                         }
 
                         $query->whereRaw('order_qty > invoice_quantity');
-                    })
-                    ->get();
+                    });
         } else {
         $selected_pi_ids = json_decode($request->selected_pi_ids) ?? [];
         $piItems = PiItem::where(function($query) use ($seriesId,$applicableBookIds,$itemId,$vendorId, $departmentId, $selected_pi_ids, $itemSearch,$storeId,$subStoreId, $soId, $indentId) {
-                        if(count($selected_pi_ids)) {
-                            $query->whereNotIn('id',$selected_pi_ids);
+                    if(count($selected_pi_ids)) {
+                        $query->whereNotIn('id',$selected_pi_ids);
+                    }
+                    $query->whereHas('pi', function($pi) use ($seriesId,$applicableBookIds,$departmentId,$storeId,$subStoreId,$indentId) {
+                        $pi->withDefaultGroupCompanyOrg();
+                        $pi->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]);
+                        // if($seriesId) {
+                        //     $pi->where('book_id',$seriesId);
+                        // } else {
+                        //     if(count($applicableBookIds)) {
+                        //         $pi->whereIn('book_id',$applicableBookIds);
+                        //     }
+                        // }
+                        if(count($applicableBookIds)) {
+                            $pi->whereIn('book_id',$applicableBookIds);
                         }
-                        $query->whereHas('pi', function($pi) use ($seriesId,$applicableBookIds,$departmentId,$storeId,$subStoreId,$indentId) {
-                            $pi->withDefaultGroupCompanyOrg();
-                            $pi->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]);
-                            // if($seriesId) {
-                            //     $pi->where('book_id',$seriesId);
-                            // } else {
-                            //     if(count($applicableBookIds)) {
-                            //         $pi->whereIn('book_id',$applicableBookIds);
-                            //     }
-                            // }
-                            if(count($applicableBookIds)) {
-                                $pi->whereIn('book_id',$applicableBookIds);
-                            }
-                            if($storeId) {
-                                $pi->where('store_id', $storeId);
-                            }
-                            if($subStoreId) {
-                                $pi->where('sub_store_id', $subStoreId);
-                            }
-                            // if($docNumber) {
-                            //     $pi->where('document_number', 'LIKE', "%$docNumber%");
-                            // }
-                            if($indentId) {
-                                $pi->where('id', $indentId);
-                            }
-                            if($departmentId) {
-                                $pi->where('department_id', $departmentId);
-                            }
-                        });
-                        if($soId) {
-                            $query->whereJsonContains('so_id', $soId);
+                        if($storeId) {
+                            $pi->where('store_id', $storeId);
                         }
-                        $query->whereHas('item', function($itemQuery) use ($vendorId) {
-                            if($vendorId) {
-                                $itemQuery->whereHas('approvedVendors', function($av) use ($vendorId) {
-                                    $av->where('vendor_id', $vendorId);
-                                });
-                            }
-                        });
-                        if ($itemSearch) {
-                            $query->whereHas('item', function ($query) use ($itemSearch) {
-                                $query->where('item_name', 'like', '%' . $itemSearch . '%')
-                                      ->orWhere('item_code', 'like', '%' . $itemSearch . '%');
+                        if($subStoreId) {
+                            $pi->where('sub_store_id', $subStoreId);
+                        }
+                        // if($docNumber) {
+                        //     $pi->where('document_number', 'LIKE', "%$docNumber%");
+                        // }
+                        if($indentId) {
+                            $pi->where('id', $indentId);
+                        }
+                        if($departmentId) {
+                            $pi->where('department_id', $departmentId);
+                        }
+                    });
+                    if($soId) {
+                        $query->where('so_id', $soId);
+                    }
+                    $query->whereHas('item', function($itemQuery) use ($vendorId) {
+                        if($vendorId) {
+                            $itemQuery->whereHas('approvedVendors', function($av) use ($vendorId) {
+                                $av->where('vendor_id', $vendorId);
                             });
                         }
-                        $query->whereRaw('indent_qty > order_qty');
-                    })
-                    ->get();
+                    });
+                    if ($itemSearch) {
+                        $query->whereHas('item', function ($query) use ($itemSearch) {
+                            $query->where('item_name', 'like', '%' . $itemSearch . '%')
+                                    ->orWhere('item_code', 'like', '%' . $itemSearch . '%');
+                        });
+                    }
+                    $query->whereRaw('indent_qty > order_qty');
+                });
         }
-        $vendors = Vendor::withDefaultGroupCompanyOrg()
-        ->where('status', ConstantHelper::ACTIVE)
-        ->get();
-
-        $html = view('procurement.po.partials.pi-item-list', ['piItems' => $piItems, 'vendors' => $vendors, 'documentDate' => $documentDate])->render();
-        return response()->json(['data' => ['pis' => $html], 'status' => 200, 'message' => "fetched!"]);
+        return $piItems;
     }
+    
 
     # Get PI Buld Item List
     public function getPiBulk(Request $request)
@@ -2866,7 +2993,13 @@ class PoController extends Controller
         ]);
         $po = PurchaseOrder::with(['vendor'])->find($request->id);
         $vendor = $po->vendor;
-        $sendTo = $request->email_to ?? $vendor->email;
+        $sendTo = $request->email_to ?? null;
+        if(!$sendTo) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Recipient email is required.',
+            ], 422);
+        }
         $vendor->email = $sendTo;
         $title = "Purchase Order Generated";
         $pattern = "Purchase Order";
@@ -2898,7 +3031,7 @@ class PoController extends Controller
             </tr>
         </table>
         HTML;
-        self::sendMail($vendor,$title,$description,$cc,$attachment,$mail_from,$mail_from_name);
+        return self::sendMail($vendor,$title,$description,$cc,$attachment,$mail_from,$mail_from_name);
     }
     public function sendMail($receiver, $title, $description, $cc = null, $attachment, $mail_from=null, $mail_from_name=null)
     {
@@ -2909,7 +3042,7 @@ class PoController extends Controller
         return response() -> json([
             'status' => 'success',
             'message' => 'Email request sent succesfully',
-        ]);
+        ],200);
             
     }
 

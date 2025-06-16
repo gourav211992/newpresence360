@@ -1,17 +1,23 @@
 <div class="modal fade text-start" id="prModal" tabindex="-1" aria-labelledby="prModal" aria-hidden="true">
-	<div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 1200px">
+	<div class="modal-dialog modal-xl">
 		<div class="modal-content">
-			<div class="modal-header">
+			<div class="modal-header d-flex justify-content-between align-items-start">
 				<div>
 					@if(request()->type == 'supplier-invoice')
-					<h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="prModal">Select Purchase Order</h4>
+						<h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="prModal">Select Purchase Order</h4>
 					@else
-					<h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="prModal">Select Purchase Indent</h4>
+						<h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="prModal">Select Purchase Indent</h4>
 					@endif
 					<p class="mb-0">Select from the below list</p>
 				</div>
-				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-			</div>
+			
+				<div class="d-flex align-items-start gap-2">
+					<button type="button" class="btn btn-primary btn-sm prProcess">
+						<i data-feather="check-circle"></i> Process
+					</button>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+			</div>			
 			<div class="modal-body">
 				<div class="row">
 					<div class="col">
@@ -70,9 +76,9 @@
 						{{-- <button type="button" class="btn btn-primary btn-sm searchPiBtn"><i data-feather="search"></i> Search</button> --}}
 					</div>
 					<div class="col-md-12">
-						<div class="table-responsive">
-							<table class="mt-1 table myrequesttablecbox table-striped po-order-detail">
-								<thead>
+						<div class="po-table-container">
+							<table class="table table-striped table-bordered po-order-detail myrequesttablecbox nowrap w-100">
+								<thead class="table-light header">
 									<tr>
 										<th>
 											<div class="form-check form-check-inline me-0">
@@ -87,32 +93,35 @@
 										<th>Attributes</th>
 										<th>UOM</th>
 										<th>Quantity</th>
-										<th style="min-width: 250px;max-width: 350px;">Vendor</th>
+										<th style="min-width: 250px; max-width: 350px;">Vendor</th>
 										@if(request()->type != 'supplier-invoice')
 											<th>Sales Order</th>
 										@endif
-										@if(request()->type == 'supplier-invoice')
-											<th>Location</th>
-										@endif
-										@if(request()->type != 'supplier-invoice')
 										<th>Location</th>
-										@endif
 										<th>Requester</th>
 										@if(request()->type != 'supplier-invoice')
 											<th>Remarks</th>
 										@endif
 									</tr>
 								</thead>
-								<tbody id="prDataTable">
-								</tbody>
+								<tbody id="prDataTable"></tbody>
 							</table>
 						</div>
+						
+						<div class="datatable-footer-fixed">
+							<div id="custom_length"></div>        <!-- Left: Show entries -->
+							<div id="custom_info" class="text-center small text-muted"></div>  <!-- Center: Showing 1 to 10... -->
+							<div id="custom_pagination" class="text-end"></div>   <!-- Right: Pagination -->
+						  </div>
+
+						  
+						{{-- <div class="datatable-footer-fixed">
+							<div id="custom_length"></div>
+							<div id="custom_info" class="text-center small text-muted"></div>
+							<div id="custom_pagination" class="text-end flex-grow-1"></div>
+						</div> --}}
 					</div>
 				</div>
-			</div>			
-			<div class="modal-footer text-end">
-				<button type = "button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"><i data-feather="x-circle"></i> Cancel</button>
-				<button type = "button" class="btn btn-primary btn-sm prProcess"><i data-feather="check-circle"></i> Process</button>
 			</div>
 		</div>
 	</div>

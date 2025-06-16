@@ -255,7 +255,7 @@
                                                             id="voucher_name" required value="{{ $data->voucher_name }}"
                                                             readonly />
                                                         @error('voucher_name')
-                                                            <span class="text-danger">{{ $message }}</span>
+                                                            <span class="text-danger" style="font-size:12px">{{ $message }}</span>
                                                         @enderror
                                                     </div>
                                                 </div>
@@ -271,7 +271,7 @@
                                                             id="voucher_no" required value="{{ $data->voucher_no }}"
                                                             readonly />
                                                         @error('voucher_no')
-                                                            <span class="text-danger">{{ $message }}</span>
+                                                            <span class="text-danger" style="font-size:12px">{{ $message }}</span>
                                                         @enderror
                                                     </div>
 

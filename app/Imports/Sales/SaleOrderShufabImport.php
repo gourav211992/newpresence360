@@ -13,6 +13,7 @@ use App\Models\ErpSaleOrder;
 use App\Models\ErpStore;
 use App\Models\Item;
 use App\Models\SaleOrderImportShufab;
+use App\Models\SoImportShufabDynField;
 use App\Models\SubType;
 use App\Models\Unit;
 use Carbon\Carbon;
@@ -66,10 +67,10 @@ class SaleOrderShufabImport implements ToArray, WithHeadingRow, SkipsEmptyRows, 
                 if ($row['order_date']) {
                     $orderDetail -> document_date = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($row['order_date'])->format('Y-m-d');
                     if (!$orderDetail -> document_date) {
-                        $orderDetail -> document_date = Carbon::now() -> format("Y-m-d");
+                        $orderDetail -> document_date = Carbon::today() -> format("Y-m-d");
                     }
                 } else {
-                    $orderDetail -> document_date = Carbon::now() -> format("Y-m-d");
+                    $orderDetail -> document_date = Carbon::today() -> format("Y-m-d");
                 }
                 //Document Number Validation
                 $numberPatternData = Helper::generateDocumentNumberNew($book->id, $orderDetail -> document_date);
@@ -87,23 +88,23 @@ class SaleOrderShufabImport implements ToArray, WithHeadingRow, SkipsEmptyRows, 
                 $parameters = $bookParams['data']['parameters'];
                 if (isset($parameters -> future_date_allowed) && $parameters -> future_date_allowed == 'no') {
                     //Check for Future date
-                    if (Carbon::parse($orderDetail -> document_date) -> gt(Carbon::now())) {
+                    if (Carbon::parse($orderDetail -> document_date) -> gt(Carbon::today())) {
                         $errors[] = "Future Date is not allowed";
                     }
                 }
                 $bookParams = BookHelper::fetchBookDocNoAndParameters($this -> bookId, $orderDetail -> document_date);
                 $parameters = $bookParams['data']['parameters'];
-                if (isset($parameters -> future_date_allowed) && $parameters -> future_date_allowed == 'no') {
+                if (isset($parameters -> future_date_allowed[0]) && $parameters -> future_date_allowed[0] == 'no') {
                     //Check for Future date
-                    if (Carbon::parse($orderDetail -> document_date) -> gt(Carbon::now())) {
-                        $errors[] = "Future Date is not allowed";
+                    if (Carbon::parse($orderDetail -> document_date) -> gt(Carbon::today())) {
+                        $errors[] = "Future Order Date is not allowed";
                     }
                 }
 
-                if (isset($parameters -> back_date_allowed) && $parameters -> back_date_allowed == 'no') {
+                if (isset($parameters -> back_date_allowed[0]) && $parameters -> back_date_allowed[0] == 'no') {
                     //Check for past date
-                    if (Carbon::parse($orderDetail -> document_date) -> lt(Carbon::now())) {
-                        $errors[] = "Past Date is not allowed";
+                    if (Carbon::parse($orderDetail -> document_date) -> lt(Carbon::today())) {
+                        $errors[] = "Past Order Date is not allowed";
                     }
                 }
                 //Customer Validation
@@ -111,8 +112,14 @@ class SaleOrderShufabImport implements ToArray, WithHeadingRow, SkipsEmptyRows, 
                 if (!$orderDetail -> customer_code) {
                     $errors[] = "Customer not specified";
                 }
+                //Trim and lower the customer code/ name entered for flexible search
+                $customerSearch = strtolower(trim($orderDetail->customer_code));
                 $customer = Customer::withDefaultGroupCompanyOrg() -> where('status', ConstantHelper::ACTIVE) 
-                -> where('customer_type', ConstantHelper::REGULAR) -> where('company_name', $orderDetail -> customer_code) -> first();
+                    -> where('customer_type', ConstantHelper::REGULAR) 
+                    -> where(function ($query) use ($customerSearch) {
+                        $query->whereRaw('LOWER(company_name) = ?', [$customerSearch])
+                              ->orWhereRaw('LOWER(customer_code) = ?', [$customerSearch]);
+                    }) -> first();
                 if (!isset($customer)) {
                     $errors[] = "Customer not found or is inactive";
                 } else {
@@ -138,12 +145,23 @@ class SaleOrderShufabImport implements ToArray, WithHeadingRow, SkipsEmptyRows, 
                 //Item
                 $totalQty = 0;
                 $orderDetail -> item_code = $row['item_code'];
+                if (!$orderDetail -> item_code) {
+                    $errors[] = "Item not specified";
+                }
+                //Trim and lower the item code/ name entered for flexible search
+                $itemSearch = strtolower(trim($orderDetail->item_code));
+                //Get only limited type of items
                 $subTypeIds = SubType::whereIn('name', [ConstantHelper::FINISHED_GOODS, ConstantHelper::TRADED_ITEM, 
                 ConstantHelper::ASSET,ConstantHelper::WIP_SEMI_FINISHED])
                 -> get() -> pluck('id') -> toArray();
-                $item = Item::withDefaultGroupCompanyOrg() -> where('status', ConstantHelper::ACTIVE) -> whereHas('subTypes', function ($subTypeQuery) use($subTypeIds) {
-                    $subTypeQuery -> whereIn('sub_type_id', $subTypeIds);
-                }) -> where('type', ConstantHelper::GOODS) -> where('item_code', $orderDetail -> item_code) -> first();
+                $item = Item::withDefaultGroupCompanyOrg() -> where('status', ConstantHelper::ACTIVE) 
+                    -> whereHas('subTypes', function ($subTypeQuery) use($subTypeIds) {
+                        $subTypeQuery -> whereIn('sub_type_id', $subTypeIds);
+                    }) -> where('type', ConstantHelper::GOODS) 
+                    ->where(function ($query) use ($itemSearch) {
+                        $query->whereRaw('LOWER(item_code) = ?', [$itemSearch])
+                              ->orWhereRaw('LOWER(item_name) = ?', [$itemSearch]);
+                    }) -> first();
                 $orderDetail -> item_id = $item ?-> id;
                 if (!isset($item)) {
                     $errors[] = "Item not found or invalid item specified";
@@ -151,8 +169,9 @@ class SaleOrderShufabImport implements ToArray, WithHeadingRow, SkipsEmptyRows, 
                 //UOM
                 $orderDetail -> uom_code = $row['uom'];
                 if ($orderDetail -> uom_code) {
+                    $uomSearch = strtolower(trim($orderDetail -> uom_code));
                     $uom = Unit::withDefaultGroupCompanyOrg() -> where('status', ConstantHelper::ACTIVE) 
-                    -> where('name', $orderDetail -> uom_code) -> first();
+                    -> whereRaw('LOWER(name) = ?',[$uomSearch]) -> first();
                     $orderDetail -> uom_id = $uom ?-> id;
                     if (!$uom) {
                         $errors[] = "UOM not found";
@@ -200,17 +219,41 @@ class SaleOrderShufabImport implements ToArray, WithHeadingRow, SkipsEmptyRows, 
                 }
                 //Delivery Date
                 if ($row['delivery_date']) {
-                    $orderDetail -> delivery_date = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($row['delivery_date'])->format('Y-m-d');;
+                    $orderDetail -> delivery_date = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($row['delivery_date'])->format('Y-m-d');
+                    if (Carbon::parse($orderDetail -> delivery_date) -> lt(Carbon::today())) {
+                        $errors[] = "Past Delivery Date is not allowed";
+                    }
                 } else {
-                    $orderDetail -> delivery_date = $orderDetail -> document_date;
+                    //Check if document date is current or future
+                    if (Carbon::parse($orderDetail -> document_date) -> gte(Carbon::today())) {
+                        $orderDetail -> delivery_date = $orderDetail -> document_date;
+                    } else { //Default to current date
+                        $orderDetail -> delivery_date = Carbon::today() -> format('Y-m-d');
+                    }
                 }
                 $orderDetail -> created_by = $this -> authUserId;
                 $orderDetail -> is_migrated = "0";
-                $orderDetail -> created_at = Carbon::now() -> format('Y-m-d');
-                $orderDetail -> updated_at = Carbon::now() -> format('Y-m-d');
+                $orderDetail -> created_at = Carbon::today() -> format('Y-m-d');
+                $orderDetail -> updated_at = Carbon::today() -> format('Y-m-d');
                 $orderDetail -> reason = $errors;
                 //Sales Order Insertion
-                SaleOrderImportShufab::create((array) $orderDetail);
+                $soImport = SaleOrderImportShufab::create((array) $orderDetail);
+                //Dynamic Fields
+                $dynamicFields = $book ?-> dynamic_fields ?? [];
+                foreach ($dynamicFields as $dynField) {
+                    foreach ($dynField -> dynamic_field -> details as $dynDetail) {
+                        $trimmedField = strtolower(trim($dynDetail -> name));
+                        $excelField = str_replace(" ", "_", $trimmedField);
+                        //Excel Field
+                        SoImportShufabDynField::create([
+                            'import_id' => $soImport -> id,
+                            'dyn_header_id' => $dynDetail -> header_id,
+                            'dyn_detail_id' => $dynDetail -> id,
+                            'name' => $dynDetail -> name,
+                            'value' => isset($row[$excelField]) ? $row[$excelField] : null
+                        ]);
+                    }
+                }
             }
         }
         

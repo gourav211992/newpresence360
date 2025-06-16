@@ -172,7 +172,6 @@ class PaymentVoucherController extends Controller
         if ($r->ids) {
             $ids = array_map('intval', $r->ids);
         }
-        // dd($data->get());
         $data = $data->get()
             ->reject(fn($customer) => in_array($customer->id, $ids))
             ->map(fn($customer) => [
@@ -181,6 +180,7 @@ class PaymentVoucherController extends Controller
                 'code' => $customer->code,
                 'customer' => $customer->customer,
                 'vendor' => $customer->vendor,
+                'organization'=>$customer->organization,
             ])
             ->toArray();
 
@@ -427,15 +427,15 @@ class PaymentVoucherController extends Controller
             ->route($request->document_type . '.create')
             ->withErrors(['voucher_no' => $request->voucher_no . ' Voucher No. Already Exist!']);
     }
-if($request->reference_no!="" && $request->payment_type === "Bank"){
-$ref = PaymentVoucher::where('reference_no', $request->reference_no)->exists();
+// if($request->reference_no!="" && $request->payment_type === "Bank"){
+// $ref = PaymentVoucher::where('reference_no', $request->reference_no)->exists();
 
-if ($ref) {
-    return redirect()
-        ->route($request->document_type . '.create')
-        ->withErrors(['Reference No. Already Exist!'])->withInput();
-}
-}
+// if ($ref) {
+//     return redirect()
+//         ->route($request->document_type . '.create')
+//         ->withErrors(['Reference No. Already Exist!'])->withInput();
+// }
+// }
 
 
 
@@ -481,7 +481,7 @@ if ($ref) {
 
             $voucher->payment_date = $request->payment_date;
             $voucher->payment_mode = $request->payment_mode;
-            $voucher->reference_no = $request->payment_type === "Bank"?$request->reference_no:"";
+            // $voucher->reference_no = $request->payment_type === "Bank"?$request->reference_no:"";
             $voucher->revision_number = 0;
 
             // Currency details
@@ -533,6 +533,15 @@ if ($ref) {
             // Process voucher details
             foreach ($request->party_id as $index => $party) {
                 $details = new PaymentVoucherDetails();
+                if($request->reference_no && $request->reference_no[$index]!="" && $request->payment_type === "Bank"){
+                $ref = PaymentVoucherDetails::where('reference_no', $request->reference_no[$index])->exists();
+
+                    if ($ref) {
+                        return redirect()
+                            ->route($request->document_type . '.create')
+                            ->withErrors(['Reference No. Already Exist!'])->withInput();
+                    }
+                }
                 $details->payment_voucher_id = $voucher->id;
                 $customer = Ledger::find($party);
                 $details->ledger_id = $customer->id;
@@ -540,6 +549,7 @@ if ($ref) {
                 $details->partyCode = $customer->code;
                 $details->type = $request->document_type == ConstantHelper::RECEIPTS_SERVICE_ALIAS ? "customer" : "vendor";
                 $details->currentAmount = $request->amount[$index];
+                $details->reference_no = $request->reference_no[$index];
                 $details->orgAmount = $request->amount_exc[$index];
                 $details->reference = $request->reference[$index];
                 $details->save();
@@ -718,15 +728,15 @@ if ($ref) {
 
     public function update(Request $request, string $id)
     {
-if($request->reference_no!="" && $request->payment_type === "Bank"){
-$ref = PaymentVoucher::where('reference_no', $request->reference_no)->where('id','!=',$id)->exists();
+// if($request->reference_no!="" && $request->payment_type === "Bank"){
+// $ref = PaymentVoucher::where('reference_no', $request->reference_no)->where('id','!=',$id)->exists();
 
-if ($ref) {
-    return redirect()
-        ->route($request->document_type . '.edit', [$id])
-        ->withErrors(['Reference No. Already Exist!'])->withInput();
-}
-}
+// if ($ref) {
+//     return redirect()
+//         ->route($request->document_type . '.edit', [$id])
+//         ->withErrors(['Reference No. Already Exist!'])->withInput();
+// }
+// }
 
         DB::beginTransaction();
 
@@ -797,7 +807,7 @@ if ($ref) {
                 $account = BankDetail::find($request->account_id);
                 $voucher->accountNo = $account->account_number;
                 $voucher->payment_mode = $request->payment_mode;
-                $voucher->reference_no = $request->payment_type === "Bank"?$request->reference_no:"";
+                // $voucher->reference_no = $request->payment_type === "Bank"?$request->reference_no:"";
                 $voucher->ledger_id = $bank->ledger_id;
                 $voucher->ledger_group_id = $bank->ledger_group_id;
             } else {
@@ -1675,9 +1685,9 @@ if ($ref) {
     public function checkReference(Request $request)
 {
     if($request->edit_id)
-    $exists = PaymentVoucher::where('reference_no', $request->reference_no)->where('id','!=',$request->edit_id)->exists();
+    $exists = PaymentVoucherDetails::where('reference_no', $request->reference_no)->where('id','!=',$request->edit_id)->exists();
     else
-    $exists = PaymentVoucher::where('reference_no', $request->reference_no)->exists();
+    $exists = PaymentVoucherDetails::where('reference_no', $request->reference_no)->exists();
 
     return response()->json(['exists' => $exists]);
 }

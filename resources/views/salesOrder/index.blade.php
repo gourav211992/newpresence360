@@ -26,7 +26,7 @@
                         @if ($create_button)
 						<a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{$create_route}}"><i data-feather="plus-circle"></i> Create {{request() -> type == 'sq' ? 'Quotation' : 'Order'}}</a> 
                         @if (request() -> type == 'so')
-                            <a class="btn btn-success btn-sm mb-50 mb-sm-0" href="{{route('salesOrder.import.index', ['version' => 'v2'])}}"><i data-feather="upload-cloud"></i> Import Orders</a> 
+                            <a class="btn btn-success btn-sm mb-50 mb-sm-0" href="{{route('salesOrder.import.index', ['version' => $bulk_upload_version])}}"><i data-feather="upload-cloud"></i> Import Orders</a> 
                         @endif
                         @endif
                         <a class="btn btn-dark btn-sm mb-50 mb-sm-0" href="{{ route('transactions.report', ['serviceAlias' => request() -> type]) }}"><i data-feather="bar-chart-2"></i>Report</a>
@@ -110,54 +110,14 @@
         </div>
     </div>
 
-<div class="modal modal-slide-in fade filterpopuplabel" id="filter">
-		<div class="modal-dialog sidebar-sm">
-			<form class="add-new-record modal-content pt-0"> 
-				<div class="modal-header mb-1">
-					<h5 class="modal-title" id="exampleModalLabel">Apply Filter</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">×</button>
-				</div>
-				<div class="modal-body flex-grow-1">
-					<div class="mb-1">
-						  <label class="form-label" for="fp-range">Select Date</label>
-						  <input type="text" id="fp-range" class="form-control flatpickr-range bg-white" placeholder="YYYY-MM-DD to YYYY-MM-DD" />
-					</div>
-					
-					<div class="mb-1">
-						<label class="form-label">Order No.</label>
-						<select class="form-select">
-							<option>Select</option>
-						</select>
-					</div> 
-                    
-                    <div class="mb-1">
-						<label class="form-label">Customer Name</label>
-						<select class="form-select select2">
-							<option>Select</option> 
-						</select>
-					</div> 
-                    
-                    <div class="mb-1">
-						<label class="form-label">Status</label>
-						<select class="form-select">
-							<option>Select</option>
-							<option>Open</option>
-							<option>Close</option>
-						</select>
-					</div> 
-					 
-				</div>
-				<div class="modal-footer justify-content-start">
-					<button type="button" class="btn btn-primary data-submit mr-1">Apply</button>
-					<button type="reset" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-				</div>
-			</form>
-		</div>
-	</div>
+
 @endsection
+
 @section('scripts')
 <script type="text/javascript" src="{{asset('assets/js/modules/common-datatable.js')}}"></script>
 <script>
+    let reportDataTableInstance = null;
+
     $(document).ready(function() {
     function renderData(data) {
         return data ? data : 'N/A'; 
@@ -217,13 +177,16 @@
         },
     ];
     // Define your dynamic filters
-    var filters = {
-        status: '#filter-status',         // Status filter (dropdown)
-        category: '#filter-category',     // Category filter (dropdown)
-        item_code: '#filter-item-code'    // Item code filter (input text field)
+    let filtersComponents = @json($filterArray);
+    // Define your dynamic filters
+    let filters = {
+        'date_range' : '#document_date_filter'
     };
+    filtersComponents.forEach(filter => {
+        filters[filter.requestName] = "#" + (filter.id + "_input");
+    });
     var exportColumns = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]; // Columns to export
-    initializeDataTable('.datatables-basic', 
+    reportDataTableInstance = initializeDataTable('.datatables-basic', 
         "{{ $redirect_url }}", 
         columns,
         filters,  // Apply filters
@@ -238,4 +201,6 @@
     // applyFilter('.apply-filter');
 });
 </script>
+@include('partials.index-filter',$filterArray)
+
 @endsection
