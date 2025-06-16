@@ -27,42 +27,44 @@ class FailedLedgersExport implements FromCollection, WithHeadings, WithMapping, 
     public function headings(): array
     {
         $headings = [
+            'S.No',
             'Code',
             'Name',
             'Group',
             'Status',
-            'tds_section',
-            'tds_percentage',
-            'tcs_section',
-            'tcs_percentage',
-            'tax_type',
-            'tax_percentage',
+            // 'tds_section',
+            // 'tds_percentage',
+            // 'tcs_section',
+            // 'tcs_percentage',
+            // 'tax_type',
+            // 'tax_percentage',
+             'Remarks',
         ];
-
-        $headings[] = 'Remark';
 
         return $headings;
     }
 
     public function map($item): array
     {
-        $tdsSections = ConstantHelper::getTdsSections();
-        $tcsSections = ConstantHelper::getTcsSections();
-        $taxTypes    = ConstantHelper::getTaxTypes();
+        static $index = 1;
+        // $tdsSections = ConstantHelper::getTdsSections();
+        // $tcsSections = ConstantHelper::getTcsSections();
+        // $taxTypes    = ConstantHelper::getTaxTypes();
         $data = [
+            $index++,
             $item->code,
             $item->name,
             $item->ledger_groups,
             $item->status ?? 'N/A',
-            $tdsSections[$item->tds_section] ?? 'N/A',
-            $item->tds_percentage ?? 'N/A',
-            $tcsSections[$item->tcs_section] ?? 'N/A',
-            $item->tcs_percentage ?? 'N/A',
-            $taxTypes[$item->tax_type] ?? 'N/A',
-            $item->tax_percentage ?? 'N/A',
+            // $tdsSections[$item->tds_section] ?? 'N/A',
+            // $item->tds_percentage ?? 'N/A',
+            // $tcsSections[$item->tcs_section] ?? 'N/A',
+            // $item->tcs_percentage ?? 'N/A',
+            // $taxTypes[$item->tax_type] ?? 'N/A',
+            // $item->tax_percentage ?? 'N/A',
+            $item->import_remarks ?? 'N/A'
         ];
 
-        $data[] = $item->import_remarks ?? 'N/A';
 
         return $data;
     }
@@ -70,7 +72,7 @@ class FailedLedgersExport implements FromCollection, WithHeadings, WithMapping, 
     public function styles(Worksheet $sheet)
     {
         $styles = [];
-        $requiredColumns = range(1, 10);
+        $requiredColumns = range(1, 6);
         $totalColumns = count($this->headings());
         $remarksColIndex = $totalColumns;
         foreach ($requiredColumns as $col) {
@@ -98,14 +100,12 @@ class FailedLedgersExport implements FromCollection, WithHeadings, WithMapping, 
 
             ];
             $sheet->getColumnDimension($columnLetter)->setWidth(ConstantHelper::EXCEL_COLUMN_WIDTH_DEFAULT);
-            if ($col !== $remarksColIndex) {
                 $sheet->getStyle("{$columnLetter}")->getAlignment()->setWrapText(ConstantHelper::EXCEL_ALIGNMENT_WRAP);
-            }
         }
 
 
         $totalColumns = count($this->headings());
-        for ($col = 11; $col <= $totalColumns; $col++) {
+        for ($col = 6; $col <= $totalColumns; $col++) {
             $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col);
             $sheet->getStyle("{$columnLetter}1")->applyFromArray([
                 'font' => [
@@ -129,9 +129,7 @@ class FailedLedgersExport implements FromCollection, WithHeadings, WithMapping, 
                 ],
             ]);
             $sheet->getColumnDimension($columnLetter)->setWidth(ConstantHelper::EXCEL_COLUMN_WIDTH_DEFAULT);
-            if ($col !== $remarksColIndex) {
                 $sheet->getStyle("{$columnLetter}")->getAlignment()->setWrapText(ConstantHelper::EXCEL_ALIGNMENT_WRAP);
-            }
         }
         return $styles;
     }

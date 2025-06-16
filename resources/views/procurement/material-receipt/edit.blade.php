@@ -2825,7 +2825,7 @@
                             $("#itemTable .mrntableselectexcel").empty().append(data.data.pos);
                         }
                         let locationId = $("[name='header_store_id']").val();
-                        getLocation(locationId);
+                        // getLocation(locationId);
                         getSubStores(locationId, item='');
                         updateImportItemData(data.status);
                         setTimeout(() => {
@@ -3294,7 +3294,7 @@
                             $("[name='supplier_invoice_date']").val();
                         }
                         let locationId = $("[name='header_store_id']").val();
-                        getLocation(locationId);
+                        // getLocation(locationId);
 
                         if (finalDiscounts.length) {
                             let rows = '';
@@ -3586,7 +3586,7 @@
                             $("[name='supplier_invoice_date']").val();
                         }
                         let locationId = $("[name='header_store_id']").val();
-                        getLocation(locationId);
+                        // getLocation(locationId);
 
                         if (finalDiscounts.length) {
                             let rows = '';

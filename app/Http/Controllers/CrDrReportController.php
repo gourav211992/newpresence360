@@ -1769,8 +1769,11 @@ class CrDrReportController extends Controller
         $ids = [];
         $group_id = $ledger_group->getAllChildIds();
         $group_id[] = $ledger_group->id;
+        $accessibleLocations = InventoryHelper::getAccessibleLocations();
+        $locationIds = $accessibleLocations->pluck('id')->toArray();
         $data = Voucher::withDefaultGroupCompanyOrg()->with('ErpLocation', 'organization')
             ->whereIn("organization_id", $organization_id)
+            ->whereIn('location', $locationIds)
             ->when($request->location_id, function ($query) use ($request) {
                 $query->where('location', $request->location_id);
             })

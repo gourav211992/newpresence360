@@ -15,14 +15,12 @@ use App\Helpers\ServiceParametersHelper;
 use App\Helpers\TaxHelper;
 use App\Helpers\NumberHelper;
 use App\Helpers\TransactionReportHelper;
-use App\Http\Controllers\Report\TransactionReportController;
 use App\Http\Requests\ErpSaleOrderRequest;
 use App\Models\Attribute;
 use App\Models\AttributeGroup;
 use App\Models\AuthUser;
 use App\Models\Bom;
 use App\Models\BomDetail;
-use App\Models\Book;
 use App\Models\CashCustomerDetail;
 use App\Models\Category;
 use App\Models\Country;
@@ -30,7 +28,6 @@ use App\Models\Customer;
 use App\Models\Address;
 use App\Models\Department;
 use App\Models\ErpAddress;
-use App\Models\ErpAttribute;
 use App\Models\ErpInvoiceItem;
 use App\Models\ErpSaleOrderHistory;
 use App\Models\ErpSoDynamicField;
@@ -40,32 +37,23 @@ use App\Models\ErpStore;
 use App\Models\Item;
 use App\Models\ErpItemAttribute;
 use App\Models\ErpSaleOrder;
-use App\Models\ErpSaleOrderItem;
-use App\Models\ErpSaleOrderItemAttribute;
-use App\Models\ErpSaleOrderItemDelivery;
-use App\Models\ErpSaleOrderMrnTed;
 use App\Models\ErpSaleOrderTed;
 use App\Models\ErpSoItem;
 use App\Models\ErpSoItemAttribute;
 use App\Models\ErpSoItemDelivery;
-use App\Models\ErpVendor;
 use App\Models\ItemSpecification;
-use App\Models\NumberPattern;
 use App\Models\Organization;
 use App\Models\OrganizationGroup;
-use App\Models\ProductionLevel;
 use App\Models\ProductionRouteDetail;
-use App\Models\ServiceParameter;
+use Illuminate\Support\Facades\Storage;
+use Yajra\DataTables\DataTables;
+use Illuminate\Http\Request;
 use App\Models\State;
-use App\Services\Reports\TransactionReport;
 use Carbon\Carbon;
 use DB;
-use Illuminate\Support\Facades\Storage;
 use PDF;
 use Exception;
-use Illuminate\Http\Request;
 use stdClass;
-use Yajra\DataTables\DataTables;
 
 class ErpSaleOrderController extends Controller
 {
@@ -102,7 +90,10 @@ class ErpSaleOrderController extends Controller
             //Date Filters
             $dateRange = $request -> date_range ??  null;
             
-            $salesOrder = ErpSaleOrder::where('document_type', $orderType) -> whereIn('store_id',$accessible_locations) -> bookViewAccess($pathUrl) -> withDefaultGroupCompanyOrg() -> withDraftListingLogic() -> when($request -> customer_id, function ($custQuery) use($request) {
+            $salesOrder = ErpSaleOrder::where('document_type', $orderType) -> whereIn('store_id',$accessible_locations) 
+            -> bookViewAccess($pathUrl) -> withDefaultGroupCompanyOrg() -> withDraftListingLogic() 
+            // -> whereBetween('document_date', [$selectedfyYear['start_date'], $selectedfyYear['end_date']])
+            -> when($request -> customer_id, function ($custQuery) use($request) {
                 $custQuery -> where('customer_id', $request -> customer_id);
             }) -> when($request -> book_id, function ($bookQuery) use($request) {
                 $bookQuery -> where('book_id', $request -> book_id);
@@ -111,7 +102,7 @@ class ErpSaleOrderController extends Controller
             }) -> when($request -> location_id, function ($docQuery) use($request) {
                 $docQuery -> where('store_id', $request -> location_id);
             }) -> when($request -> company_id, function ($docQuery) use($request) {
-                $docQuery -> where('store_id', $request -> company_id);
+                $docQuery -> where('company_id', $request -> company_id);
             }) -> when($request -> organization_id, function ($docQuery) use($request) {
                 $docQuery -> where('organization_id', $request -> organization_id);
             }) -> when($request -> status, function ($docStatusQuery) use($request) {
@@ -219,7 +210,6 @@ class ErpSaleOrderController extends Controller
         return view('salesOrder.index', [
             'redirect_url' => $redirectUrl,
             'create_route' => $createRoute,
-            'create_button' => count($servicesBooks['services']),
             'filterArray' => TransactionReportHelper::FILTERS_MAPPING[ConstantHelper::SO_SERVICE_ALIAS],
             'autoCompleteFilters' => $autoCompleteFilters,
             'bulk_upload_version' => $salesOrderBulkUploadVersion,
@@ -297,129 +287,128 @@ class ErpSaleOrderController extends Controller
     }
     public function edit(Request $request, string $id)
     {
-        try {
-            $pathUrl = request()->segments()[0];
-            $orderType = ConstantHelper::SO_SERVICE_ALIAS;
-            $redirectUrl = route('sale.order.index');
-            if ($pathUrl === 'sales-quotation') {
-                $orderType = ConstantHelper::SQ_SERVICE_ALIAS;
-                $redirectUrl = route('sale.quotation.index');
-            }
+        $pathUrl = request()->segments()[0];
+        $orderType = ConstantHelper::SO_SERVICE_ALIAS;
+        $redirectUrl = route('sale.order.index');
+        if ($pathUrl === 'sales-quotation') {
+            $orderType = ConstantHelper::SQ_SERVICE_ALIAS;
+            $redirectUrl = route('sale.quotation.index');
+        }
         request() -> merge(['type' => $orderType]);
         $servicesBooks = [];
-            $user = Helper::getAuthenticatedUser();
-            $orderType = $request->input('type', ConstantHelper::SO_SERVICE_ALIAS);
-            $bookTypeAlias = ConstantHelper::SO_SERVICE_ALIAS;
-            if ($orderType === ConstantHelper::SQ_SERVICE_ALIAS) {
-                $bookTypeAlias = ConstantHelper::SQ_SERVICE_ALIAS;
-            }
-            if (isset($request->revisionNumber)) {
-                $order = ErpSaleOrderHistory::with(['media_files', 'discount_ted', 'expense_ted', 'billing_address_details', 'shipping_address_details', 'location_address_details'])->with('items', function ($query) {
+        $user = Helper::getAuthenticatedUser();
+        $orderType = $request->input('type', ConstantHelper::SO_SERVICE_ALIAS);
+        $bookTypeAlias = ConstantHelper::SO_SERVICE_ALIAS;
+        if ($orderType === ConstantHelper::SQ_SERVICE_ALIAS) {
+            $bookTypeAlias = ConstantHelper::SQ_SERVICE_ALIAS;
+        }
+        if (isset($request->revisionNumber)) {
+            $order = ErpSaleOrderHistory::with(['media_files', 'discount_ted', 'expense_ted', 
+                'billing_address_details', 'shipping_address_details', 'location_address_details'])
+                ->with('items', function ($query) {
                     $query->with('custom_bom_details','discount_ted', 'tax_ted', 'item_deliveries')->with([
                         'item' => function ($itemQuery) {
                             $itemQuery->with(['specifications', 'alternateUoms.uom', 'uom']);
                         }
                     ]);
-                })->where('source_id', $id)->where('revision_number', $request->revisionNumber)->first();
-                $ogOrder = ErpSaleOrder::find($id);
-            } else {
-                $order = ErpSaleOrder::with(['media_files', 'discount_ted', 'expense_ted', 'billing_address_details', 'shipping_address_details', 'location_address_details'])->with('items', function ($query) {
+                })->bookViewAccess($pathUrl) -> withDefaultGroupCompanyOrg() -> withDraftListingLogic()
+                -> where('source_id', $id)->where('revision_number', $request->revisionNumber)->firstOrFail();
+            $ogOrder = ErpSaleOrder::where('id', $id) -> bookViewAccess($pathUrl) -> withDefaultGroupCompanyOrg() 
+                -> withDraftListingLogic() -> firstOrFail();
+        } else {
+            $order = ErpSaleOrder::with(['media_files', 'discount_ted', 'expense_ted', 
+                'billing_address_details', 'shipping_address_details', 'location_address_details'])
+                ->with('items', function ($query) {
                     $query->with('custom_bom_details','discount_ted', 'tax_ted', 'item_deliveries')->with([
                         'item' => function ($itemQuery) {
                             $itemQuery->with(['specifications', 'alternateUoms.uom', 'uom']);
                         }
                     ]);
-                })->find($id);
-                $ogOrder = $order;
-            }
-            $stores = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
-            $organization = Organization::where('id', $user->organization_id)->first();
-            $departments = Department::where('organization_id', $organization->id)
+                }) -> where('id', $id) ->bookViewAccess($pathUrl) -> withDefaultGroupCompanyOrg() -> withDraftListingLogic()->firstOrFail();
+            $ogOrder = $order;
+        }
+        $stores = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
+        $organization = Organization::where('id', $user->organization_id)->first();
+        $departments = Department::where('organization_id', $organization->id)
                         ->where('status', ConstantHelper::ACTIVE)
                         ->get();
-                if (isset($order)) {
-                    $parentUrl = request() -> segments()[0];
-                    $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl, $order -> book ?-> service ?-> alias);
-                    foreach ($order -> items as &$soItem) {
-                        $referencedAmount = ErpSoItem::where('sq_item_id', $soItem -> id) -> sum('order_qty');
-                        if (isset($referencedAmount) && $referencedAmount > 0) {
-                            $soItem -> min_attribute = $referencedAmount;
-                            $soItem -> is_editable = false;
-                            $soItem -> restrict_delete = true;
-                        }
-                        else if ($soItem -> sq_item_id !== null) {
-                            $pulled = ErpSoItem::find($soItem -> sq_item_id);
-                            if (isset($pulled)) {
-                                $availableTotalQty = $soItem -> order_qty + $pulled -> balance_qty;
-                                $soItem -> max_attribute = $availableTotalQty;
-                                $soItem -> is_editable = false;
-                            } else {
-                                $soItem -> max_attribute = 999999;
-                                $soItem -> is_editable = true;
-                            }
-                        } else {
-                            $soItem->max_attribute = 999999;
-                            $soItem->is_editable = true;
-                        }
-                    }
-                }
-                $revision_number = $order->revision_number;
-                $totalValue = ($order -> total_item_value - $order -> total_discount_value) + $order -> total_tax_value + $order -> total_expense_value;
-                $userType = Helper::userCheck();
-                $buttons = Helper::actionButtonDisplay($order->book_id,$order->document_status , $order->id, $totalValue, $order->approval_level, $order -> created_by ?? 0, $userType['type'], $revision_number);
-                $books = Helper::getBookSeriesNew($bookTypeAlias) -> get();
-                $countries = Country::select('id AS value', 'name AS label') -> where('status', ConstantHelper::ACTIVE) -> get();
-                $revNo = $order->revision_number;
-                if($request->has('revisionNumber')) {
-                    $revNo = intval($request->revisionNumber);
+        $parentUrl = request() -> segments()[0];
+        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl, $order -> book ?-> service ?-> alias);
+        foreach ($order -> items as &$soItem) {
+            $referencedAmount = ErpSoItem::where('sq_item_id', $soItem -> id) -> sum('order_qty');
+            if (isset($referencedAmount) && $referencedAmount > 0) {
+                $soItem -> min_attribute = $referencedAmount;
+                $soItem -> is_editable = false;
+                $soItem -> restrict_delete = true;
+            }
+            else if ($soItem -> sq_item_id !== null) {
+                $pulled = ErpSoItem::find($soItem -> sq_item_id);
+                if (isset($pulled)) {
+                    $availableTotalQty = $soItem -> order_qty + $pulled -> balance_qty;
+                    $soItem -> max_attribute = $availableTotalQty;
+                    $soItem -> is_editable = false;
                 } else {
-                    $revNo = $order->revision_number;
+                    $soItem -> max_attribute = 999999;
+                    $soItem -> is_editable = true;
                 }
-                $docValue = $order->total_amount ?? 0;
-                $approvalHistory = Helper::getApprovalHistory($order->book_id, $ogOrder->id, $revNo, $docValue, $order -> created_by);
-                $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$order->document_status] ?? '';
-                $shortClose = 0;
-                if(intval($ogOrder->revision_number) > 0) {
-                    $shortClose = 1;
-                } else {
-                    if($ogOrder->document_status == ConstantHelper::APPROVED || $ogOrder->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED) {
-                        $shortClose = 1;
-                    }
-                }
-                $pendingOrder = ErpSoItem::where('sale_order_id', $ogOrder->id)
-                    ->whereRaw('order_qty > (dnote_qty + short_close_qty)')
-                    ->count();
-                if($pendingOrder) {
-                    $shortClose = 1;
-                } else {
-                    $shortClose = 0;
-                }
-                $dynamicFieldsUI = $order -> dynamicfieldsUi();
-                $itemImportFile = asset('templates/SalesOrderItemImport.xlsx');
-                $data = [
-                    'user' => $user,
-                    'series' => $books,
-                    'order' => $order,
-                    'countries' => $countries,
-                    'buttons' => $buttons,
-                    'approvalHistory' => $approvalHistory,
-                    'type' => $orderType,
-                    'stores' => $stores,
-                    'departments' => $departments,
-                    'revision_number' => $revision_number,
-                    'docStatusClass' => $docStatusClass,
-                    'shortClose' => $shortClose,
-                    'maxFileCount' => isset($order -> mediaFiles) ? (10 - count($order -> media_files)) : 10,
-                    'services' => $servicesBooks['services'],
-                    'redirectUrl' => $redirectUrl,
-                    'itemImportFile' => $itemImportFile,
-                    'dynamicFieldsUi' => $dynamicFieldsUI
-                ];
-                return view('salesOrder.create_edit', $data);
-            
-        } catch(Exception $ex) {
-            dd($ex -> getMessage());
+            } else {
+                $soItem->max_attribute = 999999;
+                $soItem->is_editable = true;
+            }
         }
+        $revision_number = $order->revision_number;
+        $totalValue = ($order -> total_item_value - $order -> total_discount_value) + $order -> total_tax_value + $order -> total_expense_value;
+        $userType = Helper::userCheck();
+        $buttons = Helper::actionButtonDisplay($order->book_id,$order->document_status , $order->id, $totalValue, $order->approval_level, $order -> created_by ?? 0, $userType['type'], $revision_number);
+        $books = Helper::getBookSeriesNew($bookTypeAlias) -> get();
+        $countries = Country::select('id AS value', 'name AS label') -> where('status', ConstantHelper::ACTIVE) -> get();
+        $revNo = $order->revision_number;
+        if($request->has('revisionNumber')) {
+            $revNo = intval($request->revisionNumber);
+        } else {
+            $revNo = $order->revision_number;
+        }
+        $docValue = $order->total_amount ?? 0;
+        $approvalHistory = Helper::getApprovalHistory($order->book_id, $ogOrder->id, $revNo, $docValue, $order -> created_by);
+        $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$order->document_status] ?? '';
+        $shortClose = 0;
+        if(intval($ogOrder->revision_number) > 0) {
+            $shortClose = 1;
+        } else {
+            if($ogOrder->document_status == ConstantHelper::APPROVED || $ogOrder->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED) {
+                $shortClose = 1;
+            }
+        }
+        $pendingOrder = ErpSoItem::where('sale_order_id', $ogOrder->id)
+            ->whereRaw('order_qty > (dnote_qty + short_close_qty)')
+            ->count();
+        if($pendingOrder) {
+            $shortClose = 1;
+        } else {
+            $shortClose = 0;
+        }
+        $dynamicFieldsUI = $order -> dynamicfieldsUi();
+        $itemImportFile = asset('templates/SalesOrderItemImport.xlsx');
+        $data = [
+            'user' => $user,
+            'series' => $books,
+            'order' => $order,
+            'countries' => $countries,
+            'buttons' => $buttons,
+            'approvalHistory' => $approvalHistory,
+            'type' => $orderType,
+            'stores' => $stores,
+            'departments' => $departments,
+            'revision_number' => $revision_number,
+            'docStatusClass' => $docStatusClass,
+            'shortClose' => $shortClose,
+            'maxFileCount' => isset($order -> mediaFiles) ? (10 - count($order -> media_files)) : 10,
+            'services' => $servicesBooks['services'],
+            'redirectUrl' => $redirectUrl,
+            'itemImportFile' => $itemImportFile,
+            'dynamicFieldsUi' => $dynamicFieldsUI
+        ];
+        return view('salesOrder.create_edit', $data);
     }
 
     public function store(ErpSaleOrderRequest $request)
@@ -1032,7 +1021,7 @@ class ErpSaleOrderController extends Controller
                         if (isset($request -> item_delivery_schedule_qty[$itemDataKey])) {
                             foreach ($request -> item_delivery_schedule_qty[$itemDataKey] as $itemDeliveryKey => $itemDeliveryQty) {
                                 if (isset($request -> item_delivery_schedule_date[$itemDataKey][$itemDeliveryKey])) {
-                                    if (Carbon::parse($request -> item_delivery_schedule_date[$itemDataKey][$itemDeliveryKey]) -> lt(Carbon::parse($saleOrder -> created_at))) {
+                                    if (Carbon::parse($request -> item_delivery_schedule_date[$itemDataKey][$itemDeliveryKey]) -> startOfDay() -> lt(Carbon::parse($saleOrder -> created_at) -> startOfDay())) {
                                         DB::rollBack();
                                         return response() -> json([
                                             'message' => '',
@@ -1058,7 +1047,7 @@ class ErpSaleOrderController extends Controller
                             }
                         } 
                         else {
-                            if (Carbon::parse($soItem -> delivery_date) -> lt(Carbon::parse($saleOrder -> created_at))) {
+                            if (Carbon::parse($soItem -> delivery_date) -> startOfDay() -> lt(Carbon::parse($saleOrder -> created_at) -> startOfDay())) {
                                 DB::rollBack();
                                 return response() -> json([
                                     'message' => '',
@@ -1538,7 +1527,9 @@ class ErpSaleOrderController extends Controller
     public function processQuotation(Request $request)
     {
         try {
-            $quotation = ErpSaleOrder::with(['discount_ted', 'expense_ted', 'billing_address_details', 'shipping_address_details'])->with('customer', function ($sQuery) {
+            $pathUrl = route('sale.quotation.index');
+            $quotation = ErpSaleOrder::with(['discount_ted', 'expense_ted', 
+            'billing_address_details', 'shipping_address_details'])->with('customer', function ($sQuery) {
                 $sQuery->with(['currency', 'payment_terms']);
             })->whereHas('items', function ($subQuery) use ($request) {
                 $subQuery->whereIn('id', $request->items_id);
@@ -1548,7 +1539,8 @@ class ErpSaleOrderController extends Controller
                         $itemQuery->with(['specifications', 'alternateUoms.uom', 'uom', 'hsn']);
                     }
                 ]);
-            })->where('document_type', ConstantHelper::SQ_SERVICE_ALIAS)->whereIn('id', $request->quotation_id)->get();
+            }) -> bookViewAccess($pathUrl) -> withDefaultGroupCompanyOrg() -> withDraftListingLogic()
+            ->where('document_type', ConstantHelper::SQ_SERVICE_ALIAS)->whereIn('id', $request->quotation_id)->get();
             foreach ($quotation as $header) {
                 foreach ($header->items as &$orderItem) {
                     $orderItem->item_attributes_array = $orderItem->item_attributes_array();
@@ -1569,15 +1561,18 @@ class ErpSaleOrderController extends Controller
     public function getQuotations(Request $request)
     {
         try {
+            $pathUrl = route('sale.quotation.index');
             $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request->header_book_id);
-            $quotation = ErpSoItem::whereHas('header', function ($subQuery) use ($request, $applicableBookIds) {
-                $subQuery->where('document_type', ConstantHelper::SQ_SERVICE_ALIAS)->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])->whereIn('book_id', $applicableBookIds)->when($request->customer_id, function ($custQuery) use ($request) {
+            $quotation = ErpSoItem::whereHas('header', function ($subQuery) use ($request, $applicableBookIds, $pathUrl) {
+                $subQuery->where('document_type', ConstantHelper::SQ_SERVICE_ALIAS)->
+                whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
+                ->whereIn('book_id', $applicableBookIds)->when($request->customer_id, function ($custQuery) use ($request) {
                     $custQuery->where('customer_id', $request->customer_id);
                 })->when($request->book_id, function ($bookQuery) use ($request) {
                     $bookQuery->where('book_id', $request->book_id);
                 })->when($request->document_id, function ($docQuery) use ($request) {
                     $docQuery->where('id', $request->document_id);
-                });
+                }) -> bookViewAccess($pathUrl) -> withDefaultGroupCompanyOrg();
             })-> with('attributes') -> with('uom') -> with(['header.customer']) -> whereColumn('quotation_order_qty', "<", "order_qty");
 
             if ($request->item_id) {
@@ -1653,6 +1648,10 @@ class ErpSaleOrderController extends Controller
     public function generatePdf(Request $request, $id)
     {
         $user = Helper::getAuthenticatedUser();
+        $pathUrl = route('sale.order.index');
+        if ($request -> document_type === ConstantHelper::SQ_SERVICE_ALIAS) {
+            $pathUrl = route('sale.quotation.index');
+        }
         $organization = Organization::where('id', $user->organization_id)->first();
         $organizationAddress = Address::with(['city', 'state', 'country'])
             ->where('addressable_id', $user->organization_id)
@@ -1660,24 +1659,23 @@ class ErpSaleOrderController extends Controller
             ->first();
 
         $order = ErpSaleOrder::with(
-            [
-                'customer',
-                'currency',
-                'discount_ted',
-                'expense_ted',
-                'billing_address_details',
-                'shipping_address_details',
-                'location_address_details'
-            ]
-        )
-            ->with('items', function ($query) {
+                [
+                    'customer',
+                    'currency',
+                    'discount_ted',
+                    'expense_ted',
+                    'billing_address_details',
+                    'shipping_address_details',
+                    'location_address_details'
+                ]
+            ) ->with('items', function ($query) {
                 $query->with('discount_ted', 'tax_ted', 'item_deliveries')->with([
                     'item' => function ($itemQuery) {
                         $itemQuery->with(['specifications', 'alternateUoms.uom', 'uom']);
                     }
                 ]);
-            })
-            ->find($id);
+            }) -> bookViewAccess($pathUrl) -> withDefaultGroupCompanyOrg() -> withDraftListingLogic() -> where('id', $id)
+            ->firstOrFail();
             $pdfFile = $request -> type == 'grouped' ? "pdf.sales-document-attribute-wise" : "pdf.sales-document";
             $maxAttributeCount = 0;
             $allAttributeValues = [];
@@ -1975,7 +1973,7 @@ class ErpSaleOrderController extends Controller
         $pathUrl = route('sale.order.index');
         $orderType = ConstantHelper::SO_SERVICE_ALIAS;
         $soItems = ErpSoItem::whereHas('header', function ($headerQuery) use($orderType, $pathUrl, $request) {
-            $headerQuery -> where('document_type', $orderType)-> withDefaultGroupCompanyOrg() -> withDraftListingLogic();
+            $headerQuery -> where('document_type', $orderType)->  bookViewAccess($pathUrl) -> withDefaultGroupCompanyOrg() -> withDraftListingLogic();
             //Customer Filter
             $headerQuery = $headerQuery -> when($request -> customer_id, function ($custQuery) use($request) {
                 $custQuery -> where('customer_id', $request -> customer_id);
@@ -2183,7 +2181,7 @@ class ErpSaleOrderController extends Controller
         $pathUrl = route('sale.order.index');
         $orderType = ConstantHelper::SO_SERVICE_ALIAS;
         $soItems = ErpSoItem::whereHas('header', function ($headerQuery) use($orderType, $pathUrl, $request) {
-            $headerQuery -> where('document_type', $orderType)-> withDefaultGroupCompanyOrg() -> withDraftListingLogic();
+            $headerQuery -> where('document_type', $orderType) -> bookViewAccess($pathUrl) -> withDefaultGroupCompanyOrg() -> withDraftListingLogic();
             //Customer Filter
             $headerQuery = $headerQuery -> when($request -> customer_id, function ($custQuery) use($request) {
                 $custQuery -> where('customer_id', $request -> customer_id);

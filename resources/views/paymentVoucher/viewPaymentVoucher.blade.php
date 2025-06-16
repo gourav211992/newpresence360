@@ -13,16 +13,9 @@
 @endsection
 
 @section('content')
-    <script>
-        const locationCostCentersMap = @json(
-            $locations->mapWithKeys(function ($location) {
-                return [
-                    $location->id => $location->cost_centers->map(function ($cc) {
-                        return ['id' => $cc->id, 'name' => $cc->name];
-                    }),
-                ];
-            }));
-    </script>
+<script>
+            const locationCostCentersMap = @json($cost_centers);
+</script>
     <!-- BEGIN: Content-->
     <div class="app-content content ">
         <div class="content-overlay"></div>
@@ -1334,7 +1327,7 @@
                                             <td>${val['date']}</td>
                                             <td class="fw-bolder text-dark">${val['series']['book_code'].toUpperCase()}</td>
                                             <td>${val['voucher_no']}</td>
-                                            <td>${item.erp_location?.store_name ?? '-'}</td>
+                                            <td>${val['erp_location']?.store_name ?? '-'}</td>
                                             <td>${item.cost_center?.name ?? '-'}</td>
                                             <td class="text-end">${formatIndianNumber(val['amount'])}</td>
                                             <td class="text-end">${formatIndianNumber(val['balance'])}</td>
@@ -1480,6 +1473,22 @@
         }
 
         $(document).ready(function() {
+            bind();
+            if ($("#Bank").is(":checked")) {
+                $(".bankfield").show();
+                $(".cashfield").hide();
+                $('.bankInput').prop('required', true);
+                $('.ref-no-header').show(); // Show the header
+                $('.reference_no').prop('required', true).closest('td').show();
+                $('#ledger_id').prop('required', false);
+            } else {
+                $(".cashfield").show();
+                $(".bankfield").hide();
+                $('.bankInput').prop('required', false);
+                $('.reference_no').prop('required', false).closest('td').hide();
+                $('.ref-no-header').hide(); // Hide the header
+                $('#ledger_id').prop('required', true);
+            }
             @if (!$buttons['draft'])
                 $('#voucherForm').find('input, select, textarea').prop('disabled', true);
                 $('#revisionNumber').prop('disabled', false);

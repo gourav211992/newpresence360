@@ -194,11 +194,13 @@ class PWOController extends Controller
                     $pwoSoMapping->so_id = $component['so_id'] ?? null;
                     $pwoSoMapping->so_item_id = $component['so_item_id'] ?? null;
                     $pwoSoMapping->store_id = $component['store_id'] ?? null;
-                    if(intval($component['main_so_item'])) {
-                        $pwoSoMapping->main_so_item = true;
-                    } else {
-                        $pwoSoMapping->main_so_item = false;
-                    }
+                    // if(intval($component['main_so_item'])) {
+                    // if (!empty(intval($component['main_so_item']))) {
+                    //     $pwoSoMapping->main_so_item = true;
+                    // } else {
+                    //     $pwoSoMapping->main_so_item = false;
+                    // }
+                    $pwoSoMapping->main_so_item = isset($component['main_so_item']) && intval($component['main_so_item']) != 0;
                     $pwoSoMapping->item_id = $component['item_id'] ?? null;
                     $pwoSoMapping->item_code = $component['item_code'] ?? null;
                     $attributes = [];
@@ -793,11 +795,13 @@ class PWOController extends Controller
                     $pwoSoMapping->item_id = $component['item_id'] ?? null;
                     $pwoSoMapping->item_code = $component['item_code'] ?? null;
                     $pwoSoMapping->store_id = $component['store_id'] ?? null;
-                    if(intval($component['main_so_item'])) {
-                        $pwoSoMapping->main_so_item = true;
-                    } else {
-                        $pwoSoMapping->main_so_item = false;
-                    }
+                    // if(intval($component['main_so_item'])) {
+                    // if (!empty(intval($component['main_so_item']))) {
+                    //     $pwoSoMapping->main_so_item = true;
+                    // } else {
+                    //     $pwoSoMapping->main_so_item = false;
+                    // }
+                    $pwoSoMapping->main_so_item = isset($component['main_so_item']) && intval($component['main_so_item']) != 0;
                     foreach($item?->itemAttributes as $itemAttribute) {
                         if (isset($component['attr_group_id'][$itemAttribute->attribute_group_id])) {
                             $attribute = Attribute::find(@$component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_name']);
@@ -1404,7 +1408,8 @@ class PWOController extends Controller
         $extendedPwoItems = $pwoItems;
         if(!$isAttribute) {
             foreach ($pwoItems as $index => $item) {
-                if ($item['main_so_item'] && !empty($item['so_item_ids'])) {
+                if (!empty($item['main_so_item']) && !empty($item['so_item_ids'])) {
+                // if ($item['main_so_item'] && !empty($item['so_item_ids'])) {
                     $soItems = ErpSoItem::where('sale_order_id', $item['so_id'])
                         ->whereIn('id', $item['so_item_ids'])
                         ->get();

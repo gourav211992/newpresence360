@@ -151,28 +151,35 @@ class LedgerImport implements ToModel, WithHeadingRow, WithChunkReading, WithSta
             }
 
             // Process group IDs
-            $groupData = $this->service->processGroupData($group);
-            $groupIds = $groupData['groupIds'];
-            $groupLower = $groupData['groupLower'];
-            // Clean unnecessary fields
-            if (!in_array('tds', $groupLower)) {
-                $row['tds_section'] = null;
-                $row['tds_percentage'] = null;
-            } else {
-                $row['tds_section'] = $this->service->getTdsSectionKeyFromLabel($row['tds_section'] ?? '') ?? null;
+            try {
+                $groupData = $this->service->processGroupData($group);
+
+            } catch (\Exception $e) {
+                    Log::error("group not found: " . $group);
+                    $status = 'Failed';
             }
-            if (!in_array('tcs', $groupLower)) {
-                $row['tcs_section'] = null;
-                $row['tcs_percentage'] = null;
-            } else {
-                $row['tcs_section'] = $this->service->getTcsSectionKeyFromLabel($row['tcs_section'] ?? '') ?? null;
-            }
-            if (!in_array('gst', $groupLower)) {
-                $row['tax_type'] = null;
-                $row['tax_percentage'] = null;
-            } else {
-                $row['tax_type'] = $this->service->getTaxTypeSectionKeyFromLabel($row['tax_type'] ?? '') ?? null;
-            }
+            // $groupIds = $groupData['groupIds'];
+            // $groupLower = $groupData['groupLower'];
+
+            // // Clean unnecessary fields
+            // if (!in_array('tds', $groupLower)) {
+            //     $row['tds_section'] = null;
+            //     $row['tds_percentage'] = null;
+            // } else {
+            //     $row['tds_section'] = $this->service->getTdsSectionKeyFromLabel($row['tds_section'] ?? '') ?? null;
+            // }
+            // if (!in_array('tcs', $groupLower)) {
+            //     $row['tcs_section'] = null;
+            //     $row['tcs_percentage'] = null;
+            // } else {
+            //     $row['tcs_section'] = $this->service->getTcsSectionKeyFromLabel($row['tcs_section'] ?? '') ?? null;
+            // }
+            // if (!in_array('gst', $groupLower)) {
+            //     $row['tax_type'] = null;
+            //     $row['tax_percentage'] = null;
+            // } else {
+            //     $row['tax_type'] = $this->service->getTaxTypeSectionKeyFromLabel($row['tax_type'] ?? '') ?? null;
+            // }
             $uploadedItem = UploadLedgerMaster::create([
                 'code' => $code,
                 'name' => $name,
@@ -204,9 +211,10 @@ class LedgerImport implements ToModel, WithHeadingRow, WithChunkReading, WithSta
                 'row' => $row
             ]);
             if (isset($uploadedItem)) {
+                $errorMsg = rtrim("Error importing item: " . $e->getMessage(), '.');
                 $uploadedItem->update([
                     'import_status' => 'Failed',
-                    'import_remarks' => "Error importing item: " . $e->getMessage(),
+                    'import_remarks' => $errorMsg,
                 ]);
             }
 
@@ -232,24 +240,37 @@ class LedgerImport implements ToModel, WithHeadingRow, WithChunkReading, WithSta
             $errors[] = "Error fetching sub-category: " . $e->getMessage();
         }
 
+        // try {
+        //     // Check uniqueness
+        //     $this->service->checkLedgerUniqueness('code', $code,$this->user);
+        //     // Validate unique name
+        //     $this->service->checkLedgerUniqueness('name', $name,$this->user);
+        // } catch (Exception $e) {
+        //     $errors[] = $e->getMessage();
+        // }
+        $groupIds = [];
         try {
-            // Check uniqueness
-            $this->service->checkLedgerUniqueness('code', $code,$this->user);
-            // Validate unique name
-            $this->service->checkLedgerUniqueness('name', $name,$this->user);
-        } catch (Exception $e) {
-            $errors[] = "Error Fields already Exists: " . $e->getMessage();
-        }
-        try {
+                $groupData = $this->service->processGroupData($group);
+                $groupIds = $groupData['groupIds'];
 
-            $groupData = $this->service->processGroupData($group);
-            $groupIds = $groupData['groupIds'];
+            } catch (\Exception $e) {
+                    // $status = 'Failed';
+                $errors[] = "Error processing: " . $e->getMessage();
+                $uploadedItem->update([
+                    'import_status' => 'Failed',
+                    'import_remarks' => implode(' ', $errors), // Combine all error messages
+                ]);
+
+                $this->onFailure($uploadedItem);
+                return;
+            }
+        try {
             $item = new Ledger([
                 'code' => $uploadedItem->code,
                 'name' => $uploadedItem->name,
                 'ledger_group_id' => json_encode($groupIds),
                 'status' => $this->service->mapStatus($uploadedItem['status'] ?? 1),
-                'tds_section' => $uploadedItem->tds_section,
+                'tds_section' => $uploadedItem->tdssection,
                 'tds_percentage' => $uploadedItem->tds_percentage ?? null,
                 'tcs_section' => $uploadedItem->tcs_section  ?? null,
                 'tcs_percentage' => $uploadedItem->tcs_percentage  ?? null,
@@ -260,27 +281,34 @@ class LedgerImport implements ToModel, WithHeadingRow, WithChunkReading, WithSta
                 'group_id' => $uploadedItem->group_id,
             ]);
 
-
             $rules = [
                 'code' => [
                     'required',
                     'string',
                     'max:255',
-                    Rule::unique('erp_ledgers', 'code')->where(function ($query) use ($organizationId, $companyId, $groupId) {
-                        return $query->where('organization_id', $organizationId)
-                            ->where('company_id', $companyId)
-                            ->where('group_id', $groupId);
-                    }),
+                    function ($attribute, $value, $fail) {
+                        $exists = \App\Models\Ledger::withDefaultGroupCompanyOrg()
+                            ->where($attribute, $value)
+                            ->exists();
+
+                        if ($exists) {
+                            $fail("The {$attribute} has already been taken.");
+                        }
+                    },
                 ],
                 'name' => [
                     'required',
                     'string',
                     'max:255',
-                    Rule::unique('erp_ledgers', 'name')->where(function ($query) use ($organizationId, $companyId, $groupId) {
-                        return $query->where('organization_id', $organizationId)
-                            ->where('company_id', $companyId)
-                            ->where('group_id', $groupId);
-                    }),
+                     function ($attribute, $value, $fail) {
+                        $exists = \App\Models\Ledger::withDefaultGroupCompanyOrg()
+                            ->where($attribute, $value)
+                            ->exists();
+
+                        if ($exists) {
+                            $fail("The {$attribute} has already been taken.");
+                        }
+                    },
                 ],
                 'tax_type' => [
                     'nullable',
@@ -317,11 +345,13 @@ class LedgerImport implements ToModel, WithHeadingRow, WithChunkReading, WithSta
             $validator = Validator::make($item->toArray(), $rules, []);
 
             if ($validator->fails()) {
-                $errors[] = $validator->errors()->all();
+                $flattenedErrors = implode(' ', $validator->errors()->all()); // Join errors with period and space
+
+                $errors[] = $flattenedErrors; 
 
                 $uploadedItem->update([
                     'import_status' => 'Failed',
-                    'import_remarks' => $errors,
+                    'import_remarks' => implode(' ', $errors), // Combine all error messages
                 ]);
 
                 $this->onFailure($uploadedItem);
@@ -338,10 +368,10 @@ class LedgerImport implements ToModel, WithHeadingRow, WithChunkReading, WithSta
             $this->onSuccess($uploadedItem);
         } catch (Exception $e) {
             Log::error("Error fetching category: " . $e->getMessage(), ['error' => $e]);
-            $errors[] = "Error fetching: " . $e->getMessage();
+            $errorMsg = rtrim("Error fetching: " . $e->getMessage(), '.');
             $uploadedItem->update([
                 'import_status' => 'Failed',
-                'import_remarks' =>  $errors,
+                'import_remarks' =>  $errorMsg,
             ]);
             Log::info("Updated uploaded item status to Failed. Remarks: " . $uploadedItem->import_remarks . ". Status: " . $uploadedItem->status); //Check the status here
             $this->onFailure($uploadedItem);

@@ -3451,9 +3451,9 @@
                         var selected = false;
                         ui.item.alternateUoms.forEach((saleUom) => {
                             if (saleUom.is_selling) {
-                                uomInnerHTML += `<option value = '${saleUom.uom?.id}' ${selected == false ? "selected" : ""}>${saleUom.uom?.alias}</option>`;
                                 selected = true;
                             }
+                            uomInnerHTML += `<option value = '${saleUom.uom?.id}' ${selected == true ? "selected" : ""}>${saleUom.uom?.alias}</option>`;
                         });
                     }
                     uomDropdown.innerHTML = uomInnerHTML;
@@ -3666,9 +3666,7 @@
                     itemUomsHTML += `<option value = '${item.item.uom.id}' ${item.item.uom.id == item.uom_id ? "selected" : ""}>${item.item.uom.alias}</option>`;
                 }
                 item.item.alternate_uoms.forEach(singleUom => {
-                    if (singleUom.is_selling) {
-                        itemUomsHTML += `<option value = '${singleUom.uom.id}' ${singleUom.uom.id == item.uom_id ? "selected" : ""} >${singleUom.uom?.alias}</option>`;
-                    }
+                    itemUomsHTML += `<option value = '${singleUom.uom.id}' ${singleUom.uom.id == item.uom_id ? "selected" : ""} >${singleUom.uom?.alias}</option>`;
                 });
                 document.getElementById('uom_dropdown_' + itemIndex).innerHTML = itemUomsHTML;
                 getItemTax(itemIndex);
@@ -4656,9 +4654,7 @@
                                 itemUomsHTML += `<option value = '${item.item.uom.id}' ${item.item.uom.id == item.uom_id ? "selected" : ""}>${item.item.uom.alias}</option>`;
                             }
                             item.item.alternate_uoms.forEach(singleUom => {
-                                if (singleUom.is_selling) {
                                     itemUomsHTML += `<option value = '${singleUom.uom.id}' ${singleUom.uom.id == item.uom_id ? "selected" : ""} >${singleUom.uom?.alias}</option>`;
-                                }
                             });
                             document.getElementById('uom_dropdown_' + currentOrderIndexVal).innerHTML = itemUomsHTML;
                             getItemTax(currentOrderIndexVal);
