@@ -323,14 +323,12 @@
                                                         </thead>
                                                         <tbody class="mrntableselectexcel">
                                                             <tr >
-                                                                <td class="customernewsection-form">
-                                                                    <div
-                                                                        class="form-check form-check-primary custom-checkbox">
-                                                                        <input type="checkbox"
-                                                                            class="form-check-input row-check">
-                                                                        <label class="form-check-label"></label>
-                                                                    </div>
-                                                                </td>
+                                                               <td class="customernewsection-form">
+                <div class="form-check form-check-primary custom-checkbox">
+                  <input type="checkbox" class="form-check-input">
+                  <label class="form-check-label"></label>
+                </div>
+              </td>
                                                                 <td class="poprod-decpt">
                                                                     <input type="text" required placeholder="Enter"
                                                                         class="form-control mw-100 mb-25 asset-code-input"
@@ -705,12 +703,12 @@
             }
             let newRow = '';
             newRow = ` <tr >
-                <td class="customernewsection-form">
-                    <div class="form-check form-check-primary custom-checkbox">
-                    <input type="checkbox" class="form-check-input row-check">
-                    <label class="form-check-label"></label>
-                    </div>
-                </td>
+                 <td class="customernewsection-form">
+                <div class="form-check form-check-primary custom-checkbox">
+                  <input type="checkbox" class="form-check-input">
+                  <label class="form-check-label"></label>
+                </div>
+              </td>
                 <td class="poprod-decpt">
                     <input type="text" required placeholder="Enter" class="form-control mw-100 mb-25 asset-code-input" oninput="this.value = this.value.toUpperCase();" />
                     <span class="text-danger code_error" style="font-size:12px"></span>
@@ -1457,7 +1455,7 @@
             let blank_row = ` <tr >
               <td class="customernewsection-form">
                 <div class="form-check form-check-primary custom-checkbox">
-                  <input type="checkbox" class="form-check-input row-check">
+                  <input type="checkbox" class="form-check-input">
                   <label class="form-check-label"></label>
                 </div>
               </td>
