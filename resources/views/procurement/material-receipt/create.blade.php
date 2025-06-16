@@ -2577,7 +2577,7 @@
                         $("#vendor_name").prop('readonly',true);
                         $(".editAddressBtn").addClass('d-none');
                         let locationId = $("[name='header_store_id']").val();
-                        getLocation(locationId);
+                        // getLocation(locationId);
 
                         if(finalDiscounts.length) {
                             let rows = '';
@@ -2895,7 +2895,7 @@
                         $("#vendor_name").prop('readonly',true);
                         $(".editAddressBtn").addClass('d-none');
                         let locationId = $("[name='header_store_id']").val();
-                        getLocation(locationId);
+                        // getLocation(locationId);
 
                         if(finalDiscounts.length) {
                             let rows = '';
@@ -3218,7 +3218,7 @@
                             $("#itemTable .mrntableselectexcel").empty().append(data.data.pos);
                         }
                         let locationId = $("[name='header_store_id']").val();
-                        getLocation(locationId);
+                        // getLocation(locationId);
                         updateImportItemData(data.status);
                         setTimeout(() => {
                             setTableCalculation();

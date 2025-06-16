@@ -284,14 +284,24 @@ class ItemController extends Controller
                 $validatedData['company_id'] = $policyLevelData['company_id'];
                 $validatedData['organization_id'] = $policyLevelData['organization_id'];
             } else {
+                if ($organization->group_id == 5) {
+                    $validatedData['organization_id'] = $organization->id;  
+                } else {
+                    $validatedData['organization_id'] = null;
+                }
                 $validatedData['group_id'] = $organization->group_id;
                 $validatedData['company_id'] = null;
-                $validatedData['organization_id'] = null;
+                // $validatedData['organization_id'] = null;
             }
         } else {
+            if ($organization->group_id == 5) {
+                $validatedData['organization_id'] = $organization->id;  
+            } else {
+                $validatedData['organization_id'] = null;
+            }
             $validatedData['group_id'] = $organization->group_id;
             $validatedData['company_id'] = null;
-            $validatedData['organization_id'] = null;
+            // $validatedData['organization_id'] = null;
         }
         if ($request->document_status === 'submitted') {
             $validatedData['status'] = $validatedData['status'] ?? ConstantHelper::ACTIVE; 
@@ -656,14 +666,24 @@ class ItemController extends Controller
                 $validatedData['company_id'] = $policyLevelData['company_id'];
                 $validatedData['organization_id'] = $policyLevelData['organization_id'];
             } else {
+                if ($organization->group_id == 5) {
+                    $validatedData['organization_id'] = $organization->id;  
+                } else {
+                    $validatedData['organization_id'] = null;
+                }
                 $validatedData['group_id'] = $organization->group_id;
                 $validatedData['company_id'] = null;
-                $validatedData['organization_id'] = null;
+                // $validatedData['organization_id'] = null;
             }
         } else {
+            if ($organization->group_id == 5) {
+                $validatedData['organization_id'] = $organization->id;  
+            } else {
+                $validatedData['organization_id'] = null;
+            }
             $validatedData['group_id'] = $organization->group_id;
             $validatedData['company_id'] = null;
-            $validatedData['organization_id'] = null;
+            // $validatedData['organization_id'] = null;
         }
         if ($request->input('document_status') === 'submitted') {
             $validatedData['status'] = $validatedData['status'] ?? ConstantHelper::ACTIVE; 

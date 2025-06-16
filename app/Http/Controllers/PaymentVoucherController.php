@@ -360,21 +360,15 @@ class PaymentVoucherController extends Controller
 
         $orgCurrency = Organization::where('id', Helper::getAuthenticatedUser()->organization_id)->value('currency_id');
 
-        $cost_centers = CostCenterOrgLocations::where('organization_id', Helper::getAuthenticatedUser()->organization_id)
-    ->with(['costCenter' => function ($query) {
-        $query->where('status', 'active');
-    }])
-    ->get()
-    ->filter(function ($item) {
-        return $item->costCenter !== null;
-    })
-    ->map(function ($item) {
-        return [
-            'id' => $item->costCenter->id,
-            'name' => $item->costCenter->name,
-        ];
-    })
-    ->toArray();
+        $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
+            $item->withDefaultGroupCompanyOrg()->where('status', 'active');
+
+            return [
+                'id' => $item->costCenter->id,
+                'name' => $item->costCenter->name,
+                'location' => $item->costCenter->locations,
+            ];
+        })->toArray();
         // pass authenticate user's org locations
          $locations = InventoryHelper::getAccessibleLocations();
          $fyear = Helper::getFinancialYear(date('Y-m-d'));
@@ -699,21 +693,16 @@ class PaymentVoucherController extends Controller
                 $to_users[] = $userObj;
             }
         }
-        $cost_centers = CostCenterOrgLocations::where('organization_id', Helper::getAuthenticatedUser()->organization_id)
-        ->with(['costCenter' => function ($query) {
-            $query->where('status', 'active');
-        }])
-        ->get()
-        ->filter(function ($item) {
-            return $item->costCenter !== null;
-        })
-        ->map(function ($item) {
+        
+        $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
+            $item->withDefaultGroupCompanyOrg()->where('status', 'active');
+
             return [
                 'id' => $item->costCenter->id,
                 'name' => $item->costCenter->name,
+                'location' => $item->costCenter->locations,
             ];
-        })
-        ->toArray();
+        })->toArray();
 
 
 

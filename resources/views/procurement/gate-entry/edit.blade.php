@@ -3244,7 +3244,7 @@
                             $("[name='supplier_invoice_date']").val();
                         }
                         let locationId = $("[name='header_store_id']").val();
-                        getLocation(locationId);
+                        // getLocation(locationId);
 
                         if (finalDiscounts.length) {
                             let rows = '';
@@ -3536,7 +3536,7 @@
                             $("[name='supplier_invoice_date']").val();
                         }
                         let locationId = $("[name='header_store_id']").val();
-                        getLocation(locationId);
+                        // getLocation(locationId);
 
                         if (finalDiscounts.length) {
                             let rows = '';

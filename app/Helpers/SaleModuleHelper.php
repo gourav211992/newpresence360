@@ -28,6 +28,7 @@ use App\Models\Item;
 use App\Models\ItemAttribute;
 use App\Models\Organization;
 use App\Models\OrganizationBookParameter;
+use App\Models\Unit;
 use App\Models\Vendor;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
@@ -441,6 +442,23 @@ class SaleModuleHelper
             ]);
             
             
+        }
+    }
+
+    public static function getItemSellingPrice(Item $item, int|null $uomId = null) : float
+    {
+        $itemSellPrice = $item -> sell_price;
+        if ($item -> uom_id === $uomId) {
+            return floatval($itemSellPrice);
+        } else {
+            $sellPrice = 0;
+            foreach ($item -> alternateUOMs as $altUom) {
+                if ($altUom -> unit_id === $uomId) {
+                    $sellPrice = $itemSellPrice * $altUom -> conversion_to_inventory;
+                    break;
+                }
+            }
+            return floatval($sellPrice);
         }
     }
 }

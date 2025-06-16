@@ -250,8 +250,8 @@
                                 }
                             }
                         @endphp
-                        @endif
                         {!! $html !!}
+                        @endif
                     </td>
                     <td
                         style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">

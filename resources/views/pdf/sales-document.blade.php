@@ -260,50 +260,58 @@
             </table>
         @endif
 
+        @php
+            $taxBracket = [];
+            $totalCGSTValue = 0.00;
+            $totalSGSTValue = 0.00;
+            $totalIGSTValue = 0.00;
+            $totalTaxValue = 0.00;
+        @endphp
+
         <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
             <tr>
                 <td
-                    style="padding: 6px; border: 1px solid #000; border-top: none; background: #80808070; text-align: center; font-weight: bold;">
+                    style="padding: 6px; border: 1px solid #000; background: #80808070; text-align: center; font-weight: bold;">
                     #
                 </td>
                 <td
-                    style="font-weight: bold; width: {{$type ==  App\Helpers\ConstantHelper::SERVICE_LABEL[App\Helpers\ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS] ?  "23.44%" : "31.80%"}}; padding: 6px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
+                    style="font-weight: bold; width: {{$type ==  App\Helpers\ConstantHelper::SERVICE_LABEL[App\Helpers\ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS] ?  "23.44%" : "31.80%"}}; padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
                     <div style="">Item</div>
                 </td>
                 <td
-                    style="font-weight: bold; padding: 6px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
+                    style="font-weight: bold; padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
                     HSN Code
                 </td>
                 <td
-                    style="font-weight: bold; padding: 4px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
+                    style="font-weight: bold; padding: 4px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
                     Quantity
                 </td>
                 <td
-                    style="font-weight: bold; padding: 4px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
+                    style="font-weight: bold; padding: 4px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
                     UOM
                 </td>
                 <td
-                    style="font-weight: bold; padding: 6px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
+                    style="font-weight: bold; padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
                     Rate
                 </td>
                 <td
-                    style="font-weight: bold; padding: 6px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
+                    style="font-weight: bold; padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
                     Value
                 </td>
                 <td
-                    style="font-weight: bold; padding: 6px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
+                    style="font-weight: bold; padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
                     Discount
                 </td>
                 <td
-                    style="font-weight: bold; padding: 6px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
+                    style="font-weight: bold; padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
                     Taxable<br> Value
                 </td>
                 <td
-                    style="font-weight: bold; padding: 6px; border: 1px solid #000; border-top: none; border-left: none; text-align: center; background: #80808070;">
+                    style="font-weight: bold; padding: 6px; border: 1px solid #000; border-left: none; text-align: center; background: #80808070;">
                     Tax <br> Amt
                 </td>
                 <td
-                    style="font-weight: bold; padding: 6px; border: 1px solid #000; border-top: none; border-left: none; text-align: center; background: #80808070;">
+                    style="font-weight: bold; padding: 6px; border: 1px solid #000; border-left: none; text-align: center; background: #80808070;">
                     Tax <br>Group
                 </td>
             </tr>
@@ -396,11 +404,11 @@
 
                                             // Add tax values to the taxBracket
                                             if (isset($taxBracket[$taxName])) {
-                                                $taxBracket[$taxName][0] += $tax->ted_amount;
-                                                $taxBracket[$taxName][1] += $tax->assessment_amount;
+                                                @$taxBracket[$taxName][0] += $tax->ted_amount;
+                                                @$taxBracket[$taxName][1] += $tax->assessment_amount;
                                             } else {
-                                                $taxBracket[$taxName][0] = $tax->ted_amount;
-                                                $taxBracket[$taxName][1] = $tax->assessment_amount;
+                                                @$taxBracket[$taxName][0] = $tax->ted_amount;
+                                                @$taxBracket[$taxName][1] = $tax->assessment_amount;
                                             }
 
                                             // Add the current tax amount to the total tax

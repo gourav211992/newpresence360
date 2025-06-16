@@ -119,14 +119,14 @@
                                 </ul>
                                 <div class="tab-content">
                                     <div class="tab-pane active" id="Succeded">
-                                        <div class="text-end my-1">
+                                        {{-- <div class="text-end my-1">
                                             <button type="button"
                                                 class="btn btn-warning btn-sm mb-50 mb-sm-0 me-50 exportBtn"><i
                                                     data-feather="download"></i>Export to Excel</button>
-                                        </div>
-                                        <div class="table-responsive candidates-tables">
+                                        </div> --}}
+                                        <div class="table-responsive">
                                             <table
-                                                class="datatables-basic1 datatables-success table table-striped myrequesttablecbox loanapplicationlist">
+                                                class="datatables-basic1 datatables-success table  myrequesttablecbox">
                                                 <thead>
                                                     <tr>
                                                         <th>S.No</th>
@@ -148,14 +148,14 @@
                                                 class="btn btn-warning btn-sm mb-50 mb-sm-0 me-50 editbtnNew"><i
                                                     data-feather='upload'></i>Upload Again</button>
                                         </div>
-                                        <div class="text-end my-1">
+                                        {{-- <div class="text-end my-1">
                                             <button type="button"
                                                 class="btn btn-warning btn-sm mb-50 mb-sm-0 me-50 exportBtn"><i
                                                     data-feather="download"></i>Export to Excel</button>
-                                        </div>
-                                        <div class="table-responsive candidates-tables">
+                                        </div> --}}
+                                        <div class="table-responsive">
                                             <table
-                                                class="datatables-basic datatables-failed table table-striped myrequesttablecbox loanapplicationlist">
+                                                class="datatables-basic datatables-failed table myrequesttablecbox">
                                                 <thead>
                                                     <tr>
                                                         <th>#</th>
@@ -192,8 +192,25 @@
                     feather.replace();
                 },
                 order: [[0, 'asc']],
-                dom:
-                    '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-3 withoutheadbuttin dt-action-buttons text-end"><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+                dom: '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-3 withoutheadbuttin dt-action-buttons text-end"B><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+				  lengthMenu: [7, 10, 25, 50, 75, 100], // Options for number of rows to show
+                   buttons:
+                [{
+                    extend: 'excel',
+                            text: feather.icons['file'].toSvg({ class: 'font-small-4 me-50' }) + 'Excel',
+                            className: 'btn btn-outline-secondary',
+                            exportOptions: { columns: [0,1,2,3,4] },
+                            action: function (e, dt, node, config) {
+                                    window.location.href = `/ledger/export-failed`;
+                                },
+                    init: function (api, node, config) {
+                        $(node).removeClass('btn-secondary');
+                        $(node).parent().removeClass('btn-group');
+                        setTimeout(function () {
+                            $(node).closest('.dt-buttons').removeClass('btn-group').addClass('d-inline-flex');
+                        }, 50);
+                    }
+                    }],
                 lengthMenu: [7, 10, 25, 50, 75, 100],
                 columnDefs: [
                     { "orderable": false, "targets": [4] }
@@ -217,8 +234,24 @@
                     feather.replace();
                 },
                 order: [[0, 'asc']],
-                dom:
-                    '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-3 withoutheadbuttin dt-action-buttons text-end"><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+                dom: '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-3 withoutheadbuttin dt-action-buttons text-end"B><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+				  lengthMenu: [7, 10, 25, 50, 75, 100], // Options for number of rows to show
+                   buttons:
+                [{
+                    extend: 'excel',
+                            text: feather.icons['file'].toSvg({ class: 'font-small-4 me-50' }) + 'Excel',
+                            className: 'btn btn-outline-secondary',
+                            action: function (e, dt, node, config) {
+                                    window.location.href = `/ledger/export-successful`;
+                                },
+                    init: function (api, node, config) {
+                        $(node).removeClass('btn-secondary');
+                        $(node).parent().removeClass('btn-group');
+                        setTimeout(function () {
+                            $(node).closest('.dt-buttons').removeClass('btn-group').addClass('d-inline-flex');
+                        }, 50);
+                    }
+                    }],
                 lengthMenu: [7, 10, 25, 50, 75, 100],
                 columnDefs: [
                     { "orderable": false, "targets": [5] }

@@ -11,14 +11,7 @@
 
 @section('content')
     <script>
-        const locationCostCentersMap = @json(
-            $locations->mapWithKeys(function ($location) {
-                return [
-                    $location->id => $location->cost_centers->map(function ($cc) {
-                        return ['id' => $cc->id, 'name' => $cc->name];
-                    }),
-                ];
-            }));
+        const locationCostCentersMap = @json($cost_centers);
     </script>
     <!-- BEGIN: Content-->
     <div class="app-content content ">
@@ -900,7 +893,7 @@
                                         <td>${val['date']}</td>
                                         <td class="fw-bolder text-dark">${val['series']?.book_code?.toUpperCase() ?? '-'}</td>
                                         <td>${val['voucher_no'] ?? '-'}</td>
-                                        <td class="text-end">${item.erp_location?.store_name ?? '-'}</td>
+                                        <td class="text-end">${val['erp_location']?.store_name ?? '-'}</td>
                                         <td class="text-end">${item.cost_center?.name ?? '-'}</td>
                                             <td class="text-end">${formatIndianNumber(val['amount'])}</td>
                                             <td class="balanceInput text-end">${formatIndianNumber(val['balance'])}</td>
@@ -1800,31 +1793,23 @@
         $('#locations').on('change', function() {
             let selectedLocationIds = $(this).val();
 
-            // Ensure selectedLocationIds is always an array
-            if (!Array.isArray(selectedLocationIds)) {
-                selectedLocationIds = selectedLocationIds ? [selectedLocationIds] : [];
-            }
-
-            let costCenterSet = new Map();
-
-            selectedLocationIds.forEach(locId => {
-                let centersObj = locationCostCentersMap[locId] || {};
-                let centers = Object.values(centersObj);
-                centers.forEach(center => {
-                    costCenterSet.set(center.id, center.name);
-                });
+            const costCenterSet = locationCostCentersMap.filter(center => {
+                if (!center.location) return false;
+                const locationArray = Array.isArray(center.location) ?
+                    center.location.flatMap(loc => loc.split(',')) :
+                    [];
+                return locationArray.includes(String(selectedLocationIds));
             });
 
             // Get the div
             let $costCenterRow = $('#costCenterRow');
             let $dropdown = $('.costCenter');
-
             // Show or hide the row based on availability
-            if (costCenterSet.size > 0) {
+            if (costCenterSet.length > 0) {
                 $costCenterRow.show();
                 $dropdown.empty();
-                costCenterSet.forEach((name, id) => {
-                    $dropdown.append(`<option value="${id}">${name}</option>`);
+                costCenterSet.forEach(center => {
+                    $dropdown.append(`<option value="${center.id}">${center.name}</option>`);
                 });
             } else {
                 $costCenterRow.hide();

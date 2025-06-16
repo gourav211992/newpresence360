@@ -154,7 +154,8 @@ class PwoRequest extends FormRequest
                         $soItemId = $attribute['so_item_id'] ?? null;
                         $soItem = ErpSoItem::find($soItemId);
                         $inputQty = floatval($attribute['qty']);
-                        $mainSoItem = intval($attribute['main_so_item']) && $attribute['main_so_item'] ? true : false;
+                        $mainSoItem = !empty($attribute['main_so_item']);
+                        // $mainSoItem = intval($attribute['main_so_item']) && $attribute['main_so_item'] ? true : false;
                         if($mainSoItem) {
                             if($moId) {
                                 $pwoSoMapping = PwoSoMapping::find($pwoMappingId); 

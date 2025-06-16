@@ -24,12 +24,14 @@ class LedgerImportExportService
         $groupId = $organization->group_id;
         $companyId = $organization->company_id;
         $organizationId = $organization->id;
-
-        $existing = Ledger::where($field, $value)
-            ->where('organization_id', $organizationId)
-            ->where('company_id', $companyId)
-            ->where('group_id', $groupId)
-            ->first();
+        $existing = Ledger::withDefaultGroupCompanyOrg()->
+        where($field, $value)
+        ->first();
+        // $existing = Ledger::where($field, $value)
+        //     ->where('organization_id', $organizationId)
+        //     ->where('company_id', $companyId)
+        //     ->where('group_id', $groupId)
+        //     ->first();
 
         if ($existing) {
             throw new \Exception(ucfirst($field) . " already exists: {$value}");
@@ -47,12 +49,19 @@ class LedgerImportExportService
             $groupParts = array_map('trim', explode(',', $group));
             $groupLower = array_map('strtolower', $groupParts);
 
-            $groupIds = Helper::getGroupsQuery()
+            $existingGroups = Helper::getGroupsQuery()
                 ->whereIn('name', $groupParts)
-                ->pluck('id')
-                ->toArray();
-        }
+                ->pluck('name', 'id')
+            ->toArray();
 
+            $groupIds = array_keys($existingGroups);
+            $foundNames = array_map('strtolower', array_values($existingGroups));
+            $missingGroups = array_diff($groupLower, $foundNames);
+
+            if (!empty($missingGroups)) {
+                throw new \Exception("Group(s) not found: " . implode(', ', $missingGroups));
+            }
+        }
         return [
             'groupIds' => $groupIds,
             'groupLower' => $groupLower,

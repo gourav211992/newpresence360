@@ -1,4 +1,12 @@
 @extends('layouts.app')
+@section('styles')
+<style>
+/* Red active tab */
+.nav-tabs .text-danger:after {
+    background: linear-gradient(30deg, #dc3545, rgba(220, 53, 69, 0.5)) !important;
+}
+</style>
+@endsection
 @section('content')
         <div class="app-content content ">
             <div class="content-overlay"></div>
@@ -30,7 +38,7 @@
                     <section id="basic-datatable">
                         <div class="row">
                             <div class="col-12">
-                                <div class="card">
+                                <div class="card mb-1">
                                     <div class="card-body customernewsection-form">
                                         <div class="border-bottom mb-2 pb-25">
                                             <div class="row align-items-center">
@@ -107,13 +115,14 @@
                 </div>
 
                 <div class="col-md-12 col-12 d-none" id = "upload-status-section">
+                    <div class="text-primary mb-1">Only Valid records will be imported on submission</div>
                            <div class="card  new-cardbox"> 
                                 <ul class="nav nav-tabs border-bottom" role="tablist">
                                     <li class="nav-item">
                                         <a class="nav-link active" data-bs-toggle="tab" href="#Succeded">Valid Records &nbsp;<span id="success-count">(0)</span></a>
                                     </li>
                                     <li class="nav-item">
-                                        <a class="nav-link" data-bs-toggle="tab" href="#Failed">Invalid Records &nbsp;<span id="failed-count">(0)</span></a>
+                                        <a class="nav-link text-danger" data-bs-toggle="tab" href="#Failed">Invalid Records &nbsp;<span id="failed-count">(0)</span></a>
                                     </li>
                                 </ul>
                                 <div class="tab-content">
@@ -325,5 +334,15 @@
             }
         });
     }
+    
+    window.addEventListener('beforeunload', function (e) {
+        let draftButton = document.getElementById('draft-button');
+        let submitButton = document.getElementById('submit-button');
+        if (!draftButton.classList.contains('d-none') && !submitButton.classList.contains('d-none')) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+
 </script>
 @endsection

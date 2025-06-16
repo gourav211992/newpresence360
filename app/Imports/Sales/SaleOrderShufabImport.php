@@ -6,6 +6,7 @@ use App\Helpers\ConstantHelper;
 use App\Helpers\CurrencyHelper;
 use App\Helpers\Helper;
 use App\Helpers\ItemHelper;
+use App\Helpers\SaleModuleHelper;
 use App\Models\Attribute;
 use App\Models\Book;
 use App\Models\Customer;
@@ -169,14 +170,47 @@ class SaleOrderShufabImport implements ToArray, WithHeadingRow, SkipsEmptyRows, 
                 //UOM
                 $orderDetail -> uom_code = $row['uom'];
                 if ($orderDetail -> uom_code) {
+                    $itemUoms = [];
+                    //Get Item specific UOMs
+                    if ($item) {
+                        array_push($itemUoms, $item -> uom_id);
+                        foreach ($item -> alternateUOMs as $altUom) {
+                            array_push($itemUoms, $altUom -> uom_id);
+                        }
+                    }
                     $uomSearch = strtolower(trim($orderDetail -> uom_code));
                     $uom = Unit::withDefaultGroupCompanyOrg() -> where('status', ConstantHelper::ACTIVE) 
-                    -> whereRaw('LOWER(name) = ?',[$uomSearch]) -> first();
+                    -> whereRaw('LOWER(name) = ?',[$uomSearch]) 
+                    -> when(count($itemUoms), function ($itemUomQuery) use($itemUoms) {
+                        $itemUomQuery -> whereIn('id', $itemUoms);
+                    }) -> first();
                     $orderDetail -> uom_id = $uom ?-> id;
                     if (!$uom) {
                         $errors[] = "UOM not found";
                     }
-                }                
+                } else {
+                    //Assign Default UOM
+                    if ($item) {
+                        $itemUom = $item -> uom;
+                        $itemSellingUom = null;
+                        //Check and assign if a selling UOM exists
+                        foreach ($item -> alternateUOMs as $altUom) {
+                            if ($altUom -> is_selling) {
+                                $itemSellingUom = $altUom -> uom;
+                            }
+                        }
+                        //Assign if selling uom is found else default to item uom
+                        if (isset($itemSellingUom)) {
+                            $orderDetail -> uom_code = $itemSellingUom -> alias;
+                            $orderDetail -> uom_id = $itemSellingUom -> id;
+                        } else if (isset($itemUom)) {
+                            $orderDetail -> uom_code = $itemUom -> alias;
+                            $orderDetail -> uom_id = $itemUom -> id;
+                        } else {
+                            $errors[] = "No UOM found for this item";
+                        }
+                    }
+                }             
                 //Attribute Size
                 for ($i=1; $i <= 14; $i++) { 
                     $key = 'size_' . $i;
@@ -209,13 +243,16 @@ class SaleOrderShufabImport implements ToArray, WithHeadingRow, SkipsEmptyRows, 
                     $errors[] = 'Please specify item quantity';
                 }
                 //Rate
-                if ($row['rate']) {
+                if ($row['rate'] && floatval($row['rate']) > 0) {
                     $orderDetail -> rate = $row['rate'];
                 } else {
-                    $orderDetail -> rate = $item ?-> sell_price;
+                    if ($item) {
+                        $itemRate = SaleModuleHelper::getItemSellingPrice($item, $orderDetail -> uom_id);
+                        $orderDetail -> rate = $itemRate;
+                    }
                 }
-                if (!$orderDetail -> rate) {
-                    $errors[] = "Item Rate not specified";
+                if (!isset($orderDetail -> rate)) {
+                    $errors[] = "Item Rate not specified or not found from Item";
                 }
                 //Delivery Date
                 if ($row['delivery_date']) {
