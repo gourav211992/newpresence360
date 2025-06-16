@@ -15,7 +15,7 @@ class FixedAssetSub extends Model
 
     protected $table = 'erp_finance_fixed_asset_sub';
     protected $guarded = ['id'];
-  
+
     public function asset()
     {
         return $this->belongsTo(FixedAssetRegistration::class, 'parent_id');
@@ -111,10 +111,86 @@ class FixedAssetSub extends Model
     }
     public function getInsurancesAttribute()
     {
-        return FixedAssetInsurance::whereJsonContains('sub_asset', (string) $this->id)->get();
+        return FixedAssetInsurance::whereJsonContains('sub_asset', (string) $this->id)->latest()->first();
     }
     public function getMaintenanceAttribute()
     {
-        return FixedAssetMaintenance::whereJsonContains('sub_asset', (string) $this->id)->get();
+        return FixedAssetMaintenance::whereJsonContains('sub_asset', (string) $this->id)->latest()->first();;
+    }
+    public function getIssueAttribute()
+    {
+        return FixedAssetIssueTransfer::whereJsonContains('sub_asset', (string) $this->id)->latest()->first();
+    }
+    public function getRevAttribute()
+    {
+        $revImp =  FixedAssetRevImp::where('document_type', 'revaluation')
+            ->get()
+            ->filter(function ($revImp) {
+                $details = json_decode($revImp->asset_details, true);
+                foreach ($details as $item) {
+                    if ((string) $item['sub_asset_id'] === (string) $this->id) {
+                        return true;
+                    }
+                }
+                return false;
+            })
+            ->sortByDesc('document_date')
+            ->first();
+        if (!$revImp) {
+            return null;
+        }
+
+        // Extract and return the matching sub_asset_id row from asset_details
+        $details = json_decode($revImp->asset_details, true);
+
+        foreach ($details as $item) {
+            if ((string) $item['sub_asset_id'] === (string) $this->id) {
+                return (object) array_merge(
+                [
+                    'document_date' => $revImp->document_date,
+                    'document_id'   => $revImp->id,
+                ],
+                $item
+            );
+            }
+        }
+
+        return null;
+    }
+    public function getImpAttribute()
+    {
+        $revImp =  FixedAssetRevImp::where('document_type', 'impairement')
+            ->get()
+            ->filter(function ($revImp) {
+                $details = json_decode($revImp->asset_details, true);
+                foreach ($details as $item) {
+                    if ((string) $item['sub_asset_id'] === (string) $this->id) {
+                        return true;
+                    }
+                }
+                return false;
+            })
+            ->sortByDesc('document_date')
+            ->first();
+        if (!$revImp) {
+            return null;
+        }
+
+        // Extract and return the matching sub_asset_id row from asset_details
+        $details = json_decode($revImp->asset_details, true);
+
+        foreach ($details as $item) {
+            if ((string) $item['sub_asset_id'] === (string) $this->id) {
+                return (object) array_merge(
+                [
+                    'document_date' => $revImp->document_date,
+                    'document_id'   => $revImp->id,
+                ],
+                $item
+            );
+            }
+        }
+
+        return null;
     }
 }

@@ -51,6 +51,12 @@ class RegistrationController extends Controller
         if (count($servicesBooks['services']) == 0) {
             return redirect()->route('/');
         }
+        if ($request->filter_asset)
+            $data = $data->where('id', $request->filter_asset);
+        if ($request->filter_ledger)
+            $data = $data->where('ledger_id', $request->filter_ledger);
+        if ($request->filter_status)
+            $data = $data->where('document_status', $request->filter_status);
         if ($request->date) {
             $dates = explode(' to ', $request->date);
             $start = date('Y-m-d', strtotime($dates[0]));
@@ -66,7 +72,10 @@ class RegistrationController extends Controller
             $end = $fyear['end_date'];
         }
         $data = $data->get();
-        return view('fixed-asset.registration.index', compact('data'));
+        $assetCodes = FixedAssetRegistration::withDefaultGroupCompanyOrg()->get();
+        $ledgers = FixedAssetRegistration::withDefaultGroupCompanyOrg()->pluck('ledger_id')->unique();
+        $ledgers = Ledger::withDefaultGroupCompanyOrg()->whereIn('id', $ledgers)->get();
+        return view('fixed-asset.registration.index', compact('data','assetCodes', 'ledgers'));
     }
 
     /**
@@ -760,9 +769,39 @@ class RegistrationController extends Controller
 
         return response()->json($costCenters);
     }
-    public function export(Request $r)
-    {
-        $data = FixedAssetRegistration::withDefaultGroupCompanyOrg()->get();
-        return Excel::download(new FixedAssetReportExport($data), 'FixedAsset.xlsx');
-    }
+    public function export(Request $request)
+{
+    $data = FixedAssetSub::whereHas('asset', function ($query) use ($request) {
+        $query->withDefaultGroupCompanyOrg();
+
+        if ($request->filled('filter_asset')) {
+            $query->where('id', $request->filter_asset);
+        }
+
+        if ($request->filled('filter_ledger')) {
+            $query->where('ledger_id', $request->filter_ledger);
+        }
+
+        if ($request->filled('filter_status')) {
+            $query->where('document_status', $request->filter_status);
+        }
+
+        if ($request->filled('date')) {
+            [$start, $end] = explode(' to ', $request->date);
+            $start = date('Y-m-d', strtotime($start));
+            $end = date('Y-m-d', strtotime($end));
+        } else {
+            $fyear = Helper::getFinancialYear(now());
+            $start = $fyear['start_date'];
+            $end = $fyear['end_date'];
+        }
+
+        $query->whereBetween('document_date', [$start, $end]);
+        $query->orderBy('document_date','desc');
+    });
+    $data = $data->get();
+
+    return Excel::download(new FixedAssetReportExport($data), 'FixedAsset.xlsx');
+}
+
 }

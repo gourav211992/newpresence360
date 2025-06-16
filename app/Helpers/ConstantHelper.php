@@ -74,7 +74,7 @@ class ConstantHelper
     const POSTED = 'posted';
     const PAYABLE='Account Payable';
     const RECEIVABLE = 'Account Receivable';
-    const DOCUMENT_STATUS = [self::DRAFT, self::SUBMITTED, self::APPROVAL_NOT_REQUIRED, self::PARTIALLY_APPROVED, self::APPROVED, self::REJECTED];
+    const DOCUMENT_STATUS = [self::DRAFT, self::SUBMITTED, self::APPROVAL_NOT_REQUIRED, self::PARTIALLY_APPROVED, self::APPROVED, self::REJECTED,self::POSTED];
 
     const DOCUMENT_STATUS_CSS = [self::DRAFT => 'text-warning', self::SUBMITTED => 'text-primary', self::APPROVAL_NOT_REQUIRED => 'text-success', self::PARTIALLY_APPROVED => 'text-warning', self::APPROVED => 'text-success', self::REJECTED => 'text-danger', self::POSTED => 'text-primary-new',self::COMPLETED => 'text-warning'];
 

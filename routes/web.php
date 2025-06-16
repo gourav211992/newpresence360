@@ -2432,7 +2432,8 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::get('fixed-asset/get-cost-centers', [RegistrationController::class, 'getCostCenters'])->name('finance.fixed-asset.get-cost-centers');
     Route::get('fixed-asset/export', [RegistrationController::class, 'export'])->name('finance.fixed-asset.export');
     Route::post('fixed-asset/category-search', [RegistrationController::class, 'categorySearch'])->name('finance.fixed-asset.category-search');
-
+     Route::post('fixed-asset/registration/filter', [RegistrationController::class, 'index'])->name('finance.fixed-asset.registration.filter');
+   
     Route::resource('fixed-asset/issue-transfer', IssueTransferController::class)->names([
         'index' => 'finance.fixed-asset.issue-transfer.index',
         'create' => 'finance.fixed-asset.issue-transfer.create',

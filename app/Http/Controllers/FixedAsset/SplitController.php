@@ -230,7 +230,7 @@ class SplitController extends Controller
             $dep_method = $organization->dep_method;
             $financialEndDate = Helper::getFinancialYear(date('Y-m-d'))['end_date'];
             $financialStartDate = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
-                $groups = Group::whereIn('id',$allChildIds)->get();
+            $groups = Group::whereIn('id',$allChildIds)->get();
 
         
       
