@@ -10,14 +10,7 @@
 
 @section('content')
 <script>
-    const locationCostCentersMap = @json(
-        $locations->mapWithKeys(function ($location) {
-            return [
-                $location->id => $location->cost_centers->map(function ($cc) {
-                    return ['id' => $cc->id, 'name' => $cc->name];
-                }),
-            ];
-        }));
+        const locationCostCentersMap = @json($cost_centers);
 </script>
     <!-- BEGIN: Content-->
     <div class="app-content content ">
@@ -465,7 +458,7 @@
                                                     @php
                                                     // Find the selected location object
                                                     $selectedLocation = $locations->firstWhere('id', $data->location);
-                                                    $locationCostCenters = $selectedLocation->cost_centers ?? [];
+                                                    $locationCostCenters = $cost_centers ?? [];
 
                                                     // Check if the selected cost center exists in this location
                                                     $showCostCenter = count($locationCostCenters) > 0 || collect($locationCostCenters)->contains('id', $data->cost_center_id);
@@ -1175,7 +1168,7 @@ $('.settleInput').each(function () {
                                             <td>${val['date']}</td>
                                             <td class="fw-bolder text-dark">${val['series']['book_code'].toUpperCase()}</td>
                                             <td>${val['voucher_no']}</td>
-                                            <td>${item.erp_location?.store_name ?? '-'}</td>
+                                            <td>${val['erp_location']?.store_name ?? '-'}</td>
                                             <td>${item.cost_center?.name ?? '-'}</td>
                                             <td class="text-end">${formatIndianNumber(val['amount'])}</td>
                                             <td class="text-end balanceInput">${formatIndianNumber(val['balance'])}</td>
@@ -1490,6 +1483,22 @@ function check_amount() {
 
 
         $(document).ready(function() {
+            bind();
+            if ($("#Bank").is(":checked")) {
+                $(".bankfield").show();
+                $(".cashfield").hide();
+                $('.bankInput').prop('required', true);
+                $('.ref-no-header').show(); // Show the header
+                $('.reference_no').prop('required', true).closest('td').show();
+                $('#ledger_id').prop('required', false);
+            } else {
+                $(".cashfield").show();
+                $(".bankfield").hide();
+                $('.bankInput').prop('required', false);
+                $('.reference_no').prop('required', false).closest('td').hide();
+                $('.ref-no-header').hide(); // Hide the header
+                $('#ledger_id').prop('required', true);
+            }
             $('#reference_no').trigger('input');
 
             @if (!$buttons['draft'] || !$fyear['authorized'])
@@ -2245,42 +2254,33 @@ function showToast(icon, title) {
             );
         @endif
 
-        $('#locations').on('change', function () {
-    let selectedLocationIds = $(this).val();
+       $('#locations').on('change', function() {
+            let selectedLocationIds = $(this).val();
 
-    // Ensure selectedLocationIds is always an array
-    if (!Array.isArray(selectedLocationIds)) {
-        selectedLocationIds = selectedLocationIds ? [selectedLocationIds] : [];
-    }
-
-    let costCenterSet = new Map();
-
-    selectedLocationIds.forEach(locId => {
-        let centersObj = locationCostCentersMap[locId] || {};
-            let centers = Object.values(centersObj); // Convert to array
-            console.log(centers,'here');
-            centers.forEach(center => {
-                costCenterSet.set(center.id, center.name);
+            const costCenterSet = locationCostCentersMap.filter(center => {
+                if (!center.location) return false;
+                const locationArray = Array.isArray(center.location) ?
+                    center.location.flatMap(loc => loc.split(',')) :
+                    [];
+                return locationArray.includes(String(selectedLocationIds));
             });
-    });
 
-    // Get the div
-    let $costCenterRow = $('#costCenterRow');
-    let $dropdown = $('.costCenter');
-
-    // Show or hide the row based on availability
-    if (costCenterSet.size > 0) {
-        $costCenterRow.show();
-        $dropdown.empty();
-        costCenterSet.forEach((name, id) => {
-            $dropdown.append(`<option value="${id}">${name}</option>`);
+            // Get the div
+            let $costCenterRow = $('#costCenterRow');
+            let $dropdown = $('.costCenter');
+            // Show or hide the row based on availability
+            if (costCenterSet.length > 0) {
+                $costCenterRow.show();
+                $dropdown.empty();
+                costCenterSet.forEach(center => {
+                    $dropdown.append(`<option value="${center.id}">${center.name}</option>`);
+                });
+            } else {
+                $costCenterRow.hide();
+                $dropdown.empty();
+            }
         });
-    } else {
-        $costCenterRow.hide();
-        $dropdown.empty();
-    }
-});
-let timer;
+        let timer;
 
         $('#reference_no').on('input', function () {
             clearTimeout(timer);

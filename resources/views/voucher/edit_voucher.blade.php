@@ -19,13 +19,7 @@
 
 @section('content')
 <script>
-    const locationCostCentersMap = @json(
-        $locations->mapWithKeys(function($location) {
-            return [$location->id => $location->cost_centers->map(function($cc) {
-                return ['id' => $cc->id, 'name' => $cc->name];
-            })];
-        })
-    );
+    const locationCostCentersMap = @json($cost_centers);
 </script>
     <!-- BEGIN: Content-->
     <div class="app-content content ">
@@ -512,7 +506,7 @@
                                                                 @php
                                                             // Find the selected location object
                                                             $selectedLocation = $locations->firstWhere('id', $data->location);
-                                                            $locationCostCenters = $selectedLocation->cost_centers ?? [];
+                                                            $locationCostCenters = $cost_centers ?? [];
                                                         @endphp
 
                                                         <select class="costCenter form-select mw-100" name="cost_center_id[]" id="cost_center_id{{ $no }}">
@@ -1203,20 +1197,12 @@ function rate_change(){
 function populateCostCenterDropdowns() {
             let selectedLocationIds = $('#locations').val();
 
-            // Ensure selectedLocationIds is always an array
-            if (!Array.isArray(selectedLocationIds)) {
-                selectedLocationIds = selectedLocationIds ? [selectedLocationIds] : [];
-            }
-
-            // Collect unique cost centers for all selected locations
-            let costCenterSet = new Map();
-
-            selectedLocationIds.forEach(locId => {
-                let centersObj = locationCostCentersMap[locId] || {};
-                let centers = Object.values(centersObj); // Convert to array
-                centers.forEach(center => {
-                    costCenterSet.set(center.id, center.name);
-                });
+            const costCenterSet = locationCostCentersMap.filter(center => {
+                if (!center.location) return false;
+                const locationArray = Array.isArray(center.location) ?
+                    center.location.flatMap(loc => loc.split(',')) :
+                    [];
+                return locationArray.includes(String(selectedLocationIds));
             });
 
             // Update all .costCenter selects
@@ -1224,8 +1210,8 @@ function populateCostCenterDropdowns() {
                 let $dropdown = $(this);
                 $dropdown.empty();
                 // $dropdown.append('<option value="">Select Cost Center</option>');
-                costCenterSet.forEach((name, id) => {
-                    $dropdown.append(`<option value="${id}">${name}</option>`);
+                costCenterSet.forEach((center) => {
+                    $dropdown.append(`<option value="${center.id}">${center.name}</option>`);
                 });
             });
         }
@@ -1233,22 +1219,18 @@ function populateCostCenterDropdowns() {
         function populateSingleCostCenterDropdown($dropdown) {
             let selectedLocationIds = $('#locations').val();
 
-            if (!Array.isArray(selectedLocationIds)) {
-                selectedLocationIds = selectedLocationIds ? [selectedLocationIds] : [];
-            }
-
-            let costCenterSet = new Map();
-            selectedLocationIds.forEach(locId => {
-                let centersObj = locationCostCentersMap[locId] || {};
-                let centers = Object.values(centersObj);
-                centers.forEach(center => {
-                    costCenterSet.set(center.id, center.name);
-                });
+            const costCenterSet = locationCostCentersMap.filter(center => {
+                if (!center.location) return false;
+                const locationArray = Array.isArray(center.location) ?
+                    center.location.flatMap(loc => loc.split(',')) :
+                    [];
+                return locationArray.includes(String(selectedLocationIds));
             });
 
+
             $dropdown.empty();
-            costCenterSet.forEach((name, id) => {
-                $dropdown.append(`<option value="${id}">${name}</option>`);
+            costCenterSet.forEach((center) => {
+                $dropdown.append(`<option value="${center.id}">${center.name}</option>`);
             });
         }
 function calculate_cr_dr() {

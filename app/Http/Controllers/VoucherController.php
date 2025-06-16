@@ -50,9 +50,12 @@ class VoucherController extends Controller
 
         if ($request->partyID && $request->ledgerGroup) {
             $ledger = (int) $request->partyID;
+            $accessibleLocations = InventoryHelper::getAccessibleLocations();
+            $locationIds = $accessibleLocations->pluck('id')->toArray();
             $ledger_group = (int)$request->ledgerGroup;
             $data = Voucher::where("organization_id", Helper::getAuthenticatedUser()->organization_id)->with('ErpLocation', 'organization')
                 ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
+                ->whereIn('location', $locationIds)
                 ->withWhereHas('items', function ($i) use ($ledger, $request, $ledger_group) {
                     $i->where('ledger_id', $ledger)
                     ->where('ledger_parent_id', $ledger_group);
@@ -100,7 +103,7 @@ class VoucherController extends Controller
 
                 $data = $data->with(['series' => function ($s) {
                     $s->select('id', 'book_code');
-                }])->select('id', 'amount', 'book_id', 'document_date as date','created_at', 'voucher_name', 'voucher_no')
+                }])->select('id', 'amount', 'book_id', 'document_date as date','created_at', 'voucher_name', 'voucher_no', 'location', 'organization_id')
                     ->orderBy('id', 'desc')->get()->map(function ($voucher) use ($request, $ledger) {
                         $voucher->date = date('d/m/Y', strtotime($voucher->date));
                         $voucher->document_date = $voucher->document_date;
@@ -720,21 +723,15 @@ class VoucherController extends Controller
         $allledgers = Ledger::withDefaultGroupCompanyOrg()->get();
         $allowedCVGroups = Helper::getChildLedgerGroupsByNameArray(ConstantHelper::CV_ALLOWED_GROUPS,'names');
         $exlucdeJVGroups = Helper::getChildLedgerGroupsByNameArray(ConstantHelper::JV_EXCLUDE_GROUPS,'names');
-        $cost_centers = CostCenterOrgLocations::where('organization_id', Helper::getAuthenticatedUser()->organization_id)
-        ->with(['costCenter' => function ($query) {
-            $query->where('status', 'active');
-        }])
-        ->get()
-        ->filter(function ($item) {
-            return $item->costCenter !== null;
-        })
-        ->map(function ($item) {
+        $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
+            $item->withDefaultGroupCompanyOrg()->where('status', 'active');
+
             return [
                 'id' => $item->costCenter->id,
                 'name' => $item->costCenter->name,
+                'location' => $item->costCenter->locations,
             ];
-        })
-        ->toArray();
+        })->toArray();
         $fyear = Helper::getFinancialYear(date('Y-m-d'));
         // pass authenticate user's org locations
      $locations = InventoryHelper::getAccessibleLocations();

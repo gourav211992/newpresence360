@@ -29,16 +29,17 @@ class LedgersExport implements FromCollection, WithHeadings, WithMapping, WithSt
     public function headings(): array
     {
         $headings = [
+            'S.No',
             'Code',
             'Name',
             'Group',
             'Status',
-            'tds_section',
-            'tds_percentage',
-            'tcs_section',
-            'tcs_percentage',
-            'tax_type',
-            'tax_percentage',
+            // 'tds_section',
+            // 'tds_percentage',
+            // 'tcs_section',
+            // 'tcs_percentage',
+            // 'tax_type',
+            // 'tax_percentage',
             'Remarks',
         ];
 
@@ -47,22 +48,24 @@ class LedgersExport implements FromCollection, WithHeadings, WithMapping, WithSt
 
     public function map($item): array
     {
+        static $index = 1;
         $groupNames = $this->service->getGroupNamesByIds($item->ledger_group_id);
         $tdsSections = ConstantHelper::getTdsSections();
         $tcsSections = ConstantHelper::getTcsSections();
         $taxTypes    = ConstantHelper::getTaxTypes();
         $status = 
         $data = [
+            $index++,
             $item->code,
             $item->name,
             implode(', ', $groupNames),
             ($item->status == 1) ? ConstantHelper::STATUS[0] : ConstantHelper::STATUS[1],
-            $tdsSections[$item->tds_section] ?? 'N/A',
-            $item->tds_percentage ?? 'N/A',
-            $tcsSections[$item->tcs_section] ?? 'N/A',
-            $item->tcs_percentage ?? 'N/A',
-            $taxTypes[$item->tax_type] ?? 'N/A',
-            $item->tax_percentage ?? 'N/A',
+            // $tdsSections[$item->tds_section] ?? 'N/A',
+            // $item->tds_percentage ?? 'N/A',
+            // $tcsSections[$item->tcs_section] ?? 'N/A',
+            // $item->tcs_percentage ?? 'N/A',
+            // $taxTypes[$item->tax_type] ?? 'N/A',
+            // $item->tax_percentage ?? 'N/A',
             'Success',
         ];
 
@@ -72,7 +75,7 @@ class LedgersExport implements FromCollection, WithHeadings, WithMapping, WithSt
     public function styles(Worksheet $sheet)
     {
         $styles = [];
-        $requiredColumns = range(1, 10);
+        $requiredColumns = range(1, 6);
         foreach ($requiredColumns as $col) {
             $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col);
             $styles["{$columnLetter}1"] = [
@@ -101,7 +104,7 @@ class LedgersExport implements FromCollection, WithHeadings, WithMapping, WithSt
         }
 
         $totalColumns = count($this->headings());
-        for ($col = 11; $col <= $totalColumns; $col++) {
+        for ($col = 6; $col <= $totalColumns; $col++) {
             $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col);
             $sheet->getStyle("{$columnLetter}1")->applyFromArray([
                 'font' => [
