@@ -1,0 +1,1 @@
+<input type="text" name="components[{{$rowCount}}][sale_order]" readonly class="form-control" value="{{ $row?->so?->full_document_number ?? '' }}" />

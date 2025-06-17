@@ -1,0 +1,1 @@
+<input type="text" readonly name="components[{{$rowCount}}][item_name]" class="form-control" value="{{$row?->item?->item_name}}">

@@ -319,14 +319,11 @@
                                         <div class="col-md-4">
                                     <div class="mb-1">
                                         <label class="form-label">Upload Document</label>
-                                        <input type="file" name="attachment[]" class="form-control" onchange = "addFiles(this,'main_bom_file_preview')" multiple>
+                                        <input type="file" name="attachment[]" class="form-control" onchange = "addFiles(this,'main_bom_preview')" multiple>
                                         <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
                                     </div>
                                 </div>
-                                <div class = "col-md-6" style = "margin-top:19px;">
-                                    <div class = "row" id = "main_bom_file_preview">
-                                    </div>
-                                </div>  
+                                @include('partials.document-preview',['documents' => $bom->getDocuments(), 'document_status' => $bom->document_status,'elementKey' => 'main_bom_preview'])
                                     </div>
                             </div>
                             <div class="col-md-12">

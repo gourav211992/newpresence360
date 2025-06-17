@@ -123,7 +123,7 @@
                                 <div
                                     class="table-responsive trailbalnewdesfinance po-reportnewdesign leadger-balancefinance trailbalnewdesfinancerightpad gsttabreporttotal">
                                     <table
-                                        class="datatables-basic table myrequesttablecbox tablecomponentreport po-order-detail">
+                                        class="mt-1 datatables-basic table myrequesttablecbox tablecomponentreport po-order-detail">
                                         <thead>
                                             <tr>
                                                 <th>#</th>
@@ -139,7 +139,7 @@
                                                 <th class="text-end">Balance</th>
                                                 <th width="150px" class="text-end">Settle Amt</th>
                                                 <th class="text-center">
-                                                    <div class="form-check form-check-inline me-0">
+                                                <div class="form-check form-check-inline me-0">
                                                         <input class="form-check-input" type="checkbox" name="podetail"
                                                             id="inlineCheckbox1">
                                                     </div>
@@ -230,6 +230,7 @@
     <!-- END: Dashboard Custom Code JS-->
     <script>
         const voucherMap = {};
+        const selectedVoucherIds = new Set();
 
         function updateLocationsDropdown(selectedOrgIds) {
             const filteredLocations = locations.filter(loc =>
@@ -376,7 +377,8 @@
                                     const balance = parseFloat(item.balance ?? voucher
                                         .balance ?? 0).toFixed(2);
                                     const dataAmount = balance;
-
+                                    const existingSettleAmt = voucherMap[uniqueKey]?.settle_amt ?? 0;
+                                    const isChecked = existingSettleAmt > 0;
                                     html += `<tr id="${uniqueKey}" class="voucherRows">
                                         <td>${index + 1}</td>
                                         <td>${voucher.date ?? '-'}</td>
@@ -390,11 +392,11 @@
                                         <td class="text-end">${formatIndianNumber(amount)}</td>
                                         <td class="balanceInput text-end">${formatIndianNumber(balance)}</td>
                                         <td class="text-end">
-                                            <input type="number" class="form-control text-end mw-100 settleInput settleAmount${uniqueKey}" data-id="${uniqueKey}" value="0"/>
+                                            <input type="number" class="form-control text-end mw-100 settleInput settleAmount${uniqueKey}" data-id="${uniqueKey}" value="${existingSettleAmt}"/>
                                         </td>
                                         <td class="text-center">
-                                            <div class="form-check form-check-inline me-0">
-                                                <input class="form-check-input vouchers voucherCheck${uniqueKey}" data-id="${uniqueKey}" type="checkbox" name="vouchers" value="${uniqueKey}" data-amount="${dataAmount}">
+                                            <div class="form-check form-check-inline me-2">
+                                                <input class="form-check-input vouchers voucherCheck${uniqueKey}" data-id="${uniqueKey}" type="checkbox" name="vouchers" value="${uniqueKey}" data-amount="${dataAmount}"  ${isChecked ? 'checked' : ''}/>
                                             </div>
                                         </td>
                                     </tr>`;
@@ -416,14 +418,24 @@
                 error: () => $('.preloader').hide()
             });
         }
-        $(document).on('keyup keydown', '.settleInput', function() {
-            let value = parseInt($(this).val());
-            if (value > 0) {
-                $('.voucherCheck' + $(this).attr('data-id')).prop('checked', true);
-            } else {
-                $('.voucherCheck' + $(this).attr('data-id')).prop('checked', false);
+       $(document).on('keyup keydown', '.settleInput', function() {
+            const input = $(this);
+            const id = input.data('id');
+            const value = parseFloat(input.val()) || 0;
+
+            // Store in voucherMap for cross-page persistence
+            if (voucherMap[id]) {
+                voucherMap[id].settle_amt = value;
             }
-            let input = $(this);
+
+            // Set checkbox status
+            if (value > 0) {
+                $('.voucherCheck' + id).prop('checked', true);
+                selectedVoucherIds.add(id);
+            } else {
+                $('.voucherCheck' + id).prop('checked', false);
+                selectedVoucherIds.delete(id);
+            }
             let row = input.closest('.voucherRows');
             let balanceText = row.find('.balanceInput').text().replace(/,/g, '');
             let balance = parseFloat(balanceText);
@@ -443,21 +455,26 @@
             calculateSettle();
         });
 
-        $(document).on('input', '.settleInput', function(e) {
-            let max = parseInt(e.target.max);
-            let value = parseInt(e.target.value);
+        $(document).on('input', '.settleInput', function() {
+            const key = $(this).data('id');
+            const val = parseFloat($(this).val()) || 0;
 
-            if (value > 0) {
-                $('.voucherCheck' + $(this).attr('data-id')).attr('checked', true);
+            // Save to memory
+            if (voucherMap[key]) {
+                voucherMap[key].settle_amt = val;
+            }
+
+            // Update checkbox state
+            if (val > 0) {
+                $('.voucherCheck' + key).prop('checked', true);
+                selectedVoucherIds.add(key);
             } else {
-                $('.voucherCheck' + $(this).attr('data-id')).attr('checked', false);
+                $('.voucherCheck' + key).prop('checked', false);
+                selectedVoucherIds.delete(key);
             }
 
-            if (value > max) {
-                e.target.value = max;
-            }
+            calculateSettle();
         });
-
 
 
         function updateVoucherNumbers() {
@@ -467,15 +484,33 @@
         }
 
         function calculateSettle() {
-           let settleSum = 0;
-            $('.vouchers:checked').each(function() {
-                               const value = parseFloat($('.settleAmount' + this.value).val()) || 0;
-                settleSum = parseFloat(settleSum) + value;
-            }).get();
-            $('.totalSettle').text(parseFloat(settleSum).toFixed(2));
+            let settleSum = 0;
 
+            // Loop through all entries in voucherMap (not just visible ones)
+            Object.entries(voucherMap).forEach(([key, voucher]) => {
+                const val = parseFloat(voucher?.settle_amt) || 0;
+                if (val > 0) {
+                    settleSum += val;
+                }
+            });
 
+            $('.totalSettle').text(settleSum.toFixed(2));
         }
+
+        $('.datatables-basic').on('draw.dt', function() {
+            $('.vouchers').each(function() {
+                const key = $(this).val();
+                const isChecked = selectedVoucherIds.has(key);
+                $(this).prop('checked', isChecked);
+
+                const $row = $(this).closest('tr');
+                const settleVal = parseFloat(voucherMap[key]?.settle_amt || 0);
+                $row.find('.settleInput').val(isChecked ? settleVal.toFixed(2) : '0.00');
+            });
+
+            calculateSettle();
+        });
+
 
         function calculateAmountAndBalanceTotals() {
             let totalAmount = 0,
@@ -503,18 +538,14 @@
         function getSelectedVoucherData() {
             const selectedData = [];
 
-            $('.vouchers:checked').each(function() {
-                const fullId = this.value; // e.g., "123_0"
-                const $row = $(this).closest('tr');
-                const settleAmt = parseFloat($('.settleAmount' + fullId).val()) || 0;
-
-                const fullVoucher = voucherMap[fullId];
-                if (!fullVoucher || !fullVoucher.item?.id) return;
+            selectedVoucherIds.forEach(key => {
+                const voucher = voucherMap[key];
+                if (!voucher || !voucher.item?.id) return;
 
                 selectedData.push({
-                    ...fullVoucher,
-                    settle_amt: settleAmt.toFixed(2),
-                    item_id: fullVoucher.item.id
+                    ...voucher,
+                    settle_amt: parseFloat(voucher.settle_amt || 0).toFixed(2),
+                    item_id: voucher.item.id
                 });
             });
 
@@ -524,18 +555,41 @@
 
 
         $('#inlineCheckbox1').on('click', function() {
-           const table = $('.datatables-basic').DataTable();
             const isChecked = this.checked;
+            const table = $('.datatables-basic').DataTable();
 
-            table.rows({ search: 'applied' }).nodes().each(function(row) {
-                const $checkbox = $(row).find('.vouchers');
-                $checkbox.prop('checked', isChecked);
-                const balance = parseFloat($(row).find('.balanceInput').text().replace(/,/g, '')) || 0;
-                $(row).find('.settleInput').val(isChecked ? balance.toFixed(2) : '');
+            // Loop through all rows in DataTable's full dataset (not just DOM)
+            table.rows().every(function() {
+                const data = this.data(); // `data` is the actual row data object/HTML
+                const rowNode = this.node();
+                const $row = $(rowNode);
+                const $checkbox = $row.find('.vouchers');
+                const key = $checkbox.val();
+
+                // Handle checkbox and settle input on visible page only
+                if ($row.is(':visible')) {
+                    $checkbox.prop('checked', isChecked);
+                    const balance = parseFloat($row.find('.balanceInput').text().replace(/,/g, '')) || 0;
+                    $row.find('.settleInput').val(isChecked ? balance.toFixed(2) : '0.00');
+                }
+
+                // Ensure voucherMap and selectedVoucherIds are updated
+                if (voucherMap[key]) {
+                    const balance = parseFloat(voucherMap[key]?.item?.balance || voucherMap[key]?.balance ||
+                        0);
+                    voucherMap[key].settle_amt = isChecked ? balance : 0;
+
+                    if (isChecked) {
+                        selectedVoucherIds.add(key);
+                    } else {
+                        selectedVoucherIds.delete(key);
+                    }
+                }
             });
 
-                calculateSettle();
+            calculateSettle();
         });
+
 
         $('#filterForm').on('submit', e => {
             e.preventDefault();
@@ -550,7 +604,7 @@
 
         $(document).on('click', '#proceed', function() {
             isValid = true;
-             $('.settleInput').each(function() {
+            $('.settleInput').each(function() {
                 let input = $(this);
                 let row = input.closest('.voucherRows');
                 let balanceText = row.find('.balanceInput').text().replace(/,/g, '');
@@ -563,14 +617,14 @@
                 if (settleAmount > balance) {
                     input.addClass('is-invalid');
                     input.after(
-                        '<span class="invalid-feedback d-block" style="font-size:12px">Settle amount cannot be greater than balance.</span>'
+                        '<span class="invalid-feedback d-block"  style="font-size:12px">Settle amount cannot be greater than balance.</span>'
                         );
                     isValid = false;
                 } else {
                     input.removeClass('is-invalid');
                 }
             });
-             if (!isValid) {
+            if (!isValid) {
                 // Prevent modal close or further processing
                 return false;
             }
@@ -614,19 +668,23 @@
 
 
         $(document).ready(() => {
-           $(document).on('change', '.vouchers', function () {
+            $(document).on('change', '.vouchers', function() {
+                const key = $(this).val();
                 const isChecked = $(this).is(':checked');
                 const $row = $(this).closest('tr');
-                const balanceText = $row.find('.balanceInput').text().replace(/,/g, '');
-                const balanceVal = parseFloat(balanceText) || 0;
+                const balance = parseFloat($row.find('.balanceInput').text().replace(/,/g, '')) || 0;
 
                 const $input = $row.find('.settleInput');
-                $input.val(isChecked ? balanceVal.toFixed(2) : '0.00');
+                $input.val(isChecked ? balance.toFixed(2) : '0.00');
 
-                // No need to trigger `keyup`, just manually remove error if unchecked
-                if (!isChecked) {
-                    $input.removeClass('is-invalid');
-                    $input.next('.invalid-feedback').remove();
+                if (voucherMap[key]) {
+                    voucherMap[key].settle_amt = isChecked ? balance : 0;
+                }
+
+                if (isChecked) {
+                    selectedVoucherIds.add(key);
+                } else {
+                    selectedVoucherIds.delete(key);
                 }
 
                 calculateSettle();

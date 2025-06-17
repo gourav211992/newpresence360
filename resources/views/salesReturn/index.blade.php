@@ -25,9 +25,11 @@
                 <div class="content-header-right text-sm-end col-md-7 mb-50 mb-sm-0">
                     <div class="form-group breadcrumb-right">
                         <button class="btn btn-warning btn-sm mb-50 mb-sm-0" onclick ='openFiltersModal();' ><i data-feather="filter"></i> Filter</button> 
+                        @if($create_button)
 						<a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{route('sale.return.create', ['type' => request() -> type ? request() -> type : 'sr'])}}"><i data-feather="plus-circle"></i>
                         {{'Create ' . $typeName}}
                         </a> 
+                        @endif
                         <a class="btn btn-dark btn-sm mb-50 mb-sm-0" href="{{ route('transactions.report', ['serviceAlias' => 'sr']) }}"><i data-feather="bar-chart-2"></i>Report</a>
 
                     </div>

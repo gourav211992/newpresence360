@@ -644,7 +644,7 @@
                                                                     </td>
                                                                     <td>
                                                                         <input type="text"
-                                                                            class="form-control mw-100 text-end bankInput reference_no"
+                                                                            class="form-control mw-100 bankInput reference_no"
                                                                             name="reference_no[]"
                                                                             data-row="{{ $no }}"
                                                                             id="reference_no{{ $no }}"
@@ -921,8 +921,9 @@
                                     </tbody>
                                     <tfoot>
                                         <tr>
-                                            <td colspan="9" class="text-end">Total</td>
+                                            <td colspan="8" class="text-end">Total</td>
                                             <td class="fw-bolder text-dark text-end settleTotal">0</td>
+                                            <td></td>
                                         </tr>
                                     </tfoot>
                                 </table>

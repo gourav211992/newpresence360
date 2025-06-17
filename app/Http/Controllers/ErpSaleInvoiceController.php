@@ -242,7 +242,8 @@ class ErpSaleInvoiceController extends Controller
         }
         $parentURL = request() -> segments()[0];
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
-        return view('salesInvoice.index', ['typeName' => $typeName, 'redirect_url' => $redirectUrl, 'create_route' => $createRoute, 'create_button' => count($servicesBooks['services']),'filterArray' => TransactionReportHelper::FILTERS_MAPPING[ConstantHelper::SI_SERVICE_ALIAS],
+        $create_button = (count($servicesBooks['services']) > 0 && $selectedfyYear['authorized'] && !$selectedfyYear['lock_fy']) ? true : false;
+        return view('salesInvoice.index', ['typeName' => $typeName, 'redirect_url' => $redirectUrl, 'create_route' => $createRoute, 'create_button' => $create_button,'filterArray' => TransactionReportHelper::FILTERS_MAPPING[ConstantHelper::SI_SERVICE_ALIAS],
             'autoCompleteFilters' => $autoCompleteFilters,]);
     }
 
@@ -1707,6 +1708,9 @@ class ErpSaleInvoiceController extends Controller
             if ($request -> item_id && isset($order) && $request -> doc_type !== ConstantHelper::LAND_LEASE && $request -> doc_type != PackingListConstants::SERVICE_ALIAS) {
                 $order = $order -> where('item_id', $request -> item_id);
             }
+            if (!$order || $order -> count() <= 0) {
+                return DataTables::of(collect())->make(true);
+            }
             $order = isset($order) ? $order -> get() : new Collection();
             if ($request -> doc_type === PackingListConstants::SERVICE_ALIAS) {
                 foreach ($order as $docDetail) {
@@ -1846,9 +1850,54 @@ class ErpSaleInvoiceController extends Controller
                         return $group;
                     });
             }
-            return response() -> json([
-                'data' => $order
-            ]);
+            return DataTables::of($order)
+                ->addColumn('book_code', fn($item) => $item?->header?->book_code ?? ($item->header->book?->book_code ?? ''))
+                ->addColumn('document_number', fn($item) => $item?->header?->document_number)
+                ->addColumn('document_date', fn($item) => $item->header->getFormattedDate("document_date"))
+                ->addColumn('so_no', fn($item) => $item?->so?->book_code . '-' . $item?->so?->document_number)
+                ->addColumn('item_name', function ($item) use ($request) {
+                    $name = $item->item->item_name ?? '';
+                    if (
+                        $request->doc_type === ConstantHelper::MO_SERVICE_ALIAS ||
+                        ($request->doc_type === ConstantHelper::JO_SERVICE_ALIAS && $request->mi_type === "Sub Contracting")
+                    ) {
+                        if ($item->rm_type === 'sf') {
+                            $name .= '-' . ($item->station?->name ?? '');
+                        }
+                    }
+                    return $name;
+                })
+                ->addColumn('store_location_code', fn($item) => $item->header?->store_location?->store_name ?? '')
+                ->addColumn('sub_store_code', fn($item) => $item->header?->sub_store?->name ?? '')
+                ->addColumn('department_code', fn($item) => $item->header?->department?->name ?? '')
+                ->addColumn('requester_name', fn($item) => $item?->header && method_exists($item->header, 'requester_name') ? $item->header->requester_name() : '')
+                ->addColumn('station_name', fn($item) => $item->header?->station?->name ?? '')
+                ->addColumn('avl_stock', function ($item) use ($request) {
+                    return number_format($item->getAvlStock(
+                        $request->store_id_from,
+                        $request->sub_store_id_from ?? null,
+                        $request->station_id_from ?? null
+                    ),2);
+                })
+                ->editColumn('qty', function ($item) use ($request) {
+                    return (number_format($item->qty,2));
+                })
+                ->editColumn('mi_balance_qty', function ($item) use ($request) {
+                    return (number_format($item->mi_balance_qty,2));
+                })
+                ->addColumn('attributes_array', function ($item) use ($request) {
+                    if(in_array($request->doc_type, [ConstantHelper::JO_SERVICE_ALIAS])){
+                        return $item->attributes->map(fn($attr) => [
+                            'attribute_name' => $attr->headerAttribute?->name,
+                            'attribute_value' => $attr->headerAttributeValue?->value,
+                        ])->values();
+                    }
+                    return $item->attributes->map(fn($attr) => [
+                        'attribute_name' => $attr->attr_name,
+                        'attribute_value' => $attr->attr_value,
+                    ])->values();
+                })
+                ->make(true);
         } catch(Exception $ex) {
             return response() -> json([
                 'message' => 'Some internal error occurred',

@@ -103,29 +103,17 @@ if($pi_item?->item?->approvedVendors->count()) {
 <td>
     <input type="hidden" name="components[{{$rowCount}}][store_id]" value="{{$pi_item?->pi->store_id}}">
     <input readonly class="form-control mw-100" type="text" name="components[{{$rowCount}}][store_name]" value="{{ucfirst($pi_item?->pi?->store?->store_name)}}">
-    {{-- <select disabled class="form-select mw-100 " name="components[{{$rowCount}}][department_id]">
-        @if($pi_item?->pi->department_id)
-        <option value="{{$pi_item?->pi->department_id}}">{{ucfirst($pi_item?->pi?->department?->name)}}</option>
-        @endif
-    </select> --}}
 </td>
 <td>
     <input type="hidden" name="components[{{$rowCount}}][department_id]" value="{{$pi_item?->pi->department_id}}">
     <input type="hidden" name="components[{{$rowCount}}][sub_store_id]" value="{{$pi_item?->pi->sub_store_id}}">
     <input readonly class="form-control mw-100" type="text" name="components[{{$rowCount}}][department_name]" value="{{ucfirst($pi_item?->pi?->sub_store?->name)}}">
-    {{-- <select disabled class="form-select mw-100 " name="components[{{$rowCount}}][department_id]">
-        @if($pi_item?->pi->department_id)
-        <option value="{{$pi_item?->pi->department_id}}">{{ucfirst($pi_item?->pi?->department?->name)}}</option>
-        @endif
-    </select> --}}
 </td>
 <td>
     <input type="hidden" name="components[{{$rowCount}}][user_id]" value="{{$pi_item?->pi?->user_id}}">
     <input readonly class="form-control mw-100" type="text" name="components[{{$rowCount}}][requester_name]" value="{{ucfirst($pi_item?->pi?->requester?->name)}}">
 </td>
 <td><input disabled type="text" class="form-control mw-100 text-end" value="{{$pi_item->remarks}}" name="components[{{$rowCount}}][remark]"></td>
-{{-- <input type="hidden" name="components[{{$rowCount}}][po_item_id]" value="{{$pi_item->id}}"> --}}
-{{-- <input type="hidden" name="components[{{$rowCount}}][pi_item_id]" value="{{$pi_item?->id}}"> --}}
 <input type="hidden" name="components[{{$rowCount}}][so_id]" value="{{$pi_item?->so_id}}">
 </tr>
 @empty

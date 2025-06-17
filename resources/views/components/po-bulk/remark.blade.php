@@ -1,0 +1,1 @@
+<input type="text" class="form-control text-end" name="components[{{$rowCount}}][remark]" value="{{$row?->remarks}}" disabled>
