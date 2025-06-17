@@ -164,26 +164,37 @@
                                             class="form-control flatpickr-range bg-white"
                                             placeholder="YYYY-MM-DD to YYYY-MM-DD" value="{{request('date')}}"/>
                                     </div>
+                                      <div class="mb-1">
+                                        <label class="form-label">Organization</label>
+                                        <select id="organization_id" name="organization_id" class="form-select select2">
+                                        <option value="" disabled>Select</option>
+                                        @foreach ($companies as $organization)
+                                            <option value="{{ $organization->organization->id }}"
+                                                {{ $organization->organization->id == $organizationId ? 'selected' : '' }}>
+                                                {{ $organization->organization->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    </div>
+                                     <div class="mb-1">
+                                        <label class="form-label">Location</label>
+                                        <select id="location_id" class="form-select select2"
+                                            name="location_id">
+                                            <option value="">Select Location</option>
+                                           
+                                        </select>
+                                    </div>
+
                                     <div class="mb-1">
                                         <label class="form-label">Cost Center</label>
                                         <select id="cost_center_id" class="form-select select2"
                                             name="cost_center_id">
                                             <option value="">Select</option>
-                                            @foreach ($cost_centers as $key => $value)
-                                            <option value="{{ $value['id'] }}" @if(request('cost_center_id')==$value['id']) selected @endif>{{ $value['name'] }}</option>
-                                            @endforeach
+                                           
                                         </select>
                                     </div>
 
-                                    <div class="mb-1">
-                                        <label class="form-label">Company</label>
-                                        <select class="form-select" name="company_id" id="company_id">
-                                            <option value="">Select Company</option>
-                                            @foreach ($companies as $company)
-                                                <option value="{{ $company->id }}">{{ $company->name }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
+                                  
                                 </div>
                                 <div class="modal-footer justify-content-start">
                                     <button type="submit" class="btn btn-primary data-submit mr-1">Apply</button>
@@ -202,6 +213,8 @@
 @section('scripts')
 <script>
     $(document).ready(function () {
+          $('#cost_center_id').prop('required', false);
+                $('.cost_center').hide();
         // Hide preloader after full page load
         $(window).on('load', function () {
             $('.preloader').fadeOut();
@@ -219,4 +232,111 @@
 
     });
 </script>
+    <script>
+
+        $(document).ready(function() {
+            let urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('organization_id') == "")
+                $('#organization_id').val(urlParams.get('organization_id'));
+
+            if (urlParams.get('cost_center_id') == "")
+                $('#cost_center_id').val(urlParams.get('cost_center_id'));
+
+            if (urlParams.get('location_id') == "")
+                $('#location_id').val(urlParams.get('location_id'));
+        });
+        const locations = @json($locations);
+        const costCenters = @json($cost_centers);
+
+        function updateLocationsDropdown(selectedOrgIds) {
+            selectedOrgIds = $('#organization_id').val() || [];
+
+            const requestedLocationId = @json(request('location_id')) || "";
+
+            const filteredLocations = locations.filter(loc =>
+                selectedOrgIds.includes(String(loc.organization_id))
+            );
+
+            const $locationDropdown = $('#location_id');
+            $locationDropdown.empty().append('<option value="">Select</option>');
+
+
+            filteredLocations.forEach(loc => {
+                const isSelected = String(loc.id) === String(requestedLocationId) ? 'selected' : '';
+                $locationDropdown.append(`<option value="${loc.id}" ${isSelected}>${loc.store_name}</option>`);
+            });
+
+            // Load cost centers if location was pre-selected
+            if (requestedLocationId) {
+                loadCostCenters(requestedLocationId);
+            }
+
+            $locationDropdown.trigger('change');
+        }
+
+
+
+        function loadCostCenters(locationId) {
+            if (locationId) {
+                const filteredCenters = costCenters.filter(center => {
+                    if (!center.location) return false;
+
+                    const locationArray = Array.isArray(center.location) ?
+                        center.location.flatMap(loc => loc.split(',')) : [];
+
+                    return locationArray.includes(String(locationId));
+                });
+                // console.log(filteredCenters,costCenters,locationId);
+
+                const $costCenter = $('#cost_center_id');
+                $costCenter.empty().append('<option value="">Select</option>');
+               
+
+                if (filteredCenters.length === 0) {
+                    $costCenter.prop('required', false);
+                    $('.cost_center').hide();
+                } else {
+                    $costCenter.prop('required', true).append('<option value="">Select</option>');
+                    $('.cost_center').show();
+
+                    filteredCenters.forEach(center => {
+                        $costCenter.append(`<option value="${center.id}">${center.name}</option>`);
+                    });
+                }
+                $costCenter.val(@json(request('cost_center_id')) || "");
+                $costCenter.trigger('change');
+
+            }
+        }
+        $('#organization_id').trigger('change');
+        // On change of organization
+        $('#organization_id').on('change', function() {
+            const selectedOrgIds = $(this).val() || [];
+            updateLocationsDropdown(selectedOrgIds);
+
+        });
+
+        // On page load, check for preselected orgs
+        const preselectedOrgIds = $('#organization_id').val() || [];
+        if (preselectedOrgIds.length > 0) {
+            updateLocationsDropdown(preselectedOrgIds);
+        }
+        // On location change, load cost centers
+        $('#location_id').on('change', function() {
+            const locationId = $(this).val();
+            if (!locationId) {
+                $('#cost_center_id').empty().append('<option value="">Select</option>');
+                  $('#cost_center_id').prop('required', false);
+                $('.cost_center').hide();
+                // $('.cost_center').hide(); // Optional: hide the section if needed
+                return;
+            }
+            loadCostCenters(locationId);
+
+
+
+        });
+    </script>
+    
+
 @endsection

@@ -273,6 +273,9 @@ class SaleOrderImportV2 implements ToArray, WithHeadingRow, SkipsEmptyRows, With
                     if ($item) {
                         $itemRate = SaleModuleHelper::getItemSellingPrice($item, $orderDetail -> uom_id);
                         $orderDetail -> rate = $itemRate;
+                        if (floatval($orderDetail -> rate) <= 0) {
+                            $errors[] = "Item Rate not specified and not found from Item";
+                        }
                     }
                 }
                 if (!isset($orderDetail -> rate)) {

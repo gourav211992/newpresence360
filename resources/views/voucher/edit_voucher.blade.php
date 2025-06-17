@@ -18,9 +18,9 @@
 @endsection
 
 @section('content')
-<script>
-    const locationCostCentersMap = @json($cost_centers);
-</script>
+    <script>
+        const locationCostCentersMap = @json($cost_centers);
+    </script>
     <!-- BEGIN: Content-->
     <div class="app-content content ">
         <div class="content-overlay"></div>
@@ -38,16 +38,23 @@
                 <input type="hidden" name="doc_no" id="doc_no">
 
                 <input type="hidden" name="org_currency_id" id="org_currency_id" value="{{ $data->org_currency_id }}">
-                <input type="hidden" name="org_currency_code" id="org_currency_code" value="{{ $data->org_currency_code }}">
-                <input type="hidden" name="org_currency_exg_rate" id="org_currency_exg_rate" value="{{ $data->org_currency_exg_rate }}">
+                <input type="hidden" name="org_currency_code" id="org_currency_code"
+                    value="{{ $data->org_currency_code }}">
+                <input type="hidden" name="org_currency_exg_rate" id="org_currency_exg_rate"
+                    value="{{ $data->org_currency_exg_rate }}">
 
                 <input type="hidden" name="comp_currency_id" id="comp_currency_id" value="{{ $data->comp_currency_id }}">
-                <input type="hidden" name="comp_currency_code" id="comp_currency_code" value="{{ $data->comp_currency_code }}">
-                <input type="hidden" name="comp_currency_exg_rate" id="comp_currency_exg_rate" value="{{ $data->comp_currency_exg_rate }}">
+                <input type="hidden" name="comp_currency_code" id="comp_currency_code"
+                    value="{{ $data->comp_currency_code }}">
+                <input type="hidden" name="comp_currency_exg_rate" id="comp_currency_exg_rate"
+                    value="{{ $data->comp_currency_exg_rate }}">
 
-                <input type="hidden" name="group_currency_id" id="group_currency_id" value="{{ $data->group_currency_id }}">
-                <input type="hidden" name="group_currency_code" id="group_currency_code" value="{{ $data->group_currency_code }}">
-                <input type="hidden" name="group_currency_exg_rate" id="group_currency_exg_rate" value="{{ $data->group_currency_exg_rate }}">
+                <input type="hidden" name="group_currency_id" id="group_currency_id"
+                    value="{{ $data->group_currency_id }}">
+                <input type="hidden" name="group_currency_code" id="group_currency_code"
+                    value="{{ $data->group_currency_code }}">
+                <input type="hidden" name="group_currency_exg_rate" id="group_currency_exg_rate"
+                    value="{{ $data->group_currency_exg_rate }}">
 
                 <input type="hidden" name="currency_code" id="currency_code" value="{{ $data->currency_code }}">
 
@@ -74,10 +81,10 @@
                         </div>
                         <div class="content-header-right text-end col-md-6 col-6 mb-2 mb-sm-0">
                             <div class="form-group breadcrumb-right">
-                                <a type="button" href="{{route('vouchers.index')}}" class="btn btn-secondary btn-sm"><i
+                                <a type="button" href="{{ route('vouchers.index') }}" class="btn btn-secondary btn-sm"><i
                                         data-feather="arrow-left-circle"></i> Back</a>
 
-                                @if(isset($fyear) && $fyear['authorized'])
+                                @if (isset($fyear) && $fyear['authorized'])
                                     @if ($buttons['draft'])
                                         <a type="button" onclick = "submitForm('draft');"
                                             class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" id="draft"
@@ -91,7 +98,8 @@
                                     @if ($buttons['approve'])
                                         <a type="button" id="reject-button" data-bs-toggle="modal"
                                             data-bs-target="#approveModal" onclick = "setReject();"
-                                            class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i data-feather="x-circle"></i> Reject</a>
+                                            class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i
+                                                data-feather="x-circle"></i> Reject</a>
                                         <a type="button" class="btn btn-success btn-sm" data-bs-toggle="modal"
                                             data-bs-target="#approveModal" onclick = "setApproval();"><i
                                                 data-feather="check-circle"></i> Approve</a>
@@ -101,10 +109,10 @@
                                             class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i>
                                             Amendment</a>
                                     @endif --}}
-                                    {{-- @if($buttons['revoke'])
+                                    {{-- @if ($buttons['revoke'])
                                     <a id = "revokeButton" type="button" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i> Revoke</a>
                                     @endif --}}
-                                    {{-- @if($buttons['cancel'])
+                                    {{-- @if ($buttons['cancel'])
                                     <a id = "cancelButton" type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0"><i data-feather="x-circle"></i> Cancel</a>
                                     @endif --}}
                                     {{-- @if ($buttons['reference'])
@@ -117,16 +125,21 @@
                                             class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i>
                                             Amendment</a>
                                     @endif
-                                    @if($buttons['revoke'])
-                                    <a id = "revokeButton" type="button" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i> Revoke</a>
+                                    @if ($buttons['revoke'])
+                                        <a id = "revokeButton" type="button"
+                                            class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i>
+                                            Revoke</a>
                                     @endif
-                                    @if($buttons['cancel'])
-                                    <a id = "cancelButton" type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0"><i data-feather="x-circle"></i> Cancel</a>
+                                    @if ($buttons['cancel'])
+                                        <a id = "cancelButton" type="button"
+                                            class="btn btn-danger btn-sm mb-50 mb-sm-0"><i data-feather="x-circle"></i>
+                                            Cancel</a>
                                     @endif
                                 @endif
                                 @if ($buttons['reference'])
-                                    <a type="button" href="{{$ref_view_route}}"
-                                        class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i data-feather="file-text"></i>  View REF</a>
+                                    <a type="button" href="{{ $ref_view_route }}"
+                                        class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i
+                                            data-feather="file-text"></i> View REF</a>
                                 @endif
 
 
@@ -139,20 +152,20 @@
 
                 <div class="content-body">
                     @if (session('success'))
-                    <div class="alert alert-success">
-                        {{ session('success') }}
-                    </div>
-                @endif
+                        <div class="alert alert-success">
+                            {{ session('success') }}
+                        </div>
+                    @endif
 
-                @if ($errors->any())
-                    <div class="alert alert-danger">
-                        <ul>
-                            @foreach ($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
+                    @if ($errors->any())
+                        <div class="alert alert-danger">
+                            <ul>
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
 
 
                     <section id="basic-datatable">
@@ -184,17 +197,19 @@
                                                             };
                                                         @endphp
                                                         <div class="col-md-6 text-sm-end">
-                                                            <span class="badge rounded-pill {{App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$data->document_status] ?? ''}} forminnerstatus">
+                                                            <span
+                                                                class="badge rounded-pill {{ App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$data->document_status] ?? '' }} forminnerstatus">
                                                                 <span class="text-dark">Status</span>
-                                                                 : <span class="{{App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS[$data->document_status] ?? ''}}">
+                                                                : <span
+                                                                    class="{{ App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS[$data->document_status] ?? '' }}">
                                                                     @if ($data->document_status == App\Helpers\ConstantHelper::APPROVAL_NOT_REQUIRED)
-                                                                    Approved
-                                                                @else
-                                                                    {{ ucfirst($data->document_status) }}
-                                                                @endif
+                                                                        Approved
+                                                                    @else
+                                                                        {{ ucfirst($data->document_status) }}
+                                                                    @endif
+                                                                </span>
                                                             </span>
-                                                            </span>
-                                                    </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -214,8 +229,9 @@
                                                     <div class="col-md-6">
                                                         <select class="form-select select2" name="book_type_id"
                                                             id="book_type_id" required onchange="getBooks()" disabled>
-                                                            <option value="{{ $data?->series?->org_service_id }}" selected>
-                                                                    {{ $data?->series?->org_service?->name }}</option>
+                                                            <option value="{{ $data?->series?->org_service_id }}"
+                                                                selected>
+                                                                {{ $data?->series?->org_service?->name }}</option>
 
                                                         </select>
                                                     </div>
@@ -230,7 +246,8 @@
                                                     <div class="col-md-6">
                                                         <select class="form-select" id="book_id" name="book_id"
                                                             required onchange="get_voucher_details()" disabled>
-                                                             <option value="{{ $data?->book_id }}" selected>{{ $data?->series?->book_code }}</option>
+                                                            <option value="{{ $data?->book_id }}" selected>
+                                                                {{ $data?->series?->book_code }}</option>
 
 
 
@@ -249,7 +266,8 @@
                                                             id="voucher_name" required value="{{ $data->voucher_name }}"
                                                             readonly />
                                                         @error('voucher_name')
-                                                            <span class="text-danger" style="font-size:12px">{{ $message }}</span>
+                                                            <span class="text-danger"
+                                                                style="font-size:12px">{{ $message }}</span>
                                                         @enderror
                                                     </div>
                                                 </div>
@@ -265,7 +283,8 @@
                                                             id="voucher_no" required value="{{ $data->voucher_no }}"
                                                             readonly />
                                                         @error('voucher_no')
-                                                            <span class="text-danger" style="font-size:12px">{{ $message }}</span>
+                                                            <span class="text-danger"
+                                                                style="font-size:12px">{{ $message }}</span>
                                                         @enderror
                                                     </div>
 
@@ -279,8 +298,7 @@
                                                         <input type="date" class="form-control" name="date"
                                                             id="date" required value="{{ $data->document_date }}"
                                                             min="{{ $fyear['start_date'] }}"
-                                                            max="{{ $fyear['end_date'] }}"
-                                                             />
+                                                            max="{{ $fyear['end_date'] }}" />
                                                     </div>
                                                 </div>
                                                 <div class="row align-items-center mb-1">
@@ -291,12 +309,13 @@
 
                                                     <div class="col-md-6">
                                                         <select id="locations" class="form-select" name="location">
-                                                            <option disabled value="" selected>Select Location</option>
-                                                            @foreach ($locations as $location)
-                                                            <option value="{{ $location->id }}"
-                                                                {{ (isset($data->location) && $data->location == $location->id) ? 'selected' : '' }}>
-                                                                {{ $location->store_name }}
+                                                            <option disabled value="" selected>Select Location
                                                             </option>
+                                                            @foreach ($locations as $location)
+                                                                <option value="{{ $location->id }}"
+                                                                    {{ isset($data->location) && $data->location == $location->id ? 'selected' : '' }}>
+                                                                    {{ $location->store_name }}
+                                                                </option>
                                                             @endforeach
                                                         </select>
                                                     </div>
@@ -324,81 +343,103 @@
                                                 </div>
                                                 <div class="row align-items-center mb-1">
 
-                                                   <div class="col-md-2">
-                                                    <label class="form-label mt-50">Exchange Rate</label>
+                                                    <div class="col-md-2">
+                                                        <label class="form-label mt-50">Exchange Rate</label>
 
 
-                                                </div>
-                                                <div class="col-md-6">
-                                                <input type="text" class="form-control" id="orgExchangeRate" value="{{ round($data->org_currency_exg_rate,2) }}" onclick="rate_change()" oninput="calculate_cr_dr()"/>
-                                             </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <input type="text" class="form-control" id="orgExchangeRate"
+                                                            value="{{ round($data->org_currency_exg_rate, 2) }}"
+                                                            onclick="rate_change()" oninput="calculate_cr_dr()" />
+                                                    </div>
                                                     <div class="col-md-7" hidden>
-                                                      <div class="d-flex align-items-center">
+                                                        <div class="d-flex align-items-center">
                                                             <div class="row">
-                                                           <div class="col-md-4">
-                                                               <div class="d-flex">
-                                                                    <input type="text" class="form-control" readonly id="base_currency_code" value="{{ $data->org_currency_code }}" style="text-transform:uppercase;width: 80px; border-right: none; border-radius: 7px 0 0 7px" />
+                                                                <div class="col-md-4">
+                                                                    <div class="d-flex">
+                                                                        <input type="text" class="form-control"
+                                                                            readonly id="base_currency_code"
+                                                                            value="{{ $data->org_currency_code }}"
+                                                                            style="text-transform:uppercase;width: 80px; border-right: none; border-radius: 7px 0 0 7px" />
 
 
+                                                                    </div>
+                                                                    <label class="form-label">Base</label>
                                                                 </div>
-                                                                <label class="form-label">Base</label>
-                                                           </div>
 
-                                                           <div hidden class="col-md-4">
-                                                               <div class="d-flex">
-                                                                    <input type="text" class="form-control" readonly id="company_currency_code" value="{{ $data->comp_currency_code }}" style="text-transform:uppercase;width: 80px; border-right: none; border-radius: 7px 0 0 7px" />
+                                                                <div hidden class="col-md-4">
+                                                                    <div class="d-flex">
+                                                                        <input type="text" class="form-control"
+                                                                            readonly id="company_currency_code"
+                                                                            value="{{ $data->comp_currency_code }}"
+                                                                            style="text-transform:uppercase;width: 80px; border-right: none; border-radius: 7px 0 0 7px" />
 
-                                                                    <input type="text" class="form-control" readonly id="company_exchange_rate" value="{{ round($data->comp_currency_exg_rate,2) }}" style="width: 80px;  border-radius:0 7px 7px 0" />
+                                                                        <input type="text" class="form-control"
+                                                                            readonly id="company_exchange_rate"
+                                                                            value="{{ round($data->comp_currency_exg_rate, 2) }}"
+                                                                            style="width: 80px;  border-radius:0 7px 7px 0" />
 
 
+                                                                    </div>
+                                                                    <label class="form-label">Company</label>
                                                                 </div>
-                                                                <label class="form-label">Company</label>
-                                                           </div>
 
-                                                           <div hidden class="col-md-4">
-                                                               <div class="d-flex">
-                                                                    <input type="text" class="form-control" readonly id="grp_currency_code" value="{{ $data->group_currency_code }}" style="text-transform:uppercase;width: 80px; border-right: none; border-radius: 7px 0 0 7px" />
+                                                                <div hidden class="col-md-4">
+                                                                    <div class="d-flex">
+                                                                        <input type="text" class="form-control"
+                                                                            readonly id="grp_currency_code"
+                                                                            value="{{ $data->group_currency_code }}"
+                                                                            style="text-transform:uppercase;width: 80px; border-right: none; border-radius: 7px 0 0 7px" />
 
-                                                                    <input type="text" class="form-control" readonly id="grp_exchange_rate" value="{{ round($data->group_currency_exg_rate,2) }}" style="width: 80px;  border-radius:0 7px 7px 0" />
+                                                                        <input type="text" class="form-control"
+                                                                            readonly id="grp_exchange_rate"
+                                                                            value="{{ round($data->group_currency_exg_rate, 2) }}"
+                                                                            style="width: 80px;  border-radius:0 7px 7px 0" />
 
 
+                                                                    </div>
+                                                                    <label class="form-label">Group</label>
                                                                 </div>
-                                                                <label class="form-label">Group</label>
-                                                           </div>
-                                                       </div>
+                                                            </div>
 
 
 
                                                         </div>
-                                                   </div>
+                                                    </div>
 
                                                 </div>
                                             </div>
-                                                 {{-- History Code --}}
-                           @include('partials.approval-history', ['document_status' => $data->approvalStatus, 'revision_number' => $data->revision_number])
+                                            {{-- History Code --}}
+                                            @include('partials.approval-history', [
+                                                'document_status' => $data->approvalStatus,
+                                                'revision_number' => $data->revision_number,
+                                            ])
 
 
-                                <div @if($data->approvalStatus==="cancel") style="display:none;" @endif>
-                                        </div>
+                                            <div @if ($data->approvalStatus === 'cancel') style="display:none;" @endif>
+                                            </div>
                                             <div
-                                            class="newheader d-flex justify-content-between align-items-end mt-2 border-top pt-2">
-                                            <div class="header-left" @if($data->approvalStatus==="cancel") style="display:none;" @endif>
-                                                <h4 class="card-title text-theme">Item Wise Detail</h4>
-                                                <p class="card-text">Fill the details</p>
-                                            </div>
-                                            {{-- {{ dd($buttons['draft'], $fyear['authorized'] , $buttons['draft'] && !$fyear['authorized']) }} --}}
-                                            <div class="header-right">
-                                                @if ($buttons['draft'] && $fyear['authorized'])
-                                                <a href="{{ route('ledgers.create') }}"
-                                                    class="btn btn-outline-primary btn-sm" target="_blank"><i
-                                                        data-feather="plus"></i> Add Ledger</a>
-                                                @endif
+                                                class="newheader d-flex justify-content-between align-items-end mt-2 border-top pt-2">
+                                                <div class="header-left"
+                                                    @if ($data->approvalStatus === 'cancel') style="display:none;" @endif>
+                                                    <h4 class="card-title text-theme">Item Wise Detail</h4>
+                                                    <p class="card-text">Fill the details</p>
+                                                </div>
+                                                {{-- {{ dd($buttons['draft'], $fyear['authorized'] , $buttons['draft'] && !$fyear['authorized']) }} --}}
+                                                <div class="header-right">
+                                                    @if ($buttons['draft'] && $fyear['authorized'])
+                                                        <a href="{{ route('ledgers.create') }}"
+                                                            class="btn btn-outline-primary btn-sm" target="_blank"><i
+                                                                data-feather="plus"></i> Add Ledger</a>
+                                                    @endif
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
 
 
-                                        <div class="table-responsive pomrnheadtffotsticky mt-1" @if($data->approvalStatus==="cancel") style="display:none;" @endif>
+                                        <div class="table-responsive pomrnheadtffotsticky mt-1"
+                                            @if ($data->approvalStatus === 'cancel') style="display:none;" @endif>
                                             <table
                                                 class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
                                                 <thead>
@@ -421,7 +462,7 @@
                                                             $no = $index + 1;
                                                         @endphp
                                                         <tr id="{{ $no }}">
-                                                            <td  class="number">{{ $no }}</td>
+                                                            <td class="number">{{ $no }}</td>
                                                             <td class="poprod-decpt">
                                                                 <input type="text"
                                                                     class="form-control mw-100 ledgerselect"
@@ -434,36 +475,37 @@
                                                                     id="ledger_id{{ $no }}"
                                                                     value="{{ $item->ledger_id }}" class="ledgers" />
                                                                 <!--<input placeholder="Line Notes" type="text"
-                                                                                                                                                                    class="form-control mw-100 mt-50"
-                                                                                                                                                                    name="notes1" />-->
+                                                                                                                                                                        class="form-control mw-100 mt-50"
+                                                                                                                                                                        name="notes1" />-->
                                                             </td>
                                                             <td>
                                                                 <select id="groupSelect{{ $no }}"
                                                                     name="parent_ledger_id[]"
-                                                                    class="ledgerGroup form-select mw-100" data-ledger="{{$item->ledger_id}}" required  >
-                                                                    @if ($item->ledger && method_exists($item->ledger, 'groups') && $item->ledger->groups() instanceof \Illuminate\Database\Eloquent\Relations\Relation)
-                                                                     @if(is_array($item->ledger->groups))
-                                                                    @foreach ($item->ledger->groups as $group)
-                                                                      <option value="{{ $group->id }}"
-                                                                            @if ($group->id == $item->ledger_parent_id) selected @endif>
-                                                                            {{ $group->name }}</option>
-
-
+                                                                    class="ledgerGroup form-select mw-100"
+                                                                    data-ledger="{{ $item->ledger_id }}" required>
+                                                                    @if (
+                                                                        $item->ledger &&
+                                                                            method_exists($item->ledger, 'groups') &&
+                                                                            $item->ledger->groups() instanceof \Illuminate\Database\Eloquent\Relations\Relation)
+                                                                        @if (is_array($item->ledger->groups))
+                                                                            @foreach ($item->ledger->groups as $group)
+                                                                                <option value="{{ $group->id }}"
+                                                                                    @if ($group->id == $item->ledger_parent_id) selected @endif>
+                                                                                    {{ $group->name }}</option>
                                                                             @endforeach
-                                                                            @else
-                                                                              <option value="{{ $item->ledger->groups->id }}"
-                                                                                    @if ($item->ledger->groups->id == $item->ledger_parent_id) selected @endif>
-                                                                                    {{ $item->ledger->groups->name }}</option>
-                                                                    @endif
-                                                                    @else
-                                                                    @foreach ($groups as $group)
-
-                                                                        @if ($group->id == $item->ledger_parent_id)
-
-                                                                         <option value="{{ $group->id }}" selected> {{ $group->name }}</option>
-
+                                                                        @else
+                                                                            <option
+                                                                                value="{{ $item->ledger->groups->id }}"
+                                                                                @if ($item->ledger->groups->id == $item->ledger_parent_id) selected @endif>
+                                                                                {{ $item->ledger->groups->name }}</option>
                                                                         @endif
-                                                                @endforeach
+                                                                    @else
+                                                                        @foreach ($groups as $group)
+                                                                            @if ($group->id == $item->ledger_parent_id)
+                                                                                <option value="{{ $group->id }}"
+                                                                                    selected> {{ $group->name }}</option>
+                                                                            @endif
+                                                                        @endforeach
                                                                     @endif
                                                                 </select>
                                                             </td>
@@ -482,46 +524,59 @@
 
                                                             <input type="hidden"
                                                                 class="dbt_amt_inr debt_inr_{{ $no }}"
-                                                                name="org_debit_amt[]"
-                                                                id="dept_inr_{{ $no }}" value="{{ $item->debit_amt_org }}" />
+                                                                name="org_debit_amt[]" id="dept_inr_{{ $no }}"
+                                                                value="{{ $item->debit_amt_org }}" />
 
-                                                                <input type="hidden"
+                                                            <input type="hidden"
                                                                 class="crd_amt_inr crd_inr_{{ $no }}"
-                                                                name="org_credit_amt[]"
-                                                                id="crd_inr_{{ $no }}"
+                                                                name="org_credit_amt[]" id="crd_inr_{{ $no }}"
                                                                 value="{{ $item->credit_amt_org }}" />
 
 
                                                             <td><input type="number"
                                                                     class="form-control mw-100 dbt_amt debt_{{ $no }} text-end"
-                                                                    name="debit_amt[]" id="dept_{{ $no }}" onfocus="focusInput(this)"
-                                                                    min="0" step="0.01" value="{{ $item->debit_amt }}" /></td>
+                                                                    name="debit_amt[]" id="dept_{{ $no }}"
+                                                                    onfocus="focusInput(this)" min="0"
+                                                                    step="0.01" value="{{ $item->debit_amt }}" /></td>
 
                                                             <td><input type="number"
                                                                     class="form-control mw-100 crd_amt crd_{{ $no }} text-end"
-                                                                    name="credit_amt[]" id="crd_{{ $no }}" onfocus="focusInput(this)"
-                                                                    min="0" step="0.01" value="{{ $item->credit_amt }}" />
+                                                                    name="credit_amt[]" id="crd_{{ $no }}"
+                                                                    onfocus="focusInput(this)" min="0"
+                                                                    step="0.01" value="{{ $item->credit_amt }}" />
                                                             </td>
                                                             <td>
                                                                 @php
-                                                            // Find the selected location object
-                                                            $selectedLocation = $locations->firstWhere('id', $data->location);
-                                                            $locationCostCenters = $cost_centers ?? [];
-                                                        @endphp
+                                                                    // Find the selected location object
+                                                                    $selectedLocation = $locations->firstWhere(
+                                                                        'id',
+                                                                        $data->location,
+                                                                    );
 
-                                                        <select class="costCenter form-select mw-100" name="cost_center_id[]" id="cost_center_id{{ $no }}">
-                                                            @foreach ($locationCostCenters as $value)
-                                                                <option value="{{ $value['id'] }}"
-                                                                    @if($value['id'] == $item->cost_center_id) selected @endif>
-                                                                    {{ $value['name'] }}
-                                                                </option>
-                                                            @endforeach
-                                                        </select>
+                                                                    // Initialize as empty array if no location found
+                                                                    $locationCostCenters = [];
+                                                                    if ($selectedLocation) {
+                                                                        $locationCostCenters =
+                                                                            $selectedLocation->cost_centers ?? [];
+                                                                    }
+                                                                @endphp
+
+                                                                <select class="costCenter form-select mw-100"
+                                                                    name="cost_center_id[]"
+                                                                    id="cost_center_id{{ $no }}">
+                                                                    @foreach ($locationCostCenters as $value)
+                                                                        <option value="{{ $value['id'] }}"
+                                                                            @if ($value['id'] == $item->cost_center_id) selected @endif>
+                                                                            {{ $value['name'] }}
+                                                                        </option>
+                                                                    @endforeach
+                                                                </select>
 
 
                                                             </td>
                                                             <td>
-                                                                <input type="text" class="form-control mw-100 remarks_" placeholder="Enter Remarks"
+                                                                <input type="text" class="form-control mw-100 remarks_"
+                                                                    placeholder="Enter Remarks"
                                                                     id="hiddenRemarks_{{ $no }}"
                                                                     value="{{ $item->remarks }}" name="item_remarks[]">
                                                                 <div class="d-flex">
@@ -534,228 +589,210 @@
                                                                             class="text-primary"><i
                                                                                 data-feather="file-text"></i></span>
                                                                     </div>
-                                                                </td>
-                                                                <td>
-                                                                    @if ($buttons['draft'] && $fyear['authorized'])
-
+                                                            </td>
+                                                            <td>
+                                                                @if ($buttons['draft'] && $fyear['authorized'])
                                                                     <div class="me-50 cursor-pointer"><span
-
                                                                             data-bs-placement="top"
                                                                             class="text-danger remove-item"><i
                                                                                 data-feather="trash-2"></i></span>
                                                                     </div>
-                                                                    @endif
-                                                                </div>
+                                                                @endif
+                                        </div>
 
+                                        </td>
+                                        </tr>
+                                    @empty
+                                        <div>No Item data..</div>
+                                        @endforelse
+                                        </tbody>
+                                        <tfoot>
+                                            <tr class="totalsubheadpodetail voucher-tab-foot">
+                                                <td colspan="3"></td>
+                                                <td class="text-end">
+                                                    <h5 id="dbt_total">0.00</h5>
+                                                    <input type="hidden" name="amount" id="amount">
+                                                </td>
+                                                <td hidden class="text-end">
+                                                    <h5 id="dbt_total_inr">0.00</h5>
+                                                </td>
+                                                <td class="text-end">
+                                                    <h5 id="crd_total">0.00</h5>
+                                                </td>
+                                                <td hidden class="text-end">
+                                                    <h5 id="crd_total_inr">0.00</h5>
+                                                </td>
+                                                <td colspan="3" class="text-end">
+                                                    @if ($buttons['draft'] && $fyear['authorized'])
+                                                        <a href="#"
+                                                            class="text-primary add-contactpeontxt mt-0 add-item-row"
+                                                            id="addnew"><i data-feather='plus'></i> Add New
+                                                            Item</a>
+                                                    @endif
+                                                </td>
+
+                                            </tr>
+                                            <tr valign="top" class="voucher_details" id="voucher-details-row">
+                                                <td colspan="9" rowspan="10">
+                                                    <table class="table border">
+                                                        <tr>
+                                                            <td class="p-0">
+                                                                <h6 class="text-dark mb-0 bg-light-primary py-1 px-50">
+                                                                    <strong>Voucher Details</strong>
+                                                                </h6>
                                                             </td>
                                                         </tr>
-                                                    @empty
-                                                        <div>No Item data..</div>
-                                                    @endforelse
-                                                </tbody>
-                                                <tfoot>
-                                                    <tr class="totalsubheadpodetail voucher-tab-foot">
-                                                        <td colspan="3"></td>
-                                                        <td class="text-end">
-                                                            <h5 id="dbt_total">0.00</h5>
-                                                            <input type="hidden" name="amount" id="amount">
-                                                        </td>
-                                                        <td hidden class="text-end">
-                                                            <h5 id="dbt_total_inr">0.00</h5>
-                                                        </td>
-                                                        <td class="text-end">
-                                                            <h5 id="crd_total">0.00</h5>
-                                                        </td>
-                                                        <td hidden class="text-end">
-                                                            <h5 id="crd_total_inr">0.00</h5>
-                                                        </td>
-                                                        <td colspan="3" class="text-end">
-                                                            @if ($buttons['draft'] && $fyear['authorized'])
-                                                            <a href="#"
-                                                                class="text-primary add-contactpeontxt mt-0 add-item-row"
-                                                                id="addnew"><i data-feather='plus'></i> Add New
-                                                                Item</a>
-                                                            @endif
-                                                        </td>
+                                                        <tr>
+                                                            <td class="poprod-decpt">
+                                                                <span class="poitemtxt mw-100"><strong>Ledger Name: </strong><span id="ledger_name_details">-</span></span>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                        <tr>
+                                                            <td class="poprod-decpt">
+                                                                <span
+                                                                    class="badge rounded-pill badge-light-primary"><strong>Base
+                                                                        Currency:</strong> <span id="base-currency"
+                                                                        class="text-uppercase">-</span></span>
+                                                                <span
+                                                                    class="badge rounded-pill badge-light-primary"><strong>Debit
+                                                                        Amt:</strong> <span id="base-debit">-</span></span>
+                                                                <span
+                                                                    class="badge rounded-pill badge-light-primary"><strong>Credit
+                                                                        Amt:</strong> <span
+                                                                        id="base-credit">-</span></span>
+                                                            </td>
+                                                        </tr>
 
-                                                    </tr>
-                                                    <tr valign="top" class="voucher_details" id="voucher-details-row">
-                                                        <td colspan="9" rowspan="10">
-                                                            <table class="table border">
-                                                                <tr>
-                                                                    <td class="p-0">
-                                                                        <h6
-                                                                            class="text-dark mb-0 bg-light-primary py-1 px-50">
-                                                                            <strong>Voucher Details</strong>
-                                                                        </h6>
-                                                                    </td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td class="poprod-decpt">
-                                                                        <span class="poitemtxt mw-100"><strong>Ledger Name:</strong><span id="ledger_name_details">-</span></span>
-                                                                    </td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <tr>
-                                                                        <td class="poprod-decpt">
-                                                                            <span
-                                                                                class="badge rounded-pill badge-light-primary"><strong>Base
-                                                                                    Currency:</strong> <span
-                                                                                    id="base-currency"
-                                                                                    class="text-uppercase">-</span></span>
-                                                                            <span
-                                                                                class="badge rounded-pill badge-light-primary"><strong>Debit
-                                                                                    Amt:</strong> <span
-                                                                                    id="base-debit">-</span></span>
-                                                                            <span
-                                                                                class="badge rounded-pill badge-light-primary"><strong>Credit
-                                                                                    Amt:</strong> <span
-                                                                                    id="base-credit">-</span></span>
-                                                                        </td>
-                                                                    </tr>
-
-                                                                    <td class="poprod-decpt">
-                                                                        <span
-                                                                            class="badge rounded-pill badge-light-primary"><strong>Company
-                                                                                Currency:</strong> <span
-                                                                                id="company-currency"
-                                                                                class="text-uppercase">-</span></span>
-                                                                        <span
-                                                                            class="badge rounded-pill badge-light-primary"><strong>Debit
-                                                                                Amt:</strong> <span
-                                                                                id="company-debit">-</span></span>
-                                                                        <span
-                                                                            class="badge rounded-pill badge-light-primary"><strong>Credit
-                                                                                Amt:</strong> <span
-                                                                                id="company-credit">-</span></span>
-                                                                    </td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td class="poprod-decpt">
-                                                                        <span
-                                                                            class="badge rounded-pill badge-light-primary"><strong>Group
-                                                                                Currency:</strong> <span
-                                                                                id="group-currency"
-                                                                                class="text-uppercase">-</span></span>
-                                                                        <span
-                                                                            class="badge rounded-pill badge-light-primary"><strong>Debit
-                                                                                Amt:</strong> <span
-                                                                                id="group-debit">-</span></span>
-                                                                        <span
-                                                                            class="badge rounded-pill badge-light-primary"><strong>Credit
-                                                                                Amt:</strong> <span
-                                                                                id="group-credit">-</span></span>
-                                                                    </td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td class="poprod-decpt">
-                                                                        <span
-                                                                            class="badge rounded-pill badge-light-secondary"><strong>Remarks:</strong>
-                                                                            <span id="remarks">Description will
-                                                                                come here for items...</span></span>
-                                                                    </td>
-                                                                </tr>
-                                                            </table>
+                                                        <td class="poprod-decpt">
+                                                            <span class="badge rounded-pill badge-light-primary"><strong>Company
+                                                                    Currency:</strong> <span id="company-currency"
+                                                                    class="text-uppercase">-</span></span>
+                                                            <span class="badge rounded-pill badge-light-primary"><strong>Debit
+                                                                    Amt:</strong> <span id="company-debit">-</span></span>
+                                                            <span class="badge rounded-pill badge-light-primary"><strong>Credit
+                                                                    Amt:</strong> <span id="company-credit">-</span></span>
                                                         </td>
-                                                    </tr>
-                                                </tfoot>
+                                            </tr>
+                                            <tr>
+                                                <td class="poprod-decpt">
+                                                    <span class="badge rounded-pill badge-light-primary"><strong>Group
+                                                            Currency:</strong> <span id="group-currency"
+                                                            class="text-uppercase">-</span></span>
+                                                    <span class="badge rounded-pill badge-light-primary"><strong>Debit
+                                                            Amt:</strong> <span id="group-debit">-</span></span>
+                                                    <span class="badge rounded-pill badge-light-primary"><strong>Credit
+                                                            Amt:</strong> <span id="group-credit">-</span></span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td class="poprod-decpt">
+                                                    <span
+                                                        class="badge rounded-pill badge-light-secondary"><strong>Remarks:</strong>
+                                                        <span id="remarks">Description will
+                                                            come here for items...</span></span>
+                                                </td>
+                                            </tr>
                                             </table>
-                                        </div>
-
-
-
-                                        <div class="row mt-2" @if($data->approvalStatus==="cancel") style="display:none;" @endif>
-
-                                            <div class="col-md-4 mb-1">
-                                                <label class="form-label">Document</label>
-                                                <input type="file" onchange="checkFileTypeandSize(event)" class="form-control" multiple name="document[]" id="document" />
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label class="form-label"></label>
-                                                 <div id="preview">
-                                                    @php $documents = $data->document? json_decode($data->document, true): [];
-                                                    if(!is_array($documents) && $data->document)
-                                                    $documents[] = $data->document;
-
-                                                                    @endphp
-
-                                                        @isset($documents)
-                                                            @foreach ($documents as $key1 => $fileGroup)
-                                                                @php
-                                                                    // Extract file extension
-                                                                    $extension = pathinfo(
-                                                                        $fileGroup,
-                                                                        PATHINFO_EXTENSION,
-                                                                    );
-                                                                    // Set default icon
-                                                                    $icon = 'file-text';
-                                                                    switch (
-                                                                        strtolower($extension)
-                                                                    ) {
-                                                                        case 'pdf':
-                                                                            $icon = 'file';
-                                                                            break;
-                                                                        case 'doc':
-                                                                        case 'docx':
-                                                                            $icon = 'file';
-                                                                            break;
-                                                                        case 'xls':
-                                                                        case 'xlsx':
-                                                                            $icon = 'file';
-                                                                            break;
-                                                                        case 'png':
-                                                                        case 'jpg':
-                                                                        case 'jpeg':
-                                                                        case 'gif':
-                                                                            $icon = 'image';
-                                                                            break;
-                                                                        case 'zip':
-                                                                        case 'rar':
-                                                                            $icon = 'archive';
-                                                                            break;
-                                                                        default:
-                                                                            $icon = 'file';
-                                                                            break;
-                                                                    }
-                                                                @endphp
-                                                                <div class="image-uplodasection expenseadd-sign"
-                                                                    data-file-index="{{ $key1 }}">
-                                                                    <a href="{{url('')}}/voucherDocuments/{{$fileGroup}}" target="_blank">
-                                                                    <i data-feather="{{ $icon }}"
-                                                                        class="fileuploadicon"></i>
-                                                                     </div>
-                                                                    </a>
-
-                                                            @endforeach
-                                                        @endisset
-                                                    </td>
-                                                 </div>
-
-                                            </div>
-
-
-                                            <div class="col-md-12">
-                                                <div class="mb-1">
-                                                    <label class="form-label">Final Remarks</label>
-                                                    <textarea type="text" rows="4" class="form-control" placeholder="Enter Remarks here..." name="remarks">{{$data->remarks}}</textarea>
-
-                                                </div>
-                                            </div>
-
-                                        </div>
+                                            </td>
+                                            </tr>
+                                        </tfoot>
+                                        </table>
                                     </div>
+
+
+
+                                    <div class="row mt-2" @if ($data->approvalStatus === 'cancel') style="display:none;" @endif>
+
+                                        <div class="col-md-4 mb-1">
+                                            <label class="form-label">Document</label>
+                                            <input type="file" onchange="checkFileTypeandSize(event)"
+                                                class="form-control" multiple name="document[]" id="document" />
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label"></label>
+                                            <div id="preview">
+                                                @php $documents = $data->document
+                                                        ? json_decode($data->document, true)
+                                                        : [];
+                                                    if (!is_array($documents) && $data->document) {
+                                                        $documents[] = $data->document;
+                                                    }
+
+                                                @endphp
+
+                                                @isset($documents)
+                                                    @foreach ($documents as $key1 => $fileGroup)
+                                                        @php
+                                                            // Extract file extension
+                                                            $extension = pathinfo($fileGroup, PATHINFO_EXTENSION);
+                                                            // Set default icon
+                                                            $icon = 'file-text';
+                                                            switch (strtolower($extension)) {
+                                                                case 'pdf':
+                                                                    $icon = 'file';
+                                                                    break;
+                                                                case 'doc':
+                                                                case 'docx':
+                                                                    $icon = 'file';
+                                                                    break;
+                                                                case 'xls':
+                                                                case 'xlsx':
+                                                                    $icon = 'file';
+                                                                    break;
+                                                                case 'png':
+                                                                case 'jpg':
+                                                                case 'jpeg':
+                                                                case 'gif':
+                                                                    $icon = 'image';
+                                                                    break;
+                                                                case 'zip':
+                                                                case 'rar':
+                                                                    $icon = 'archive';
+                                                                    break;
+                                                                default:
+                                                                    $icon = 'file';
+                                                                    break;
+                                                            }
+                                                        @endphp
+                                                        <div class="image-uplodasection expenseadd-sign"
+                                                            data-file-index="{{ $key1 }}">
+                                                            <a href="{{ url('') }}/voucherDocuments/{{ $fileGroup }}"
+                                                                target="_blank">
+                                                                <i data-feather="{{ $icon }}"
+                                                                    class="fileuploadicon"></i>
+                                                        </div>
+                                                        </a>
+                                                    @endforeach
+                                                @endisset
+                                                </td>
+                                            </div>
+
+                                        </div>
+
+
+                                        <div class="col-md-12">
+                                            <div class="mb-1">
+                                                <label class="form-label">Final Remarks</label>
+                                                <textarea type="text" rows="4" class="form-control" placeholder="Enter Remarks here..." name="remarks">{{ $data->remarks }}</textarea>
+
+                                            </div>
+                                        </div>
 
                                     </div>
                                 </div>
+
                             </div>
                         </div>
                 </div>
-                <!-- Modal to add new record -->
-
-                </section>
-
         </div>
-        </form>
+    </div>
+    <!-- Modal to add new record -->
+
+    </section>
+
+    </div>
+    </form>
 
     </div>
     </div>
@@ -868,28 +905,28 @@
 
             // Check if selected option's data-alias is equal to contra_alias (e.g., 'cv')
             if (selectedOption.data('alias') === cv) {
-                $('.ledgerGroup').each(function () {
+                $('.ledgerGroup').each(function() {
                     let text = $(this).text().trim();
-                    console.log("allowed "+allowedNames,text);
+                    console.log("allowed " + allowedNames, text);
                     // get the visible text of each ledger group
-                    if (!allowedNames.includes(text) && (text!="")) {
-                        let id =  $(this).closest('tr').attr('id');
-                        $('#ledger_name'+id).val('');
-                        $('#ledger_id'+id).val('');
-                        $('#groupSelect'+id).val('');
+                    if (!allowedNames.includes(text) && (text != "")) {
+                        let id = $(this).closest('tr').attr('id');
+                        $('#ledger_name' + id).val('');
+                        $('#ledger_id' + id).val('');
+                        $('#groupSelect' + id).val('');
                     }
                 });
-            }else if (selectedOption.data('alias') === jv) {
-                $('.ledgerGroup').each(function () {
+            } else if (selectedOption.data('alias') === jv) {
+                $('.ledgerGroup').each(function() {
                     let text = $(this).text().trim();
-                    console.log("exclude "+excludeNames,text);
-                    if (excludeNames.includes(text) && (text!="")) {
-                        let id =  $(this).closest('tr').attr('id');
-                        console.log(excludeNames,text,id);
+                    console.log("exclude " + excludeNames, text);
+                    if (excludeNames.includes(text) && (text != "")) {
+                        let id = $(this).closest('tr').attr('id');
+                        console.log(excludeNames, text, id);
 
-                        $('#ledger_name'+id).val('');
-                        $('#ledger_id'+id).val('');
-                        $('#groupSelect'+id).val('');
+                        $('#ledger_name' + id).val('');
+                        $('#ledger_id' + id).val('');
+                        $('#groupSelect' + id).val('');
 
                     }
                 });
@@ -903,10 +940,10 @@
                 });
             }
 
-            if($('#currency_code').val()==""){
+            if ($('#currency_code').val() == "") {
                 console.log('default');
-            getExchangeRate();
-        }else{
+                getExchangeRate();
+            } else {
                 calculate_cr_dr();
             }
 
@@ -994,7 +1031,7 @@
                                 $('#comp_currency_exg_rate').val(response.data
                                     .comp_currency_exg_rate);
 
-                                    $('#company_currency_code').val(response.data.comp_currency_code);
+                                $('#company_currency_code').val(response.data.comp_currency_code);
                                 $('#company_exchange_rate').val(response.data
                                     .comp_currency_exg_rate);
 
@@ -1002,7 +1039,7 @@
                                 $('#group_currency_code').val(response.data.group_currency_code);
                                 $('#group_currency_exg_rate').val(response.data
                                     .group_currency_exg_rate);
-                                    $('#grp_currency_code').val(response.data.group_currency_code);
+                                $('#grp_currency_code').val(response.data.group_currency_code);
                                 $('#grp_exchange_rate').val(response.data
                                     .group_currency_exg_rate);
                                 calculate_cr_dr();
@@ -1010,7 +1047,7 @@
                             } else {
                                 resetCurrencies();
                                 $('#orgExchangeRate').val('');
-                                showToast("error",response.message);
+                                showToast("error", response.message);
                             }
                         }
                     });
@@ -1019,7 +1056,7 @@
                     resetCurrencies();
                 }
             } else {
-                showToast("error",'Organization currency is not set!!');
+                showToast("error", 'Organization currency is not set!!');
             }
         }
 
@@ -1053,9 +1090,9 @@
         });
 
         function check_amount() {
-                $('#draft').attr('disabled', true);
-                $('#submitted').attr('disabled', true);
-                $('.preloader').show();
+            $('#draft').attr('disabled', true);
+            $('#submitted').attr('disabled', true);
+            $('.preloader').show();
 
             let seen = new Set(); // Create a Set to track unique combinations
             let duplicateFound = false; // Flag to track duplicates
@@ -1079,29 +1116,30 @@
                 showToast("error", "Duplicate ledger groups found. Please correct and try again.");
                 return false;
             }
-            let stop=false;
+            let stop = false;
 
 
             $('#item-details-body tr').each(function() {
-            let debAmount = parseFloat(removeCommas($(this).find('.dbt_amt').val()))||0;
-            let crdAmount = parseFloat(removeCommas($(this).find('.crd_amt').val()))||0;
+                let debAmount = parseFloat(removeCommas($(this).find('.dbt_amt').val())) || 0;
+                let crdAmount = parseFloat(removeCommas($(this).find('.crd_amt').val())) || 0;
 
-            // Check if both the credit and debit amounts are 0
-            if (debAmount == 0 && crdAmount == 0) {
-                $('.preloader').hide();
-                showToast('error','Can not save ledgers with Credit and Debit amount both being 0');
-                $('#draft').attr('disabled', false);
-                $('#submitted').attr('disabled', false);
-                stop=true;
-                return false;  // Stop the loop and return false
-            }
-                });
-            if(stop)
-            return false;
+                // Check if both the credit and debit amounts are 0
+                if (debAmount == 0 && crdAmount == 0) {
+                    $('.preloader').hide();
+                    showToast('error', 'Can not save ledgers with Credit and Debit amount both being 0');
+                    $('#draft').attr('disabled', false);
+                    $('#submitted').attr('disabled', false);
+                    stop = true;
+                    return false; // Stop the loop and return false
+                }
+            });
+            if (stop)
+                return false;
 
-            if (parseFloat(removeCommas($('#crd_total').text())) == 0 || parseFloat(removeCommas($('#dbt_total').text())) == 0) {
+            if (parseFloat(removeCommas($('#crd_total').text())) == 0 || parseFloat(removeCommas($('#dbt_total').text())) ==
+                0) {
                 $('.preloader').hide();
-                showToast("error",'Debit and credit amount should be greater than 0');
+                showToast("error", 'Debit and credit amount should be greater than 0');
                 $('#draft').attr('disabled', false);
                 $('#submitted').attr('disabled', false);
                 return false;
@@ -1110,7 +1148,7 @@
                 return true;
             } else {
                 $('.preloader').hide();
-                showToast("error",'Debit and credit amount total should be same!!');
+                showToast("error", 'Debit and credit amount total should be same!!');
                 $('#draft').attr('disabled', false);
                 $('#submitted').attr('disabled', false);
                 return false;
@@ -1175,33 +1213,32 @@
             }
         });
 
-        $(document).on('click', '.remove-item', function () {
-    const $row = $(this).closest('tr');
-    const totalRows = $('#item-details-body tr').length;
+        $(document).on('click', '.remove-item', function() {
+            const $row = $(this).closest('tr');
+            const totalRows = $('#item-details-body tr').length;
 
-    if (totalRows <= 1) {
-        showToast("warning", "At least one row must remain."); // Optional toast/alert
-        return; // Don't remove
-    }
+            if (totalRows <= 1) {
+                showToast("warning", "At least one row must remain."); // Optional toast/alert
+                return; // Don't remove
+            }
 
-    $row.remove(); // Remove the row
-    updateRowNumbers();
-    calculate_cr_dr(); // Your custom function
-});
+            $row.remove(); // Remove the row
+            updateRowNumbers();
+            calculate_cr_dr(); // Your custom function
+        });
 
-function rate_change(){
-    $('.voucher_details').hide();
+        function rate_change() {
+            $('.voucher_details').hide();
 
-}
+        }
 
-function populateCostCenterDropdowns() {
+        function populateCostCenterDropdowns() {
             let selectedLocationIds = $('#locations').val();
 
             const costCenterSet = locationCostCentersMap.filter(center => {
                 if (!center.location) return false;
                 const locationArray = Array.isArray(center.location) ?
-                    center.location.flatMap(loc => loc.split(',')) :
-                    [];
+                    center.location.flatMap(loc => loc.split(',')) : [];
                 return locationArray.includes(String(selectedLocationIds));
             });
 
@@ -1222,8 +1259,7 @@ function populateCostCenterDropdowns() {
             const costCenterSet = locationCostCentersMap.filter(center => {
                 if (!center.location) return false;
                 const locationArray = Array.isArray(center.location) ?
-                    center.location.flatMap(loc => loc.split(',')) :
-                    [];
+                    center.location.flatMap(loc => loc.split(',')) : [];
                 return locationArray.includes(String(selectedLocationIds));
             });
 
@@ -1233,7 +1269,8 @@ function populateCostCenterDropdowns() {
                 $dropdown.append(`<option value="${center.id}">${center.name}</option>`);
             });
         }
-function calculate_cr_dr() {
+
+        function calculate_cr_dr() {
             $('#org_currency_exg_rate').val($('#orgExchangeRate').val());
             const exchangeRate = parseFloat($('#orgExchangeRate').val()) ||
                 1; // Assume an input for exchange rate with id 'exchange_rate'
@@ -1311,31 +1348,35 @@ function calculate_cr_dr() {
                 var dr_amount = 0;
 
                 $('.dbt_amt').each(function() {
-                const value = parseFloat(removeCommas($(this).val())) || 0;
-                $(this).val(value.toFixed(2));
+                    const value = parseFloat(removeCommas($(this).val())) || 0;
+                    $(this).val(value.toFixed(2));
 
-            });
-            $('.crd_amt').each(function() {
-                const value = parseFloat(removeCommas($(this).val())) || 0;
-                $(this).val(value.toFixed(2));
+                });
+                $('.crd_amt').each(function() {
+                    const value = parseFloat(removeCommas($(this).val())) || 0;
+                    $(this).val(value.toFixed(2));
 
-            });
+                });
 
-                if (parseFloat(removeCommas($('#crd_total').text())) == parseFloat(removeCommas($('#dbt_total')
+                if (parseFloat(removeCommas($('#crd_total').text())) == parseFloat(removeCommas($(
+                            '#dbt_total')
                         .text()))) {} else if (
-                    parseFloat(removeCommas($('#crd_total').text())) > parseFloat(removeCommas($('#dbt_total').text()))) {
-                    dr_amount = parseFloat(removeCommas($('#crd_total').text())) - parseFloat(removeCommas($('#dbt_total')
+                    parseFloat(removeCommas($('#crd_total').text())) > parseFloat(removeCommas($(
+                        '#dbt_total').text()))) {
+                    dr_amount = parseFloat(removeCommas($('#crd_total').text())) - parseFloat(removeCommas(
+                        $('#dbt_total')
                         .text()));
                 } else {
-                    cr_amount = parseFloat(removeCommas($('#dbt_total').text())) - parseFloat(removeCommas($('#crd_total')
+                    cr_amount = parseFloat(removeCommas($('#dbt_total').text())) - parseFloat(removeCommas(
+                        $('#crd_total')
                         .text()));
                 }
 
                 let rowCount = document.querySelectorAll('#item-details-body tr').length;
-                rowCount =  Number($('#item-details-body tr:last').attr('id'));
+                rowCount = Number($('#item-details-body tr:last').attr('id'));
 
-                let totalDebit=parseFloat(removeCommas($('#dbt_total').text()));
-                let totalCredit=parseFloat(removeCommas($('#crd_total').text()));
+                let totalDebit = parseFloat(removeCommas($('#dbt_total').text()));
+                let totalCredit = parseFloat(removeCommas($('#crd_total').text()));
                 let balanceDebit = totalDebit - totalCredit; // Calculate the balance for debit
                 let balanceCredit = totalCredit - totalDebit; // Calculate the balance for credit
 
@@ -1406,12 +1447,12 @@ function calculate_cr_dr() {
 
                 document.querySelector('#item-details-body').insertAdjacentHTML('beforeend',
                     newRow);
-                    feather.replace();
-                    initializeLedgerAutocomplete(newRow);
+                feather.replace();
+                initializeLedgerAutocomplete(newRow);
                 calculate_cr_dr();
                 // Populate cost centers for the new row's dropdown
                 populateSingleCostCenterDropdown($(`#cost_center_id${rowCount + 1}`));
-                 updateRowNumbers();
+                updateRowNumbers();
 
 
 
@@ -1420,7 +1461,8 @@ function calculate_cr_dr() {
             });
 
         });
-            function getBooks() {
+
+        function getBooks() {
             $('#book_id').empty();
             $('#book_id').prepend('<option disabled selected value="">Select Series</option>');
 
@@ -1556,53 +1598,53 @@ function calculate_cr_dr() {
                         $('#doc_prefix').val('');
                         $('#doc_suffix').val('');
                         $('#doc_no').val('');
-                        showToast("error",data.message);
+                        showToast("error", data.message);
                     }
                 });
             });
         }
 
-function handleRowClick(rowElement) {
-    const $row = $(rowElement); // Accept DOM/jQuery row directly
+        function handleRowClick(rowElement) {
+            const $row = $(rowElement); // Accept DOM/jQuery row directly
 
-    $('.voucher_details').show();
+            $('.voucher_details').show();
 
-    const rowId = $row.data('row-id') || $row.attr('id') || ''; // fallback if needed
-    const ledgerName = $row.find('td').eq(1).find('input[name^="ledger_name"]').val();
-    const debitAmount = parseFloat($row.find('td').eq(3).find('input').val()) || 0;
-    const creditAmount = parseFloat($row.find('td').eq(4).find('input').val()) || 0;
+            const rowId = $row.data('row-id') || $row.attr('id') || ''; // fallback if needed
+            const ledgerName = $row.find('td').eq(1).find('input[name^="ledger_name"]').val();
+            const debitAmount = parseFloat($row.find('td').eq(3).find('input').val()) || 0;
+            const creditAmount = parseFloat($row.find('td').eq(4).find('input').val()) || 0;
 
-    const compCurrency = $('#comp_currency_code').val() || '';
-    const groupCurrency = $('#group_currency_code').val() || '';
-    const baseCurrency = $('#org_currency_code').val() || '';
+            const compCurrency = $('#comp_currency_code').val() || '';
+            const groupCurrency = $('#group_currency_code').val() || '';
+            const baseCurrency = $('#org_currency_code').val() || '';
 
-    const compRate = parseFloat($('#comp_currency_exg_rate').val()) || 1;
-    const groupRate = parseFloat($('#group_currency_exg_rate').val()) || 1;
-    const baseRate = parseFloat($('#org_currency_exg_rate').val()) || 1;
+            const compRate = parseFloat($('#comp_currency_exg_rate').val()) || 1;
+            const groupRate = parseFloat($('#group_currency_exg_rate').val()) || 1;
+            const baseRate = parseFloat($('#org_currency_exg_rate').val()) || 1;
 
-    const companyDebit = debitAmount * compRate;
-    const companyCredit = creditAmount * compRate;
-    const groupDebit = debitAmount * groupRate;
-    const groupCredit = creditAmount * groupRate;
-    const baseDebit = debitAmount * baseRate;
-    const baseCredit = creditAmount * baseRate;
+            const companyDebit = debitAmount * compRate;
+            const companyCredit = creditAmount * compRate;
+            const groupDebit = debitAmount * groupRate;
+            const groupCredit = creditAmount * groupRate;
+            const baseDebit = debitAmount * baseRate;
+            const baseCredit = creditAmount * baseRate;
 
-    const remark = $(`#hiddenRemarks_${rowId}`).val() || 'No remarks available';
+            const remark = $(`#hiddenRemarks_${rowId}`).val() || 'No remarks available';
 
-    $('#ledger_name_details').text(ledgerName || '-');
-    $('#company-currency').text(compCurrency);
-    $('#company-debit').text(formatIndianNumber(companyDebit.toFixed(2)));
-    $('#company-credit').text(formatIndianNumber(companyCredit.toFixed(2)));
-    $('#group-currency').text(groupCurrency);
-    $('#base-currency').text(baseCurrency);
-    $('#group-debit').text(formatIndianNumber(groupDebit.toFixed(2)));
-    $('#group-credit').text(formatIndianNumber(groupCredit.toFixed(2)));
-    $('#base-debit').text(formatIndianNumber(baseDebit.toFixed(2)));
-    $('#base-credit').text(formatIndianNumber(baseCredit.toFixed(2)));
-    $('#remarks').text(remark);
-    $('#voucher-details-row').data('row-id', rowId);
-}
-$(document).on('click', '#amendmentSubmit', (e) => {
+            $('#ledger_name_details').text(ledgerName || '-');
+            $('#company-currency').text(compCurrency);
+            $('#company-debit').text(formatIndianNumber(companyDebit.toFixed(2)));
+            $('#company-credit').text(formatIndianNumber(companyCredit.toFixed(2)));
+            $('#group-currency').text(groupCurrency);
+            $('#base-currency').text(baseCurrency);
+            $('#group-debit').text(formatIndianNumber(groupDebit.toFixed(2)));
+            $('#group-credit').text(formatIndianNumber(groupCredit.toFixed(2)));
+            $('#base-debit').text(formatIndianNumber(baseDebit.toFixed(2)));
+            $('#base-credit').text(formatIndianNumber(baseCredit.toFixed(2)));
+            $('#remarks').text(remark);
+            $('#voucher-details-row').data('row-id', rowId);
+        }
+        $(document).on('click', '#amendmentSubmit', (e) => {
             let actionUrl = "{{ route('vouchers.amendment', $data->id) }}";
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
@@ -1640,11 +1682,13 @@ $(document).on('click', '#amendmentSubmit', (e) => {
 
         $(function() {
             $("#revisionNumber").change(function() {
-                window.location.href =
-                    "{{ route('vouchers.edit', ['voucher' => $data->id]) }}?revisionNumber=" + $(this)
+                const fullUrl = "{{ route('vouchers.edit', ['voucher' => $data->id]) }}?revisionNumber=" +
+                    $(this)
                     .val();
+                window.open(fullUrl, "_blank");
             });
         });
+
         function checkFileTypeandSize(event) {
             const file = event.target.files[0];
 
@@ -1654,19 +1698,20 @@ $(document).on('click', '#amendmentSubmit', (e) => {
 
                 const videoExtensions = /(\.mp4|\.avi|\.mov|\.wmv|\.mkv)$/i;
                 if (videoExtensions.exec(file.name)) {
-                    showToast("error","Video files are not allowed.");
+                    showToast("error", "Video files are not allowed.");
                     event.target.value = "";
                     return;
                 }
 
                 if (fileSizeMB > maxSizeMB) {
-                    showToast("error","File size should not exceed 5MB.");
+                    showToast("error", "File size should not exceed 5MB.");
                     event.target.value = "";
                     return;
                 }
                 handleFileUpload(event, `#preview`);
             }
         }
+
         function handleFileUpload(event, previewElement) {
             var files = event.target.files;
             var previewContainer = $(previewElement); // The container where previews will appear
@@ -1769,26 +1814,26 @@ $(document).on('click', '#amendmentSubmit', (e) => {
                 inputElement.value = ""; // Clear the input value to reset it
             }
         }
+
         function updateRowNumbers() {
-  $('#item-details-body tr').each(function (index) {
-    // Update the number column (index starts at 0, so add 1)
-    $(this).find('.number').text(index + 1);
-  });
-}
+            $('#item-details-body tr').each(function(index) {
+                // Update the number column (index starts at 0, so add 1)
+                $(this).find('.number').text(index + 1);
+            });
+        }
 
-@if (!$buttons['draft'] || !$fyear['authorized'])
-$('#voucherForm').find('input, select, textarea').prop('disabled', true);
-$('#revisionNumber').prop('disabled', false);
-
-
-@endif
-function focusInput(inputElement) {
+        @if (!$buttons['draft'] || !$fyear['authorized'])
+            $('#voucherForm').find('input, select, textarea').prop('disabled', true);
+            $('#revisionNumber').prop('disabled', false);
+        @endif
+        function focusInput(inputElement) {
             // Check if the input value is "0"
             if (inputElement.value === "0" || inputElement.value === "0.00") {
                 // Clear the input field
                 inputElement.value = "";
             }
         }
+
         function showToast(icon, title) {
             const Toast = Swal.mixin({
                 toast: true,
@@ -1809,49 +1854,11 @@ function focusInput(inputElement) {
 
         $(document).on('click', '#revokeButton', (e) => {
             $('.preloader').show();
-    let actionUrl = '{{ route("voucher.revoke.document") }}'+ '?id='+'{{$data->id}}';
-    fetch(actionUrl).then(response => {
-        return response.json().then(data => {
-            $('.preloader').hide();
-            if(data.status == 'error') {
-                Swal.fire({
-                    title: 'Error!',
-                    text: data.message,
-                    icon: 'error',
-                });
-            } else {
-                Swal.fire({
-                    title: 'Success!',
-                    text: data.message,
-                    icon: 'success',
-                });
-            }
-            location.reload();
-        });
-    });
-});
-$(document).on('click', '#cancelButton', (e) => {
-    e.preventDefault(); // Prevent default behavior
-    // Show confirmation dialog
-    Swal.fire({
-        title: 'Are you sure to cancel?',
-        text: "Your all ledger entries will be deleted, also same voucher no. can't be used and this action cannot be undo.",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, cancel it!',
-        cancelButtonText: 'No, keep it',
-    }).then((result) => {
-
-        if (result.isConfirmed) {
-            $('.preloader').show();
-            // Proceed with AJAX request after confirmation
-            let actionUrl = '{{ route("voucher.cancel.document") }}' + '?id=' + '{{$data->id}}';
-
-            fetch(actionUrl)
-                .then(response => response.json())
-                .then(data => {
-                     $('.preloader').hide();
-                    if (data.status === 'error') {
+            let actionUrl = '{{ route('voucher.revoke.document') }}' + '?id=' + '{{ $data->id }}';
+            fetch(actionUrl).then(response => {
+                return response.json().then(data => {
+                    $('.preloader').hide();
+                    if (data.status == 'error') {
                         Swal.fire({
                             title: 'Error!',
                             text: data.message,
@@ -1862,23 +1869,62 @@ $(document).on('click', '#cancelButton', (e) => {
                             title: 'Success!',
                             text: data.message,
                             icon: 'success',
-                        }).then(() => {
-                            location.reload(); // Reload after confirmation
                         });
                     }
-                })
-                .catch(error => {
-                     $('.preloader').hide();
-                    console.error('Error:', error);
-                    Swal.fire({
-                        title: 'Error!',
-                        text: 'Something went wrong. Please try again.',
-                        icon: 'error',
-                    });
+                    location.reload();
                 });
-        }
-    });
-});
+            });
+        });
+        $(document).on('click', '#cancelButton', (e) => {
+            e.preventDefault(); // Prevent default behavior
+            // Show confirmation dialog
+            Swal.fire({
+                title: 'Are you sure to cancel?',
+                text: "Your all ledger entries will be deleted, also same voucher no. can't be used and this action cannot be undo.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, cancel it!',
+                cancelButtonText: 'No, keep it',
+            }).then((result) => {
+
+                if (result.isConfirmed) {
+                    $('.preloader').show();
+                    // Proceed with AJAX request after confirmation
+                    let actionUrl = '{{ route('voucher.cancel.document') }}' + '?id=' +
+                        '{{ $data->id }}';
+
+                    fetch(actionUrl)
+                        .then(response => response.json())
+                        .then(data => {
+                            $('.preloader').hide();
+                            if (data.status === 'error') {
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: data.message,
+                                    icon: 'error',
+                                });
+                            } else {
+                                Swal.fire({
+                                    title: 'Success!',
+                                    text: data.message,
+                                    icon: 'success',
+                                }).then(() => {
+                                    location.reload(); // Reload after confirmation
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            $('.preloader').hide();
+                            console.error('Error:', error);
+                            Swal.fire({
+                                title: 'Error!',
+                                text: 'Something went wrong. Please try again.',
+                                icon: 'error',
+                            });
+                        });
+                }
+            });
+        });
 
         $(document).on('change', '.costCenter', function() {
             var selectedValue = $(this).val(); // Get the selected cost center value
@@ -1889,121 +1935,127 @@ $(document).on('click', '#cancelButton', (e) => {
         });
 
 
-$(document).on('input', '.ledgerselect', function () {
-    const currentRow = $(this).closest('tr');
-    let groupDropdown = currentRow.find('.ledgerGroup'); // group dropdown select
-    groupDropdown.empty();
+        $(document).on('input', '.ledgerselect', function() {
+            const currentRow = $(this).closest('tr');
+            let groupDropdown = currentRow.find('.ledgerGroup'); // group dropdown select
+            groupDropdown.empty();
 
-    const inputValue = $(this).val();
-    if (inputValue.trim() === '') {
-        currentRow.find('.ledger_id').val(''); // hidden input for selected ledger ID
-    }
-});
-function initializeLedgerAutocomplete(context) {
-    context.find(".ledgerselect").each(function () {
-        const $input = $(this);
-
-        // Avoid reinitializing if already done
-        if ($input.hasClass('ui-autocomplete-input')) {
-            $input.autocomplete("destroy");
-        }
-
-        $input.autocomplete({
-            source: function (request, response) {
-                let preLedgers = [];
-                $('.ledgerselect').each(function () {
-                    if ($(this).val() !== "") {
-                        preLedgers.push($(this).val());
-                    }
-                });
-
-                $.ajax({
-                    headers: {
-                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                    },
-                    url: '{{ route('ledgers.search') }}',
-                    type: "POST",
-                    dataType: "json",
-                    data: {
-                        keyword: request.term,
-                        series: $('#book_type_id').val(),
-                        ids: preLedgers
-                    },
-                    success: function (data) {
-                        response(data);
-                    },
-                    error: function () {
-                        response([]);
-                    }
-                });
-            },
-            minLength: 0,
-            select: function (event, ui) {
-                $input.val(ui.item.label);
-                const currentRow = $input.closest('tr');
-                const ledgerId = ui.item.value;
-                const groupDropdown = currentRow.find('.ledgerGroup');
-                const ledgerIdInput = currentRow.find('.ledgers');
-
-                let preGroups = [];
-                $('.ledgerGroup').each(function () {
-                    let ledgerGroup = $(this).val();
-                    let ledger_id = $(this).data('ledger');
-                    if (ledgerGroup !== "") {
-                        preGroups.push({ ledger_id, ledgerGroup });
-                    }
-                });
-
-                if (ledgerId) {
-                    $.ajax({
-                        url: '{{ route('voucher.getLedgerGroups') }}',
-                        method: 'GET',
-                        data: {
-                            ids: preGroups,
-                            ledger_id: ledgerId
-                        },
-                        success: function (response) {
-
-                            groupDropdown.empty();
-                            response.forEach(item => {
-                                groupDropdown.append(`<option value="${item.id}">${item.name}</option>`);
-                            });
-                            groupDropdown.removeAttr('style');
-                            groupDropdown.data('ledger', ledgerId);
-                            ledgerIdInput.val(ledgerId);
-
-                            handleRowClick(currentRow);
-                        },
-                        error: function (xhr) {
-                            let errorMessage = xhr.responseJSON?.error || 'Error fetching group items.';
-                            showToast("error", errorMessage);
-                        }
-                    });
-                }
-
-                return false;
-            },
-            change: function (event, ui) {
-                if (!ui.item) {
-                    $input.val('');
-                    const currentRow = $input.closest('tr');
-                    currentRow.find('.ledger_id').val('');
-                    currentRow.find('.ledgerGroup').empty();
-                }
-            },
-            focus: function () {
-                return false;
-            }
-        }).focus(function () {
-            if (this.value === "") {
-                $(this).autocomplete("search");
+            const inputValue = $(this).val();
+            if (inputValue.trim() === '') {
+                currentRow.find('.ledger_id').val(''); // hidden input for selected ledger ID
             }
         });
-    });
-}
-$(function () {
-    initializeLedgerAutocomplete($("#item-details-body"));
-});
 
+        function initializeLedgerAutocomplete(context) {
+            context.find(".ledgerselect").each(function() {
+                const $input = $(this);
+
+                // Avoid reinitializing if already done
+                if ($input.hasClass('ui-autocomplete-input')) {
+                    $input.autocomplete("destroy");
+                }
+
+                $input.autocomplete({
+                    source: function(request, response) {
+                        let preLedgers = [];
+                        $('.ledgerselect').each(function() {
+                            if ($(this).val() !== "") {
+                                preLedgers.push($(this).val());
+                            }
+                        });
+
+                        $.ajax({
+                            headers: {
+                                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                            },
+                            url: '{{ route('ledgers.search') }}',
+                            type: "POST",
+                            dataType: "json",
+                            data: {
+                                keyword: request.term,
+                                series: $('#book_type_id').val(),
+                                ids: preLedgers
+                            },
+                            success: function(data) {
+                                response(data);
+                            },
+                            error: function() {
+                                response([]);
+                            }
+                        });
+                    },
+                    minLength: 0,
+                    select: function(event, ui) {
+                        $input.val(ui.item.label);
+                        const currentRow = $input.closest('tr');
+                        const ledgerId = ui.item.value;
+                        const groupDropdown = currentRow.find('.ledgerGroup');
+                        const ledgerIdInput = currentRow.find('.ledgers');
+
+                        let preGroups = [];
+                        $('.ledgerGroup').each(function() {
+                            let ledgerGroup = $(this).val();
+                            let ledger_id = $(this).data('ledger');
+                            if (ledgerGroup !== "") {
+                                preGroups.push({
+                                    ledger_id,
+                                    ledgerGroup
+                                });
+                            }
+                        });
+
+                        if (ledgerId) {
+                            $.ajax({
+                                url: '{{ route('voucher.getLedgerGroups') }}',
+                                method: 'GET',
+                                data: {
+                                    ids: preGroups,
+                                    ledger_id: ledgerId
+                                },
+                                success: function(response) {
+
+                                    groupDropdown.empty();
+                                    response.forEach(item => {
+                                        groupDropdown.append(
+                                            `<option value="${item.id}">${item.name}</option>`
+                                            );
+                                    });
+                                    groupDropdown.removeAttr('style');
+                                    groupDropdown.data('ledger', ledgerId);
+                                    ledgerIdInput.val(ledgerId);
+
+                                    handleRowClick(currentRow);
+                                },
+                                error: function(xhr) {
+                                    let errorMessage = xhr.responseJSON?.error ||
+                                        'Error fetching group items.';
+                                    showToast("error", errorMessage);
+                                }
+                            });
+                        }
+
+                        return false;
+                    },
+                    change: function(event, ui) {
+                        if (!ui.item) {
+                            $input.val('');
+                            const currentRow = $input.closest('tr');
+                            currentRow.find('.ledger_id').val('');
+                            currentRow.find('.ledgerGroup').empty();
+                        }
+                    },
+                    focus: function() {
+                        return false;
+                    }
+                }).focus(function() {
+                    if (this.value === "") {
+                        $(this).autocomplete("search");
+                    }
+                });
+            });
+        }
+        $(function() {
+            initializeLedgerAutocomplete($("#item-details-body"));
+        });
     </script>
 @endsection

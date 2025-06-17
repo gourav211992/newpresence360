@@ -288,7 +288,8 @@
     }
 
     function uploadOrders(documentStatus = 'draft')
-    {    
+    {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
         //Hit the AJAX
         $.ajax({
             url: "{{route('salesOrder.import.store', ['version' => request() -> version])}}",
@@ -335,14 +336,17 @@
         });
     }
     
-    window.addEventListener('beforeunload', function (e) {
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    function handleBeforeUnload(e)
+    {
         let draftButton = document.getElementById('draft-button');
         let submitButton = document.getElementById('submit-button');
         if (!draftButton.classList.contains('d-none') && !submitButton.classList.contains('d-none')) {
             e.preventDefault();
             e.returnValue = '';
         }
-    });
+    }
 
 </script>
 @endsection

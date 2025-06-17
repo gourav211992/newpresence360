@@ -151,12 +151,10 @@
                     @php
                         $colspan = 9;
                         $sheet_check = $products->filter(function($prod){
-                                //return $prod->number_of_sheets;
-                                return 1;
+                                return $prod->number_of_sheets;
                             });
                         $machine_check = $products->filter(function($prod){
-                                //return $prod->machine_id;
-                                return 1;
+                                return $prod->machine_id;
                             });
                         if(count($sheet_check))
                         {

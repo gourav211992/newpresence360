@@ -529,7 +529,7 @@ class BookController extends Controller
             }
             foreach ($book->common_parameters as $bookParamKey => &$bookParam) {
                 if ($bookParam->parameter_name === ServiceParametersHelper::REFERENCE_FROM_SERVICE_PARAM) {
-                    $orgServiceParam = OrganizationServiceParameter::where('service_id', $book->org_service->service_id)->where('parameter_name', $bookParam->parameter_name)->first();
+                    $orgServiceParam = OrganizationServiceParameter::where('service_id', $book->org_service->service_id)->where('parameter_name', $bookParam->parameter_name)->latest() -> first();
                     if (isset($orgServiceParam)) {
                         $selectOptions = "";
                         // $serviceIds = $orgServiceParam -> parameter_value;
@@ -579,7 +579,7 @@ class BookController extends Controller
 
                     }
                 } else if ($bookParam->parameter_name === ServiceParametersHelper::REFERENCE_FROM_SERIES_PARAM) {
-                    $orgServiceParam = OrganizationServiceParameter::where('service_id', $book->org_service->service_id)->where('parameter_name', ServiceParametersHelper::REFERENCE_FROM_SERVICE_PARAM)->first();
+                    $orgServiceParam = OrganizationServiceParameter::where('service_id', $book->org_service->service_id)->where('parameter_name', ServiceParametersHelper::REFERENCE_FROM_SERVICE_PARAM)->latest()->first();
                     $actualOrgServiceParam = OrganizationServiceParameter::where('service_id', $book->org_service->service_id)->where('parameter_name', $bookParam->parameter_name)->first();
                     if (isset($orgServiceParam) && isset($actualOrgServiceParam)) {
                         $selectOptions = "";
@@ -627,7 +627,7 @@ class BookController extends Controller
                     $multipleSelectionCommonClass = ($bookParam->parameter_name == ServiceParametersHelper::ISSUE_TYPE_PARAM) ? 'commonMultipleSelection' : '';
                     $label = ServiceParametersHelper::SERVICE_PARAMETERS[$bookParam->parameter_name];
                     $selectOptions = "";
-                    $orgServiceParam = OrganizationServiceParameter::where('service_id', $book->org_service->service_id)->where('parameter_name', $bookParam->parameter_name)->first();
+                    $orgServiceParam = OrganizationServiceParameter::where('service_id', $book->org_service->service_id)->where('parameter_name', $bookParam->parameter_name)->latest()->first();
                     foreach ($orgServiceParam->service_parameter->applicable_values as $appValue) {
                         $optionLabel = ucfirst($appValue);
                         if (in_array($appValue, $bookParam->parameter_value)) {
@@ -665,7 +665,7 @@ class BookController extends Controller
             }
             foreach ($book->gl_parameters as $bookParamKey => &$bookParam) {
                 if ($bookParam->parameter_name === ServiceParametersHelper::GL_POSTING_SERIES_PARAM) {
-                    $orgServiceParam = OrganizationServiceParameter::where('service_id', $book->org_service->service_id)->where('parameter_name', $bookParam->parameter_name)->first();
+                    $orgServiceParam = OrganizationServiceParameter::where('service_id', $book->org_service->service_id)->where('parameter_name', $bookParam->parameter_name)->latest()->first();
                     if (isset($orgServiceParam)) {
                         $selectOptions = "";
                         
@@ -717,7 +717,7 @@ class BookController extends Controller
                 } else {
                     $label = ServiceParametersHelper::SERVICE_PARAMETERS[$bookParam->parameter_name];
                     $selectOptions = "";
-                    $orgServiceParam = OrganizationServiceParameter::where('service_id', $book->org_service->service_id)->where('parameter_name', $bookParam->parameter_name)->first();
+                    $orgServiceParam = OrganizationServiceParameter::where('service_id', $book->org_service->service_id)->where('parameter_name', $bookParam->parameter_name)->latest()->first();
                     foreach ($orgServiceParam->service_parameter->applicable_values as $appValue) {
                         $optionLabel = ucfirst($appValue);
                         if (in_array($appValue, $bookParam->parameter_value)) {

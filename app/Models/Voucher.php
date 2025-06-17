@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Helpers\InventoryHelper;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -14,7 +15,7 @@ class Voucher extends Model
 {
     protected $table = 'erp_vouchers';
 
-    use HasFactory,DefaultGroupCompanyOrg,Deletable;
+    use HasFactory, DefaultGroupCompanyOrg, Deletable;
     protected static function boot()
     {
         parent::boot();
@@ -24,39 +25,44 @@ class Voucher extends Model
         });
     }
 
-            protected static function booted()
-            {
-                static::updated(function ($voucher) {
-                    if ($voucher->isDirty('approvalStatus') || $voucher->isDirty('document_status')) {
-                        $caller = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10);
+    protected static function booted()
+    {
+        static::addGlobalScope('defaultLocation', function ($builder) {
+            $locs = InventoryHelper::getAccessibleLocations()->pluck('id')->toArray()??[];
+            $builder->whereIn('location',$locs);
+        });
 
-                        // Find the file and line number of the first user-level call
-                        foreach ($caller as $trace) {
-                            if (isset($trace['file']) && strpos($trace['file'], 'vendor') === false) {
-                                $file = $trace['file'];
-                                $line = $trace['line'];
-                                break;
-                            }
-                        }
+        static::updated(function ($voucher) {
+            if ($voucher->isDirty('approvalStatus') || $voucher->isDirty('document_status')) {
+                $caller = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10);
 
-                        $changes = [];
-
-                        if ($voucher->isDirty('approvalStatus')) {
-                            $changes[] = "approvalStatus: '{$voucher->getOriginal('approvalStatus')}' → '{$voucher->approvalStatus}'";
-                        }
-
-                        if ($voucher->isDirty('document_status')) {
-                            $changes[] = "document_status: '{$voucher->getOriginal('document_status')}' → '{$voucher->document_status}'";
-                        }
-
-                        $logMessage = "Voucher Update (voucher_no: {$voucher->voucher_no}) | "
-                                    . implode(' | ', $changes)
-                                    . " | Source: {$file} (Line {$line})";
-
-                        Log::info($logMessage);
+                // Find the file and line number of the first user-level call
+                foreach ($caller as $trace) {
+                    if (isset($trace['file']) && strpos($trace['file'], 'vendor') === false) {
+                        $file = $trace['file'];
+                        $line = $trace['line'];
+                        break;
                     }
-                });
+                }
+
+                $changes = [];
+
+                if ($voucher->isDirty('approvalStatus')) {
+                    $changes[] = "approvalStatus: '{$voucher->getOriginal('approvalStatus')}' → '{$voucher->approvalStatus}'";
+                }
+
+                if ($voucher->isDirty('document_status')) {
+                    $changes[] = "document_status: '{$voucher->getOriginal('document_status')}' → '{$voucher->document_status}'";
+                }
+
+                $logMessage = "Voucher Update (voucher_no: {$voucher->voucher_no}) | "
+                    . implode(' | ', $changes)
+                    . " | Source: {$file} (Line {$line})";
+
+                Log::info($logMessage);
             }
+        });
+    }
 
 
 
@@ -141,7 +147,7 @@ class Voucher extends Model
     }
     public function ledger_items()
     {
-        return $this->hasMany(ItemDetail::class) -> select('credit_amt AS credit_amount', 'debit_amt AS debit_amount', 'ledger_parent_id', 'ledger_parent_id AS ledger_group_id', 'ledger_id', 'entry_type');
+        return $this->hasMany(ItemDetail::class)->select('credit_amt AS credit_amount', 'debit_amt AS debit_amount', 'ledger_parent_id', 'ledger_parent_id AS ledger_group_id', 'ledger_id', 'entry_type');
     }
 
     public function approvals()
@@ -155,7 +161,7 @@ class Voucher extends Model
     }
     public function getCreatedByAttribute()
     {
-        return $this -> voucherable_id;
+        return $this->voucherable_id;
     }
 
     public function ErpLocation()
