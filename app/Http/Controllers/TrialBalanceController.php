@@ -179,6 +179,20 @@ class TrialBalanceController extends Controller
         if ($r->currency != "") {
             $currency = $r->currency;
         };
+        $loc = null;
+        $cost = null;
+        $org = null;
+
+        if ($r->has('location_id') && $r->location_id!="")
+            $loc = $r->location_id;
+
+        if ($r->has('cost_center_id') && $r->cost_center_id!="")
+            $cost = $r->cost_center_id;
+
+        if ($r->has('organization_id') && $r->organization_id!="")
+            $org = $r->organization_id;
+
+
         $organizationName = DB::table('organizations')->where('id', $r->organization_id)->value('name');
         $ledgerName = Ledger::where('id', $r->ledger_id)->where('status', 1)->value('name');
 
@@ -192,24 +206,32 @@ class TrialBalanceController extends Controller
             $carry = 0;
         else
             $carry = 1;
-        $ledgerData = Helper::getLedgerData($r->ledger_id, $startDate, $endDate, $r->company_id, $r->organization_id, $r->ledger_group, $currency, $r->cost_center_id,$r->location_id);
+        $ledgerData = Helper::getLedgerData($r->ledger_id, $startDate, $endDate, $r->company_id, $org, $r->ledger_group, $currency, $cost,$loc);
         $totalDebit = 0;
         $totalCredit = 0;
         $data = [['', '', '', '', '', '', '']];
 
         // Get first opening of ledger
-        $openingData = ItemDetail::where('ledger_id', $r->ledger_id)
+           $openingData = ItemDetail::where('ledger_id', $r->ledger_id)
             ->where('ledger_parent_id', $r->ledger_group)
-            ->whereHas('voucher', function ($query) use ($startDate, $fy, $carry) {
+            ->when(!is_null($cost), function ($q) use ($cost) {
+                    $q->where('cost_center_id', $cost);
+                    })
+            ->whereHas('voucher', function ($query) use ($startDate, $fy, $carry,$loc,$org) {
+                $query->withDefaultGroupCompanyOrg();
                 $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
+                $query->when(!is_null($loc), function ($q) use ($loc) {
+                        $q->where('location', $loc);
+                    })
+                    ->when(!is_null($org), function ($q) use ($org) {
+                        $q->where('organization_id', $org);
+                    });
                 $query->where('document_date', '<', $startDate);
                 if (!$carry)
                     $query->where('document_date', '>=', $fy['start_date']);
-                $query->where('organization_id', Helper::getAuthenticatedUser()->organization_id);
             })
             ->selectRaw("SUM(debit_amt_{$currency}) as total_debit, SUM(credit_amt_{$currency}) as total_credit")
             ->first();
-
         $opening = $openingData;
         $opening->opening = ($openingData->total_debit - $openingData->total_credit) ?? 0;
         $opening->opening_type = ($openingData->total_debit > $openingData->total_credit) ? 'Dr' : 'Cr';
@@ -337,13 +359,26 @@ class TrialBalanceController extends Controller
         if ($r->currency != "") {
             $currency = $r->currency;
         };
+        $loc = null;
+        $cost = null;
+        $org = null;
+
+        if ($r->has('location_id') && $r->location_id!="")
+            $loc = $r->location_id;
+
+        if ($r->has('cost_center_id') && $r->cost_center_id!="")
+            $cost = $r->cost_center_id;
+
+        if ($r->has('organization_id') && $r->organization_id!="")
+            $org = $r->organization_id;
+
         $dates = explode(' to ', $r->date);
         $startDate = date('Y-m-d', strtotime($dates[0]));
         $endDate = date('Y-m-d', strtotime($dates[1]));
         $fy = Helper::getFinancialYear($startDate);
 
 
-        $data = Helper::getLedgerData($r->ledger_id, $startDate, $endDate, $r->company_id, $r->organization_id, $r->ledger_group, $currency, $r->cost_center_id,$r->location_id);
+        $data = Helper::getLedgerData($r->ledger_id, $startDate, $endDate, $r->company_id, $org, $r->ledger_group, $currency, $cost,$loc);
         $id = $r->ledger_id;
         $group = $r->ledger_group;
 
@@ -355,12 +390,21 @@ class TrialBalanceController extends Controller
 
         $openingData = ItemDetail::where('ledger_id', $id)
             ->where('ledger_parent_id', $group)
-            ->whereHas('voucher', function ($query) use ($startDate, $fy, $carry) {
+            ->when(!is_null($cost), function ($q) use ($cost) {
+                    $q->where('cost_center_id', $cost);
+                    })
+            ->whereHas('voucher', function ($query) use ($startDate, $fy, $carry,$loc,$org) {
+                $query->withDefaultGroupCompanyOrg();
                 $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
+                $query->when(!is_null($loc), function ($q) use ($loc) {
+                        $q->where('location', $loc);
+                    })
+                    ->when(!is_null($org), function ($q) use ($org) {
+                        $q->where('organization_id', $org);
+                    });
                 $query->where('document_date', '<', $startDate);
                 if (!$carry)
                     $query->where('document_date', '>=', $fy['start_date']);
-                $query->where('organization_id', Helper::getAuthenticatedUser()->organization_id);
             })
             ->selectRaw("SUM(debit_amt_{$currency}) as total_debit, SUM(credit_amt_{$currency}) as total_credit")
             ->first();
@@ -379,27 +423,19 @@ class TrialBalanceController extends Controller
         $user = Helper::getAuthenticatedUser();
         $orgIds = $user->organizations->pluck('organizations.id')->toArray();
         array_push($orgIds, $user?->organization_id);
-        $companies = OrganizationCompany::whereIn('id', Organization::whereIn('id', $orgIds)->pluck('company_id')->toArray())
-            ->with('organizations', function ($orgQuery) use ($orgIds) {
-                $orgQuery->whereIn('id', $orgIds);
-            })->select('id', 'name')->get();
-        $cost_centers = CostCenterOrgLocations::withDefaultGroupCompanyOrg()
-            ->with(['costCenter' => function ($query) {
-                $query->where('status', 'active');
-            }])
-            ->get()
-            ->filter(function ($item) {
-                return $item->costCenter !== null;
-            })
-            ->map(function ($item) {
-                return [
-                    'id' => $item->costCenter->id,
-                    'name' => $item->costCenter->name,
-                ];
-            })
-            ->toArray();
+        $companies = Helper::getAuthenticatedUser()->access_rights_org;
+        $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
+            $item->withDefaultGroupCompanyOrg()->where('status', 'active');
 
-        return view('ledgers.getLedgerReport', compact('cost_centers', 'companies'));
+            return [
+                'id' => $item->costCenter->id,
+                'name' => $item->costCenter->name,
+                'location' => $item->costCenter->locations,
+            ];
+        })->toArray();
+        $locations = InventoryHelper::getAccessibleLocations();
+
+        return view('ledgers.getLedgerReport', compact('cost_centers', 'companies','locations'));
     }
 
     public function get_org_ledgers($id)
@@ -563,10 +599,23 @@ class TrialBalanceController extends Controller
         if ($r->currency != "") {
             $currency = $r->currency;
         };
+
+         $loc = null;
+        $cost = null;
+        $org = null;
+
+        if ($r->has('location_id') && $r->location_id!="")
+            $loc = $r->location_id;
+
+        if ($r->has('cost_center_id') && $r->cost_center_id!="")
+            $cost = $r->cost_center_id;
+
+        if ($r->has('organization_id') && $r->organization_id!="")
+            $org = $r->organization_id;
+
         // Fetch companies based on the user's organization group
-        $companies = DB::table('organization_companies')
-            ->where('group_id', Helper::getAuthenticatedUser()->organization_id)
-            ->get();
+        $companies = Helper::getAuthenticatedUser()->access_rights_org;
+
         $organization = DB::table('organizations')->where('id', Helper::getAuthenticatedUser()->organization_id)->value('name');
         $ledger = Ledger::where('id', $id)->where('status', 1)->value('name');
         // Determine the date range
@@ -579,21 +628,15 @@ class TrialBalanceController extends Controller
             $startDate = $financialYear['start_date'];
             $endDate = $financialYear['end_date'];
         }
-        $cost_centers = CostCenterOrgLocations::where('organization_id', Helper::getAuthenticatedUser()->organization_id)
-            ->with(['costCenter' => function ($query) {
-                $query->where('status', 'active');
-            }])
-            ->get()
-            ->filter(function ($item) {
-                return $item->costCenter !== null;
-            })
-            ->map(function ($item) {
-                return [
-                    'id' => $item->costCenter->id,
-                    'name' => $item->costCenter->name,
-                ];
-            })
-            ->toArray();
+        $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
+            $item->withDefaultGroupCompanyOrg()->where('status', 'active');
+
+            return [
+                'id' => $item->costCenter->id,
+                'name' => $item->costCenter->name,
+                'location' => $item->costCenter->locations,
+            ];
+        })->toArray();
 
 
 
@@ -605,14 +648,25 @@ class TrialBalanceController extends Controller
         else
             $carry = 1;
 
-        $openingData = ItemDetail::where('ledger_id', $id)
+       
+
+             $openingData = ItemDetail::where('ledger_id', $id)
             ->where('ledger_parent_id', $group)
-            ->whereHas('voucher', function ($query) use ($startDate, $fy, $carry) {
+            ->when(!is_null($cost), function ($q) use ($cost) {
+                    $q->where('cost_center_id', $cost);
+                    })
+            ->whereHas('voucher', function ($query) use ($startDate, $fy, $carry,$loc,$org) {
+                $query->withDefaultGroupCompanyOrg();
+                $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
+                $query->when(!is_null($loc), function ($q) use ($loc) {
+                        $q->where('location', $loc);
+                    })
+                    ->when(!is_null($org), function ($q) use ($org) {
+                        $q->where('organization_id', $org);
+                    });
                 $query->where('document_date', '<', $startDate);
                 if (!$carry)
                     $query->where('document_date', '>=', $fy['start_date']);
-                $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
-                $query->where('organization_id', Helper::getAuthenticatedUser()->organization_id);
             })
             ->selectRaw("SUM(debit_amt_{$currency}) as total_debit, SUM(credit_amt_{$currency}) as total_credit")
             ->first();
@@ -620,9 +674,11 @@ class TrialBalanceController extends Controller
         $opening = $openingData;
         $opening->opening = ($openingData->total_debit - $openingData->total_credit) ?? 0;
         $opening->opening_type = ($openingData->total_debit > $openingData->total_credit) ? 'Dr' : 'Cr';
+        $organizationId = Helper::getAuthenticatedUser()->organization_id;
+         $locations = InventoryHelper::getAccessibleLocations();
 
 
 
-        return view('trialBalance.trail_ledger', compact('cost_centers', 'data', 'companies', 'id', 'startDate', 'endDate', 'organization', 'ledger', 'opening', 'group'));
+        return view('trialBalance.trail_ledger', compact('locations','cost_centers', 'data', 'companies', 'id', 'startDate', 'endDate', 'organization', 'ledger', 'opening', 'group','organizationId'));
     }
 }

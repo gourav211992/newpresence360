@@ -12,7 +12,6 @@ return new class extends Migration
         $table->unsignedBigInteger('book_id')->after('id')->nullable();
         $table->unsignedBigInteger('doc_no')->after('book_id')->nullable();
         $table->string('ledger_code_type')->after('doc_no')->nullable();
-         $table->string('prefix')->after('doc_no')->nullable();
     });
 }
 
@@ -22,8 +21,6 @@ public function down()
         $table->dropColumn('book_id');
         $table->dropColumn('doc_no');
          $table->dropColumn('ledger_code_type');
-         $table->dropColumn('prefix');
-        
     });
 }
 

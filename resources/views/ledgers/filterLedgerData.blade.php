@@ -51,7 +51,11 @@
         </tr>
     @endforeach
 </tbody>
-
+  @php 
+    $closing = ($opening->opening)+ $totalDebit-$totalCredit;
+    $closing_type =$closing<0?"Cr":"Dr";
+    
+ @endphp
 <tfoot>
     <tr class="ledfootnobg">
         <td colspan="5" class="text-end">Current Total</td>
@@ -60,13 +64,10 @@
     </tr>
     <tr class="ledfootnobg">
         <td colspan="5" class="text-end">Opening Balance</td>
-        <td>@if($opening && $opening->opening_type=="Dr") {{ Helper::formatIndianNumber($opening->opening) }} @endif</td>
-        <td>@if($opening && $opening->opening_type=="Cr") {{ Helper::formatIndianNumber($opening->opening) }} @endif</td>
+        <td>@if($opening && $opening->opening_type=="Dr") {{ Helper::formatIndianNumber(abs($opening->opening)) }} @endif</td>
+        <td>@if($opening && $opening->opening_type=="Cr") {{ Helper::formatIndianNumber(abs($opening->opening)) }} @endif</td>
     </tr>
-    @php $closing = ($opening->opening)+ $totalDebit-$totalCredit;
-    $closing_type =$closing<0?"Cr":"Dr";
-
-@endphp
+  
     <td colspan="5" class="text-end">Closing Balance</td>
     <td>@if($closing && $closing_type=="Dr") {{ Helper::formatIndianNumber($closing) }} @endif</td>
     <td>@if($closing && $closing_type=="Cr") {{ Helper::formatIndianNumber(abs($closing)) }} @endif</td>

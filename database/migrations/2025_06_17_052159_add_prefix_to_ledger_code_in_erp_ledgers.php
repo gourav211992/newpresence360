@@ -1,0 +1,21 @@
+<?php 
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up()
+    {
+        Schema::table('erp_ledgers', function (Blueprint $table) {
+            $table->string('prefix')->nullable()->after('doc_no');
+        });
+    }
+
+    public function down()
+    {
+        Schema::table('erp_ledgers', function (Blueprint $table) {
+            $table->dropColumn('prefix');
+        });
+    }
+};

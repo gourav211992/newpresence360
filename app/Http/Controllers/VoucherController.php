@@ -747,7 +747,8 @@ class VoucherController extends Controller
     public function edit(Request $r, $id)
     {
         $currNumber = $r->revisionNumber;
-        if ($r->has('revisionNumber')) {
+        $data = Voucher::with(['items','ErpLocation'])->find($id);
+        if ($r->has('revisionNumber') && $data->revision_number!=$currNumber) {
             $data = VoucherHistory::where('source_id', $id)->where('revision_number', $currNumber)->first();
         } else {
             $data = Voucher::with(['items','ErpLocation'])->find($id);

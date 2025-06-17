@@ -9,17 +9,16 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Carbon\Carbon;
-use Maatwebsite\Excel\Events\BeforeSheet;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Maatwebsite\Excel\Events\AfterSheet;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use App\Helpers\Helper;
 
 class FixedAssetReportExport implements FromCollection, WithHeadings, WithMapping, WithEvents, WithStyles
 {
     protected $items;
+    protected $srNo = 1; // Counter for Sr. No.
 
     public function __construct($items)
     {
@@ -31,14 +30,13 @@ class FixedAssetReportExport implements FromCollection, WithHeadings, WithMappin
         return $this->items;
     }
 
-    // Row 2: Actual column headers
     public function headings(): array
     {
         return [
+            'Sr. No',
             'Asset Code',
             'Asset Name',
             'Sub Asset Code',
-            'Sub Asset Name',
             'Asset Category',
             'Type',
             'Date of Acquisition',
@@ -78,10 +76,10 @@ class FixedAssetReportExport implements FromCollection, WithHeadings, WithMappin
     public function map($item): array
     {
         return [
+            $this->srNo++,
             $item?->asset?->asset_code ?? 'N/A',
             $item?->asset?->asset_name ?? 'N/A',
             $item?->sub_asset_code ?? 'N/A',
-            $item?->asset?->asset_name ?? 'N/A',
             $item?->asset?->category?->name ?? 'N/A',
             $item?->asset?->reference_series == ConstantHelper::FIXED_ASSET_MERGER ? 'Merger' : ($item?->asset?->reference_series == ConstantHelper::FIXED_ASSET_SPLIT ? 'Split' : 'Register'),
             $item?->asset?->document_date != null
@@ -94,21 +92,18 @@ class FixedAssetReportExport implements FromCollection, WithHeadings, WithMappin
             Helper::formatIndianNumber($item?->salvage_value) ?? 'N/A',
             $item?->location?->store_name ?? 'N/A',
             $item?->issue?->authorizedPerson?->name ?? 'N/A',
-
             $item?->asset?->useful_life && !empty($item?->capitalize_date) && !empty($item?->expiry_date)
                 ? Carbon::parse($item->capitalize_date)->diffInYears(Carbon::parse($item->expiry_date)) .
                 ' (' . Carbon::parse($item->capitalize_date)->diffInDays(Carbon::parse($item->expiry_date)) . ' days)'
                 : ($item?->asset?->useful_life
                     ? $item->asset->useful_life . ' (' . ($item->asset->useful_life * 365) . ' days)'
                     : 'N/A'),
-
             $item?->last_dep_date && $item?->expiry_date
                 ? Carbon::parse($item->last_dep_date)->diffInYears(Carbon::parse($item->expiry_date)) .
                 ' (' . Carbon::parse($item->last_dep_date)->diffInDays(Carbon::parse($item->expiry_date)) . ' days)'
                 : ($item?->asset?->useful_life
                     ? $item->asset->useful_life . ' (' . ($item->asset->useful_life * 365) . ' days)'
                     : 'N/A'),
-
             $item?->asset?->depreciation_method ?? 'N/A',
             $item?->capitalize_date != null
                 ? Carbon::parse($item->capitalize_date)->format('d-m-Y')
@@ -167,117 +162,113 @@ class FixedAssetReportExport implements FromCollection, WithHeadings, WithMappin
                 $sheet->insertNewRowBefore(1, 1);
 
                 $sheet->fromArray([[
+                    '', // Sr. No group header
                     'Asset Identification',
                     '',
                     '',
                     '',
                     '',
-                    '',                    // A-F: empty
                     'Acquisition & Salvage Details:',
                     '',
                     '',
-                    '', // G-J: 4 cells for this header
+                    '',
                     'Location & Allocation:',
-                    '',               // K-L: 2 cells
+                    '',
                     'Depreciation and Useful Life:',
                     '',
                     '',
                     '',
                     '',
-                    '', // M-R: 6 cells
+                    '',
                     'Insurance & Security:',
                     '',
                     '',
-                    '',        // S-V: 4 cells
+                    '',
                     'Status Tracking:',
                     '',
                     '',
-                    '',              // W-Z: 4 cells
+                    '',
                     'Audit & Verification:',
-                    '',                 // AA-AB: 2 cells
+                    '',
                     'Maintenance & Condition:',
                     '',
-                    '',          // AC-AE: 3 cells
+                    '',
                     'Revaluation Details:',
                     '',
-                    '',               // AF-AH: 3 cells
+                    '',
                     'Impairment Details:',
                     '',
-                    ''                  // AI-AK: 3 cells
+                    '',
                 ]], null, 'A1');
 
-                // Merging matching cells
-                $sheet->mergeCells('A1:F1');
-                $sheet->mergeCells('G1:J1');   // Acquisition & Salvage Details (4 columns)
-                $sheet->mergeCells('K1:L1');   // Location & Allocation (2 columns)
-                $sheet->mergeCells('M1:R1');   // Depreciation and Useful Life (6 columns)
-                $sheet->mergeCells('S1:V1');   // Insurance & Security (4 columns)
-                $sheet->mergeCells('W1:Z1');   // Status Tracking (4 columns)
-                $sheet->mergeCells('AA1:AB1'); // Audit & Verification (2 columns)
-                $sheet->mergeCells('AC1:AE1'); // Maintenance & Condition (3 columns)
-                $sheet->mergeCells('AF1:AH1'); // Revaluation Details (3 columns)
-                $sheet->mergeCells('AI1:AK1'); // Impairment Details (3 columns)
-                $totalRows = $sheet->getHighestRow(); // Includes your inserted rows + data rows
-                $totalColumns = 37; // Adjust if your columns change
+                $sheet->mergeCells('A1:A1'); // Sr. No
+                $sheet->mergeCells('B1:F1');
+                $sheet->mergeCells('G1:J1');
+                $sheet->mergeCells('K1:L1');
+                $sheet->mergeCells('M1:R1');
+                $sheet->mergeCells('S1:V1');
+                $sheet->mergeCells('W1:Z1');
+                $sheet->mergeCells('AA1:AB1');
+                $sheet->mergeCells('AC1:AE1');
+                $sheet->mergeCells('AF1:AH1');
+                $sheet->mergeCells('AI1:AK1');
 
-                // Get column letter for last column
+                $totalColumns = 37; // Updated for Sr. No column
                 $lastColumnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($totalColumns);
+                $range = "A1:{$lastColumnLetter}" . $sheet->getHighestRow();
 
-                $range = "A1:{$lastColumnLetter}{$totalRows}";
                 $sheet->getStyle($range)->applyFromArray([
                     'borders' => [
                         'allBorders' => [
                             'borderStyle' => Border::BORDER_THIN,
-                            'color' => ['argb' => 'FF000000'], // black color
+                            'color' => ['argb' => 'FF000000'],
                         ],
                     ],
                 ]);
 
                 $sheet->getStyle('1:1')->getFont()->setBold(true);
-                $sheet->getStyle('1:1')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-
-                // For second row just bold
+                $sheet->getStyle('1:1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                 $sheet->getStyle('2:2')->getFont()->setBold(true);
 
+                 // Style first two header rows (red background, white bold font)
+            $sheet->getStyle("A1:{$lastColumnLetter}2")->applyFromArray([
+                'font' => [
+                    'bold' => true,
+                    'color' => ['rgb' => 'FFFFFF'],
+                ],
+                'fill' => [
+                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => 'C00000'],
+                ],
+            ]);
 
-                // Total columns count - count your headings array
-
-
-                // Loop through columns A, B, C ... up to the last needed column and set auto size
                 for ($col = 0; $col < $totalColumns; $col++) {
-                    // Convert number to letter: 0 => A, 1 => B, etc.
                     $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col + 1);
                     $sheet->getColumnDimension($columnLetter)->setAutoSize(true);
                 }
-                $rightAlignedColumns = ['I', 'J', 'Q', 'R', 'S', 'Y', 'Z', 'AF', 'AH', 'AI', 'AK'];
-                $highestRow = $sheet->getHighestRow();
-                $highestColumn = $sheet->getHighestColumn();
 
-                // Apply right alignment
+                $rightAlignedColumns = ['H', 'I', 'P', 'Q', 'R', 'X', 'Y', 'AE', 'AG', 'AH', 'AJ'];
+                $highestRow = $sheet->getHighestRow();
+
                 foreach ($rightAlignedColumns as $column) {
                     $sheet->getStyle("{$column}2:{$column}{$highestRow}")
                         ->getAlignment()
                         ->setHorizontal(Alignment::HORIZONTAL_RIGHT);
                 }
-                $leftAlignedColumns = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'K', 'L', 'M', 'N', 'O', 'P', 'T', 'U', 'V', 'W', 'X', 'AA', 'AB', 'AC', 'AD', 'AE', 'AG', 'AJ']
-;
-                // Apply left alignment + force text format
-                 foreach ($leftAlignedColumns as $column) {
+
+                $leftAlignedColumns = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'J', 'K', 'L', 'M', 'N', 'O', 'S', 'T', 'U', 'V', 'W', 'Z', 'AA', 'AB', 'AC', 'AD', 'AF', 'AI'];
+
+                foreach ($leftAlignedColumns as $column) {
                     $sheet->getStyle("{$column}2:{$column}{$highestRow}")
                         ->getAlignment()
                         ->setHorizontal(Alignment::HORIZONTAL_LEFT);
                 }
             }
-
         ];
     }
 
-
     public function styles(Worksheet $sheet)
     {
-        // Columns to be right-aligned
-
-        // Bold the first row (headers)
         return [
             1 => ['font' => ['bold' => true]],
         ];

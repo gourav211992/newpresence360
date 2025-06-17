@@ -49,6 +49,7 @@
 									<tr>
 										<th>Sr. No</th>
 										<th>Parent Group</th>
+										<th>Prefix</th>
 										<th>Group Name</th>
 										<th>Status</th>
 										<th>Created Date</th>
@@ -60,6 +61,7 @@
 										<tr>
 											<td>{{ $item->id }}</td>
 											<td>@if($item?->parent_group_id) {{ $item?->parent?->name }} @endif</td>
+											<td>{{ $item->prefix ??"-" }}</td>
 											<td>{{ $item->name }}</td>
 											<td>{{ Str::ucfirst($item->status) }}</td>
 											<td class="fw-bolder text-dark">

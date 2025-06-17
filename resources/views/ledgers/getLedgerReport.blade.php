@@ -42,7 +42,7 @@
 										@csrf
 										<div class="customernewsection-form poreportlistview p-1">
 											<div class="row">
-												<div class="col-md-2">
+												<div class="col-md-2 mb-2">
 													<div class="mb-1 mb-sm-0">
 														<label class="form-label">Company</label>
 														<select class="form-select select2 companySelect" required id="company_id">
@@ -53,7 +53,7 @@
 														</select>
 													</div>
 												</div>
-												<div class="col-md-2">
+												<div class="col-md-2 mb-2">
 													<div class="mb-1 mb-sm-0">
 														<label class="form-label">Organization</label>
 														<select class="form-select select2" id="organization_id" required>
@@ -61,7 +61,23 @@
 														</select>
 													</div>
 												</div>
-												<div class="col-md-2">
+                                                <div class="col-md-2 mb-2">
+													<div class="mb-1 mb-sm-0">
+														<label class="form-label">Location</label>
+														<select class="form-select select2" id="location_id">
+															<option value="" selected disabled>Select Location</option>
+														</select>
+													</div>
+												</div>
+                                                <div class="col-md-2 mb-2 cost_center">
+													<div class="mb-1 mb-sm-0">
+														<label class="form-label">Cost Center</label>
+														<select class="form-select select2" id="cost_center_id">
+															<option value="" selected disabled>Select Cost Center</option>
+														</select>
+													</div>
+												</div>
+												<div class="col-md-2 mb-2">
 													<div class="mb-1 mb-sm-0">
 														<label class="form-label">Select Ledger</label>
 														<select class="form-select select2" id="ledger_id" required>
@@ -69,14 +85,14 @@
 														</select>
 													</div>
 												</div>
-                                                <div class="col-md-2">
+                                                <div class="col-md-2 mb-2">
 													<div class="mb-1 mb-sm-0">
 														<label class="form-label">Ledger Group</label>
 														<select class="form-select select2" id="ledger_group" required>
 														</select>
 													</div>
 												</div>
-                                                <div class="col-md-2">
+                                                <div class="col-md-2 mb-2">
                                                     <div class="mb-1 mb-sm-0">
                                                     <label class="form-label">Currency</label>
                                                     <select id="currency" class="form-select select2" required>
@@ -87,12 +103,12 @@
                                                     </div>
                                                 </div>
 
-												<div class="col-md-2">
+												<div class="col-md-2 mb-2">
 													<label class="form-label" for="fp-range">Select Period</label>
-													<input type="text" id="fp-range" class="form-control flatpickr-range bg-white" placeholder="YYYY-MM-DD to YYYY-MM-DD" required/>
+													<input type="text" id="fp-range" required class="form-control flatpickr-range bg-white" placeholder="YYYY-MM-DD to YYYY-MM-DD" required/>
 												</div>
 												<div class="col-md-2">
-													<div class="mt-2 mb-sm-0">
+													<div class="mt-2">
 														<label class="mb-1">&nbsp</label>
 														<button class="btn btn-warning btn-sm" type="submit"><i data-feather="filter"></i> Run Report</button>
 													</div>
@@ -150,6 +166,8 @@
 				ledger_id:$('#ledger_id').val(),
 				date:$('#fp-range').val(),
 				'_token':'{!!csrf_token()!!}',
+                location_id: $('#location_id').val(),
+                cost_center_id: $('#cost_center_id').val(),
                 ledger_group:$("#ledger_group").val(),
 			},
             xhrFields: {
@@ -232,6 +250,8 @@
 
 
     $(document).on('change', '#organization_id', function () {
+        const selectedOrgIds = $(this).val() || [];
+        updateLocationsDropdown(selectedOrgIds);
     $("#ledger_id").html("");
     $("#ledger_id").append("<option disabled selected value=''>Select Ledger</option>");
 
@@ -268,6 +288,7 @@
 		$('#mytable tfoot').remove();
 		if ($('#fp-range').val()=="") {
 			showToast('error','Please select time Period!!');
+              $('.preloader').hide();
 			return false;
 		}
 
@@ -280,6 +301,8 @@
 				ledger_id:$('#ledger_id').val(),
 				date:$('#fp-range').val(),
                 currency:$('#currency').val(),
+                location_id: $('#location_id').val(),
+                cost_center_id: $('#cost_center_id').val(),
                 ledger_group:$("#ledger_group").val(),
 
 			},
@@ -301,5 +324,107 @@
                         icon: icon
                     });
 }
+
+        $(document).ready(function() {
+            $('.cost_center').hide();
+            $('#cost_center_id').prop('required', false);
+            let urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('organization_id') == "")
+                $('#organization_id').val(urlParams.get('organization_id'));
+
+            if (urlParams.get('cost_center_id') == "")
+                $('#cost_center_id').val(urlParams.get('cost_center_id'));
+
+            if (urlParams.get('location_id') == "")
+                $('#location_id').val(urlParams.get('location_id'));
+        });
+        const locations = @json($locations);
+        const costCenters = @json($cost_centers);
+
+        function updateLocationsDropdown(selectedOrgIds) {
+            selectedOrgIds = $('#organization_id').val() || [];
+
+            const requestedLocationId = @json(request('location_id')) || "";
+
+            const filteredLocations = locations.filter(loc =>
+                selectedOrgIds.includes(String(loc.organization_id))
+            );
+
+            const $locationDropdown = $('#location_id');
+            $locationDropdown.empty().append('<option value="">Select Location</option>');
+
+
+            filteredLocations.forEach(loc => {
+                const isSelected = String(loc.id) === String(requestedLocationId) ? 'selected' : '';
+                $locationDropdown.append(`<option value="${loc.id}" ${isSelected}>${loc.store_name}</option>`);
+            });
+
+            // Load cost centers if location was pre-selected
+            if (requestedLocationId) {
+                loadCostCenters(requestedLocationId);
+            }
+
+            $locationDropdown.trigger('change');
+        }
+
+
+
+        function loadCostCenters(locationId) {
+               const $costCenter = $('#cost_center_id');
+                $costCenter.empty();
+            if (locationId) {
+                const filteredCenters = costCenters.filter(center => {
+                    if (!center.location) return false;
+
+                    const locationArray = Array.isArray(center.location) ?
+                        center.location.flatMap(loc => loc.split(',')) : [];
+
+                    return locationArray.includes(String(locationId));
+                });
+                if (filteredCenters.length === 0) {
+                    $costCenter.prop('required', false);
+                    $('.cost_center').hide();
+                } else {
+                    $costCenter.prop('required', true).append('<option value="">Select Cost Center</option>');
+                    $('.cost_center').show();
+
+                    filteredCenters.forEach(center => {
+                        $costCenter.append(`<option value="${center.id}">${center.name}</option>`);
+                    });
+                }
+                $costCenter.val(@json(request('cost_center_id')) || "");
+                $costCenter.trigger('change');
+
+            }
+            else{
+                 $costCenter.prop('required', false);
+                $('.cost_center').hide();
+
+            }
+        }
+        //$('#organization_id').trigger('change');
+        
+
+        // On page load, check for preselected orgs
+        const preselectedOrgIds = $('#organization_id').val() || [];
+        if (preselectedOrgIds.length > 0) {
+            updateLocationsDropdown(preselectedOrgIds);
+        }
+        // On location change, load cost centers
+        $('#location_id').on('change', function() {
+            const locationId = $(this).val();
+            if (!locationId) {
+                $('#cost_center_id').empty().append('<option value="">Select Cost Center</option>');
+                // $('.cost_center').hide(); // Optional: hide the section if needed
+                $('#cost_center_id').prop('required', false);
+                $('.cost_center').hide();
+                return;
+            }
+            loadCostCenters(locationId);
+
+
+
+        });
 </script>
+
 @endsection

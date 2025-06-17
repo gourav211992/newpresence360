@@ -653,21 +653,33 @@
 
 
 
-        $(".mrntableselectexcel tr").click(function() {
-            $(this).addClass('trselected').siblings().removeClass('trselected');
-            value = $(this).find('td:first').html();
-        });
+       
+        // Delegated click event for dynamically added rows
+$(document).on('click', '.mrntableselectexcel tr', function() {
+    $(this).addClass('trselected').siblings().removeClass('trselected');
+});
 
-        $(document).on('keydown', function(e) {
-            if (e.which == 38) {
-                $('.trselected').prev('tr').addClass('trselected').siblings().removeClass('trselected');
-            } else if (e.which == 40) {
-                $('.trselected').next('tr').addClass('trselected').siblings().removeClass('trselected');
-            }
-             var selected = $('.trselected');
-            if (selected.length && selected.offset())
-            $('.mrntableselectexcel').scrollTop($('.trselected').offset().top - 40);
-        });
+// Keyboard navigation for up/down arrow keys
+$(document).on('keydown', function(e) {
+    var $selected = $('.trselected');
+
+    if (e.which === 38) { // Up arrow
+        $selected.prev('tr').addClass('trselected').siblings().removeClass('trselected');
+    } else if (e.which === 40) { // Down arrow
+        $selected.next('tr').addClass('trselected').siblings().removeClass('trselected');
+    }
+
+    // Scroll to the selected row inside scrollable container
+    var $container = $('.mrntableselectexcel');
+    var $newSelected = $('.trselected');
+
+    if ($newSelected.length && $container.length && $newSelected.offset()) {
+        var containerOffset = $container.offset().top;
+        var selectedOffset = $newSelected.offset().top;
+        $container.scrollTop($container.scrollTop() + (selectedOffset - containerOffset - 40));
+    }
+});
+
 
         $('#add_new_sub_asset').on('click', function() {
             let allInputsFilled = true;
