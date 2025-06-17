@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use App\Traits\Deletable;
 use App\Traits\DefaultGroupCompanyOrg;
 use Illuminate\Support\Facades\Log;
+use App\Helpers\InventoryHelper;
 
 
 
@@ -26,9 +27,16 @@ class PaymentVoucher extends Model
             $model->approval_level = $model->approvalLevel;
         });
     }
+    
+    
 
 protected static function booted()
 {
+    static::addGlobalScope('defaultLocation', function ($builder) {
+            $locs = InventoryHelper::getAccessibleLocations()->pluck('id')->toArray()??[];
+            $builder->whereIn('location',$locs);
+        });
+
     static::updated(function ($voucher) {
         if ($voucher->isDirty('approvalStatus') || $voucher->isDirty('document_status')) {
             $caller = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10);

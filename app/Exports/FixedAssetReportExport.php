@@ -14,6 +14,7 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use App\Helpers\Helper;
+use App\Models\FixedAssetSub;
 
 class FixedAssetReportExport implements FromCollection, WithHeadings, WithMapping, WithEvents, WithStyles
 {
@@ -86,12 +87,13 @@ class FixedAssetReportExport implements FromCollection, WithHeadings, WithMappin
                 ? Carbon::parse($item->asset->document_date)->format('d-m-Y')
                 : 'N/A',
             $item?->asset?->vendor?->company_name ?? 'N/A',
-            $item?->asset?->purchase_amount && $item?->asset?->quantity
-                ? Helper::formatIndianNumber($item->asset->purchase_amount / $item->asset->quantity)
+            $item?->current_value
+                ? Helper::formatIndianNumber($item->current_value)
                 : 'N/A',
             Helper::formatIndianNumber($item?->salvage_value) ?? 'N/A',
             $item?->location?->store_name ?? 'N/A',
             $item?->issue?->authorizedPerson?->name ?? 'N/A',
+            
             $item?->asset?->useful_life && !empty($item?->capitalize_date) && !empty($item?->expiry_date)
                 ? Carbon::parse($item->capitalize_date)->diffInYears(Carbon::parse($item->expiry_date)) .
                 ' (' . Carbon::parse($item->capitalize_date)->diffInDays(Carbon::parse($item->expiry_date)) . ' days)'
@@ -116,8 +118,8 @@ class FixedAssetReportExport implements FromCollection, WithHeadings, WithMappin
                 : 'N/A',
             $item?->insurances?->policy_no ?? 'N/A',
             $item?->insurances?->lien_security_details ?? 'N/A',
-            $item?->insurances?->expiry_date
-                ? (Carbon::parse($item->insurances->expiry_date)->lt(Carbon::today()) ? 'Expired' : 'Active')
+            FixedAssetSub::current_status($item->id)
+                ? FixedAssetSub::current_status($item->id)
                 : 'N/A',
             'N/A',
             'N/A',

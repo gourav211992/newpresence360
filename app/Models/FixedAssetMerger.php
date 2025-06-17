@@ -9,6 +9,7 @@ use App\Traits\DefaultGroupCompanyOrg;
 use App\Helpers\Helper;
 use App\Traits\Deletable;
 use Illuminate\Support\Facades\DB;
+use App\Helpers\ServiceParametersHelper;
 use Carbon\Carbon;
 
 
@@ -60,9 +61,22 @@ class FixedAssetMerger extends Model
     public static function makeRegistration($id)
     {
         $request = FixedAssetMerger::find($id);
+        $book = Book::find($request->book_id);
+        $glPostingBookParam = OrganizationBookParameter::where('book_id', $book->id)->where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM)->first();
+        if (isset($glPostingBookParam) && isset($glPostingBookParam->parameter_value[0])) {
+            $glPostingBookId = $glPostingBookParam->parameter_value[0];
+        } else {
+            return array(
+                'status' => false,
+                'message' => 'Financial Book Code is not specified',
+                'data' => []
+            );
+        }
+        
 
 
-        $exitingReg = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('reference_series', $request->book_id)->where('reference_doc_id', $request->id)->first();
+        $exitingReg = FixedAssetRegistration::withDefaultGroupCompanyOrg()
+        ->where('reference_series', $request->book_id)->where('reference_doc_id', $request->id)->first();
         if ($exitingReg) {
             return array(
                 'message' => 'Registration already posted',
@@ -104,7 +118,7 @@ class FixedAssetMerger extends Model
             'company_id' => $request->company_id,
             'created_by' => $request->created_by,
             'type' => $request->type,
-            'book_id' => $request->book_id,
+            'book_id' => $glPostingBookId,
             'document_number' => $request->document_number,
             'document_date' => $request->document_date,
             'asset_code' => $request->asset_code,

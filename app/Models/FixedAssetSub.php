@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Log;
+use App\Helpers\ConstantHelper;
 use Carbon\Carbon;
 
 class FixedAssetSub extends Model
@@ -28,6 +29,7 @@ class FixedAssetSub extends Model
     {
         return $this->belongsTo(CostCenter::class, 'cost_center_id');
     }
+
     public static function generateSubAssets($parentId, $assetCode, $quantity, $totalValue, $salvageValue)
     {
         $asset = FixedAssetRegistration::findOrFail($parentId); // Ensure parent asset exists
@@ -109,6 +111,41 @@ class FixedAssetSub extends Model
 
         return $splitSubAssetIds->merge($mergerSubAssetIds)->unique()->values()->all();
     }
+    public static function current_status($subAssetId)
+    {
+        // Check in FixedAssetMerger
+        $foundInMerger = FixedAssetMerger::query()
+            ->where('document_status',ConstantHelper::POSTED)
+            ->pluck('asset_details')
+            ->contains(function ($json) use ($subAssetId) {
+                $decoded = json_decode($json, true);
+                if (!is_array($decoded)) return false;
+
+                foreach ($decoded as $item) {
+                    if (isset($item['sub_asset_id']) && is_array($item['sub_asset_id'])) {
+                        if (in_array((int)$subAssetId, array_map('intval', $item['sub_asset_id']))) {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            });
+
+        if ($foundInMerger) {
+            return 'Merge';
+        }
+
+        // Check in FixedAssetSplit
+        $foundInSplit = FixedAssetSplit::where('sub_asset_id', $subAssetId)->where('document_status',ConstantHelper::POSTED)->exists();
+
+        if ($foundInSplit) {
+            return 'Split';
+        }
+
+        return "Active";
+    }
+
     public function getInsurancesAttribute()
     {
         return FixedAssetInsurance::whereJsonContains('sub_asset', (string) $this->id)->latest()->first();
@@ -146,12 +183,12 @@ class FixedAssetSub extends Model
         foreach ($details as $item) {
             if ((string) $item['sub_asset_id'] === (string) $this->id) {
                 return (object) array_merge(
-                [
-                    'document_date' => $revImp->document_date,
-                    'document_id'   => $revImp->id,
-                ],
-                $item
-            );
+                    [
+                        'document_date' => $revImp->document_date,
+                        'document_id'   => $revImp->id,
+                    ],
+                    $item
+                );
             }
         }
 
@@ -182,12 +219,12 @@ class FixedAssetSub extends Model
         foreach ($details as $item) {
             if ((string) $item['sub_asset_id'] === (string) $this->id) {
                 return (object) array_merge(
-                [
-                    'document_date' => $revImp->document_date,
-                    'document_id'   => $revImp->id,
-                ],
-                $item
-            );
+                    [
+                        'document_date' => $revImp->document_date,
+                        'document_id'   => $revImp->id,
+                    ],
+                    $item
+                );
             }
         }
 

@@ -73,3 +73,4 @@
     <td>@if($closing && $closing_type=="Cr") {{ Helper::formatIndianNumber(abs($closing)) }} @endif</td>
     </tr>
 </tfoot>
+

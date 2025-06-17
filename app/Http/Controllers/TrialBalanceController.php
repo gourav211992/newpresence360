@@ -679,6 +679,7 @@ class TrialBalanceController extends Controller
 
 
 
-        return view('trialBalance.trail_ledger', compact('locations','cost_centers', 'data', 'companies', 'id', 'startDate', 'endDate', 'organization', 'ledger', 'opening', 'group','organizationId'));
+  
+         return view('trialBalance.trail_ledger', compact('locations','cost_centers', 'data', 'companies', 'id', 'startDate', 'endDate', 'organization', 'ledger', 'opening', 'group','organizationId'));
     }
 }
