@@ -844,8 +844,9 @@
                                        </tbody>
                                        <tfoot>
                                             <tr>
-                                                <td colspan="9" class="text-end">Total</td>
+                                                <td colspan="8" class="text-end">Total</td>
                                                 <td class="fw-bolder text-dark text-end settleTotal">0</td>
+                                                <td></td>
                                             </tr>
                                        </tfoot>
                                 </table>
@@ -1742,7 +1743,7 @@ $('#revisionNumber').prop('disabled', false);
                             </div>
                         </td>
                         <td>
-                            <input type="text" class="form-control mw-100 text-end bankInput reference_no" 
+                            <input type="text" class="form-control mw-100 bankInput reference_no" 
                                 name="reference_no[]" data-row="${rowCount}" id="reference_no${rowCount}" />
                             <span class="text-danger bankInput" id="reference_error${rowCount}" style="font-size:12px"></span>
                         </td>

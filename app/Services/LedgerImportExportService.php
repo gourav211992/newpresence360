@@ -59,7 +59,7 @@ class LedgerImportExportService
             $missingGroups = array_diff($groupLower, $foundNames);
 
             if (!empty($missingGroups)) {
-                throw new \Exception("Group(s) not found: " . implode(', ', $missingGroups));
+                throw new \Exception("Group(s) not found");
             }
         }
         return [

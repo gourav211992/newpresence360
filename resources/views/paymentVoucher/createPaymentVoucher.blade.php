@@ -484,7 +484,7 @@
                                                                             </div>
                                                                         </td>
                                                                        <td>
-                                                                            <input type="text" class="form-control mw-100 text-end bankInput reference_no" 
+                                                                            <input type="text" class="form-control mw-100  bankInput reference_no" 
                                                                                 name="reference_no[]" data-row="{{ $no }}" id="reference_no{{ $no }}" 
                                                                                  />
                                                                             <span class="text-danger bankInput" id="reference_error{{ $no }}" style="font-size:12px"></span>
@@ -589,8 +589,8 @@
                                                         <tfoot>
                                                             <tr class="totalsubheadpodetail">
                                                                 <td colspan="7" class="text-end">Total</td>
-                                                                <td class="text-end currentCurrencySum">0</td>
-                                                                <td class="text-end orgCurrencySum">0</td>
+                                                                <td class="text-end currentCurrencySum">{{ $voucher['amount'] }}</td>
+                                                                <td class="text-end orgCurrencySum">{{ $voucher['amount'] }}</td>
                                                                 <td></td>
                                                             </tr>
                                                         </tfoot>
@@ -701,9 +701,9 @@
                                     </tbody>
                                     <tfoot>
                                         <tr>
-                                            <td colspan="9" class="text-end">Total</td>
+                                            <td colspan="8" class="text-end">Total</td>
                                             <td class="fw-bolder text-dark text-end settleTotal">0</td>
-                                            {{-- <td></td> --}}
+                                            <td></td>
                                         </tr>
                                     </tfoot>
                                 </table>

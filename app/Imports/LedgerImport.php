@@ -255,7 +255,7 @@ class LedgerImport implements ToModel, WithHeadingRow, WithChunkReading, WithSta
 
             } catch (\Exception $e) {
                     // $status = 'Failed';
-                $errors[] = "Error processing: " . $e->getMessage();
+                $errors[] = $e->getMessage();
                 $uploadedItem->update([
                     'import_status' => 'Failed',
                     'import_remarks' => implode(' ', $errors), // Combine all error messages
@@ -282,67 +282,36 @@ class LedgerImport implements ToModel, WithHeadingRow, WithChunkReading, WithSta
             ]);
 
             $rules = [
-                'code' => [
-                    'required',
-                    'string',
-                    'max:255',
-                    function ($attribute, $value, $fail) {
-                        $exists = \App\Models\Ledger::withDefaultGroupCompanyOrg()
-                            ->where($attribute, $value)
-                            ->exists();
-
-                        if ($exists) {
-                            $fail("The {$attribute} has already been taken.");
-                        }
-                    },
-                ],
-                'name' => [
-                    'required',
-                    'string',
-                    'max:255',
-                     function ($attribute, $value, $fail) {
-                        $exists = \App\Models\Ledger::withDefaultGroupCompanyOrg()
-                            ->where($attribute, $value)
-                            ->exists();
-
-                        if ($exists) {
-                            $fail("The {$attribute} has already been taken.");
-                        }
-                    },
-                ],
-                'tax_type' => [
-                    'nullable',
-                    'string',
-                    'max:255',
-                ],
-                'tax_percentage' => [
-                    'nullable',
-                    'int',
-                    'max:255',
-                ],
-                'tds_section' => [
-                    'nullable',
-                    'string',
-                    'max:255',
-                ],
-                'tds_percentage' => [
-                    'nullable',
-                    'numeric',
-                    'max:255',
-                ],
-                'tcs_section' => [
-                    'nullable',
-                    'string',
-                    'max:255',
-                ],
-                'tcs_percentage' => [
-                    'nullable',
-                    'numeric',
-                    'max:255',
-                ],
+                'code' => ['required', 'string', 'max:255'],
+                'name' => ['required', 'string', 'max:255'],
+                'tax_type' => ['nullable', 'string', 'max:255'],
+                'tax_percentage' => ['nullable', 'int', 'max:255'],
+                'tds_section' => ['nullable', 'string', 'max:255'],
+                'tds_percentage' => ['nullable', 'numeric', 'max:255'],
+                'tcs_section' => ['nullable', 'string', 'max:255'],
+                'tcs_percentage' => ['nullable', 'numeric', 'max:255'],
             ];
 
-            $validator = Validator::make($item->toArray(), $rules, []);
+            // Add unified custom rule
+            $validator = Validator::make($item->toArray(), $rules);
+
+            $validator->after(function ($validator) use ($item) {
+                $codeExists = \App\Models\Ledger::withDefaultGroupCompanyOrg()
+                    ->where('code', $item->code)
+                    ->exists();
+
+                $nameExists = \App\Models\Ledger::withDefaultGroupCompanyOrg()
+                    ->where('name', $item->name)
+                    ->exists();
+
+                if ($codeExists && $nameExists) {
+                    $validator->errors()->add('code_name', 'The code and name have already been taken.');
+                } elseif ($codeExists) {
+                    $validator->errors()->add('code', 'The code has already been taken.');
+                } elseif ($nameExists) {
+                    $validator->errors()->add('name', 'The name has already been taken.');
+                }
+            });
 
             if ($validator->fails()) {
                 $flattenedErrors = implode(' ', $validator->errors()->all()); // Join errors with period and space
