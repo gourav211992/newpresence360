@@ -75,9 +75,12 @@ class ErpPSVController extends Controller
         $redirectUrl = route('psv.index');
         $createRoute = route('psv.create');
         $typeName = "Physical Stock Verification ";
-         $accessible_locations = InventoryHelper::getAccessibleLocations()->pluck('id')->toArray();
+        $accessible_locations = InventoryHelper::getAccessibleLocations()->pluck('id')->toArray();
+        $parentURL = request() -> segments()[0];
         $selectedfyYear = Helper::getFinancialYear(Carbon::now()->format('Y-m-d'));
         $autoCompleteFilters = self::getBasicFilters();
+        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
+        $create_button = (count($servicesBooks['services']) > 0 && $selectedfyYear['authorized'] && !$selectedfyYear['lock_fy']) ? true : false;
         //Date Filters
         $dateRange = $request -> date_range ?? null;
         if ($request -> ajax()) {
@@ -183,9 +186,7 @@ class ErpPSVController extends Controller
                 ]);
             }
         }
-        $parentURL = request() -> segments()[0];
-        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
-        return view('PSV.index', ['typeName' => $typeName, 'redirect_url' => $redirectUrl,'create_route' => $createRoute, 'create_button' => count($servicesBooks['services']), 'filterArray' => TransactionReportHelper::FILTERS_MAPPING[ConstantHelper::PSV_SERVICE_ALIAS],
+        return view('PSV.index', ['typeName' => $typeName, 'redirect_url' => $redirectUrl,'create_route' => $createRoute, 'create_button' => $create_button, 'filterArray' => TransactionReportHelper::FILTERS_MAPPING[ConstantHelper::PSV_SERVICE_ALIAS],
             'autoCompleteFilters' => $autoCompleteFilters,]);
     }
 

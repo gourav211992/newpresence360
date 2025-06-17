@@ -6,35 +6,6 @@ td .form-select {
     min-width: 100% !important;
     box-sizing: border-box;
 }
-.datatable-footer-fixed {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 15px;
-    background-color: #fff;
-    border-top: 1px solid #dee2e6;
-    position: sticky;
-    bottom: 0;
-    z-index: 100;
-    gap: 10px;
-}  
-#custom_length {
-    text-align: left;
-    white-space: nowrap;
-}
-
-#custom_length label {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    margin-bottom: 0;
-    white-space: nowrap;
-}
-
-#custom_length select {
-    width: auto;
-    display: inline-block;
-}
 </style>
 @endsection
 @section('content')
@@ -1961,54 +1932,42 @@ function getIndents()
     var columns = [];
     if(type == 'purchase-order') {
         columns = [
-            { data: 'select_checkbox', name: 'select_checkbox', orderable: false, searchable: false },
-            { data: 'book_name', name: 'book_name', render: renderData },
-            { data: 'doc_no', name: 'doc_no', render: renderData, createdCell: (td) => $(td).addClass('no-wrap') },
-            { data: 'doc_date', name: 'doc_date', render: renderData, createdCell: (td) => $(td).addClass('no-wrap') },
-            { data: 'item_code', name: 'item_code', render: renderData, createdCell: (td) => $(td).addClass('no-wrap') },
-            { data: 'item_name', name: 'item_name', render: renderData },
-            { data: 'attributes', name: 'attributes', render: renderData },
-            { data: 'uom', name: 'uom', render: renderData },
-            { data: 'balance_qty', name: 'balance_qty', render: renderData },
-            { data: 'vendor_select', name: 'vendor_select', render: renderData },
-            { data: 'so_no', name: 'so_no', render: renderData },
-            { data: 'location', name: 'location', render: renderData },
-            { data: 'requester', name: 'requester', render: renderData },
-            { data: 'remarks', name: 'remarks', render: renderData },
+            { data: 'id',visible: false, orderable: true, searchable: false},
+            { data: 'select_checkbox', name: 'select_checkbox', orderable: false, searchable: false},
+            { data: 'book_name', name: 'book_name', render: renderData, orderable: false, searchable: false},
+            { data: 'doc_no', name: 'doc_no', render: renderData, orderable: false, searchable: false },
+            { data: 'doc_date', name: 'doc_date', render: renderData, orderable: false, searchable: false },
+            { data: 'item_code', name: 'item_code', render: renderData, orderable: false, searchable: false },
+            { data: 'item_name', name: 'item_name', render: renderData, orderable: false, searchable: false },
+            { data: 'attributes', name: 'attributes', render: renderData, orderable: false, searchable: false },
+            { data: 'uom', name: 'uom', render: renderData, orderable: false, searchable: false },
+            { data: 'balance_qty', name: 'balance_qty', render: renderData, orderable: false, searchable: false },
+            { data: 'vendor_select', name: 'vendor_select', render: renderData, orderable: false, searchable: false },
+            { data: 'so_no', name: 'so_no', render: renderData, orderable: false, searchable: false },
+            { data: 'location', name: 'location', render: renderData, orderable: false, searchable: false },
+            { data: 'requester', name: 'requester', render: renderData, orderable: false, searchable: false },
+            { data: 'remarks', name: 'remarks', render: renderData, orderable: false, searchable: false },
         ];
     } else {
         var columns = [
-            { data: 'select_checkbox', name: 'select_checkbox', orderable: false, searchable: false },
-            { data: 'book_name', name: 'book_name', render: renderData },
-            { data: 'doc_no', name: 'doc_no', render: renderData, createdCell: (td) => $(td).addClass('no-wrap') },
-            { data: 'doc_date', name: 'doc_date', render: renderData, createdCell: (td) => $(td).addClass('no-wrap') },
-            { data: 'item_code', name: 'item_code', render: renderData, createdCell: (td) => $(td).addClass('no-wrap') },
-            { data: 'item_name', name: 'item_name', render: renderData },
-            { data: 'attributes', name: 'attributes', render: renderData },
-            { data: 'uom', name: 'uom', render: renderData },
-            { data: 'balance_qty', name: 'balance_qty', render: renderData },
-            { data: 'vendor_select', name: 'vendor_select', render: renderData },
-            { data: 'location', name: 'location', render: renderData },
-            { data: 'requester', name: 'requester', render: renderData },
+            { data: 'id',visible: false, orderable: true, searchable: false},
+            { data: 'select_checkbox', name: 'select_checkbox', orderable: false, searchable: false},
+            { data: 'book_name', name: 'book_name', render: renderData, orderable: false, searchable: false },
+            { data: 'doc_no', name: 'doc_no', render: renderData, orderable: false, searchable: false },
+            { data: 'doc_date', name: 'doc_date', render: renderData, orderable: false, searchable: false },
+            { data: 'item_code', name: 'item_code', render: renderData, orderable: false, searchable: false },
+            { data: 'item_name', name: 'item_name', render: renderData, orderable: false, searchable: false },
+            { data: 'attributes', name: 'attributes', render: renderData, orderable: false, searchable: false },
+            { data: 'uom', name: 'uom', render: renderData, orderable: false, searchable: false },
+            { data: 'balance_qty', name: 'balance_qty', render: renderData, orderable: false, searchable: false },
+            { data: 'vendor_select', name: 'vendor_select', render: renderData, orderable: false, searchable: false },
+            { data: 'location', name: 'location', render: renderData, orderable: false, searchable: false },
+            { data: 'requester', name: 'requester', render: renderData, orderable: false, searchable: false },
         ];
-    }
-    let filters = [];
-    var exportColumns = [];
-    for (let i = 0; i < columns.length; i++) {
-        if (columns[i].name !== 'check_box' && columns[i].name !== 'actions') {
-            exportColumns.push(i);
-        }
     }
     initializeDataTableCustom('#prModal .po-order-detail', 
         ajaxUrl,
         columns,
-        filters,
-        "PO",
-        exportColumns,
-        [],
-        enableExport = false,
-        enableExport = false 
-
     );
 }
 $(document).on('keyup', '#item_name_search', (e) => {

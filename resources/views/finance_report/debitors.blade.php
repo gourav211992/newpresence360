@@ -18,7 +18,7 @@
                                 <div class="row pofilterhead action-button align-items-center">
                                     <div class="col-md-4">
                                         <h3>Debtors</h3>
-                                        <p class="my-25">As on <strong>{{$date2}}</strong></p>
+                                        <p class="my-25">As on <strong>{{ $date2 }}</strong></p>
                                     </div>
                                     <div
                                         class="col-md-8 text-sm-end pofilterboxcenter mb-0 d-flex flex-wrap align-items-center justify-content-sm-end">
@@ -41,15 +41,16 @@
                                                     @endphp
 
                                                     @isset($all_groups)
-                                                    @foreach($all_groups as $group)
-                                                        <option value="{{$group->id}}" {{ $selectedGroupId == $group->id ? 'selected' : '' }}>
-                                                            {{$group->name}}
-                                                        </option>
-                                                    @endforeach
+                                                        @foreach ($all_groups as $group)
+                                                            <option value="{{ $group->id }}"
+                                                                {{ $selectedGroupId == $group->id ? 'selected' : '' }}>
+                                                                {{ $group->name }}
+                                                            </option>
+                                                        @endforeach
                                                     @endisset
 
                                                 </select>
-                                       </div>
+                                            </div>
                                         </div>
                                         <div class="col-md-3">
                                             <div class="mb-1 mb-sm-0">
@@ -60,24 +61,31 @@
                                                         $selectedLedgerId = request()->query('ledger'); // Get group_id from URL params
                                                     @endphp
                                                     @isset($all_ledgers)
-                                                    @foreach($all_ledgers as $ledger)
-                                                    <option value="{{$ledger->id}}" {{ $selectedLedgerId == $ledger->id ? 'selected' : '' }}>{{$ledger->name}}</option>
-                                                    @endforeach
+                                                        @foreach ($all_ledgers as $ledger)
+                                                            <option value="{{ $ledger->id }}"
+                                                                {{ $selectedLedgerId == $ledger->id ? 'selected' : '' }}>
+                                                                {{ $ledger->name }}</option>
+                                                        @endforeach
                                                     @endisset
 
                                                 </select>
-                                       </div>
+                                            </div>
                                         </div>
                                         <div class="col-md-3">
                                             <label class="form-label" for="fp-range">Select Period</label>
-                                            <input type="text" id="fp-range" class="form-control flatpickr-range bg-white flatpickr-input active" value="{{$date}}" placeholder="YYYY-MM-DD to YYYY-MM-DD" readonly="readonly">
+                                            <input type="text" id="fp-range"
+                                                class="form-control flatpickr-range bg-white flatpickr-input active"
+                                                value="{{ $date }}" placeholder="YYYY-MM-DD to YYYY-MM-DD"
+                                                readonly="readonly">
                                         </div>
 
                                         <div class="col-md-2">
                                             <div class="mt-2 mb-sm-0">
                                                 <label class="mb-1">&nbsp;</label>
-                                                <button class="btn mt-25 btn-warning btn-sm waves-effect waves-float waves-light" onClick="filter()">
-                                                   <i data-feather="filter"></i> Run Report</button>
+                                                <button
+                                                    class="btn mt-25 btn-warning btn-sm waves-effect waves-float waves-light"
+                                                    onClick="filter()">
+                                                    <i data-feather="filter"></i> Run Report</button>
                                             </div>
 
                                         </div>
@@ -88,11 +96,12 @@
 
                                     </div>
                                     <br>
-                                        <div class="col-md-3">
-                                            @if(request()->hasAny(['ledger', 'age0', 'age1', 'age2', 'age3', 'age4']))
-                                            <a type="button" href="{{ route('voucher.debit.report') }}" class="btn btn-danger">Clear</a>
+                                    <div class="col-md-3">
+                                        @if (request()->hasAny(['ledger', 'age0', 'age1', 'age2', 'age3', 'age4']))
+                                            <a type="button" href="{{ route('voucher.debit.report') }}"
+                                                class="btn btn-danger">Clear</a>
                                         @endif
-                                        </div>
+                                    </div>
 
 
 
@@ -100,7 +109,8 @@
                             </div>
                             <div class="col-md-12">
                                 <div class="table-responsive trailbalnewdesfinance po-reportnewdesign gsttabreporttotal">
-                                    <table class="datatables-basic table myrequesttablecbox tabledebreport tableistlastcolumnfixed">
+                                    <table
+                                        class="datatables-basic table myrequesttablecbox tabledebreport tableistlastcolumnfixed">
                                         <thead>
                                             <tr>
                                                 <th>#</th>
@@ -133,73 +143,87 @@
                                         <tbody>
 
                                             @foreach ($customers as $index => $customer)
-                                            <tr>
-                                                <td>{{ $index + 1 }}</td>
-                                                <td class="fw-bolder text-dark text-nowrap">
-                                                    <div
-                                                        data-bs-placement="top" title="{{ $customer?->ledger_parent_name ??"-" }}">
-                                                        {{ $customer?->ledger_parent_name ??"-" }}
-                                                    </div>
-                                                </td>
+                                                <tr>
+                                                    <td>{{ $index + 1 }}</td>
+                                                    <td class="fw-bolder text-dark text-nowrap">
+                                                        <div data-bs-placement="top"
+                                                            title="{{ $customer?->ledger_parent_name ?? '-' }}">
+                                                            {{ $customer?->ledger_parent_name ?? '-' }}
+                                                        </div>
+                                                    </td>
 
-                                                <td class="text-nowrap">
-                                                    <div
-                                                        data-bs-placement="top" title="{{ $customer?->ledger_name ??"-" }}">
-                                                        {{ $customer?->ledger_name ??"-" }}
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <div
-                                                        data-bs-placement="top" title="{{ $customer?->credit_days ??0}}">
-                                                        {{ $customer?->credit_days ??0}}
-                                                    </div>
-                                                </td>
-                                                <td class="text-end text-nowrap">
-                                                    <span class="badge rounded-pill badge-light-success">
-                                                    {{ number_format(abs($customer->total_outstanding), 2) }}
-                                                    <span class="{{ $customer->total_outstanding < 0 ? 'text-danger' : 'text-success' }}">
-                                                        {{ $customer->total_outstanding < 0 ? 'Cr' : 'Dr' }}
-                                                    </span>
-                                                </td>
-                                                <td class="text-end text-nowrap">
-                                                    <div
-                                                        data-bs-placement="top" title="{{ $customer?->overdue ??0}}">
-                                                        {{ Helper::formatIndianNumber($customer?->overdue ??0)}}
-                                                    </div>
-                                                </td>
-                                                <td class="text-end text-nowrap">
-                                                    {{ number_format(abs($customer->days_0_30), 2) }}
+                                                    <td class="text-nowrap">
+                                                        <div data-bs-placement="top"
+                                                            title="{{ $customer?->ledger_name ?? '-' }}">
+                                                            {{ $customer?->ledger_name ?? '-' }}
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <div data-bs-placement="top"
+                                                            title="{{ $customer?->credit_days ?? 0 }}">
+                                                            {{ $customer?->credit_days ?? 0 }}
+                                                        </div>
+                                                    </td>
+                                                    <td class="text-end text-nowrap">
+                                                        <span class="badge rounded-pill badge-light-success">
+                                                            {{ number_format(abs($customer->total_outstanding), 2) }}
+                                                            <span
+                                                                class="{{ $customer->total_outstanding < 0 ? 'text-danger' : 'text-success' }}">
+                                                                {{ $customer->total_outstanding < 0 ? 'Cr' : 'Dr' }}
+                                                            </span>
+                                                    </td>
+                                                    <td class="text-end text-nowrap">
+                                                        <div data-bs-placement="top"
+                                                            title="{{ $customer?->overdue ?? 0 }}">
+                                                            {{ Helper::formatIndianNumber($customer?->overdue ?? 0) }}
+                                                        </div>
+                                                    </td>
+                                                    <td class="text-end text-nowrap">
+                                                        {{ number_format(abs($customer->days_0_30), 2) }}
                                                         {{ $customer->days_0_30 < 0 ? 'Cr' : 'Dr' }}
-                                                </td>
-                                                <td class="text-end text-nowrap">
-                                                    {{ number_format(abs($customer->days_30_60), 2) }}
+                                                    </td>
+                                                    <td class="text-end text-nowrap">
+                                                        {{ number_format(abs($customer->days_30_60), 2) }}
                                                         {{ $customer->days_30_60 < 0 ? 'Cr' : 'Dr' }}
-                                                </td>
-                                                <td class="text-end text-nowrap">
-                                                    {{ number_format(abs($customer->days_60_90), 2) }}
+                                                    </td>
+                                                    <td class="text-end text-nowrap">
+                                                        {{ number_format(abs($customer->days_60_90), 2) }}
                                                         {{ $customer->days_60_90 < 0 ? 'Cr' : 'Dr' }}
-                                                </td>
-                                                <td class="text-end text-nowrap">
-                                                    {{ number_format(abs($customer->days_90_120), 2) }}
+                                                    </td>
+                                                    <td class="text-end text-nowrap">
+                                                        {{ number_format(abs($customer->days_90_120), 2) }}
                                                         {{ $customer->days_90_120 < 0 ? 'Cr' : 'Dr' }}
-                                                </td>
-                                                <td class="text-end text-nowrap">
-                                                    {{ number_format(abs($customer->days_120_180), 2) }}
+                                                    </td>
+                                                    <td class="text-end text-nowrap">
+                                                        {{ number_format(abs($customer->days_120_180), 2) }}
                                                         {{ $customer->days_120_180 < 0 ? 'Cr' : 'Dr' }}
-                                                </td>
-                                                <td class="text-end text-nowrap">
-                                                    {{ number_format(abs($customer->days_above_180), 2) }}
+                                                    </td>
+                                                    <td class="text-end text-nowrap">
+                                                        {{ number_format(abs($customer->days_above_180), 2) }}
                                                         {{ $customer->days_above_180 < 0 ? 'Cr' : 'Dr' }}
-                                                </td>
-                                                     <td>
-                                                        @if($customer->ledger_id)
-                                                    <a  href="{{route("crdr.report.ledger.details",['debit',$customer->ledger_id,$customer->ledger_parent_id])}}@if(request('date'))?date={{request('date')}}@endif" target="_blank"">
-                                                        <i class="cursor-pointer" data-feather='eye'></i>
-                                                    </a>
-                                                        @endif
-                                                </td>
-                                            </tr>
+                                                    </td>
+                                                    <td>
+                                                       @if ($customer->ledger_id)
+                                                        @php
+                                                            $query = [];
+                                                            if (request('date')) $query['date'] = request('date');
+                                                            if (request('location_id')) $query['location_id'] = request('location_id');
+                                                            if (request('organization_id')) $query['organization_id'] = request('organization_id');
+                                                            if (request('cost_center_id')) $query['cost_center_id'] = request('cost_center_id');
 
+                                                            $url = route('crdr.report.ledger.details', ['debit', $customer->ledger_id, $customer->ledger_parent_id]);
+                                                            if ($query) {
+                                                                $url .= '?' . http_build_query($query);
+                                                            }
+                                                        @endphp
+
+                                                        <a href="{{ $url }}" target="_blank">
+                                                            <i class="cursor-pointer" data-feather='eye'></i>
+                                                        </a>
+                                                    @endif
+
+                                                    </td>
+                                                </tr>
                                             @endforeach
 
 
@@ -228,7 +252,7 @@
                     <div>
                         <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="myModalLabel17">
                             <span id="party"></span>
-                            </h4>
+                        </h4>
                         <p class="mb-0">View the below list</p>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -289,22 +313,37 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    <div class="step-custhomapp bg-light">
+                        <ul class="nav nav-tabs my-25 custapploannav" role="tablist">
+                            <li class="nav-item">
+                                <a class="nav-link active" data-bs-toggle="tab" href="#Ageing" role="tab"><i
+                                        data-feather="calendar"></i> Ageing Filter</a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a class="nav-link" data-bs-toggle="tab" href="#Filter" role="tab"><i
+                                        data-feather="bar-chart"></i> Other Filter</a>
+                            </li>
+
+                        </ul>
+                    </div>
+
 
                     <!--
-            <div class="row">
-             <div class="col-md-7 mt-1">
-              <div class="form-check form-check-success mb-1">
-               <input type="checkbox" class="form-check-input" id="colorCheck1" data-column-index=""  checked="">
-               <label class="form-check-label fw-bolder text-dark" for="colorCheck1">All Columns</label>
-              </div>
-             </div>
-            </div>
-    -->
+                    <div class="row">
+                     <div class="col-md-7 mt-1">
+                      <div class="form-check form-check-success mb-1">
+                       <input type="checkbox" class="form-check-input" id="colorCheck1" data-column-index=""  checked="">
+                       <label class="form-check-label fw-bolder text-dark" for="colorCheck1">All Columns</label>
+                      </div>
+                     </div>
+                    </div>
+            -->
 
 
 
                     <div class="tab-content tablecomponentreport">
-                        <div class="tab-pane active" id="Employee">
+                        <div class="tab-pane active" id="Ageing">
 
 
 
@@ -312,7 +351,8 @@
                                 <div class="row">
                                     <div class="col-md-12">
                                         <div class="form-check form-check-primary">
-                                            <input type="checkbox" class="form-check-input" checked id="selectAllInputAging">
+                                            <input type="checkbox" class="form-check-input" checked
+                                                id="selectAllInputAging">
                                             <label class="form-check-label" for="selectAllInputAging">Ageing</label>
                                         </div>
                                     </div>
@@ -321,32 +361,32 @@
                                     <!-- New input fields for days -->
                                     <div class="col-md-4">
                                         <div class="form-group">
-                                            <input type="number" id="age0" class="form-control aging-input" value="30"
-                                                min="0" placeholder="30 Days">
+                                            <input type="number" id="age0" class="form-control aging-input"
+                                                value="30" min="0" placeholder="30 Days">
                                         </div>
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-group">
-                                            <input type="number" id="age1" class="form-control aging-input" value="60"
-                                                min="0" placeholder="60 Days">
+                                            <input type="number" id="age1" class="form-control aging-input"
+                                                value="60" min="0" placeholder="60 Days">
                                         </div>
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-group">
-                                            <input type="number" id="age2" class="form-control aging-input" value="90"
-                                                min="0" placeholder="90 Days">
+                                            <input type="number" id="age2" class="form-control aging-input"
+                                                value="90" min="0" placeholder="90 Days">
                                         </div>
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-group">
-                                            <input type="number" id="age3" class="form-control aging-input" value="120"
-                                                min="0" placeholder="120 Days">
+                                            <input type="number" id="age3" class="form-control aging-input"
+                                                value="120" min="0" placeholder="120 Days">
                                         </div>
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-group">
-                                            <input type="number" id="age4" class="form-control aging-input" value="180"
-                                                min="0" placeholder="180 Days">
+                                            <input type="number" id="age4" class="form-control aging-input"
+                                                value="180" min="0" placeholder="180 Days">
                                         </div>
                                     </div>
                                 </div>
@@ -354,6 +394,44 @@
 
 
 
+                        </div>
+                        <div class="tab-pane" id="Filter">
+                            <div class="compoenentboxreport advanced-filterpopup customernewsection-form">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-check ps-0">
+                                            <label class="form-check-label">Add Filter</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Organizaion</label>
+                                        <select id="organization_id" class="form-select select2" multiple>
+                                            <option value="" disabled>Select</option>
+                                            @foreach ($companies as $organization)
+                                                <option value="{{ $organization->organization->id }}"
+                                                    {{ $organization->organization->id == $organizationId ? 'selected' : '' }}>
+                                                    {{ $organization->organization->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Location</label>
+                                        <select id="location_id" class="form-select select2">
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Cost Center</label>
+                                        <select id="cost_center_id" class="form-select select2" name="cost_center_id"
+                                            required>
+                                        </select>
+                                    </div>
+
+                                </div>
+
+                            </div>
                         </div>
                         <div class="tab-pane" id="Bank">
                             <div class="compoenentboxreport advanced-filterpopup customernewsection-form">
@@ -447,8 +525,8 @@
             </div>
         </div>
     </div>
-     {{-- for customized excel --}}
-    <form id="customExcelExportForm1"  action="{{ route('credit.debit.report.export') }}" method="POST">
+    {{-- for customized excel --}}
+    <form id="customExcelExportForm1" action="{{ route('credit.debit.report.export') }}" method="POST">
         @csrf
         <input type="hidden" name="customers" value="{{ json_encode($customers) }}">
         <!-- Serialize complex arrays to JSON -->
@@ -460,7 +538,10 @@
         <input type="hidden" name="age2" value="{{ $age2 }}">
         <input type="hidden" name="age3" value="{{ $age3 }}">
         <input type="hidden" name="age4" value="{{ $age4 }}">
-        <input type="hidden" name="group_id" value="{{ $selectedGroupId}}">
+        <input type="hidden" name="cost_center_id" value="{{ request('cost_center_id')??null }}">
+        <input type="hidden" name="organization_id" value="{{ request('organization_id')??null }}">
+        <input type="hidden" name="location_id" value="{{ request('location_id')??null }}">
+        <input type="hidden" name="group_id" value="{{ $selectedGroupId }}">
     </form>
 @endsection
 @section('scripts')
@@ -512,293 +593,425 @@
 
         var dt_basic_table = $('.datatables-basic');
         if (dt_basic_table.length) {
-    var dt_basic = dt_basic_table.DataTable({
-        order: [[0, 'asc']],
-        scrollX: true,
-        dom: '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-3"l><"col-sm-12 col-md-6 withoutheadbuttin dt-action-buttons text-end pe-0"B><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
-        "drawCallback": function(settings) {
-            feather.replace(); // Re-initialize icons if needed
-        },
-        displayLength: 8,
-        lengthMenu: [8, 10, 25, 50, 75, 100],
-        buttons:
-        [{
-            extend: 'excel',
-                    text: feather.icons['file'].toSvg({ class: 'font-small-4 me-50' }) + 'Excel',
+            var dt_basic = dt_basic_table.DataTable({
+                order: [
+                    [0, 'asc']
+                ],
+                scrollX: true,
+                dom: '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-3"l><"col-sm-12 col-md-6 withoutheadbuttin dt-action-buttons text-end pe-0"B><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+                "drawCallback": function(settings) {
+                    feather.replace(); // Re-initialize icons if needed
+                },
+                displayLength: 8,
+                lengthMenu: [8, 10, 25, 50, 75, 100],
+                buttons: [{
+                    extend: 'excel',
+                    text: feather.icons['file'].toSvg({
+                        class: 'font-small-4 me-50'
+                    }) + 'Excel',
                     className: 'btn btn-outline-secondary',
                     filename: 'Debtors Report',
-                    action: function (e, dt, node, config) {
-                    document.getElementById('customExcelExportForm1').submit();
+                    action: function(e, dt, node, config) {
+                        document.getElementById('customExcelExportForm1').submit();
+                    },
+                    init: function(api, node, config) {
+                        $(node).removeClass('btn-secondary');
+                        $(node).parent().removeClass('btn-group');
+                        setTimeout(function() {
+                            $(node).closest('.dt-buttons').removeClass('btn-group').addClass(
+                                'd-inline-flex');
+                        }, 50);
                     }
-            ,
-            init: function (api, node, config) {
-                $(node).removeClass('btn-secondary');
-                $(node).parent().removeClass('btn-group');
-                setTimeout(function () {
-                    $(node).closest('.dt-buttons').removeClass('btn-group').addClass('d-inline-flex');
-                }, 50);
-            }
-            }],
-        // buttons: [{
-        //     extend: 'collection',
-        //     className: 'btn btn-outline-secondary dropdown-toggle',
-        //     text: feather.icons['share'].toSvg({
-        //         class: 'font-small-3 me-50'
-        //     }) + 'Export',
-        //     buttons: [
-        //         {
-        //             extend: 'excel',
-        //             text: feather.icons['file'].toSvg({
-        //                 class: 'font-small-4 me-50'
-        //             }) + 'Excel',
-        //             className: 'dropdown-item',
-        //             filename: 'Debtors Report',
-        //             // exportOptions: {
-        //             //     columns: ':not(:last-child)' // Excludes the last column (Action)
-        //             // }
-        //             action: function (e, dt, node, config) {
-        //                                 document.getElementById('customExcelExportForm1').submit();
-        //             }
-        //         },
-        //         {
-        //             extend: 'pdf',
-        //             text: feather.icons['clipboard'].toSvg({
-        //                 class: 'font-small-4 me-50'
-        //             }) + 'Pdf',
-        //             className: 'dropdown-item',
-        //             filename: 'Debtors Report',
-        //             exportOptions: {
-        //                 columns: ':not(:last-child)' // Excludes the last column (Action)
-        //             }
-        //         },
-        //         {
-        //             extend: 'copy',
-        //             text: feather.icons['mail'].toSvg({
-        //                 class: 'font-small-4 me-50'
-        //             }) + 'Mail',
-        //             className: 'dropdown-item',
-        //             filename: 'Debtors Report',
-        //             exportOptions: {
-        //                 columns: ':not(:last-child)' // Excludes the last column (Action)
-        //             }
-        //         }
-        //     ],
-        //     init: function(api, node, config) {
-        //         $(node).removeClass('btn-secondary');
-        //         $(node).parent().removeClass('btn-group');
-        //         setTimeout(function() {
-        //             $(node).closest('.dt-buttons').removeClass('btn-group').addClass('d-inline-flex');
-        //         }, 50);
-        //     }
-        // }],
-        language: {
-            search: '',
-            searchPlaceholder: "Search...",
-            paginate: {
-                previous: '&nbsp;',
-                next: '&nbsp;'
-            }
+                }],
+                // buttons: [{
+                //     extend: 'collection',
+                //     className: 'btn btn-outline-secondary dropdown-toggle',
+                //     text: feather.icons['share'].toSvg({
+                //         class: 'font-small-3 me-50'
+                //     }) + 'Export',
+                //     buttons: [
+                //         {
+                //             extend: 'excel',
+                //             text: feather.icons['file'].toSvg({
+                //                 class: 'font-small-4 me-50'
+                //             }) + 'Excel',
+                //             className: 'dropdown-item',
+                //             filename: 'Debtors Report',
+                //             // exportOptions: {
+                //             //     columns: ':not(:last-child)' // Excludes the last column (Action)
+                //             // }
+                //             action: function (e, dt, node, config) {
+                //                                 document.getElementById('customExcelExportForm1').submit();
+                //             }
+                //         },
+                //         {
+                //             extend: 'pdf',
+                //             text: feather.icons['clipboard'].toSvg({
+                //                 class: 'font-small-4 me-50'
+                //             }) + 'Pdf',
+                //             className: 'dropdown-item',
+                //             filename: 'Debtors Report',
+                //             exportOptions: {
+                //                 columns: ':not(:last-child)' // Excludes the last column (Action)
+                //             }
+                //         },
+                //         {
+                //             extend: 'copy',
+                //             text: feather.icons['mail'].toSvg({
+                //                 class: 'font-small-4 me-50'
+                //             }) + 'Mail',
+                //             className: 'dropdown-item',
+                //             filename: 'Debtors Report',
+                //             exportOptions: {
+                //                 columns: ':not(:last-child)' // Excludes the last column (Action)
+                //             }
+                //         }
+                //     ],
+                //     init: function(api, node, config) {
+                //         $(node).removeClass('btn-secondary');
+                //         $(node).parent().removeClass('btn-group');
+                //         setTimeout(function() {
+                //             $(node).closest('.dt-buttons').removeClass('btn-group').addClass('d-inline-flex');
+                //         }, 50);
+                //     }
+                // }],
+                language: {
+                    search: '',
+                    searchPlaceholder: "Search...",
+                    paginate: {
+                        previous: '&nbsp;',
+                        next: '&nbsp;'
+                    }
+                }
+            });
+
+            $('div.head-label').html('<h6 class="mb-0">Event List</h6>');
         }
-    });
 
-    $('div.head-label').html('<h6 class="mb-0">Event List</h6>');
-}
+        // Flat Date picker (if needed)
+        var dt_date_table = $('.dt-date');
+        if (dt_date_table.length) {
+            dt_date_table.flatpickr({
+                monthSelectorType: 'static',
+                dateFormat: 'm/d/Y'
+            });
+        }
 
-    // Flat Date picker (if needed)
-    var dt_date_table = $('.dt-date');
-    if (dt_date_table.length) {
-        dt_date_table.flatpickr({
-            monthSelectorType: 'static',
-            dateFormat: 'm/d/Y'
-        });
-    }
-    function getDetails(ledger,ledger_group,partyName){
+        function getDetails(ledger, ledger_group, partyName) {
             $.ajax({
-                url: "{{ route('voucher.credit_details.report') }}?ledger_id="+ledger+"&ledger_group_id="+ledger_group+"&type=debit",
-           method: 'GET', // Change to POST if necessary
-        dataType: 'json',
-        success: function(data) {
-            // Check if data is not empty
-            if (data.length > 0) {
-                var tbody = $('#inovice_tbody'); // Get tbody element
-                tbody.empty();
-                $('#party').text(partyName)
+                url: "{{ route('voucher.credit_details.report') }}?ledger_id=" + ledger + "&ledger_group_id=" +
+                    ledger_group + "&type=debit",
+                method: 'GET', // Change to POST if necessary
+                dataType: 'json',
+                success: function(data) {
+                    // Check if data is not empty
+                    if (data.length > 0) {
+                        var tbody = $('#inovice_tbody'); // Get tbody element
+                        tbody.empty();
+                        $('#party').text(partyName)
 
                         // Loop through the response data and append rows to the table
                         $.each(data, function(index, item) {
-                    // Function to format amounts with Cr/Dr
-                    function formatAmount(amount) {
-                        return amount < 0 ? Math.abs(amount) + ' Cr' : amount + ' Dr';
+                            // Function to format amounts with Cr/Dr
+                            function formatAmount(amount) {
+                                return amount < 0 ? Math.abs(amount) + ' Cr' : amount + ' Dr';
+                            }
+
+                            // Create a new row for each item in the response
+                            var row = '<tr>';
+                            row += '<td>' + (index + 1) + '</td>'; // Row index
+                            row += '<td>' + item.bookCode + '</td>'; // Series column
+                            row += '<td>' + item.voucher_no + '</td>'; // Doc No. column
+                            row += '<td>' + item.document_date + '</td>'; // Doc Date column
+                            row += '<td class="text-end">' + formatAmount(item.total_outstanding) +
+                                '</td>'; // O/S Amount column
+                            row += '<td class="text-end">' + formatAmount(item.days_0_30) +
+                                '</td>'; // 0-30 Days column
+                            row += '<td class="text-end">' + formatAmount(item.days_30_60) +
+                                '</td>'; // 30-60 Days column
+                            row += '<td class="text-end">' + formatAmount(item.days_60_90) +
+                                '</td>'; // 60-90 Days column
+                            row += '<td class="text-end">' + formatAmount(item.days_90_120) +
+                                '</td>'; // 90-120 Days column
+                            row += '<td class="text-end">' + formatAmount(item.days_120_180) +
+                                '</td>'; // 120-180 Days column
+                            row += '<td class="text-end">' + formatAmount(item.days_above_180) +
+                                '</td>'; // Above 180 Days column
+                            row += '</tr>';
+
+                            // Append the new row to the table body
+                            tbody.append(row);
+                            $('#invoice-view').modal('show');
+                        });
                     }
-
-                    // Create a new row for each item in the response
-                    var row = '<tr>';
-                    row += '<td>' + (index + 1) + '</td>'; // Row index
-                    row += '<td>' + item.bookCode + '</td>'; // Series column
-                    row += '<td>' + item.voucher_no + '</td>'; // Doc No. column
-                    row += '<td>' + item.document_date + '</td>'; // Doc Date column
-                    row += '<td class="text-end">' + formatAmount(item.total_outstanding) + '</td>'; // O/S Amount column
-                    row += '<td class="text-end">' + formatAmount(item.days_0_30) + '</td>'; // 0-30 Days column
-                    row += '<td class="text-end">' + formatAmount(item.days_30_60) + '</td>'; // 30-60 Days column
-                    row += '<td class="text-end">' + formatAmount(item.days_60_90) + '</td>'; // 60-90 Days column
-                    row += '<td class="text-end">' + formatAmount(item.days_90_120) + '</td>'; // 90-120 Days column
-                    row += '<td class="text-end">' + formatAmount(item.days_120_180) + '</td>'; // 120-180 Days column
-                    row += '<td class="text-end">' + formatAmount(item.days_above_180) + '</td>'; // Above 180 Days column
-                    row += '</tr>';
-
-                    // Append the new row to the table body
-                    tbody.append(row);
-                    $('#invoice-view').modal('show');
-                });
-            }
-        },
-        error: function(xhr, status, error) {
-            console.error('Error fetching data: ', error);
-        }
-    });
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error fetching data: ', error);
+                }
+            });
 
 
         }
 
-        $(document).ready(function () {
+        $(document).ready(function() {
             let urlParams = new URLSearchParams(window.location.search);
-        let selectedVoucher = urlParams.get('voucher');
+            let selectedVoucher = urlParams.get('voucher');
 
-        if (selectedVoucher) {
-            $('#filter_voucher').val(selectedVoucher).select2(); // Set selected and trigger change for Select2
-        }
-
-    // Set the input fields' values based on the URL parameters, using defaults if the params are not set
-    $('#age0').val(urlParams.get('age0') || 30);  // Default to 30 if age0 is not present
-    $('#age1').val(urlParams.get('age1') || 60);  // Default to 60 if age1 is not present
-    $('#age2').val(urlParams.get('age2') || 90);  // Default to 90 if age2 is not present
-    $('#age3').val(urlParams.get('age3') || 120); // Default to 120 if age3 is not present
-    $('#age4').val(urlParams.get('age4') || 180); // Default to 180 if age4 is not present
-
-    function toggleColumns() {
-        $(".column-toggle").each(function () {
-            let colIndex = $(this).data("column-index");
-            if ($(this).is(":checked")) {
-                $("table th:nth-child(" + colIndex + "), table td:nth-child(" + colIndex + ")").show();
-            } else {
-                $("table th:nth-child(" + colIndex + "), table td:nth-child(" + colIndex + ")").hide();
-            }
-        });
-    }
-
-    // Select All Checkbox
-    $("#selectAll").change(function () {
-        $(".column-toggle").prop("checked", $(this).prop("checked"));
-        toggleColumns();
-    });
-
-    // Individual Column Toggle
-    $(".column-toggle").change(function () {
-        toggleColumns();
-    });
-
-    // Initialize on page load
-    toggleColumns();
-});
-
-function filter() {
-    let ledger = $('#filter_ledger').val();
-    let group = $('#filter_group').val();
-    let range = $('#fp-range').val();
-    let ages = [];
-    let isAgingChecked = $('#selectAllInputAging').prop('checked');  // Check if the aging checkbox is checked
-
-    // If the aging checkbox is checked, capture the age values
-    if (isAgingChecked) {
-        $('.aging-input').each(function() {
-            ages.push($(this).val());  // Get value of each aging input field
-        });
-    }
-
-    let currentUrl = new URL(window.location.href);  // Get the current URL
-
-    // Add or update the voucher parameter
-    if (ledger !== "") {
-        currentUrl.searchParams.set('ledger', ledger);
-    } else {
-        currentUrl.searchParams.delete('ledger');
-    }
-    if (group !== "") {
-        currentUrl.searchParams.set('group', group);
-    } else {
-        currentUrl.searchParams.delete('group');
-    }
-    if (range !== "") {
-        currentUrl.searchParams.set('date', range);
-    } else {
-        currentUrl.searchParams.delete('date');
-    }
-
-    // Add age values to the URL only if aging checkbox is checked
-    if (isAgingChecked) {
-        for (let i = 0; i < ages.length; i++) {
-            currentUrl.searchParams.set('age' + i, ages[i]);  // Add or update age0, age1, age2, etc.
-        }
-    } else {
-        // If aging checkbox is not checked, remove any age parameters
-        for (let i = 0; i < 5; i++) {
-            currentUrl.searchParams.delete('age' + i);
-        }
-    }
-
-    const ages_v = ['age0', 'age1', 'age2', 'age3', 'age4'];
-        let prevValue = 0; // Start comparison from 0
-        let isValid = true;
-
-        $.each(ages_v, function (index, id) {
-            let value = parseInt($('#' + id).val(), 10);
-
-            // Validation checks
-            if (isNaN(value) || value <= prevValue) {
-                isValid = false;
-                return false; // Break out of loop on failure
+            if (selectedVoucher) {
+                $('#filter_voucher').val(selectedVoucher).select2(); // Set selected and trigger change for Select2
             }
 
-            prevValue = value; // Update previous value for next check
-        });
+            // Set the input fields' values based on the URL parameters, using defaults if the params are not set
+            $('#age0').val(urlParams.get('age0') || 30); // Default to 30 if age0 is not present
+            $('#age1').val(urlParams.get('age1') || 60); // Default to 60 if age1 is not present
+            $('#age2').val(urlParams.get('age2') || 90); // Default to 90 if age2 is not present
+            $('#age3').val(urlParams.get('age3') || 120); // Default to 120 if age3 is not present
+            $('#age4').val(urlParams.get('age4') || 180); // Default to 180 if age4 is not present
+
+            if (urlParams.get('organization_id') == "")
+                $('#organization_id').val(urlParams.get('organization_id'));
+
+            if (urlParams.get('cost_center_id') == "")
+                $('#cost_center_id').val(urlParams.get('cost_center_id'));
+
+            if (urlParams.get('location_id') == "")
+                $('#location_id').val(urlParams.get('location_id'));
 
 
-    if(isValid)
-        window.location.href = currentUrl.toString();
-    else{
-    Swal.fire({title: 'Not Valid Ageing!',text: "Each age must be a number greater than the previous one.",icon: 'error'});
-    }
-}
-
-$('#filter_group').on('change', function () {
-    let groupId = $(this).val();
-    if (!groupId) {
-        $('#ledgerDropdown').html('<option value="">Select Ledger</option>');
-        return;
-    }
-
-    $.ajax({
-        url: "{{ route('crdr.report.ledger', ':groupId') }}".replace(':groupId', groupId),
-        type: 'GET',
-        dataType: 'json',
-        success: function (response) {
-            if (response.status === 200) {
-                let options = '<option value="">Select Ledger</option>';
-                response.data.forEach(function (ledger) {
-                    options += `<option value="${ledger.id}">${ledger.name}</option>`;
+            function toggleColumns() {
+                $(".column-toggle").each(function() {
+                    let colIndex = $(this).data("column-index");
+                    if ($(this).is(":checked")) {
+                        $("table th:nth-child(" + colIndex + "), table td:nth-child(" + colIndex + ")")
+                            .show();
+                    } else {
+                        $("table th:nth-child(" + colIndex + "), table td:nth-child(" + colIndex + ")")
+                            .hide();
+                    }
                 });
-                $('#filter_ledger').html(options);
-            } else {
-                alert('No ledgers found');
             }
-        },
-        error: function () {
-            alert('Error fetching ledgers');
+
+            // Select All Checkbox
+            $("#selectAll").change(function() {
+                $(".column-toggle").prop("checked", $(this).prop("checked"));
+                toggleColumns();
+            });
+
+            // Individual Column Toggle
+            $(".column-toggle").change(function() {
+                toggleColumns();
+            });
+
+            // Initialize on page load
+            toggleColumns();
+        });
+
+        function filter() {
+            let ledger = $('#filter_ledger').val();
+            let group = $('#filter_group').val();
+            let location = $('#location_id').val();
+            let cost_center = $('#cost_center_id').val();
+            let organization = $('#organization_id').val();
+            let range = $('#fp-range').val();
+            let ages = [];
+            let isAgingChecked = $('#selectAllInputAging').prop('checked'); // Check if the aging checkbox is checked
+
+            // If the aging checkbox is checked, capture the age values
+            if (isAgingChecked) {
+                $('.aging-input').each(function() {
+                    ages.push($(this).val()); // Get value of each aging input field
+                });
+            }
+
+            let currentUrl = new URL(window.location.href); // Get the current URL
+
+            // Add or update the voucher parameter
+            if (ledger !== "" && ledger !== null) {
+                currentUrl.searchParams.set('ledger', ledger);
+            } else {
+                currentUrl.searchParams.delete('ledger');
+            }
+            if (group !== "" && group !== null) {
+                currentUrl.searchParams.set('group', group);
+            } else {
+                currentUrl.searchParams.delete('group');
+            }
+            if (range !== "" && range !== null) {
+                currentUrl.searchParams.set('date', range);
+            } else {
+                currentUrl.searchParams.delete('date');
+            }
+            if (location !== "" && location !== null)
+                currentUrl.searchParams.set('location_id', location);
+            else
+                currentUrl.searchParams.delete('location_id');
+
+            if (organization !== "" && organization !== null)
+                currentUrl.searchParams.set('organization_id', organization);
+            else
+                currentUrl.searchParams.delete('organization_id');
+
+            if (cost_center !== "" && cost_center !== null)
+                currentUrl.searchParams.set('cost_center_id', cost_center);
+            else
+                currentUrl.searchParams.delete('cost_center_id');
+
+            // Add age values to the URL only if aging checkbox is checked
+            if (isAgingChecked) {
+                for (let i = 0; i < ages.length; i++) {
+                    currentUrl.searchParams.set('age' + i, ages[i]); // Add or update age0, age1, age2, etc.
+                }
+            } else {
+                // If aging checkbox is not checked, remove any age parameters
+                for (let i = 0; i < 5; i++) {
+                    currentUrl.searchParams.delete('age' + i);
+                }
+            }
+
+            const ages_v = ['age0', 'age1', 'age2', 'age3', 'age4'];
+            let prevValue = 0; // Start comparison from 0
+            let isValid = true;
+
+            $.each(ages_v, function(index, id) {
+                let value = parseInt($('#' + id).val(), 10);
+
+                // Validation checks
+                if (isNaN(value) || value <= prevValue) {
+                    isValid = false;
+                    return false; // Break out of loop on failure
+                }
+
+                prevValue = value; // Update previous value for next check
+            });
+
+
+            if (isValid)
+                window.location.href = currentUrl.toString();
+            else {
+                Swal.fire({
+                    title: 'Not Valid Ageing!',
+                    text: "Each age must be a number greater than the previous one.",
+                    icon: 'error'
+                });
+            }
         }
-    });
-});
+
+        $('#filter_group').on('change', function() {
+            let groupId = $(this).val();
+            if (!groupId) {
+                $('#ledgerDropdown').html('<option value="">Select Ledger</option>');
+                return;
+            }
+
+            $.ajax({
+                url: "{{ route('crdr.report.ledger', ':groupId') }}".replace(':groupId', groupId),
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.status === 200) {
+                        let options = '<option value="">Select Ledger</option>';
+                        response.data.forEach(function(ledger) {
+                            options += `<option value="${ledger.id}">${ledger.name}</option>`;
+                        });
+                        $('#filter_ledger').html(options);
+                    } else {
+                        alert('No ledgers found');
+                    }
+                },
+                error: function() {
+                    alert('Error fetching ledgers');
+                }
+            });
+        });
+    </script>
+    <script>
+        const locations = @json($locations);
+        const costCenters = @json($cost_centers);
+
+        function updateLocationsDropdown(selectedOrgIds) {
+            selectedOrgIds = $('#organization_id').val() || [];
+
+            const requestedLocationId = @json(request('location_id')) || "";
+
+            const filteredLocations = locations.filter(loc =>
+                selectedOrgIds.includes(String(loc.organization_id))
+            );
+
+            const $locationDropdown = $('#location_id');
+            $locationDropdown.empty().append('<option value="">Select</option>');
+
+
+            filteredLocations.forEach(loc => {
+                const isSelected = String(loc.id) === String(requestedLocationId) ? 'selected' : '';
+                $locationDropdown.append(`<option value="${loc.id}" ${isSelected}>${loc.store_name}</option>`);
+            });
+
+            // Load cost centers if location was pre-selected
+            if (requestedLocationId) {
+                loadCostCenters(requestedLocationId);
+            }
+
+            $locationDropdown.trigger('change');
+        }
 
 
 
+        function loadCostCenters(locationId) {
+            if (locationId) {
+                const filteredCenters = costCenters.filter(center => {
+                    if (!center.location) return false;
+
+                    const locationArray = Array.isArray(center.location) ?
+                        center.location.flatMap(loc => loc.split(',')) : [];
+
+                    return locationArray.includes(String(locationId));
+                });
+                // console.log(filteredCenters,costCenters,locationId);
+
+                const $costCenter = $('#cost_center_id');
+                $costCenter.empty();
+
+                if (filteredCenters.length === 0) {
+                    $costCenter.prop('required', false);
+                    $('.cost_center').hide();
+                } else {
+                    $costCenter.prop('required', true).append('<option value="">Select Cost Center</option>');
+                    $('.cost_center').show();
+
+                    filteredCenters.forEach(center => {
+                        $costCenter.append(`<option value="${center.id}">${center.name}</option>`);
+                    });
+                }
+                $costCenter.val(@json(request('cost_center_id')) || "");
+                $costCenter.trigger('change');
+
+            }
+        }
+        $('#organization_id').trigger('change');
+        // On change of organization
+        $('#organization_id').on('change', function() {
+            const selectedOrgIds = $(this).val() || [];
+            updateLocationsDropdown(selectedOrgIds);
+
+        });
+
+        // On page load, check for preselected orgs
+        const preselectedOrgIds = $('#organization_id').val() || [];
+        if (preselectedOrgIds.length > 0) {
+            updateLocationsDropdown(preselectedOrgIds);
+        }
+        // On location change, load cost centers
+        $('#location_id').on('change', function() {
+            const locationId = $(this).val();
+            if (!locationId) {
+                $('#cost_center_id').empty().append('<option value="">Select Cost Center</option>');
+                // $('.cost_center').hide(); // Optional: hide the section if needed
+                return;
+            }
+            loadCostCenters(locationId);
+
+
+
+        });
     </script>
 @endsection

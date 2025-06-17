@@ -56,20 +56,19 @@ function initializeDataTable(selector, ajaxUrl, columns, filters = {}, exportTit
                 }
             ],
             dom: `
-    <"d-flex justify-content-between align-items-center mx-2 row"
-        <"col-sm-12 col-md-9 dt-action-buttons text-start"B>
-        <"col-sm-12 col-md-3 text-end"f>
-    >
-    r
-    t
-    <"d-flex justify-content-between align-items-top row"
-        <"col-sm-12 col-md-3"l>
-        <"col-sm-12 text-center col-md-6"i>
-        <"col-sm-12 col-md-3 text-end"p>
-    >
-`,
-processing:true,
-
+                <"d-flex justify-content-between align-items-center mx-2 row"
+                    <"col-sm-12 col-md-9 dt-action-buttons text-start"B>
+                    <"col-sm-12 col-md-3 text-end"f>
+                >
+                r
+                t
+                <"d-flex justify-content-between align-items-top row"
+                    <"col-sm-12 col-md-3"l>
+                    <"col-sm-12 text-center col-md-6"i>
+                    <"col-sm-12 col-md-3 text-end"p>
+                >
+            `,
+            processing:true,
             buttons: showButtons ?[
                 {
                     extend: 'collection',

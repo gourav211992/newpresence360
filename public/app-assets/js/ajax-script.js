@@ -98,7 +98,6 @@ $(document).on('submit', '.ajax-input-form', function (e) {
     if (this.classList.contains('psv_form')) {
         const items = document.getElementsByClassName('comp_item_code');
         for (let index = 0; index < items.length; index++) {
-            console.log(items[index].getAttribute('selected-attribute'),'ajax-common');
             data.append(`item_attributes[${index}]`, items[index].getAttribute('selected-attribute'));
         }
         
@@ -339,6 +338,8 @@ function appendSerializedFormRows(formData, containerSelector, jsonKey, options 
         const jsonArray = [];
         $rows.each(function () {
             const obj = {};
+            const isChecked = $(this).find('input.pi_item_checkbox').is(':checked');
+            obj['is_pi_item_id'] = isChecked;
             $(this).find('input, select, textarea').each(function () {
                 const name = $(this).attr('name');
                 const value = $(this).val();

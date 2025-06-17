@@ -240,7 +240,7 @@
                                             $attrValue = $checker->value;
                                         }
                                     }
-                                    if ($attr && $attrValue) {
+                                    if (isset($attr) && isset($attrValue)) {
                                         if ($html) {
                                             $html .= ' , ';
                                         }

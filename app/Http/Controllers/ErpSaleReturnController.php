@@ -77,6 +77,7 @@ class ErpSaleReturnController extends Controller
         $createRoute = route('sale.return.create');
         request()->merge(['type' => $orderType]);
         $typeName = SaleModuleHelper::getAndReturnReturnTypeName($orderType);
+        $create_button = (count($servicesBooks['services']) > 0 && $selectedfyYear['authorized'] && !$selectedfyYear['lock_fy']) ? true : false;
         $autoCompleteFilters = self::getBasicFilters();
         request() -> merge(['type' => $orderType]);
         if ($request -> ajax()) {
@@ -219,6 +220,7 @@ class ErpSaleReturnController extends Controller
             'create_route' => $createRoute,
             'filterArray' => TransactionReportHelper::FILTERS_MAPPING[ConstantHelper::SR_SERVICE_ALIAS],
             'autoCompleteFilters' => $autoCompleteFilters,
+            'create_button' => $create_button,
         ]);
     }
     public function getBasicFilters()

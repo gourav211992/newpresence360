@@ -5,9 +5,11 @@ namespace App\Http\Requests;
 use App\Helpers\BookHelper;
 use App\Models\Item;
 use Illuminate\Foundation\Http\FormRequest;
+use App\Traits\ProcessesComponentJson;
 
 class PoBulkRequest extends FormRequest
 {
+    use ProcessesComponentJson;
      /**
      * Determine if the user is authorized to make this request.
      */
@@ -21,6 +23,10 @@ class PoBulkRequest extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
+    protected function prepareForValidation(): void
+    {
+        $this->processComponentJson('components_json');
+    }
 
      public function rules(): array
      {
@@ -92,7 +98,7 @@ class PoBulkRequest extends FormRequest
     
  
          foreach ($this->input('components', []) as $index => $component) {
-            if (!empty($component['pi_item_id'])) {
+            if (!empty($component['is_pi_item_id'])) {
                 $rules["components.$index.qty"] = 'required|numeric|min:0.000001';
                 $rules["components.$index.rate"] = 'required|numeric|min:0.01';
                 $rules["components.$index.vendor_id"] = 'required';

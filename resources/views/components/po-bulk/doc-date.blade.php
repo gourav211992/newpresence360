@@ -1,0 +1,1 @@
+<input type="text" name="components[{{$rowCount}}][doc_date]" value="{{($row->pi?->getFormattedDate('document_date') ?? '')}}" class="form-control" readonly>

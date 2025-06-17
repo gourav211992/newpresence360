@@ -78,6 +78,7 @@ class ErpSaleOrderController extends Controller
         $salesOrderBulkUploadVersion = "v2";
         //Shufab special case for custom import
         $userGroup = OrganizationGroup::find($organization ?-> group_id);
+        $selectedfyYear = Helper::getFinancialYear(Carbon::now()->format('Y-m-d'));
         if ($userGroup) {
             $groupName = strtolower($userGroup -> name);
             if (str_contains($groupName, 'shufab')) {
@@ -86,7 +87,6 @@ class ErpSaleOrderController extends Controller
         }
         if ($request -> ajax()) {
             $accessible_locations = InventoryHelper::getAccessibleLocations()->pluck('id')->toArray();
-            $selectedfyYear = Helper::getFinancialYear(Carbon::now()->format('Y-m-d'));
             //Date Filters
             $dateRange = $request -> date_range ??  null;
             
@@ -207,13 +207,14 @@ class ErpSaleOrderController extends Controller
         }
         $parentURL = request() -> segments()[0];
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
+        $create_button = (count($servicesBooks['services']) > 0 && $selectedfyYear['authorized'] && !$selectedfyYear['lock_fy']) ? true : false;
         return view('salesOrder.index', [
             'redirect_url' => $redirectUrl,
             'create_route' => $createRoute,
             'filterArray' => TransactionReportHelper::FILTERS_MAPPING[ConstantHelper::SO_SERVICE_ALIAS],
             'autoCompleteFilters' => $autoCompleteFilters,
             'bulk_upload_version' => $salesOrderBulkUploadVersion,
-            'create_button' => count($servicesBooks['services'])
+            'create_button' => $create_button,
         ]);
     }
     public function getBasicFilters()

@@ -10,7 +10,6 @@
 					@endif
 					<p class="mb-0">Select from the below list</p>
 				</div>
-			
 				<div class="d-flex align-items-start gap-2">
 					<button type="button" class="btn btn-primary btn-sm prProcess">
 						<i data-feather="check-circle"></i> Process
@@ -73,13 +72,13 @@
 					<div class="col mb-1">
 						<label class="form-label">&nbsp;</label><br/>
 						<button type="button" class="btn btn-warning btn-sm clearPiFilter"><i data-feather="x-circle"></i> Clear</button>
-						{{-- <button type="button" class="btn btn-primary btn-sm searchPiBtn"><i data-feather="search"></i> Search</button> --}}
 					</div>
 					<div class="col-md-12">
 						<div class="po-table-container">
 							<table class="table table-striped table-bordered po-order-detail myrequesttablecbox nowrap w-100">
 								<thead class="table-light header">
 									<tr>
+										<th class="d-none">ID</th>
 										<th>
 											<div class="form-check form-check-inline me-0">
 												<input class="form-check-input" type="checkbox" name="podetail" id="inlineCheckbox1">
@@ -107,19 +106,6 @@
 								<tbody id="prDataTable"></tbody>
 							</table>
 						</div>
-						
-						<div class="datatable-footer-fixed">
-							<div id="custom_length"></div>        <!-- Left: Show entries -->
-							<div id="custom_info" class="text-center small text-muted"></div>  <!-- Center: Showing 1 to 10... -->
-							<div id="custom_pagination" class="text-end"></div>   <!-- Right: Pagination -->
-						  </div>
-
-						  
-						{{-- <div class="datatable-footer-fixed">
-							<div id="custom_length"></div>
-							<div id="custom_info" class="text-center small text-muted"></div>
-							<div id="custom_pagination" class="text-end flex-grow-1"></div>
-						</div> --}}
 					</div>
 				</div>
 			</div>

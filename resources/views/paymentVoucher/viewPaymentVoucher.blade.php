@@ -1,15 +1,15 @@
 @php
-    $type = $data->document_type ==='receipts'?'debit':'credit';
+    $type = $data->document_type === 'receipts' ? 'debit' : 'credit';
 @endphp
 @php use App\Helpers\ConstantHelper; @endphp
 @extends('layouts.app')
 
 @section('styles')
-<style>
-    .settleInput {
-        text-align: right;
-    }
-</style>
+    <style>
+        .settleInput {
+            text-align: right;
+        }
+    </style>
 @endsection
 
 @section('content')
@@ -22,8 +22,8 @@
         <div class="header-navbar-shadow"></div>
         <div class="content-wrapper container-xxl p-0">
 
-        <form id="voucherForm">
-            @csrf
+            <form id="voucherForm">
+                @csrf
 
                 <input type="hidden" name="status" id="status" value="{{ $data->document_status }}">
                 <input type="hidden" name="totalAmount" id="totalAmount" value="{{ $data->amount }}">
@@ -49,34 +49,38 @@
 
                 <input type="hidden" name="document_type" id="document_type" value="{{ $data->document_type }}">
 
-            <div class="content-header pocreate-sticky">
-                <div class="row">
-                    <div class="content-header-left col-md-6 mb-2">
-                        <div class="row breadcrumbs-top">
-                            <div class="col-12">
-                                <h2 class="content-header-title float-start mb-0">Edit {{ Str::ucfirst($data->document_type) }} Voucher</h2>
-                                <div class="breadcrumb-wrapper">
-                                    <ol class="breadcrumb">
-                                        <li class="breadcrumb-item"><a href="{{ route('/') }}">Home</a></li>
-                                        <li class="breadcrumb-item"><a href="{{ $indexUrl }}" >{{ Str::ucfirst($data->document_type) }} Vouchers</a></li>
-                                        <li class="breadcrumb-item active">View</li>
-                                    </ol>
+                <div class="content-header pocreate-sticky">
+                    <div class="row">
+                        <div class="content-header-left col-md-6 mb-2">
+                            <div class="row breadcrumbs-top">
+                                <div class="col-12">
+                                    <h2 class="content-header-title float-start mb-0">Edit
+                                        {{ Str::ucfirst($data->document_type) }} Voucher</h2>
+                                    <div class="breadcrumb-wrapper">
+                                        <ol class="breadcrumb">
+                                            <li class="breadcrumb-item"><a href="{{ route('/') }}">Home</a></li>
+                                            <li class="breadcrumb-item"><a
+                                                    href="{{ $indexUrl }}">{{ Str::ucfirst($data->document_type) }}
+                                                    Vouchers</a></li>
+                                            <li class="breadcrumb-item active">View</li>
+                                        </ol>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
                         <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
                             <div class="form-group breadcrumb-right">
                                 <a href="{{ $indexUrl }}" class="btn btn-secondary btn-sm"><i
                                         data-feather="arrow-left-circle"></i> Back</a>
-                                @if(isset($fyear) && $fyear['authorized'])
+                                @if (isset($fyear) && $fyear['authorized'])
                                     @if ($buttons['draft'])
                                         <button type="button" onclick = "submitForm('draft');"
                                             class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" id="submit-button"
                                             name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
                                     @endif
-                                    @if($buttons['cancel'])
-                                    <a id = "cancelButton" type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0"><i data-feather='x-circle'></i> Cancel</a>
+                                    @if ($buttons['cancel'])
+                                        <a id = "cancelButton" type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0"><i
+                                                data-feather='x-circle'></i> Cancel</a>
                                     @endif
 
                                     @if ($buttons['submit'])
@@ -87,7 +91,8 @@
                                     @if ($buttons['approve'])
                                         <button type="button" id="reject-button" data-bs-toggle="modal"
                                             data-bs-target="#approveModal" onclick = "setReject();"
-                                            class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i data-feather="x-circle"></i>  Reject</button>
+                                            class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i
+                                                data-feather="x-circle"></i> Reject</button>
                                         <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal"
                                             data-bs-target="#approveModal" onclick = "setApproval();"><i
                                                 data-feather="check-circle"></i> Approve</button>
@@ -100,21 +105,30 @@
 
 
 
-                                    @if($buttons['revoke'])
-                                    <a id = "revokeButton" type="button" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i> Revoke</a>
+                                    @if ($buttons['revoke'])
+                                        <a id = "revokeButton" type="button"
+                                            class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i>
+                                            Revoke</a>
                                     @endif
-                                     @if ($buttons['post'])
+                                    @if ($buttons['post'])
                                         <button onclick = "onPostVoucherOpen();" type = "button"
-                                            class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i data-feather="check-circle"></i> Post</button>
+                                            class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i
+                                                data-feather="check-circle"></i> Post</button>
                                     @endif
-                                    @if($data->document_status == "approved" || $data->document_status == "approval_not_required" || $data->document_status == "posted")
-                                    <a data-bs-toggle="modal" data-bs-target="#addcoulmn" class="btn btn-primary btn-sm mb-0 waves-effect"><i data-feather="mail"></i> Send Mail</a>
+                                    @if (
+                                        $data->document_status == 'approved' ||
+                                            $data->document_status == 'approval_not_required' ||
+                                            $data->document_status == 'posted')
+                                        <a data-bs-toggle="modal" data-bs-target="#addcoulmn"
+                                            class="btn btn-primary btn-sm mb-0 waves-effect"><i data-feather="mail"></i>
+                                            Send Mail</a>
                                     @endif
                                 @endif
                                 @if ($buttons['voucher'])
-                                        <button type="button" onclick="onPostVoucherOpen('posted');"
-                                            class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i data-feather="file-text"></i> Voucher</button>
-                                    @endif
+                                    <button type="button" onclick="onPostVoucherOpen('posted');"
+                                        class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i
+                                            data-feather="file-text"></i> Voucher</button>
+                                @endif
 
 
 
@@ -152,19 +166,21 @@
                                                             };
                                                         @endphp
                                                         <div class="col-md-6 text-sm-end">
-                                                            <span class="badge rounded-pill {{App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$data->document_status] ?? ''}} forminnerstatus">
+                                                            <span
+                                                                class="badge rounded-pill {{ App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$data->document_status] ?? '' }} forminnerstatus">
                                                                 <span class="text-dark">Status</span>
-                                                                 : <span class="{{App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS[$data->document_status] ?? ''}}">
+                                                                : <span
+                                                                    class="{{ App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS[$data->document_status] ?? '' }}">
                                                                     @if ($data->document_status == App\Helpers\ConstantHelper::APPROVAL_NOT_REQUIRED)
-                                                                    Approved
-                                                                @else
-                                                                    {{ ucfirst($data->document_status) }}
-                                                                @endif
+                                                                        Approved
+                                                                    @else
+                                                                        {{ ucfirst($data->document_status) }}
+                                                                    @endif
+                                                                </span>
                                                             </span>
-                                                            </span>        
+                                                        </div>
+
                                                     </div>
-                                                      
-                                             </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -203,7 +219,8 @@
                                                             name="voucher_no" required value="{{ $data->voucher_no }}"
                                                             readonly />
                                                         @error('voucher_no')
-                                                            <span class="text-danger" style="font-size:12px">{{ $message }}</span>
+                                                            <span class="text-danger"
+                                                                style="font-size:12px">{{ $message }}</span>
                                                         @enderror
                                                     </div>
                                                 </div>
@@ -368,8 +385,10 @@
                                                         <label class="form-label mt-50">Exchange Rates</label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="text" class="form-control"
-                                                         id="orgExchangeRate" oninput="resetCalculations()" value="{{ round($data->org_currency_exg_rate, 2) }}"  readonly />
+                                                        <input type="text" class="form-control" id="orgExchangeRate"
+                                                            oninput="resetCalculations()"
+                                                            value="{{ round($data->org_currency_exg_rate, 2) }}"
+                                                            readonly />
 
 
                                                     </div>
@@ -439,19 +458,21 @@
                                                     </div>
 
                                                     <div class="col-md-5">
-                                                        <select id="locations" class="form-select select2" name="location">
-                                                            <option disabled value="" selected>Select Locations</option>
-                                                            @foreach ($locations as $location)
-                                                            <option value="{{ $location->id }}"
-                                                                {{ (isset($data->location) && $data->location == $location->id) ? 'selected' : '' }}>
-                                                                {{ $location->store_name }}
+                                                        <select id="locations" class="form-select select2"
+                                                            name="location">
+                                                            <option disabled value="" selected>Select Locations
                                                             </option>
+                                                            @foreach ($locations as $location)
+                                                                <option value="{{ $location->id }}"
+                                                                    {{ isset($data->location) && $data->location == $location->id ? 'selected' : '' }}>
+                                                                    {{ $location->store_name }}
+                                                                </option>
                                                             @endforeach
                                                         </select>
                                                     </div>
 
                                                 </div>
-                                                {{-- @if(count($cost_centers) > 0 && $data->cost_center_id!=null)
+                                                {{-- @if (count($cost_centers) > 0 && $data->cost_center_id != null)
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Cost Center <span
@@ -462,7 +483,7 @@
                                                     <select class="form-control select2" name="cost_center_id"
                                                             id="cost_center_id">
                                                             @foreach ($cost_centers as $cost)
-                                                                <option value="{{ $cost['id'] }}" @if($cost['id']===$data->cost_center_id) selected @endif>
+                                                                <option value="{{ $cost['id'] }}" @if ($cost['id'] === $data->cost_center_id) selected @endif>
                                                                     {{ $cost['name'] }}</option>
                                                             @endforeach
                                                         </select>
@@ -470,27 +491,39 @@
                                                 </div>
 
                                                     @endif --}}
-                                                    @php
+                                                @php
                                                     // Find the selected location object
                                                     $selectedLocation = $locations->firstWhere('id', $data->location);
-                                                    $locationCostCenters = $cost_centers ?? [];
+
+                                                    // Initialize as empty array if no location found
+                                                    $locationCostCenters = [];
+                                                    if ($selectedLocation) {
+                                                        $locationCostCenters = $selectedLocation->cost_centers ?? [];
+                                                    }
 
                                                     // Check if the selected cost center exists in this location
-                                                    $showCostCenter = count($locationCostCenters) > 0 || collect($locationCostCenters)->contains('id', $data->cost_center_id);
+                                                    $showCostCenter =
+                                                        count($locationCostCenters) > 0 ||
+                                                        collect($locationCostCenters)->contains(
+                                                            'id',
+                                                            $data->cost_center_id,
+                                                        );
                                                 @endphp
-
-                                                <div class="row align-items-center mb-1" id="costCenterRow" style="{{ $showCostCenter ? '' : 'display:none;' }}">
+                                                <div class="row align-items-center mb-1" id="costCenterRow"
+                                                    style="{{ $showCostCenter ? '' : 'display:none;' }}">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Cost Center <span class="text-danger">*</span></label>
+                                                        <label class="form-label">Cost Center <span
+                                                                class="text-danger">*</span></label>
                                                     </div>
 
                                                     <div class="col-md-5 mb-1 mb-sm-0">
-                                                        <select class="costCenter form-control select2" name="cost_center_id" id="cost_center_id">
+                                                        <select class="costCenter form-control select2"
+                                                            name="cost_center_id" id="cost_center_id">
                                                             @foreach ($locationCostCenters as $value)
-                                                            <option value="{{ $value['id'] }}"
-                                                                @if($value['id'] == $data->cost_center_id) selected @endif>
-                                                                {{ $value['name'] }}
-                                                            </option>
+                                                                <option value="{{ $value['id'] }}"
+                                                                    @if ($value['id'] == $data->cost_center_id) selected @endif>
+                                                                    {{ $value['name'] }}
+                                                                </option>
                                                             @endforeach
                                                         </select>
                                                     </div>
@@ -498,10 +531,14 @@
 
 
                                             </div>
-                                                               {{-- History Code --}}
-                           @include('partials.approval-history', ['document_status' => $data->document_status, 'revision_number' => $data->revision_number])
-                        </div>
-                                        <div class="row" @if($data->document_status=="cancel") style="display:none;" @endif>
+                                            {{-- History Code --}}
+                                            @include('partials.approval-history', [
+                                                'document_status' => $data->document_status,
+                                                'revision_number' => $data->revision_number,
+                                            ])
+                                        </div>
+                                        <div class="row"
+                                            @if ($data->document_status == 'cancel') style="display:none;" @endif>
                                             <div class="col-md-12">
                                                 <div class="border-top mt-2 pt-2 mb-1">
                                                     <div class="row">
@@ -544,14 +581,15 @@
                                                                     <td>{{ $no }}</td>
                                                                     <td class="poprod-decpt">
                                                                         <input type="text" placeholder="Select"
-                                                                            class="form-control mw-100 ledgerselect mb-25 partyCode{{$no}}" required data-id="{{ $no }}"
+                                                                            class="form-control mw-100 ledgerselect mb-25 partyCode{{ $no }}"
+                                                                            required data-id="{{ $no }}"
                                                                             required data-id="{{ $no }}"
                                                                             value="{{ $item?->ledger?->code ?? $item?->party?->ledger?->code }}" />
                                                                         <input type="hidden" name="party_id[]"
                                                                             type="hidden"
                                                                             id="party_id{{ $no }}"
                                                                             class="ledgers"
-                                                                            value="{{ $item->ledger_id??$item->party_id }}" />
+                                                                            value="{{ $item->ledger_id ?? $item->party_id }}" />
                                                                     </td>
                                                                     <td class="poprod-decpt"><input type="text"
                                                                             disabled placeholder="Select"
@@ -560,37 +598,60 @@
                                                                             value="{{ $item?->ledger?->name ?? $item?->party?->ledger?->name }}" />
                                                                     </td>
                                                                     <td>
-                                                                        <select required id="groupSelect{{$no}}"
+                                                                        <select required
+                                                                            id="groupSelect{{ $no }}"
                                                                             name="parent_ledger_id[]"
                                                                             class="ledgerGroup form-select mw-100">
-                                                                            <option value="{{ $item?->ledger_group?->id ?? $item?->party?->ledger_group?->id }}">{{ $item?->ledger_group?->name ?? $item?->party?->ledger_group?->name }}</option>
+                                                                            <option
+                                                                                value="{{ $item?->ledger_group?->id ?? $item?->party?->ledger_group?->id }}">
+                                                                                {{ $item?->ledger_group?->name ?? $item?->party?->ledger_group?->name }}
+                                                                            </option>
                                                                         </select>
                                                                     </td>
                                                                     <td>
                                                                         <input type="text" disabled
                                                                             placeholder="Select"
                                                                             class="form-control mw-100 mb-25 organization"
-                                                                            id="organization{{$no}}"
-                                                                            value="{{ $item?->ledger?->organization?->name ?? $item?->party?->ledger?->organization?->name }}"  />
+                                                                            id="organization{{ $no }}"
+                                                                            value="{{ $item?->ledger?->organization?->name ?? $item?->party?->ledger?->organization?->name }}" />
                                                                     </td>
                                                                     <td>
-                                                                        <div class="position-relative d-flex align-items-center">
-                                                                            <select class="form-select mw-100 invoiceDrop drop{{ $no }}" data-id="{{ $no }}" name="reference[]">
+                                                                        <div
+                                                                            class="position-relative d-flex align-items-center">
+                                                                            <select
+                                                                                class="form-select mw-100 invoiceDrop drop{{ $no }}"
+                                                                                data-id="{{ $no }}"
+                                                                                name="reference[]">
                                                                                 {{-- <option value="">Selecvoucht</option> --}}
-                                                                                <option @if($item->reference=="Invoice") selected @endif>Invoice</option>
-                                                                                <option @if($item->reference=="Advance") selected @endif>Advance</option>
-                                                                                <option @if($item->reference=="On Account") selected @endif>On Account</option>
+                                                                                <option
+                                                                                    @if ($item->reference == 'Invoice') selected @endif>
+                                                                                    Invoice</option>
+                                                                                <option
+                                                                                    @if ($item->reference == 'Advance') selected @endif>
+                                                                                    Advance</option>
+                                                                                <option
+                                                                                    @if ($item->reference == 'On Account') selected @endif>
+                                                                                    On Account</option>
                                                                             </select>
                                                                             <div class="ms-50 flex-shrink-0">
-                                                                                <button type="button" class="btn p-25 btn-sm btn-outline-secondary invoice{{ $no }}" style="font-size: 10px" onclick="openInvoice({{ $no }},{{$data->id}},{{$item->id}})" @if($item->reference!="Invoice") disabled @endif>Invoice</button>
+                                                                                <button type="button"
+                                                                                    class="btn p-25 btn-sm btn-outline-secondary invoice{{ $no }}"
+                                                                                    style="font-size: 10px"
+                                                                                    onclick="openInvoice({{ $no }},{{ $data->id }},{{ $item->id }})"
+                                                                                    @if ($item->reference != 'Invoice') disabled @endif>Invoice</button>
                                                                             </div>
                                                                         </div>
                                                                     </td>
                                                                     <td>
-                                                                            <input type="text" class="form-control mw-100 text-end bankInput reference_no" 
-                                                                                name="reference_no[]" data-row="{{ $no }}" id="reference_no{{ $no }}" 
-                                                                                @if($item->reference_no) value="{{ $item->reference_no }}" @endif />
-                                                                            <span class="text-danger bankInput" id="reference_error{{ $no }}" style="font-size:12px"></span>
+                                                                        <input type="text"
+                                                                            class="form-control mw-100 text-end bankInput reference_no"
+                                                                            name="reference_no[]"
+                                                                            data-row="{{ $no }}"
+                                                                            id="reference_no{{ $no }}"
+                                                                            @if ($item->reference_no) value="{{ $item->reference_no }}" @endif />
+                                                                        <span class="text-danger bankInput"
+                                                                            id="reference_error{{ $no }}"
+                                                                            style="font-size:12px"></span>
                                                                     </td>
                                                                     <td><input type="number"
                                                                             class="form-control mw-100 text-end amount"
@@ -604,10 +665,17 @@
                                                                             value="{{ $item->orgAmount }}" required />
                                                                     </td>
                                                                     <td>
-                                                                        @if($data->document_status=="approved" || $data->document_status=="approval_not_required"||$data->document_status=="posted")
-                                                                        <a href="javascript:void(0);" data-url="{{route('paymentVouchers.print',[$data->id,$item->ledger_id,$item->ledger_group_id])}}" class="text-primary print-btn"><i data-feather="printer"></i></a></td>
-                                                                        @endif
-                                                                    </tr>
+                                                                        @if (
+                                                                            $data->document_status == 'approved' ||
+                                                                                $data->document_status == 'approval_not_required' ||
+                                                                                $data->document_status == 'posted')
+                                                                            <a href="javascript:void(0);"
+                                                                                data-url="{{ route('paymentVouchers.print', [$data->id, $item->ledger_id, $item->ledger_group_id]) }}"
+                                                                                class="text-primary print-btn"><i
+                                                                                    data-feather="printer"></i></a>
+                                                                    </td>
+                                                            @endif
+                                                            </tr>
                                                             @endforeach
                                                         </tbody>
                                                         <tfoot>
@@ -728,7 +796,8 @@
                         </div>
                         <div class="modal-footer text-end">
                             <button onclick = "postVoucher(this);" id = "posting_button" type = "button"
-                                class="btn btn-primary btn-sm waves-effect waves-float waves-light"><i data-feather="check-circle"></i> Submit</button>
+                                class="btn btn-primary btn-sm waves-effect waves-float waves-light"><i
+                                    data-feather="check-circle"></i> Submit</button>
                         </div>
                     </div>
                 </div>
@@ -780,26 +849,29 @@
         </div>
     </div>
     <!-- END: Content-->
-    <div class="modal fade text-start" id="invoice" tabindex="-1" aria-labelledby="myModalLabel17" aria-hidden="true">
+    <div class="modal fade text-start" id="invoice" tabindex="-1" aria-labelledby="myModalLabel17"
+        aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 1000px">
             <div class="modal-content">
                 <div class="modal-header">
                     <div>
-                        <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="myModalLabel17">Select Pending Invoices</h4>
+                        <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="myModalLabel17">Select
+                            Pending Invoices</h4>
                         <p class="mb-0">Settled Amount from the below list</p>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                     <div class="row">
+                    <div class="row">
                         <div class="col-md-3 header_invoices">
                             <div class="mb-1">
                                 <label class="form-label">Date <span class="text-danger">*</span></label>
-                                <input type="date" class="form-control" id="voucherDate" max="{{ date('Y-m-d') }}"/>
+                                <input type="date" class="form-control" id="voucherDate"
+                                    max="{{ date('Y-m-d') }}" />
                             </div>
                         </div>
 
-                         <div class="col-md-3 header_invoices">
+                        <div class="col-md-3 header_invoices">
                             <div class="mb-1">
                                 <label class="form-label">Voucher Type <span class="text-danger">*</span></label>
                                 <select class="form-select select2" id="book_code">
@@ -808,25 +880,26 @@
                                         <option value="{{ $book->alias }}">{{ $book->name }}</option>
                                     @endforeach
                                 </select>
-                                </div>
+                            </div>
                         </div>
 
-                         <div class="col-md-3 header_invoices">
+                        <div class="col-md-3 header_invoices">
                             <div class="mb-1">
                                 <label class="form-label">Document No. <span class="text-danger">*</span></label>
                                 <input type="text" id="document_no" class="form-control" />
                             </div>
                         </div>
 
-                         <div class="col-md-3  mb-1 header_invoices">
-                              <label class="form-label">&nbsp;</label><br/>
-                             <button type="button" class="btn btn-warning btn-sm" onclick="getLedgers()"><i data-feather="search"></i> Search</button>
-                         </div>
-                         <div class="col-md-12">
+                        <div class="col-md-3  mb-1 header_invoices">
+                            <label class="form-label">&nbsp;</label><br />
+                            <button type="button" class="btn btn-warning btn-sm" onclick="getLedgers()"><i
+                                    data-feather="search"></i> Search</button>
+                        </div>
+                        <div class="col-md-12">
                             <div class="table-responsive">
                                 <table class="mt-1 table myrequesttablecbox table-striped po-order-detail">
                                     <thead>
-                                         <tr>
+                                        <tr>
                                             <th>#</th>
                                             <th>Date</th>
                                             <th>Series</th>
@@ -836,29 +909,32 @@
                                             <th class="text-end">Amount</th>
                                             <th class="text-end">Balance</th>
                                             <th class="text-end" width="150px">Settle Amt</th>
-                                             <th class="text-center">
-                                                 <div class="form-check form-check-inline me-0">
-                                                    <input class="form-check-input" type="checkbox" name="podetail" disabled id="inlineCheckbox1">
+                                            <th class="text-center">
+                                                <div class="form-check form-check-inline me-0">
+                                                    <input class="form-check-input" type="checkbox" name="podetail"
+                                                        disabled id="inlineCheckbox1">
                                                 </div>
-                                             </th>
-                                          </tr>
-                                        </thead>
-                                        <tbody id="vouchersBody">
-                                       </tbody>
-                                       <tfoot>
-                                            <tr>
-                                                <td colspan="9" class="text-end">Total</td>
-                                                <td class="fw-bolder text-dark text-end settleTotal">0</td>
-                                            </tr>
-                                       </tfoot>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="vouchersBody">
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="9" class="text-end">Total</td>
+                                            <td class="fw-bolder text-dark text-end settleTotal">0</td>
+                                        </tr>
+                                    </tfoot>
                                 </table>
                             </div>
                         </div>
-                     </div>
+                    </div>
                 </div>
                 <div class="modal-footer text-end">
-                    <button class="btn btn-outline-secondary btn-sm" hidden data-bs-dismiss="modal"><i data-feather="x-circle"></i> Cancel</button>
-                    <button class="btn btn-primary btn-sm" data-bs-dismiss="modal" type="button" hidden onclick="setAmount()"><i data-feather="check-circle"></i> Process</button>
+                    <button class="btn btn-outline-secondary btn-sm" hidden data-bs-dismiss="modal"><i
+                            data-feather="x-circle"></i> Cancel</button>
+                    <button class="btn btn-primary btn-sm" data-bs-dismiss="modal" type="button" hidden
+                        onclick="setAmount()"><i data-feather="check-circle"></i> Process</button>
                 </div>
             </div>
         </div>
@@ -888,115 +964,114 @@
         </div>
     </div>
 
-  <div class="modal fade text-start filterpopuplabel " id="addcoulmn" tabindex="-1" aria-labelledby="myModalLabel17" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div>
-                    <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="myModalLabel17">Send Mail to {{$data->document_type=='payments'?'Vendor':'Customer'}}</h4>
+    <div class="modal fade text-start filterpopuplabel " id="addcoulmn" tabindex="-1" aria-labelledby="myModalLabel17"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="myModalLabel17">Send Mail to
+                            {{ $data->document_type == 'payments' ? 'Vendor' : 'Customer' }}</h4>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="row">
-                    <div class="col-md-12">
-                         <div class=" customernewsection-form mb-1">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class=" customernewsection-form mb-1">
 
-                            <div class="row mt-1">
-                                <div class="col-md-8 mb-1">
-                                    <label class="form-label">To <label class="text-danger">*</label></label>
-                                    <select disabled class="form-select select2" name="to" id="to" required multiple>
-                                        @foreach($to_users as $to)
-                                        <option value="{{$to->id}}" data-type="{{$to->type}}" data-ledger_id="{{$to->ledger}}"  data-ledger_group_id="{{$to->group}}" selected>{{$to->email}}</option>
-                                        @endforeach
-                                    </select>
+                                <div class="row mt-1">
+                                    <div class="col-md-8 mb-1">
+                                        <label class="form-label">To <label class="text-danger">*</label></label>
+                                        <select disabled class="form-select select2" name="to" id="to"
+                                            required multiple>
+                                            @foreach ($to_users as $to)
+                                                <option value="{{ $to->id }}" data-type="{{ $to->type }}"
+                                                    data-ledger_id="{{ $to->ledger }}"
+                                                    data-ledger_group_id="{{ $to->group }}" selected>
+                                                    {{ $to->email }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-8 mb-1">
+                                        <label class="form-label">CC <label class="text-danger">*</label></label>
+                                        @php
+                                            $selectedCc = [App\Helpers\Helper::getAuthenticatedUser()->auth_user_id];
+                                        @endphp
+
+                                        <select class="form-select select2" name="cc" multiple>
+                                            <option disabled>Select</option>
+                                            @foreach ($cc_users as $cc)
+                                                <option value="{{ $cc->id }}"
+                                                    {{ in_array($cc->id, $selectedCc) ? 'selected' : '' }}>
+                                                    {{ $cc->email }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+
+                                    </div>
                                 </div>
-                                <div class="col-md-8 mb-1">
-                                    <label class="form-label">CC <label class="text-danger">*</label></label>
-                                    @php
-                                        $selectedCc = [App\Helpers\Helper::getAuthenticatedUser()->auth_user_id];
-                                    @endphp
-
-                                    <select class="form-select select2" name="cc" multiple>
-                                        <option disabled>Select</option>
-                                        @foreach($cc_users as $cc)
-                                            <option value="{{ $cc->id }}" {{ in_array($cc->id, $selectedCc) ? 'selected' : '' }}>
-                                                {{ $cc->email }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-
+                                <input name="payment_voucher_id" type="hidden" value="{{ $data->id }}">
+                                <div class="col-md-12">
+                                    <label class="form-label">Remarks <label class="text-danger">*</label></label>
+                                    <textarea class="form-control" placeholder="Enter Remarks" id="mail_remarks" name="mail_remarks" required>Please find attached your current {{ $data->document_type == 'payments' ? 'payment' : 'receipt' }} advice.</textarea>
                                 </div>
-                             </div>
-                             <input name="payment_voucher_id" type="hidden" value="{{$data->id}}">
-                             <div class="col-md-12">
-                                <label class="form-label">Remarks  <label class="text-danger">*</label></label>
-                                <textarea
-                                    class="form-control"
-                                    placeholder="Enter Remarks"
-                                    id="mail_remarks"
-                                    name="mail_remarks"
-                                    required
-                                >Please find attached your current {{$data->document_type=='payments'?'payment':'receipt'}} advice.</textarea>
                             </div>
                         </div>
-                     </div>
-                 </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="reset" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="applyBtn" class="btn btn-primary data-submit mr-1">Submit</button>
+                </div>
+
+
+
             </div>
-
-            <div class="modal-footer">
-                <button type="reset" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" id="applyBtn" class="btn btn-primary data-submit mr-1">Submit</button>
-            </div>
-
-
-
         </div>
     </div>
-</div>
 
 @endsection
 
 @section('scripts')
-
     <script>
+        document.addEventListener("click", function(e) {
+            if (e.target.closest(".print-btn")) {
+                e.preventDefault();
+                $('.preloader').show();
+                const btn = e.target.closest(".print-btn");
+                const printUrl = btn.getAttribute("data-url");
+                $.ajax({
+                    url: printUrl,
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    success: function() {
+                        $('.preloader').hide();
+                        window.open(printUrl, '_blank');
+                    },
+                    error: function(xhr) {
+                        $('.preloader').hide();
+                        console.log(xhr.responseJSON)
+                        let errorMessage = 'An unexpected error occurred.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
 
-document.addEventListener("click", function (e) {
-    if (e.target.closest(".print-btn")) {
-        e.preventDefault();
-        $('.preloader').show();
-        const btn = e.target.closest(".print-btn");
-        const printUrl = btn.getAttribute("data-url");
-        $.ajax({
-            url: printUrl,
-            method: 'GET',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            success: function () {
-                $('.preloader').hide();
-                window.open(printUrl, '_blank');
-            },
-            error: function (xhr) {
-                $('.preloader').hide();
-                console.log(xhr.responseJSON)
-                let errorMessage = 'An unexpected error occurred.';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    errorMessage = xhr.responseJSON.message;
-                }
-
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Print Error',
-                    html: errorMessage,
-                    allowOutsideClick: false,
-                    allowEscapeKey: false,
-                    confirmButtonText: 'OK'
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Print Error',
+                            html: errorMessage,
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,
+                            confirmButtonText: 'OK'
+                        });
+                    }
                 });
             }
         });
-    }
-});
 
 
         function onPostVoucherOpen(type = "not_posted") {
@@ -1097,8 +1172,9 @@ document.addEventListener("click", function (e) {
                                 text: response.message,
                                 icon: 'success',
                             });
-                            if ("{{$data->document_type}}" === 'Receipt' || "{{$data->document_type}}" === 'receipts' )
-                            location.href = '/receipts';
+                            if ("{{ $data->document_type }}" === 'Receipt' ||
+                                "{{ $data->document_type }}" === 'receipts')
+                                location.href = '/receipts';
                             else
                                 location.href = '/payments';
 
@@ -1162,9 +1238,9 @@ document.addEventListener("click", function (e) {
             }
         });
 
-        function openInvoice(id,paymentId=null,details=null,ref=null) {
+        function openInvoice(id, paymentId = null, details = null, ref = null) {
             console.log(id);
-            if ($('#party_id'+id).val()!="") {
+            if ($('#party_id' + id).val() != "") {
                 $('.drop' + id).val('Invoice');
                 const comingParty = $('#party_id' + id).val();
                 if (comingParty != $('#currentParty').val()) {
@@ -1175,17 +1251,17 @@ document.addEventListener("click", function (e) {
                 }
                 $('#currentParty').val(comingParty);
                 $('#currentRow').val(id);
-                getLedgers(paymentId,details,ref);
+                getLedgers(paymentId, details, ref);
                 $('#invoice').modal('toggle');
-                if(paymentId!=null)
-                $('.header_invoices').hide();
+                if (paymentId != null)
+                    $('.header_invoices').hide();
             } else {
                 $('.drop' + id).val('');
                 alert('Select party to select invoice!!');
             }
         }
 
-        function getLedgers(paymentId=null,details=null,ref=null) {
+        function getLedgers(paymentId = null, details = null, ref = null) {
             $('.vouchers:not(:checked)').map(function() {
                 $('#' + this.value).remove();
             }).get();
@@ -1208,42 +1284,45 @@ document.addEventListener("click", function (e) {
                 data: {
                     date: $('#voucherDate').val(),
                     '_token': '{!! csrf_token() !!}',
-                    partyCode: $('.partyCode'+$('#currentRow').val()).val(),
+                    partyCode: $('.partyCode' + $('#currentRow').val()).val(),
                     book_code: $('#book_code').val(),
                     partyID: $('#party_id' + $('#currentRow').val()).val(),
                     ledgerGroup: $('#groupSelect' + $('#currentRow').val()).val(),
                     document_no: $('#document_no').val(),
                     type: $('#document_type').val(),
-                    payment_voucher_id:'{{$data->id}}',
-                    page:'view',
-                    details_id:details,
+                    payment_voucher_id: '{{ $data->id }}',
+                    page: 'view',
+                    details_id: details,
                 },
                 success: function(response) {
                     if (response.data.length > 0) {
                         var html = '';
                         $.each(response.data, function(index, val) {
                             if (!preSelected.includes(val['id'].toString())) {
-                                $.each(val.items || [], function (i, item) {
+                                $.each(val.items || [], function(i, item) {
 
-                                var amount = 0.00;
-                                var checked = "";
-                                var dataAmount = parseFloat(val['balance']).toFixed(2);
-                                if (partyData != "" && partyData != undefined) {
-                                    $.each(JSON.parse(partyData), function(indexP, valP) {
-                                        if (valP['voucher_id'].toString() == val['id']) {
-                                            amount = (parseFloat(valP['amount'])).toFixed(2);
-                                            checked = "checked";
-                                            dataAmount = (parseFloat(valP['amount'])).toFixed(
-                                            2);
-                                        }
-                                    });
-                                }
+                                    var amount = 0.00;
+                                    var checked = "";
+                                    var dataAmount = parseFloat(val['balance']).toFixed(2);
+                                    if (partyData != "" && partyData != undefined) {
+                                        $.each(JSON.parse(partyData), function(indexP, valP) {
+                                            if (valP['voucher_id'].toString() == val[
+                                                    'id']) {
+                                                amount = (parseFloat(valP['amount']))
+                                                    .toFixed(2);
+                                                checked = "checked";
+                                                dataAmount = (parseFloat(valP[
+                                                    'amount'])).toFixed(
+                                                    2);
+                                            }
+                                        });
+                                    }
 
-                                if (val['balance'] < 1 && checked == "") {
-                                    console.log('hii' + val['id']);
-                                } else {
-                                    if(val['settle']){
-                                    html += `<tr id="${val['id']}" class="voucherRows">
+                                    if (val['balance'] < 1 && checked == "") {
+                                        console.log('hii' + val['id']);
+                                    } else {
+                                        if (val['settle']) {
+                                            html += `<tr id="${val['id']}" class="voucherRows">
                                             <td>${index+1}</td>
                                             <td>${val['date']}</td>
                                             <td class="fw-bolder text-dark">${val['series']['book_code'].toUpperCase()}</td>
@@ -1261,9 +1340,9 @@ document.addEventListener("click", function (e) {
                                                 </div>
                                             </td>
                                         </tr>`;
+                                        }
                                     }
-                                }
-                            });
+                                });
                             }
                         });
                         $('#LedgerId').val(response.ledgerId);
@@ -1297,9 +1376,12 @@ document.addEventListener("click", function (e) {
                 $('.vouchers').prop('checked', this.checked);
                 selectAllVouchers();
             });
-            $("#revisionNumber").change(function() {
-                window.location.href = "{{ route($editUrlString, $data->id) }}?revisionNumber=" +
-                    $(this).val();
+            const baseEditUrl = "{{ route($editUrlString, $data->id) }}";
+
+            $("#revisionNumber").on("change", function() {
+                const selectedRevision = $(this).val();
+                const fullUrl = baseEditUrl + "?revisionNumber=" + encodeURIComponent(selectedRevision);
+                window.open(fullUrl, "_blank");
             });
         });
 
@@ -1408,11 +1490,9 @@ document.addEventListener("click", function (e) {
                 $('#ledger_id').prop('required', true);
             }
             @if (!$buttons['draft'])
-$('#voucherForm').find('input, select, textarea').prop('disabled', true);
-$('#revisionNumber').prop('disabled', false);
-
-
-@endif
+                $('#voucherForm').find('input, select, textarea').prop('disabled', true);
+                $('#revisionNumber').prop('disabled', false);
+            @endif
             bind();
 
             if (orgCurrency != "") {
@@ -1482,14 +1562,15 @@ $('#revisionNumber').prop('disabled', false);
                             },
                             error: function() {
                                 response(
-                            []); // Respond with an empty array in case of error
+                                    []); // Respond with an empty array in case of error
                             },
                         });
                     },
                     minLength: 0,
                     select: function(event, ui) {
                         const documentType = $("#document_type").val();
-                        const isReceipts = (documentType === '{{ ConstantHelper::RECEIPTS_SERVICE_ALIAS }}');
+                        const isReceipts = (documentType ===
+                            '{{ ConstantHelper::RECEIPTS_SERVICE_ALIAS }}');
 
                         let relation = null;
                         let relationLabel = '';
@@ -1623,14 +1704,14 @@ $('#revisionNumber').prop('disabled', false);
                         <td><a href="#" class="text-danger deleteRow"><i data-feather="trash-2"></i></a></td>
                     </tr>`;
                 $('.mrntableselectexcel').append(newRow);
-                
+
                 // Set visibility based on payment type
                 if ($("#Bank").is(":checked")) {
                     $('#reference_no' + rowCount).prop('required', true).closest('td').show();
                 } else {
                     $('#reference_no' + rowCount).prop('required', false).closest('td').hide();
                 }
-                
+
                 bind();
                 initializeAutocomplete();
                 updateLevelNumbers();
@@ -1642,7 +1723,7 @@ $('#revisionNumber').prop('disabled', false);
                 count++;
             });
 
-             $(document).on('keyup keydown', '.amount', function() {
+            $(document).on('keyup keydown', '.amount', function() {
                 if ($('#orgExchangeRate').val() == "") {
                     alert('Select currency first!!');
                     return false;
@@ -1650,7 +1731,7 @@ $('#revisionNumber').prop('disabled', false);
                 const inVal = parseFloat($(this).val()) || 0;
                 if (inVal > 0) {
                     $("." + $(this).attr('id')).val($(this).val() * $('#orgExchangeRate').val());
-                }else {
+                } else {
                     $("." + $(this).attr('id')).val("0.00");
                 }
                 calculateTotal();
@@ -1783,6 +1864,7 @@ $('#revisionNumber').prop('disabled', false);
             $('#group_currency_code').val('');
             $('#group_currency_exg_rate').val('');
         }
+
         function resetCalculations() {
             $('#org_currency_exg_rate').val($('#orgExchangeRate').val());
             $('.amount').each(function() {
@@ -1827,16 +1909,12 @@ $('#revisionNumber').prop('disabled', false);
                 }
             });
         }
-
-
-
     </script>
     <script>
+        function onPostVoucherOpen(type = "not_posted") {
 
-       function onPostVoucherOpen(type = "not_posted") {
-   
-                proceedWithVoucher(type);
-            }
+            proceedWithVoucher(type);
+        }
 
         function proceedWithVoucher(type = "not_posted") {
             resetPostVoucher();
@@ -1907,139 +1985,99 @@ $('#revisionNumber').prop('disabled', false);
         }
 
         function postVoucher(element) {
-        Swal.fire({
-        title: 'Are you sure?',
-        text: "Note: Once Submit the Voucher you are not able to redo the entry",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, post it!',
-        cancelButtonText: 'Cancel'
-        }).then((result) => {
-        if (result.isConfirmed) {
-            $('.preloader').show();
-            const bookId = "{{ $data->book_id }}";
-            const type = "{{ $data->document_type }}"
-            const documentId = "{{ $data->id }}";
-            const postingApiUrl = "{{ route('paymentVouchers.post') }}";
-            const remarks = $("#remarks").val();
-            console.log(bookId);
-            console.log(documentId);
-            if (bookId && documentId) {
-                $.ajax({
-                    url: postingApiUrl,
-                    type: "POST",
-                    dataType: "json",
-                    contentType: "application/json", // Specifies the request payload type
-                    data: JSON.stringify({
-                        // Your JSON request data here
-                        book_id: bookId,
-                        document_id: documentId,
-                        remarks: remarks,
-                        type: type,
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "Note: Once Submit the Voucher you are not able to redo the entry",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, post it!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $('.preloader').show();
+                    const bookId = "{{ $data->book_id }}";
+                    const type = "{{ $data->document_type }}"
+                    const documentId = "{{ $data->id }}";
+                    const postingApiUrl = "{{ route('paymentVouchers.post') }}";
+                    const remarks = $("#remarks").val();
+                    console.log(bookId);
+                    console.log(documentId);
+                    if (bookId && documentId) {
+                        $.ajax({
+                            url: postingApiUrl,
+                            type: "POST",
+                            dataType: "json",
+                            contentType: "application/json", // Specifies the request payload type
+                            data: JSON.stringify({
+                                // Your JSON request data here
+                                book_id: bookId,
+                                document_id: documentId,
+                                remarks: remarks,
+                                type: type,
 
-                    }),
-                    success: function(data) {
-                    $('.preloader').hide();
-                        const response = data.data;
-                        if (response.status) {
-                            Swal.fire({
-                                title: 'Success!',
-                                text: response.message,
-                                icon: 'success',
-                            });
-                            if ("{{$data->document_type}}" === 'Receipt' || "{{$data->document_type}}" === 'receipts' )
-                                location.href = '/receipts';
-                            else
-                                location.href = '/payments';
+                            }),
+                            success: function(data) {
+                                $('.preloader').hide();
+                                const response = data.data;
+                                if (response.status) {
+                                    Swal.fire({
+                                        title: 'Success!',
+                                        text: response.message,
+                                        icon: 'success',
+                                    });
+                                    if ("{{ $data->document_type }}" === 'Receipt' ||
+                                        "{{ $data->document_type }}" === 'receipts')
+                                        location.href = '/receipts';
+                                    else
+                                        location.href = '/payments';
 
 
-                        } else {
-                            Swal.fire({
-                                title: 'Error!',
-                                text: response.message,
-                                icon: 'error',
-                            });
-                        }
-                    },
-                    error: function(jqXHR, textStatus, errorThrown) {
-                        $('.preloader').hide();
-                        Swal.fire({
-                            title: 'Error!',
-                            text: 'Some internal error occured',
-                            icon: 'error',
+                                } else {
+                                    Swal.fire({
+                                        title: 'Error!',
+                                        text: response.message,
+                                        icon: 'error',
+                                    });
+                                }
+                            },
+                            error: function(jqXHR, textStatus, errorThrown) {
+                                $('.preloader').hide();
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: 'Some internal error occured',
+                                    icon: 'error',
+                                });
+                            }
                         });
+
                     }
-                });
-
+                } else {
+                    $('#postvoucher').modal('hide');
                 }
-            }
-            else{
-                $('#postvoucher').modal('hide');
-            }
-        });
+            });
         }
-        function bind(){
 
-                                                   $('.amount').on('click', function () {
-                                                       if($(this).val()==="0" || $(this).val()==="0.00"){
-                                                           $(this).val('');
-                                                       }
-                                                   });
+        function bind() {
 
-                                                   $('.amount').on('focusout', function () {
-                                                       if($(this).val()===""){
-                                                           $(this).val('0.00');
-                                                       }
-                                                   });
+            $('.amount').on('click', function() {
+                if ($(this).val() === "0" || $(this).val() === "0.00") {
+                    $(this).val('');
+                }
+            });
 
-                                                           }
+            $('.amount').on('focusout', function() {
+                if ($(this).val() === "") {
+                    $(this).val('0.00');
+                }
+            });
 
-    $(document).on('click', '#revokeButton', (e) => {
-    let actionUrl = '{{ route("paymentVouchers.revoke.document") }}'+ '?id='+'{{$data->id}}';
-    fetch(actionUrl).then(response => {
-        return response.json().then(data => {
-            if(data.status == 'error') {
-                Swal.fire({
-                    title: 'Error!',
-                    text: data.message,
-                    icon: 'error',
-                });
-            } else {
-                Swal.fire({
-                    title: 'Success!',
-                    text: data.message,
-                    icon: 'success',
-                });
-            }
-            location.reload();
-        });
-    });
-});
-
-function changerate(){
-        $('#org_currency_exg_rate').val($('#orgExchangeRate').val());
-        calculateTotal();
         }
-        $(document).on('click', '#cancelButton', (e) => {
-    e.preventDefault(); // Prevent default behavior
 
-    // Show confirmation dialog
-    Swal.fire({
-        title: 'Are you sure to cancel?',
-        text: "Your all ledger entries will be deleted, also same voucher no. can't be used and this action cannot be undo.",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, cancel it!',
-        cancelButtonText: 'No, keep it',
-    }).then((result) => {
-        if (result.isConfirmed) {
-            // Proceed with AJAX request after confirmation
-            let actionUrl = '{{ route("paymentVouchers.cancel.document") }}' + '?id=' + '{{$data->id}}';
-
-            fetch(actionUrl)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'error') {
+        $(document).on('click', '#revokeButton', (e) => {
+            let actionUrl = '{{ route('paymentVouchers.revoke.document') }}' + '?id=' + '{{ $data->id }}';
+            fetch(actionUrl).then(response => {
+                return response.json().then(data => {
+                    if (data.status == 'error') {
                         Swal.fire({
                             title: 'Error!',
                             text: data.message,
@@ -2050,67 +2088,131 @@ function changerate(){
                             title: 'Success!',
                             text: data.message,
                             icon: 'success',
-                        }).then(() => {
-                            location.reload(); // Reload after confirmation
                         });
                     }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    Swal.fire({
-                        title: 'Error!',
-                        text: 'Something went wrong. Please try again.',
-                        icon: 'error',
-                    });
+                    location.reload();
                 });
-        }
-    });
-});
-document.addEventListener('DOMContentLoaded', function () {
-    const type = @json($type);
-
-    document.getElementById('printButton').addEventListener('click', function (e) {
-        e.preventDefault();
-        const modal = new bootstrap.Modal(document.getElementById('partySelectModal'));
-        modal.show();
-    });
-
-    document.getElementById('partySelectForm').addEventListener('submit', function (e) {
-        e.preventDefault();
-        const selected = document.querySelector('input[name="party"]:checked');
-
-        if (!selected) {
-            alert("Please select a party to continue.");
-            return;
-        }
-
-        const ledgerId = selected.getAttribute('data-ledgerid');
-        const ledgerGroupId = selected.getAttribute('data-ledgergroupid');
-
-        const url = `{{ route('crdr.report.ledger.print', ['type' => 'TYPE', 'ledger' => 'LEDGER', 'group' => 'GROUP']) }}`
-            .replace('TYPE', type)
-            .replace('LEDGER', ledgerId)
-            .replace('GROUP', ledgerGroupId);
-
-        window.open(url, '_blank');
-        bootstrap.Modal.getInstance(document.getElementById('partySelectModal')).hide();
-    });
-});
-function getSelectedData() {
-    let selectedData = [];
-
-    $('select[name="to"] option:selected').each(function() {
-        selectedData.push({
-            id: $(this).val(),
-            type: $(this).data('type'),
-            ledger_id:$(this).data('ledger_id'),
-            ledger_group_id:$(this).data('ledger_group_id') // reads data-type="..." from the <option>
+            });
         });
-    });
 
-    return selectedData;
-}
-$('#applyBtn').on('click', function (e) {
+        function changerate() {
+            $('#org_currency_exg_rate').val($('#orgExchangeRate').val());
+            calculateTotal();
+        }
+        $(document).on('click', '#cancelButton', (e) => {
+            e.preventDefault(); // Prevent default behavior
+
+            // Show confirmation dialog
+            Swal.fire({
+                title: 'Are you sure to cancel?',
+                text: "Your all ledger entries will be deleted, also same voucher no. can't be used and this action cannot be undo.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, cancel it!',
+                cancelButtonText: 'No, keep it',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Proceed with AJAX request after confirmation
+                    let actionUrl = '{{ route('paymentVouchers.cancel.document') }}' + '?id=' +
+                        '{{ $data->id }}';
+
+                    fetch(actionUrl)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status === 'error') {
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: data.message,
+                                    icon: 'error',
+                                });
+                            } else {
+                                Swal.fire({
+                                    title: 'Success!',
+                                    text: data.message,
+                                    icon: 'success',
+                                }).then(() => {
+                                    location.reload(); // Reload after confirmation
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            Swal.fire({
+                                title: 'Error!',
+                                text: 'Something went wrong. Please try again.',
+                                icon: 'error',
+                            });
+                        });
+                }
+            });
+        });
+        document.addEventListener('DOMContentLoaded', function() {
+            const type = @json($type);
+
+            document.getElementById('printButton').addEventListener('click', function(e) {
+                e.preventDefault();
+                const modal = new bootstrap.Modal(document.getElementById('partySelectModal'));
+                modal.show();
+            });
+
+            document.getElementById('partySelectForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const selected = document.querySelector('input[name="party"]:checked');
+
+                if (!selected) {
+                    alert("Please select a party to continue.");
+                    return;
+                }
+
+                const ledgerId = selected.getAttribute('data-ledgerid');
+                const ledgerGroupId = selected.getAttribute('data-ledgergroupid');
+
+                const baseUrl =
+                    `{{ route('crdr.report.ledger.print', ['type' => 'TYPE', 'ledger' => 'LEDGER', 'group' => 'GROUP']) }}`;
+                const url = baseUrl
+                    .replace('TYPE', type)
+                    .replace('LEDGER', ledgerId)
+                    .replace('GROUP', ledgerGroupId);
+
+                // Your optional filter parameters
+                const filters = {
+                    date: date, // e.g., '2025-06-16'
+                    location_id: location_id,
+                    organization_id: organization_id,
+                    cost_center_id: cost_center_id
+                };
+
+                // Build query string with non-empty values
+                const queryParams = Object.entries(filters)
+                    .filter(([key, value]) => value !== null && value !== undefined && value !== '')
+                    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+                    .join('&');
+
+                // Combine URL and query string
+                const finalUrl = queryParams ? `${url}?${queryParams}` : url;
+
+                // Open in a new tab
+                window.open(finalUrl, '_blank');
+                bootstrap.Modal.getInstance(document.getElementById('partySelectModal')).hide();
+            });
+        });
+
+        function getSelectedData() {
+            let selectedData = [];
+
+            $('select[name="to"] option:selected').each(function() {
+                selectedData.push({
+                    id: $(this).val(),
+                    type: $(this).data('type'),
+                    ledger_id: $(this).data('ledger_id'),
+                    ledger_group_id: $(this).data(
+                        'ledger_group_id') // reads data-type="..." from the <option>
+                });
+            });
+
+            return selectedData;
+        }
+        $('#applyBtn').on('click', function(e) {
 
             // Close the modal
             var filterModal = bootstrap.Modal.getInstance(document.getElementById('addcoulmn'));
@@ -2129,35 +2231,36 @@ $('#applyBtn').on('click', function (e) {
                 cc: $('select[name="cc"]').val(),
                 remarks: $('textarea[name="mail_remarks"]').val(),
                 payment_id: $('input[name="payment_voucher_id"]').val(),
-                type:"{{$data->document_type}}",
+                type: "{{ $data->document_type }}",
             };
-            let remarks= $('textarea[name="mail_remarks"]').val();
+            let remarks = $('textarea[name="mail_remarks"]').val();
             let to = $('select[name="to"]').val();
             let cc = $('select[name="cc"]').val();
 
             var requiredFields = {
-            "To": to,
-            "CC": cc,
-            "Remarks": remarks,
-        };
+                "To": to,
+                "CC": cc,
+                "Remarks": remarks,
+            };
             if (formData.to && formData.to.length > 0 || formData.type || formData.date) {
 
 
                 // AJAX request
-                let isValid=true;
-                const fields = ['to','cc', 'mail_remarks'];
+                let isValid = true;
+                const fields = ['to', 'cc', 'mail_remarks'];
 
 
                 fields.forEach(field => {
-                    var inputField = $('[name="'+field+'"]');
-                    var errorMessage = inputField.closest('.col-md-8, .col-md-4, .col-md-12').find('.invalid-feedback');
+                    var inputField = $('[name="' + field + '"]');
+                    var errorMessage = inputField.closest('.col-md-8, .col-md-4, .col-md-12').find(
+                        '.invalid-feedback');
 
                     if (inputField.hasClass('select2-hidden-accessible')) {
                         // Select2 elements validation
                         if (!inputField.val() || inputField.val().length === 0) {
                             inputField.next('.select2-container').addClass('is-invalid');
                             errorMessage.show();
-                            isValid=false;
+                            isValid = false;
                         } else {
                             inputField.next('.select2-container').removeClass('is-invalid');
                             errorMessage.hide();
@@ -2168,95 +2271,94 @@ $('#applyBtn').on('click', function (e) {
                             console.log(field);
                             inputField.addClass('is-invalid');
                             errorMessage.show();
-                            isValid=false;
+                            isValid = false;
                         } else {
                             inputField.removeClass('is-invalid');
                             errorMessage.hide();
                         }
                     }
                 });
-                if(isValid){
-                     $('.preloader').show();
+                if (isValid) {
+                    $('.preloader').show();
                     $('#applyBtn').prop('disabled', true);
                     $.ajax({
-                    url: "{{ route('paymentVouchers.email') }}",
-                    method: 'POST',
-                    data: formData,
-                    success: function (response) {
-                        // Show success message
-                         $('.preloader').hide();
-                        const Toast = Swal.mixin({
-                            toast: true,
-                            position: "top-end",
-                            showConfirmButton: false,
-                            timer: 3000,
-                            timerProgressBar: true,
-                            didOpen: (toast) => {
-                                toast.onmouseenter = Swal.stopTimer;
-                                toast.onmouseleave = Swal.resumeTimer;
+                        url: "{{ route('paymentVouchers.email') }}",
+                        method: 'POST',
+                        data: formData,
+                        success: function(response) {
+                            // Show success message
+                            $('.preloader').hide();
+                            const Toast = Swal.mixin({
+                                toast: true,
+                                position: "top-end",
+                                showConfirmButton: false,
+                                timer: 3000,
+                                timerProgressBar: true,
+                                didOpen: (toast) => {
+                                    toast.onmouseenter = Swal.stopTimer;
+                                    toast.onmouseleave = Swal.resumeTimer;
+                                }
+                            });
+                            Toast.fire({
+                                icon: "success",
+                                title: response.success
+                            });
+                            if (filterModal) {
+                                filterModal.hide();
+                                $('#applyBtn').prop('disabled', false);
                             }
-                        });
-                        Toast.fire({
-                            icon: "success",
-                            title: response.success
-                        });
-                        if (filterModal) {
-                            filterModal.hide();
-                            $('#applyBtn').prop('disabled',false);
-                        }
-                    },
-                    error: function (xhr) {
-                        $('.preloader').hide();
-                        if (xhr.status === 422) {
-                            var errors = xhr.responseJSON.errors;
+                        },
+                        error: function(xhr) {
+                            $('.preloader').hide();
+                            if (xhr.status === 422) {
+                                var errors = xhr.responseJSON.errors;
 
-                            // Handle and display validation errors
-                            for (var field in errors) {
-                                if (errors.hasOwnProperty(field)) {
-                                    var errorMessages = errors[field];
+                                // Handle and display validation errors
+                                for (var field in errors) {
+                                    if (errors.hasOwnProperty(field)) {
+                                        var errorMessages = errors[field];
 
-                                    // Find the input field
-                                    var inputField = $('[name="' + field + '"]');
+                                        // Find the input field
+                                        var inputField = $('[name="' + field + '"]');
 
-                                    // If the field has the select2 class
-                                    if (inputField.hasClass('select2')) {
-                                        // Remove any previous error messages
-                                        inputField.closest('.select2-wrapper').find(
-                                            '.invalid-feedback').remove();
+                                        // If the field has the select2 class
+                                        if (inputField.hasClass('select2')) {
+                                            // Remove any previous error messages
+                                            inputField.closest('.select2-wrapper').find(
+                                                '.invalid-feedback').remove();
 
-                                        // Append the error message after the select2 container
-                                        inputField.closest('.select2-wrapper').append(
-                                            '<div class="invalid-feedback d-block">' +
-                                            errorMessages.join(', ') + '</div>');
+                                            // Append the error message after the select2 container
+                                            inputField.closest('.select2-wrapper').append(
+                                                '<div class="invalid-feedback d-block">' +
+                                                errorMessages.join(', ') + '</div>');
 
-                                        // Add is-invalid class to highlight the error
-                                        inputField.next('.select2-container').addClass(
-                                            'is-invalid');
-                                    } else {
-                                        // For normal inputs, remove previous error and append new one
-                                        inputField.removeClass('is-invalid').addClass(
-                                            'is-invalid');
-                                        inputField.next('.invalid-feedback')
-                                            .remove(); // Remove any previous error
-                                        inputField.after(
-                                            '<div class="invalid-feedback">' +
-                                            errorMessages.join(', ') + '</div>');
+                                            // Add is-invalid class to highlight the error
+                                            inputField.next('.select2-container').addClass(
+                                                'is-invalid');
+                                        } else {
+                                            // For normal inputs, remove previous error and append new one
+                                            inputField.removeClass('is-invalid').addClass(
+                                                'is-invalid');
+                                            inputField.next('.invalid-feedback')
+                                                .remove(); // Remove any previous error
+                                            inputField.after(
+                                                '<div class="invalid-feedback">' +
+                                                errorMessages.join(', ') + '</div>');
+                                        }
                                     }
                                 }
                             }
+
+
                         }
-
-
-                    }
-                });
-            }
+                    });
+                }
             } else {
                 if (filterModal) {
                     filterModal.hide();
-                    $('#applyBtn').prop('disabled',false);
+                    $('#applyBtn').prop('disabled', false);
                 }
             }
         });
-
     </script>
 @endsection

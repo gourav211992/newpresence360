@@ -341,7 +341,7 @@
 
     
     <!-- Department -->
-    <div class="col-md-2 mb-2 consumption d-none" id="department_id_header">
+    <div class="col-md-2 mb-2 consumption consumption_dept d-none" id="department_id_header">
         <label class="form-label">Department</label>
         <select class="form-select disable_on_edit" name="department_id" id="department_id_input">
             @foreach ($departments as $department)
@@ -351,7 +351,7 @@
     </div>
 
     <!-- Requester -->
-    <div class="col-md-2 mb-2 consumption d-none" id="user_id_header">
+    <div class="col-md-2 mb-2 consumption consumption_user d-none" id="user_id_header">
         <label class="form-label">Requester</label>
         <input type="text" class="form-control mw-100 ledgerselecct ui-autocomplete-input" id="user_id_dropdown" placeholder="Select">
         <input type="hidden" value="" name="user_id" id="user_id_input">
@@ -434,7 +434,7 @@
 
     
     <!-- Department -->
-    <div class="col-md-2 mb-2 consumption {{$order -> issue_type === 'Consumption' && $order -> requester_type === 'Department' ? '' : 'd-none'}}" id="department_id_header">
+    <div class="col-md-2 mb-2 consumption consumption_dept{{$order -> issue_type === 'Consumption' && $order -> requester_type === 'Department' ? '' : 'd-none'}}" id="department_id_header">
         <label class="form-label">Department</label>
         <select class="form-select disable_on_edit" name="department_id" id="department_id_input">
             @foreach ($departments as $department)
@@ -444,7 +444,7 @@
     </div>
 
     <!-- Requester -->
-    <div class="col-md-2 mb-2 consumption {{$order -> issue_type === 'Consumption' && $order -> requester_type === 'User' ? '' : 'd-none'}}" id="user_id_header">
+    <div class="col-md-2 mb-2 consumption consumption_user {{$order -> issue_type === 'Consumption' && $order -> requester_type === 'User' ? '' : 'd-none'}}" id="user_id_header">
         <label class="form-label">Requester</label>
         <input type="text" class="form-control mw-100 ledgerselecct ui-autocomplete-input" id="user_id_dropdown" placeholder="Select" value = "{{$order -> requester ?-> name}}">
         <input type="hidden" value="{{$order -> user_id}}" name="user_id" id="user_id_input">
@@ -1679,16 +1679,11 @@
     }
 
     function getOrders(type = "mo") {
-        var qtsHTML = ``;
-        let requesterHTML = ``;
-        let stationHTML = ``;
-        let soNoHTML = ``;
-        let subStoreHTML = ``;
         let departmentOrStoreKey = 'store_location_code';
         let tableSelector = '#mo_orders_table';
         let docType = `#${type}_header_pull`;
         if (type === 'pwo') {
-            tableSelector = '#pwo_orders_table'; // this should match actual table ID/class in modal
+            tableSelector = '#pwo_orders_table';
         } else if (type === 'pi') {
             departmentOrStoreKey = 'department_code';
             tableSelector = '#pi_orders_table';
@@ -1696,160 +1691,90 @@
             tableSelector = '#jo_orders_table';
         }
 
-        const location_id = $(`#location_id_${type}_val`).val();
-        const departmentId = $(`#department_id_${type}_val`).val();
-        const book_id = $(`#book_id_${type}_val`).val();
-        const document_id = $(`#document_id_${type}_val`).val();
-        const so_id = $(`#so_id_${type}_val`).val();
-        const item_id = $(`#item_id_${type}_val`).val();
+        // Build selected IDs
+        const selectedIds = Array.from(document.getElementsByClassName("item_header_rows")).map((_, index) => {
+            let idInput = document.getElementById(`${type}_id_${index}`);
+            return idInput ? idInput.value : '';
+        });
+
         const apiUrl = "{{ route('material.issue.pull.items') }}";
-        var selectedIds = [];
 
-        var headerRows = document.getElementsByClassName("item_header_rows");
-        for (let index = 0; index < headerRows.length; index++) {
-            let referedId = '';
-            if (type == "mo") {
-                referedId = document.getElementById('mo_id_' + index).value;
-            } else if (type == "pwo") {
-                referedId = document.getElementById('pwo_id_' + index).value;
-            } else if (type == "pi") {
-                referedId = document.getElementById('pi_id_' + index).value;
-            } else if (type == "jo") {
-                referedId = document.getElementById('jo_id_' + index).value;
-            } else {
-                referedId = '';
-            }
-            selectedIds.push(referedId);
-        }
-        // showTableLoadingRow(tableSelector, 15, "Loading Items..."); // Use correct column count
+        const renderData = data => data || 'N/A';
 
-        $.ajax({
-            url: apiUrl,
-            method: 'POST',
-            dataType: 'json',
-            data: {
-                location_id,
-                department_id: departmentId,
-                book_id,
-                document_id,
-                item_id,
-                so_id,
-                doc_type: type,
-                mi_type: $("#issue_type_input").val(),
-                header_book_id: $("#series_id_input").val(),
-                store_id: $("#store_to_id_input").val(),
-                sub_store_id: $("#sub_store_to_id_input").val(),
-                store_id_from: $("#store_from_id_input").val(),
-                sub_store_id_from: $("#sub_store_from_id_input").val(),
-                selected_ids: selectedIds,
-                requester_type: $("#requester_type_input").val(),
-                requester_department_id: $("#department_id_input").val(),
-                requester_user_id: $("#user_id_input").val(),
-                station_id: $("#station_to_id_input").val(),
-                vendor_id : $("#vendor_id_input").val()
+        const columns = [
+            {
+                data: null,
+                name: 'checkbox',
+                orderable: false,
+                searchable: false,
+                render: (data, type, row) => {
+                    return `<div class="form-check form-check-inline me-0">
+                        <input class="form-check-input pull_checkbox" type="checkbox"
+                            ${row.avl_stock > 0 ? '' : 'disabled'}
+                            doc-id="${row.id}"
+                            current-doc-id="0"
+                            document-id="${row.id}"
+                            so-item-id="${row.id}"
+                            balance_qty="${row.avl_stock}">
+                    </div>`;
+                }
             },
-            success: function(data) {
-                if (Array.isArray(data.data) && data.data.length > 0) {
-                    data.data.forEach((qt, qtIndex) => {
-                        requesterHTML = qt?.header?.requester_name ? `<td>${qt?.header?.requester_name}</td>` : '';
-                        stationHTML = (qt?.station_name || type == 'mo') ? `<td>${qt?.station_name || ''}</td>` : '';
-                        subStoreHTML = qt?.sub_store_code ? `<td>${qt?.sub_store_code}</td>` : '';
-                        soNoHTML = `<td>${qt?.so_no}</td>`;
+            { data: 'book_code', name: 'book_code', render: renderData, className: 'no-wrap' },
+            { data: 'document_number', name: 'document_number', render: renderData, className: 'no-wrap' },
+            { data: 'document_date', name: 'document_date', render: renderData, className: 'no-wrap' }
+        ];
 
-                        var attributesHTML = ``;
-                        qt.attributes.forEach(attribute => {
-                            attributesHTML += `<span class="badge rounded-pill badge-light-primary">${attribute.attribute_name} : ${attribute.attribute_value}</span>`;
-                        });
-                    });
+        // Conditional columns
+        if (type === 'pi') {
+            columns.push(
+                { data: 'department_code', name: 'department_code', render: renderData, className: 'no-wrap' },
+                { data: 'requester_name', name: 'requester_name', render: renderData, className: 'no-wrap' }
+            );
+        } else if (type === 'mo') {
+            columns.push(
+                { data: 'store_location_code', name: 'store_location_code', render: renderData, className: 'no-wrap' },
+                { data: 'sub_store_code', name: 'sub_store_code', render: renderData, className: 'no-wrap' },
+                { data: 'station_name', name: 'station_name', render: renderData, className: 'no-wrap' }
+            );
+        } else if (type === 'jo') {
+            columns.push(
+                { data: 'store_location_code', name: 'store_location_code', render: renderData, className: 'no-wrap' }
+            );
+        }
+
+        columns.push(
+            { data: 'so_no', name: 'so_no', render: renderData, className: 'no-wrap' },
+            { data: 'item_code', name: 'item_code', render: renderData, className: 'no-wrap' },
+            {
+                data: 'item_name',
+                name: 'item_name',
+                render: renderData => {
+                    return `<div class="item-name-cell text-wrap" style="width: 150px; word-break: break-word">${renderData}</div>`;
                 }
-
-                // Define column setup same as you shared
-                const renderData = data => data || 'N/A';
-                const columns = [
-                    {
-                        data: null,
-                        name: 'checkbox',
-                        orderable: false,
-                        searchable: false,
-                        render: (data, type, row) => {
-                            return `<div class="form-check form-check-inline me-0">
-                                <input class="form-check-input pull_checkbox" type="checkbox"
-                                    ${row.avl_stock > 0 ? '' : 'disabled'}
-                                    doc-id="${row.id}"
-                                    current-doc-id="0"
-                                    document-id="${row.id}"
-                                    so-item-id="${row.id}"
-                                    balance_qty="${row.avl_stock}">
-                            </div>`;
-                        }
-                    },
-                    { data: 'book_code', name: 'book_code', render: renderData, className: 'no-wrap' },
-                    { data: 'document_number', name: 'document_number', render: renderData, className: 'no-wrap' },
-                    { data: 'document_date', name: 'document_date', render: renderData, className: 'no-wrap' }
-                ];
-
-                // Add conditionally based on type
-                if (type === 'pi') {
-                    columns.push(
-                        { data: 'department_code', name: 'department_code', render: renderData, className: 'no-wrap' },
-                        { data: 'requester_name', name: 'requester_name', render: renderData, className: 'no-wrap' }
-                    );
-                } else if (type === 'mo') {
-                    columns.push(
-                        { data: 'store_location_code', name: 'store_location_code', render: renderData, className: 'no-wrap' },
-                        { data: 'sub_store_code', name: 'sub_store_code', render: renderData, className: 'no-wrap' },
-                        { data: 'station_name', name: 'station_name', render: renderData, className: 'no-wrap' },
-                    );
+            },
+            {
+                data: 'attributes_array',
+                name: 'attributes_array',
+                render: attributes_array => {
+                    if (!attributes_array) return '';
+                    attributes_array = typeof attributes_array === 'string' ? JSON.parse(attributes_array) : attributes_array;
+                    return `
+                        <div class="item-name-wrapper" style="display: flex; flex-wrap: wrap; gap: 4px; width: 200px;">
+                            ${attributes_array.map(attr =>
+                                `<span class="badge wrap-if-too-long rounded-pill badge-light-primary" style="margin-bottom: 4px; flex: 0 0 auto;">
+                                    ${attr.attribute_name} : ${attr.attribute_value}
+                                </span>`).join('')}
+                        </div>`;
                 }
-                else if (type === "jo")
-                {
-                    columns.push(
-                    { data: 'store_location_code', name: 'store_location_code', render: renderData, className: 'no-wrap' },
-                    );
-                }
+            },
+            { data: 'uom.name', name: 'uom.name', render: renderData, className: 'no-wrap' },
+            { data: 'qty', name: 'qty', render: renderData, className: 'no-wrap numeric-alignment' },
+            { data: 'mi_balance_qty', name: 'mi_balance_qty', render: renderData, className: 'no-wrap numeric-alignment' },
+            { data: 'avl_stock', name: 'avl_stock', render: renderData, className: 'no-wrap numeric-alignment' }
+        );
 
-                // Add remaining shared columns
-                columns.push(
-                    { data: 'so_no', name: 'so_no', render: renderData, className: 'no-wrap' },
-                    { data: 'item_code', name: 'item_code', render: renderData, className: 'no-wrap' },
-                    {
-                        data: 'item_name',
-                        name: 'item_name',
-                        render: renderData => {
-                            return `<div class="item-name-cell text-wrap" style="width: 150px; word-break: break-word">${renderData}</div>`;
-                        }
-                    },
-                    {
-                        data: 'attributes_array',
-                        name: 'attributes_array',
-                        className: '',
-                        render: attributes_array => {
-                            if (!attributes_array) return '';
-                            attributes_array = typeof attributes_array === 'string' ? JSON.parse(attributes_array) : attributes_array;
-
-                            return `
-                                <div class="item-name-wrapper" style="display: flex; flex-wrap: wrap; gap: 4px; width: 200px;">
-                                    ${attributes_array.map(attr =>
-                                        `<span class="badge wrap-if-too-long rounded-pill badge-light-primary" style="
-                                            margin-bottom: 4px;
-                                            flex: 0 0 auto;
-                                        ">
-                                            ${attr.attribute_name} : ${attr.attribute_value}
-                                        </span>`
-                                    ).join('')}
-                                </div>
-                            `;
-                        }
-                    },
-                    { data: 'uom.name', name: 'uom.name', render: renderData, className: 'no-wrap' },
-                    { data: 'qty', name: 'qty', render: renderData, className: 'no-wrap numeric-alignment' },
-                    { data: 'mi_balance_qty', name: 'mi_balance_qty', render: renderData, className: 'no-wrap numeric-alignment' },
-                    { data: 'avl_stock', name: 'avl_stock', render: renderData, className: 'no-wrap numeric-alignment' }
-                );
-
-
-                const filters = {
-                    location_id:`#location_id_${type}_val`,
+        const filters = {
+            location_id:`#location_id_${type}_val`,
                     department_id:`#department_id_${type}_val`,
                     book_id:`#book_id_${type}_val`,
                     document_id:`#document_id_${type}_val`,
@@ -1868,35 +1793,29 @@
                     requester_user_id: "#user_id_input",
                     station_id: "#station_to_id_input",
                     vendor_id : $("#vendor_id_input"),
+        };
 
-                };
+        // Destroy existing table if any
+        if ($.fn.DataTable.isDataTable(tableSelector)) {
+            $(tableSelector).DataTable().clear().destroy();
+        }
 
-                const exportColumns = [0, 1, 2, 3, 4, 5, 6, 7, 8];
-                $(tableSelector).find('tbody').html('');
-                if ($.fn.DataTable.isDataTable(tableSelector)) {
-                    $(tableSelector).DataTable().clear().destroy();
-                }
-                // Initialize your DataTable with your function
-                initializeDataTable(
-                    tableSelector,
-                    apiUrl,
-                    columns,
-                    filters,
-                    "Order Items - " + type.toUpperCase(),
-                    [],
-                    [], // default order
-                    'landscape',
-                    'POST',
-                    false,
-                    false
-                );
-            },
-            error: function(xhr) {
-                console.error('Error fetching data:', xhr.responseText);
-                $(tableSelector).find('tbody').html(`<tr><td colspan="16" class="text-center text-danger">No data found</td></tr>`);
-            }
-        });
+        // Initialize DataTable
+        initializeDataTable(
+            tableSelector,
+            apiUrl,
+            columns,
+            filters,
+            "Order Items - " + type.toUpperCase(),
+            [],
+            [], // default order
+            'landscape',
+            'POST',
+            false,
+            false
+        );
     }
+
 
     let current_doc_id = 0;
 
@@ -2012,6 +1931,7 @@
                             // deleteItemRows();
                             if (true) {
                                 currentOrder.items.forEach((item, itemIndex) => {
+                                    console.log(item, "ITEM");
                                     let selectedStockType = 'R';
                                     if (openPullType == 'mo') {
                                         if (item?.rm_type && item?.rm_type === 'rm') {
@@ -2554,19 +2474,21 @@ function onHeaderStoreChange(element, type)
 
     function applyIssueTypeChange(selectedType)
     {
+        console.log("Selected Type: ", selectedType);
         if (selectedType == 'Location Transfer') {
             implementIssueTypeChange('.location_transfer','.sub_contracting, .consumption, .sub_loc_transfer');
         } else if (selectedType == 'Sub Location Transfer') {
             implementIssueTypeChange('.sub_loc_transfer, .sub_location','.location_transfer, .consumption, .sub_contracting');
-        } else if (selectedType == 'Sub Contracting' || 'Job Work') {
+        } else if (selectedType == 'Sub Contracting' || selectedType == 'Job Work') {
             implementIssueTypeChange('.sub_contracting, .sub_location','.location_transfer, .consumption, .sub_loc_transfer');
         } else if (selectedType == 'Consumption') {
-            implementIssueTypeChange('.consumption','.location_transfer, .sub_contracting, .sub_loc_transfer');
+            implementIssueTypeChange('.consumption','.location_transfer, .sub_location, .sub_contracting, .sub_loc_transfer');
         }
     }
 
     function implementIssueTypeChange(targetClasses, querySelectorOtherClasses)
     {
+        console.log("Target Classes: ", targetClasses);
         var otherElements = document.querySelectorAll(querySelectorOtherClasses);
         for (let index = 0; index < otherElements.length; index++) {
             otherElements[index].style.display = "none";
@@ -2584,7 +2506,7 @@ function onHeaderStoreChange(element, type)
         let departmentIdHeader = document.getElementById('department_id_header');
 
         if (targetClasses.includes('consumption')) {
-            
+            console.log("Target Classes: ", targetClasses);
             if (requesterTypeParam == "Department") {
 
                 userIdHeaderField.classList.add('d-none');
@@ -2944,7 +2866,113 @@ function onHeaderStoreChange(element, type)
         selectedValues = {};
         getOrders(type);
     }
+    function getStoresData(itemRowId, qty = null, callOnClick = true)
+        {
+            const qtyElement = document.getElementById('item_qty_' + itemRowId);
+            if (qtyElement && qtyElement.value > 0) {
+            const itemDetailId = document.getElementById('item_row_' + itemRowId).getAttribute('data-detail-id');
+            const itemId = document.getElementById('items_dropdown_'+ itemRowId).getAttribute('data-id');
+            let itemAttributes = JSON.parse(document.getElementById(`items_dropdown_${itemRowId}`).getAttribute('attribute-array'));
+                    let selectedItemAttr = [];
+                    if (itemAttributes && itemAttributes.length > 0) {
+                        itemAttributes.forEach(element => {
+                        element.values_data.forEach(subElement => {
+                            if (subElement.selected) {
+                                selectedItemAttr.push(subElement.id);
+                            }
+                        });
+                    });
+                    }
+                        const storeElement = document.getElementById('data_stores_' + itemRowId);
+                       
+                        const rateInput = document.getElementById('item_rate_' + itemRowId);
+                        const valueInput = document.getElementById('item_value_' + itemRowId);
 
+                        $.ajax({
+                        url: "{{route('get_item_store_details')}}",
+                            method: 'GET',
+                            dataType: 'json',
+                            data : {
+                                item_id : itemId,
+                                uom_id : $("#uom_dropdown_" + itemRowId).val(),
+                                selectedAttr : selectedItemAttr,
+                                quantity : qty ? qty : document.getElementById('item_qty_' + itemRowId).value,
+                                is_edit : "{{isset($order) ? 1 : 0}}",
+                                header_id : "{{isset($order) ? $order -> id : null}}",
+                                detail_id : itemDetailId,
+                                store_id: $("#store_from_id_input").val(),
+                                sub_store_id : $("#item_sub_store_from_" + itemRowId).val(),
+                                station_id : $("item_station_from_" + itemRowId).val(),
+                                stock_type : $("#stock_type_" + itemRowId).val(),
+                                wip_station_id : $("#wip_station_id_"+ itemRowId).length ? $("#wip_station_id_"+ itemRowId).val() : ''
+                            },
+                            success: function(data) {
+                                if (data?.stores && data?.stores?.records && data?.stores?.records?.length > 0 && data.stores.code == 200) {
+                                    var storesArray = [];
+                                    var dataRecords = data?.stores?.records;
+                                    var totalValue = 0;
+                                    var totalRate = 0;
+                                    dataRecords.forEach(storeData => {
+                                        storesArray.push({
+                                            store_id : storeData.store_id,
+                                            store_code : storeData.store,
+                                            rack_id : storeData.rack_id,
+                                            rack_code : storeData.rack ? storeData.rack : '',
+                                            shelf_id : storeData.shelf_id,
+                                            shelf_code : storeData.shelf ? storeData.shelf : '',
+                                            bin_id : storeData.bin_id,
+                                            bin_code : storeData.bin ? storeData.bin : '',
+                                            qty : parseFloat(storeData.allocated_quantity_alt_uom).toFixed(4),
+                                            inventory_uom_qty : parseFloat(storeData.allocated_quantity).toFixed(4)
+                                        })
+                                        totalValue+= parseFloat(storeData.cost_per_unit) * parseFloat(storeData.allocated_quantity_alt_uom);
+                                    });
+                                    var actualQty = qtyElement.value;
+                                    if (actualQty > 0) {
+                                        valueInput.value = totalValue.toFixed(2);
+                                        totalRate = parseFloat(totalValue) / parseFloat(qty ? qty : qtyElement.value); 
+                                        rateInput.value = parseFloat(totalRate).toFixed(2);
+                                    } else {
+                                        rateInput.value = 0.00;
+                                        valueInput.value = 0.00;
+                                    }
+                                    // storeElement.setAttribute('data-stores', encodeURIComponent(JSON.stringify(storesArray)));
+                                    // if (callOnClick) {
+                                    //     onItemClick(itemRowId, callOnClick);
+                                    // }
+                                } else if (data?.stores?.code == 202) {
+                                    Swal.fire({
+                                        title: 'Error!',
+                                        text: data?.stores?.message,
+                                        icon: 'error',
+                                    });
+                                    // storeElement.setAttribute('data-stores', encodeURIComponent(JSON.stringify([])));
+                                    document.getElementById('item_qty_' + itemRowId).value = 0.00;
+                                    if (callOnClick) {
+                                        onItemClick(itemRowId, callOnClick);
+                                    }
+                                    rateInput.value = 0.00;
+                                    valueInput.value = 0.00;
+                                } else {
+                                    // storeElement.setAttribute('data-stores', encodeURIComponent(JSON.stringify([])));
+                                    if (callOnClick) {
+                                        onItemClick(itemRowId, callOnClick);
+                                    }
+                                    rateInput.value = 0.00;
+                                    valueInput.value = 0.00;
+                                }
+                                openStoreLocationModal(itemRowId);
+                            },
+                            error: function(xhr) {
+                                console.error('Error fetching customer data:', xhr.responseText);
+                                storeElement.setAttribute('data-stores', encodeURIComponent(JSON.stringify([])));
+                                rateInput.value = 0.00;
+                                valueInput.value = 0.00;
+
+                            }
+                        });
+            }
+        }
 </script>
 @endsection
 @endsection

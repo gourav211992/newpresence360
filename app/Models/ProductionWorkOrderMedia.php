@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\FileUploadTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Storage;
 
 class ProductionWorkOrderMedia extends Model
 {
-    use HasFactory;
+    use HasFactory,FileUploadTrait;
     protected $table = 'erp_pwo_media';
 
     protected $fillable = [

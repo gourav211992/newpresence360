@@ -216,7 +216,8 @@ class ErpMaterialIssueController extends Controller
         }
         $parentURL = request() -> segments()[0];
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
-        return view('materialIssue.index', ['typeName' => $typeName, 'redirect_url' => $redirectUrl, 'create_route' => $createRoute, 'create_button' => count($servicesBooks['services']),'filterArray' => TransactionReportHelper::FILTERS_MAPPING[ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME],
+        $create_button = (count($servicesBooks['services']) > 0 && $selectedfyYear['authorized'] && !$selectedfyYear['lock_fy']) ? true : false;
+        return view('materialIssue.index', ['typeName' => $typeName, 'redirect_url' => $redirectUrl, 'create_route' => $createRoute, 'create_button' => $create_button,'filterArray' => TransactionReportHelper::FILTERS_MAPPING[ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME],
             'autoCompleteFilters' => $autoCompleteFilters,]);
     }
     public function getBasicFilters()
