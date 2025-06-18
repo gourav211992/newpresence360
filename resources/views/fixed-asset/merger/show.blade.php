@@ -868,6 +868,10 @@ $('#location').on('change', function () {
 
 $('#location').trigger('change');
 
+        $(document).on('click', '.mrntableselectexcel tr', function() {
+    $(this).addClass('trselected').siblings().removeClass('trselected');
+});
+
 
     </script>
     <!-- END: Content-->

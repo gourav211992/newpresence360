@@ -971,29 +971,33 @@
     <div class="modal fade text-start" id="pullPopUp" tabindex="-1" aria-labelledby="header_pull_label" aria-hidden="true">
 		<div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 1250px">
 			<div class="modal-content">
-				<div class="modal-header">
-					<div>
+                <div class="modal-header">
+                    <div class="col-md-9">
                         <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="header_pull_label">Select Document</h4>
                         <p class="mb-0">Select from the below list</p>
                     </div>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-				</div>
+                    <div class="text-end col-md-3 text-end">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"><i data-feather="x-circle"></i> Cancel</button>
+                        <button type="button" class="ml-1 btn btn-primary btn-sm" onclick="processOrder();" data-bs-dismiss="modal"><i data-feather="check-circle"></i> Process</button>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>        
 				<div class="modal-body">
 					 <div class="row">
 
                      <div class="col">
                             <div class="mb-1">
                             <label class="form-label">Customer Name <span class="text-danger">*</span></label>
-                                <input type="text" id="customer_code_input_qt" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
-                                <input type = "hidden" id = "customer_id_qt_val"></input>
+                                <input type="text" id="customer_code_input_so" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+                                <input type = "hidden" id = "customer_id_so_val"></input>
                             </div>
                         </div>
 
                         <div class="col">
                             <div class="mb-1">
                                 <label class="form-label">Series <span class="text-danger">*</span></label>
-                                <input type="text" id="book_code_input_qt" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
-                                <input type = "hidden" id = "book_id_qt_val"></input>
+                                <input type="text" id="book_code_input_so" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+                                <input type = "hidden" id = "book_id_so_val"></input>
                             </div>
                         </div>
                          
@@ -1001,37 +1005,38 @@
                          <div class="col">
                             <div class="mb-1">
                                 <label class="form-label">Document No. <span class="text-danger">*</span></label>
-                                <input type="text" id="document_no_input_qt" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
-                                <input type = "hidden" id = "document_id_qt_val"></input>
+                                <input type="text" id="document_no_input_so" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+                                <input type = "hidden" id = "document_id_so_val"></input>
                             </div>
                         </div>
 
                          <div class="col">
                             <div class="mb-1">
                                 <label class="form-label">Item Name <span class="text-danger">*</span></label>
-                                <input type="text" id="item_name_input_qt" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
-                                <input type = "hidden" id = "item_id_qt_val"></input>
+                                <input type="text" id="item_name_input_so" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+                                <input type = "hidden" id = "item_id_so_val"></input>
                             </div>
                         </div>
-                         
-                         <div class="col  mb-1">
-                              <label class="form-label">&nbsp;</label><br/>
-                             <button onclick = "getOrders(openPullType);" type = "button" class="btn btn-warning btn-sm"><i data-feather="search"></i> Search</button>
-                         </div>
+                        <div class="col mb-1">
+                            <label class="form-label">&nbsp;</label><br />
+                            <button onclick="clearFilters('so');" type="button" class="btn btn-danger btn-sm"><i
+                                    data-feather="trash"></i> Clear</button>
+                        </div>
 
 						 <div class="col-md-12">
 							<div class="table-responsive">
-								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail"> 
+                                <table class="dataTables_scroll datatables-basic table-sm table-bordered table myrequesttablecbox pomrnheadtffotsticky" id="so_invoice_table">
+                                    <input type = "hidden" id = "so_invoice_table_value" value = "so"> 
 									<thead>
 										 <tr>
 											<th>
 												<!-- <div class="form-check form-check-inline me-0">
-													<input class="form-check-input" type="checkbox" name="podetail" id="inlineCheckbox1">
-												</div>  -->
+                                                    <input class="form-check-input" type="checkbox" id="checkAllSOElement" onchange="checkAllSO(this);">
+                                                </div> -->
 											</th>  
 											<th>Series</th>
-											<th>Document No.</th>
-											<th>Document Date</th>
+											<th>Doc No.</th>
+											<th>Doc Date</th>
                                             <th>Currency</th>
                                             <th>Customer Name</th>
 											<th>Item</th>
@@ -1041,24 +1046,14 @@
 											<th>Balance Qty</th> 
 											<th id = "avl_stock_header">Avl Stock</th> 
 											<th>Rate</th> 
-											<th id = "packing_slip_nos_header">Packing Slips No</th> 
-										  </tr>
-										</thead>
-										<tbody id = "qts_data_table">
-                                            
-									   </tbody>
-
-
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    </tbody>
 								</table>
 							</div>
 						</div>
-
-
 					 </div>
-				</div>
-				<div class="modal-footer text-end">
-					<button type = "button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"><i data-feather="x-circle"></i> Cancel</button>
-					<button type = "button" class="btn btn-primary btn-sm" onclick = "processOrder();" data-bs-dismiss="modal"><i data-feather="check-circle"></i> Process</button>
 				</div>
 			</div>
 		</div>
@@ -1067,18 +1062,24 @@
 		<div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 1250px">
 			<div class="modal-content">
 				<div class="modal-header">
-					<div>
-                        <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="header_pull_label">Select Document</h4>
+                    <div class="col-md-9">
+                        <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="header_pull_label">Select
+                            Document</h4>
                         <p class="mb-0">Select from the below list</p>
                     </div>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-				</div>
+                    <div class="text-end col-md-3 text-end">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"><i
+                            data-feather="x-circle"></i> Cancel</button>
+                        <button type="button" class="ml-1 btn btn-primary btn-sm" onclick="processOrder();"
+                            data-bs-dismiss="modal"><i data-feather="check-circle"></i> Process</button>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
 				<div class="modal-body">
 					 <div class="row">
-
-                     <div class="col">
-                        <div class="mb-1">
-                            <label class="form-label">Customer Name <span class="text-danger">*</span></label>
+                        <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">Customer Name <span class="text-danger">*</span></label>
                                 <input type="text" id="customer_code_input_plist" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
                                 <input type = "hidden" id = "customer_id_plist_val"></input>
                             </div>
@@ -1108,20 +1109,19 @@
                                 <input type = "hidden" id = "item_id_plist_val"></input>
                             </div>
                         </div>
-                         
-                         <div class="col  mb-1">
-                              <label class="form-label">&nbsp;</label><br/>
-                             <button onclick = "getOrders('plist');" type = "button" class="btn btn-warning btn-sm"><i data-feather="search"></i> Search</button>
-                         </div>
-
-						 <div class="col-md-12">
+                        <div class="col  mb-1">
+                            <label class="form-label">&nbsp;</label><br />
+                            <button onclick="clearFilters('plist');" type="button" class="btn btn-danger btn-sm"><i data-feather="trash"></i> Clear</button>
+                        </div>
+                        <div class="col-md-12">
 							<div class="table-responsive">
-								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail"> 
+                                <input type = "hidden" id = "plist_invoice_table_value" value = "plist"> 
+                                <table class="dataTables_scroll datatables-basic table-sm table-bordered table myrequesttablecbox pomrnheadtffotsticky" id="plist_invoice_table">
 									<thead>
-										 <tr>
+                                        <tr>
 											<th>
 												<!-- <div class="form-check form-check-inline me-0">
-													<input class="form-check-input" type="checkbox" name="podetail" id="inlineCheckbox1">
+													<input class="form-check-input" type="checkbox" id="checkAllPlistElement" onchange="checkAllPlist(this);">
 												</div>  -->
 											</th>  
                                             <th>SO No.</th>
@@ -1132,23 +1132,14 @@
 											<th>Package No.</th>
 											<th>Items</th>
 											<th>Total Quantity</th> 
-										  </tr>
-										</thead>
-										<tbody id = "qts_data_table_plist">
-                                            
-									   </tbody>
-
-
+                                        </tr>
+                                    </thead>
+                                    <tbody>   
+                                    </tbody>
 								</table>
 							</div>
 						</div>
-
-
-					 </div>
-				</div>
-				<div class="modal-footer text-end">
-					<button type = "button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"><i data-feather="x-circle"></i> Cancel</button>
-					<button type = "button" class="btn btn-primary btn-sm" onclick = "processOrder('plist');" data-bs-dismiss="modal"><i data-feather="check-circle"></i> Process</button>
+                    </div>
 				</div>
 			</div>
 		</div>
@@ -1214,7 +1205,8 @@
 
 						 <div class="col-md-12">
 							<div class="table-responsive">
-								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail"> 
+                                <table class="dataTables_scroll datatables-basic table-sm table-bordered table myrequesttablecbox pomrnheadtffotsticky" id="land_lease_invoice_table">
+                                    <input type = "hidden" id = "land_lease_invoice_table_value" value = "land-lease"> 
 									<thead>
 										 <tr>
 											<th>
@@ -2077,7 +2069,7 @@
                 <div class="col-md-12">
                     <div class="mb-1">
                         <label class="form-label">Remarks</label>
-                        <textarea name="remarks" id="mail_remarks" class="form-control cannot_disable"></textarea>
+                        <textarea name="remarks" id="mail_remarks" class="form-control cannot_disable" placeholder = "Please Enter Required Remarks"></textarea>
                     </div>
                 </div>
             </div>
@@ -2261,6 +2253,7 @@
 </script>
 @include('PL.common-js-route',["order" => isset($order) ? $order : null, "route_prefix" => "sale.invoice"])
 <script src="{{ asset("assets\\js\\modules\\pl\\common-script.js") }}"></script>
+<script type="text/javascript" src="{{asset('assets/js/modules/pull-popup-datatable.js')}}"></script>
 <script>
         $(window).on('load', function() {
             if (feather) {
@@ -3747,161 +3740,146 @@
             });
         }
     }
-    function getOrders(type = 'so')
-    {
-        var qtsHTML = ``;
-        let targetTable = null;
-        let customer_id = null;
-        let book_id = null;
-        let document_id = null;
-        let itemId = null;
-        if (type == 'plist') {
-            targetTable = document.getElementById('qts_data_table_plist');
-            customer_id = $("#customer_id_plist_val").val();
-            book_id = $("#book_id_plist_val").val();
-            item_id = $("#item_id_plist_val").val();
-            document_id = $("#document_id_plist_val").val();
-        } else if (type == 'land-lease') {
-            targetTable = document.getElementById('qts_data_table_land');
-            customer_id = $("#customer_id_qt_val_land").val();
-            book_id = $("#book_id_qt_val_land").val();
-            item_id = $("#item_id_qt_val").val();
-            document_id = $("#document_id_qt_val_land").val();
-        } else {
-            targetTable = document.getElementById('qts_data_table');
-            customer_id = $("#customer_id_qt_val").val();
-            book_id = $("#book_id_qt_val").val();
-            document_id = $("#document_id_qt_val").val();
-            item_id = $("#item_id_qt_val").val();
+    function getOrders(type = 'so') {
+        console.log("GETTING ORDERS",type);
+        const apiUrl = "{{ route('sale.invoice.pull.items') }}";
+        if ( type == "land-lease")
+        {
+            const apiUrl = "{{ route('sale.invoice.pull.land') }}";
         }
-        console.log(customer_id, "CUSTOMER ID");
-        const landParcelId = $("#land_parcel_id_qt_val_land").val();
-        const landPlotId = $("#land_plot_id_qt_val_land").val();
-        const apiUrl = "{{route('sale.invoice.pull.items')}}";
-        var selectedIds = [];
-        var headerRows = document.getElementsByClassName("item_header_rows");
-        for (let index = 0; index < headerRows.length; index++) {
-            var referedId = document.getElementById('qt_id_' + index);
-            if (referedId) {
-                selectedIds.push(referedId.value);
-            }
-        }
-
-        $.ajax({
-            url: apiUrl,
-            method: 'GET',
-            dataType: 'json',
-            data : {
-                customer_id : customer_id,
-                book_id : book_id,
-                document_id : document_id,
-                item_id : item_id,
-                doc_type : openPullType,
-                header_book_id : $("#series_id_input").val(),
-                land_plot_id : landPlotId,
-                land_parcel_id :landParcelId,
-                store_id: $("#store_id_input").val(),
-                selected_ids : selectedIds
-            },
-            success: function(data) {
-                if (Array.isArray(data.data) && data.data.length > 0) {
-                    if (type == 'land-lease') {
-                        data.data.forEach((qt, qtIndex) => {
-                            let parcelName = qt?.header?.plots?.length > 0 ? qt?.header?.plots[0].land?.name : '';
-                            let plots = '';
-                            qt?.header?.plots?.forEach((singlePlot) => {
-                                if (singlePlot && singlePlot?.plot?.plot_name) {
-                                    plots += singlePlot.plot.plot_name;
-                                }
-                            });
-                            qtsHTML += `
-                                <tr>
-                                    <td>
-                                        <div class="form-check form-check-inline me-0">
-                                            <input class="form-check-input po_checkbox" type="checkbox" name="po_check" id="po_checkbox_${qtIndex}" oninput = "checkQuotation(this);" can-check-message = '${qt?.can_check_message}' doc-id = "${qt?.header.id}" current-doc-id = "0" document-id = "${qt?.header?.id}" so-item-id = "${qt.id}" balance_qty = "${qt.balance_qty}">
-                                        </div> 
-                                    </td>   
-                                    <td>${qt?.header?.series?.book_code}</td>
-                                    <td>${qt?.header?.document_no}</td>
-                                    <td>${moment(qt?.header?.document_date).format('D/M/Y')}</td>
-                                    <td>${qt?.header?.customer?.company_name}</td>
-                                    <td>${parcelName}</td>
-                                    <td>${plots}</td>
-                                    <td>${qt?.type}</td>
-                                    <td>${qt?.installment_cost}</td>
-                                    <td>${moment(qt?.due_date).format('D/M/Y')}</td>
-                                </tr>
-                            `
-                        });
-                    } else if (type == 'plist'){
-                        data.data.forEach((qt, qtIndex) => {
-                            var soItemsIds = ``;
-                            qtsHTML += `
-                                <tr>
-                                    <td>
-                                        <div class="form-check form-check-inline me-0">
-                                            <input class="form-check-input po_checkbox" type="checkbox" name="po_check" id="po_checkbox_${qtIndex}" oninput = "checkQuotation(this);" doc-id = "${qt?.sale_order?.id}" current-doc-id = "0" document-id = "${qt?.sale_order?.id}" so-item-id = "${JSON.stringify(qt?.so_item_ids)}" detail-id="${qt?.id}">
-                                        </div> 
-                                    </td>  
-                                    <td>${qt?.sale_order?.book_code + " - " + qt?.sale_order?.document_number}</td>
-                                    <td>${qt?.sale_order?.document_date}</td>
-                                    <td>${qt?.sale_order?.customer_code}</td> 
-                                    <td>${qt?.header?.book_code}</td>
-                                    <td>${qt?.header?.document_number}</td>
-                                    <td>${qt?.packing_number}</td>
-                                    <td>${qt?.items_ui}</td>
-                                    <td>${qt?.total_item_qty}</td>
-                                </tr>
-                            `;
-                        });
-                    } else { 
-                        
-                        data.data.forEach((qt, qtIndex) => {
-                            let pslipItemData = ``;
-                            let avlStock = ``;
-                        if (openPullType == 'so') {
-                            pslipItemData = `<td>${qt?.pslips}</td>`;
-                            avlStock = `<td>${qt?.stock_qty}</td>`;
-
-                        }
-                            var attributesHTML = ``;
-                            qt.attributes.forEach(attribute => {
-                                attributesHTML += `<span class="badge rounded-pill badge-light-primary" > ${attribute.attribute_name} : ${attribute.attribute_value} </span>`;
-                            });
-                            qtsHTML += `
-                                <tr>
-                                    <td>
-                                        <div class="form-check form-check-inline me-0">
-                                            <input ${qt?.stock_qty > 0 ? '' : 'disabled'} class="form-check-input po_checkbox" type="checkbox" name="po_check" id="po_checkbox_${qtIndex}" oninput = "checkQuotation(this);" doc-id = "${qt?.header.id}" current-doc-id = "0" document-id = "${qt?.header?.id}" so-item-id = "${qt.id}" balance_qty = "${qt.balance_qty}">
-                                        </div> 
-                                    </td>   
-                                    <td>${qt?.header?.book_code}</td>
-                                    <td>${qt?.header?.document_number}</td>
-                                    <td>${qt?.header?.document_date}</td>
-                                    <td>${qt?.header?.currency_code}</td>
-                                    <td>${qt?.header?.customer?.company_name}</td>
-                                    <td>${qt?.item_code}</td>
-                                    <td>${attributesHTML}</td>
-                                    <td>${qt?.uom?.name}</td>
-                                    <td>${qt?.order_qty}</td>
-                                    <td>${qt?.balance_qty}</td>
-                                    ${avlStock}
-                                    <td>${qt?.rate}</td>
-                                    ${pslipItemData}
-                                </tr>
-                            `
-                        });
-                    } 
-                }
-                targetTable.innerHTML = qtsHTML;
-            },
-            error: function(xhr) {
-                console.error('Error fetching customer data:', xhr.responseText);
-                targetTable.innerHTML = '';
+        const checkboxColumn = () => ({
+            data: null,
+            name: 'checkbox',
+            orderable: false,
+            searchable: false,
+            render: (row, _, __, meta) => {
+                const docId = row?.header?.id || row?.sale_order?.id;
+                const soItemId = row?.id || JSON.stringify(row?.so_item_ids);
+                const isEnabled = row?.stock_qty > 0 || ['land-lease', 'plist'].includes(type);
+                return `<div class="form-check form-check-inline me-0">
+                    <input class="form-check-input pull_checkbox po_checkbox" type="checkbox"
+                        ${isEnabled ? '' : 'disabled'}
+                        name="po_check"
+                        id="po_checkbox_${meta.row}"
+                        oninput="checkQuotation(this);"
+                        doc-id="${docId}"
+                        current-doc-id="0"
+                        document-id="${docId}"
+                        so-item-id="${soItemId}"
+                        balance_qty="${row.balance_qty || 0}">
+                </div>`;
             }
         });
-     
+
+        const getColumns = () => {
+            if (type === 'land-lease') {
+                return [
+                    checkboxColumn(),
+                    { data: 'header.series.book_code', name: 'book_code' },
+                    { data: 'header.document_no', name: 'document_no' },
+                    { data: 'header.document_date', name: 'document_date', render: d => moment(d).format('D/M/Y') },
+                    { data: 'header.customer.company_name', name: 'company_name' },
+                    { data: 'header.plots[0].land.name', name: 'land_name' },
+                    {
+                        data: 'header.plots',
+                        name: 'plot_names',
+                        render: plots => plots?.map(p => p?.plot?.plot_name).join(', ') || 'N/A'
+                    },
+                    { data: 'type', name: 'type' },
+                    { data: 'installment_cost', name: 'installment_cost' },
+                    { data: 'due_date', name: 'due_date', render: d => moment(d).format('D/M/Y') }
+                ];
+            } else if (type === 'plist') {
+                return [
+                    checkboxColumn(),
+                    {data: 'sale_order',name: 'sale_order',render: so => `${so?.book_code} - ${so?.document_number}`},
+                    { data: 'sale_order.document_date', name: 'document_date' },
+                    { data: 'sale_order.customer_code', name: 'customer_code' },
+                    { data: 'header.book_code', name: 'book_code' },
+                    { data: 'header.document_number', name: 'document_number' },
+                    { data: 'packing_number', name: 'packing_number'},
+                    { data: 'items_ui', name: 'items_ui' },
+                    { data: 'total_item_qty', name: 'total_item_qty'}
+                ];
+            } else {
+                return [
+                    checkboxColumn(),
+                    { data: 'header.book_code', name: 'book_code' },
+                    { data: 'header.document_number', name: 'document_number' },
+                    { data: 'header.document_date', name: 'document_date' },
+                    { data: 'header.currency_code', name: 'currency_code' },
+                    { data: 'header.customer.company_name', name: 'company_name' },
+                    { data: 'item_code', name: 'item_code' },
+                    {
+                        data: 'attributes',
+                        name: 'attributes',
+                        render: attrs => attrs?.map(attr =>
+                            `<span class="badge rounded-pill badge-light-primary">${attr.attribute_name} : ${attr.attribute_value}</span>`
+                        ).join('') || ''
+                    },
+                    { data: 'uom.name', name: 'uom'},
+                    { data: 'order_qty', name: 'order_qty'},
+                    { data: 'balance_qty', name: 'balance_qty'},
+                    { data: 'avl_stock', name: 'avl_stock'},
+                    { data: 'rate', name: 'rate'},
+                ];
+            }
+        };
+         const tableSelector = type === 'plist' ? '#plist_invoice_table'
+            : type === 'land-lease' ? '#land_lease_invoice_table'
+            : '#so_invoice_table';
+       
+        const selectedIds = Array.from(document.getElementsByClassName("item_header_rows"))
+            .map((_, i) => document.getElementById('qt_id_' + i)?.value)
+            .filter(Boolean);
+        console.log('columns', getColumns());
+        const filters = {
+            doc_type: $(tableSelector+"_value"),
+            header_book_id: $("#series_id_input"),
+            land_plot_id: $("#land_plot_id_qt_val_land"),
+            land_parcel_id: $("#land_parcel_id_qt_val_land"),
+            store_id: $("#store_id_input"),
+            selected_ids: selectedIds
+        };
+
+        if (type === 'plist') {
+            filters.customer_id = $("#customer_id_plist_val");
+            filters.book_id = $("#book_id_plist_val");
+            filters.item_id = $("#item_id_plist_val");
+            filters.document_id = $("#document_id_plist_val");
+        } else if (type === 'land-lease') {
+            filters.customer_id = $("#customer_id_qt_val_land");
+            filters.book_id = $("#book_id_qt_val_land");
+            filters.item_id = $("#item_id_qt_val");
+            filters.document_id = $("#document_id_qt_val_land");
+        } else {
+            filters.customer_id = $("#customer_id_qt_val");
+            filters.book_id = $("#book_id_qt_val");
+            filters.item_id = $("#item_id_qt_val");
+            filters.document_id = $("#document_id_qt_val");
+        }
+
+        console.log("Table Selector", tableSelector);
+        console.log('filters', filters);
+        if ($.fn.DataTable.isDataTable(tableSelector)) {
+            $(tableSelector).DataTable().destroy();
+        }
+
+        initializeDataTable(
+            tableSelector,
+            apiUrl,
+            getColumns(),
+            filters,
+            "Sales Items - " + type.toUpperCase(),
+            [],        // Buttons
+            [],        // Order
+            'landscape',
+            'GET',
+            false,      // serverSide
+            false       // processing
+        );
     }
+
 
     function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "") {
             $("#" + selector).autocomplete({
@@ -3951,7 +3929,7 @@
     }
     var openPullType = "so";
 
-    function openHeaderPullModal(type = null)
+    function openHeaderPullModal(type = "so")
     {
         const pslipHeader = document.getElementById('packing_slip_nos_header');
         if (pslipHeader) {
@@ -3961,9 +3939,9 @@
         if (avlStock) {
             avlStock.style.removeProperty('display');
         }
-        document.getElementById('qts_data_table').innerHTML = '';
-        document.getElementById('qts_data_table_land').innerHTML = '';
-        document.getElementById('qts_data_table_plist').innerHTML = '';
+        // document.getElementById('qts_data_table').innerHTML = '';
+        // document.getElementById('qts_data_table_land').innerHTML = '';
+        // document.getElementById('qts_data_table_plist').innerHTML = '';
         if (type == "si") {
             openPullType = "so";
             initializeAutocompleteQt("book_code_input_qt", "book_id_qt_val", "book_so", "book_code", "book_name");
@@ -5193,6 +5171,76 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
                 console.error('Error fetching customer data:', xhr.responseText);
             }
             });
+    }
+    function checkAllSO(element)
+    {
+        const selectableElements = document.getElementsByClassName('pull_checkbox');
+        for (let index = 0; index < selectableElements.length; index++) {
+            if (!selectableElements[index].disabled) {
+                selectableElements[index].checked = element.checked;
+                // if (openPull)
+                // if (element.checked) {
+                //     checkQuotation(selectableElements[index]);
+                // }
+            }
+        }
+    }
+    function checkAllPlist(element)
+    {
+        const selectableElements = document.getElementsByClassName('pull_checkbox');
+        for (let index = 0; index < selectableElements.length; index++) {
+            if (!selectableElements[index].disabled) {
+                selectableElements[index].checked = element.checked;
+            }
+        }
+    }
+    function checkAllIn(element)
+    {
+        const selectableElements = document.getElementsByClassName('pull_checkbox');
+        for (let index = 0; index < selectableElements.length; index++) {
+            if (!selectableElements[index].disabled) {
+                selectableElements[index].checked = element.checked;
+            }
+        }
+    }
+    function checkAllLandLease(element)
+    {
+        const selectableElements = document.getElementsByClassName('pull_checkbox');
+        for (let index = 0; index < selectableElements.length; index++) {
+            if (!selectableElements[index].disabled) {
+                selectableElements[index].checked = element.checked;
+            }
+        }
+    }
+    function clearFilters(type = 'so') {
+        const fields = [
+            `location_code_input_${type}`,
+            `location_id_${type}_val`,
+            `department_code_input_${type}`,
+            `department_id_${type}_val`,
+            `book_code_input_${type}`,
+            `book_id_${type}_val`,
+            `document_no_input_${type}`,
+            `document_id_${type}_val`,
+            `so_no_input_${type}`,
+            `so_id_${type}_val`,
+            `item_name_input_${type}`,
+            `item_id_${type}_val`
+        ];
+
+        fields.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                if ('value' in el) {
+                    el.value = '';
+                } else {
+                    el.textContent = '';
+                }
+            }
+        });
+
+        selectedValues = {};
+        getOrders(type);
     }
 
 </script>

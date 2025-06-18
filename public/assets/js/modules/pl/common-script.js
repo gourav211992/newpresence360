@@ -20,6 +20,7 @@ let invDets = window.routes.invDets;
 let bookDetails = window.routes.bookDetails;
 let amendUrl = window.routes.amend;
 let getSeries = window.routes.getSeries;
+let redirectUrl = window.routes.redirectUrl;
 // Optional: use them in fetch, axios, etc.
 $('#order_date_input').on('blur', function() {
     if(checkDateRange(this)){
@@ -278,10 +279,30 @@ function disableHeader()
     if (leaseButton) {
         leaseButton.disabled = true;
     }
-    let orderButton = document.getElementById('select_mfg_button');
+    let morderButton = document.getElementById('select_mfg_button');
+    if (morderButton) {
+        morderButton.disabled = true;
+    }
+    let orderButton = document.getElementById('select_order_button');
     if (orderButton) {
         orderButton.disabled = true;
     }
+    let plistButton = document.getElementById('pack_list_button');
+    if (plisButton) {
+        plistButton.disabled = true;
+    }
+    // let orderButton = document.getElementById('select_mfg_button');
+    // if (orderButton) {
+    //     orderButton.disabled = true;
+    // }
+    // let orderButton = document.getElementById('select_mfg_button');
+    // if (orderButton) {
+    //     orderButton.disabled = true;
+    // }
+    // let orderButton = document.getElementById('select_mfg_button');
+    // if (orderButton) {
+    //     orderButton.disabled = true;
+    // }
    
 }
 
@@ -320,9 +341,17 @@ function enableHeader()
     if (leaseButton) {
         leaseButton.disabled = false;
     }
-    let orderButton = document.getElementById('select_mfg_button');
+    let morderButton = document.getElementById('select_mfg_button');
+    if (morderButton) {
+        morderButton.disabled = false;
+    }
+    let orderButton = document.getElementById('select_order_button');
     if (orderButton) {
         orderButton.disabled = false;
+    }
+    let plistButton = document.getElementById('pack_list_button');
+    if (plisButton) {
+        plistButton.disabled = false;
     }
 }
 document.addEventListener('DOMContentLoaded', function() {
@@ -484,7 +513,7 @@ function onSeriesChange(element, reset = true)
 
 function revokeDocument()
     {
-        const orderId = "{{isset($order) ? $order -> id : null}}";
+        const orderId = order ? order.id : null;
         if (orderId) {
             $.ajax({
             url: revokeUrl,
@@ -507,7 +536,7 @@ function revokeDocument()
                         text: data.message,
                         icon: 'error',
                     });
-                    window.location.href = "{{$redirect_url}}";
+                    window.location.href = redirect_url;
                 }
             },
             error: function(xhr) {
@@ -537,7 +566,7 @@ function resetParametersDependentElements(reset = true)
     if (selectionSection) {
         selectionSection.style.display = "none";
     }
-    var selectionSectionSO = document.getElementById('sales_invoice_selection');
+    var selectionSectionSO = document.getElementById('sales_order_selection');
     if (selectionSectionSO) {
         selectionSectionSO.style.display = "none";
     }
@@ -556,6 +585,10 @@ function resetParametersDependentElements(reset = true)
     var selectionSectionLease = document.getElementById('land_lease_selection');
     if (selectionSectionLease) {
         selectionSectionLease.style.display = "none";
+    }
+    var selectionSectionPlist = document.getElementById('packing_list_selection');
+    if (selectionSectionPlist) {
+        selectionSectionPlist.style.display = "none";
     }
     const section = document.getElementById('add_item_section');
     if (section) {
@@ -636,94 +669,94 @@ function getDocNumberByBookId(element, reset = true)
     });
 }
 function enableDisableQtButton()
-    {
-        const bookId = document.getElementById('series_id_input').value;
-        const bookCode = document.getElementById('book_code_input').value;
-        const documentDate = document.getElementById('order_date_input').value;
-        let siButton = document.getElementById('select_si_button');
-        let miButton = document.getElementById('select_mi_button');
-        let pwoButton = document.getElementById('select_pwo_button');
-        let moButton = document.getElementById('select_mo_button');
-        let joButton = document.getElementById('select_jo_button');
-        let piButton = document.getElementById('select_pi_button');
-        let dnButton = document.getElementById('select_dn_button');
-        let leaseButton = document.getElementById('select_lease_button');
-        let orderButton = document.getElementById('select_order_button');
-        let plistButton = document.getElementById('pack_list_button');
-        let customerSection = document.getElementById('customer_code_input');
+{
+    const bookId = document.getElementById('series_id_input').value;
+    const bookCode = document.getElementById('book_code_input').value;
+    const documentDate = document.getElementById('order_date_input').value;
+    let siButton = document.getElementById('select_si_button');
+    let miButton = document.getElementById('select_mi_button');
+    let pwoButton = document.getElementById('select_pwo_button');
+    let moButton = document.getElementById('select_mo_button');
+    let joButton = document.getElementById('select_jo_button');
+    let piButton = document.getElementById('select_pi_button');
+    let dnButton = document.getElementById('select_dn_button');
+    let leaseButton = document.getElementById('select_lease_button');
+    let orderButton = document.getElementById('select_order_button');
+    let plistButton = document.getElementById('pack_list_button');
+    let customerSection = document.getElementById('customer_code_input');
 
-        if (bookId && bookCode && documentDate) {
-            if (siButton) {
-                siButton.disabled = false;
-            }
-            if (miButton) {
-                miButton.disabled = false;
-            }
-            if (pwoButton) {
-                pwoButton.disabled = false;
-            }
-            if (moButton) {
-                moButton.disabled = false;
-            }
-            if (joButton) {
-                joButton.disabled = false;
-            }
-            if (piButton) {
-                piButton.disabled = false;
-            }
-            if (dnButton) {
-                dnButton.disabled = false;
-            }
-            if (leaseButton) {
-                leaseButton.disabled = false;
-            }
-            if (orderButton) {
-                orderButton.disabled = false;
-            }
-            if (plistButton) {
-                plistButton.disabled = false;
-            }
-            if(customerSection)
-            {
-                customerSection.disabled = false;
-            }
-        } else {
-            if (siButton) {
-                siButton.disabled = true;
-            }
-            if (miButton) {
-                miButton.disabled = true;
-            }
-            if (pwoButton) {
-                pwoButton.disabled = true;
-            }
-            if (moButton) {
-                moButton.disabled = true;
-            }
-            if (joButton) {
-                joButton.disabled = true;
-            }
-            if (piButton) {
-                piButton.disabled = true;
-            }
-            if (dnButton) {
-                dnButton.disabled = true;
-            }
-            if (leaseButton) {
-                leaseButton.disabled = true;
-            }
-            if (orderButton) {
-                orderButton.disabled = true;
-            }
-            if (plistButton) {
-                plistButton.disabled = true;
-            }
-            if(customerSection)
-            {
-                customerSection.disabled = true;
-            }
+    if (bookId && bookCode && documentDate) {
+        if (siButton) {
+            siButton.disabled = false;
+        }
+        if (miButton) {
+            miButton.disabled = false;
+        }
+        if (pwoButton) {
+            pwoButton.disabled = false;
+        }
+        if (moButton) {
+            moButton.disabled = false;
+        }
+        if (joButton) {
+            joButton.disabled = false;
+        }
+        if (piButton) {
+            piButton.disabled = false;
+        }
+        if (dnButton) {
+            dnButton.disabled = false;
+        }
+        if (leaseButton) {
+            leaseButton.disabled = false;
+        }
+        if (orderButton) {
+            orderButton.disabled = false;
+        }
+        if (plistButton) {
+            plistButton.disabled = false;
+        }
+        if(customerSection)
+        {
+            customerSection.disabled = false;
+        }
+    } else {
+        if (siButton) {
+            siButton.disabled = true;
+        }
+        if (miButton) {
+            miButton.disabled = true;
+        }
+        if (pwoButton) {
+            pwoButton.disabled = true;
+        }
+        if (moButton) {
+            moButton.disabled = true;
+        }
+        if (joButton) {
+            joButton.disabled = true;
+        }
+        if (piButton) {
+            piButton.disabled = true;
+        }
+        if (dnButton) {
+            dnButton.disabled = true;
+        }
+        if (leaseButton) {
+            leaseButton.disabled = true;
+        }
+        if (orderButton) {
+            orderButton.disabled = true;
+        }
+        if (plistButton) {
+            plistButton.disabled = true;
+        }
+        if(customerSection)
+        {
+            customerSection.disabled = true;
         }
     }
+}
 
    
 
@@ -887,6 +920,17 @@ function implementBookParameters(paramData)
                         selectionSectionElement.style.display = "";
                     }
                     var selectionPopupElement = document.getElementById('pi_order_selection');
+                    if (selectionPopupElement)
+                    {
+                        selectionPopupElement.style.display = ""
+                    }
+                }
+                if (selectSingleVal == 'plist') {
+                    var selectionSectionElement = document.getElementById('selection_section');
+                    if (selectionSectionElement) {
+                        selectionSectionElement.style.display = "";
+                    }
+                    var selectionPopupElement = document.getElementById('packing_list_selection');
                     if (selectionPopupElement)
                     {
                         selectionPopupElement.style.display = ""
@@ -1812,7 +1856,7 @@ function changeDropdownOptions(mainDropdownElement, dependentDropdownIds, dataKe
         method : "GET",
         headers : {
             'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            'X-CSRF-TOKEN': csrfToken
         },
     }).then(response => response.json()).then(data => {
         if (mainDropdownElement.id == "customer_id_input") {
@@ -2281,82 +2325,6 @@ $(document).on('change', '#revisionNumber', (e) => {
     window.open(actionUrl, '_blank'); // Opens in a new tab
 });
 
-$(document).on('submit', '.ajax-submit-2', function (e) {
-    e.preventDefault();
-     var submitButton = (e.originalEvent && e.originalEvent.submitter)
-                        || $(this).find(':submit');
-    var submitButtonHtml = submitButton.innerHTML;
-    submitButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
-    submitButton.disabled = true;
-    var method = $(this).attr('method');
-    var url = $(this).attr('action');
-    var redirectUrl = $(this).data('redirect');
-    var data = new FormData($(this)[0]);
-
-    var formObj = $(this);
-   
-    $.ajax({
-        url,
-        type: method,
-        data,
-        contentType: false,
-        processData: false,
-        success: function (res) {
-            submitButton.disabled = false;
-            submitButton.innerHTML = submitButtonHtml;
-            $('.ajax-validation-error-span').remove();
-            $(".is-invalid").removeClass("is-invalid");
-            $(".help-block").remove();
-            $(".waves-ripple").remove();
-            Swal.fire({
-                title: 'Success!',
-                text: res.message,
-                icon: 'success',
-            });
-            setTimeout(() => {
-                if (res.store_id) {
-                    location.href = `/stores/${res.store_id}/edit`;
-                } else if (redirectUrl) {
-                    location.href = redirectUrl;
-                } else {
-                    location.reload();
-                }
-            }, 1500);
-           
-        },
-        error: function (error) {
-            submitButton.disabled = false;
-            submitButton.innerHTML = submitButtonHtml;
-            $('.ajax-validation-error-span').remove();
-            $(".is-invalid").removeClass("is-invalid");
-            $(".help-block").remove();
-            $(".waves-ripple").remove();
-            let res = error.responseJSON || {};
-            if (error.status === 422 && res.errors) {
-                if (
-                    Object.size(res) > 0 &&
-                    Object.size(res.errors) > 0
-                ) {
-                    show_validation_error(res.errors);
-                }
-                // let errors = res.errors;
-                // for (const [key, errorMessages] of Object.entries(errors)) {
-                //     var name = key.replace(/\./g, "][").replace(/\]$/, "");
-                //     formObj.find(`[name="${name}"]`).parent().append(
-                //         `<span class="ajax-validation-error-span form-label text-danger" style="font-size:12px">${errorMessages[0]}</span>`
-                //     );
-                // }
-
-            } else {
-                Swal.fire({
-                    title: 'Error!',
-                    text: res.message || 'An unexpected error occurred.',
-                    icon: 'error',
-                });
-            }
-        }
-    });
-});
 
 const maxNumericLimit = 9999999;
 
@@ -2413,7 +2381,7 @@ $(document).on('click','#billAddressEditBtn',(e) => {
         method : "GET",
         headers : {
             'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            'X-CSRF-TOKEN': csrfToken
         },
     }).then(response => response.json()).then(data => {
         if (data) {
@@ -2442,8 +2410,8 @@ $(document).on('click','#billAddressEditBtn',(e) => {
     $("#edit-address-billing").modal('show');
 });
 function sendMailTo() {
-        const customerEmail = "{{ isset($order) ? $order->customer->email : '' }}";
-        const customerName = "{{ isset($order) ? $order->customer->company_name : '' }}";
+        const customerEmail = order ? order.customer.email : "";
+        const customerName = order ? order.customer.company_name : "";
         const emailInput = document.getElementById('cust_mail');
         const header = document.getElementById('send_mail_heading_label');
         if (emailInput) {
@@ -2453,7 +2421,7 @@ function sendMailTo() {
         {
             header.innerHTML = "Send Mail";
         }
-        $("#mail_remarks").val("Your Invoice has been successfully generated.");
+        $("#mail_remarks").val("");
         $('#sendMail').modal('show');
     }
 $(document).on('click','#shipAddressEditBtn',(e) => {
@@ -2464,7 +2432,7 @@ $(document).on('click','#shipAddressEditBtn',(e) => {
         method : "GET",
         headers : {
             'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            'X-CSRF-TOKEN': csrfToken
         },
     }).then(response => response.json()).then(data => {
         if (data) {

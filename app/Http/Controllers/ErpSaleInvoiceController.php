@@ -61,6 +61,7 @@ use Carbon\Carbon;
 use DB;
 use Dompdf\Options;
 use App\Models\CashCustomerDetail;
+use Http;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -345,7 +346,6 @@ class ErpSaleInvoiceController extends Controller
                 $orderType = SaleModuleHelper::SALES_INVOICE_LEASE_TYPE;
             }
             request() -> merge(['type' => $orderType]);
-            $selectedfyYear = Helper::getFinancialYear($doc->document_date ?? Carbon::now()->format('Y-m-d'));
             $user = Helper::getAuthenticatedUser();
             $users = AuthUser::where('organization_id', $user -> organization_id) -> where('status', ConstantHelper::ACTIVE) -> get();
             $servicesBooks = [];
@@ -414,76 +414,77 @@ class ErpSaleInvoiceController extends Controller
                 }
             }
            
-                $revision_number = $order->revision_number;
-                $totalValue = ($order -> total_item_value - $order -> total_discount_value) + $order -> total_tax_value + $order -> total_expense_value;
-                $userType = Helper::userCheck();
-                $buttons = Helper::actionButtonDisplay($order->book_id,$order->document_status , $order->id, $totalValue, $order->approval_level, $order -> created_by ?? 0, $userType['type'], $revision_number);
-                $type = SaleModuleHelper::getAndReturnInvoiceType($request -> type);
-                $request -> merge(['type' => $type]);
-                $books = Helper::getBookSeriesNew($type) -> get();
-                $countries = Country::select('id AS value', 'name AS label') -> where('status', ConstantHelper::ACTIVE) -> get();
+            $revision_number = $order->revision_number;
+            $totalValue = ($order -> total_item_value - $order -> total_discount_value) + $order -> total_tax_value + $order -> total_expense_value;
+            $userType = Helper::userCheck();
+            $buttons = Helper::actionButtonDisplay($order->book_id,$order->document_status , $order->id, $totalValue, $order->approval_level, $order -> created_by ?? 0, $userType['type'], $revision_number);
+            $type = SaleModuleHelper::getAndReturnInvoiceType($request -> type);
+            $request -> merge(['type' => $type]);
+            $books = Helper::getBookSeriesNew($type) -> get();
+            $countries = Country::select('id AS value', 'name AS label') -> where('status', ConstantHelper::ACTIVE) -> get();
+            $revNo = $order->revision_number;
+            if($request->has('revisionNumber')) {
+                $revNo = intval($request->revisionNumber);
+            } else {
                 $revNo = $order->revision_number;
-                if($request->has('revisionNumber')) {
-                    $revNo = intval($request->revisionNumber);
-                } else {
-                    $revNo = $order->revision_number;
-                }
-                $docValue = $order->total_amount ?? 0;
-                $approvalHistory = Helper::getApprovalHistory($order->book_id, $order->id, $revNo, $docValue, $order -> created_by);
-                $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$order->document_status] ?? '';
-                $typeName = "Sales Invoice";
-                if ($type == ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS) {
-                    $typeName = "Delivery Note";
-                } else if ($type == ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
-                    $typeName = "Delivery Note CUM Invoice";
-                } else if ($type == ConstantHelper::LEASE_INVOICE_SERVICE_ALIAS) {
-                    $typeName = "Lease Invoice";
-                }
-                $editBundle = !in_array($order -> document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]);
-                $einvoice = $order -> irnDetail() -> first();
-                $enableEinvoice = ($order -> document_type === ConstantHelper::SI_SERVICE_ALIAS) ||
-                 $order -> document_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS && !$order -> invoice_required;
-                if ($order -> gst_invoice_type !== EInvoiceHelper::B2B_INVOICE_TYPE) {
-                    $enableEinvoice = false;
-                }
-                $subStores = InventoryHelper::getAccesibleSubLocations($order -> store_id);
-                $transportationModes = EwayBillMaster::where('status', 'active')
-                    ->where('type', '=', 'transportation-mode')
-                    ->orderBy('id', 'ASC')
-                    ->get();
-                $editTransporterFields = false;
-                if (!isset($einvoice -> ewb_no) && $order -> total_amount > EInvoiceHelper::EWAY_BILL_MIN_AMOUNT_LIMIT) {
-                    $editTransporterFields = true;
-                }
-                $dynamicFieldsUI = $order -> dynamicfieldsUi();
+            }
+            $docValue = $order->total_amount ?? 0;
+            $approvalHistory = Helper::getApprovalHistory($order->book_id, $order->id, $revNo, $docValue, $order -> created_by);
+            $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$order->document_status] ?? '';
+            $typeName = "Sales Invoice";
+            if ($type == ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS) {
+                $typeName = "Delivery Note";
+            } else if ($type == ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
+                $typeName = "Delivery Note CUM Invoice";
+            } else if ($type == ConstantHelper::LEASE_INVOICE_SERVICE_ALIAS) {
+                $typeName = "Lease Invoice";
+            }
+            $editBundle = !in_array($order -> document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]);
+            $einvoice = $order -> irnDetail() -> first();
+            $enableEinvoice = ($order -> document_type === ConstantHelper::SI_SERVICE_ALIAS) ||
+                $order -> document_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS && !$order -> invoice_required;
+            if ($order -> gst_invoice_type !== EInvoiceHelper::B2B_INVOICE_TYPE) {
+                $enableEinvoice = false;
+            }
+            $subStores = InventoryHelper::getAccesibleSubLocations($order -> store_id);
+            $transportationModes = EwayBillMaster::where('status', 'active')
+                ->where('type', '=', 'transportation-mode')
+                ->orderBy('id', 'ASC')
+                ->get();
+            $editTransporterFields = false;
+            if (!isset($einvoice -> ewb_no) && $order -> total_amount > EInvoiceHelper::EWAY_BILL_MIN_AMOUNT_LIMIT) {
+                $editTransporterFields = true;
+            }
+            $dynamicFieldsUI = $order -> dynamicfieldsUi();
+            $selectedfyYear = Helper::getFinancialYear($order->document_date ?? Carbon::now()->format('Y-m-d'));
 
-                $data = [
-                    'user' => $user,
-                    'users' => $users,
-                    'series' => $books,
-                    'order' => $order,
-                    'countries' => $countries,
-                    'buttons' => $buttons,
-                    'approvalHistory' => $approvalHistory,
-                    'type' => $type,
-                    'editBundle' => $editBundle,
-                    'revision_number' => $revision_number,
-                    'docStatusClass' => $docStatusClass,
-                    'typeName' => $typeName,
-                    'stores' => $stores,
-                    'maxFileCount' => isset($order -> mediaFiles) ? (10 - count($order -> media_files)) : 10,
-                    'services' => $servicesBooks['services'],
-                    'redirect_url' => $redirect_url,
-                    'location_visibility' => $locationVisiblity,
-                    'einvoice' => $einvoice,
-                    'enableEinvoice' => $enableEinvoice,
-                    'subStores' => $subStores,
-                    'dynamicFieldsUi' => $dynamicFieldsUI,
-                    'transportationModes' => $transportationModes,
-                    'current_financial_year' => $selectedfyYear,
-                    'editTransporterFields' => $editTransporterFields
-                ];
-                return view('salesInvoice.create_edit', $data);
+            $data = [
+                'user' => $user,
+                'users' => $users,
+                'series' => $books,
+                'order' => $order,
+                'countries' => $countries,
+                'buttons' => $buttons,
+                'approvalHistory' => $approvalHistory,
+                'type' => $type,
+                'editBundle' => $editBundle,
+                'revision_number' => $revision_number,
+                'docStatusClass' => $docStatusClass,
+                'typeName' => $typeName,
+                'stores' => $stores,
+                'maxFileCount' => isset($order -> mediaFiles) ? (10 - count($order -> media_files)) : 10,
+                'services' => $servicesBooks['services'],
+                'redirect_url' => $redirect_url,
+                'location_visibility' => $locationVisiblity,
+                'einvoice' => $einvoice,
+                'enableEinvoice' => $enableEinvoice,
+                'subStores' => $subStores,
+                'dynamicFieldsUi' => $dynamicFieldsUI,
+                'transportationModes' => $transportationModes,
+                'current_financial_year' => $selectedfyYear,
+                'editTransporterFields' => $editTransporterFields
+            ];
+            return view('salesInvoice.create_edit', $data);
            
         } catch(Exception $ex) {
             dd($ex -> getMessage());
@@ -1627,65 +1628,41 @@ class ErpSaleInvoiceController extends Controller
         try {
             $selectedIds = $request -> selected_ids ?? [];
             $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request -> header_book_id);
-            if ($request -> doc_type === ConstantHelper::SO_SERVICE_ALIAS) {
-                $referedHeaderId = ErpSoItem::whereIn('id', $selectedIds) -> first() ?-> header ?-> id;
-                $order = ErpSoItem::whereHas('header', function ($subQuery) use($request, $applicableBookIds, $referedHeaderId) {
-                    $subQuery -> withDefaultGroupCompanyOrg() -> when($referedHeaderId, function ($refQuery) use($referedHeaderId) {
-                        $refQuery -> where('id', $referedHeaderId);
-                    })-> where('document_type', ConstantHelper::SO_SERVICE_ALIAS) -> whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]) -> whereIn('book_id', $applicableBookIds) -> when($request -> customer_id, function ($custQuery) use($request) {
-                        $custQuery -> where('customer_id', $request -> customer_id) -> where('store_id', $request -> store_id);
-                    }) -> when($request -> book_id, function ($bookQuery) use($request) {
-                        $bookQuery -> where('book_id', $request -> book_id);
-                    }) -> when($request -> document_id, function ($docQuery) use($request) {
-                        $docQuery -> where('id', $request -> document_id);
-                    });
-                })-> with('attributes') -> with('uom') -> when(count($selectedIds) > 0, function ($refQuery) use($selectedIds) {
-                    $refQuery -> whereNotIn('id', $selectedIds);
-                })-> with('header', function ($headerQuery) {
-                    $headerQuery -> with(['customer', 'shipping_address_details']);
-                }) -> whereColumn('dnote_qty', "<", "order_qty");
-            } else if ($request -> doc_type === ConstantHelper::SI_SERVICE_ALIAS || $request -> doc_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS) {
-                $order = ErpInvoiceItem::whereHas('header', function ($subQuery) use($request, $applicableBookIds) {
-                    $subQuery -> withDefaultGroupCompanyOrg() -> whereIn('document_type', [ConstantHelper::SI_SERVICE_ALIAS, ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS]) -> whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]) -> whereIn('book_id', $applicableBookIds) -> when($request -> customer_id, function ($custQuery) use($request) {
-                        $custQuery -> where('customer_id', $request -> customer_id)-> where('store_id', $request -> store_id);;
-                    }) -> when($request -> book_id, function ($bookQuery) use($request) {
-                        $bookQuery -> where('book_id', $request -> book_id);
-                    }) -> when($request -> document_id, function ($docQuery) use($request) {
-                        $docQuery -> where('id', $request -> document_id);
-                    });
-                })-> with('attributes') -> with('uom') -> with('header', function ($headerQuery) use($request) {
-                    $headerQuery -> with(['customer', 'shipping_address_details']) -> when($request -> doc_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS, function ($dnQuery) {
-                        $dnQuery -> where('invoice_required', 1);
-                    });
-                })-> whereColumn('invoice_qty', "<", "order_qty");    
-            }
-            else if ($request -> doc_type === ConstantHelper::LAND_LEASE) {
-                $order = LandLeaseScheduler::whereHas('header', function ($subQuery) use($applicableBookIds, $request) {
-                    $subQuery -> whereIn('book_id', $applicableBookIds) -> whereIn('approvalStatus', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
-                    -> when($request -> book_id, function ($bookQuery) use($request) {
-                        $bookQuery -> where('book_id', $request -> book_id);
-                    }) -> when($request -> document_id, function ($docQuery) use($request) {
-                        $docQuery -> where('id', $request -> document_id);
-                    })-> when($request -> book_id, function ($bookQuery) use($request) {
-                        $bookQuery -> where('book_id', $request -> book_id);
-                    }) -> when($request -> document_id, function ($docQuery) use($request) {
-                        $docQuery -> where('id', $request -> document_id);
-                    }) -> when($request -> customer_id, function ($docQuery) use($request) {
-                        $docQuery -> where('customer_id', $request -> customer_id);
-                    }) -> when($request -> land_parcel_id, function ($landPlotQuery) use($request) {
-                        $landPlotQuery -> whereHas('plots', function ($plotQuery) use($request) {
-                            $plotQuery -> where('land_parcel_id', $request -> land_parcel_id);
-                        });
-                    }) -> when($request -> land_plot_id, function ($landPlotQuery) use($request) {
-                        $landPlotQuery -> whereHas('plots', function ($plotQuery) use($request) {
-                            $plotQuery -> where('land_plot_id', $request -> land_plot_id);
-                        });
-                    });
-                }) -> with('header', function ($headerQuery) use($request) {
-                    $headerQuery -> with(['address', 'series', 'customer', 'plots.land', 'plots.plot']);
-                }) -> where('due_date', '<=', Carbon::now()) -> whereColumn('installment_cost', '>', 'invoice_amount');
-            } else if ($request -> doc_type === PackingListConstants::SERVICE_ALIAS) {
-                $order = PackingListDetail::withWhereHas('header', function ($subQuery) use($request, $applicableBookIds) {
+            $query = null;
+
+            if ($request->doc_type === ConstantHelper::SO_SERVICE_ALIAS) {
+                $referedHeaderId = ErpSoItem::whereIn('id', $selectedIds)->first()?->header?->id;
+
+                $query = ErpSoItem::with(['attributes', 'uom', 'header.customer', 'header.shipping_address_details'])
+                    ->whereHas('header', function ($subQuery) use ($request, $applicableBookIds, $referedHeaderId) {
+                        $subQuery->withDefaultGroupCompanyOrg()
+                            ->when($referedHeaderId, fn($q) => $q->where('id', $referedHeaderId))
+                            ->where('document_type', ConstantHelper::SO_SERVICE_ALIAS)
+                            ->where('store_id', $request->store_id)
+                            ->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
+                            ->whereIn('book_id', $applicableBookIds)
+                            ->when($request->customer_id, fn($q) => $q->where('customer_id', $request->customer_id))
+                            ->when($request->book_id, fn($q) => $q->where('book_id', $request->book_id))
+                            ->when($request->document_id, fn($q) => $q->where('id', $request->document_id));
+                    })
+                    ->whereColumn('dnote_qty', '<', 'order_qty')
+                    ->when(count($selectedIds) > 0, fn($q) => $q->whereNotIn('id', $selectedIds));
+
+            } elseif (in_array($request->doc_type, [ConstantHelper::SI_SERVICE_ALIAS, ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS])) {
+                $query = ErpInvoiceItem::with(['attributes', 'uom', 'header.customer', 'header.shipping_address_details'])
+                    ->whereHas('header', function ($subQuery) use ($request, $applicableBookIds) {
+                        $subQuery->withDefaultGroupCompanyOrg()
+                            ->whereIn('document_type', [ConstantHelper::SI_SERVICE_ALIAS, ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS])
+                            ->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
+                            ->whereIn('book_id', $applicableBookIds)
+                            ->when($request->customer_id, fn($q) => $q->where('customer_id', $request->customer_id)->where('store_id', $request->store_id))
+                            ->when($request->book_id, fn($q) => $q->where('book_id', $request->book_id))
+                            ->when($request->document_id, fn($q) => $q->where('id', $request->document_id));
+                    })
+                    ->whereColumn('invoice_qty', '<', 'order_qty');
+
+            } elseif ($request->doc_type === PackingListConstants::SERVICE_ALIAS) {
+                $query = PackingListDetail::withWhereHas('header', function ($subQuery) use($request, $applicableBookIds) {
                     $subQuery -> withDefaultGroupCompanyOrg() -> whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]) -> whereIn('book_id', $applicableBookIds) 
                     -> when($request -> book_id, function ($bookQuery) use($request) {
                         $bookQuery -> where('book_id', $request -> book_id);
@@ -1702,159 +1679,28 @@ class ErpSaleInvoiceController extends Controller
                     });
                 }) ->with('sale_order')-> whereNull('dn_item_id');
             }
-            else {
-                $order = null;
+
+            // LAND_LEASE cannot be paginated without get()
+            // $order = $order -> values();
+            // if ($request -> doc_type == ConstantHelper::LAND_LEASE) {
+            //     $order = SaleModuleHelper::sortByDueDateLogic($order);
+            //     $order = $order->groupBy('lease_id')
+            //         ->flatMap(function ($group) {
+            //             // Optionally, sort each group further if needed
+            //             return $group;
+            //         });
+            // }
+            // You should either: cache & paginate separately or continue to use get()
+
+            if (!$query) {
+                return DataTables::of(collect([]))->make(true);
             }
-            if ($request -> item_id && isset($order) && $request -> doc_type !== ConstantHelper::LAND_LEASE && $request -> doc_type != PackingListConstants::SERVICE_ALIAS) {
-                $order = $order -> where('item_id', $request -> item_id);
-            }
-            if (!$order || $order -> count() <= 0) {
-                return DataTables::of(collect())->make(true);
-            }
-            $order = isset($order) ? $order -> get() : new Collection();
-            if ($request -> doc_type === PackingListConstants::SERVICE_ALIAS) {
-                foreach ($order as $docDetail) {
-                    $totalQty = 0;
-                    $itemsHTML = "";
-                    $extraItemsCount = 0;
-                    $soItemIds = [];
-                    foreach ($docDetail -> items as $detailItemIndex => $detailItem) {
-                        array_push($soItemIds, $detailItem -> so_item_id);
-                        if ($detailItemIndex == 0) {
-                            $totalQty += $detailItem -> qty;
-                            //Build Items UI
-                            $maxChar = 70;
-                            $itemName = $detailItem -> item_name;
-                            $totalChar = strlen($itemName);
-                            $attributesHTML = "";
-                            foreach($detailItem -> attributes as $itemAttr) {
-                                $attributeName = $itemAttr -> attribute_name;
-                                $attributeValue = $itemAttr -> attribute_value;
-                                $totalChar += (strlen($attributeName) + strlen($attributeValue));
-                                if ($totalChar <= $maxChar) {
-                                    $attributesHTML .= "<span class='badge rounded-pill badge-light-primary' > $attributeName : $attributeValue</span>";
-                                } else {
-                                    $attributesHTML .= "..";
-                                }
-                            }
-                            $itemsHTML .= "<span class='badge rounded-pill badge-light-primary' > $itemName</span> $attributesHTML";
-                        } else {
-                            $extraItemsCount += 1;
-                        }                    
-                    }
-                    if ($extraItemsCount > 0) {
-                        $itemsHTML .= "<span class='badge rounded-pill badge-light-primary' > + $extraItemsCount</span>";
-                    }
-                    $docDetail -> items_ui = $itemsHTML;
-                    $docDetail -> total_item_qty = $totalQty;
-                    $docDetail -> so_item_ids = $soItemIds;
-                }
-            }
-            if ($request -> doc_type !== ConstantHelper::LAND_LEASE) {
-                $order = $order -> filter(function ($singleOrder) use($request) {
-                    // if ($request -> doc_type === ConstantHelper::SO_SERVICE_ALIAS) {
-                    //     return $singleOrder -> balance_qty > 0 && $singleOrder -> balance_bundle_qty > 0;
-                    // }
-                    if ($request -> doc_type != PackingListConstants::SERVICE_ALIAS) {
-                        return $singleOrder -> balance_qty > 0;
-                    } else {
-                        return true;
-                    }
-                });
-                foreach ($order as &$itemVal) {
-                    if ($request -> doc_type === ConstantHelper::SO_SERVICE_ALIAS) {
-                        $itemVal -> stock_qty = $itemVal -> getStockBalanceQty($request -> store_id ?? 0);
-                        $itemVal -> pslips = SaleModuleHelper::getPendingPackingSlipsOfOrder($itemVal -> id);
-                    } else {
-                        if ($request -> doc_type != PackingListConstants::SERVICE_ALIAS) {
-                            $itemVal -> stock_qty = $itemVal -> balance_qty;
-                        }
-                    }
-                }                
-            } else {
-                $headerId = null;
-                $headerIds = [];
-                foreach ($order as &$itemVal) {
-                    if ($headerId !== $itemVal -> header -> id) {
-                        $securityItem = $itemVal ?-> header ?-> securityItem();
-                        if (isset($securityItem)) {
-                            $order -> push($securityItem);
-                        }
-                    }
-                    $itemVal -> type = ConstantHelper::LEASE;
-                    $itemDetails = ($itemVal -> header ?-> plots() ?-> first() ?-> land);
-                    if (($itemDetails)) {
-                        $serviceItems = (json_decode($itemDetails -> service_item, true));
-                        if (isset($serviceItems) && count($serviceItems) > 0) {
-                            $serviceItem = array_filter($serviceItems, function ($servItem) {
-                                return $servItem["'servicetype'"] == "Lease" || $servItem["'servicetype'"] == "Land-Lease";
-                            });
-                            if (count($serviceItem) > 0) {
-                                $serviceItem = array_values($serviceItem);
-                                $item = Item::where('item_code', $serviceItem[0]["'servicecode'"])-> where('type', ConstantHelper::SERVICE) -> first();
-                                if (isset($item)) {
-                                    $itemVal -> can_check = true;
-                                    $itemVal -> can_check_message = '';
-                                } else {
-                                    $itemVal -> can_check = false;
-                                    $itemVal -> can_check_message = 'Service Item not found, Please update before selecting';
-                                }
-                            } else {
-                                $itemVal -> can_check = false;
-                                $itemVal -> can_check_message = 'Service Item not found, Please update before selecting';
-                            }
-                        }
-                    } else {
-                        $itemVal -> can_check = false;
-                        $itemVal -> can_check_message = 'Service Item not found, Please update before selecting';
-                    }
-                    $itemVal -> installment_cost = round($itemVal -> installment_cost - $itemVal -> invoice_amount, 2);
-                    $headerId = $itemVal -> header -> id;
-                    array_push($headerIds, $itemVal -> header -> id);
-                }
-                $headers = LandLease:: whereIn('book_id', $applicableBookIds) -> whereNotIn('id', $headerIds)
-                -> whereIn('approvalStatus', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
-                -> whereColumn('security_deposit', '>', 'invoice_security_deposit')
-                -> with(['address', 'series', 'customer', 'plots.land', 'plots.plot'])
-                -> when($request -> book_id, function ($bookQuery) use($request) {
-                    $bookQuery -> where('book_id', $request -> book_id);
-                }) -> when($request -> document_id, function ($docQuery) use($request) {
-                    $docQuery -> where('id', $request -> document_id);
-                }) -> when($request -> customer_id, function ($docQuery) use($request) {
-                    $docQuery -> where('customer_id', $request -> customer_id);
-                }) -> when($request -> land_parcel_id, function ($landPlotQuery) use($request) {
-                    $landPlotQuery -> whereHas('plots', function ($plotQuery) use($request) {
-                        $plotQuery -> where('land_parcel_id', $request -> land_parcel_id);
-                    });
-                }) -> when($request -> land_plot_id, function ($landPlotQuery) use($request) {
-                    $landPlotQuery -> whereHas('plots', function ($plotQuery) use($request) {
-                        $plotQuery -> where('land_plot_id', $request -> land_plot_id);
-                    });
-                }) -> get();
-                    if (count($headers) > 0) {
-                        foreach($headers as &$header) {
-                            $securityItem = $header ?-> securityItem();
-                            if (isset($securityItem)) {
-                                $order -> push($securityItem);
-                            }
-                        }
-                    }
-               
-            }
-            $order = $order -> values();
-            if ($request -> doc_type == ConstantHelper::LAND_LEASE) {
-                $order = SaleModuleHelper::sortByDueDateLogic($order);
-                $order = $order->groupBy('lease_id')
-                    ->flatMap(function ($group) {
-                        // Optionally, sort each group further if needed
-                        return $group;
-                    });
-            }
-            return DataTables::of($order)
+
+            return DataTables::of($query)
                 ->addColumn('book_code', fn($item) => $item?->header?->book_code ?? ($item->header->book?->book_code ?? ''))
                 ->addColumn('document_number', fn($item) => $item?->header?->document_number)
-                ->addColumn('document_date', fn($item) => $item->header->getFormattedDate("document_date"))
-                ->addColumn('so_no', fn($item) => $item?->so?->book_code . '-' . $item?->so?->document_number)
+                ->addColumn('document_date', fn($item) =>  method_exists($item?->header, 'getFormattedDate') ? $item->header->getFormattedDate("document_date") : '')
+                ->addColumn('so_no', fn($item) => ($item?->so?->book_code ?? '') . '-' . ($item?->so?->document_number ?? ''))
                 ->addColumn('item_name', function ($item) use ($request) {
                     $name = $item->item->item_name ?? '';
                     if (
@@ -1870,38 +1716,164 @@ class ErpSaleInvoiceController extends Controller
                 ->addColumn('store_location_code', fn($item) => $item->header?->store_location?->store_name ?? '')
                 ->addColumn('sub_store_code', fn($item) => $item->header?->sub_store?->name ?? '')
                 ->addColumn('department_code', fn($item) => $item->header?->department?->name ?? '')
-                ->addColumn('requester_name', fn($item) => $item?->header && method_exists($item->header, 'requester_name') ? $item->header->requester_name() : '')
+                ->addColumn('requester_name', fn($item) => isset($item?->header) && method_exists($item?->header, 'requester_name') ? $item->header->requester_name() : '')
                 ->addColumn('station_name', fn($item) => $item->header?->station?->name ?? '')
-                ->addColumn('avl_stock', function ($item) use ($request) {
-                    return number_format($item->getAvlStock(
-                        $request->store_id_from,
-                        $request->sub_store_id_from ?? null,
-                        $request->station_id_from ?? null
-                    ),2);
-                })
-                ->editColumn('qty', function ($item) use ($request) {
-                    return (number_format($item->qty,2));
-                })
-                ->editColumn('mi_balance_qty', function ($item) use ($request) {
-                    return (number_format($item->mi_balance_qty,2));
-                })
+                ->editColumn('avl_stock', fn($item) => isset($item) && method_exists($item, 'getAvailableStocks') 
+                    ? number_format($item->getAvailableStocks(
+                        request('store_id'),
+                        request('sub_store_id') ?? null
+                    ), 2) : '0.00')
+                ->editColumn('qty', fn($item) => number_format($item->qty ?? 0, 2))
+                ->editColumn('balance_qty', fn($item) => number_format($item->balance_qty ?? 0, 2))
+                ->editColumn('rate', fn($item) => number_format($item->rate ?? 0, 2))
                 ->addColumn('attributes_array', function ($item) use ($request) {
-                    if(in_array($request->doc_type, [ConstantHelper::JO_SERVICE_ALIAS])){
+                    if (in_array($request->doc_type, [ConstantHelper::JO_SERVICE_ALIAS])) {
                         return $item->attributes->map(fn($attr) => [
                             'attribute_name' => $attr->headerAttribute?->name,
                             'attribute_value' => $attr->headerAttributeValue?->value,
                         ])->values();
                     }
+                    if ($request->doc_type === PackingListConstants::SERVICE_ALIAS) {
+                        return $item->items->flatMap(function ($detailItem) {
+                            return $detailItem->attributes->map(fn($attr) => [
+                                'attribute_name' => $attr->attr_name,
+                                'attribute_value' => $attr->attr_value,
+                            ]);
+                        })->values();
+                    }
                     return $item->attributes->map(fn($attr) => [
                         'attribute_name' => $attr->attr_name,
-                        'attribute_value' => $attr->attr_value,
+                        'attribute_value' => $attr->attribute_value,
                     ])->values();
                 })
+                ->addColumn('stock_qty', function ($item) use ($request) {
+                    return method_exists($item, 'getStockBalanceQty') 
+                        ? $item->getStockBalanceQty($request->store_id ?? 0, $request->sub_store_id ?? 0) ?? 0 
+                        : 0;
+                })
+                ->addColumn('sale_order', function ($item) {
+                    return [
+                        'book_code'       => $item?->sale_order?->book_code,
+                        'document_number' => $item?->sale_order?->document_number,
+                        'document_date'   => isset($item->sale_order) && method_exists($item?->sale_order, 'getFormattedDate') 
+                            ? $item->sale_order->getFormattedDate("document_date") 
+                            : '',
+                        'customer_code'   => $item?->sale_order?->customer?->customer_code,
+                    ];
+                })
+                ->addColumn('items_ui', function ($item) {
+                    $itemsHTML = '';
+                    $totalChar = 0;
+                    $maxChar = 70;
+                    $extraItemsCount = 0;
+                    $totalQty = 0;
+
+                    if ($item->items && $item->items->count()) {
+                        foreach ($item->items as $index => $detailItem) {
+                            $totalQty += $detailItem->qty;
+                            if ($index == 0) {
+                                $itemName = $detailItem->item_name ?? '';
+                                $totalChar += strlen($itemName);
+                                $attributesHTML = '';
+
+                                if ($detailItem->attributes && $detailItem->attributes->count()) {
+                                    foreach ($detailItem->attributes as $attr) {
+                                        $attributeName = $attr->attribute_name ?? '';
+                                        $attributeValue = $attr->attribute_value ?? '';
+                                        $totalChar += strlen($attributeName) + strlen($attributeValue);
+
+                                        if ($totalChar <= $maxChar) {
+                                            $attributesHTML .= "<span class='badge rounded-pill badge-light-primary'>$attributeName : $attributeValue</span> ";
+                                        } else {
+                                            $attributesHTML .= '..';
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                $itemsHTML .= "<span class='badge rounded-pill badge-light-primary'>$itemName</span> $attributesHTML";
+                            } else {
+                                $extraItemsCount++;
+                            }
+                        }
+
+                        if ($extraItemsCount > 0) {
+                            $itemsHTML .= "<span class='badge rounded-pill badge-light-primary'> + $extraItemsCount</span>";
+                        }
+                    }
+
+                    return $itemsHTML;
+                })
+
+                ->addColumn('total_item_qty', function ($item) {
+                    if ($item->items && $item->items->count()) {
+                        return $item->items->sum('qty');
+                    }
+                    return 0;
+                })
+                ->rawColumns(['items_ui'])
                 ->make(true);
+
+
         } catch(Exception $ex) {
             return response() -> json([
                 'message' => 'Some internal error occurred',
                 'error' => $ex -> getMessage() . $ex -> getFile() . $ex -> getLine()
+            ]);
+        }
+    }
+
+    public function getSalesLandForPulling(Request $request)
+    {
+        try {
+            $selectedIds = $request->selected_ids ?? [];
+            $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request->header_book_id);
+
+            // Build base query
+            $query = LandLeaseItem::with(['uom', 'header.customer', 'header.shipping_address_details'])
+                ->whereHas('header', function ($subQuery) use ($request, $applicableBookIds) {
+                    $subQuery->withDefaultGroupCompanyOrg()
+                        ->where('document_type', ConstantHelper::LAND_LEASE)
+                        ->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
+                        ->whereIn('book_id', $applicableBookIds)
+                        ->when($request->customer_id, fn($q) => $q->where('customer_id', $request->customer_id))
+                        ->when($request->book_id, fn($q) => $q->where('book_id', $request->book_id))
+                        ->when($request->document_id, fn($q) => $q->where('id', $request->document_id));
+                })
+                ->when(count($selectedIds) > 0, fn($q) => $q->whereNotIn('id', $selectedIds));
+
+            $items = $query->get(); // must fetch as collection
+
+            // Optional: Sort or group here if needed
+            // $items = SaleModuleHelper::sortByDueDateLogic($items);
+
+            return DataTables::of(collect($items))
+                ->addColumn('book_code', fn($item) => $item?->header?->book_code ?? ($item->header->book?->book_code ?? ''))
+                ->addColumn('document_number', fn($item) => $item?->header?->document_number)
+                ->addColumn('document_date', fn($item) => $item->header->getFormattedDate("document_date"))
+                ->addColumn('item_name', fn($item) => $item->item->item_name ?? '')
+                ->addColumn('store_location_code', fn($item) => $item->header?->store_location?->store_name ?? '')
+                ->addColumn('sub_store_code', fn($item) => $item->header?->sub_store?->name ?? '')
+                ->addColumn('department_code', fn($item) => $item->header?->department?->name ?? '')
+                ->addColumn('requester_name', fn($item) => $item?->header && method_exists($item->header, 'requester_name') ? $item->header->requester_name() : '')
+                ->addColumn('station_name', fn($item) => $item->header?->station?->name ?? '')
+                ->editColumn('avl_stock', fn($item) => number_format($item->getAvailableStocks(
+                    request('store_id'),
+                    request('sub_store_id') ?? null
+                ), 2))
+                ->editColumn('qty', fn($item) => number_format($item->qty, 2))
+                ->editColumn('balance_qty', fn($item) => number_format($item->balance_qty, 2))
+                ->editColumn('rate', fn($item) => number_format($item->rate, 2))
+                ->addColumn('attributes_array', fn($item) => $item->attributes->map(fn($attr) => [
+                    'attribute_name' => $attr->attr_name,
+                    'attribute_value' => $attr->attr_value,
+                ])->values())
+                ->make(true);
+
+        } catch (Exception $ex) {
+            return response()->json([
+                'message' => 'Some internal error occurred',
+                'error' => $ex->getMessage() . ' in ' . $ex->getFile() . ':' . $ex->getLine()
             ]);
         }
     }
@@ -2152,7 +2124,7 @@ class ErpSaleInvoiceController extends Controller
     }
 
     // genrate pdf
-    public function generatePdf(Request $request, $id,$pattern)
+    public function generatePdf(Request $request, $id,$pattern,$download = false,$returnRaw = false)
     {
         $user = Helper::getAuthenticatedUser();
 
@@ -2287,7 +2259,12 @@ class ErpSaleInvoiceController extends Controller
 
         $pdfPath = 'invoices/pdfs/invoice_' . $fileName  . '.pdf';
         Storage::disk('local')->put($pdfPath, $dompdf->output());
-
+        if ($download) {
+            return $dompdf->stream($fileName . '.pdf', ['Attachment' => true]);
+        }
+        if ($returnRaw) {
+            return $dompdf->output(); // raw PDF content (string)
+        }
         return response($dompdf->output())
             ->header('Content-Type', 'application/pdf')
             ->header('Content-Disposition', 'inline; filename="Einvoice_' . $fileName . '.pdf"');
@@ -2571,55 +2548,149 @@ class ErpSaleInvoiceController extends Controller
     }
     public function EInvoiceMail(Request $request)
     {
-        
-        $invoice =ErpSaleInvoice::with(['customer'])->find($request->id);
+        $invoice = ErpSaleInvoice::with(['customer'])->find($request->id);
         $customer = $invoice->customer;
+
         $sendTo = $request->email_to ?? $customer->email;
         $customer->email = $sendTo;
+
         $title = "Invoice Generated";
         $pattern = "Tax Invoice";
         $remarks = $request->remarks ?? null;
+
         $mail_from = '';
         $mail_from_name = '';
         $cc = $request->cc_to ? implode(',', $request->cc_to) : null;
-        $attachment = $request->file('attachments') ?? null;
-        $name = $customer->company_name; // Assuming vendor is already defined
-        $viewLink = route('sale.invoice.generate-pdf', ['id'=>$request->id,'pattern'=>$pattern]);
+
+        $name = $customer->company_name;
+        $viewLink = route('sale.invoice.generate-pdf', ['id' => $request->id, 'pattern' => $pattern]);
+
+        // HTML description
         $description = <<<HTML
         <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; padding: 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); font-family: Arial, sans-serif;">
             <tr>
                 <td>
-                    <h2 style="color: #2c3e50;">Your Invoice </h2>
+                    <h2 style="color: #2c3e50;">Your Invoice</h2>
                     <p style="font-size: 16px; color: #555;">Dear {$name},</p>
-                        <p style='font-size: 15px; color: #333;'>
-                            {$remarks}
-                        </p>
+                    <p style="font-size: 15px; color: #333;">{$remarks}</p>
                     <p style="font-size: 15px; color: #333;">
-                        Please click the button below to view or download your invoice:
+                        Please find the attached invoice PDF for your reference. You may download and review it at your convenience.
                     </p>
-                    <p style="text-align: center; margin: 20px 0;">
-                        <a href="{$viewLink}" target="_blank" style="background-color: #7415ae; color: #ffffff; padding: 12px 24px; border-radius: 5px; font-size: 16px; text-decoration: none; font-weight: bold;">
-                            Invoice
-                        </a>
+                    <p style="font-size: 15px; color: #333;">
+                        If you have any questions or need further assistance, feel free to reach out.
                     </p>
                 </td>
             </tr>
         </table>
         HTML;
-        self::sendMail($customer,$title,$description,$cc,$attachment,$mail_from,$mail_from_name);
-    }
-    public function sendMail($receiver, $title, $description, $cc = null, $attachment, $mail_from=null, $mail_from_name=null)
-    {
-        if (!$receiver || !isset($receiver->email)) {
-            return "Error: Receiver details are missing or invalid.";
+        $attachments = [];
+
+        // Attach generated invoice PDF
+        try {
+            $pdfContent = $this->generatePdf(
+                 $request,
+                 $request->id,
+                 $pattern,
+                 false,
+                 true,
+            );
+
+            $pdfFileName = "Invoice_{$invoice->document_number}.pdf";
+            $attachments[] = [
+                'file' => $pdfContent,
+                'options' => [
+                    'as' => $pdfFileName,
+                    'mime' => 'application/pdf',
+                ]
+            ];
+        } catch (\Exception $e) {
+            // Handle PDF generation failure (optional log or notify)
+            \Log::error("Failed to generate invoice PDF for email: " . $e->getMessage());
         }
-        dispatch(new SendEmailJob($receiver, $mail_from, $mail_from_name,$title,$description,$cc,$attachment));
-        return response() -> json([
-            'status' => 'success',
-            'message' => 'Email request sent succesfully',
-        ]);
-            
+
+        // Attach any uploaded files
+        if ($request->hasFile('attachments')) {
+            foreach ((array) $request->file('attachments') as $uploadedFile) {
+                $attachments[] = [
+                    'file' => file_get_contents($uploadedFile->getRealPath()),
+                    'options' => [
+                        'as' => $uploadedFile->getClientOriginalName(),
+                        'mime' => $uploadedFile->getMimeType(),
+                    ]
+                ];
+            }
+        }
+
+        // Send email with attachments
+        return self::sendMail(
+            $customer,
+            $title,
+            $description,
+            $cc,
+            $attachments,
+            $mail_from,
+            $mail_from_name
+        );
     }
+
+
+
+    public function sendMail($receiver, $title, $description, $cc = null, $attachments = [], $mail_from = null, $mail_from_name = null,$bcc=null)
+    {
+        try {
+            if (!$receiver || !isset($receiver->email)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Receiver details are missing or invalid.',
+                ], 400);
+            }
+
+            // Prepare attachment paths to pass to the job (avoid binary content in queue)
+            $storedAttachments = [];
+
+            foreach ($attachments as $attachment) {
+                $filename = $attachment['options']['as'] ?? uniqid() . '.pdf';
+                $mime = $attachment['options']['mime'] ?? 'application/octet-stream';
+                $tempPath = storage_path("app/temp_mails/{$filename}");
+
+                // Ensure directory exists
+                if (!file_exists(dirname($tempPath))) {
+                    mkdir(dirname($tempPath), 0777, true);
+                }
+
+                file_put_contents($tempPath, $attachment['file']);
+
+                $storedAttachments[] = [
+                    'path' => $tempPath,
+                    'as' => $filename,
+                    'mime' => $mime
+                ];
+            }
+
+            dispatch(new SendEmailJob(
+            $receiver,
+            $mail_from,
+            $mail_from_name,
+            $title,
+            $description,
+            $cc,
+            $bcc,
+            $storedAttachments
+            ));
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Email request sent successfully',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error sending email: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to send email. ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function invoicePod(Request $request)
     {
         //ALLOWED_EXTENSIONS = ['doc', 'docx', 'odt', 'rtf', 'txt', 'xls', 'xlsx', 'ods', 'csv','ppt', 'pptx', 'odp', 'pdf', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'tif', 'svg', 'ico', 'webp'

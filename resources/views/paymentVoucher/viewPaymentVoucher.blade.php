@@ -777,6 +777,7 @@
                                                     <th>Group</th>
                                                     <th>Leadger Code</th>
                                                     <th>Leadger Name</th>
+                                                    <th>Cost Center</th>
                                                     <th class="text-end">Debit</th>
                                                     <th class="text-end">Credit</th>
                                                 </tr>
@@ -1104,6 +1105,7 @@
                     <td class="fw-bolder text-dark">${voucherDetail.ledger_group_code ? voucherDetail.ledger_group_code : ''}</td>
                     <td>${voucherDetail.ledger_code ? voucherDetail.ledger_code : ''}</td>
                     <td>${voucherDetail.ledger_name ? voucherDetail.ledger_name : ''}</td>
+                    <td>${voucherDetail.cost_name ? voucherDetail.cost_name : ''}</td>
                     <td class="text-end">${voucherDetail.debit_amount > 0 ? parseFloat(voucherDetail.debit_amount).toFixed(2) : ''}</td>
                     <td class="text-end">${voucherDetail.credit_amount > 0 ? parseFloat(voucherDetail.credit_amount).toFixed(2) : ''}</td>
 					</tr>
@@ -1946,6 +1948,7 @@
                     <td class="fw-bolder text-dark">${voucherDetail.ledger_group_code ? voucherDetail.ledger_group_code : ''}</td>
                     <td>${voucherDetail.ledger_code ? voucherDetail.ledger_code : ''}</td>
                     <td>${voucherDetail.ledger_name ? voucherDetail.ledger_name : ''}</td>
+                    <td>${voucherDetail.cost_name ? voucherDetail.cost_name : ''}</td>
                     <td class="text-end">${voucherDetail.debit_amount > 0 ? parseFloat(voucherDetail.debit_amount).toFixed(2) : ''}</td>
                     <td class="text-end">${voucherDetail.credit_amount > 0 ? parseFloat(voucherDetail.credit_amount).toFixed(2) : ''}</td>
 					</tr>

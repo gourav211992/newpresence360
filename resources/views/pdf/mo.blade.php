@@ -319,7 +319,7 @@
                     <td width='140px' style="vertical-align: middle; padding: 2px 3px; border: 1px solid #000; border-top: none; text-align: center;">
                         {{ $val->station->name }}
                     </td>
-                    <td style="vertical-align: middle; padding: 10px 3px; text-align:left; border: 1px solid #000; border-top: none; border-left: none;">
+                    <td width="150px" style="vertical-align: middle; padding: 10px 3px; text-align:left; border: 1px solid #000; border-top: none; border-left: none;">
                       <b>{{ @$val->item->item_name }}</b><br>
                         {{ @$val->item->item_code }}<br />
                         @if(isset($val->specifications))

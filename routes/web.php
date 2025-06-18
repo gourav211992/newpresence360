@@ -2027,6 +2027,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::get('/sale-invoices/generate-pdf/{id}/{pattern}', [ErpSaleInvoiceController::class, 'generatePdf'])->name('sale.invoice.generate-pdf');
     Route::post('/sale-invoices/EInvoiceMail', [ErpSaleInvoiceController::class, 'EInvoiceMail'])->name('sale.invoice.eInvoiceMail');
     Route::get('/sale-invoices/pull/items', [ErpSaleInvoiceController::class, 'getSalesItemsForPulling'])->name('sale.invoice.pull.items');
+    Route::get('/sale-invoices/pull/land', [ErpSaleInvoiceController::class, 'getSalesLandForPulling'])->name('sale.invoice.pull.land');
     Route::get('/sale-invoices/process/items', [ErpSaleInvoiceController::class, 'processPulledItems'])->name('sale.invoice.process.items');
     Route::post('/sale-invoices/revoke', [ErpSaleInvoiceController::class, 'revokeSalesInvoice'])->name('sale.invoice.revoke');
     Route::get('/sale-invoices/get/pslip-bundles/so', [ErpSaleInvoiceController::class, 'getBundlesForPulledSo'])->name('sale.invoice.get.pslip.bundles.so');

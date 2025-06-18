@@ -11,6 +11,7 @@ window.pageData = {
     endDate:{!! $current_financial_year['end_date'] ? json_encode($current_financial_year['end_date']) : 'null' !!},
     today: "{!! Carbon\Carbon::now()->format('Y-m-d') !!}",
     menu_alias : "{!!  request() -> segments()[0] !!}",
+    redirectUrl : "{!! isset($redirectUrl) ? $redirectUrl : '' !!}",
 };
 </script>
 <script>

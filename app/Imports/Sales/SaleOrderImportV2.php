@@ -219,8 +219,10 @@ class SaleOrderImportV2 implements ToArray, WithHeadingRow, SkipsEmptyRows, With
                 }
                 $orderDetail -> attributes = $attributesArray;
                 $orderDetail -> qty = floatval($row['qty']);
-                if ($orderDetail -> qty <= 0) {
+                if ($orderDetail -> qty == 0) {
                     $errors[] = "Item Quantity not specified";
+                } else if (floatval($orderDetail -> qty) < 0) {
+                    $errors[] = "Item Quantity cannot be negative";
                 }
                 //UOM
                 $orderDetail -> uom_code = $row['uom'];
@@ -267,19 +269,19 @@ class SaleOrderImportV2 implements ToArray, WithHeadingRow, SkipsEmptyRows, With
                     }
                 }          
                 //Rate
-                if ($row['rate'] && floatval($row['rate']) > 0) {
-                    $orderDetail -> rate = $row['rate'];
-                } else {
-                    if ($item) {
-                        $itemRate = SaleModuleHelper::getItemSellingPrice($item, $orderDetail -> uom_id);
-                        $orderDetail -> rate = $itemRate;
-                        if (floatval($orderDetail -> rate) <= 0) {
-                            $errors[] = "Item Rate not specified and not found from Item";
-                        }
+                $orderDetail -> rate = floatval($row['rate']);
+                if ($item && !$orderDetail -> rate) {
+                    $itemRate = SaleModuleHelper::getItemSellingPrice($item, $orderDetail -> uom_id);
+                    $orderDetail -> rate = $itemRate;
+                    if (floatval($orderDetail -> rate) == 0) {
+                        $errors[] = "Item Rate not specified and not found from Item";
                     }
-                }
-                if (!isset($orderDetail -> rate)) {
-                    $errors[] = "Item Rate not specified or not found from Item";
+                } else {
+                    if (floatval($orderDetail -> rate) == 0) {
+                        $errors[] = "Item Rate not specified and not found from Item";
+                    } else if (floatval($orderDetail -> rate) < 0) {
+                        $errors[] = "Item Rate cannot be negative";
+                    }
                 }
                 //Delivery Date
                 if ($row['delivery_date']) {
