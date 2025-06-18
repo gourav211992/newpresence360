@@ -589,8 +589,8 @@
                                                         <tfoot>
                                                             <tr class="totalsubheadpodetail">
                                                                 <td colspan="7" class="text-end">Total</td>
-                                                                <td class="text-end currentCurrencySum">{{ $voucher['amount'] }}</td>
-                                                                <td class="text-end orgCurrencySum">{{ $voucher['amount'] }}</td>
+                                                                <td class="text-end currentCurrencySum">{{ $voucher['amount']??0 }}</td>
+                                                                <td class="text-end orgCurrencySum">{{ $voucher['amount']??0 }}</td>
                                                                 <td></td>
                                                             </tr>
                                                         </tfoot>

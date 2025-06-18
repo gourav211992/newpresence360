@@ -76,6 +76,38 @@ class FixedAssetReportExport implements FromCollection, WithHeadings, WithMappin
 
     public function map($item): array
     {
+
+        $use = null;
+        $bal_use = null;
+
+        if ($item?->capitalize_date && $item?->expiry_date) {
+            $expiryPlusOne = Carbon::parse($item->expiry_date)->addDay();
+            $capitalizeDate = Carbon::parse($item->capitalize_date);
+
+            if ($capitalizeDate->eq($item->expiry_date)) {
+                $use = "0 (0 days)";
+            } else {
+                $years = $capitalizeDate->diffInYears($expiryPlusOne);
+                $days = $capitalizeDate->diffInDays($expiryPlusOne);
+
+                $use = "{$years} ({$days} days)";
+            }
+        }
+
+        if ($item?->last_dep_date && $item?->expiry_date) {
+            $expiryPlusOne = Carbon::parse($item->expiry_date)->addDay();
+            $lastDepDate = Carbon::parse($item->last_dep_date);
+
+            if ($lastDepDate->eq($item->expiry_date)) {
+                $bal_use = "0 (0 days)";
+            } else {
+                $years = $lastDepDate->diffInYears($expiryPlusOne);
+                $days = $lastDepDate->diffInDays($expiryPlusOne);
+
+                $bal_use = "{$years} ({$days} days)";
+            }
+        }
+
         return [
             $this->srNo++,
             $item?->asset?->asset_code ?? 'N/A',
@@ -93,17 +125,14 @@ class FixedAssetReportExport implements FromCollection, WithHeadings, WithMappin
             Helper::formatIndianNumber($item?->salvage_value) ?? 'N/A',
             $item?->location?->store_name ?? 'N/A',
             $item?->issue?->authorizedPerson?->name ?? 'N/A',
-            
+
             $item?->asset?->useful_life && !empty($item?->capitalize_date) && !empty($item?->expiry_date)
-                ? Carbon::parse($item->capitalize_date)->diffInYears(Carbon::parse($item->expiry_date)) .
-                ' (' . Carbon::parse($item->capitalize_date)->diffInDays(Carbon::parse($item->expiry_date)) . ' days)'
-                : ($item?->asset?->useful_life
+                ? $use : ($item?->asset?->useful_life
                     ? $item->asset->useful_life . ' (' . ($item->asset->useful_life * 365) . ' days)'
                     : 'N/A'),
+
             $item?->last_dep_date && $item?->expiry_date
-                ? Carbon::parse($item->last_dep_date)->diffInYears(Carbon::parse($item->expiry_date)) .
-                ' (' . Carbon::parse($item->last_dep_date)->diffInDays(Carbon::parse($item->expiry_date)) . ' days)'
-                : ($item?->asset?->useful_life
+                ? $bal_use : ($item?->asset?->useful_life
                     ? $item->asset->useful_life . ' (' . ($item->asset->useful_life * 365) . ' days)'
                     : 'N/A'),
             $item?->asset?->depreciation_method ?? 'N/A',
@@ -118,9 +147,7 @@ class FixedAssetReportExport implements FromCollection, WithHeadings, WithMappin
                 : 'N/A',
             $item?->insurances?->policy_no ?? 'N/A',
             $item?->insurances?->lien_security_details ?? 'N/A',
-            FixedAssetSub::current_status($item->id)
-                ? FixedAssetSub::current_status($item->id)
-                : 'N/A',
+            FixedAssetSub::current_status($item->id)?FixedAssetSub::current_status($item->id):'Active',
             'N/A',
             'N/A',
             'N/A',
@@ -232,24 +259,24 @@ class FixedAssetReportExport implements FromCollection, WithHeadings, WithMappin
                 $sheet->getStyle('1:1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                 $sheet->getStyle('2:2')->getFont()->setBold(true);
 
-                 // Style first two header rows (red background, white bold font)
-            $sheet->getStyle("A1:{$lastColumnLetter}2")->applyFromArray([
-                'font' => [
-                    'bold' => true,
-                    'color' => ['rgb' => 'FFFFFF'],
-                ],
-                'fill' => [
-                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-                    'startColor' => ['rgb' => 'C00000'],
-                ],
-            ]);
+                // Style first two header rows (red background, white bold font)
+                $sheet->getStyle("A1:{$lastColumnLetter}2")->applyFromArray([
+                    'font' => [
+                        'bold' => true,
+                        'color' => ['rgb' => 'FFFFFF'],
+                    ],
+                    'fill' => [
+                        'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                        'startColor' => ['rgb' => 'C00000'],
+                    ],
+                ]);
 
                 for ($col = 0; $col < $totalColumns; $col++) {
                     $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col + 1);
                     $sheet->getColumnDimension($columnLetter)->setAutoSize(true);
                 }
 
-                $rightAlignedColumns = ['H', 'I', 'P', 'Q', 'R', 'X', 'Y', 'AE', 'AG', 'AH', 'AJ'];
+                $rightAlignedColumns = ['I', 'Q', 'J','R','S', 'Y', 'Z', 'AF', 'AH','AI', 'AK'];
                 $highestRow = $sheet->getHighestRow();
 
                 foreach ($rightAlignedColumns as $column) {
@@ -258,7 +285,7 @@ class FixedAssetReportExport implements FromCollection, WithHeadings, WithMappin
                         ->setHorizontal(Alignment::HORIZONTAL_RIGHT);
                 }
 
-                $leftAlignedColumns = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'J', 'K', 'L', 'M', 'N', 'O', 'S', 'T', 'U', 'V', 'W', 'Z', 'AA', 'AB', 'AC', 'AD', 'AF', 'AI'];
+                $leftAlignedColumns = ['A', 'B', 'C', 'D', 'E', 'F', 'G','H', 'K', 'L', 'M', 'N', 'O','P', 'T', 'U', 'V', 'W', 'X', 'AA', 'AB', 'AC', 'AD','AE', 'AG','AJ'];
 
                 foreach ($leftAlignedColumns as $column) {
                     $sheet->getStyle("{$column}2:{$column}{$highestRow}")

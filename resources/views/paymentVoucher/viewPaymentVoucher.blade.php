@@ -1,5 +1,21 @@
 @php
     $type = $data->document_type === 'receipts' ? 'debit' : 'credit';
+      // Find the selected location object
+                                                    $selectedLocation = $locations->firstWhere('id', $data->location);
+
+                                                    // Initialize as empty array if no location found
+                                                    $locationCostCenters = [];
+                                                    if ($selectedLocation) {
+                                                        $locationCostCenters = $selectedLocation->cost_centers ?? [];
+                                                    }
+
+                                                    // Check if the selected cost center exists in this location
+                                                    $showCostCenter =
+                                                        count($locationCostCenters) > 0 ||
+                                                        collect($locationCostCenters)->contains(
+                                                            'id',
+                                                            $data->cost_center_id,
+                                                        );
 @endphp
 @php use App\Helpers\ConstantHelper; @endphp
 @extends('layouts.app')
@@ -491,24 +507,6 @@
                                                 </div>
 
                                                     @endif --}}
-                                                @php
-                                                    // Find the selected location object
-                                                    $selectedLocation = $locations->firstWhere('id', $data->location);
-
-                                                    // Initialize as empty array if no location found
-                                                    $locationCostCenters = [];
-                                                    if ($selectedLocation) {
-                                                        $locationCostCenters = $selectedLocation->cost_centers ?? [];
-                                                    }
-
-                                                    // Check if the selected cost center exists in this location
-                                                    $showCostCenter =
-                                                        count($locationCostCenters) > 0 ||
-                                                        collect($locationCostCenters)->contains(
-                                                            'id',
-                                                            $data->cost_center_id,
-                                                        );
-                                                @endphp
                                                 <div class="row align-items-center mb-1" id="costCenterRow"
                                                     style="{{ $showCostCenter ? '' : 'display:none;' }}">
                                                     <div class="col-md-3">
@@ -519,12 +517,14 @@
                                                     <div class="col-md-5 mb-1 mb-sm-0">
                                                         <select class="costCenter form-control select2"
                                                             name="cost_center_id" id="cost_center_id">
+                                                            @isset($locationCostCenters)
                                                             @foreach ($locationCostCenters as $value)
                                                                 <option value="{{ $value['id'] }}"
                                                                     @if ($value['id'] == $data->cost_center_id) selected @endif>
                                                                     {{ $value['name'] }}
                                                                 </option>
                                                             @endforeach
+                                                            @endisset
                                                         </select>
                                                     </div>
                                                 </div>

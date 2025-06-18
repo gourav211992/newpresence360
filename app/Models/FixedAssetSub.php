@@ -142,7 +142,13 @@ class FixedAssetSub extends Model
         if ($foundInSplit) {
             return 'Split';
         }
-
+        $item = FixedAssetSub::find($subAssetId);
+        if ($item?->last_dep_date!=null && $item?->expiry_date!=null) {
+            $lastDepDate = Carbon::parse($item->last_dep_date);
+            if ($lastDepDate->eq($item->expiry_date))
+                return "Expired";
+            
+        }
         return "Active";
     }
 
