@@ -413,9 +413,13 @@
                                                             </tr>
                                                         </thead>
                                                         <tbody class="mrntableselectexcel">
+                                                            @php $totalAmount = 0; $totalExcAmount = 0; @endphp
                                                             @if (isset($selectedRows) && !empty($selectedRows))
                                                                 @foreach ($selectedRows as $index => $voucher)
-                                                                    @php $no = $index + 1; @endphp
+                                                                    @php $no = $index + 1;
+                                                                    $totalAmount += $voucher['amount'];
+                                                                    $totalExcAmount += $voucher['amount'];
+                                                                    @endphp
 
                                                                     <tr class="approvlevelflow" id="{{ $no }}">
                                                                         <td>{{ $no }}</td>
@@ -589,8 +593,8 @@
                                                         <tfoot>
                                                             <tr class="totalsubheadpodetail">
                                                                 <td colspan="7" class="text-end">Total</td>
-                                                                <td class="text-end currentCurrencySum">{{ $voucher['amount']??0 }}</td>
-                                                                <td class="text-end orgCurrencySum">{{ $voucher['amount']??0 }}</td>
+                                                                    <td class="text-end currentCurrencySum">{{ App\Helpers\Helper::formatIndianNumber($totalAmount) }}</td>
+                                                                    <td class="text-end orgCurrencySum">{{ App\Helpers\Helper::formatIndianNumber($totalExcAmount) }}</td>
                                                                 <td></td>
                                                             </tr>
                                                         </tfoot>

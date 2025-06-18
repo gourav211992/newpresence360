@@ -382,7 +382,7 @@
                                         ?.settle_amt ?? 0;
                                     const isChecked = existingSettleAmt > 0;
                                     html += `<tr id="${uniqueKey}" class="voucherRows">
-                                        <td>${index + 1}</td>
+                                        <td>${i + 1}</td>
                                         <td>${voucher.date ?? '-'}</td>
                                         <td data-ledger-id="${item.ledger ?? ''}">${item.ledger?.name ?? '-'}</td>
                                         <td>${item.ledger_group?.name ?? item.ledger?.ledger_group?.name ?? '-'}</td>
