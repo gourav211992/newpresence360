@@ -40,7 +40,7 @@ class CostCenterController extends Controller
         $user = Helper::getAuthenticatedUser();
         $companies = $user -> access_rights_org;
         $existingCostCenters = CostCenter::withDefaultGroupCompanyOrg()->pluck('name')->toArray();
-        $groups = CostGroup::where('organization_id',Helper::getAuthenticatedUser()->organization_id)->where('status','active')->get();
+        $groups = CostGroup::withDefaultGroupCompanyOrg()->where('status','active')->get();
         return view('costCenter.create', compact('groups','companies','existingCostCenters'));
     }
 

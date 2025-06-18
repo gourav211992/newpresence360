@@ -4,12 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\DefaultGroupCompanyOrg;
 
 class CostGroup extends Model
 {
     protected $table = 'erp_cost_groups';
 
-    use HasFactory;
+    use HasFactory,DefaultGroupCompanyOrg;
 
     protected $fillable = [
         'name',
@@ -23,5 +24,10 @@ class CostGroup extends Model
     public function parent()
     {
         return $this->belongsTo(CostGroup::class, 'parent_cost_group_id');
+    }
+
+    public function cost_center()
+    {
+        return $this->hasOne(CostCenter::class, 'cost_group_id');
     }
 }
