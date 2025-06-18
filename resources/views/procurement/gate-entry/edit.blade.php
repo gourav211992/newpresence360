@@ -2815,11 +2815,13 @@
         /*Open Po model*/
         $(document).on('click', '.poSelect', (e) => {
             $("#poModal").modal('show');
+            currentProcessType='po';
             openPurchaseRequest();
             getPurchaseOrders();
         });
         $(document).on('click', '.joSelect', (e) => {
             $("#joModal").modal('show');
+            currentProcessType='jo';
             openJobRequest();
             getJobOrders();
         });
@@ -2842,6 +2844,9 @@
         }
 
         function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "") {
+            let modalType = '#poModal';
+            if (currentProcessType == 'jo')
+                modalType = '#joModal';
             $("#" + selector).autocomplete({
                 source: function(request, response) {
                     $.ajax({
@@ -2868,7 +2873,7 @@
                         }
                     });
                 },
-                appendTo: '#poModal',
+                appendTo: modalType,
                 minLength: 0,
                 select: function(event, ui) {
                     var $input = $(this);
@@ -2890,60 +2895,60 @@
         }
 
         function openJobRequest() {
-            initializeAutocomplete3("vendor_code_input_qt", "vendor_id_qt_val", "vendor_list", "vendor_code",
+            initializeAutocompleteQt("jo_vendor_code_input_qt", "jo_vendor_id_qt_val", "vendor_list", "vendor_code",
                 "company_name");
-            initializeAutocomplete3("book_code_input_qt", "book_id_qt_val", "book_po", "book_code", "");
-            initializeAutocomplete3("document_no_input_qt", "document_id_qt_val", "po_document_qt", "document_number", "");
-            initializeAutocomplete3("item_name_input_qt", "item_id_qt_val", "goods_item_list", "item_code", "item_name");
+            initializeAutocompleteQt("jo_book_code_input_qt", "jo_book_id_qt_val", "book_po", "book_code", "");
+            initializeAutocompleteQt("jo_document_no_input_qt", "jo_document_id_qt_val", "po_document_qt", "document_number", "");
+            initializeAutocompleteQt("jo_item_name_input_qt", "jo_item_id_qt_val", "goods_item_list", "item_code", "item_name");
         }
 
-        function initializeAutocomplete3(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "") {
-            $("#" + selector).autocomplete({
-                source: function(request, response) {
-                    $.ajax({
-                        url: '/search',
-                        method: 'GET',
-                        dataType: 'json',
-                        data: {
-                            q: request.term,
-                            type: typeVal,
-                            vendor_id: $("#vendor_id_qt_val").val(),
-                            header_book_id: $("#book_id").val(),
-                        },
-                        success: function(data) {
-                            response($.map(data, function(item) {
-                                return {
-                                    id: item.id,
-                                    label: `${item[labelKey1]} ${labelKey2 ? (item[labelKey2] ? '(' + item[labelKey2] + ')' : '') : ''}`,
-                                    code: item[labelKey1] || '',
-                                };
-                            }));
-                        },
-                        error: function(xhr) {
-                            console.error('Error fetching customer data:', xhr.responseText);
-                        }
-                    });
-                },
-                appendTo: '#joModal',
-                minLength: 0,
-                select: function(event, ui) {
-                    var $input = $(this);
-                    $input.val(ui.item.label);
-                    $("#" + selectorSibling).val(ui.item.id);
-                    return false;
-                },
-                change: function(event, ui) {
-                    if (!ui.item) {
-                        $(this).val("");
-                        $("#" + selectorSibling).val("");
-                    }
-                }
-            }).focus(function() {
-                if (this.value === "") {
-                    $(this).autocomplete("search", "");
-                }
-            });
-        }
+        // function initializeAutocomplete3(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "") {
+        //     $("#" + selector).autocomplete({
+        //         source: function(request, response) {
+        //             $.ajax({
+        //                 url: '/search',
+        //                 method: 'GET',
+        //                 dataType: 'json',
+        //                 data: {
+        //                     q: request.term,
+        //                     type: typeVal,
+        //                     vendor_id: $("#vendor_id_qt_val").val(),
+        //                     header_book_id: $("#book_id").val(),
+        //                 },
+        //                 success: function(data) {
+        //                     response($.map(data, function(item) {
+        //                         return {
+        //                             id: item.id,
+        //                             label: `${item[labelKey1]} ${labelKey2 ? (item[labelKey2] ? '(' + item[labelKey2] + ')' : '') : ''}`,
+        //                             code: item[labelKey1] || '',
+        //                         };
+        //                     }));
+        //                 },
+        //                 error: function(xhr) {
+        //                     console.error('Error fetching customer data:', xhr.responseText);
+        //                 }
+        //             });
+        //         },
+        //         appendTo: '#joModal',
+        //         minLength: 0,
+        //         select: function(event, ui) {
+        //             var $input = $(this);
+        //             $input.val(ui.item.label);
+        //             $("#" + selectorSibling).val(ui.item.id);
+        //             return false;
+        //         },
+        //         change: function(event, ui) {
+        //             if (!ui.item) {
+        //                 $(this).val("");
+        //                 $("#" + selectorSibling).val("");
+        //             }
+        //         }
+        //     }).focus(function() {
+        //         if (this.value === "") {
+        //             $(this).autocomplete("search", "");
+        //         }
+        //     });
+        // }
 
         window.onload = function () {
             let selectedPoIds = [];
@@ -3197,7 +3202,7 @@
                 '?ids=' + encodeURIComponent(ids) +
                 '&currency_id=' + encodeURIComponent(currencyId) +
                 '&d_date=' + encodeURIComponent(transactionDate) +
-                '&groupItems=' + encodeURIComponent(groupItems) +
+                // '&groupItems=' + encodeURIComponent(groupItems) +
                 '&current_row_count=' + current_row_count;
 
             fetch(actionUrl).then(response => {
@@ -3489,7 +3494,7 @@
                 '?ids=' + encodeURIComponent(ids) +
                 '&currency_id=' + encodeURIComponent(currencyId) +
                 '&d_date=' + encodeURIComponent(transactionDate) +
-                '&groupItems=' + encodeURIComponent(groupItems) +
+                // '&groupItems=' + encodeURIComponent(groupItems) +
                 '&current_row_count=' + current_row_count;
 
             fetch(actionUrl).then(response => {

@@ -121,7 +121,7 @@
 
 							<div class="mb-1">
 								<label class="form-label">Parent Group</label>
-								<select id="filter-parent-group" class="form-select">
+								<select id="filter-parent-group" class="form-select select2">
 									<option value="">Select</option>
 									@foreach($parentGroup as $parent_group)
 										<option value="{{ $parent_group->name }}">{{ $parent_group->name }}
@@ -132,7 +132,7 @@
 
 							<div class="mb-1">
 								<label class="form-label">Group</label>
-								<select id="filter-group-name" class="form-select">
+								<select id="filter-group-name" class="form-select select2">
 									<option value="">Select</option>
 									@foreach($data as $item)
 										<option value="{{ $item->name }}">{{ $item->name }}

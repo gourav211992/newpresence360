@@ -2140,7 +2140,7 @@ class MaterialReceiptController extends Controller
             {
                 $gateEntry = GateEntryHeader::where('job_order_id', $purchaseOrder->id)->first();
             }
-            $poDetail = JoProduct::find($request->po_detail_id ?? $request->supplier_inv_detail_id);
+            $poDetail = JoProduct::find($request->jo_detail_id ?? $request->supplier_inv_detail_id);
         }
 
         $html = view(
@@ -2775,7 +2775,7 @@ class MaterialReceiptController extends Controller
         $finalPoItems = [];
 
         foreach ($poItems as $poItem) {
-            if (($poItem->gate_entry_required == 'yes') || ($poItem->gate_entry_required == 'no')) {
+            if ($poItem->gate_entry_required == 'yes') {
                 // Fetch Gate Entry Details
                 $geItems = GateEntryDetail::where('job_order_item_id', $poItem->id)
                     ->whereRaw('(accepted_qty > mrn_qty)')
@@ -2841,6 +2841,7 @@ class MaterialReceiptController extends Controller
         $requestIds = json_decode($request->ids, true) ?: [];
         $moduleTypes = json_decode($request->moduleTypes, true) ?: [];
         $type = "po";
+        $tableRowCount = $request->tableRowCount ?: 0;
 
         // Ensure all module types are the same
         if (count(array_unique($moduleTypes)) > 1) {
@@ -2986,7 +2987,8 @@ class MaterialReceiptController extends Controller
             'locations'=>$locations,
             'moduleType'=>$moduleType,
             'totalGateEntryQty' => $totalGateEntryQty,
-            'type' => $type
+            'type' => $type,
+            'tableRowCount' => $tableRowCount
         ])
         ->render();
 
@@ -3023,16 +3025,12 @@ class MaterialReceiptController extends Controller
         $requestIds = json_decode($request->ids, true) ?: [];
         $moduleTypes = json_decode($request->moduleTypes, true) ?: [];
         $type = "jo";
+        $tableRowCount = $request->tableRowCount ?? 0;
 
         // Ensure all module types are the same
         if (count(array_unique($moduleTypes)) > 1) {
             return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => "Multiple different module types are not allowed."]);
         }
-
-        // Check Unique Request Id
-        // if (count($requestIds) > 1) {
-        //     return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => "Only one row can be selected at a time."]);
-        // }
 
         // Determine module type
         $moduleType = $moduleTypes[0] ?? null;
@@ -3041,9 +3039,9 @@ class MaterialReceiptController extends Controller
             $poItems = GateEntryDetail::with(
                 [
                     'gateEntryHeader',
-                    'gateEntryHeader.purchaseOrder',
-                    'poItem',
-                    'poItem.po',
+                    'gateEntryHeader.jobOrder',
+                    // 'poItem',
+                    // 'poItem.po',
                     'joItem',
                     'joItem.jo',
                 ]
@@ -3070,11 +3068,11 @@ class MaterialReceiptController extends Controller
                 ->pluck('jo_id')
                 ->toArray();
 
-                $view = 'procurement.material-receipt.partials.gate-entry-item-row';
+            $view = 'procurement.material-receipt.partials.gate-entry-item-row';
         } else {
             $poItems = JoProduct::whereIn('id', $requestIds)->get();
             $uniquePoIds = $poItems->pluck('jo_id')->unique()->toArray();
-            $view = 'procurement.material-receipt.partials.po-item-row';
+            $view = 'procurement.material-receipt.partials.jo-item-row';
         }
 
         if(count($uniquePoIds) > 1) {
@@ -3151,13 +3149,15 @@ class MaterialReceiptController extends Controller
             $totalGateEntryQty = GateEntryDetail::with(
                 [
                     'gateEntryHeader',
-                    'gateEntryHeader.purchaseOrder',
-                    'poItem',
-                    'poItem.po',
+                    'gateEntryHeader.jobOrder',
+                    // 'poItem',
+                    // 'poItem.po',
+                    'joItem',
+                    'joItem.jo',
                 ]
             )
             ->whereIn('id', $requestIds)
-            ->groupBy('purchase_order_item_id')
+            ->groupBy('job_order_item_id')
             ->sum('accepted_qty'); // Sum of selected gate entry quantities
         }
 
@@ -3168,7 +3168,8 @@ class MaterialReceiptController extends Controller
             'type' => $type,
             'locations'=>$locations,
             'moduleType'=>$moduleType,
-            'totalGateEntryQty' => $totalGateEntryQty
+            'totalGateEntryQty' => $totalGateEntryQty,
+            'tableRowCount' => $tableRowCount
         ])
         ->render();
 
@@ -4177,13 +4178,13 @@ class MaterialReceiptController extends Controller
         }
         $inventoryUom = Unit::find($item->uom_id ?? null);
         $storageUom = Unit::find($item->storage_uom_id ?? null);
-        $inventoryQty = ItemHelper::convertToBaseUom($item->id, $request->uom_id, $request->qty);
-        if (!$inventoryQty) {
-            return response()->json([
-                'status' => 204,
-                "is_setup" => false,
-                'message' => 'Inventory Qty not exist.',
-            ], 422);
+            $inventoryQty = ItemHelper::convertToBaseUom($item->id, $request->uom_id, $request->qty);
+            if (!$inventoryQty) {
+                return response()->json([
+                    'status' => 204,
+                    "is_setup" => false,
+                    'message' => 'Inventory Qty not exist.',
+                ], 422);
         }
 
         $data = [

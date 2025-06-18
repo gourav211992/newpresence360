@@ -1,5 +1,13 @@
 @php
     use App\Helpers\ConstantHelper;
+    // Find the selected location object
+    $selectedLocation = $locations->firstWhere('id', $data->location);
+
+    // Initialize as empty array if no location found
+    $locationCostCenters = [];
+    if ($selectedLocation) {
+        $locationCostCenters = $selectedLocation->cost_centers ?? [];
+    }
 @endphp
 
 @extends('layouts.app')
@@ -475,8 +483,8 @@
                                                                     id="ledger_id{{ $no }}"
                                                                     value="{{ $item->ledger_id }}" class="ledgers" />
                                                                 <!--<input placeholder="Line Notes" type="text"
-                                                                                                                                                                        class="form-control mw-100 mt-50"
-                                                                                                                                                                        name="notes1" />-->
+                                                                                                                                                                            class="form-control mw-100 mt-50"
+                                                                                                                                                                            name="notes1" />-->
                                                             </td>
                                                             <td>
                                                                 <select id="groupSelect{{ $no }}"
@@ -546,20 +554,7 @@
                                                                     step="0.01" value="{{ $item->credit_amt }}" />
                                                             </td>
                                                             <td>
-                                                                @php
-                                                                    // Find the selected location object
-                                                                    $selectedLocation = $locations->firstWhere(
-                                                                        'id',
-                                                                        $data->location,
-                                                                    );
 
-                                                                    // Initialize as empty array if no location found
-                                                                    $locationCostCenters = [];
-                                                                    if ($selectedLocation) {
-                                                                        $locationCostCenters =
-                                                                            $selectedLocation->cost_centers ?? [];
-                                                                    }
-                                                                @endphp
 
                                                                 <select class="costCenter form-select mw-100"
                                                                     name="cost_center_id[]"
@@ -644,7 +639,8 @@
                                                         </tr>
                                                         <tr>
                                                             <td class="poprod-decpt">
-                                                                <span class="poitemtxt mw-100"><strong>Ledger Name: </strong><span id="ledger_name_details">-</span></span>
+                                                                <span class="poitemtxt mw-100"><strong>Ledger Name:
+                                                                    </strong><span id="ledger_name_details">-</span></span>
                                                             </td>
                                                         </tr>
                                                         <tr>
@@ -712,7 +708,8 @@
                                         <div class="col-md-4">
                                             <label class="form-label"></label>
                                             <div id="preview">
-                                                @php $documents = $data->document
+                                                @php
+                                                    $documents = $data->document
                                                         ? json_decode($data->document, true)
                                                         : [];
                                                     if (!is_array($documents) && $data->document) {
@@ -1417,11 +1414,13 @@
                     </td>
                    <td>
                         <select class="costCenter form-select mw-100" name="cost_center_id[]" id="cost_center_id${rowCount + 1}">
-                              @foreach ($locationCostCenters as $value)
+                            @isset($locationCostCenters)  
+                            @foreach ($locationCostCenters as $value)
                                                                 <option value="{{ $value['id'] }}" >
                                                                     {{ $value['name'] }}
                                                                 </option>
                                                             @endforeach
+                                                    @endisset
                         </select>
                     </td>
                     <td>
@@ -2018,7 +2017,7 @@
                                     response.forEach(item => {
                                         groupDropdown.append(
                                             `<option value="${item.id}">${item.name}</option>`
-                                            );
+                                        );
                                     });
                                     groupDropdown.removeAttr('style');
                                     groupDropdown.data('ledger', ledgerId);

@@ -3,7 +3,7 @@
 		<div class="modal-content">
 			<div class="modal-header">
 				<div>
-					<h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="joModal">
+					<h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="joModalLabel">
 						Select Job Order
 					</h4>
 					<p class="mb-0">
@@ -17,29 +17,29 @@
 					<div class="col">
 						<div class="mb-1">
 							<label class="form-label">Series</label>
-							<input type="text" id="book_code_input_qt" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
-							<input type = "hidden" id = "book_id_qt_val"></input>
+							<input type="text" id="jo_book_code_input_qt" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+							<input type = "hidden" id = "jo_book_id_qt_val"></input>
 						</div>
 					</div>
 					<div class="col">
 						<div class="mb-1">
 							<label class="form-label">Doc No.</label>
-							<input type="text" id="document_no_input_qt" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
-							<input type = "hidden" id = "document_id_qt_val"></input>
+							<input type="text" id="jo_document_no_input_qt" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+							<input type = "hidden" id = "jo_document_id_qt_val"></input>
 						</div>
 					</div>
 					<div class="col">
 						<div class="mb-1">
 							<label class="form-label">Item</label>
-							<input type="text" id="item_name_input_qt" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
-							<input type = "hidden" id = "item_id_qt_val"></input>
+							<input type="text" id="jo_item_name_input_qt" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+							<input type = "hidden" id = "jo_item_id_qt_val"></input>
 						</div>
 					</div>
 					<div class="col">
 						<div class="mb-1">
 							<label class="form-label">Vendor</label>
-							<input type="text" id="vendor_code_input_qt" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
-							<input type = "hidden" id = "vendor_id_qt_val"></input>
+							<input type="text" id="jo_vendor_code_input_qt" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+							<input type = "hidden" id = "jo_vendor_id_qt_val"></input>
 						</div>
 					</div>
 					<div class="col mb-1">

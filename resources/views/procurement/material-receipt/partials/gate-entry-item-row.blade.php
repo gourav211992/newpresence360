@@ -1,6 +1,6 @@
 @foreach($poItems as $key => $item)
     @php
-        $rowCount = $key + 1;
+        $rowCount = $tableRowCount + $key + 1;
         $balanceQty = (($item->accepted_qty ?? 0) - ($item->mrn_qty ?? 0));
     @endphp
     <tr data-group-item="{{json_encode($item)}}" id="row_{{$rowCount}}" data-index="{{$rowCount}}" @if($rowCount < 2 ) class="trselected" @endif>

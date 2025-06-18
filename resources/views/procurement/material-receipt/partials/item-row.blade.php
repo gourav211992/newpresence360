@@ -6,7 +6,7 @@
         </div>
     </td>
     <td class="poprod-decpt">
-        <input type="text" name="component_item_name[{{$rowCount}}]" placeholder="Select" class="form-control mw-100 mb-25 ledgerselecct comp_item_code " readonly/>
+        <input type="text" name="component_item_name[{{$rowCount}}]" placeholder="Select" class="form-control mw-100 mb-25 ledgerselecct comp_item_code "/>
         <input type="hidden" name="components[{{$rowCount}}][item_id]"/>
         <input type="hidden" name="components[{{$rowCount}}][item_code]"/>
         <input type="hidden" name="components[{{$rowCount}}][item_name]"/>
