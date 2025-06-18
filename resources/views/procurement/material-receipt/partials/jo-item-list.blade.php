@@ -35,10 +35,10 @@
             <div class="form-check form-check-inline me-0">
                 @if($moduleType == 'gate-entry')
                     <input class="form-check-input po_item_checkbox" type="checkbox" name="po_item_check" value="{{$joDetail->id}}" data-module="{{$moduleType}}"
-                    data-current-jo="{{ $joDetail ? $joDetail->header_id : 'null' }}" data-existing-jo="{{ $joData ? $joData->purchase_order_id : 'null' }}"  @if ($joData && $joData->purchase_order_id !=  $joDetail->purchase_order_id)  disabled="disabled" @endif >
+                    data-current-po="{{ $joDetail ? $joDetail->header_id : 'null' }}" data-existing-jo="{{ $joData ? $joData->purchase_order_id : 'null' }}"  @if ($joData && $joData->purchase_order_id !=  $joDetail->purchase_order_id)  disabled="disabled" @endif >
                 @else
                     <input class="form-check-input jo_item_checkbox" type="checkbox" name="jo_item_check" value="{{$joDetail->id}}" data-module="{{$moduleType}}"
-                    data-current-jo="{{ $joDetail ? $joDetail->purchase_order_id : 'null' }}" data-existing-jo="{{ $joData ? $joData->purchase_order_id : 'null' }}"  @if ($joData && $joData->purchase_order_id !=  $joDetail->purchase_order_id)  disabled="disabled" @endif >
+                    data-current-po="{{ $joDetail ? $joDetail->purchase_order_id : 'null' }}" data-existing-jo="{{ $joData ? $joData->purchase_order_id : 'null' }}"  @if ($joData && $joData->purchase_order_id !=  $joDetail->purchase_order_id)  disabled="disabled" @endif >
                 @endif
             </div>
         </td>

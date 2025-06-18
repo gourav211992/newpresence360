@@ -2,20 +2,20 @@
     @php
         $rowCount = $tableRowCount + $key + 1;
         $orderQty = 0.00;
-        $moduleType = 'p-order';
-        if($item->po && ($item->po->gate_entry_required == 'yes')){
+        $moduleType = 'j-order';
+        if($item->po && ($item->jo->gate_entry_required == 'yes')){
             $moduleType = 'gate-entry';
             $orderQty = ($item->ge_qty - $item->grn_qty);
         } else{
-            $moduleType = 'p-order';
+            $moduleType = 'j-order';
             $orderQty = (($item->order_qty - $item->short_close_qty) - $item->grn_qty);
         }
     @endphp
     <tr data-group-item="{{json_encode($item)}}" id="row_{{$rowCount}}" data-index="{{$rowCount}}" @if($rowCount < 2 ) class="trselected" @endif>
         <input type="hidden" name="components[{{$rowCount}}][ref_type]" value="{{$type}}">
-        <input type="hidden" name="components[{{$rowCount}}][purchase_order_id]" value="{{$item->purchase_order_id}}">
+        <input type="hidden" name="components[{{$rowCount}}][purchase_order_id]" value="{{$item->job_order_id}}">
         @if($item->po?->type == 'supplier-invoice')
-            <input type="hidden" name="components[{{$rowCount}}][po_detail_id]" value="{{$item->po_item?->id}}">
+            <input type="hidden" name="components[{{$rowCount}}][po_detail_id]" value="{{$item->jo_item?->id}}">
             <input type="hidden" name="components[{{$rowCount}}][supplier_inv_detail_id]" value="{{$item->id}}">
         @else
             <input type="hidden" name="components[{{$rowCount}}][po_detail_id]" value="{{$item->id}}">
@@ -75,7 +75,7 @@
         <td>
             <input type="hidden" name="module-type" id="module-type" value="{{ $moduleType }}">
             <input type="number" class="form-control mw-100 order_qty text-end checkNegativeVal" name="components[{{$rowCount}}][order_qty]"
-            value="{{$orderQty}}" step="any" {{ ($item?->po?->partial_delivery == 'no') ? 'readonly' : '' }} {{ ($item?->item?->is_inspection == 1) ? 'readonly' : '' }} />
+            value="{{$orderQty}}" step="any" {{ ($item?->jo?->partial_delivery == 'no') ? 'readonly' : '' }} {{ ($item?->item?->is_inspection == 1) ? 'readonly' : '' }} />
         </td>
         <td>
             <input type="number" class="form-control mw-100 accepted_qty text-end checkNegativeVal" name="components[{{$rowCount}}][accepted_qty]"
@@ -143,7 +143,7 @@
             </div>
         </td>
         <input type="hidden" name="components[{{$rowCount}}][po_item_hidden_ids]" value="{{$item->id}}">
-        <input type="hidden" name="components[{{$rowCount}}][po_hidden_ids]" value="{{$item->po->id}}">
+        <input type="hidden" name="components[{{$rowCount}}][po_hidden_ids]" value="{{$item->jo->id}}">
         <input type="hidden" name="components[{{$rowCount}}][ge_qty]" value="{{$item->ge_qty}}">
         <input type="hidden" name="components[{{$rowCount}}][item_module_type]" value="{{$moduleType}}">
     </tr>

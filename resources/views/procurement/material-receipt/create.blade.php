@@ -728,6 +728,7 @@
     <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
     <script>
         let currentProcessType = null;
+        let tableRowCount = 0;
         const selectedCostCenterId = "";
         $(document).on('change','#book_id',(e) => {
             let bookId = e.target.value;
@@ -838,15 +839,20 @@
             /*Reference from*/
             let reference_from_service = parameters.reference_from_service;
             if(reference_from_service.length) {
-                // console.log('reference_from_service--->>', reference_from_service);
-
                 let po = @json(\App\Helpers\ConstantHelper::PO_SERVICE_ALIAS);
                 let jo = @json(\App\Helpers\ConstantHelper::JO_SERVICE_ALIAS);
-                // console.log(po, jo);
 
-                if(reference_from_service.includes('po')) {
+                if((reference_from_service.includes('po')) ||(reference_from_service.includes('jo'))) {
                     $("#reference_from").removeClass('d-none');
-                    $(".poSelect").removeClass('d-none');
+                    if (reference_from_service.includes('po'))
+                    {
+                        $(".poSelect").removeClass('d-none');
+                    }
+                    if (reference_from_service.includes('jo'))
+                    {
+                        $(".joSelect").removeClass('d-none');
+                    }
+
                 } else {
                     $("#reference_from").addClass('d-none');
                 }
@@ -854,12 +860,6 @@
                     $("#addNewItemBtn").removeClass('d-none');
                 } else {
                     $("#addNewItemBtn").addClass('d-none');
-                }
-                if(reference_from_service.includes('jo')) {
-                    $("#reference_from").removeClass('d-none');
-                    $(".joSelect").removeClass('d-none');
-                } else {
-                    $("#reference_from").addClass('d-none');
                 }
             } else {
                 Swal.fire({
@@ -1253,7 +1253,7 @@
         /*For comp attr*/
         function getItemAttribute(itemId, rowCount, selectedAttr, tr){
             let mrn_detail_id = "";
-            let actionUrl = '{{route("material-receipt.item.attr")}}'+'?item_id='+itemId+'&mrn_detail_id='+mrn_detail_id+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
+            let actionUrl = '{{route("material-receipt.item.attr")}}'+'?item_id='+itemId+'&mrn_detail_id='+mrn_detail_id+`&rowCount=${tableRowCount}&selectedAttr=${selectedAttr}`;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if (data.status == 200) {
@@ -1411,15 +1411,15 @@
                 let detailId = $row.find("[name*='mrn_detail_id']").val() ?? '';
                 if(currentProcessType == 'po')
                 {
-                    actionUrl = '{{route("material-receipt.get.itemdetail")}}'+'?item_id='+itemId+'&purchase_order_id='+poHeaderId+'&po_detail_id='+poDetailId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&headerId='+headerId+'&detailId='+detailId+'&store_id='+storeId+'&sub_store_id='+subStoreId;
+                    actionUrl = '{{route("material-receipt.get.itemdetail")}}'+'?item_id='+itemId+'&type='+currentProcessType+'&purchase_order_id='+poHeaderId+'&po_detail_id='+poDetailId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&headerId='+headerId+'&detailId='+detailId+'&store_id='+storeId+'&sub_store_id='+subStoreId;
                 }
                 else if(currentProcessType == 'jo')
                 {
-                    actionUrl = '{{route("material-receipt.get.itemdetail")}}'+'?item_id='+itemId+'&job_order_id='+poHeaderId+'&jo_detail_id='+poDetailId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&headerId='+headerId+'&detailId='+detailId+'&store_id='+storeId+'&sub_store_id='+subStoreId;
+                    actionUrl = '{{route("material-receipt.get.itemdetail")}}'+'?item_id='+itemId+'&type='+currentProcessType+'&job_order_id='+poHeaderId+'&jo_detail_id='+poDetailId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&headerId='+headerId+'&detailId='+detailId+'&store_id='+storeId+'&sub_store_id='+subStoreId;
                 }
                 else
                 {
-                    actionUrl = '{{route("material-receipt.get.itemdetail")}}'+'?item_id='+itemId+'&purchase_order_id='+poHeaderId+'&po_detail_id='+poDetailId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&headerId='+headerId+'&detailId='+detailId+'&store_id='+storeId+'&sub_store_id='+subStoreId;
+                    actionUrl = '{{route("material-receipt.get.itemdetail")}}'+'?item_id='+itemId+'&type='+currentProcessType+'&purchase_order_id='+poHeaderId+'&po_detail_id='+poDetailId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&headerId='+headerId+'&detailId='+detailId+'&store_id='+storeId+'&sub_store_id='+subStoreId;
                 }
 
                 fetch(actionUrl).then(response => {
@@ -2092,7 +2092,7 @@
             $(`[name="components[${rowCount}][order_qty]"]`).focus();
             $("#attribute").modal('hide');
             $('#attribute').one('hidden.bs.modal', () => {
-                const $input = $(`[name="components[${rowCount}][accepted_qty]"]`);
+                const $input = $(`[name="components[${rowCount}][order_qty]"]`);
                 $input.focus();
                 getItemDetail(rowCount);
             });
@@ -2100,12 +2100,16 @@
 
         /*Open Po model*/
         $(document).on('click', '.poSelect', (e) => {
+            tableRowCount = $('.mrntableselectexcel tr').length;
             $("#poModal").modal('show');
+            currentProcessType='po';
             openPurchaseRequest();
             getPurchaseOrders();
         });
         $(document).on('click', '.joSelect', (e) => {
+            tableRowCount = $('.mrntableselectexcel tr').length;
             $("#joModal").modal('show');
+            currentProcessType='jo';
             openJobRequest();
             getJobOrders();
         });
@@ -2128,6 +2132,10 @@
         }
         function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "")
         {
+            let modalType = '#poModal';
+            if (currentProcessType == 'jo')
+                modalType = '#joModal';
+
             $("#" + selector).autocomplete({
                 source: function(request, response) {
                     $.ajax({
@@ -2154,7 +2162,7 @@
                         }
                     });
                 },
-                appendTo : '#poModal',
+                appendTo : modalType,
                 minLength: 0,
                 select: function(event, ui) {
                     var $input = $(this);
@@ -2177,58 +2185,10 @@
 
         function openJobRequest()
         {
-            initializeAutocomplete3("vendor_code_input_qt", "vendor_id_qt_val", "vendor_list", "vendor_code", "company_name");
-            initializeAutocomplete3("book_code_input_qt", "book_id_qt_val", "book_po", "book_code", "");
-            initializeAutocomplete3("document_no_input_qt", "document_id_qt_val", "po_document_qt", "document_number", "");
-            initializeAutocomplete3("item_name_input_qt", "item_id_qt_val", "goods_item_list", "item_code", "item_name");
-        }
-        function initializeAutocomplete3(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "")
-        {
-            $("#" + selector).autocomplete({
-                source: function(request, response) {
-                    $.ajax({
-                        url: '/search',
-                        method: 'GET',
-                        dataType: 'json',
-                        data: {
-                            q: request.term,
-                            type: typeVal,
-                            vendor_id : $("#vendor_id_qt_val").val(),
-                            header_book_id : $("#book_id").val(),
-                        },
-                        success: function(data) {
-                            response($.map(data, function(item) {
-                                return {
-                                    id: item.id,
-                                    label: `${item[labelKey1]} ${labelKey2 ? (item[labelKey2] ? '(' + item[labelKey2] + ')' : '') : ''}`,
-                                    code: item[labelKey1] || '',
-                                };
-                            }));
-                        },
-                        error: function(xhr) {
-                            console.error('Error fetching customer data:', xhr.responseText);
-                        }
-                    });
-                },
-                appendTo : '#joModal',
-                minLength: 0,
-                select: function(event, ui) {
-                    var $input = $(this);
-                    $input.val(ui.item.label);
-                    $("#" + selectorSibling).val(ui.item.id);
-                    return false;
-                },
-                change: function(event, ui) {
-                    if (!ui.item) {
-                        $(this).val("");
-                        $("#" + selectorSibling).val("");
-                    }
-                }
-            }).focus(function() {
-                if (this.value === "") {
-                    $(this).autocomplete("search", "");
-                }
-            });
+            initializeAutocompleteQt("jo_vendor_code_input_qt", "jo_vendor_id_qt_val", "vendor_list", "vendor_code", "company_name");
+            initializeAutocompleteQt("jo_book_code_input_qt", "jo_book_id_qt_val", "book_po", "book_code", "");
+            initializeAutocompleteQt("jo_document_no_input_qt", "jo_document_id_qt_val", "po_document_qt", "document_number", "");
+            initializeAutocompleteQt("jo_item_name_input_qt", "jo_item_id_qt_val", "goods_item_list", "item_code", "item_name");
         }
 
         window.onload = function () {
@@ -2293,7 +2253,7 @@
             &item_id=${encodeURIComponent(item_id)}
             &vendor_id=${encodeURIComponent(vendor_id)}
             &header_book_id=${encodeURIComponent(header_book_id)}
-            &selected_jo_ids=${selectedJoIds}
+            &selected_po_ids=${selectedJoIds}
             &document_date=${document_date}
             &item_search=${item_search}`;
 
@@ -2333,16 +2293,22 @@
         {
             let ids = [];
             let referenceNos = [];
+            // let codes = [];
             $('.po_item_checkbox:checked').each(function() {
                 ids.push($(this).val());
                 referenceNo = $(this).siblings("input[type='hidden'][name='reference_no']").val();
                 if (referenceNo) {
                     referenceNos.push(referenceNo);
                 }
+                // var dataCode = $(this).attr('data-current-po');
+                // if (dataCode) {
+                //     codes.push(dataCode);
+                // }
             });
             return {
                 ids: ids,
-                referenceNos: referenceNos
+                referenceNos: referenceNos,
+                // headerIds: codes
             };
         }
 
@@ -2359,12 +2325,15 @@
             let result = getSelectedPoIDS();
             let ids = result.ids;
             let referenceNo = result.referenceNos[0];
+            // let headerIds = result.headerIds;
+
+            let idsLength = ids.length;
             currentProcessType = 'po';
             if (!ids.length) {
                 $("#poModal").modal('hide');
                 Swal.fire({
                     title: 'Error!',
-                    text: 'Please select at least one one po',
+                    text: 'Please select at least one po',
                     icon: 'error',
                 });
                 return false;
@@ -2492,14 +2461,15 @@
             groupItems = JSON.stringify(groupItems);
             ids = JSON.stringify(ids);
             moduleTypes = JSON.stringify(moduleTypes);
-            let type = '{{ request()->route("type") }}'; // Dynamically fetch the `type` from the current route
+            let type = 'po'; // Dynamically fetch the `type` from the current route
             let actionUrl = '{{ route("material-receipt.process.po-item") }}'
-            .replace(':type', type)
             + '?ids=' + encodeURIComponent(ids)
+            + '&type=' + type
             + '&moduleTypes=' + moduleTypes
+            + '&tableRowCount=' + tableRowCount
             + '&currency_id=' + encodeURIComponent(currencyId)
             + '&d_date=' + encodeURIComponent(transactionDate)
-            + '&groupItems=' + encodeURIComponent(groupItems);
+            // + '&groupItems=' + encodeURIComponent(groupItems);
 
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
@@ -2645,10 +2615,20 @@
                         focusAndScrollToLastRowInput();
                         setTimeout(() => {
                             setTableCalculation();
-                            $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
-                                let currentIndex = index + 1;
-                                setAttributesUIHelper(currentIndex,"#itemTable");
-                            });
+                            if(idsLength > 1)
+                            {
+                                $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+                                    if(tableRowCount>0)
+                                    {
+                                        currentIndex = tableRowCount + 1;
+                                    }
+                                    let currentIndex = index + 1;
+                                    setAttributesUIHelper(currentIndex,"#itemTable");
+                                });
+                            }
+                            currentIndex = tableRowCount + 1;
+                            setAttributesUIHelper(currentIndex,"#itemTable");
+
                         },500);
                     }
                     if(data.status == 422) {
@@ -2678,6 +2658,7 @@
             let result = getSelectedPoIDS();
             let ids = result.ids;
             let referenceNo = result.referenceNos[0];
+            let idsLength = ids.length;
             currentProcessType = 'jo';
             if (!ids.length) {
                 $("#joModal").modal('hide');
@@ -2811,14 +2792,15 @@
             groupItems = JSON.stringify(groupItems);
             ids = JSON.stringify(ids);
             moduleTypes = JSON.stringify(moduleTypes);
-            let type = '{{ request()->route("type") }}'; // Dynamically fetch the `type` from the current route
+            let type = 'jo'; // Dynamically fetch the `type` from the current route
             let actionUrl = '{{ route("material-receipt.process.jo-item") }}'
-            .replace(':type', type)
             + '?ids=' + encodeURIComponent(ids)
+            + '&type=' + type
             + '&moduleTypes=' + moduleTypes
+            + '&tableRowCount=' + tableRowCount
             + '&currency_id=' + encodeURIComponent(currencyId)
             + '&d_date=' + encodeURIComponent(transactionDate)
-            + '&groupItems=' + encodeURIComponent(groupItems);
+            // + '&groupItems=' + encodeURIComponent(groupItems);
 
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
@@ -2963,10 +2945,19 @@
                         focusAndScrollToLastRowInput();
                         setTimeout(() => {
                             setTableCalculation();
-                            $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
-                                let currentIndex = index + 1;
-                                setAttributesUIHelper(currentIndex,"#itemTable");
-                            });
+                            if(idsLength > 1)
+                            {
+                                $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+                                    if(tableRowCount>0)
+                                    {
+                                        currentIndex = tableRowCount + 1;
+                                    }
+                                    let currentIndex = index + 1;
+                                    setAttributesUIHelper(currentIndex,"#itemTable");
+                                });
+                            }
+                            currentIndex = tableRowCount + 1;
+                            setAttributesUIHelper(currentIndex,"#itemTable");
                         },500);
                     }
                     if(data.status == 422) {

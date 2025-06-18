@@ -272,6 +272,12 @@ class GateEntryController extends Controller
             $mrn->ship_to = $request->shipping_id;
             $mrn->billing_address = $request->billing_address;
             $mrn->shipping_address = $request->shipping_address;
+            $mrn->supplier_invoice_date = $request->supplier_invoice_date ? date('Y-m-d', strtotime($request->supplier_invoice_date)) : '';
+            $mrn->supplier_invoice_no = $request->supplier_invoice_no ?? '';
+            $mrn->eway_bill_no = $request->eway_bill_no ?? '';
+            $mrn->consignment_no = $request->consignment_no ?? '';
+            $mrn->transporter_name = $request->transporter_name ?? '';
+            $mrn->vehicle_no = $request->vehicle_no ?? '';
             $mrn->revision_number = 0;
             $document_number = $request->document_number ?? null;
             $numberPatternData = Helper::generateDocumentNumberNew($request -> book_id, $request -> document_date);
@@ -2420,22 +2426,22 @@ class GateEntryController extends Controller
                 $jo->withDefaultGroupCompanyOrg();
                 $jo->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::POSTED]);
                 if($seriesId) {
-                    $jo->where('erp_purchase_orders.book_id',$seriesId);
+                    $jo->where('erp_job_orders.book_id',$seriesId);
                 }
 
                 // Filter by document number
                 if ($docNumber) {
-                    $jo->where('erp_purchase_orders.document_number', $docNumber);
+                    $jo->where('erp_job_orders.document_number', $docNumber);
                 }
 
                 // Filter by vendor ID
                 if ($vendorId) {
-                    $jo->where('erp_purchase_orders.vendor_id', $vendorId);
+                    $jo->where('erp_job_orders.vendor_id', $vendorId);
                 }
 
                 // Filter by store ID
                 if ($storeId) {
-                    $jo->where('erp_purchase_orders.store_id', $storeId);
+                    $jo->where('erp_job_orders.store_id', $storeId);
                 }
             });
 

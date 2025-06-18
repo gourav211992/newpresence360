@@ -43,6 +43,7 @@
 										<tr>
 											<th>#</th>
 											<th>Name</th>
+											<th>Cost Group</th>
 											<th>Organization</th>
 											<th>Locations</th>
 											<th>Status</th>
@@ -55,7 +56,8 @@
 										@foreach ($centers as $index=>$item)
 											<tr>
 												<td>{{ $index+1 }}</td>
-												<td>{{ $item->name }}</td>
+												<td>{{ $item->name  }}</td>
+												<td>{{ $item->group?->name ?? ''}}</td>
 												<td>{{ implode(', ', $item->organization_names->toArray()) }}</td>
 												<td>{{ implode(', ', $item->location_names->toArray()) }}</td>
 												<td>{{ Str::ucfirst($item->status) }}</td>

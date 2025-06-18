@@ -1009,7 +1009,7 @@ class ErpMaterialIssueController extends Controller
                 }
                 DB::commit();
                 $printOption = 'Material Issue';
-                if ($materialIssue -> issue_type == "Location Transfer")
+                if ($materialIssue -> issue_type == "Location Transfer" || $materialIssue -> issue_type == "Sub Contracting" || $materialIssue -> issue_type == "Job Work")
                 {
                     $printOption = 'Delivery Challan';
                 }

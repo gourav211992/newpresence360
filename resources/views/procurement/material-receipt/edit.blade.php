@@ -955,6 +955,7 @@
     <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
     <script>
         const selectedCostCenterId = "{{ $mrn->cost_center_id ?? '' }}";
+        let tableRowCount = 0;
         /*Clear local storage*/
         setTimeout(() => {
             localStorage.removeItem('deletedItemDiscTedIds');
@@ -1494,7 +1495,7 @@
         /*For comp attr*/
         function getItemAttribute(itemId, rowCount, selectedAttr, tr){
             let mrn_detail_id = $(tr).find("input[name*='[mrn_detail_id]']").val() || '';
-            let actionUrl = '{{route("material-receipt.item.attr")}}'+'?item_id='+itemId+'&mrn_detail_id='+mrn_detail_id+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
+            let actionUrl = '{{route("material-receipt.item.attr")}}'+'?item_id='+itemId+'&mrn_detail_id='+mrn_detail_id+`&rowCount=${tableRowCount}&selectedAttr=${selectedAttr}`;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if (data.status == 200) {
@@ -1545,9 +1546,11 @@
                 let itemStoreData = JSON.parse($(currentTr).find("[id*='components_stores_data']").val() || "[]");
                 let headerId = $(currentTr).find("[name*='mrn_header_id']").val() ?? '';
                 let detailId = $(currentTr).find("[name*='mrn_detail_id']").val() ?? '';
-
-                let actionUrl = '{{route("material-receipt.get.itemdetail")}}' +
+                if(currentProcessType == 'po')
+                {
+                    actionUrl = '{{route("material-receipt.get.itemdetail")}}' +
                     '?item_id=' + itemId +
+                    '&type='+currentProcessType+
                     '&purchase_order_id=' + poHeaderId +
                     '&po_detail_id=' + poDetailId +
                     '&selectedAttr=' + JSON.stringify(selectedAttr) +
@@ -1559,6 +1562,41 @@
                     '&detailId='+detailId+
                     '&store_id='+storeId+
                     '&sub_store_id='+subStoreId;
+                }
+                else if(currentProcessType == 'jo')
+                {
+                    actionUrl = '{{route("material-receipt.get.itemdetail")}}' +
+                    '?item_id=' + itemId +
+                    '&type='+currentProcessType+
+                    '&job_order_id=' + poHeaderId +
+                    '&jo_detail_id=' + poDetailId +
+                    '&selectedAttr=' + JSON.stringify(selectedAttr) +
+                    '&itemStoreData=' + JSON.stringify(itemStoreData) +
+                    '&remark=' + remark +
+                    '&uom_id=' + uomId +
+                    '&qty=' + qty +
+                    '&headerId=' + headerId +
+                    '&detailId='+detailId+
+                    '&store_id='+storeId+
+                    '&sub_store_id='+subStoreId;
+                }
+                else
+                {
+                    actionUrl = '{{route("material-receipt.get.itemdetail")}}' +
+                    '?item_id=' + itemId +
+                    '&type='+currentProcessType+
+                    '&purchase_order_id=' + poHeaderId +
+                    '&po_detail_id=' + poDetailId +
+                    '&selectedAttr=' + JSON.stringify(selectedAttr) +
+                    '&itemStoreData=' + JSON.stringify(itemStoreData) +
+                    '&remark=' + remark +
+                    '&uom_id=' + uomId +
+                    '&qty=' + qty +
+                    '&headerId=' + headerId +
+                    '&detailId='+detailId+
+                    '&store_id='+storeId+
+                    '&sub_store_id='+subStoreId;
+                }
 
                 fetch(actionUrl).then(response => {
                     return response.json().then(data => {
@@ -2864,12 +2902,16 @@
 
         /*Open Po model*/
         $(document).on('click', '.poSelect', (e) => {
+            tableRowCount = $('.mrntableselectexcel tr').length;
             $("#poModal").modal('show');
+            currentProcessType='po';
             openPurchaseRequest();
             getPurchaseOrders();
         });
         $(document).on('click', '.joSelect', (e) => {
+            tableRowCount = $('.mrntableselectexcel tr').length;
             $("#joModal").modal('show');
+            currentProcessType='jo';
             openJobRequest();
             getJobOrders();
         });
@@ -2892,6 +2934,9 @@
         }
 
         function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "") {
+            let modalType = '#poModal';
+            if (currentProcessType == 'jo')
+                modalType = '#joModal';
             $("#" + selector).autocomplete({
                 source: function(request, response) {
                     $.ajax({
@@ -2918,7 +2963,7 @@
                         }
                     });
                 },
-                appendTo: '#poModal',
+                appendTo: modalType,
                 minLength: 0,
                 select: function(event, ui) {
                     var $input = $(this);
@@ -2940,60 +2985,60 @@
         }
 
         function openJobRequest() {
-            initializeAutocomplete3("vendor_code_input_qt", "vendor_id_qt_val", "vendor_list", "vendor_code",
+            initializeAutocompleteQt("jo_vendor_code_input_qt", "jo_vendor_id_qt_val", "vendor_list", "vendor_code",
                 "company_name");
-            initializeAutocomplete3("book_code_input_qt", "book_id_qt_val", "book_po", "book_code", "");
-            initializeAutocomplete3("document_no_input_qt", "document_id_qt_val", "po_document_qt", "document_number", "");
-            initializeAutocomplete3("item_name_input_qt", "item_id_qt_val", "goods_item_list", "item_code", "item_name");
+            initializeAutocompleteQt("jo_book_code_input_qt", "jo_book_id_qt_val", "book_po", "book_code", "");
+            initializeAutocompleteQt("jo_document_no_input_qt", "jo_document_id_qt_val", "po_document_qt", "document_number", "");
+            initializeAutocompleteQt("jo_item_name_input_qt", "jo_item_id_qt_val", "goods_item_list", "item_code", "item_name");
         }
 
-        function initializeAutocomplete3(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "") {
-            $("#" + selector).autocomplete({
-                source: function(request, response) {
-                    $.ajax({
-                        url: '/search',
-                        method: 'GET',
-                        dataType: 'json',
-                        data: {
-                            q: request.term,
-                            type: typeVal,
-                            vendor_id: $("#vendor_id_qt_val").val(),
-                            header_book_id: $("#book_id").val(),
-                        },
-                        success: function(data) {
-                            response($.map(data, function(item) {
-                                return {
-                                    id: item.id,
-                                    label: `${item[labelKey1]} ${labelKey2 ? (item[labelKey2] ? '(' + item[labelKey2] + ')' : '') : ''}`,
-                                    code: item[labelKey1] || '',
-                                };
-                            }));
-                        },
-                        error: function(xhr) {
-                            console.error('Error fetching customer data:', xhr.responseText);
-                        }
-                    });
-                },
-                appendTo: '#joModal',
-                minLength: 0,
-                select: function(event, ui) {
-                    var $input = $(this);
-                    $input.val(ui.item.label);
-                    $("#" + selectorSibling).val(ui.item.id);
-                    return false;
-                },
-                change: function(event, ui) {
-                    if (!ui.item) {
-                        $(this).val("");
-                        $("#" + selectorSibling).val("");
-                    }
-                }
-            }).focus(function() {
-                if (this.value === "") {
-                    $(this).autocomplete("search", "");
-                }
-            });
-        }
+        // function initializeAutocomplete3(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "") {
+        //     $("#" + selector).autocomplete({
+        //         source: function(request, response) {
+        //             $.ajax({
+        //                 url: '/search',
+        //                 method: 'GET',
+        //                 dataType: 'json',
+        //                 data: {
+        //                     q: request.term,
+        //                     type: typeVal,
+        //                     vendor_id: $("#vendor_id_qt_val").val(),
+        //                     header_book_id: $("#book_id").val(),
+        //                 },
+        //                 success: function(data) {
+        //                     response($.map(data, function(item) {
+        //                         return {
+        //                             id: item.id,
+        //                             label: `${item[labelKey1]} ${labelKey2 ? (item[labelKey2] ? '(' + item[labelKey2] + ')' : '') : ''}`,
+        //                             code: item[labelKey1] || '',
+        //                         };
+        //                     }));
+        //                 },
+        //                 error: function(xhr) {
+        //                     console.error('Error fetching customer data:', xhr.responseText);
+        //                 }
+        //             });
+        //         },
+        //         appendTo: '#joModal',
+        //         minLength: 0,
+        //         select: function(event, ui) {
+        //             var $input = $(this);
+        //             $input.val(ui.item.label);
+        //             $("#" + selectorSibling).val(ui.item.id);
+        //             return false;
+        //         },
+        //         change: function(event, ui) {
+        //             if (!ui.item) {
+        //                 $(this).val("");
+        //                 $("#" + selectorSibling).val("");
+        //             }
+        //         }
+        //     }).focus(function() {
+        //         if (this.value === "") {
+        //             $(this).autocomplete("search", "");
+        //         }
+        //     });
+        // }
 
         window.onload = function () {
             let selectedPoIds = [];
@@ -3105,6 +3150,7 @@
         $(document).on('click', '.poProcess', (e) => {
             let result = getSelectedPoIDS();
             let ids = result.ids;
+            let idsLength = ids.length;
             let referenceNo = result.referenceNos[0];
             currentProcessType = 'po';
             if (!ids.length) {
@@ -3207,7 +3253,7 @@
                                 $input.closest('tr').find('.attributeBtn').trigger('click');
                             } else {
                                 $input.closest('tr').find('.attributeBtn').trigger('click');
-                                $input.closest('tr').find('[name*="[accepted_qty]"]').val('')
+                                $input.closest('tr').find('[name*="[order_qty]"]').val('')
                                     .focus();
                             }
                         }, 100);
@@ -3241,15 +3287,15 @@
             groupItems = JSON.stringify(groupItems);
             let current_row_count = $("tbody tr[id*='row_']").length;
             ids = JSON.stringify(ids);
-            let type = '{{ request()->route('type') }}'; // Dynamically fetch the `type` from the current route
-            let actionUrl = '{{ route('gate-entry.process.po-item') }}'
-                .replace(':type', type) +
-                '?ids=' + encodeURIComponent(ids) +
-                '&currency_id=' + encodeURIComponent(currencyId) +
-                '&d_date=' + encodeURIComponent(transactionDate) +
-                '&groupItems=' + encodeURIComponent(groupItems) +
-                '&current_row_count=' + current_row_count;
-
+            let type = 'po'; // Dynamically fetch the `type` from the current route
+            let actionUrl = '{{ route("material-receipt.process.po-item") }}'
+            + '?ids=' + encodeURIComponent(ids)
+            + '&type=' + type
+            + '&moduleTypes=' + moduleTypes
+            + '&tableRowCount=' + tableRowCount
+            + '&currency_id=' + encodeURIComponent(currencyId)
+            + '&d_date=' + encodeURIComponent(transactionDate)
+            // + '&groupItems=' + encodeURIComponent(groupItems);
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if (data.status == 200) {
@@ -3363,11 +3409,19 @@
                         focusAndScrollToLastRowInput();
                         setTimeout(() => {
                             setTableCalculation();
-                            $("#itemTable .mrntableselectexcel tr").each(function(index,
-                                item) {
-                                let currentIndex = index + 1;
-                                setAttributesUIHelper(currentIndex, "#itemTable");
-                            });
+                            if(idsLength > 1)
+                            {
+                                $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+                                    if(tableRowCount>0)
+                                    {
+                                        currentIndex = tableRowCount + 1;
+                                    }
+                                    let currentIndex = index + 1;
+                                    setAttributesUIHelper(currentIndex,"#itemTable");
+                                });
+                            }
+                            currentIndex = tableRowCount + 1;
+                            setAttributesUIHelper(currentIndex,"#itemTable");
                         }, 500);
                     }
                     if (data.status == 422) {
@@ -3397,6 +3451,7 @@
         $(document).on('click', '.joProcess', (e) => {
             let result = getSelectedPoIDS();
             let ids = result.ids;
+            let idsLength = ids.length;
             let referenceNo = result.referenceNos[0];
             currentProcessType = 'jo';
             if (!ids.length) {
@@ -3533,14 +3588,15 @@
             groupItems = JSON.stringify(groupItems);
             let current_row_count = $("tbody tr[id*='row_']").length;
             ids = JSON.stringify(ids);
-            let type = '{{ request()->route('type') }}'; // Dynamically fetch the `type` from the current route
-            let actionUrl = '{{ route('gate-entry.process.jo-item') }}'
-                .replace(':type', type) +
-                '?ids=' + encodeURIComponent(ids) +
-                '&currency_id=' + encodeURIComponent(currencyId) +
-                '&d_date=' + encodeURIComponent(transactionDate) +
-                '&groupItems=' + encodeURIComponent(groupItems) +
-                '&current_row_count=' + current_row_count;
+            let type = 'jo'; // Dynamically fetch the `type` from the current route
+            let actionUrl = '{{ route("material-receipt.process.jo-item") }}'
+            + '?ids=' + encodeURIComponent(ids)
+            + '&type=' + type
+            + '&moduleTypes=' + moduleTypes
+            + '&tableRowCount=' + tableRowCount
+            + '&currency_id=' + encodeURIComponent(currencyId)
+            + '&d_date=' + encodeURIComponent(transactionDate)
+            // + '&groupItems=' + encodeURIComponent(groupItems);
 
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
@@ -3655,11 +3711,19 @@
                         focusAndScrollToLastRowInput();
                         setTimeout(() => {
                             setTableCalculation();
-                            $("#itemTable .mrntableselectexcel tr").each(function(index,
-                                item) {
-                                let currentIndex = index + 1;
-                                setAttributesUIHelper(currentIndex, "#itemTable");
-                            });
+                            if(idsLength > 1)
+                            {
+                                $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+                                    if(tableRowCount>0)
+                                    {
+                                        currentIndex = tableRowCount + 1;
+                                    }
+                                    let currentIndex = index + 1;
+                                    setAttributesUIHelper(currentIndex,"#itemTable");
+                                });
+                            }
+                            currentIndex = tableRowCount + 1;
+                            setAttributesUIHelper(currentIndex,"#itemTable");
                         }, 500);
                     }
                     if (data.status == 422) {

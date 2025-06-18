@@ -81,6 +81,25 @@
                                                     </div>
 
                                                 </div>
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Cost Group <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <select class="form-select select2" id="cost_group_id"
+                                                            name="cost_group_id" required>
+                                                            <option value="">Select</option>
+                                                            @foreach ($groups as $group)
+                                                                <option value="{{ $group->id }}"
+                                                                    {{-- data-costgroup="{{ $group->parent_cost_group_id }}" --}}
+                                                                    {{ $data->cost_group_id == $group->id ? 'selected' : '' }}>
+                                                                    {{ $group->name }}
+                                                                </option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+                                                </div>
 
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">

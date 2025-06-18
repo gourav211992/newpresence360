@@ -125,12 +125,11 @@ class FixedAssetReportExport implements FromCollection, WithHeadings, WithMappin
             Helper::formatIndianNumber($item?->salvage_value) ?? 'N/A',
             $item?->location?->store_name ?? 'N/A',
             $item?->issue?->authorizedPerson?->name ?? 'N/A',
-
+            
             $item?->asset?->useful_life && !empty($item?->capitalize_date) && !empty($item?->expiry_date)
                 ? $use : ($item?->asset?->useful_life
                     ? $item->asset->useful_life . ' (' . ($item->asset->useful_life * 365) . ' days)'
                     : 'N/A'),
-
             $item?->last_dep_date && $item?->expiry_date
                 ? $bal_use : ($item?->asset?->useful_life
                     ? $item->asset->useful_life . ' (' . ($item->asset->useful_life * 365) . ' days)'

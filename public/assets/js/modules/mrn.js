@@ -233,7 +233,11 @@ $(document).on('blur',"[name*='accepted_qty']",(e) => {
     } else {
         itemValue.val('');
     }
-    generatePackets(dataIndex, itemId, acceptedQuantity.val());
+    if(acceptedQuantity.val() > 0)
+    {
+        generatePackets(dataIndex, itemId, acceptedQuantity.val());
+    }
+
 });
 
 /*rate on change*/
@@ -1538,7 +1542,7 @@ let allStoragePointsList = [];
 let activeRowIndex = null;
 let expectedInvQty = 0;
 
-// Generate Packets 
+// Generate Packets
 function generatePackets(activeRowIndex, itemId, qty){
     let uomId = Number($("#itemTable #row_" + activeRowIndex).find("select[name*='[uom_id]']").val());
     // Call backend API to get item conversion & storage details
@@ -1573,7 +1577,7 @@ function generatePackets(activeRowIndex, itemId, qty){
                     const packet_number = $(this).find('.storage-packet-number').val() || null;
                     packets.push({ id: id, quantity: qty, packet_number: packet_number });
                 }
-                $(`#itemTable #row_${activeRowIndex} input[name*='[storage_packets]']`).val(JSON.stringify(packets));        
+                $(`#itemTable #row_${activeRowIndex} input[name*='[storage_packets]']`).val(JSON.stringify(packets));
             } else {
                 Swal.fire('Error', 'Could not fetch item storage conversion info.', 'error');
             }
@@ -1637,7 +1641,7 @@ $(document).on('click', '.addStoragePointBtn', function () {
 // Utility: Extract and save old packets into hidden input
 function getOldPackets(rowCount) {
     const packets = [];
-    
+
     $(`[id="row_${rowCount}"]`).find("[name*='[packet_number]']").each(function(index,item) {
         let key = index +1;
         const id = $(item).closest('tr').find(`[name*='[${key}][packet_id]']`).val();
@@ -1648,7 +1652,7 @@ function getOldPackets(rowCount) {
             expectedInvQty += Number(quantity);
         }
     });
-    
+
     if (packets.length) {
         $(`#itemTable #row_${rowCount} input[name*='[storage_packets]']`).val(JSON.stringify(packets));
     }
@@ -1789,7 +1793,7 @@ function updateAddButtonState() {
 // Save button validation
 $(document).on('click', '#saveStoragePointsBtn', function () {
     const totalQty = Number($('#storagePacketTotal').text());
-    
+
     if (totalQty !== expectedInvQty) {
         Swal.fire('Error', `Total quantity (${totalQty}) must equal inventory quantity (${expectedInvQty}).`, 'error');
         return;

@@ -794,18 +794,17 @@
             if(reference_from_service.length) {
                 let po = '{{\App\Helpers\ConstantHelper::PO_SERVICE_ALIAS}}';
                 let jo = '{{\App\Helpers\ConstantHelper::JO_SERVICE_ALIAS}}';
-                if(reference_from_service.includes(po)) {
+                if((reference_from_service.includes('po')) ||(reference_from_service.includes('jo'))) {
                     $("#reference_from").removeClass('d-none');
-                } else {
-                    $("#reference_from").addClass('d-none');
-                }
-                if(reference_from_service.includes('d')) {
-                    $("#addNewItemBtn").removeClass('d-none');
-                } else {
-                    $("#addNewItemBtn").addClass('d-none');
-                }
-                if(reference_from_service.includes(jo)) {
-                    $("#reference_from").removeClass('d-none');
+                    if (reference_from_service.includes('po'))
+                    {
+                        $(".poSelect").removeClass('d-none');
+                    }
+                    if (reference_from_service.includes('jo'))
+                    {
+                        $(".joSelect").removeClass('d-none');
+                    }
+
                 } else {
                     $("#reference_from").addClass('d-none');
                 }
@@ -1344,15 +1343,15 @@
                 let itemStoreData = JSON.parse($(currentTr).find("[id*='components_stores_data']").val() || "[]");
                 if(currentProcessType == 'po')
                 {
-                    actionUrl = '{{route("gate-entry.get.itemdetail")}}'+'?item_id='+itemId+'&purchase_order_id='+poHeaderId+'&po_detail_id='+poDetailId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&itemStoreData='+JSON.stringify(itemStoreData)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&headerId='+headerId+'&detailId='+detailId;
+                    actionUrl = '{{route("gate-entry.get.itemdetail")}}'+'?item_id='+itemId+'&type='+currentProcessType+'&purchase_order_id='+poHeaderId+'&po_detail_id='+poDetailId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&itemStoreData='+JSON.stringify(itemStoreData)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&headerId='+headerId+'&detailId='+detailId;
                 }
                 else if(currentProcessType == 'jo')
                 {
-                    actionUrl = '{{route("gate-entry.get.itemdetail")}}'+'?item_id='+itemId+'&job_order_id='+poHeaderId+'&jo_detail_id='+poDetailId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&itemStoreData='+JSON.stringify(itemStoreData)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&headerId='+headerId+'&detailId='+detailId;
+                    actionUrl = '{{route("gate-entry.get.itemdetail")}}'+'?item_id='+itemId+'&type='+currentProcessType+'&job_order_id='+poHeaderId+'&jo_detail_id='+poDetailId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&itemStoreData='+JSON.stringify(itemStoreData)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&headerId='+headerId+'&detailId='+detailId;
                 }
                 else
                 {
-                    actionUrl = '{{route("gate-entry.get.itemdetail")}}'+'?item_id='+itemId+'&purchase_order_id='+poHeaderId+'&po_detail_id='+poDetailId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&itemStoreData='+JSON.stringify(itemStoreData)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&headerId='+headerId+'&detailId='+detailId;
+                    actionUrl = '{{route("gate-entry.get.itemdetail")}}'+'?item_id='+itemId+'&type='+currentProcessType+'&purchase_order_id='+poHeaderId+'&po_detail_id='+poDetailId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&itemStoreData='+JSON.stringify(itemStoreData)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&headerId='+headerId+'&detailId='+detailId;
                 }
                 fetch(actionUrl).then(response => {
                     return response.json().then(data => {
@@ -1876,11 +1875,13 @@
         /*Open Po model*/
         $(document).on('click', '.poSelect', (e) => {
             $("#poModal").modal('show');
+            currentProcessType='po';
             openPurchaseRequest();
             getPurchaseOrders();
         });
         $(document).on('click', '.joSelect', (e) => {
             $("#joModal").modal('show');
+            currentProcessType='jo';
             openJobRequest();
             getJobOrders();
         });
@@ -1903,6 +1904,10 @@
         }
         function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "")
         {
+            let modalType = '#poModal';
+            if (currentProcessType == 'jo')
+                modalType = '#joModal';
+
             $("#" + selector).autocomplete({
                 source: function(request, response) {
                     $.ajax({
@@ -1929,7 +1934,7 @@
                         }
                     });
                 },
-                appendTo : '#poModal',
+                appendTo : modalType,
                 minLength: 0,
                 select: function(event, ui) {
                     var $input = $(this);
@@ -1952,59 +1957,59 @@
 
         function openJobRequest()
         {
-            initializeAutocomplete3("vendor_code_input_qt", "vendor_id_qt_val", "vendor_list", "vendor_code", "company_name");
-            initializeAutocomplete3("book_code_input_qt", "book_id_qt_val", "book_po", "book_code", "");
-            initializeAutocomplete3("document_no_input_qt", "document_id_qt_val", "po_document_qt", "document_number", "");
-            initializeAutocomplete3("item_name_input_qt", "item_id_qt_val", "goods_item_list", "item_code", "item_name");
+            initializeAutocompleteQt("jo_vendor_code_input_qt", "jo_vendor_id_qt_val", "vendor_list", "vendor_code", "company_name");
+            initializeAutocompleteQt("jo_book_code_input_qt", "jo_book_id_qt_val", "book_po", "book_code", "");
+            initializeAutocompleteQt("jo_document_no_input_qt", "jo_document_id_qt_val", "po_document_qt", "document_number", "");
+            initializeAutocompleteQt("jo_item_name_input_qt", "jo_item_id_qt_val", "goods_item_list", "item_code", "item_name");
         }
-        function initializeAutocomplete3(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "")
-        {
-            $("#" + selector).autocomplete({
-                source: function(request, response) {
-                    $.ajax({
-                        url: '/search',
-                        method: 'GET',
-                        dataType: 'json',
-                        data: {
-                            q: request.term,
-                            type: typeVal,
-                            vendor_id : $("#vendor_id_qt_val").val(),
-                            header_book_id : $("#book_id").val(),
-                        },
-                        success: function(data) {
-                            response($.map(data, function(item) {
-                                return {
-                                    id: item.id,
-                                    label: `${item[labelKey1]} ${labelKey2 ? (item[labelKey2] ? '(' + item[labelKey2] + ')' : '') : ''}`,
-                                    code: item[labelKey1] || '',
-                                };
-                            }));
-                        },
-                        error: function(xhr) {
-                            console.error('Error fetching customer data:', xhr.responseText);
-                        }
-                    });
-                },
-                appendTo : '#joModal',
-                minLength: 0,
-                select: function(event, ui) {
-                    var $input = $(this);
-                    $input.val(ui.item.label);
-                    $("#" + selectorSibling).val(ui.item.id);
-                    return false;
-                },
-                change: function(event, ui) {
-                    if (!ui.item) {
-                        $(this).val("");
-                        $("#" + selectorSibling).val("");
-                    }
-                }
-            }).focus(function() {
-                if (this.value === "") {
-                    $(this).autocomplete("search", "");
-                }
-            });
-        }
+        // function initializeAutocomplete3(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "")
+        // {
+        //     $("#" + selector).autocomplete({
+        //         source: function(request, response) {
+        //             $.ajax({
+        //                 url: '/search',
+        //                 method: 'GET',
+        //                 dataType: 'json',
+        //                 data: {
+        //                     q: request.term,
+        //                     type: typeVal,
+        //                     vendor_id : $("#vendor_id_qt_val").val(),
+        //                     header_book_id : $("#book_id").val(),
+        //                 },
+        //                 success: function(data) {
+        //                     response($.map(data, function(item) {
+        //                         return {
+        //                             id: item.id,
+        //                             label: `${item[labelKey1]} ${labelKey2 ? (item[labelKey2] ? '(' + item[labelKey2] + ')' : '') : ''}`,
+        //                             code: item[labelKey1] || '',
+        //                         };
+        //                     }));
+        //                 },
+        //                 error: function(xhr) {
+        //                     console.error('Error fetching customer data:', xhr.responseText);
+        //                 }
+        //             });
+        //         },
+        //         appendTo : '#joModal',
+        //         minLength: 0,
+        //         select: function(event, ui) {
+        //             var $input = $(this);
+        //             $input.val(ui.item.label);
+        //             $("#" + selectorSibling).val(ui.item.id);
+        //             return false;
+        //         },
+        //         change: function(event, ui) {
+        //             if (!ui.item) {
+        //                 $(this).val("");
+        //                 $("#" + selectorSibling).val("");
+        //             }
+        //         }
+        //     }).focus(function() {
+        //         if (this.value === "") {
+        //             $(this).autocomplete("search", "");
+        //         }
+        //     });
+        // }
 
         window.onload = function () {
             localStorage.removeItem('selectedPoIds');
@@ -2065,7 +2070,7 @@
             &item_id=${encodeURIComponent(item_id)}
             &vendor_id=${encodeURIComponent(vendor_id)}
             &header_book_id=${encodeURIComponent(header_book_id)}
-            &selected_jo_ids=${selectedJoIds}
+            &selected_po_ids=${selectedJoIds}
             &document_date=${document_date}
             &item_search=${item_search}`;
 
@@ -2250,7 +2255,7 @@
             + '?ids=' + encodeURIComponent(ids)
             + '&currency_id=' + encodeURIComponent(currencyId)
             + '&d_date=' + encodeURIComponent(transactionDate)
-            + '&groupItems=' + encodeURIComponent(groupItems)
+            // + '&groupItems=' + encodeURIComponent(groupItems)
             + '&current_row_count='+current_row_count;
 
             fetch(actionUrl).then(response => {
@@ -2533,7 +2538,7 @@
             + '?ids=' + encodeURIComponent(ids)
             + '&currency_id=' + encodeURIComponent(currencyId)
             + '&d_date=' + encodeURIComponent(transactionDate)
-            + '&groupItems=' + encodeURIComponent(groupItems)
+            // + '&groupItems=' + encodeURIComponent(groupItems)
             + '&current_row_count='+current_row_count;
 
             fetch(actionUrl).then(response => {

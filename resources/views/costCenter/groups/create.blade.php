@@ -52,7 +52,7 @@
                                         </div>
 
                                         <div class="col-md-9">
-                                            <form action="{{ route('cost-group.store') }}" method="POST">
+                                            <form id="costCenter" action="{{ route('cost-group.store') }}" method="POST">
                                                 @csrf
 
                                                 <div class="row align-items-center mb-1">
@@ -135,5 +135,82 @@
             </div>
         </div>
     </div>
+    <!-- END: Content-->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+$(document).ready(function () {
+    const existingCostGroups = @json($existingCostGroups); // Pass from controller
+    const redirectUrl = "{{ route('cost-group.index') }}";
+        $('#costCenter').on('submit', function (e) {
+            e.preventDefault(); // Prevent full page reload
+            $('.preloader').show();
+            let submitBtn = $('#submitBtn');
+            let form = $(this);
+            submitBtn.prop('disabled', true);
+
+            // Clear previous error messages
+            // form.find('.alert.alert-danger').remove();
+            let name = $('input[name="name"]').val()?.trim().toLowerCase();
+            if (existingCostGroups.map(n => n.toLowerCase()).includes(name)) {
+                $('.preloader').hide();
+                submitBtn.prop('disabled', false);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Duplicate Entry',
+                    text: 'A Cost Group with this name already exists.',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    confirmButtonText: 'OK'
+                });
+                return; // Stop further execution
+            }
+
+            $.ajax({
+                url: form.attr('action'),
+                method: form.attr('method'),
+                data: form.serialize(),
+                success: function (response) {
+                    $('.preloader').hide();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Created!',
+                        text: 'Cost Group created successfully.',
+                        confirmButtonText: 'OK'
+                    }).then(() => {
+                        form.trigger('reset');
+                        location.href = redirectUrl;
+
+                    });
+                },
+                error: function (xhr) {
+                    $('.preloader').hide();
+                    submitBtn.prop('disabled', false);
+
+                    if (xhr.status === 422) {
+                        // Validation errors
+                        let errors = xhr.responseJSON.errors;
+                        $.each(errors, function (field, messages) {
+                            Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: messages[0],
+                            });
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Something went wrong. Please try again.',
+                        });
+                    }
+                }
+            });
+        });
+    });
+    </script>
+
+    <!-- END: Content-->
+
     <!-- END: Content-->
 @endsection

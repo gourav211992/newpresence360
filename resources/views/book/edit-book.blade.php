@@ -471,7 +471,7 @@
                                                                                         <option disabled value="">
                                                                                             Select
                                                                                             Approver</option>
-                                                                                        @if(isset($workflowGroup->employee))
+                                                                                        @if(isset($workflowGroup->employees))
                                                                                         @foreach ($workflowGroup ?-> employees as $user)
                                                                                             <option
                                                                                                 value="{{ $user->id }}|{{ $user->type }}"
