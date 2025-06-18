@@ -783,10 +783,9 @@
 
 
 
-        $(".mrntableselectexcel tr").click(function() {
-            $(this).addClass('trselected').siblings().removeClass('trselected');
-            value = $(this).find('td:first').html();
-        });
+        $(document).on('click', '.mrntableselectexcel tr', function() {
+    $(this).addClass('trselected').siblings().removeClass('trselected');
+});
 
         $(document).on('keydown', function(e) {
             if (e.which == 38) {

@@ -19,6 +19,7 @@ use App\Models\FixedAssetSub;
 class FixedAssetReportExport implements FromCollection, WithHeadings, WithMapping, WithEvents, WithStyles
 {
     protected $items;
+
     protected $srNo = 1; // Counter for Sr. No.
 
     public function __construct($items)
@@ -80,18 +81,13 @@ class FixedAssetReportExport implements FromCollection, WithHeadings, WithMappin
         $use = null;
         $bal_use = null;
 
-        if ($item?->capitalize_date && $item?->expiry_date) {
-            $expiryPlusOne = Carbon::parse($item->expiry_date)->addDay();
+        if ($item?->capitalize_date) {
             $capitalizeDate = Carbon::parse($item->capitalize_date);
-
-            if ($capitalizeDate->eq($item->expiry_date)) {
-                $use = "0 (0 days)";
-            } else {
-                $years = $capitalizeDate->diffInYears($expiryPlusOne);
+            $expiryPlusOne =  $capitalizeDate->copy()->addYears($item->asset->useful_life);
+            $years = $capitalizeDate->diffInYears($expiryPlusOne);
                 $days = $capitalizeDate->diffInDays($expiryPlusOne);
-
-                $use = "{$years} ({$days} days)";
-            }
+                 $use = "{$years} ({$days} days)";
+            
         }
 
         if ($item?->last_dep_date && $item?->expiry_date) {

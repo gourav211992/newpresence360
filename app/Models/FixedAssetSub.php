@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 use App\Helpers\ConstantHelper;
 use Carbon\Carbon;
 
+
 class FixedAssetSub extends Model
 {
     use HasFactory, SoftDeletes;

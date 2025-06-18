@@ -423,7 +423,10 @@ class TrialBalanceController extends Controller
         $user = Helper::getAuthenticatedUser();
         $orgIds = $user->organizations->pluck('organizations.id')->toArray();
         array_push($orgIds, $user?->organization_id);
-        $companies = Helper::getAuthenticatedUser()->access_rights_org;
+        $companies = OrganizationCompany::whereIn('id', Organization::whereIn('id', $orgIds)->pluck('company_id')->toArray())
+            ->with('organizations', function ($orgQuery) use ($orgIds) {
+                $orgQuery->whereIn('id', $orgIds);
+            })->select('id', 'name')->get();
         $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
             $item->withDefaultGroupCompanyOrg()->where('status', 'active');
 
