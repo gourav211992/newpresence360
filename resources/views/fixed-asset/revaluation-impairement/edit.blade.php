@@ -93,24 +93,24 @@
                                                         <label class="form-label">Type <span
                                                                 class="text-danger">*</span></label>
                                                     </div>
+                                                    @php
+                                                            $selectedType = $data->document_type ?? 'revaluation'; // default to 'revaluation' if not set
+                                                        @endphp
 
-                                                    <div class="col-md-8">
-                                                        <div class="demo-inline-spacing">
-                                                            <div class="form-check form-check-primary mt-25">
-                                                                <input type="radio" id="Revaluation" name="document_type"
-                                                                    value="revaluation" class="form-check-input" checked>
-                                                                <label class="form-check-label fw-bolder"
-                                                                    for="Revaluation">Revaluation</label>
-                                                            </div>
-                                                            <div class="form-check form-check-primary mt-25">
-                                                                <input type="radio" id="Impairement" name="document_type"
-                                                                    value="impairement" class="form-check-input">
-                                                                <label class="form-check-label fw-bolder"
-                                                                    for="Impairement">Impairement</label>
+                                                     <div class="col-md-8"> 
+                                                            <div class="demo-inline-spacing">
+                                                                <div class="form-check form-check-primary mt-25">
+                                                                    <input type="radio" id="Revaluation" name="document_type" value="revaluation" class="form-check-input"
+                                                                        {{ $selectedType === 'revaluation' ? 'checked' : '' }}>
+                                                                    <label class="form-check-label fw-bolder" for="Revaluation">Revaluation</label>
+                                                                </div> 
+                                                                <div class="form-check form-check-primary mt-25">
+                                                                    <input type="radio" id="Impairement" name="document_type" value="impairement" class="form-check-input"
+                                                                        {{ $selectedType === 'impairement' ? 'checked' : '' }}>
+                                                                    <label class="form-check-label fw-bolder" for="Impairement">Impairement</label>
+                                                                </div>  
                                                             </div>
                                                         </div>
-
-                                                    </div>
                                                 </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">

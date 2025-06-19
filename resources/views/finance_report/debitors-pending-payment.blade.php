@@ -358,9 +358,15 @@
                     details_id: details
                 },
                 success: response => {
+                   console.log("Voucher Response:", response);
                     $('.preloader').hide();
+                    const table = $('.datatables-basic').DataTable();
+                    table.clear().draw();
+                    Object.keys(voucherMap).forEach(key => delete voucherMap[key]);
+                    selectedVoucherIds.clear(); $('.preloader').hide();
                     if (response.data.length > 0) {
                         let html = '';
+                        let rowIndex = 1; 
                         $.each(response.data, function(index, voucher) {
                             // if (!preSelected.includes(voucher.id.toString())) {
                             if (!preSelected.includes(voucher.id.toString()) && voucher.balance >= 1) {
@@ -380,7 +386,7 @@
                                     const existingSettleAmt = voucherMap[uniqueKey]?.settle_amt ?? 0;
                                     const isChecked = existingSettleAmt > 0;
                                     html += `<tr id="${uniqueKey}" class="voucherRows">
-                                        <td>${i + 1}</td>
+                                        <td>${rowIndex}</td>
                                         <td>${voucher.date ?? '-'}</td>
                                         <td data-ledger-id="${item.ledger ?? ''}">${item.ledger?.name ?? '-'}</td>
                                         <td>${item.ledger_group?.name ?? item.ledger?.ledger_group?.name ?? '-'}</td>
@@ -400,20 +406,21 @@
                                             </div>
                                         </td>
                                     </tr>`;
+                                    
+                                    rowIndex++;
                                 });
                             }
                         });
 
-                        const table = $('.datatables-basic').DataTable();
                         const rows = $.parseHTML(html).filter(el => el.nodeName === "TR");
-                        table.clear();
                         rows.forEach(row => table.row.add(row));
                         table.draw();
 
-                        updateVoucherNumbers();
-                        calculateSettle();
-                        calculateAmountAndBalanceTotals();
                     }
+                    $('#inlineCheckbox1').prop('checked', false);
+                    updateVoucherNumbers();
+                    calculateSettle();
+                    calculateAmountAndBalanceTotals();
                 },
                 error: () => $('.preloader').hide()
             });
@@ -537,10 +544,24 @@
 
         function getSelectedVoucherData() {
             const selectedData = [];
+            const validationErrors = [];
 
             selectedVoucherIds.forEach(key => {
                 const voucher = voucherMap[key];
                 if (!voucher || !voucher.item?.id) return;
+
+                const ledgerName = voucher.item?.ledger?.name ?? 'Unknown Ledger';
+
+                if (!voucher.item?.ledger?.customer) {
+                    validationErrors.push(`${ledgerName}'s customer is missing`);
+                    return;
+                }
+
+                const creditDays = voucher.item.ledger.customer.credit_days;
+                if (creditDays === null || creditDays === undefined || creditDays === '') {
+                    validationErrors.push(`${ledgerName}'s customer has no credit days set`);
+                    return;
+                }
 
                 selectedData.push({
                     ...voucher,
@@ -548,6 +569,15 @@
                     item_id: voucher.item.id
                 });
             });
+
+            if (validationErrors.length > 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Validation Error',
+                    html: validationErrors.map(e => `<div>${e}</div>`).join(''),
+                });
+                return false;
+            }
 
             return selectedData;
         }
@@ -593,12 +623,14 @@
 
         $('#filterForm').on('submit', e => {
             e.preventDefault();
+            $('#inlineCheckbox1').prop('checked', false);
             $('#filter').modal('hide');
             getLedgers(buildParams());
         });
 
         $('#findFilters').on('click', e => {
             e.preventDefault();
+            $('#inlineCheckbox1').prop('checked', false);
             getLedgers(buildParams());
         });
 
@@ -630,7 +662,13 @@
             }
             $('.preloader').show();
             const selectedRows = getSelectedVoucherData();
+            if (selectedRows === false){
+                $('.preloader').hide();
+                return;
+            }
+              
 
+            console.log(selectedRows);
             if (selectedRows.length === 0) {
                 $('.preloader').hide();
                 Swal.fire({
