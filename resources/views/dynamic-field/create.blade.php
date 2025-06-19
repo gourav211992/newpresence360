@@ -106,10 +106,11 @@
                                                                 <thead>
                                                                     <tr>
                                                                         <th>S.NO</th>
-                                                                        <th>Dynamic Field Name<span class="text-danger">*</span></th>
-                                                                        <th>Dynamic Field Description</th>
+                                                                        <th>Name<span class="text-danger">*</span></th>
+                                                                        <th>Description</th>
                                                                         <th>Data Type</th>
                                                                         <th>List Value</th>
+                                                                        <th>Mandatory</th>
                                                                         <th>Action</th>
                                                                     </tr>
                                                                 </thead>
@@ -134,15 +135,19 @@
                                                                             </select>
                                                                         </td>
                                                                         <td class="poprod-decpt">
-    <div class="badge-container">
-        <!-- Badges yahan dynamically add honge -->
-    </div>
-    <!-- Hidden input to store just the values (for badges & display) -->
-    <input type="hidden" name="field_details[0][value]" class="list-value-input" value="">
-    <a href="javascript:void(0);" class="btn p-25 btn-sm btn-outline-secondary add-value-btn" style="font-size: 10px">
-        Add Value
-    </a>
-</td>
+                                                                            <div class="badge-container">
+                                                                            </div>
+                                                                            <input type="hidden" name="field_details[0][value]" class="list-value-input" value="">
+                                                                            <a href="javascript:void(0);" class="btn p-25 btn-sm btn-outline-secondary add-value-btn" style="font-size: 10px">
+                                                                                Add Value
+                                                                            </a>
+                                                                        </td>
+                                                                        <td>
+                                                                            <div class="form-check form-check-primary mt-25 custom-checkbox">
+                                                                                <input type="hidden" name="field_details[0][mandatory]" value="0">
+                                                                                <input type="checkbox" class="form-check-input mandatory-checkbox" name="field_details[0][mandatory]" value="1">
+                                                                            </div>
+                                                                        </td>
                                                                         <td>
                                                                             <a href="#" class="text-primary add-row"><i data-feather="plus-square"></i></a>
                                                                             <a href="#" class="text-danger delete-row"><i data-feather="trash-2"></i></a>
@@ -243,6 +248,18 @@
 
             updateBadges($row);
         }
+
+        $(document).on('change', '.data-type-select', function() {
+            var $row = $(this).closest('tr');
+            var $dataTypeSelect = $row.find('.data-type-select');
+            var selectedType = $dataTypeSelect.val();
+            if (selectedType === DATA_TYPE_LIST) {
+                const $row = $(this).closest('tr');
+                $('#addaccess').data('row', $row);
+                populateModal($row);
+                $('#addaccess').modal('show');
+            }
+        });
 
         $(document).on('click', '.add-value-btn', function() {
             var $row = $(this).closest('tr');
@@ -418,6 +435,8 @@
             });
 
             $newRow.find('textarea').val('');
+            $newRow.find('input[type="checkbox"]').prop('checked', false);
+            $newRow.find('input[type="hidden"][name$="[mandatory]"]').val('0');
             $newRow.find('.ajax-validation-error-span').remove();
             $newRow.find('.badge-container').empty(); 
             $tableBody.append($newRow);

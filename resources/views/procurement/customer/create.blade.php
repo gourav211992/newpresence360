@@ -71,7 +71,7 @@
                                                             </label>
                                                         </div>
                                                         <div class="col-md-9">
-                                                            <input type="text" name="company_name" class="form-control" placeholder="Enter Customer Name" />
+                                                            <input type="text" name="company_name" class="form-control customer-name-autocomplete" placeholder="Enter Customer Name" />
                                                         </div>
                                                     </div>
 
@@ -145,22 +145,13 @@
                                                     
                                                     <div class="row align-items-center mb-1">
                                                         <div class="col-md-3">
-                                                            <label class="form-label">Category</label>
+                                                            <label class="form-label">Group</label>
                                                         </div>
                                                         <div class="col-md-4 pe-sm-0 mb-1 mb-sm-0">
-                                                            <input type="text" name="category_name" class="form-control category-autocomplete" placeholder="Type to search category">
-                                                            <input type="hidden" name="category_id" class="category-id">
+                                                            <input type="text" name="subcategory_name" class="form-control category-autocomplete" placeholder="Type to search group">
+                                                            <input type="hidden" name="subcategory_id" class="category-id">
                                                             <input type="hidden" name="category_type" class="category-type" value="Customer">
                                                             <input type="hidden" name="cat_initials" class="cat_initials-id" value="">
-                                                        </div>
-                                                        <div class="col-md-2">
-                                                            <label class="form-label">Sub Category</label>
-                                                        </div>
-                                                        <div class="col-md-3">
-                                                            <input type="text" name="subcategory_name" class="form-control subcategory-autocomplete" placeholder="Type to search sub-category">
-                                                            <input type="hidden" name="subcategory_id" class="subcategory-id">
-                                                            <input type="hidden" name="category_type" class="category-type" value="Customer">
-                                                            <input type="hidden" name="sub_cat_initials" class="sub_cat_initials-id" value="">
                                                         </div>
                                                     </div>
                                                     <p class="mb-0" style="color: red;"><b>Note*:</b> File must be 2MB max | Formats: pdf, jpg, jpeg, png</p>
@@ -251,6 +242,15 @@
 												 <div class="tab-content pb-1 px-1">
                                                      <!--Start customer Details -->
                                                      <div class="tab-pane active" id="payment">
+                                                            <div class="row align-items-center mb-1" id="reldCustomerDropdown">
+                                                                <div class="col-md-2">
+                                                                    <label class="form-label">Parent Customer</label>
+                                                                </div>
+                                                                <div class="col-md-3">
+                                                                    <input type="text" name="reld_customer_name" class="form-control parent-customer-autocomplete" placeholder="Type to search customers">
+                                                                     <input type="hidden" name="reld_customer_id" class="reld_customer_id">
+                                                                </div>
+                                                            </div>
                                                             <!-- Related Party -->
                                                             <div class="row align-items-center mb-1">
                                                                 <div class="col-md-2">
@@ -261,6 +261,16 @@
                                                                         <input type="checkbox" class="form-check-input" id="Related" name="related_party">
                                                                         <label class="form-check-label" for="Related">Yes/No</label>
                                                                     </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="row align-items-center mb-1" id="contraLedger" style="display: none;">
+                                                                <div class="col-md-2">
+                                                                    <label class="form-label">Contra Ledger</label>
+                                                                </div>
+                                                                <div class="col-md-3">
+                                                                    <input type="text" name="contra_ledger_name" class="form-control contra-ledger-autocomplete" placeholder="Type to search contra ledger">
+                                                                     <input type="hidden" name="contra_ledger_id" class="contra_ledger_id">
                                                                 </div>
                                                             </div>
 
@@ -278,21 +288,6 @@
                                                                     </select>
                                                                 </div>
                                                             </div>
-
-                                                            <div class="row align-items-center mb-1" id="reldCustomerDropdown">
-                                                                <div class="col-md-2">
-                                                                    <label class="form-label">Parent Customer</label>
-                                                                </div>
-                                                                <div class="col-md-3">
-                                                                    <select class="form-select select2" name="reld_customer_id" id="reld_customer_id">
-                                                                        <option value="">Select</option>
-                                                                        @foreach ($relatedCustomers as $relatedCustomer)
-                                                                            <option value="{{ $relatedCustomer->id }}">{{ $relatedCustomer->company_name }}</option>
-                                                                        @endforeach
-                                                                    </select>
-                                                                </div>
-                                                            </div>
-
                                                             <!-- Customer Email -->
                                                             <div class="row align-items-center mb-1">
                                                                 <div class="col-md-2">
@@ -1641,9 +1636,8 @@ $(document).ready(function() {
             const companyName = companyNameInput.val().trim();
             const customerInitials = customerInitialInput.val().trim() || getCustomerInitials(companyName); 
             customerInitialInput.val(customerInitials); 
-
-            const categoryInitials = catInitialsInput.val().trim();
-            const subCategoryInitials = subCatInitialsInput.val().trim();
+            const categoryInitials = (catInitialsInput.val() || '').trim();
+            const subCategoryInitials = (subCatInitialsInput.val() || '').trim();
             const selectedCustomerType = customerTypeInput.filter(':checked').val();  
             let customerTypeCode = '';
             if (selectedCustomerType === 'Regular') {
@@ -1693,8 +1687,10 @@ $(document).ready(function() {
         $('#Related').change(function() {
             if ($(this).is(':checked')) {
                 $('#groupOrganizationsDropdown').show();
+                $('#contraLedger').show();
             } else {
                 $('#groupOrganizationsDropdown').hide();
+                $('#contraLedger').hide();
             }
         });
     });

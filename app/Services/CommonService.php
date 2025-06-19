@@ -1,15 +1,8 @@
 <?php
 
 namespace App\Services;
-use App\Models\BankInfo;
-use App\Models\Compliance;
-use App\Models\VendorAddress;
-use App\Models\Vendor;
-use App\Models\Customer;
-use App\Models\CustomerAddress;
 use App\Helpers\FileUploadHelper;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use App\Helpers\GeneralHelper;
 
 class CommonService
@@ -165,20 +158,29 @@ class CommonService
     }
     
     public function createAddress(array $data, $morphable) {
+        $isVendor = $morphable instanceof \App\Models\Vendor; 
         foreach ($data as $address) {
-            if (!empty($address['country_id']) && !empty($address['state_id']) && !empty($address['city_id'])) {
-            if (isset($address['is_billing']) && $address['is_billing'] == '1' && isset($address['is_shipping']) && $address['is_shipping'] == '1') {
-                $type = 'both';
-            } elseif (isset($address['is_billing']) && $address['is_billing'] == '1') {
+        if (!empty($address['country_id']) && !empty($address['state_id']) && !empty($address['city_id'])) {
+            if ($isVendor) {
                 $type = 'billing';
-            } elseif (isset($address['is_shipping']) && $address['is_shipping'] == '1') {
-                $type = 'shipping';
+                $is_billing = 1;
+                $is_shipping = 0;
             } else {
-                $type = ''; 
+                if (isset($address['is_billing']) && $address['is_billing'] == '1' && isset($address['is_shipping']) && $address['is_shipping'] == '1') {
+                    $type = 'both';
+                } elseif (isset($address['is_billing']) && $address['is_billing'] == '1') {
+                    $type = 'billing';
+                } elseif (isset($address['is_shipping']) && $address['is_shipping'] == '1') {
+                    $type = 'shipping';
+                } else {
+                    $type = '';
+                }
+                $is_billing = isset($address['is_billing']) && $address['is_billing'] == '1' ? 1 : 0;
+                $is_shipping = isset($address['is_shipping']) && $address['is_shipping'] == '1' ? 1 : 0;
             }
             $addressData = array_merge([
-                'is_billing' => isset($address['is_billing']) && $address['is_billing'] == '1' ? 1 : 0,
-                'is_shipping' => isset($address['is_shipping']) && $address['is_shipping'] == '1' ? 1 : 0,
+                'is_billing' => $is_billing,
+                'is_shipping' => $is_shipping,
                 'type' => $type, 
             ], $address);
             $morphable->addresses()->create($addressData);
@@ -187,24 +189,35 @@ class CommonService
     }
     public function updateAddress(array $data, $morphable)
     {
+        $isVendor = $morphable instanceof \App\Models\Vendor;
         $existingAddresses = $morphable->addresses()->pluck('id')->toArray();
         $newAddresses = [];
         foreach ($data as $address) {
             if (!empty($address['country_id']) && !empty($address['state_id']) && !empty($address['city_id'])) {
-            if (isset($address['is_billing']) && $address['is_billing'] == '1' && isset($address['is_shipping']) && $address['is_shipping'] == '1') {
-                $type = 'both';
-            } elseif (isset($address['is_billing']) && $address['is_billing'] == '1') {
+                 if ($isVendor) {
                 $type = 'billing';
-            } elseif (isset($address['is_shipping']) && $address['is_shipping'] == '1') {
-                $type = 'shipping';
+                $is_billing = 1;
+                $is_shipping = 0;
             } else {
-                $type = '';
+                $is_billing = isset($address['is_billing']) && $address['is_billing'] == '1' ? 1 : 0;
+                $is_shipping = isset($address['is_shipping']) && $address['is_shipping'] == '1' ? 1 : 0;
+
+                if ($is_billing && $is_shipping) {
+                    $type = 'both';
+                } elseif ($is_billing) {
+                    $type = 'billing';
+                } elseif ($is_shipping) {
+                    $type = 'shipping';
+                } else {
+                    $type = '';
+                }
             }
             $addressData = array_merge([
-                'is_billing' => isset($address['is_billing']) && $address['is_billing'] == '1' ? 1 : 0,
-                'is_shipping' => isset($address['is_shipping']) && $address['is_shipping'] == '1' ? 1 : 0,
-                'type' => $type, 
+                'is_billing' => $is_billing,
+                'is_shipping' => $is_shipping,
+                'type' => $type,
             ], $address);
+
             if (isset($address['id']) && !empty($address['id'])) {
                 $existingAddress = $morphable->addresses()->where('id', $address['id'])->first();
                 if ($existingAddress) {

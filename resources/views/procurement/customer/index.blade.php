@@ -49,7 +49,6 @@
                                                 <th>Phone</th>
                                                 <th>Email</th>
                                                 <th>Category</th>
-                                                <th>Sub Category</th>
                                                 <th>Sales Person</th>
                                                 <th>Gst Status</th>
                                                 <th>Created At</th>
@@ -77,21 +76,13 @@
                             <div class="modal-body flex-grow-1">
                                 <div class="mb-1">
                                     <label class="form-label">Category</label>
-                                    <select id="filter-category" name="category_id" class="form-select">
+                                    <select id="filter-category" name="subcategory_id" class="form-select">
                                         <option value="">Select Category</option>
                                         @foreach($categories as $category)
                                             <option value="{{ $category->id }}">{{ $category->name }}</option>
                                         @endforeach
                                     </select>
                                 </div>
-
-                                <div class="mb-1">
-                                    <label class="form-label">SubCategory</label>
-                                    <select id="filter-subcategory" name="subcategory_id" class="form-select" data-selected-id="">
-                                        <option value="">Select SubCategory</option>
-                                    </select>
-                                </div>
-
                                 <!-- Sales Person -->
                                 <div class="mb-1">
                                     <label class="form-label">Sales Person</label>
@@ -161,8 +152,7 @@
                 data: function(d) {
 
                     d.customer_type = $('#filter-customer-type').val();
-                    d.category_id = $('#filter-category').val(); 
-                    d.subcategory_id = $('#filter-subcategory').val(); 
+                    d.subcategory_id = $('#filter-category').val(); 
                     d.sales_person = $('#filter-sales-person').val(); 
                     d.gst_status = $('#filter-gst-status').val();
                     d.status = $('#filter-status').val();
@@ -178,7 +168,6 @@
                 {data: 'customer_type', name: 'customer_type', render: renderData}, 
                 {data: 'phone', name: 'phone', render: renderData},
                 {data: 'email', name: 'email', render: renderData},
-                { data: 'category.name', name: 'category.name', render: renderData }, 
                 { data: 'subcategory.name', name: 'subcategory.name', render: renderData }, 
                 { data: 'sales_person.name', name: 'sales_person.name', render: renderData }, 
                 {data: 'gst_status', name: 'gst_status', render: renderData},

@@ -22,7 +22,7 @@
                 </div>
                 <div class="content-header-right text-end col-md-7 mb-2 mb-sm-0">
                     <div class="form-group breadcrumb-right">
-                        <a class="btn btn-primary btn-sm" href="{{ route('driver.create') }}"><i data-feather="plus-circle"></i> Add New</a>
+                        <a class="btn btn-primary btn-sm" href="{{ route('logistics.driver.create') }}"><i data-feather="plus-circle"></i> Add New</a>
                          <button class="btn btn-warning btn-sm me-1 mb-20 mb-sm-0" data-bs-target="#filter" data-bs-toggle="modal">
                             <i data-feather="filter"></i> Filter
                         </button>
@@ -126,7 +126,7 @@ $(document).ready(function () {
             processing: true,
             serverSide: true,
             ajax: {
-                url: "{{ route('driver.index') }}",
+                url: "{{ route('logistics.driver.index') }}",
                 data: function(d) {
                     d.name = $('#filter-name').val(); 
                     d.email = $('#filter-email').val(); 

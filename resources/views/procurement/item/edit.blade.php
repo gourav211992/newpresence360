@@ -1,6 +1,16 @@
 @extends('layouts.app')
 
 @section('content')
+    <style>
+        .middleinputerror {
+        padding-bottom: 30px;
+        }
+        .middleinputerror span.text-danger {
+            font-size: 12px;
+            position: absolute;
+            top: 38px;
+        }
+    </style>
     <!-- BEGIN: Content-->
     <form class="ajax-input-form" method="POST" action="{{ route('item.update', $item->id) }}"  data-redirect="{{ route('item.index') }}">
     <input type="hidden" name="item_id" value="{{ $item->id ?? '' }}">
@@ -104,22 +114,16 @@
 
                                             <div class="row align-items-center mb-1">
                                                 <div class="col-md-3">
-                                                    <label class="form-label">Category Mapping<span class="text-danger">*</span></label>
+                                                    <label class="form-label">Group Mapping<span class="text-danger">*</span></label>
                                                 </div>
                                                 <div class="col-md-3 pe-sm-0 mb-1 mb-sm-0">
-                                                    <input type="text" name="category_name" class="form-control category-autocomplete" placeholder="Type to search category" value="{{ $item->category->name ?? '' }}">
-                                                    <input type="hidden" name="category_id" class="category-id" value="{{ $item->category_id ?? '' }}">
+                                                    <input type="text" name="category_name" class="form-control category-autocomplete" placeholder="Type to search group" value="{{ $item->subCategory->name ?? '' }}">
+                                                    <input type="hidden" name="subcategory_id" class="category-id" value="{{ $item->subcategory_id?? '' }}">
                                                     <input type="hidden" name="category_type" class="category-type" value="Product">
-                                                    <input type="hidden" name="cat_initials" class="cat_initials-id"  value="{{ $item->category->cat_initials ?? '' }}">
+                                                    <input type="hidden" name="cat_initials" class="cat_initials-id"  value="{{ $item->subCategory->cat_initials ?? '' }}">
                                                 </div>
                                                 <div class="col-md-3">
-                                                    <input type="text" name="subcategory_name" class="form-control subcategory-autocomplete" placeholder="Type to search sub-category" value="{{ $item->subCategory->name ?? '' }}">
-                                                    <input type="hidden" name="subcategory_id" class="subcategory-id" value="{{ $item->subcategory_id ?? '' }}">
-                                                    <input type="hidden" name="category_type" class="category-type" value="Product">
-                                                    <input type="hidden" name="sub_cat_initials" class="sub_cat_initials-id" value="{{ $item->subcategory->sub_cat_initials ?? '' }}">
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <a href="{{route('categories.index')}}" target="_blank" class="voucehrinvocetxt mt-0">Add Category</a>
+                                                    <a href="{{route('categories.index')}}" target="_blank" class="voucehrinvocetxt mt-0">Add Group</a>
                                                 </div>
                                             </div>
 
@@ -140,6 +144,19 @@
                                                                 <label class="form-check-label" for="subType{{ $subType->id }}">{{ $subType->name }}</label>
                                                             </div>
                                                         @endforeach
+                                                           {{-- Traded Item Checkbox --}}
+                                                            <div class="form-check form-check-primary mt-25 custom-checkbox">
+                                                                <input type="hidden" name="is_traded_item" value="0">
+                                                                <input type="checkbox" class="form-check-input" id="tradedItemCheckbox" name="is_traded_item"value="1" {{ isset($item) && $item->is_traded_item ? 'checked' : '' }}{{ $isItemReferenced  ? 'disabled' : '' }}>
+                                                                <label class="form-check-label" for="tradedItemCheckbox">Traded Item</label>
+                                                            </div>
+
+                                                            {{-- Asset Checkbox --}}
+                                                            <div class="form-check form-check-primary mt-25 custom-checkbox me-0">
+                                                                <input type="hidden" name="is_asset" value="0">
+                                                                <input type="checkbox" class="form-check-input" id="assetCheckbox" name="is_asset" value="1" {{ isset($item) && $item->is_asset ? 'checked' : '' }}{{ $isItemReferenced  ? 'disabled' : '' }}>
+                                                                <label class="form-check-label" for="assetCheckbox">Asset</label>
+                                                            </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -152,7 +169,7 @@
                                                         </label>
                                                     </div>
                                                     <div class="col-md-5 mb-1 mb-sm-0">
-                                                        <input type="text" name="item_name" class="form-control" value="{{ old('item_name', $item->item_name ?? '') }}" {{ $isItemReferenced ? 'readonly' : '' }}/>
+                                                        <input type="text" name="item_name" class="form-control item-name-autocomplete" value="{{ old('item_name', $item->item_name ?? '') }}" {{ $isItemReferenced ? 'readonly' : '' }}/>
                                                     </div>
                                                     <div class="col-md-2" >
                                                         <label class="form-label">
@@ -202,7 +219,7 @@
                                                      <div class="col-md-3"> 
                                                         <label class="form-label">Cost Price</label>  
                                                     </div>
-                                                    <div class="col-md-3 mb-1 mb-sm-0">
+                                                    <div class="col-md-3 mb-1 mb-sm-0 middleinputerror">
                                                         <div class="input-group">
                                                             <input type="text" name="cost_price" class="form-control cost-price-input" value="{{ number_format($item->cost_price, 2) }}" placeholder="Enter Cost Price">
                                                             <select class="form-select select2" id="currencySelect" name="cost_price_currency_id">
@@ -219,7 +236,7 @@
                                                     <div class="col-md-3 text-sm-end mb-1 mb-sm-0">  
                                                         <label class="form-label fw-bold">Selling Price</label>  
                                                     </div>
-                                                      <div class="col-md-3">
+                                                      <div class="col-md-3 middleinputerror">
                                                         <div class="input-group">
                                                             <input type="text" name="sell_price" class="form-control sell-price-input" value="{{ number_format($item->sell_price, 2) }}" placeholder="Enter Sell Price">
                                                               <select class="form-select select2" id="currencySelect" name="sell_price_currency_id">
@@ -274,13 +291,13 @@
                                                 <div class="step-custhomapp bg-light">
                                                     <ul class="nav nav-tabs my-25 custapploannav" role="tablist"> 
                                                         <li class="nav-item">
-                                                           <a class="nav-link" data-bs-toggle="tab" href="#Specification">Product Specification</a>
+                                                           <a class="nav-link active" data-bs-toggle="tab" href="#Specification">Product Specification</a>
                                                         </li>
                                                         <li class="nav-item">
                                                             <a class="nav-link" data-bs-toggle="tab" href="#Attributes">Attributes</a>
                                                         </li>
                                                         <li class="nav-item">
-                                                            <a class="nav-link active" data-bs-toggle="tab" href="#UOM">Alt. UOM</a>
+                                                            <a class="nav-link" data-bs-toggle="tab" href="#UOM">Alt. UOM</a>
                                                         </li>
                                                         <li class="nav-item">
                                                             <a class="nav-link" data-bs-toggle="tab" href="#Alternative">Alternative Items</a>
@@ -294,7 +311,9 @@
                                                         <li class="nav-item">
                                                             <a class="nav-link" data-bs-toggle="tab" href="#Vendors">Approved Vendors</a>
                                                         </li>
-                                                       
+                                                        <li class="nav-item">
+                                                            <a class="nav-link" id="assetTabLink" data-bs-toggle="tab" href="#Assets" style="display: none;">Asset Details</a>
+                                                        </li>
                                                         <!-- <li class="nav-item">
                                                             <a class="nav-link" data-bs-toggle="tab" href="#Compliances">Compliances</a>
                                                         </li> -->
@@ -302,7 +321,7 @@
                                                 </div>
 
 												 <div class="tab-content pb-1 px-1">
-                                                        <div class="tab-pane" id="Specification">
+                                                        <div class="tab-pane active" id="Specification">
                                                             <div class="row align-items-center mb-3">
                                                                 <div class="col-md-2">
                                                                     <label class="form-label">Product Specification Group</label>
@@ -439,7 +458,7 @@
                                                                 </table>
                                                             </div>
                                                         </div>
-                                                        <div class="tab-pane active" id="UOM">
+                                                        <div class="tab-pane" id="UOM">
                                                             <div class="table-responsive-md">
                                                                 <table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail border" id="alternateUOMTable">
                                                                     <thead>
@@ -606,13 +625,8 @@
                                                                     <label class="form-label">Safety Days</label>
                                                                     <input type="text" class="form-control numberonly" name="safety_days" value="{{ $item->safety_days ?? '' }}" />
                                                                 </div>
-                                                                <div class="col-md-3 mb-1">
-                                                                    <label class="form-label">Shelf Life in Days</label>
-                                                                    <input type="text" class="form-control numberonly" name="shelf_life_days" value="{{ $item->shelf_life_days ?? '' }}" />
-                                                                </div>
                                                             </div>
 
-                                                            
                                                             <div class="row mt-1">
                                                                 <div class="col-md-12">
                                                                     <div class="newheader border-bottom pb-50 mb-1">
@@ -693,13 +707,71 @@
                                                             <div class="row align-items-center mb-1">
                                                                 <div class="col-md-3 mb-1">
                                                                     <label class="form-label">Inspection Required</label>
-                                                                    <select name="is_inspection" class="form-select select2">
-                                                                        <option value="1" {{$item -> is_inspection ? 'selected' : ''}}>Yes</option>
-                                                                        <option value="0" {{$item -> is_inspection ? '' : 'selected'}}>No</option>
+                                                                    <select name="is_inspection" id="is_inspection" class="form-select select2">
+                                                                        <option value="1" {{ $item->is_inspection ? 'selected' : '' }}>Yes</option>
+                                                                        <option value="0" {{ !$item->is_inspection ? 'selected' : '' }}>No</option>
                                                                     </select>
+                                                                </div>
+
+                                                                <div class="col-md-6" id="inspectionCheckContainer">
+                                                                    <div class="row align-items-center mb-1">
+                                                                      <label class="form-label">Inspection Checklist</label>
+                                                                        <div class="col-md-8">
+                                                                            <input type="text" name="inspection_checklist_name" class="form-control inspection-autocomplete" placeholder="Search Inspection Checklist" value="{{ $item->inspectionChecklist ? $item->inspectionChecklist->name : '' }}" />
+                                                                            <input type="hidden" name="inspection_checklist_id" class="inspection_checklist_id" value="{{ $item->inspection_checklist_id ?? '' }}" />
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
                                                             </div>
 
+                                                            <div class="row mt-1">
+                                                                <div class="col-md-12">
+                                                                    <div class="newheader border-bottom pb-50 mb-1">
+                                                                        <h4 class="card-title text-theme">Tracking Type</h4>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+
+
+                                                            <div class="row align-items-center mb-1">
+                                                                <div class="col-md-2">
+                                                                    <label class="form-label">Serial No</label>
+                                                                    <div class="form-check form-check-primary mt-25 custom-checkbox">
+                                                                        <input type="hidden" name="is_serial_no" value="0">
+                                                                        <input type="checkbox" class="form-check-input" id="Serial" name="is_serial_no" value="1"
+                                                                            @if(isset($item) && $item->is_serial_no) checked @endif>
+                                                                        <label class="form-check-label" for="Serial">Yes/No</label>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div class="col-md-2">
+                                                                    <label class="form-label">Batch No</label>
+                                                                    <div class="form-check form-check-primary mt-25 custom-checkbox">
+                                                                        <input type="hidden" name="is_batch_no" value="0">
+                                                                        <input type="checkbox" class="form-check-input" id="Batch" name="is_batch_no" value="1"
+                                                                            @if(isset($item) && $item->is_batch_no) checked @endif>
+                                                                        <label class="form-check-label" for="Batch">Yes/No</label>
+                                                                    </div>
+                                                                </div>
+
+
+
+                                                                   <div class="col-md-2">
+                                                                        <label class="form-label">Expiry</label>
+                                                                        <div class="form-check form-check-primary mt-25 custom-checkbox">
+                                                                            <input type="hidden" name="is_expiry" value="0">
+                                                                            <input type="checkbox" class="form-check-input" id="ExpiryCheck" name="is_expiry" value="1"
+                                                                                @if(isset($item) && $item->is_expiry) checked @endif>
+                                                                            <label class="form-check-label" for="ExpiryCheck">Yes/No</label>
+                                                                        </div>
+                                                                   </div>
+
+                                                                   <div class="col-md-3" id="shelfLifeContainer" style="display: none;">
+                                                                        <label class="form-label">Shelf Life in Days</label>
+                                                                        <input type="text" class="form-control numberonly" name="shelf_life_days" @if(isset($item)) value="{{ $item->shelf_life_days }}" @endif />
+                                                                   </div>
+                                                            </div>
 
                                                             {{-- Uncomment if you need storage type --}}
                                                             {{-- 
@@ -888,7 +960,55 @@
                                                                 </table>
                                                             </div>
                                                          </div>
-                                                       
+                                                       <!-- Asset Category -->
+                                                       <div class="tab-pane" id="Assets">
+                                                        <div class="row align-items-center mb-1">
+                                                            <div class="col-md-2">
+                                                                <label for="asset_category" class="form-label">Category<span class="text-danger">*</span></label>
+                                                            </div>
+                                                            <div class="col-md-3">
+                                                                <select id="asset_category" name="asset_category_id" class="form-select mw-100 select2">
+                                                                    <option value="">Select</option>
+                                                                        @foreach($fixedAssetCategories as $fixedAssetCategorie)
+                                                                            <option value="{{ $fixedAssetCategorie->id }}"
+                                                                                {{ (isset($item) && $item->asset_category_id == $fixedAssetCategorie->id) ? 'selected' : '' }}>
+                                                                                {{ $fixedAssetCategorie->assetCategory->name ?? 'N/A' }}
+                                                                            </option>
+                                                                        @endforeach
+                                                                </select>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Expected Life -->
+                                                        <div class="row align-items-center mb-1">
+                                                            <div class="col-md-2">
+                                                                <label for="expected_life" class="form-label">Est.Useful Life (yrs) <span class="text-danger">*</span></label>
+                                                            </div>
+                                                            <div class="col-md-3">
+                                                                <input type="number" id="expected_life" name="expected_life" class="form-control"
+                                                                    value="{{ old('expected_life', $item->expected_life ?? '') }}">
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Maintenance Schedule -->
+                                                        <div class="row align-items-center mb-1">
+                                                            <div class="col-md-2">
+                                                                <label for="maintenance_schedule" class="form-label">Maint.Schedule<span class="text-danger">*</span></label>
+                                                            </div>
+                                                            <div class="col-md-3">
+                                                                <select class="form-select mw-100 select2" name="maintenance_schedule">
+                                                                    <option value="">Select</option>
+                                                                    @foreach(['weekly', 'monthly', 'quarterly', 'semi-annually', 'annually'] as $schedule)
+                                                                        <option value="{{ $schedule }}"
+                                                                            {{ (isset($item) && $item->maintenance_schedule == $schedule) ? 'selected' : '' }}>
+                                                                            {{ ucfirst($schedule) }}
+                                                                        </option>
+                                                                    @endforeach
+                                                                </select>
+                                                            </div>
+                                                        </div>
+
+                                                        </div>
                                                          <div class="tab-pane" id="Compliances" style="display:none">
                                                              <div class="table-responsive-md"> 
                                                                     <table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail border"> 
@@ -934,6 +1054,7 @@
 
                                                                 <a href="#" class="text-primary add-contactpeontxt"><i data-feather='plus'></i> Add New</a>
                                                          </div>
+                                                        </div>
                                                  </div>
                                         </div>
                                     </div>
@@ -2074,16 +2195,31 @@
             if (rawMaterialChecked || wipChecked || finishedGoodsChecked || assetChecked || expenseChecked || rawTradeChecked) {
                 checkboxes.not(':checked').prop('disabled', true);
             }
+    
+                $('input[name="is_traded_item"]').prop('disabled', false);
+                $('input[name="is_asset"]').prop('disabled', false);
             //  if (!isEditable){
             //     checkboxes.prop('disabled', !isEditable);
             // }
             if (isItemReferenced){
                 checkboxes.prop('disabled', isItemReferenced);
+                $('input[name="is_traded_item"]').prop('disabled', isItemReferenced);
+                $('input[name="is_asset"]').prop('disabled', isItemReferenced);
             }
+            $('a[href="#UOM"]').removeClass('d-none').css('display', '');
+            $('a[href="#Details"]').removeClass('d-none').css('display', '');
+            $('#UOM').removeClass('d-none').css('display', '');
+            $('#Details').removeClass('d-none').css('display', '');
         }
 
         function updateCheckboxStatesForService() {
             checkboxes.prop('disabled', true); 
+            $('input[name="is_traded_item"]').prop('checked', false).prop('disabled', true);
+            $('input[name="is_asset"]').prop('checked', false).prop('disabled', true);
+            $('a[href="#UOM"]').addClass('d-none');
+            $('a[href="#Details"]').addClass('d-none');
+            $('#UOM').addClass('d-none');
+            $('#Details').addClass('d-none');
         }
         function handleCheckboxChange() {
             const selectedType = typeRadios.filter(':checked').val();
@@ -2199,7 +2335,7 @@
         const itemNamee = itemNameInput.val().trim();
         const catInitialsInput = $('input[name="cat_initials"]');
         const itemInitialInput = $('input[name="item_initial"]');
-        const subCatInitialsInput = $('input[name="sub_cat_initials"]');
+        const subCatInitialsInput = $('input[name="cat_initials"]');
         const subTypeCheckboxes = $('.subTypeCheckbox');
         const itemCodeInput = $('input[name="item_code"]');
         const itemIdInput = $('input[name="item_id"]');
@@ -2250,8 +2386,8 @@
             const itemInitials = manualItemInitials || autoItemInitials;
             itemInitialInput.val(itemInitials);
             const subTypeSuffix = getSelectedSubTypeSuffix();
-            const catInitials = catInitialsInput.val().trim();
-            const subCatInitials = subCatInitialsInput.val().trim();
+            const catInitials = (catInitialsInput.val() || '').trim();
+            const subCatInitials = (subCatInitialsInput.val() || '').trim();
             const selectedType = typeRadios.filter(':checked').val();
             let prefix = '';
 
@@ -2376,5 +2512,65 @@
         applyCapsLock();
     });
  </script>
+ 
+<script>
+   $(document).ready(function () {
+        function toggleAssetTab() {
+            if ($('#assetCheckbox').is(':checked')) {
+                $('#assetTabLink').show();
+            } else {
+                $('#assetTabLink').removeClass('active');
+                $('#Assets').removeClass('active show');
+                $('#assetTabLink').hide();
+            }
+        }
+
+        toggleAssetTab();
+
+        $('#assetCheckbox').change(function () {
+            toggleAssetTab();
+        });
+        $('#asset_category').change(function() {
+            var categoryId = $(this).val();
+            $.ajax({
+                url: '/items/get-asset-data/' + encodeURIComponent(categoryId),
+                method: 'GET',
+                success: function(data) {
+                    $('#expected_life').val(data.expected_life_years);
+                    $('select[name="maintenance_schedule"]').val(data.maintenance_schedule).trigger('change');
+                }
+            });
+        });
+    });
+</script>
+<script>
+    $(document).ready(function() {
+        function toggleInspectionChecklist() {
+            if ($('#is_inspection').val() == '1') {
+                $('#inspectionCheckContainer').show();
+            } else {
+                $('#inspectionCheckContainer').hide();
+                $('.inspection-autocomplete').val('');
+                $('.inspection_checklist_id').val('');
+            }
+        }
+        function toggleShelfLife() {
+            if ($('#ExpiryCheck').is(':checked')) {
+                $('#shelfLifeContainer').show();
+            } else {
+                $('#shelfLifeContainer').hide();
+                $('input[name="shelf_life_days"]').val('');
+            }
+        }
+        toggleInspectionChecklist();
+        toggleShelfLife();
+        $('#is_inspection').change(function() {
+            toggleInspectionChecklist();
+        });
+        $('#ExpiryCheck').change(function() {
+            toggleShelfLife();
+        });
+    });
+</script>
 @endsection
 

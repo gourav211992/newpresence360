@@ -118,7 +118,7 @@ class ErpVehicleController extends Controller
                                 <i data-feather="more-vertical"></i>
                             </button>
                             <div class="dropdown-menu dropdown-menu-end">
-                                <a class="dropdown-item" href="' . route('vehicle.edit', $row->id) . '">
+                                <a class="dropdown-item" href="' . route('logistics.vehicle.edit', $row->id) . '">
                                     <i data-feather="edit-3" class="me-50"></i>
                                     <span>Edit</span>
                                 </a>

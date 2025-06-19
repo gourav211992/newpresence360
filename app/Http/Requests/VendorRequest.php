@@ -101,6 +101,7 @@ class VendorRequest extends FormRequest
             'ledger_id' => 'nullable|exists:erp_ledgers,id', 
             'ledger_group_id' => 'nullable|exists:erp_groups,id', 
             'related_party' => 'nullable|string|max:255',
+            'contra_ledger_id' => 'nullable|exists:erp_ledgers,id',
             'reld_vendor_id' => 'nullable|exists:erp_vendors,id',
             'enter_company_org_id' => [
                 'nullable',
@@ -513,23 +514,11 @@ class VendorRequest extends FormRequest
             $shippingCount = 0;
 
             foreach ($addresses as $index => $address) {
-                if (isset($address['is_billing']) && $address['is_billing'] == 1) {
-                    $billingCount++;
-                }
-
-                if (isset($address['is_shipping']) && $address['is_shipping'] == 1) {
-                    $shippingCount++;
-                }
-
                 if (empty($address['address'])) {
                     $validator->errors()->add("addresses.{$index}.address", 'Address is required.');
                 }
             }
-
-            if ($billingCount === 0 || $shippingCount === 0) {
-                $validator->errors()->add("addresses.{$index}.address", 'At least one billing address and one shipping address are required.');
-            }
-
+            
             // 3. GST Validation
             $gstinNo = $this->input('compliance.gstin_no');
             $companyName = $this->input('company_name');

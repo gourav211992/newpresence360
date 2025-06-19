@@ -38,6 +38,9 @@ use App\Services\ItemImportExportService;
 use Carbon\Carbon;
 use App\Mail\ImportComplete;
 use Illuminate\Support\Facades\Mail;
+use App\Models\FixedAssetSetup;
+use App\Models\InspectionChecklist;
+use App\Models\OrganizationGroup;
 use Auth;
 use stdClass;
 
@@ -60,10 +63,9 @@ class ItemController extends Controller
         $organization = Organization::where('id', $user->organization_id)->first(); 
         $organizationId = $organization?->id ?? null;
         $companyId = $organization?->company_id ?? null;
-    
         if (request()->ajax()) {
             $query = Item::WithDefaultGroupCompanyOrg()
-                ->with(['uom', 'hsn', 'category', 'subcategory', 'subTypes','auth_user'])
+                ->with(['uom', 'hsn','subCategory', 'subTypes','auth_user','group'])
                 ->orderBy('id', 'desc');
                 
             if ($status = request(key: 'status')) {
@@ -78,12 +80,8 @@ class ItemController extends Controller
                     $query->where('sub_type_id', $subtypeId);
                 });
             }
-            if ($categoryId = request('category_id')) {
-                $query->where('category_id', $categoryId);
-            }
-    
-            if ($subcategoryId = request('subcategory_id')) {
-                $query->where('subcategory_id', $subcategoryId);
+            if ($categoryId = request('subcategory_id')) {
+                $query->where('subcategory_id', $categoryId);
             }
     
             if ($type = request('type')) {
@@ -97,10 +95,33 @@ class ItemController extends Controller
                     foreach ($row->subTypes as $subTypeIndex => $subTypeVal) {
                         $subTypes .= (($subTypeIndex == 0 ? '' : ',') . $subTypeVal -> subType ?-> name);
                     }
-                    return $row->subTypes->isEmpty() ? 'No Subtypes' : $subTypes;
+                    // Asset
+                    if ($row->is_asset == '1') {
+                        $subTypes .= ($subTypes ? ', ' : '') . 'Asset';
+                    }
+
+                    // Traded Item
+                    if ($row->is_traded_item == '1') {
+                        $subTypes .= ($subTypes ? ', ' : '') . 'Traded Item';
+                    }
+
+                    if ($row->subTypes->isEmpty() && $row->is_asset != '1' && $row->is_traded_item != '1') {
+                         $subTypes = 'No Subtypes';
+                     }
+
+                     return $subTypes;
+                })
+                ->addColumn('parent_category', function($row) {
+                    if ($row->subcategory_id && $row->subCategory && $row->subCategory->parent) {
+                        return $row->subCategory->parent->name; 
+                    }
+                    return 'N/A';
                 })
                 ->editColumn('uom', function ($item) {
                     return $item->uom ? $item->uom->name : 'N/A';
+                })
+                ->addColumn('subCategoryName', function($row) {
+                    return  $row->subCategory?->name;
                 })
                 ->editColumn('created_at', function ($row) {
                     return $row->created_at ? Carbon::parse($row->created_at)->format('d-m-Y') : 'N/A';
@@ -151,8 +172,9 @@ class ItemController extends Controller
             ->get();
     
         $categories = Category::withDefaultGroupCompanyOrg()
+            ->where('type', 'Product')
+            ->doesntHave('subCategories')
             ->where('status', ConstantHelper::ACTIVE)
-            ->whereNull('parent_id')
             ->get();
     
         $types = ConstantHelper::ITEM_TYPES;
@@ -183,6 +205,7 @@ class ItemController extends Controller
         $specificationGroups = ProductSpecification::where('status', ConstantHelper::ACTIVE)->WithDefaultGroupCompanyOrg()->get();
         $parentUrl = ConstantHelper::ITEM_SERVICE_ALIAS;
         $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
+        $fixedAssetCategories = FixedAssetSetup::with('assetCategory')->where('status', ConstantHelper::ACTIVE)->withDefaultGroupCompanyOrg()->select('id', 'asset_category_id')->get();
         $itemCodeType ='Manual';
         if ($services && $services['current_book']) {
             if (isset($services['current_book'])) {
@@ -219,7 +242,7 @@ class ItemController extends Controller
             'specificationGroups'=>$specificationGroups,
             'itemCodeType' => $itemCodeType,
             'currencies'=>$currencies, 
-
+            'fixedAssetCategories'=>$fixedAssetCategories,
         ]);
     }
 
@@ -228,8 +251,7 @@ class ItemController extends Controller
         $itemName = $request->input('item_name');
         $itemId = $request->input('item_id');
         $subType = $request->input('sub_type');
-        $categoryInitials = $request->input('cat_initials');
-        $subCategoryInitials = $request->input('sub_cat_initials');
+        $subCategoryInitials = $request->input('cat_initials');
         $itemInitials = $request->input('item_initials');
         $prefix = $request->input('prefix', ''); 
         $baseCode =  $prefix .$subType . $subCategoryInitials . $itemInitials;
@@ -272,6 +294,8 @@ class ItemController extends Controller
             $validatedData['storage_uom_conversion'] = 1; 
         }
         $validatedData['created_by'] = $user->auth_user_id; 
+
+        $orgGroup = OrganizationGroup::find($organization->group_id);
         $parentUrl = ConstantHelper::ITEM_SERVICE_ALIAS;
         $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
         if ($services && $services['services'] && $services['services']->isNotEmpty()) {
@@ -284,7 +308,7 @@ class ItemController extends Controller
                 $validatedData['company_id'] = $policyLevelData['company_id'];
                 $validatedData['organization_id'] = $policyLevelData['organization_id'];
             } else {
-                if ($organization->group_id == 5) {
+                if ($orgGroup  && $orgGroup->name == 'Superme Laminates') {
                     $validatedData['organization_id'] = $organization->id;  
                 } else {
                     $validatedData['organization_id'] = null;
@@ -294,7 +318,7 @@ class ItemController extends Controller
                 // $validatedData['organization_id'] = null;
             }
         } else {
-            if ($organization->group_id == 5) {
+            if ($orgGroup  && $orgGroup->name == 'Superme Laminates') {
                 $validatedData['organization_id'] = $organization->id;  
             } else {
                 $validatedData['organization_id'] = null;
@@ -593,6 +617,7 @@ class ItemController extends Controller
         $attributeGroups = AttributeGroup::with('attributes')->WithDefaultGroupCompanyOrg()->get();
         $allItems = Item::where('status', ConstantHelper::ACTIVE)->WithDefaultGroupCompanyOrg()->get();
         $specificationGroups = ProductSpecification::where('status', ConstantHelper::ACTIVE)->WithDefaultGroupCompanyOrg()->get();
+        $fixedAssetCategories = FixedAssetSetup::with('assetCategory')->where('status', ConstantHelper::ACTIVE)->withDefaultGroupCompanyOrg()->select('id', 'asset_category_id')->get();
         $parentUrl = ConstantHelper::ITEM_SERVICE_ALIAS;
         $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
         $bomCheckResult = ItemHelper::checkItemBomExists($item->id, [], 'bom', null);
@@ -635,7 +660,8 @@ class ItemController extends Controller
             'isItemReferenced' => $isItemReferenced,
             'tablesToCheck'=>$attributeTablesToCheck,
             'currencies'=>$currencies,
-            'isBomExists'=>$isBomExists
+            'isBomExists'=>$isBomExists,
+            'fixedAssetCategories'=>$fixedAssetCategories,
         ]);
     }
 
@@ -655,6 +681,9 @@ class ItemController extends Controller
         }
         $validatedData['created_by'] = $item->created_by ?? $user->auth_user_id;
         $parentUrl = ConstantHelper::ITEM_SERVICE_ALIAS;
+
+        $orgGroup = OrganizationGroup::find($organization->group_id);
+        
         $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
         if ($services && $services['services'] && $services['services']->isNotEmpty()) {
             $firstService = $services['services']->first();
@@ -666,7 +695,7 @@ class ItemController extends Controller
                 $validatedData['company_id'] = $policyLevelData['company_id'];
                 $validatedData['organization_id'] = $policyLevelData['organization_id'];
             } else {
-                if ($organization->group_id == 5) {
+                if ($orgGroup  && $orgGroup->name == 'Superme Laminates') {
                     $validatedData['organization_id'] = $organization->id;  
                 } else {
                     $validatedData['organization_id'] = null;
@@ -676,7 +705,7 @@ class ItemController extends Controller
                 // $validatedData['organization_id'] = null;
             }
         } else {
-            if ($organization->group_id == 5) {
+            if ($orgGroup  && $orgGroup->name == 'Superme Laminates') {
                 $validatedData['organization_id'] = $organization->id;  
             } else {
                 $validatedData['organization_id'] = null;
@@ -1154,5 +1183,25 @@ class ItemController extends Controller
         $vendorId = $request->vendor_id;
         $a = ItemHelper::getItemCostPrice($itemId, $attributes, $uomId, $currencyId, $transactionDate, $vendorId,$item_qty);
         return response()->json(['data' => ['cost' => $a], 'message' => 'get item cost', 'status' => 200]);
+    }
+
+    public function getAssetDataForCategory($categoryId)
+    {
+        $data = FixedAssetSetup::where('status', 'ACTIVE')
+            ->where('id', $categoryId)
+            ->select('expected_life_years', 'maintenance_schedule')
+            ->first();
+    
+        if ($data) {
+            return response()->json([
+                'expected_life_years' => $data->expected_life_years,
+                'maintenance_schedule' => $data->maintenance_schedule
+            ]);
+        } else {
+            return response()->json([
+                'expected_life_years' => '',
+                'maintenance_schedule' => ''
+            ]);
+        }
     }
 }

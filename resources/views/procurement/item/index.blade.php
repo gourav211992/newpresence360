@@ -50,8 +50,8 @@
                                                 <th>HSN</th>
                                                 <th>Type</th>
                                                 <th>SubType</th>
-                                                <th>Category</th>
-                                                <th>Sub Category</th>
+                                                <th>Parent Group</th>
+                                                <th>Group</th>
                                                 <th>Created At</th>
                                                 <th>Created By</th>
                                                 <th>Updated At</th>
@@ -92,21 +92,13 @@
                                 </div>
                                 <div class="mb-1">
                                     <label class="form-label">Category</label>
-                                    <select id="filter-category" name="category_id" class="form-select">
+                                    <select id="filter-category" name="subcategory_id" class="form-select">
                                         <option value="">Select Category</option>
                                         @foreach($categories as $category)
                                             <option value="{{ $category->id }}">{{ $category->name }}</option>
                                         @endforeach
                                     </select>
                                 </div>
-
-                                <div class="mb-1">
-                                    <label class="form-label">SubCategory</label>
-                                    <select id="filter-subcategory" name="subcategory_id" class="form-select" data-selected-id="">
-                                        <option value="">Select SubCategory</option>
-                                    </select>
-                                </div>
-
                                 <div class="mb-1">
                                     <label class="form-label">Item Type</label>
                                     <select id="filter-type" name="type" class="form-select">
@@ -145,7 +137,7 @@ $(document).ready(function() {
     var dt_basic_table = $('.datatables-basic');
 
     function renderData(data) {
-        return data ? data : 'N/A'; 
+        return data ? data : 'N/A';  
     }
 
     if (dt_basic_table.length) {
@@ -155,13 +147,12 @@ $(document).ready(function() {
             scrollX: true,
             ajax: {
                 url: "{{ route('item.index') }}",
-                
+              
                 data: function(d) {
                     d.status = $('#filter-status').val(); 
                     d.hsn_id = $('#filter-hsn').val(); 
                     d.sub_type_id = $('#filter-sub-type').val();
-                    d.category_id = $('#filter-category').val(); 
-                    d.subcategory_id = $('#filter-subcategory').val(); 
+                    d.subcategory_id = $('#filter-category').val(); 
                     d.type = $('#filter-type').val(); 
                 }
             },
@@ -176,8 +167,8 @@ $(document).ready(function() {
                 { data: 'hsn.code', name: 'hsn.code', render: renderData }, 
                 { data: 'type', name: 'type', render: renderData },
                 { data: 'subtypes', name: 'subtypes', render: renderData },
-                { data: 'category.name', name: 'category.name', render: renderData }, 
-                { data: 'subcategory.name', name: 'subcategory.name', render: renderData }, 
+                { data: 'parent_category', name: 'parent_category', render: renderData }, 
+                { data: 'subCategoryName', name: 'subCategoryName', render: renderData },  
                 { data: 'created_at', name: 'created_at', render: function(data) {
                  return data ? data : 'N/A'; 
                 }},
@@ -264,7 +255,6 @@ $(document).ready(function() {
             $('#filter-hsn').val('');
             $('#filter-sub-type').val('');
             $('#filter-category').val('');
-            $('#filter-subcategory').val('');
             $('#filter-type').val('');
             dt_basic_table.DataTable().ajax.reload(); 
     });

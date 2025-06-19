@@ -1,8 +1,6 @@
 <?php
 
 namespace App\Http\Controllers;
-
-use Yajra\DataTables\Facades\DataTables;
 use App\Models\PhysicalStockAccount;
 use App\Models\Organization;
 use App\Models\OrganizationCompany;
@@ -30,15 +28,6 @@ class PhysicalStockAccountController extends Controller
             ->pluck('company_id')
             ->toArray();
         $companies = OrganizationCompany::whereIn('id', $companyIds)->get();
-        $categories = Category::withDefaultGroupCompanyOrg()
-            ->where('status', 'active')
-            ->get();
-
-        $subCategories = Category::withDefaultGroupCompanyOrg()
-            ->where('status', 'active')
-            ->whereNotNull('parent_id')
-            ->get();
-
         $ledgerGroups = Group::all();
         $ledgers = Ledger::withDefaultGroupCompanyOrg()
             ->where('status', '1')
@@ -52,50 +41,8 @@ class PhysicalStockAccountController extends Controller
             ->where('status', 'active')
             ->get();
 
-        if ($request->ajax()) {
-            $physicalStockAccounts = PhysicalStockAccount::with([ 
-                'organization', 'group', 'company', 'ledgerGroup',
-                'ledger', 'category', 'subCategory', 'item'
-            ])
-            ->orderBy('group_id')
-            ->orderBy('company_id')
-            ->orderBy('organization_id')
-            ->orderBy('id', 'desc');
-
-            return DataTables::of($physicalStockAccounts)
-                ->addIndexColumn()
-                ->addColumn('status', function ($row) {
-                    return '<span class="badge rounded-pill ' .
-                        ($row->status == 'active' ? 'badge-light-success' : 'badge-light-danger') .
-                        ' badgeborder-radius">' . ucfirst($row->status) . '</span>';
-                })
-                ->addColumn('action', function ($row) {
-                    $editUrl = route('physical-stock-accounts.edit', $row->id);
-                    $deleteUrl = route('physical-stock-accounts.destroy', $row->id);
-                    return '<div class="dropdown">
-                                <button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
-                                    <i data-feather="more-vertical"></i>
-                                </button>
-                                <div class="dropdown-menu dropdown-menu-end">
-                                    <a class="dropdown-item" href="' . $editUrl . '">
-                                       <i data-feather="edit-3" class="me-50"></i>
-                                        <span>Edit</span>
-                                    </a>
-                                    <form action="' . $deleteUrl . '" method="POST" class="dropdown-item">
-                                        ' . csrf_field() . method_field('DELETE') . '
-                                        <button type="submit" class="btn btn-danger btn-sm">
-                                            <i data-feather="trash" class="me-50"></i> Delete
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>';
-                })
-                ->rawColumns(['status', 'action'])
-                ->make(true);
-        }
-
         return view('procurement.physical-stock-account.index', compact(
-            'companies', 'categories', 'subCategories', 'ledgerGroups', 'ledgers', 'items', 'physicalStockAccounts', 'erpBooks','orgIds'
+            'companies', 'ledgerGroups', 'ledgers', 'items', 'physicalStockAccounts', 'erpBooks','orgIds'
         ));
     }
 
@@ -191,7 +138,7 @@ class PhysicalStockAccountController extends Controller
         array_push($orgIds, $user?->organization_id);
         $organizations = Organization::where('company_id', $companyId)
             ->whereIn('id', $orgIds)
-            ->where('status', 'active')
+            ->where('status', operator: 'active')
             ->get();
 
         return response()->json(['organizations' => $organizations]);
@@ -199,139 +146,163 @@ class PhysicalStockAccountController extends Controller
 
     public function getDataByOrganization($organizationId)
     {
-        $erpBooks = Book::withDefaultGroupCompanyOrg()
-            ->where('status', 'active')
+        // Ledger fetch
+        $ledgers = Ledger::query()
+            ->where('status', '1')
+            ->withDefaultGroupCompanyOrg()  
+    
+            ->when($organizationId, function ($query) use ($organizationId) {
+                $exists = Ledger::where('organization_id', $organizationId)
+                    ->where('status', '1')
+                    ->exists();
+    
+                if ($exists) {
+                    $query->where('organization_id', $organizationId);
+                }
+            })
             ->get();
-
-        $items = Item::withDefaultGroupCompanyOrg()
-            ->where('type', 'Goods') 
+    
+        // Book fetch
+        $erpBooks = Book::query()
             ->where('status', 'active')
+            ->withDefaultGroupCompanyOrg() 
+            ->when($organizationId, function ($query) use ($organizationId) {
+                $exists = Book::where('organization_id', $organizationId)
+                    ->where('status', 'active')
+                    ->exists();
+    
+                if ($exists) {
+                    $query->where('organization_id', $organizationId);
+                }
+            })
             ->get();
-
+    
+        // Item fetch with 'type' = 'Service'
+        $items = Item::query()
+            ->where('status', 'active')
+            ->where('type', 'Goods')
+            ->withDefaultGroupCompanyOrg() 
+            ->when($organizationId, function ($query) use ($organizationId) {
+                $exists = Item::where('organization_id', $organizationId)
+                    ->where('status', 'active')
+                    ->where('type', 'Goods')
+                    ->exists();
+    
+                if ($exists) {
+                    $query->where('organization_id', $organizationId);
+                }
+            })
+            ->get();
+    
         return response()->json([
+            'ledgers' => $ledgers,
             'erpBooks' => $erpBooks,
             'items' => $items
         ]);
     }
-
+    
     public function getCategoriesByOrganization(Request $request, $organizationId)
     {
         $searchTerm = $request->input('search', '');
-        $query = Category::withDefaultGroupCompanyOrg()
-            ->whereNull('parent_id')
-            ->where('type', 'product')
-            ->where('status', 'active');
-
+    
+        $query = Category::query()
+            ->with('parent')
+            ->doesntHave('subCategories')
+            ->where('type', 'Product')
+            ->where('status', 'active')
+            ->withDefaultGroupCompanyOrg(); 
+    
+        $query->when($organizationId, function ($q) use ($organizationId) {
+            $exists = Category::query()
+                ->doesntHave('subCategories')
+                ->where('type', 'Product')
+                ->where('status', 'active')
+                ->where('organization_id', $organizationId)
+                ->exists();
+    
+            if ($exists) {
+                $q->where('organization_id', $organizationId);
+            }
+        });
+    
         if ($searchTerm) {
             $query->where('name', 'LIKE', "%$searchTerm%");
         }
-        $categories = $query->get(['id', 'name']);
-
+    
+        $categories = $query->get(['id', 'name', 'parent_id']);
+    
         if ($categories->isEmpty()) {
             return response()->json([
                 'message' => 'No categories found for the provided organization.'
             ], 404);
         }
+    
         return response()->json([
             'categories' => $categories
         ]);
     }
-
-    public function getSubcategoriesByCategory(Request $request, $categoryId)
-    {
-        $category = Category::withDefaultGroupCompanyOrg()->find($categoryId);
-        if (!$category) {
-            return response()->json([
-                'message' => 'Category not found.'
-            ], 404);
-        }
-        $query = $category->subCategories()->where('status', 'active');
-        $searchTerm = $request->input('search', '');
-        if ($searchTerm) {
-            $query->where('name', 'LIKE', "%$searchTerm%");
-        }
-        $subCategories = $query->get(['id', 'name']);
-
-        if ($subCategories->isEmpty()) {
-            return response()->json([
-                'subCategories' => [],
-            ]);
-        }
-        return response()->json([
-            'subCategories' => $subCategories
-        ]);
-    }
-
+    
     public function getItemsAndSubCategoriesByCategory(Request $request)
     {
         $categoryId = $request->category_id;
-        $searchTerm = $request->input('search', '');
-        $subCategoryQuery = Category::withDefaultGroupCompanyOrg()
-            ->where('parent_id', $categoryId)
-            ->where('status', 'active');
+        $organizationId = $request->input('organizationId');
 
-        if ($searchTerm) {
-            $subCategoryQuery->where('name', 'LIKE', "%$searchTerm%");
+        if ($categoryId && $organizationId) {
+            $existsBoth = Item::where('subcategory_id', $categoryId)
+                ->where('status', 'active')
+                ->where('organization_id', $organizationId)
+                ->where('type', 'Goods')  
+                ->exists();
+
+            if ($existsBoth) {
+                $items = Item::where('subcategory_id', $categoryId)
+                    ->where('status', 'active')
+                    ->where('organization_id', $organizationId)
+                    ->where('type', 'Goods')  
+                    ->get();
+            } else {
+                $items = Item::where('subcategory_id', $categoryId)
+                    ->where('status', 'active')
+                    ->where('type', 'Goods') 
+                    ->withDefaultGroupCompanyOrg() 
+                    ->get();
+            }
+        } else {
+            $items = collect();
         }
 
-        $subCategories = $subCategoryQuery->get(['id', 'name']);
-
-        $items = Item::withDefaultGroupCompanyOrg()
-            ->where('category_id', $categoryId)
-            ->where('type', 'Goods') 
-            ->where('status', 'active')
-            ->get();
-
-        return response()->json([
-            'subCategories' => $subCategories,
-            'items' => $items
-        ]);
-    }
-
-    public function getItemsBySubCategory(Request $request)
-    {
-        $subCategoryId = $request->sub_category_id;
-        $searchTerm = $request->input('search', '');
-        $query = Item::withDefaultGroupCompanyOrg()
-            ->where('subcategory_id', $subCategoryId)
-            ->where('type', 'Goods') 
-            ->where('status', 'active');
-
-        if ($searchTerm) {
-            $query->where(function ($query) use ($searchTerm) {
-                $query->where('item_name', 'LIKE', "%$searchTerm%")
-                    ->orWhere('item_code', 'LIKE', "%$searchTerm%");
-            });
-        }
-        $items = $query->get(['id', 'item_name', 'item_code']);
-
-        return response()->json([
-            'items' => $items
-        ]);
+        return response()->json(['items' => $items]);
     }
 
     public function getLedgersByOrganization(Request $request, $organizationId)
     {
         $searchTerm = $request->input('search', '');
-        $query = Ledger::withDefaultGroupCompanyOrg()
-                       ->where('status', '1');
-
+    
+        $query = Ledger::query()
+            ->where('status', '1')
+            ->withDefaultGroupCompanyOrg();
+    
+        $query->when($organizationId, function ($q) use ($organizationId) {
+            $exists = Ledger::where('organization_id', $organizationId)
+                ->where('status', '1')
+                ->exists();
+    
+            if ($exists) {
+                $q->where('organization_id', $organizationId);
+            }
+        });
+    
         if ($searchTerm) {
             $query->where('name', 'LIKE', "%$searchTerm%");
         }
+    
         $ledgers = $query->get(['id', 'name', 'code']);
-
-        if ($ledgers->isEmpty()) {
-            return response()->json([
-                'ledgers' => [],
-            ]);
-        }
+    
         return response()->json([
-            'ledgers' => $ledgers
+            'ledgers' => $ledgers->isEmpty() ? [] : $ledgers,
         ]);
     }
-
-    public function getLedgerGroupByLedger(Request $request)
+        public function getLedgerGroupByLedger(Request $request)
     {
         $ledgerId = $request->input('ledger_id');
         $searchTerm = $request->input('search_term', '');

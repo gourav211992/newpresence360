@@ -217,6 +217,7 @@ class PiController extends Controller
             $pi->store_id = $request->store_id ?? null;
             $pi->sub_store_id = $request->sub_store_id ?? null;
             $pi->so_tracking_required = $request->so_tracking_required ?? 'no';
+            $pi->procurement_type = $request->procurement_type ?? 'rm';
             $document_number = $request->document_number ?? null;
 
             /**/
@@ -1069,6 +1070,7 @@ class PiController extends Controller
    # Submit PI Item list
    public function processSoItem(Request $request)
    {
+       $procurementType = $request->procurement_type ?? 'rm';
        $isAttribute = intval($request->is_attribute) ?? 0;
        $user = Helper::getAuthenticatedUser();
        $ids = json_decode($request->ids,true) ?? [];
@@ -1097,92 +1099,173 @@ class PiController extends Controller
        $createdBy = $user?->auth_user_id;
 
        DB::beginTransaction();
-       foreach($soItems as $key => $soItem) {
-           $soItemIdArr[] = $soItem->id;
-           $soId = $soItem?->header?->id ?? null;
-           $soItemId = $soItem->id;
-           $itemId = $soItem->item_id;
-            $q = $soItem?->soItemMapping->count() ? $soItem?->soItemMapping->first()->order_qty : 0;
-            $avlQty = $soItem->order_qty - $soItem->invoice_qty - $q;
-            $avlQty = max($avlQty, 0);
-               if($avlQty > 0) {
-                $soAttribute = $soItem->attributes->map(fn($soAttribute) => [
-                    'attribute_id' => $soAttribute->item_attribute_id,
-                    'attribute_value' => intval($soAttribute->attr_value)
-                ])->toArray();
-               $res = $this->syncPiSoMapping($soId, $soItemId, $itemId, $soAttribute, $avlQty, $createdBy, $avlQty);
-                   if($res['status'] == 422) {
-                       DB::rollBack();
-                       return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => $res['message']]);
-                   }
+       if($procurementType == 'rm') {
+        // This for the RM
+        foreach($soItems as $key => $soItem) {
+            $soItemIdArr[] = $soItem->id;
+            $soId = $soItem?->header?->id ?? null;
+            $soItemId = $soItem->id;
+            $itemId = $soItem->item_id;
+                $q = $soItem?->soItemMapping->count() ? $soItem?->soItemMapping->first()->order_qty : 0;
+                $avlQty = $soItem->order_qty - $soItem->invoice_qty - $q;
+                $avlQty = max($avlQty, 0);
+                if($avlQty > 0) {
+                    $soAttribute = $soItem->attributes->map(fn($soAttribute) => [
+                        'attribute_id' => $soAttribute->item_attribute_id,
+                        'attribute_value' => intval($soAttribute->attr_value)
+                    ])->toArray();
+                $res = $this->syncPiSoMapping($soId, $soItemId, $itemId, $soAttribute, $avlQty, $createdBy, $avlQty);
+                    if($res['status'] == 422) {
+                        DB::rollBack();
+                        return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => $res['message']]);
+                    }
 
-               }
-       }
-
-       do {
-           $soProcessItems = PiSoMapping::whereIn('so_item_id', $soItemIdArr)
-           ->where('created_by', $user->auth_user_id)
-           ->whereNotNull('child_bom_id')
-           ->get();
-           foreach($soProcessItems as $soProcessItem) {
-               $soId = $soProcessItem->so_id;
-               $soItemId = $soProcessItem->so_item_id;
-               $itemId = $soProcessItem->item_id;
-               $attributes = json_decode($soProcessItem->attributes,true);
-               $soItemOrderQty = $soProcessItem->order_qty;
-               $mappingExit = PiSoMapping::where([
-                   ['so_id', $soId],
-                   ['so_item_id', $soItemId],
-                   ['item_id', $itemId]
-                   ])
-                   ->whereJsonContains('attributes', $attributes)
-                   ->first();
-                $updatedQty = $soProcessItem->qty;
-                if(isset($mappingExit) && $mappingExit) {
-                    $updatedQty = $mappingExit->qty;
                 }
-
-               $res = $this->syncPiSoMapping($soId, $soItemId, $itemId, $attributes, $updatedQty, $createdBy, $soItemOrderQty);
-               if($res['status'] == 422) {
-                   DB::rollBack();
-                   return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => $res['message']]);
-               }
-               $soProcessItem->delete();
-           }
-       } while(PiSoMapping::whereIn('so_item_id', $soItemIdArr)
-       ->where('created_by', $user->auth_user_id)
-       ->whereNotNull('child_bom_id')
-       ->exists());
-       $soTracking = $request?->so_tracking_required ?? 'no';
-        if ($soTracking === 'yes') {
-            $soProcessItems = PiSoMapping::whereIn('so_item_id', $soItemIdArr)
-            ->select(
-                'erp_pi_so_mapping.vendor_id',
-                'erp_pi_so_mapping.so_id',
-                'erp_pi_so_mapping.item_id',
-                DB::raw('erp_pi_so_mapping.attributes'),
-                DB::raw('ROUND(SUM(erp_pi_so_mapping.qty - erp_pi_so_mapping.pi_item_qty),2) as total_qty')
-            )
-            ->groupBy('erp_pi_so_mapping.so_id', 'erp_pi_so_mapping.item_id', 'erp_pi_so_mapping.attributes','erp_pi_so_mapping.vendor_id')
-            ->havingRaw('total_qty > 0')
-            ->get();
-        } else {
-            $soProcessItems = PiSoMapping::whereIn('so_item_id', $soItemIdArr)
-            ->select(
-                DB::raw('NULL as so_id'),
-                'erp_pi_so_mapping.vendor_id',
-                'erp_pi_so_mapping.item_id',
-                DB::raw('erp_pi_so_mapping.attributes'),
-                DB::raw('ROUND(SUM(erp_pi_so_mapping.qty - erp_pi_so_mapping.pi_item_qty),2) as total_qty')
-            )
-            ->groupBy('erp_pi_so_mapping.item_id', 'erp_pi_so_mapping.attributes','erp_pi_so_mapping.vendor_id')
-            ->havingRaw('total_qty > 0')
-            ->get();
         }
-       DB::commit();
 
-       $html = view('procurement.pi.partials.so-process-data', ['soTracking' => $soTracking,'soProcessItems' => $soProcessItems])->render();
-       return response()->json(['data' => ['pos' => $html], 'status' => 200, 'message' => "fetched!"]);
+        do {
+            $soProcessItems = PiSoMapping::whereIn('so_item_id', $soItemIdArr)
+            ->where('created_by', $user->auth_user_id)
+            ->whereNotNull('child_bom_id')
+            ->get();
+            foreach($soProcessItems as $soProcessItem) {
+                $soId = $soProcessItem->so_id;
+                $soItemId = $soProcessItem->so_item_id;
+                $itemId = $soProcessItem->item_id;
+                $attributes = json_decode($soProcessItem->attributes,true);
+                $soItemOrderQty = $soProcessItem->order_qty;
+                $mappingExit = PiSoMapping::where([
+                    ['so_id', $soId],
+                    ['so_item_id', $soItemId],
+                    ['item_id', $itemId]
+                    ])
+                    ->whereJsonContains('attributes', $attributes)
+                    ->first();
+                    $updatedQty = $soProcessItem->qty;
+                    if(isset($mappingExit) && $mappingExit) {
+                        $updatedQty = $mappingExit->qty;
+                    }
+
+                $res = $this->syncPiSoMapping($soId, $soItemId, $itemId, $attributes, $updatedQty, $createdBy, $soItemOrderQty);
+                if($res['status'] == 422) {
+                    DB::rollBack();
+                    return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => $res['message']]);
+                }
+                $soProcessItem->delete();
+            }
+        } while(PiSoMapping::whereIn('so_item_id', $soItemIdArr)
+        ->where('created_by', $user->auth_user_id)
+        ->whereNotNull('child_bom_id')
+        ->exists());
+        $soTracking = $request?->so_tracking_required ?? 'no';
+            if ($soTracking === 'yes') {
+                $soProcessItems = PiSoMapping::whereIn('so_item_id', $soItemIdArr)
+                ->select(
+                    'erp_pi_so_mapping.vendor_id',
+                    'erp_pi_so_mapping.so_id',
+                    'erp_pi_so_mapping.item_id',
+                    DB::raw('erp_pi_so_mapping.attributes'),
+                    DB::raw('ROUND(SUM(erp_pi_so_mapping.qty - erp_pi_so_mapping.pi_item_qty),2) as total_qty')
+                )
+                ->groupBy('erp_pi_so_mapping.so_id', 'erp_pi_so_mapping.item_id', 'erp_pi_so_mapping.attributes','erp_pi_so_mapping.vendor_id')
+                ->havingRaw('total_qty > 0')
+                ->get();
+            } else {
+                $soProcessItems = PiSoMapping::whereIn('so_item_id', $soItemIdArr)
+                ->select(
+                    DB::raw('NULL as so_id'),
+                    'erp_pi_so_mapping.vendor_id',
+                    'erp_pi_so_mapping.item_id',
+                    DB::raw('erp_pi_so_mapping.attributes'),
+                    DB::raw('ROUND(SUM(erp_pi_so_mapping.qty - erp_pi_so_mapping.pi_item_qty),2) as total_qty')
+                )
+                ->groupBy('erp_pi_so_mapping.item_id', 'erp_pi_so_mapping.attributes','erp_pi_so_mapping.vendor_id')
+                ->havingRaw('total_qty > 0')
+                ->get();
+            }
+
+            $html = view('procurement.pi.partials.so-process-data', ['soTracking' => $soTracking,'soProcessItems' => $soProcessItems])->render();
+
+        } else {
+            // this is for the FG
+            foreach($soItems as $key => $soItem) {
+                $q = $soItem?->soItemMapping->count() ? $soItem?->soItemMapping->first()->order_qty : 0;
+                $avlQty = $soItem->order_qty - $soItem->invoice_qty - $q;
+                $avlQty = max($avlQty, 0);
+                $attributes = collect($soItem->item_attributes ?? [])->map(function ($attribute) {
+                    return [
+                        'attribute_id' => (int) ($attribute->item_attribute_id ?? 0),
+                        'attribute_value' => (int) ($attribute->attr_value ?? 0),
+                    ];
+                })->filter(function ($attr) {
+                    return $attr['attribute_id'] > 0 && $attr['attribute_value'] > 0;
+                })->values()->all();
+
+                $mappingData = [
+                    'so_id' => $soItem->sale_order_id ?? null,
+                    'so_item_id' => $soItem->id ?? null,
+                    'item_id' => $soItem->item_id,
+                    'created_by' => $createdBy,
+                    'bom_id' => $soItem->bom_id ?? null,
+                    'bom_detail_id' => null,
+                    'vendor_id' =>  null,
+                    'item_code' => $soItem->item_code,
+                    'order_qty' => floatval($avlQty),
+                    'bom_qty' => 0,
+                    'qty' => floatval($avlQty),
+                    'attributes' => json_encode($attributes),
+                    'child_bom_id' => null
+                ];
+                $mappingExit = PiSoMapping::where([
+                    ['so_id', $mappingData['so_id']],
+                    ['so_item_id', $mappingData['so_item_id']],
+                    ['item_id', $mappingData['item_id']]
+                ])
+                ->whereJsonContains('attributes', $attributes)
+                ->first();
+                if($mappingExit) {
+                    $mappingData['qty'] = $mappingData['qty'] + $mappingExit->qty;
+                }
+                if ($mappingExit) {
+                    $mappingExit->update($mappingData);
+                } else {
+                    PiSoMapping::create($mappingData);
+                }
+            }
+
+            $soTracking = $request?->so_tracking_required ?? 'no';
+            if ($soTracking === 'yes') {
+                $soProcessItems = PiSoMapping::whereIn('so_item_id', $ids)
+                ->select(
+                    'erp_pi_so_mapping.vendor_id',
+                    'erp_pi_so_mapping.so_id',
+                    'erp_pi_so_mapping.item_id',
+                    DB::raw('erp_pi_so_mapping.attributes'),
+                    DB::raw('ROUND(SUM(erp_pi_so_mapping.qty - erp_pi_so_mapping.pi_item_qty),2) as total_qty')
+                )
+                ->groupBy('erp_pi_so_mapping.so_id', 'erp_pi_so_mapping.item_id', 'erp_pi_so_mapping.attributes','erp_pi_so_mapping.vendor_id')
+                ->havingRaw('total_qty > 0')
+                ->get();
+            } else {
+                $soProcessItems = PiSoMapping::whereIn('so_item_id', $ids)
+                ->select(
+                    DB::raw('NULL as so_id'),
+                    'erp_pi_so_mapping.vendor_id',
+                    'erp_pi_so_mapping.item_id',
+                    DB::raw('erp_pi_so_mapping.attributes'),
+                    DB::raw('ROUND(SUM(erp_pi_so_mapping.qty - erp_pi_so_mapping.pi_item_qty),2) as total_qty')
+                )
+                ->groupBy('erp_pi_so_mapping.item_id', 'erp_pi_so_mapping.attributes','erp_pi_so_mapping.vendor_id')
+                ->havingRaw('total_qty > 0')
+                ->get();
+            }
+            $storeId = $request->store_id ?? null;
+            $soTrackingRequired = strtolower($soTracking) == 'yes' ? true : false;
+            $html = view('procurement.pi.partials.fg-item-row', ['soTrackingRequired' => $soTrackingRequired,'soItems' => $soProcessItems, 'storeId' => $storeId])->render();
+        }
+
+       DB::commit();
+       return response()->json(['data' => ['pos' => $html, 'procurement_type' => $procurementType], 'status' => 200, 'message' => "fetched!"]);
    }
 
    /**
@@ -1270,11 +1353,6 @@ class PiController extends Controller
                         //    ->where('attributes', json_encode($attributes))
                            ->whereJsonContains('attributes', $attributes)
                            ->first();
-                            
-                           
-                        //    if($soId == 27 && $soItemId == 29 && $soQty == 20) {
-                        //         dd($soId, $soItemId,$soQty,$mappingData['item_id'],$attributes);
-                        //     }
                            if($mappingExit) {
                             
                             //    $mappingData['order_qty'] = $mappingData['order_qty'] + $soQty;

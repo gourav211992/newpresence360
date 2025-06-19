@@ -39,6 +39,7 @@ class Customer  extends Model
         'currency_id',
         'payment_terms_id',
         'related_party',
+        'contra_ledger_id',
         'reld_customer_id',
         'email',
         'phone',
@@ -172,6 +173,16 @@ class Customer  extends Model
         return $this->belongsTo(Ledger::class);
     }
 
+    public function contraLedger()
+    {
+        return $this->belongsTo(Ledger::class);
+    }
+
+    public function parentdCustomer()
+    {
+        return $this->belongsTo(Customer::class, 'reld_customer_id');
+    }
+
     public function getPanAttachmentUrlAttribute()
     {
         return $this->generateFileUrl($this->pan_attachment);
@@ -225,4 +236,18 @@ class Customer  extends Model
     {
         return $this->belongsTo(AuthUser::class, 'created_by', 'id');
     }
+
+    public function scopeSearchByKeywords($query, $term): mixed
+    {
+        $keywords = preg_split('/\s+/', trim($term));
+        return $query->where(function($q) use ($keywords) {
+            foreach ($keywords as $word) {
+                $q->where(function($subQ) use ($word) {
+                    $subQ->where('company_name', 'LIKE', "%{$word}%")
+                        ->orWhere('customer_code', 'LIKE', "%{$word}%");
+                });
+            }
+        });
+    }
+
 }

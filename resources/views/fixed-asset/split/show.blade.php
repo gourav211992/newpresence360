@@ -350,7 +350,7 @@
                                                         </thead>
                                                         <tbody class="mrntableselectexcel">
                                                             @foreach (json_decode($data->sub_assets) as $subAsset)
-                                                                <tr class="trselected">
+                                                                <tr >
                                                                     <td class="poprod-decpt">
                                                                         <input type="text" required placeholder="Enter"
                                                                             class="form-control mw-100 mb-25 asset-code-input"
@@ -806,7 +806,7 @@
             let subAssetId = $('#sub_asset_id').val();
             let assetId = $('#asset_id').val();
             let newRow = '';
-            newRow = ` <tr class="trselected">
+            newRow = ` <tr >
                 <td class="customernewsection-form">
                     <div class="form-check form-check-primary custom-checkbox">
                     <input type="checkbox" class="form-check-input row-check">
@@ -1497,7 +1497,7 @@
 
         function add_blank() {
             $('.mrntableselectexcel').empty();
-            let blank_row = ` <tr class="trselected">
+            let blank_row = ` <tr >
               <td class="customernewsection-form">
                 <div class="form-check form-check-primary custom-checkbox">
                   <input type="checkbox" class="form-check-input row-check">

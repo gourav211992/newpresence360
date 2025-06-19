@@ -62,8 +62,7 @@
                                                             <th>S.No</th>
                                                             <th>Company<span class="text-danger">*</span></th>
                                                             <th>Organization<span class="text-danger">*</span></th>
-                                                            <th>Item Category</th>
-                                                            <th>Sub Category</th>
+                                                            <th>Item Group</th>
                                                             <th>Items</th>
                                                             <th>Books</th>
                                                             <th>Ledger<span class="text-danger">*</span></th>
@@ -94,14 +93,8 @@
                                                                 </td>
                                                                 <td>
                                                                     <div class="setup-td-width">
-                                                                        <input type="text" class="form-control  mw-100 autocomplete category_name" name="stock_accounts[0][category_name]" placeholder="Enter Category">
-                                                                        <input type="hidden" name="stock_accounts[0][category_id]" />
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <div class="setup-td-width">
-                                                                        <input type="text" class="form-control  mw-100 autocomplete sub_category_name" name="cogs_accounts[0][sub_category_name]" placeholder="Enter Sub Category">
-                                                                        <input type="hidden" name="cogs_accounts[0][sub_category_id]" />
+                                                                        <input type="text" class="form-control  mw-100 autocomplete sub_category_name" name="stock_accounts[0][sub_category_name]" placeholder="Enter Group">
+                                                                        <input type="hidden" name="stock_accounts[0][sub_category_id]" />
                                                                     </div>
                                                                 </td>
                                                                 <td>
@@ -175,13 +168,7 @@
 
                                                                 <td>
                                                                     <div class="setup-td-width">
-                                                                        <input type="text" class="form-control  mw-100 autocomplete category_name" name="gr_acogs_accountsccounts[{{ $index }}][category_name]" value="{{ $item->category->name ?? '' }}" placeholder="Enter Category">
-                                                                        <input type="hidden" name="cogs_accounts[{{ $index }}][category_id]" value="{{ $item->category_id ?? '' }}" />
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <div class="setup-td-width">
-                                                                        <input type="text" class="form-control  mw-100 autocomplete sub_category_name" name="cogs_accounts[{{ $index }}][sub_category_name]" value="{{ $item->subCategory->name ?? '' }}" placeholder="Enter Sub Category">
+                                                                        <input type="text" class="form-control  mw-100 autocomplete sub_category_name" name="cogs_accounts[{{ $index }}][sub_category_name]" value="{{ $item->subCategory->name ?? '' }}" placeholder="Enter Group">
                                                                         <input type="hidden" name="cogs_accounts[{{ $index }}][sub_category_id]" value="{{ $item->sub_category_id ?? '' }}" />
                                                                     </div>
                                                                 </td>
@@ -189,9 +176,9 @@
                                                                     <div class="setup-td-width">
                                                                         <select class="form-select select2 item-select" name="cogs_accounts[{{ $index }}][item_id][]" multiple>
                                                                                 @php 
-                                                                                    $categoryId = $item->category_id ?? null;
                                                                                     $subCategoryId = $item->sub_category_id ?? null;
                                                                                     $organizationId = $item->organization_id ?? null;
+                                                                                    $groupId = $item->group_id ?? null;
                                                                                     $itemIds = is_array($item->item_id) ? $item->item_id : json_decode($item->item_id, true) ?? [];
                                                                                 @endphp
 
@@ -204,19 +191,8 @@
                                                                                             </option>
                                                                                         @endif
                                                                                     @endforeach
-
-                                                                                {{-- If no sub-category, check category and items --}}
-                                                                                @elseif($categoryId && $item->category && $item->category->items->where('status', '!=', 'draft'))
-                                                                                    @foreach($item->category->items->where('status', '!=', 'draft') as $itemOption)  {{-- Excluding drafts --}}
-                                                                                        @if(!$organizationId || $itemOption->organization_id == $organizationId)  {{-- Check for organization filter --}}
-                                                                                            <option value="{{ $itemOption->id }}" data-item-code="{{ $itemOption->item_code }}" {{ in_array($itemOption->id, $itemIds) ? 'selected' : '' }}>
-                                                                                                {{ $itemOption->item_name }} ({{ $itemOption->item_code }})
-                                                                                            </option>
-                                                                                        @endif
-                                                                                    @endforeach
-
                                                                                 {{-- If no category found, fallback to organization's items --}}
-                                                                                @elseif($organizationId && $item->organization && $item->organization->items->count() > 0)
+                                                                                @elseif($organizationId && $item->organization && $item->organization->items->where('status', '!=', 'draft')->count() > 0)
                                                                                     @foreach($item->organization->items->where('status', '!=', 'draft') as $itemOption)  {{-- Excluding drafts --}}
                                                                                         @if(!$organizationId || $itemOption->organization_id == $organizationId)  {{-- Check for organization filter --}}
                                                                                             <option value="{{ $itemOption->id }}" data-item-code="{{ $itemOption->item_code }}" {{ in_array($itemOption->id, $itemIds) ? 'selected' : '' }}>
@@ -225,14 +201,14 @@
                                                                                         @endif
                                                                                     @endforeach
 
-                                                                                @elseif($item->organization && $item->organization->items->isEmpty()) 
-                                                                                  @foreach($items->where('status', '!=', 'draft') as $itemOption) 
-                                                                                    @if(!$organizationId || $itemOption->organization_id == $organizationId)  {{-- Check for organization filter --}}
-                                                                                        <option value="{{ $itemOption->id }}" data-item-code="{{ $itemOption->item_code }}" {{ in_array($itemOption->id, $itemIds) ? 'selected' : '' }}>
-                                                                                            {{ $itemOption->item_name }} ({{ $itemOption->item_code }})
-                                                                                        </option>
-                                                                                    @endif
-                                                                                @endforeach
+                                                                                 @elseif( $groupId && $item->group && $item->group->items->where('status', '!=', 'draft')) 
+                                                                                    @foreach($item->group->items->where('status', '!=', 'draft') as $itemOption) 
+                                                                                        @if( !$groupId || $itemOption->group_id == $groupId)  {{-- Check for organization filter --}}
+                                                                                            <option value="{{ $itemOption->id }}" data-item-code="{{ $itemOption->item_code }}" {{ in_array($itemOption->id, $itemIds) ? 'selected' : '' }}>
+                                                                                                {{ $itemOption->item_name }} ({{ $itemOption->item_code }})
+                                                                                            </option>
+                                                                                        @endif
+                                                                                    @endforeach
 
                                                                                 {{-- If no items are available anywhere --}}
                                                                                 @else
@@ -419,14 +395,8 @@ function addRow(clickedRow) {
         </td>
         <td>
             <div class="setup-td-width">
-                <input type="text" class="form-control  mw-100 autocomplete category_name" name="cogs_accounts[${rowIndex}][category_name]" placeholder="Enter Category">  <!-- Changed to cogs_accounts -->
-                <input type="hidden" name="cogs_accounts[${rowIndex}][category_id]" />
-            </div>
-        </td>
-        <td>
-            <div class="setup-td-width">
-                <input type="text" class="form-control  mw-100 autocomplete sub_category_name" name="cogs_accounts[${rowIndex}][sub_category_name]" placeholder="Enter Sub Category">  <!-- Changed to cogs_accounts -->
-                <input type="hidden" name="cogs_accounts[${rowIndex}][sub_category_id]" />  
+                <input type="text" class="form-control  mw-100 autocomplete category_name" name="cogs_accounts[${rowIndex}][sub_category_name]" placeholder="Enter Group">  <!-- Changed to cogs_accounts -->
+                <input type="hidden" name="cogs_accounts[${rowIndex}][sub_category_id]" />
             </div>
         </td>
         <td>
@@ -482,7 +452,6 @@ function updateRowIndexes() {
             const name = field.getAttribute('name');
             const updatedName = name.replace(/\[\d+\]/, `[${index}]`);
             field.setAttribute('name', updatedName);
-            console.log(`Updated field name: ${name} => ${updatedName}`);
         });
         if (rows.length === 1) {
                 deleteButton.style.display = 'none';
@@ -526,43 +495,19 @@ $(document).on('change', '[name^="cogs_accounts"][name$="[company_id]"]', functi
     $(document).on('change', '[name$="[organization_id]"]', function () {
         var organizationId = $(this).val();
         var $row = $(this).closest('tr');
-        var categoryInput = $row.find('[name$="[category_name]"]');
-        var categoryIdInput = $row.find('[name$="[category_id]"]');
+        var categoryInput = $row.find('[name$="[sub_category_name]"]');
+        var categoryIdInput = $row.find('[name$="[sub_category_id]"]');
         var ledgerInput = $row.find('[name$="[ledger_name]"]');
         var ledgerIdInput = $row.find('[name$="[ledger_id]"]');
         var itemSelect = $row.find('[name$="[item_id][]"]');
-        var subCategorySelect = $row.find('[name$="[sub_category_id]"]');
         var bookSelect = $row.find('[name$="[book_id][]"]');
         categoryInput.val('');
         categoryIdInput.val('');
         ledgerInput.val('');
         ledgerIdInput.val('');
         itemSelect.empty().append('<option value="">Select Item</option>');
-        subCategorySelect.empty().append('<option value="">Select Subcategory</option>');
         bookSelect.empty().append('<option value="">Select Book</option>');
         $.get(`/stock-accounts/data-by-organization/${organizationId}`, function (data) {
-            categoryInput.autocomplete({
-                source: function (request, response) {
-                    if (data.categories.length === 0) {
-                        response([{ label: "No records found", value: "" }]);
-                    } else {
-                        response($.map(data.categories, function (category) {
-                            return {
-                                label: category.name,
-                                value: category.id
-                            };
-                        }));
-                    }
-                },
-                minLength: 2,
-                select: function (event, ui) {
-                    if (ui.item.value === "") return false;
-                    categoryInput.val(ui.item.label);
-                    categoryIdInput.val(ui.item.value);
-                    categoryIdInput.trigger('change');
-                    return false;
-                }
-            });
             ledgerInput.autocomplete({
                 source: function (request, response) {
                     if (data.ledgers.length === 0) {
@@ -600,32 +545,28 @@ $(document).on('change', '[name^="cogs_accounts"][name$="[company_id]"]', functi
                     return $(selectedOption.element).data('item-code');
                 }
             });
-            subCategorySelect.empty().append('<option value="">Select Subcategory</option>');
         }).fail(function () {
             Swal.fire('Error!', 'An error occurred while loading data for the selected organization.', 'error');
         });
     });
-    $(document).on('focus input', '[name$="[category_name]"]', function () {
+    $(document).on('focus input', '[name$="[sub_category_name]"]', function () {
         var $input = $(this);
         var $row = $input.closest('tr');
-        var categoryIdInput = $row.find('[name$="[category_id]"]');
-        var subCategoryInput = $row.find('[name$="[sub_category_name]"]');
-        var subCategoryIdInput = $row.find('[name$="[sub_category_id]"]');
+        var categoryIdInput = $row.find('[name$="[sub_category_id]"]');
         var itemSelect = $row.find('[name$="[item_id][]"]');
         var organizationId = $row.find('[name$="[organization_id]"]').val();
         var searchTerm = $input.val(); 
         categoryIdInput.val('');
-        subCategoryInput.val(''); 
-        subCategoryIdInput.val('');
         itemSelect.empty().append('<option value="">Select Item</option>'); 
         $input.next('.no-records').remove();
         if (!organizationId) return;
-        $.get(`/stock-accounts/categories-by-organization/${organizationId}`, { search: searchTerm }, function (data) {
+        $.get(`/stock-accounts/categories-by-organization/${organizationId}`, { search: searchTerm,organizationId:organizationId }, function (data) {
             console.log('API Response:', data); 
             var results = data.categories && data.categories.length > 0 ? 
                 $.map(data.categories, function (category) {
                     return {
-                        label: category.name,
+                        label: category.full_name,
+                        name: category.name,
                         value: category.id
                     };
                 }) : 
@@ -633,13 +574,12 @@ $(document).on('change', '[name^="cogs_accounts"][name$="[company_id]"]', functi
 
             $input.autocomplete({
                 source: function(request, response) {
-                    console.log('Autocomplete source called:', results); 
                     response(results);
                 },
                 minLength: 0,
                 select: function(event, ui) {
                     if (ui.item.value === "") return false;
-                    $input.val(ui.item.label);
+                    $input.val(ui.item.name);
                     categoryIdInput.val(ui.item.value); 
                     categoryIdInput.trigger('change');
                     return false;
@@ -653,7 +593,7 @@ $(document).on('change', '[name^="cogs_accounts"][name$="[company_id]"]', functi
                 minLength: 0,
                 select: function(event, ui) {
                     if (ui.item.value === "") return false;
-                    $input.val(ui.item.label);
+                    $input.val(ui.item.name);
                     categoryIdInput.val(ui.item.value);
                     categoryIdInput.trigger('change');
                     return false;
@@ -662,94 +602,15 @@ $(document).on('change', '[name^="cogs_accounts"][name$="[company_id]"]', functi
         });
     });
 
-    $(document).on('focus input', '[name$="[sub_category_name]"]', function () {
-        var $input = $(this);
-        var $row = $input.closest('tr');
-        var categoryIdInput = $row.find('[name$="[category_id]"]');
-        var subCategoryIdInput = $row.find('[name$="[sub_category_id]"]');
-        var itemSelect = $row.find('[name$="[item_id][]"]');
-        var categoryId = categoryIdInput.val(); 
-        var searchTerm = $input.val(); 
-        subCategoryIdInput.val(''); 
-        itemSelect.empty().append('<option value="">Select Item</option>'); 
-        $input.next('.no-records').remove();
-        
-        if (!categoryId) {
-            return; 
-        }
 
-        $.get(`/stock-accounts/sub-categories-by-category/${categoryId}`, { category_id: categoryId, search: searchTerm }, function (data) {
-            var results = data.subCategories && data.subCategories.length > 0 ?
-                $.map(data.subCategories, function (subCategory) {
-                    return {
-                        label: subCategory.name,
-                        value: subCategory.id
-                    };
-                }) : 
-                [{ label: "No records found", value: "" }];
-            $input.autocomplete({
-                source: function(request, response) {
-                    response(results);  
-                },
-                minLength: 0, 
-                select: function(event, ui) {
-                    if (ui.item.value === "") return false; 
-                    $input.val(ui.item.label);  
-                    subCategoryIdInput.val(ui.item.value);  
-                    subCategoryIdInput.trigger('change'); 
-                    return false; 
-                }
-            }).autocomplete("search", searchTerm); 
-
-        }).fail(function () {
-            $input.autocomplete({
-                source: function(request, response) {
-                    response([{ label: "No records found", value: "" }]);
-                },
-                minLength: 0, 
-                select: function(event, ui) {
-                    if (ui.item.value === "") return false; 
-                    $input.val(ui.item.label); 
-                    subCategoryIdInput.val(ui.item.value);
-                    subCategoryIdInput.trigger('change'); 
-                    return false;
-                }
-            });
-            Swal.fire('Error!', 'An error occurred while fetching subcategories for the selected category.', 'error');
-        });
-    });
-
-    $(document).on('change input', '[name$="[category_id]"]', function () {
+    $(document).on('change input', '[name$="[sub_category_id]"]', function () {
         var categoryId = $(this).val();
         var $row = $(this).closest('tr');
-        var subCategoryInput = $row.find('[name$="[sub_category_name]"]');
-        var subCategoryIdInput = $row.find('[name$="[sub_category_id]"]');
         var itemSelect = $row.find('[name$="[item_id][]"]');
-        subCategoryInput.val('');
-        subCategoryIdInput.val('');
+        var organizationId = $row.find('[name$="[organization_id]"]').val();
         itemSelect.empty().append('<option value="">Select Item</option>');
-
         if (categoryId) {
-            $.get(`/stock-accounts/items-and-subcategories-by-category`, { category_id: categoryId }, function (data) {
-                subCategoryInput.autocomplete({
-                    source: function (request, response) {
-                        var results = $.map(data.subCategories, function (subCategory) {
-                            return {
-                                label: subCategory.name,
-                                value: subCategory.id
-                            };
-                        });
-                        response(results);
-                    },
-                    minLength: 2,
-                    select: function (event, ui) {
-                        subCategoryInput.val(ui.item.label);
-                        subCategoryIdInput.val(ui.item.value);
-                        subCategoryInput.trigger('change');
-                        return false;
-                    }
-                });
-
+            $.get(`/stock-accounts/items-and-subcategories-by-category`, { category_id: categoryId,organizationId:organizationId }, function (data) {
                 itemSelect.empty().append('<option value="">Select Item</option>');
                 data.items.forEach(function (item) {
                     itemSelect.append(`<option value="${item.id}" data-item-code="${item.item_code}">${item.item_name} (${item.item_code})</option>`);
@@ -761,28 +622,6 @@ $(document).on('change', '[name^="cogs_accounts"][name$="[company_id]"]', functi
                 });
             }).fail(function () {
                 Swal.fire('Error!', 'An error occurred while loading subcategories and items.', 'error');
-            });
-        }
-    });
-
-    $(document).on('change input', '[name$="[sub_category_id]"]', function () {
-        var subCategoryId = $(this).val();
-        var $row = $(this).closest('tr');
-        var itemSelect = $row.find('[name$="[item_id][]"]');
-        itemSelect.empty().append('<option value="">Select Item</option>');
-
-        if (subCategoryId) {
-            $.get(`/stock-accounts/items-by-subcategory`, { sub_category_id: subCategoryId }, function (data) {
-                data.items.forEach(function (item) {
-                    itemSelect.append(`<option value="${item.id}" data-item-code="${item.item_code}">${item.item_name} (${item.item_code})</option>`);
-                });
-                itemSelect.select2({
-                    templateSelection: function (selectedOption) {
-                        return $(selectedOption.element).data('item-code');
-                    }
-                });
-            }).fail(function () {
-                Swal.fire('Error!', 'An error occurred while loading items.', 'error');
             });
         }
     });
@@ -799,7 +638,7 @@ $(document).on('change', '[name^="cogs_accounts"][name$="[company_id]"]', functi
         if (!organizationId) {
             return;
         }
-        $.get(`/stock-accounts/ledgers-by-organization/${organizationId}`, { search: searchTerm }, function (data) {
+        $.get(`/stock-accounts/ledgers-by-organization/${organizationId}`, { search: searchTerm,organizationId:organizationId}, function (data) {
             var results = data.ledgers && data.ledgers.length > 0 ? 
                 $.map(data.ledgers, function (ledger) {
                     return {

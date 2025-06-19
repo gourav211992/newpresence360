@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<form method="POST" action="{{ route('vehicle.update', $vehicle->id) }}" enctype="multipart/form-data" data-redirect="{{ url('/vehicle') }}" class="ajax-input-form">
+<form method="POST" action="{{ route('logistics.vehicle.update', $vehicle->id) }}" enctype="multipart/form-data" data-redirect="{{ url('/logistics/vehicle') }}" class="ajax-input-form">
     @csrf
     @method('PUT')
     <div class="app-content content ">
@@ -22,8 +22,8 @@
                     <div class="content-header-right text-end col-md-6 col-6 mb-2">
                         <button onClick="javascript:history.go(-1)" class="btn btn-secondary btn-sm"><i data-feather="arrow-left-circle"></i> Back</button>
                          <button type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light delete-btn"
-                                    data-url="{{ route('vehicle.destroy', $vehicle->id) }}" 
-                                    data-redirect="{{ route('vehicle.index') }}"
+                                    data-url="{{ route('logistics.vehicle.destroy', $vehicle->id) }}" 
+                                    data-redirect="{{ route('logistics.vehicle.index') }}"
                                     data-message="Are you sure you want to delete this vehicle?">
                                 <i data-feather="trash-2" class="me-50"></i> Delete
                             </button>  

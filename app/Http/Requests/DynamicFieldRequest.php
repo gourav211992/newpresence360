@@ -47,7 +47,7 @@ class DynamicFieldRequest extends FormRequest
                 'nullable',
                 'string',
             ],
-            
+
             'status' => [
                 'required',
                 Rule::in(ConstantHelper::STATUS),
@@ -59,10 +59,11 @@ class DynamicFieldRequest extends FormRequest
                 'nullable',
                 'array',
             ],
-            'field_details.*.id' => 'nullable|exists:erp_dynamic_field_details,id',
+            'field_details.*.id' => 'nullable',
             'field_details.*.name' => 'nullable|string|max:255',
             'field_details.*.value' => 'nullable|string|max:255',
             'field_details.*.description' => 'nullable|string',
+            'field_details.*.mandatory' => 'nullable|in:true,false,1,0',
         ];
     }
 

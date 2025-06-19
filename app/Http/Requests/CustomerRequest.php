@@ -79,6 +79,7 @@ class CustomerRequest extends FormRequest
             'ledger_id' => 'nullable|exists:erp_ledgers,id',
             'ledger_group_id' => 'nullable|exists:erp_groups,id',
             'related_party' => 'nullable|string|max:255',
+            'contra_ledger_id' => 'nullable|exists:erp_ledgers,id',
             'reld_customer_id' => 'nullable|exists:erp_customers,id',
             'on_account_required' => 'nullable',
             'enter_company_org_id' => [

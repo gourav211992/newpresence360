@@ -223,9 +223,9 @@ $(document).ready(function() {
     function filterTaxGroups(codeType) {
         let filteredTaxGroups = [];
         if (codeType === 'Hsn') {
-            filteredTaxGroups = @json($taxGroups->where('tax_category', 'GST')->values());
+            filteredTaxGroups = @json($taxGroups->where('tax_category', 'GST','TCS')->values());
         } else if (codeType === 'Sac') {
-            filteredTaxGroups = @json($taxGroups->whereIn('tax_category', ['TDS', 'TCS'])->values());
+            filteredTaxGroups = @json($taxGroups->whereIn('tax_category', ['TDS'])->values());
         }
         return filteredTaxGroups;
     }

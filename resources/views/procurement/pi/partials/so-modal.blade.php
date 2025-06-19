@@ -6,10 +6,17 @@
 					<h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="soModal">Select Sale Order</h4>
 					<p class="mb-0">Select from the below list</p>
 				</div>
-				<div class="d-flex align-items-center">
+				<div class="me-3 d-flex align-items-center">
+					<label for="orderTypeSelect" class="form-label mb-0 me-1">Procurement Type:</label>
+					<div class="me-3">
+						<select class="form-select form-select-sm" id="orderTypeSelect" style="width: auto;">
+							<option value="fg">Buy to Order (FG)</option>
+							<option value="rm" selected>Make to Order (RM)</option>
+						</select>
+					</div>
+					<label for="attributeCheck" class="form-label mb-0 me-1">Show Attributes:</label>
 					<div class="form-check me-3">
 						<input class="form-check-input" type="checkbox" id="attributeCheck">
-						<label class="form-check-label" for="attributeCheck">Show Attributes</label>
 					</div>
 					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 				</div>

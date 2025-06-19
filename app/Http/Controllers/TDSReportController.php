@@ -20,10 +20,9 @@ class TDSReportController extends Controller
 {
     public function index(Request $request, $page = null)
     {
-        $fy = Helper::getFinancialYear(date('Y-m-d'));
-        $startDate = date('Y-m-d', strtotime($fy['start_date']));
-        $endDate = date('Y-m-d', strtotime($fy['end_date']));
-
+        //$fy = Helper::getFinancialYear(date('Y-m-d'));
+        $startDate = date('Y-m-01');
+        $endDate = date('Y-m-t');
         if ($request->date) {
             $dates = explode(' to ', $request->date);
             $startDate = date('Y-m-d', strtotime($dates[0]));

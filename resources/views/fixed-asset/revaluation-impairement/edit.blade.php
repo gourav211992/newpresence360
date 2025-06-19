@@ -278,7 +278,10 @@
                                                         <tbody class="mrntableselectexcel">
                                                             @if ($data->asset_details)
                                                                 @foreach (json_decode($data->asset_details) as $key => $value)
-                                                                    @php  $i = $key + 1; @endphp
+                                                                    @php  
+                                                                    $i = $key + 1; 
+                                                                    $sub = App\Models\FixedAssetSub::find($value->sub_asset_id);
+                                                                    @endphp
                                                                     <tr>
                                                                         <td class="customernewsection-form">
                                                                             <div
@@ -320,6 +323,7 @@
                                                                                 data-id="{{ $i }}"
                                                                                 class="form-control mw-100 text-end currentvalue" value="{{ $value->currentvalue }}" 
                                                                                 readonly />
+                                                                                <input type="hidden" class="salvage" value="{{$sub?->salvage_value}}"/>
                                                                         </td>
 
                                                                         <td><input type="date" name="last_dep_date[]"
@@ -626,6 +630,7 @@
                     row.find('.sub_asset_id').val();
                     row.find('.subasset-search-input').val('');
                     row.find('.quantity').val('');
+                    row.find('.salvage').val('');
                     row.find('.currentvalue').val('');
                     row.find('.last_dep_date').val('');
                     row.find('.revaluate_amount').val('');
@@ -648,6 +653,7 @@
                         row.find('.sub_asset_id').val();
                         row.find('.subasset-search-input').val('');
                         row.find('.quantity').val('');
+                        row.find('.salvage').val('');
                         row.find('.currentvalue').val('');
                         row.find('.last_dep_date').val('');
                         row.find('.revaluate_amount').val('');
@@ -704,6 +710,7 @@
                     $(this).val(ui.item.label);
                     subAssetId.val(ui.item.value);
                         row.find('.quantity').val('');
+                        row.find('.salvage').val('');
                         row.find('.currentvalue').val('');
                         row.find('.last_dep_date').val('');
                         row.find('.revaluate_amount').val('');
@@ -716,6 +723,7 @@
                     }
                     row.find('.quantity').val(1);
                     row.find('.currentvalue').val(sub_asset.current_value_after_dep);
+                    row.find('.salvage').val(sub_asset.salvage_value);
 
                     return false;
                 },
@@ -729,6 +737,7 @@
                         row.find('.sub_asset_id').val();
                         row.find('.subasset-search-input').val('');
                         row.find('.quantity').val('');
+                        row.find('.salvage').val('');
                         row.find('.currentvalue').val('');
                         row.find('.last_dep_date').val('');
                         row.find('.revaluate_amount').val('');
@@ -777,6 +786,7 @@
             class="form-control mw-100 quantity" /></td>
         <td><input type="text" name="currentvalue[]" id="currentvalue_${rowCount}" data-id="${rowCount}"
             class="form-control mw-100 text-end currentvalue" readonly /></td>
+            <input type="hidden" class="salvage"/>
           
         <td><input type="date" name="last_dep_date[]" id="last_dep_date_${rowCount}" data-id="${rowCount}"
             class="form-control mw-100 last_dep_date" readonly /></td>
@@ -1002,22 +1012,24 @@
         function validateRevaluationAmounts(showErrors = true) {
             const documentType = getSelectedDocumentType();
             let isValid = true;
-
+            
             document.querySelectorAll('.revaluate_amount').forEach(input => {
                 const row = input.closest('tr');
                 const currentValueInput = row.querySelector('.currentvalue');
+                const salvageValueInput = row.querySelector('.salvage');
+                
 
-                if (currentValueInput.value.trim() === "" && input.value.trim() === "") return;
+                if (currentValueInput.value.trim() === "" && input.value.trim() === "" && salvageValueInput.value.trim() === "" ) return;
 
                 const currentVal = parseFloat(currentValueInput.value) || 0;
                 const revalVal = parseFloat(input.value) || 0;
+                const salVal = parseFloat(salvageValueInput.value) || 0;
 
-                //input.classList.remove('is-invalid');
-
-                if (documentType === 'revaluation' && revalVal <= currentVal) {
+                
+               if (documentType === 'revaluation' && revalVal <= currentVal) {
                     isValid = false;
                     
-                } else if (documentType === 'impairement' && revalVal >= currentVal) {
+                } else if (documentType === 'impairement' && (revalVal >= currentVal || revalVal <= salVal)) {
                     isValid = false;
                 }
             });
@@ -1025,7 +1037,7 @@
                     if (documentType === 'revaluation') 
                         showToast('error', 'Revaluation amount must be greater than current value.');
                     else
-                        showToast('error', 'Impairement amount must be less than current value.');
+                        showToast('error', 'Impairement amount must be less than current value and grater than salvage value.');
                     }
 
             return isValid;
@@ -1043,6 +1055,7 @@
                     sub_asset_id: row.find('.sub_asset_id').val(), // array if select2 multi-select
                     sub_asset_code: row.find('.subasset-search-input').val(),
                     quantity: row.find('.quantity').val(),
+                    salvage : row.find('.salvage').val(),
                     currentvalue: row.find('.currentvalue').val(),
                     revaluate: row.find('.revaluate_amount').val(),
                     last_dep_date: row.find('.last_dep_date').val(),
@@ -1079,7 +1092,9 @@
         <td><input type="number" name="quantity[]" id="quantity_${rowCount}" readonly data-id="${rowCount}"
             class="form-control mw-100 quantity" /></td>
         <td><input type="text" name="currentvalue[]" id="currentvalue_${rowCount}" data-id="${rowCount}"
-            class="form-control mw-100 text-end currentvalue" readonly /></td>
+            class="form-control mw-100 text-end currentvalue" readonly />
+            <input type="hidden" class="salvage"/>
+        </td>
   
         <td><input type="date" name="last_dep_date[]" id="last_dep_date_${rowCount}" data-id="${rowCount}"
             class="form-control mw-100 last_dep_date" readonly /></td>
@@ -1155,5 +1170,7 @@
 
 
     </script>
+
+    
     <!-- END: Content-->
 @endsection

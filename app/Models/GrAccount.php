@@ -34,7 +34,7 @@ class GrAccount extends Model
 
     public function group()
     {
-        return $this->belongsTo(Group::class, 'group_id');
+        return $this->belongsTo(OrganizationGroup::class, 'group_id');
     }
 
     public function company()
@@ -57,10 +57,10 @@ class GrAccount extends Model
         return $this->belongsTo(Ledger::class, 'ledger_id');
     }
 
-    public function category()
-    {
-        return $this->belongsTo(Category::class, 'category_id');
-    }
+    // public function category()
+    // {
+    //     return $this->belongsTo(Category::class, 'category_id');
+    // }
 
     public function subCategory()
     {

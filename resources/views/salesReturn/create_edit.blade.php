@@ -2866,7 +2866,7 @@
                     dataType: 'json',
                     data: {
                         q: request.term,
-                        type:'customer'
+                        type:'customer_list'
                     },
                     success: function(data) {
                         response($.map(data, function(item) {

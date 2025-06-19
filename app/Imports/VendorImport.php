@@ -587,7 +587,7 @@ class VendorImport implements ToModel, WithHeadingRow, WithChunkReading
                 'pincode' => $uploadedVendor->pin_code,
                 'address' => $uploadedVendor->address,
                 'is_billing' => 1,
-                'is_shipping' => 1,
+                'is_shipping' => 0,
             ];
     
             $gstAndAddressData = [
@@ -642,7 +642,7 @@ class VendorImport implements ToModel, WithHeadingRow, WithChunkReading
                     'pincode' => $uploadedVendor->pin_code,
                     'address' => $uploadedVendor->address,
                     'is_billing' => 1,  
-                    'is_shipping' => 1, 
+                    'is_shipping' => 0, 
                 ];
                 $vendor->addresses()->create($addressData);
             } 

@@ -13,4 +13,15 @@ class OrganizationGroup extends Model
     public function currency() {
         return $this->belongsTo(Currency::class,'currency_id');
     }
+
+    public function items()
+    {
+        return $this->hasMany(Item::class, 'group_id');
+    }
+
+    public function customers()
+    {
+        return $this->hasMany(Customer::class, 'group_id');
+    }
+
 }

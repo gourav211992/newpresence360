@@ -80,7 +80,7 @@ class ErpPSVController extends Controller
         $selectedfyYear = Helper::getFinancialYear(Carbon::now()->format('Y-m-d'));
         $autoCompleteFilters = self::getBasicFilters();
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
-        $create_button = (count($servicesBooks['services']) > 0 && $selectedfyYear['authorized'] && !$selectedfyYear['lock_fy']) ? true : false;
+        $create_button = (isset($servicesBooks['services'])  && count($servicesBooks['services']) > 0 && isset($selectedfyYear['authorized']) && $selectedfyYear['authorized'] && !$selectedfyYear['lock_fy']) ? true : false;
         //Date Filters
         $dateRange = $request -> date_range ?? null;
         if ($request -> ajax()) {

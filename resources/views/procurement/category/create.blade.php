@@ -62,19 +62,20 @@
                                                         @enderror
                                                     </div>
                                                 </div>
-                                                <!-- HSN/SAC Field Section -->
-                                                <div id="hsn-section" class="row align-items-center mb-1">
+                                               
+                                                <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">HSN/SAC <span class="text-danger">*</span></label>
+                                                        <label class="form-label">Parent Group Name </label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="text" name="hsn_name" id="hsn-autocomplete_1" class="form-control hsn-autocomplete" data-id="1" placeholder="Select HSN/SAC"/>
-                                                        <input type="hidden" class="hsn-id" name="hsn_id" />
+                                                        <select name="parent_id" id="parent_id" class="form-select mw-100 select2">
+                                                            <option value="">Select Group</option>
+                                                        </select>
                                                     </div>
                                                 </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Category Name <span class="text-danger">*</span></label>
+                                                        <label class="form-label">Group Name <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
                                                         <input type="text" name="name" class="form-control" placeholder="Enter Category Name" value="{{ old('name') }}" />
@@ -85,10 +86,29 @@
                                                 </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Category Initials<span class="text-danger">*</span></label>
+                                                        <label class="form-label">Group Initials<span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
                                                         <input type="text" name ="cat_initials" id="cat_initials_display" class="form-control" />
+                                                    </div>
+                                                </div>
+                                                 <!-- HSN/SAC Field Section -->
+                                                 <div id="hsn-section" class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">HSN/SAC</label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <input type="text" name="hsn_name" id="hsn-autocomplete_1" class="form-control hsn-autocomplete" data-id="1" placeholder="Select HSN/SAC"/>
+                                                        <input type="hidden" class="hsn-id" name="hsn_id" />
+                                                    </div>
+                                                </div>
+                                                <div id="inspection-checklist" class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Inspection Checklist</label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <input type="text" name="inspection_checklist_name" class="form-control inspection-autocomplete" placeholder="Search Inspection Checklist" />
+                                                        <input type="hidden" name="inspection_checklist_id" class="form-control inspection_checklist_id" value="" />            
                                                     </div>
                                                 </div>
 
@@ -119,29 +139,6 @@
                                                         @enderror
                                                     </div>
                                                 </div>
-                                                <div class="table-responsive-md">
-                                                    <table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable">
-                                                        <thead>
-                                                            <tr>
-                                                                <th>S.NO</th>
-                                                                <th>Sub Category Name<span class="text-danger">*</span></th>
-                                                                <th>Sub Category Initials<span class="text-danger">*</span></th>
-                                                                <th>Action</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody id="sub-category-box">
-                                                            <tr class="sub-category-template">
-                                                                <td>1</td>
-                                                                <td><input type="text" name="subcategories[0][name]" class="form-control mw-100" placeholder="Enter Sub Category Name" /></td>
-                                                                <td><input type="text" class="form-control sub_cat_initials_display" name="subcategories[0][sub_cat_initials]" /></td> <!-- Display subcategory initials -->
-                                                                <td>
-                                                                    <a href="#" class="text-primary add-address"><i data-feather="plus-square"></i></a>
-                                                                    <a href="#" class="text-danger delete-row"><i data-feather="trash-2"></i></a>
-                                                                </td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
-                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -157,8 +154,63 @@
 
 @section('scripts')
 <script>
-$(document).ready(function() {
-    var $tableBody = $('#sub-category-box');
+   $(document).ready(function() {
+    function handleHSNSectionVisibility() {
+        if ($('#category-type').val() === 'Product') {
+            $('#hsn-section').show();
+            $('#inspection-checklist').show();
+        } else {
+            $('#hsn-section').hide();
+            $('#inspection-checklist').hide();
+            $('#hsn-autocomplete_1').val('');
+            $('.hsn-id').val('');
+            $('.inspection-autocomplete').val('');
+            $('.inspection_checklist_id').val('');
+        }
+    }
+
+    $('#category-type').on('change', function() {
+        handleHSNSectionVisibility();
+        var selectedType = $(this).val();
+        $.ajax({
+            url: '{{ route("categories.byType") }}', 
+            method: 'GET',
+            data: { type: selectedType },
+            success: function(data) {
+                $('#parent_id').empty();
+                $('#parent_id').append('<option value="">Select Group</option>');
+                $.each(data, function(index, category) {
+                    $('#parent_id').append('<option value="' + category.id + '">' + category.full_name + '</option>');
+                });
+            }
+        });
+    });
+
+    // Parent category में change
+    $('#parent_id').on('change', function() {
+        var parentId = $(this).val();
+        var categoryType = $('#category-type').val();
+        if (categoryType === 'Product' && parentId) {
+            $.ajax({
+                url: '{{ route("categories.getHsnByParent") }}',
+                method: 'GET',
+                data: { parent_id: parentId },
+                success: function(response) {
+                    if (response.hsn && response.hsn_id) {
+                        $('#hsn-autocomplete_1').val(response.hsn);
+                        $('.hsn-id').val(response.hsn_id);
+                    } else {
+                        $('#hsn-autocomplete_1').val('');
+                        $('.hsn-id').val('');
+                    }
+                }
+            });
+        } else {
+            $('#hsn-autocomplete_1').val('');
+            $('.hsn-id').val('');
+        }
+    });
+
     function applyCapsLock() {
         $('input[type="text"], input[type="number"]').each(function() {
             $(this).val($(this).val().toUpperCase());
@@ -167,97 +219,26 @@ $(document).ready(function() {
             var value = $(this).val().toUpperCase();  
             $(this).val(value); 
         });
-    }
-    function updateRowIndices() {
-        var $rows = $('#sub-category-box tr');
-        $tableBody.find('tr').each(function(index) {
-            var $row = $(this);
-            $row.find('td').eq(0).text(index + 1);
-            $row.find('input[name]').each(function() {
-                var name = $(this).attr('name');
-                $(this).attr('name', name.replace(/\[\d+\]/, '[' + index + ']'));
-            });
-            if ($rows.length === 1) {
-                $(this).find('.delete-row').hide(); 
-                $(this).find('.add-address').show(); 
-            } else {
-                $(this).find('.delete-row').show(); 
-                $(this).find('.add-address').toggle(index === 0); 
-            }
-        });
-        if ($tableBody.children().length === 0) {
-            addNewRow();
-        }
-    }
-    function addNewRow() {
-        var rowCount = $tableBody.children().length; 
-        var $currentRow = $tableBody.find('tr:last'); 
-        var $newRow = $currentRow.clone(); 
-        $newRow.find('input').each(function() {
-            var name = $(this).attr('name');
-            $(this).attr('name', name.replace(/\[\d+\]/, '[' + rowCount + ']')); 
-            $(this).val('');
-            $(this).removeClass('is-invalid');
-        });
-        $newRow.find('.ajax-validation-error-span').remove();
-        $tableBody.append($newRow); 
-        updateRowIndices(); 
-        feather.replace();
-        applyCapsLock();
-    }
-    function generateInitials(name) {
-        var words = name.split(' '); 
+     }
+     function generateInitials(itemName) {
+        const cleanedItemName = itemName.replace(/[^a-zA-Z0-9\s]/g, '');
+        const words = cleanedItemName.split(/\s+/).filter(word => word.length > 0);
+        let initials = '';
         if (words.length === 1) {
-            return words[0].substring(0, 2).toUpperCase();  
+            initials = words[0].substring(0, 2).toUpperCase();
         } else {
-            return (words[0].charAt(0) + words[1].charAt(0)).toUpperCase(); 
+            initials = words[0][0].toUpperCase() + words[1][0].toUpperCase();
         }
+        return initials;
     }
 
     $('input[name="name"]').on('input', function() {
-        var categoryName = $(this).val();
-        var initials = generateInitials(categoryName);
+        const categoryName = $(this).val();
+        const initials = generateInitials(categoryName);
         $('#cat_initials_display').val(initials);
     });
-
-    $tableBody.on('input', 'input[name^="subcategories"][name$="[name]"]', function() {
-        var $this = $(this);
-        var subcategoryName = $this.val();
-        var initials = generateInitials(subcategoryName);
-        $this.closest('tr').find('input[name^="subcategories"][name$="[sub_cat_initials]"]').val(initials);
-    });
-
-    $tableBody.on('click', '.delete-row', function(e) {
-        e.preventDefault();
-        var $row = $(this).closest('tr');
-        $row.remove();
-        updateRowIndices();
-    });
-
-    $tableBody.on('click', '.add-address', function(e) {
-        e.preventDefault();
-        addNewRow();
-    });
-    if ($tableBody.children().length === 0) {
-        addNewRow();
-    }
     applyCapsLock();
-});
-</script>
-<script>
-    function handleHSNSectionVisibility() {
-        if ($('#category-type').val() === 'Product') {
-            $('#hsn-section').show();
-        } else {
-            $('#hsn-section').hide();
-            $('#hsn-autocomplete_1').val('');  
-            $('.hsn-id').val(''); 
-        }
-    }
-
-    $('#category-type').on('change', function() {
-        handleHSNSectionVisibility(); 
-    });
     handleHSNSectionVisibility();
+});
 </script>
 @endsection

@@ -16,6 +16,7 @@ class DynamicFieldDetail extends Model
         'name',
         'description',
         'data_type',
+        'mandatory'
     ];
 
     public function dynamicField()

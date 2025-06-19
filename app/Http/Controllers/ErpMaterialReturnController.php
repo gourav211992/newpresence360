@@ -193,7 +193,7 @@ class ErpMaterialReturnController extends Controller
         }
         $parentURL = request() -> segments()[0];
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
-        $create_button = (count($servicesBooks['services']) > 0 && $selectedfyYear['authorized'] && !$selectedfyYear['lock_fy']) ? true : false;
+        $create_button = (isset($servicesBooks['services'])  && count($servicesBooks['services']) > 0 && isset($selectedfyYear['authorized']) && $selectedfyYear['authorized'] && !$selectedfyYear['lock_fy']) ? true : false;
         return view('materialReturn.index', ['typeName' => $typeName, 'redirect_url' => $redirectUrl, 'create_route' => $createRoute, 'filterArray' => TransactionReportHelper::FILTERS_MAPPING[ConstantHelper::MATERIAL_RETURN_SERVICE_ALIAS_NAME],
             'autoCompleteFilters' => $autoCompleteFilters, 'create_button' => $create_button]);
     

@@ -1271,7 +1271,8 @@
 
 
 @section('scripts')
-    <script>
+  <script src="{{ url('/app-assets/js/jquery-ui.js') }}"></script>
+<script>
         $.ajax({
             url: '{{ route('finance.fixed-asset.fetch.grn.data') }}',
             type: 'GET',
@@ -1384,16 +1385,20 @@
 
 
         document.getElementById('save-draft-btn').addEventListener('click', function() {
+            $('.preloader').show();
             document.getElementById('document_status').value = 'draft';
             if (!($('#asset_code').hasClass('is-invalid'))) {
                 document.getElementById('fixed-asset-registration-form').submit();
             }else{
+                $('.preloader').hide();
                 showToast('error','Please correct the errors before submitting.');
             }
         });
         $('#fixed-asset-registration-form').on('submit', function (e) {
+            $('.preloader').show();
     if ($(this).find('.is-invalid').length > 0) {
         e.preventDefault(); // Prevent form submission
+        $('.preloader').hide();
         showToast('error','Please correct the errors before submitting.');
     }
 });

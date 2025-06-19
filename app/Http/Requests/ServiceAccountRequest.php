@@ -102,7 +102,7 @@ class ServiceAccountRequest extends FormRequest
             'service_accounts.*.company_id.exists' => 'The selected company does not exist.',
             'service_accounts.*.organization_id.exists' => 'The selected organization does not exist.',
             'service_accounts.*.category_id.exists' => 'The selected category does not exist.',
-            'service_accounts.*.sub_category_id.exists' => 'The selected sub-category does not exist.',
+            'service_accounts.*.sub_category_id.exists' => 'The selected item-group does not exist.',
             'service_accounts.*.item_id.exists' => 'The selected item does not exist.',
             'service_accounts.*.book_id.exists' => 'The selected book does not exist.',
             'service_accounts.*.ledger_id.exists' => 'The selected ledger does not exist.',

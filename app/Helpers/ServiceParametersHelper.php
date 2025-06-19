@@ -64,6 +64,8 @@ class ServiceParametersHelper
     const LEDGER_CODE_TYPE_PARAM = "ledger_code_type";
     const ITEM_CODE_TYPE_PARAM_VALUES = ['Auto', 'Manual'];
     const LEDGER_CODE_TYPE_PARAM_VALUES = ['Auto', 'Manual'];
+    const PROCUREMENT_TYPE_PARAM = "procurement_type";
+    const PROCUREMENT_TYPE_VALUES = ['Make to order', 'Buy to order','All'];
       const ITEM_SERVICE_PARAMETERS = [
         [
             "name" => self::ITEM_CODE_TYPE_PARAM,
@@ -152,6 +154,7 @@ class ServiceParametersHelper
         self::LEDGER_CODE_TYPE_PARAM => 'Ledger Code',
         self::REQUESTER_TYPE_PARAM => 'Requester Type',
         self::SO_TRACKING_REQUIRED => 'SO Tracking Required?',
+        self::PROCUREMENT_TYPE_PARAM => 'Procurement Type',
     ];
     const SERVICE_PARAMETERS_VALUES = [
         self::REFERENCE_FROM_SERVICE_PARAM => [], //Applied
@@ -179,12 +182,13 @@ class ServiceParametersHelper
         self::STATION_WISE_CONSUMPTION => self::STATION_WISE_CONSUMPTION_VALUES,
         self::REQUESTER_TYPE_PARAM => self::REQUESTER_TYPE_VALUES,
         self::SO_TRACKING_REQUIRED => self::SO_TRACKING_REQUIRED_VALUES,
+        self::PROCUREMENT_TYPE_PARAM => self::PROCUREMENT_TYPE_VALUES,
     ];
     const SO_SERVICE_PARAMETERS = [
         [
             "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
-            "applicable_values" => ["0", ConstantHelper::SQ_SERVICE_ALIAS], //All possible values
-            "default_value" => ["0", ConstantHelper::SQ_SERVICE_ALIAS], //Default selected value(s)
+            "applicable_values" => ["0", ConstantHelper::SQ_SERVICE_ALIAS, ConstantHelper::PO_SERVICE_ALIAS], //All possible values
+            "default_value" => ["0", ConstantHelper::SQ_SERVICE_ALIAS, ConstantHelper::PO_SERVICE_ALIAS], //Default selected value(s)
             'is_multiple' => true, // Whether or not to allow multiple selection
             'service_level_visibility' => true, // Whether or not to show this parameter in UI
         ],
@@ -1017,7 +1021,14 @@ class ServiceParametersHelper
             "default_value" => ['no'],
             'is_multiple' => false,
             'service_level_visibility' => true
-        ]
+        ],
+        [
+            "name" => self::PROCUREMENT_TYPE_PARAM,
+            "applicable_values" => self::PROCUREMENT_TYPE_VALUES,
+            "default_value" => ['Make to Order'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
     ];
     const BOM_SERVICE_PARAMETERS = [
         [
@@ -1456,7 +1467,7 @@ class ServiceParametersHelper
         [
             "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
             "applicable_values" => ["0", ConstantHelper::PO_SERVICE_ALIAS, ConstantHelper::JO_SERVICE_ALIAS], //All possible values
-            "default_value" => ["0", ConstantHelper::PO_SERVICE_ALIAS], //Default selected value(s)
+            "default_value" => ["0", ConstantHelper::PO_SERVICE_ALIAS, ConstantHelper::JO_SERVICE_ALIAS], //Default selected value(s)
             'is_multiple' => true, // Whether or not to allow multiple selection
             'service_level_visibility' => true, // Whether or not to show this parameter in UI
         ],

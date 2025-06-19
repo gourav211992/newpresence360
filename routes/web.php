@@ -4,6 +4,9 @@ use App\Helpers\Helper;
 use App\Http\Controllers\ErpMachineController;
 use App\Http\Controllers\ErpDriverController;
 use App\Http\Controllers\ErpVehicleController;
+use App\Http\Controllers\ErpVehicleTypeController;
+use App\Http\Controllers\ErpFreightChargesController;
+use App\Http\Controllers\ErpMultiPointPricingController;
 use App\Http\Controllers\ErpPlController;
 use App\Http\Controllers\ErpPSVController;
 use App\Http\Controllers\OverheadMasterController;
@@ -20,6 +23,7 @@ use App\Http\Controllers\ErpRCController;
 use App\Http\Controllers\ErpTransporterRequestController;
 use App\Http\Controllers\ErpTransportersController;
 use App\Http\Controllers\ErpProductionSlipController;
+
 use App\Http\Controllers\OrganizationServiceController;
 use App\Http\Controllers\LoanProgress\AppraisalController;
 use App\Http\Controllers\LoanProgress\ApprovalController;
@@ -39,6 +43,7 @@ use App\Http\Controllers\FixedAsset\DepreciationController;
 use App\Http\Controllers\FixedAsset\SplitController;
 use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\AssetCategoryController;
+
 use App\Http\Controllers\LoanProgress\SanctionLetterController;
 use App\Http\Controllers\ServiceController;
 use Illuminate\Support\Facades\Log;
@@ -56,6 +61,8 @@ use App\Http\Controllers\FixedAsset\MaintenanceController;
 use App\Http\Controllers\ComplaintManagementController;
 use App\Http\Controllers\Stakeholder\StakeholderController;
 use App\Http\Controllers\FeedbackProcessController;
+
+
 use App\Http\Controllers\TaxController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BankController;
@@ -131,6 +138,7 @@ use App\Http\Controllers\BillOfMaterial\BomImportController;
 use App\Http\Controllers\CostCenter\CostGroupController;
 use App\Http\Controllers\ProductSpecificationController;
 use App\Http\Controllers\DynamicFieldController;
+use App\Http\Controllers\InspectionChecklistController;
 use App\Http\Controllers\CostCenter\CostCenterController;
 use App\Http\Controllers\LoanManagement\LoanReportController;
 use App\Http\Controllers\LoanManagement\LoanDisbursementReportController;
@@ -144,7 +152,7 @@ use App\Http\Controllers\PurchaseOrder\PurchaseOrderReportController;
 
 use App\Http\Controllers\PurchaseBillController;
 use App\Http\Controllers\DiscountMasterController;
-use App\Http\Controllers\ExpenseMasterController;
+use App\Http\Controllers\ExpenseMasterController;   
 use App\Http\Controllers\GateEntryController;
 use App\Http\Controllers\PurchaseReturnController;
 use App\Http\Controllers\ProductionRouteController;
@@ -231,6 +239,8 @@ Route::middleware(['user.auth'])->group(function () {
     Route::post('/sales-order/short-close', [ErpSaleOrderController::class, 'shortCloseSubmit'])->name('sale.order.get.shortClose.submit');
     Route::post('/sales-order/report', [ErpSaleOrderController::class, 'salesOrderReport'])->name('sale.order.report');
     Route::post('/sales-order/report/attribute-grouped', [ErpSaleOrderController::class, 'salesOrderReportAttributeGrouped'])->name('sale.order.report.attribute.grouped');
+    Route::post('/items/stock-details', [ErpSaleOrderController::class, 'getItemOrgLocationStoreWiseStock'])->name('item.stock.details');
+    Route::post('/item/stock-details', [ErpSaleOrderController::class, 'getCurrentItemStock'])->name('current.item.stock.details');
     Route::get('/sales-invoice/amend/{id}', [ErpSaleInvoiceController::class, 'amendmentSubmit'])->name('sale.invoice.amend');
     Route::get('/sales-invoice/posting/get', [ErpSaleInvoiceController::class, 'getPostingDetails'])->name('sale.invoice.posting.get');
     Route::post('/sales-invoice/post', [ErpSaleInvoiceController::class, 'postInvoice'])->name('sale.invoice.post');
@@ -561,8 +571,8 @@ Route::middleware(['user.auth'])->group(function () {
             Route::get('get-machine-detail', 'getMachineDetail')->name('get.machine.detail');
     });
 
-
-
+    
+    
 
     Route::prefix('transporter-requests')
         ->name('transporter.')
@@ -625,7 +635,7 @@ Route::middleware(['user.auth'])->group(function () {
         Route::put('/{id}', 'update')->name('machine.update');
         Route::get('/attribute/values','attributeValues')->name('machine.attribute.values');
     });
-
+    
     Route::prefix('items')->controller(ItemController::class)->group(function () {
         Route::get('get-cost','getItemCost')->name('items.get.cost');
         Route::get('/', 'index')->name('item.index');
@@ -637,6 +647,7 @@ Route::middleware(['user.auth'])->group(function () {
         Route::post('/import', 'import')->name('items.import');
         Route::post('/generate-item-code', 'generateItemCode')->name('generate-item-code');
         Route::get('/search', 'getItem')->name('items.search');
+        Route::get('/get-asset-data/{categoryId}', 'getAssetDataForCategory');
         Route::get('/{id}', 'show')->name('item.show');
         Route::get('/{id}/edit', 'edit')->name('item.edit');
         Route::put('/{id}', 'update')->name('item.update');
@@ -663,6 +674,8 @@ Route::middleware(['user.auth'])->group(function () {
         Route::get('/', 'index')->name('categories.index');
         Route::get('/create', 'create')->name('categories.create');
         Route::post('/', 'store')->name('categories.store');
+        Route::get('/by-type', 'getCategoriesByType')->name('categories.byType');
+        Route::get('/get-hsn', 'getHsnByParent')->name('categories.getHsnByParent');
         Route::get('/{id}/edit', 'edit')->name('categories.edit');
         Route::put('/{id}', 'update')->name('categories.update');
         Route::delete('/{id}', 'destroy')->name('categories.destroy');
@@ -1461,7 +1474,6 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
             Route::get('/get-stock-ledger-summary-reports', 'summaryReport');
             Route::get('/get-stock-ledger-summary-filter', 'summaryReportFilter')->name('summary.filter');
             Route::post('add-scheduler', 'addScheduler')->name('add.scheduler');
-            Route::get('/single-item', 'getSingleItemData')->name('single.item.data');
         });
 
     // Expense routes
@@ -1924,12 +1936,24 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         Route::get('/create', 'create')->name('dynamic-fields.create');
         Route::get('/field-details/{id}', 'getFieldDetails');
         Route::get('/{id}/edit', 'edit')->name('dynamic-fields.edit');
-        // Route::get('/{id}', 'show')->name('dynamic-fields.show');
         Route::put('/{id}', 'update')->name('dynamic-fields.update');
         Route::delete('/detail-value/{id}', 'dynamicValueDestroy')->name('dynamic-fields-value.destroy');
         Route::delete('/{id}', 'destroy')->name('dynamic-fields.destroy');
         Route::delete('/field-detail/{id}', 'deleteFieldDetail')->name('field-detail.delete');
         Route::get('/detail', 'getDynamicFieldDetails')->name('dynamic-fields.detail');
+    });
+
+    Route::prefix('inspection-checklists')->controller(InspectionChecklistController::class)->group(function () {
+        Route::get('/', 'index')->name('inspection-checklists.index');
+        Route::post('/', 'store')->name('inspection-checklists.store');
+        Route::get('/create', 'create')->name('inspection-checklists.create');
+        Route::get('/checklist-details/{id}', 'getChecklistDetails');
+        Route::get('/{id}/edit', 'edit')->name('inspection-checklists.edit');
+        Route::put('/{id}', 'update')->name('inspection-checklists.update');
+        Route::delete('/detail-value/{id}', 'deleteChecklistValue')->name('inspection-checklists-value.destroy');
+        Route::delete('/checklist-detail/{id}', 'deleteChecklistDetail')->name('checklist-detail.delete');
+        Route::delete('/{id}', 'destroy')->name('inspection-checklists.destroy');
+        Route::get('/detail', 'getChecklistDetails')->name('inspection-checklists.detail');
     });
 
     Route::prefix('stations')->controller(StationController::class)->group(function () {
@@ -2179,21 +2203,41 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
 
 
      //Driver
-    Route::get('/driver', [ErpDriverController::class, 'index'])->name('driver.index');
-    Route::get('/driver/create', [ErpDriverController::class, 'create'])->name('driver.create');
-    Route::post('/driver/store', [ErpDriverController::class, 'store'])->name('driver.store');
-    Route::put('/driver/update/{id}', [ErpDriverController::class, 'update'])->name('driver.update');
-    Route::get('/driver/edit/{id}', [ErpDriverController::class, 'edit'])->name('driver.edit');
-    Route::delete('/driver/{id}', [ErpDriverController::class, 'destroy'])->name('driver.destroy');
+    Route::get('/logistics/driver', [ErpDriverController::class, 'index'])->name('logistics.driver.index');
+    Route::get('/logistics/driver/create', [ErpDriverController::class, 'create'])->name('logistics.driver.create');
+    Route::post('/logistics/driver/store', [ErpDriverController::class, 'store'])->name('logistics.driver.store');
+    Route::put('/logistics/driver/update/{id}', [ErpDriverController::class, 'update'])->name('logistics.driver.update');
+    Route::get('/logistics/driver/edit/{id}', [ErpDriverController::class, 'edit'])->name('logistics.driver.edit');
+    Route::delete('/logistics/driver/{id}', [ErpDriverController::class, 'destroy'])->name('logistics.driver.destroy');
 
-    //Vehicle
-    Route::get('/vehicle', [ErpVehicleController::class, 'index'])->name('vehicle.index');
-    Route::get('/vehicle/create', [ErpVehicleController::class, 'create'])->name('vehicle.create');
-    Route::post('/vehicle/store', [ErpVehicleController::class, 'store'])->name('vehicle.store');
-    Route::put('/vehicle/update/{id}', [ErpVehicleController::class, 'update'])->name('vehicle.update');
-    Route::get('/vehicle/edit/{id}', [ErpVehicleController::class, 'edit'])->name('vehicle.edit');
-    Route::delete('/vehicle/{id}', [ErpVehicleController::class, 'destroy'])->name('vehicle.destroy');
+      //Vehicle
+    Route::get('/logistics/vehicle', [ErpVehicleController::class, 'index'])->name('logistics.vehicle.index');
+    Route::get('/logistics/vehicle/create', [ErpVehicleController::class, 'create'])->name('logistics.vehicle.create');
+    Route::post('/logistics/vehicle/store', [ErpVehicleController::class, 'store'])->name('logistics.vehicle.store');
+    Route::put('/logistics/vehicle/update/{id}', [ErpVehicleController::class, 'update'])->name('logistics.vehicle.update');
+    Route::get('/logistics/vehicle/edit/{id}', [ErpVehicleController::class, 'edit'])->name('logistics.vehicle.edit');
+    Route::delete('/logistics/vehicle/{id}', [ErpVehicleController::class, 'destroy'])->name('logistics.vehicle.destroy');
 
+
+     //Vehicle-Types
+    Route::get('/logistics/vehicle-type', [ErpVehicleTypeController::class, 'index'])->name('logistics.vehicle-type.index');
+    Route::post('/logistics/vehicle-type/store', [ErpVehicleTypeController::class, 'store'])->name('logistics.vehicle-type.store');
+    Route::delete('/logistics/vehicle-type/delete-multiple', [ErpVehicleTypeController::class, 'deleteMultiple'])->name('logistics.vehicle-type.delete-multiple');
+
+  
+
+    //Freight-Charges
+    Route::get('/logistics/freight-charges', [ErpFreightChargesController::class, 'index'])->name('logistics.freight-charges.index');
+    Route::post('/logistics/freight-charges/store', [ErpFreightChargesController::class, 'store'])->name('logistics.freight-charges.store');
+    Route::delete('/logistics/freight-charges/delete-multiple', [ErpFreightChargesController::class, 'deleteMultiple'])->name('logistics.freight-charges.delete-multiple');
+    Route::get('/logistics/freight-charges/get-cities-by-state', [ErpFreightChargesController::class, 'getCityByState'])->name('logistics.freight-charges.get-cities-by-state');
+
+   
+
+    //Multi-Point-Pricing Fixed
+    Route::get('/logistics/multi-point-fixed', [ErpMultiPointPricingController::class, 'index'])->name('logistics.multi-point-fixed.index');
+    Route::post('/logistics/multi-point-fixed/store', [ErpMultiPointPricingController::class, 'store'])->name('logistics.multi-point-fixed.store');
+    Route::delete('/logistics/multi-point-fixed/delete-multiple', [ErpMultiPointPricingController::class, 'deleteMultiple'])->name('logistics.multi-point-fixed.delete-multiple');
 
      //Production Slip
      Route::get('/production-slip', [ErpProductionSlipController::class, 'index'])->name('production.slip.index');

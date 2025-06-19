@@ -15,8 +15,6 @@ window.pageData = {
 };
 </script>
 <script>
-    console.log("Page Data: ", window.pageData);
-    console.log("order: ", "{{$order?->book?->service?->alias}}");
     window.routes = {
         docParams: "{{ route('book.get.doc_no_and_parameters') }}",
         serviceSeries: "{{ route('book.service-series.get') }}",

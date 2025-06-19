@@ -1,112 +1,95 @@
-@forelse($poItems as $poItem)
-        @php
-            $orderQty = (($poItem->order_qty ?? 0) - ($poItem->short_close_qty ?? 0));
-            $invOrderQty = (($poItem->po_item?->order_qty ?? 0) - ($poItem->short_close_qty ?? 0));
-            if (isset($poItem->po->type) && ($poItem->po->type == 'supplier-invoice')) {
-                $ref_no = ($poItem->po_item?->po?->book?->book_code ?? 'NA') . '-' . ($poItem->po_item?->po?->document_number ?? 'NA');
-            } else {
-                $ref_no = ($poItem->po?->book?->book_code ?? 'NA') . '-' . ($poItem->po?->document_number ?? 'NA');
-            }
-        @endphp
+@forelse($poItems as $poDetail)
+    @php
+
+        $orderQty = 0.00;
+        $invOrderQty = 0.00;
+        $geQty = 0.00;
+        $balanceQty = 0.00;
+        $moduleType = 'p-order';
+        if($poDetail->po->supp_invoice_required == 'yes'){
+            $moduleType = 'suppl-inv';
+            $ref_no = ($poItem->vendorAsn?->book_code ?? 'NA') . '-' . ($poItem->vendorAsn?->document_number ?? 'NA');
+            $invOrderQty = (($poDetail->balance_qty ?? 0.00) - ($poDetail->short_close_qty ?? 0.00));
+            $orderQty = (($poDetail->po_item?->order_qty ?? 0.00) - ($poDetail->short_close_qty ?? 0.00));
+            $geQty = ($poDetail->ge_qty ?? 0.00);
+            $balanceQty = ($invOrderQty - $geQty);
+        } else{
+            $moduleType = 'p-order';
+            $ref_no = ($poDetail->po?->book?->book_code ?? 'NA') . '-' . ($poDetail->po?->document_number ?? 'NA');
+            $orderQty = (($poDetail->order_qty ?? 0.00) - ($poDetail->short_close_qty ?? 0.00));
+            $invOrderQty = 0.00;
+            $geQty = ($poDetail->ge_qty ?? 0.00);
+            $balanceQty = ($orderQty - $geQty);
+        }
+    @endphp
     <tr>
         <td>
             <div class="form-check form-check-inline me-0">
-                <input class="form-check-input po_item_checkbox" type="checkbox" name="po_item_check" value="{{$poItem->id}}" data-current-po="{{ $poItem ? $poItem->purchase_order_id : 'null' }}" data-existing-po="{{ $poData ? $poData->purchase_order_id : 'null' }}"  @if ($poData && $poData->purchase_order_id !=  $poItem->purchase_order_id)  disabled="disabled" @endif>
+                @if($moduleType == 'suppl-inv')
+                    <input class="form-check-input po_item_checkbox" type="checkbox" name="po_item_check" value="{{$poDetail->id}}" data-module="{{$moduleType}}"
+                    data-current-po="{{ $poDetail ? $poDetail->vendor_asn_id : 'null' }}" data-existing-po="{{ $poData ? $poData->purchase_order_id : 'null' }}"  @if ($poData && $poData->purchase_order_id !=  $poDetail->purchase_order_id)  disabled="disabled" @endif >
+                @else
+                    <input class="form-check-input po_item_checkbox" type="checkbox" name="po_item_check" value="{{$poDetail->id}}" data-module="{{$moduleType}}"
+                    data-current-po="{{ $poDetail ? $poDetail->purchase_order_id : 'null' }}" data-existing-po="{{ $poData ? $poData->purchase_order_id : 'null' }}"  @if ($poData && $poData->purchase_order_id !=  $poDetail->purchase_order_id)  disabled="disabled" @endif >
+                @endif
                 <input type="hidden" name="reference_no" id="reference_no" value={{ $ref_no }}>
             </div>
         </td>
-        <!-- <td class="fw-bolder text-dark">
-            {{$poItem?->po?->vendor_code ?? 'NA'}} {{$poItem?->po?->type ?? 'NA'}}
-        </td> -->
         <td class="fw-bolder text-dark no-wrap">
-            {{$poItem?->po?->vendor->company_name ?? 'NA'}}
+            {{ $poDetail->po?->vendor->company_name ?? 'NA' }}
+            <input type="hidden" name="module-type" id="module-type" value="{{ $moduleType }}">
         </td>
-        @if(isset($poItem->po->type) && ($poItem->po->type == 'supplier-invoice'))
+        <td class="no-wrap">
+            {{ $poDetail->po?->book?->book_code ?? 'NA' }} - {{ $poDetail->po?->document_number ?? 'NA' }}
+        </td>
+        <td class="no-wrap">
+            {{ $poDetail->po?->getFormattedDate('document_date') }}
+        </td>
+
+        {{-- Supplier Invoice Details --}}
+        @if($poDetail->po->supp_invoice_required == 'yes')
             <td class="no-wrap">
-                {{$poItem->po_item?->po?->book?->book_code ?? 'NA'}} - {{$poItem->po_item?->po?->document_number ?? 'NA'}}
-            </td>
-            <td class="no-wrap">
-                {{ $poItem->po_item->po?->getFormattedDate('document_date') }}
-            </td>
-            <td class="no-wrap">
-                {{$poItem->po?->book?->book_code ?? 'NA'}} - {{$poItem->po?->document_number ?? 'NA'}}
-            </td>
-            <td class="no-wrap">
-                {{ $poItem->po?->getFormattedDate('document_date') }}
-            </td>
-            <td class="no-wrap">
-                {{$poItem?->item?->item_name}}[{{$poItem->item_code ?? 'NA'}}]
+                {{ $poDetail->vendorAsn->book_code ?? 'NA' }} - {{ $poDetail->vendorAsn->document_number ?? 'NA' }}
             </td>
             <td class="no-wrap">
-                @foreach($poItem?->attributes as $index => $attribute)
-                    <span class="badge rounded-pill badge-light-primary">
-                        <strong data-group-id="{{$attribute->headerAttribute->id}}">
-                            {{$attribute->headerAttribute->name}}
-                        </strong>:
-                        {{ $attribute->headerAttributeValue->value }}
-                    </span>
-                @endforeach
-            </td>
-            <td class="text-end">
-                {{number_format($invOrderQty, 2)}}
-            </td>
-            <td class="text-end">
-                {{number_format($poItem->order_qty, 2)}}
-            </td>
-            <td class="text-end">
-                {{number_format($poItem->ge_qty, 2)}}
-            </td>
-            <td class="text-end">
-                {{ number_format(($invOrderQty ?? 0) - ($poItem->ge_qty ?? 0), 2) }}
-            </td>
-            <td class="text-end">
-            {{number_format($poItem->rate, 2)}}
-            </td>
-            <td class="text-end">
-                {{ number_format((($invOrderQty - $poItem->ge_qty)* $poItem->rate), 2) }}
+                {{ $poDetail->vendorAsn?->getFormattedDate('document_date') }}
             </td>
         @else
-            <td class="no-wrap">
-                {{$poItem->po?->book?->book_code ?? 'NA'}} - {{$poItem->po?->document_number ?? 'NA'}}
-            </td>
-            <td class="no-wrap">
-                {{ $poItem->po?->getFormattedDate('document_date') }}
-            </td>
-            <td></td>
-            <td></td>
-            <td class="no-wrap">
-                {{$poItem?->item?->item_name}}[{{$poItem->item_code ?? 'NA'}}]
-            </td>
-            <td class="no-wrap">
-                @foreach($poItem?->attributes as $index => $attribute)
-                    <span class="badge rounded-pill badge-light-primary">
-                        <strong data-group-id="{{$attribute?->headerAttribute?->id}}">
-                            {{$attribute?->headerAttribute?->name}}
-                        </strong>:
-                        {{ $attribute?->headerAttributeValue?->value }}
-                    </span>
-                @endforeach
-            </td>
-            <td class="text-end">
-                {{number_format($orderQty, 2)}}
-            </td>
-            <td></td>
-            <td class="text-end">
-                {{number_format($poItem->ge_qty, 2)}}
-            </td>
-            <td class="text-end">
-                {{ number_format(($orderQty ?? 0) - ($poItem->ge_qty ?? 0), 2) }}
-            </td>
-            <td class="text-end">
-                {{number_format($poItem->rate, 2)}}
-            </td>
-            <td class="text-end">
-                {{ number_format((($orderQty - $poItem->ge_qty)* $poItem->rate), 2) }}
-            </td>
+            <td>-</td>
+            <td>-</td>
         @endif
+
+        <td class="no-wrap">
+            {{ $poDetail?->item?->item_name }} [{{ $poDetail->item_code ?? 'NA' }}]
+        </td>
+        <td class="no-wrap">
+            @foreach($poDetail?->attributes as $attribute)
+                <span class="badge rounded-pill badge-light-primary">
+                    <strong>{{ $attribute->headerAttribute->name }}</strong>: {{ $attribute->headerAttributeValue->value }}
+                </span>
+            @endforeach
+        </td>
+        <td class="text-end">
+            {{ number_format($orderQty, 2) }}
+        </td>
+        <td class="text-end">
+            {{ number_format($invOrderQty, 2) }}
+        </td>
+        <td class="text-end">
+            {{ number_format($geQty, 2) }}
+        </td>
+        <td class="text-end">
+            {{ number_format($balanceQty, 2) }}
+        </td>
+        <td class="text-end">
+            {{ number_format($poDetail->rate, 2) }}
+        </td>
+        <td class="text-end">
+            {{ number_format(($balanceQty * $poDetail->rate), 2) }}
+        </td>
     </tr>
 @empty
     <tr>
-        <td colspan="16" class="text-center">No record found!</td>
+        <td colspan="14" class="text-center">No record found!</td>
     </tr>
 @endforelse

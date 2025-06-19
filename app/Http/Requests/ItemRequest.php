@@ -37,7 +37,6 @@ class ItemRequest extends FormRequest
             'hsn_id' => 'required|exists:erp_hsns,id',
             'cost_price_currency_id' => 'nullable|exists:mysql_master.currency,id',
             'sell_price_currency_id' => 'nullable|exists:mysql_master.currency,id',
-            'category_id' => 'required|exists:erp_categories,id',
             'subcategory_id' => 'required|exists:erp_categories,id',
             'group_id' => 'nullable|exists:groups,id', 
             'company_id' => 'nullable', 
@@ -76,11 +75,19 @@ class ItemRequest extends FormRequest
             'storage_uom_count' => 'nullable',
             'storage_weight' => ['nullable', 'numeric', 'gte:0', 'regex:/^\d{1,11}(\.\d{1,4})?$/'],
             'storage_volume' => ['nullable', 'numeric', 'gte:0', 'regex:/^\d{1,11}(\.\d{1,4})?$/'],
+            'is_serial_no' => 'required|in:0,1',
+            'is_batch_no' => 'required|in:0,1',
+            'is_expiry' => 'required|in:0,1',
             'is_inspection' => 'required|in:0,1',
+            'inspection_checklist_id' => 'nullable',
+            'is_traded_item' => 'nullable|in:0,1',
+            'is_asset' => 'nullable|in:0,1',
+            'asset_category_id' => 'nullable|required_if:is_asset,1',
+            'expected_life' => 'nullable|required_if:is_asset,1|integer|min:0',
+            'maintenance_schedule' => 'nullable|required_if:is_asset,1|string|max:255',
             'item_remark' => 'nullable', 
             'cost_price' =>'nullable|regex:/^[0-9,]*(\.[0-9]{1,2})?$/|min:0',
             'sell_price' =>'nullable|regex:/^[0-9,]*(\.[0-9]{1,2})?$/|min:0',
-            'sub_types' => 'required_if:type,Goods|array',
             'storage_type' => 'nullable',
             'sub_types.*' => 'integer|exists:mysql_master.erp_sub_types,id',
             'min_stocking_level' => 'nullable|integer|min:0',
@@ -201,6 +208,19 @@ class ItemRequest extends FormRequest
                 }
     
             }
+
+             // Additional custom validation:
+            $type = $this->input('type');
+            $subTypes = $this->input('sub_types', []);
+            $isTradedItem = $this->input('is_traded_item');
+            $isAsset = $this->input('is_asset');
+
+            // Validation logic: only validate sub_types if type is 'Goods' and neither traded nor asset is selected
+            if ($type == 'Goods') {
+                if (empty($subTypes) && $isTradedItem != '1' && $isAsset != '1') {
+                    $validator->errors()->add('sub_types', 'Please select at least one subtype, or check Traded Item/Asset.');
+                }
+            }
         });
     }
 
@@ -213,11 +233,13 @@ class ItemRequest extends FormRequest
             'hsn_id.exists' => 'The selected HSN is invalid.',
             'category_id.exists' => 'The selected category is invalid.',
             'subcategory_id.exists' => 'The selected subcategory is invalid.',
+            'subcategory_id.required' => 'The Group is required.',
             'group_id.exists' => 'The selected group is invalid.',
             'organization_id.exists' => 'The selected organization is invalid.',
             'item_code.required' => 'The item code is required.',
             'item_code.unique' => 'The item code has already been taken.',
             'item_name.required' => 'The item name is required.',
+            'item_initial.required' => 'The item initial is required.',
             'uom_id.required' => 'The unit name is required.',
             'storage_uom_id.required' => 'Please select a storage unit of measure.',
             'storage_uom_id.exists' => 'The selected storage unit is invalid.',
@@ -245,6 +267,19 @@ class ItemRequest extends FormRequest
             'po_negative_tolerance.min' => 'Po negative tolerance must be greater than 0.',
             'so_positive_tolerance.min' => 'So positive tolerance must be greater than 0.',
             'so_negative_tolerance.min' => 'So negative tolerance must be greater than 0.',
+            'asset_category_id.required_if' => 'The Asset Category is required.',
+            'expected_life.required_if' => 'The Expected Life is required.',
+            'maintenance_schedule.required_if' => 'The Maintenance Schedule is required.',
+            'maintenance_schedule.max' => 'The Maintenance Schedule must not exceed 255 characters.',
+            'expected_life.integer' => 'The Expected Life must be an integer.',
+            'expected_life.min' => 'The Expected Life must be at least 0.',
+            'is_asset.in' => 'The Is Asset field must be 0 or 1.',
+            'is_asset.required' => 'The Is Asset field is required',
+            'is_inspection.in' => 'The Is Inspection field must be 0 or 1.',
+            'is_inspection.required' => 'The Is Inspection field is required',
+            'inspection_checklist_id.exists' => 'The selected Inspection Checklist is invalid.',
+            'is_traded_item.in' => 'The Is Traded Item field must be 0 or 1.',
+            'is_traded_item.required' => 'The Is Traded Item field is required',
 
             'alternate_uoms.array' => 'Alternate UOMs must be an array.',
             'alternate_uoms.*.uom_id.exists' => 'The selected alternate UOM is invalid.',

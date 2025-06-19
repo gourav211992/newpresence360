@@ -118,6 +118,7 @@
                                                                         <th>Description</th> 
                                                                         <th>Data Type</th>
                                                                         <th>List Value</th>
+                                                                        <th>Mandatory</th>
                                                                         <th>Action</th>
                                                                     </tr>
                                                                 </thead>
@@ -159,16 +160,20 @@
                                                                                         </span>
                                                                                     @endif
                                                                                 </div>
-                                                                                <!-- Hidden input to store just the values (for badges & display) -->
                                                                                 <input type="hidden" name="field_details[{{ $index }}][value]" class="list-value-hidden-input" 
                                                                                     value="@foreach($detail->values as $value){{ $value->value }}@if(!$loop->last),@endif @endforeach"/>
-                                                                                <!-- Hidden input to store value|id pairs (for backend update/delete) -->
                                                                                 <input type="hidden" name="field_details[{{ $index }}][value_ids]" class="list-value-id-hidden-input" 
                                                                                     value="@foreach($detail->values as $value){{ $value->value }}|{{ $value->id }}@if(!$loop->last),@endif @endforeach" />
 
                                                                                 <a href="javascript:void(0);" class="btn p-25 btn-sm btn-outline-secondary add-value-btn" style="font-size: 10px">
                                                                                     Add Value
                                                                                 </a>
+                                                                            </td>
+                                                                            <td>
+                                                                                <div class="form-check form-check-primary mt-25 custom-checkbox">
+                                                                                    <input type="hidden" name="field_details[{{ $index }}][mandatory]" value="0">
+                                                                                    <input type="checkbox" class="form-check-input mandatory-checkbox" name="field_details[{{ $index }}][mandatory]" value="1" {{ $detail->mandatory ? 'checked' : '' }}>
+                                                                                </div>
                                                                             </td>
 
                                                                             <td>
@@ -203,6 +208,12 @@
                                                                                 <a href="javascript:void(0);" class="btn p-25 btn-sm btn-outline-secondary add-value-btn" style="font-size: 10px">
                                                                                     Add Value
                                                                                 </a>
+                                                                            </td>
+                                                                            <td>
+                                                                                <div class="form-check form-check-primary mt-25 custom-checkbox">
+                                                                                    <input type="hidden" name="field_details[0][mandatory]" value="0">
+                                                                                    <input type="checkbox" class="form-check-input mandatory-checkbox" id="mandatoryCheckbox_0" name="field_details[0][mandatory]" value="1">
+                                                                                </div>
                                                                             </td>
                                                                             <td>
                                                                                 <a href="#" class="text-primary add-row"><i data-feather="plus-square"></i></a>
@@ -506,6 +517,8 @@ $(document).ready(function() {
         $newRow.find('textarea').val('');
         $newRow.find('select').val('');
         $newRow.attr('data-id', ''); 
+        $newRow.find('input[type="checkbox"]').prop('checked', false);
+        $newRow.find('input[type="hidden"][name$="[mandatory]"]').val('0');
         $newRow.find('.ajax-validation-error-span').remove();
         $newRow.find('.badge-container').empty();
         $newRow.find('.list-value-input').val(''); 

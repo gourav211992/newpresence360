@@ -3093,7 +3093,7 @@
                     dataType: 'json',
                     data: {
                         q: request.term,
-                        type:'customer'
+                        type:'customer_list'
                     },
                     success: function(data) {
                         response($.map(data, function(item) {
@@ -3321,34 +3321,35 @@
                         if (currentOrder) { //Set all data
                             let subStoreId = currentOrder?.sub_store_id ? currentOrder?.sub_store_id : '';
                         //Disable Header
-                            disableHeader();
                             //Basic Details
-                            $("#customer_code_input").val(currentOrder.customer_code);
-                            $("#customer_id_input").val(currentOrder.customer_id);
-                            $("#customer_code_input_hidden").val(currentOrder.customer_code);
-                            $("#consignee_name_input").val(currentOrder.consignee_name);
-                            $("#customer_phone_no_input").val(currentOrder?.customer_phone_no);
-                            $("#customer_email_input").val(currentOrder?.customer_email);
-                            $("#customer_gstin_input").val(currentOrder?.customer_gstin);
-                            //First add options also
-                            $("#currency_dropdown").empty(); // Clear existing options
-                            $("#currency_dropdown").append(new Option(
-                                currentOrder.customer ? currentOrder.customer.currency?.name || 'Default Currency Name' : 'Default Currency Name',
-                                currentOrder.currency_id || 0
-                            ));                        
-                            $("#currency_code_input").val(currentOrder.currency_code);
-                            //First add options also
-                            $("#payment_terms_dropdown").empty(); // Clear existing options
-                            $("#payment_terms_dropdown").append(new Option(
-                                currentOrder.customer ? currentOrder.customer.payment_terms?.name || 'Default Payment Terms' : 'Default Payment Name',
-                                currentOrder.payment_term_id || 0
-                            ));
-                            $("#payment_terms_code_input").val(currentOrder.payment_term_code);
-                            //Address
-                            $("#current_billing_address").text(currentOrder.billing_address_details?.display_address);
-                            $("#current_shipping_address").text(currentOrder.shipping_address_details?.display_address);
-                            $("#current_shipping_country_id").val(currentOrder.shipping_address_details?.country_id);
-                            $("#current_shipping_state_id").val(currentOrder.shipping_address_details?.state_id);
+                            //Disable Header
+                        //Basic Details
+                        $("#customer_code_input").val(currentOrder.customer_code);
+                        $("#customer_id_input").val(currentOrder.customer_id);
+                        $("#customer_code_input_hidden").val(currentOrder.customer_code);
+                        $("#consignee_name_input").val(currentOrder.consignee_name);
+                        $("#customer_phone_no_input").val(currentOrder.customer_phone_no);
+                        $("#customer_email_input").val(currentOrder.customer_email);
+                        $("#customer_gstin_input").val(currentOrder.customer_gstin);
+                        //First add options also
+                        $("#currency_dropdown").empty(); // Clear existing options
+                        $("#currency_dropdown").append(new Option(
+                            currentOrder.customer ? currentOrder.customer.currency?.name || 'Default Currency Name' : 'Default Currency Name',
+                            currentOrder.currency_id || 0
+                        ));                        
+                        $("#currency_code_input").val(currentOrder.currency_code);
+                        //First add options also
+                        $("#payment_terms_dropdown").empty(); // Clear existing options
+                        $("#payment_terms_dropdown").append(new Option(
+                            currentOrder.customer ? currentOrder.customer.payment_terms?.name || 'Default Payment Terms' : 'Default Payment Name',
+                            currentOrder.payment_term_id || 0
+                        ));
+                        $("#payment_terms_code_input").val(currentOrder.payment_term_code);
+                        //Address
+                        $("#current_billing_address").text(currentOrder.billing_address_details?.display_address);
+                        $("#current_shipping_address").text(currentOrder.shipping_address_details?.display_address);
+                        $("#current_shipping_country_id").val(currentOrder.shipping_address_details?.country_id);
+                        $("#current_shipping_state_id").val(currentOrder.shipping_address_details?.state_id);
                             const locationElement = document.getElementById('store_id_input');
                             if (locationElement) {
                                 const displayAddress = locationElement.options[locationElement.selectedIndex].getAttribute('display-address');
@@ -3442,6 +3443,7 @@
                                     bundleInfoIcon = `<div class="me-50 cursor-pointer" packet="${item.package}" qty = "${item.order_qty}" onclick = "setPackets(this);" >    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Package" class="text-primary"><i data-feather="package"></i></span>`;
                                     plistHTML = `<input type ='hidden' value = '${JSON.stringify([item.package_id])}' name = 'plist_detail_ids[${currentOrderIndexVal}]' />`;
                                     disableQty = "readonly";
+                                    item.balance_qty = item.plist_qty;
                                 }
                                 var headerStoreId = $("#store_id_input").val();
                                 var headerStoreCode = $("#store_id_input").attr("data-name");
@@ -3454,7 +3456,6 @@
                                         storesHTML += `<option value = "${store.id}">${store.store_name}</option>`
                                     }
                                 });
-
 
                                 let subStoresHTML = ``;
                                 currentSubStoreArray.forEach(subStore => {
@@ -3497,7 +3498,7 @@
                                                                             <td class="poprod-decpt">
                                                                             <input type="text" id = "items_name_${currentOrderIndexVal}" name = "item_name[${currentOrderIndexVal}]" class="form-control mw-100"   value = "${item?.item?.item_name}" readonly>
                                                                         </td>
-                                                                            <td class="poprod-decpt"> 
+                                                                            <td class="poprod-decpt" id='attribute_section_${currentOrderIndexVal}'> 
                                     <button id = "attribute_button_${currentOrderIndexVal}" ${item?.item_attributes_array?.length > 0 ? '' : 'disabled'} type = "button" data-bs-toggle="modal" onclick = "setItemAttributes('items_dropdown_${currentOrderIndexVal}', '${currentOrderIndexVal}', true);" data-bs-target="#attribute" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">Attributes</button>
                                     <input type = "hidden" name = "attribute_value_${currentOrderIndexVal}" />
 
@@ -3704,6 +3705,8 @@
                         });
                             
                             setAllTotalFields();
+
+                            disableHeader();
                             
                             changeDropdownOptions(document.getElementById('customer_id_input'), ['billing_address_dropdown','shipping_address_dropdown'], ['billing_addresses', 'shipping_addresses'], '/customer/addresses/', 'vendor_dependent', [], [{key : 'phone_no', value : currentOrder?.customer_phone_no}]);
 
@@ -3725,7 +3728,6 @@
                         }
                     }
                     subStoreDependencyRender();
-                    
                 },
                 error: function(xhr) {
                     console.error('Error fetching customer data:', xhr.responseText);
@@ -3752,9 +3754,11 @@
             name: 'checkbox',
             orderable: false,
             searchable: false,
+            // doc-id = "${qt?.sale_order?.id}" current-doc-id = "0" document-id = "${qt?.sale_order?.id}" so-item-id = "${JSON.stringify(qt?.so_item_ids)}" detail-id="${qt?.id}"
             render: (row, _, __, meta) => {
-                const docId = row?.header?.id || row?.sale_order?.id;
-                const soItemId = row?.id || JSON.stringify(row?.so_item_ids);
+                console.log("ROW", row);
+                const docId = row?.sale_order_id;
+                const soItemId = JSON.stringify(row?.sale_order?.so_item_ids);
                 const isEnabled = row?.stock_qty > 0 || ['land-lease', 'plist'].includes(type);
                 return `<div class="form-check form-check-inline me-0">
                     <input class="form-check-input pull_checkbox po_checkbox" type="checkbox"
@@ -3766,7 +3770,8 @@
                         current-doc-id="0"
                         document-id="${docId}"
                         so-item-id="${soItemId}"
-                        balance_qty="${row.balance_qty || 0}">
+                        balance_qty="${row.balance_qty || 0}"
+                        detail-id="${row?.id}">
                 </div>`;
             }
         });

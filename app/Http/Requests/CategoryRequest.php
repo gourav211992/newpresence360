@@ -3,9 +3,9 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 use App\Helpers\Helper;
-use Auth;
+use App\Models\Category; 
+use Illuminate\Support\Facades\DB; 
 
 class CategoryRequest extends FormRequest
 {
@@ -31,34 +31,22 @@ class CategoryRequest extends FormRequest
         return [
             'parent_id' => 'nullable|exists:erp_categories,id', 
             'hsn_id' => [
-                function ($attribute, $value, $fail) {
-                    if (request()->input('type') === 'Product' && empty($value)) {
-                        return $fail('The hsn is required.');
-                    }
-                },
+              
             ],
             'type' => 'required|string',
             'name' => [
                 'required',
                 'string',
                 'max:100',
-                Rule::unique('erp_categories')
-                    ->where(function ($query) {
-                        return $query->where('group_id', $this->group_id)
-                                    ->whereNull('deleted_at')
-                                    ->whereNull('parent_id');
-                    })
-                    ->ignore($categoryId),
             ],
 
-            'cat_initials' => 'required|string|max:10', 
+            'cat_initials' => 'required|string|max:100', 
+            'inspection_checklist_id' => 'nullable|exists:erp_inspection_checklists,id', 
             'status' => 'required', 
             'group_id' => 'nullable|exists:groups,id', 
             'company_id' => 'nullable', 
             'organization_id' => 'nullable|exists:organizations,id',
-            'subcategories.*.id' => 'nullable|exists:erp_categories,id',
-            'subcategories.*.name' => 'required|string|max:100', 
-            'subcategories.*.sub_cat_initials' => 'required|string|max:10', 
+
         ];
     }
 
@@ -93,6 +81,34 @@ class CategoryRequest extends FormRequest
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {
+
+            $categoryId = $this->route('id'); 
+            $categoryName = $this->input('name');
+            $category = null; 
+            if ($categoryId) {
+                $category = Category::find($categoryId); 
+            }
+            if ($category && $category->parent_id) {
+                $parentCategory = Category::find($category->parent_id); 
+
+                if ($parentCategory && $parentCategory->name === $categoryName) {
+                    return; 
+                }
+            }
+
+            $existing = Category::where('name', $categoryName)
+                ->where('group_id', $this->group_id)
+                ->whereNull('parent_id')
+                ->whereNull('deleted_at')
+                ->when($categoryId, function ($query) use ($categoryId) {
+                    return $query->where('id', '!=', $categoryId);
+                })
+                ->exists(); 
+
+            if ($existing) {
+                $validator->errors()->add('name', "The category name has already been taken.");
+            }
+
             $subcategories = collect($this->input('subcategories'));
 
             $names = $subcategories

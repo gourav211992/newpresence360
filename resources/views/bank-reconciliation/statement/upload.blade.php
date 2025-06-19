@@ -22,7 +22,7 @@
                         <a class="btn btn-primary btn-sm mb-50 mb-sm-0"
                             href="{{ asset('app-assets/sample/statement.csv') }}"><i data-feather="arrow-down-circle"></i>
                             Download Sample</a>
-                        <a class="btn btn-primary btn-sm mb-50 mb-sm-0"
+                        <a class="btn btn-success btn-sm mb-50 mb-sm-0"
                             href="{{ route('bank.statements.match-entries', ['id' => $id]) }}{{ request()->has('date') ? '?date=' . request()->get('date') : '' }}"><i
                                 data-feather="check-circle"></i> Match
                             Statement</a>
@@ -185,6 +185,21 @@
                         if (typeof feather !== 'undefined') {
                             feather.replace();
                         }
+
+                        // Show SweetAlert and redirect on confirmation
+                        Swal.fire({
+                            title: 'Upload Successful!',
+                            text: 'Your statement has been uploaded. Click OK to proceed to Reconciliation.',
+                            icon: 'success',
+                            confirmButtonText: 'OK'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                const currentUrl = window.location.href.split('?')[0];
+                                window.location.href = currentUrl +
+                                    '?type=success-statement&batch_uid=' +
+                                    $response.data.batchId;
+                            }
+                        });
 
                         setTimeout(function() {
                             const currentUrl = window.location.href.split('?')[0];

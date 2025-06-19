@@ -44,7 +44,9 @@ use App\Models\ErpSoItemDelivery;
 use App\Models\ItemSpecification;
 use App\Models\Organization;
 use App\Models\OrganizationGroup;
+use App\Models\PoItem;
 use App\Models\ProductionRouteDetail;
+use App\Models\PurchaseOrder;
 use Illuminate\Support\Facades\Storage;
 use Yajra\DataTables\DataTables;
 use Illuminate\Http\Request;
@@ -92,7 +94,7 @@ class ErpSaleOrderController extends Controller
             
             $salesOrder = ErpSaleOrder::where('document_type', $orderType) -> whereIn('store_id',$accessible_locations) 
             -> bookViewAccess($pathUrl) -> withDefaultGroupCompanyOrg() -> withDraftListingLogic() 
-            // -> whereBetween('document_date', [$selectedfyYear['start_date'], $selectedfyYear['end_date']])
+            -> whereBetween('document_date', [$selectedfyYear['start_date'], $selectedfyYear['end_date']])
             -> when($request -> customer_id, function ($custQuery) use($request) {
                 $custQuery -> where('customer_id', $request -> customer_id);
             }) -> when($request -> book_id, function ($bookQuery) use($request) {
@@ -207,7 +209,7 @@ class ErpSaleOrderController extends Controller
         }
         $parentURL = request() -> segments()[0];
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
-        $create_button = (count($servicesBooks['services']) > 0 && $selectedfyYear['authorized'] && !$selectedfyYear['lock_fy']) ? true : false;
+        $create_button = (isset($servicesBooks['services'])  && count($servicesBooks['services']) > 0 && isset($selectedfyYear['authorized']) && $selectedfyYear['authorized'] && !$selectedfyYear['lock_fy']) ? true : false;
         return view('salesOrder.index', [
             'redirect_url' => $redirectUrl,
             'create_route' => $createRoute,
@@ -1528,24 +1530,55 @@ class ErpSaleOrderController extends Controller
     public function processQuotation(Request $request)
     {
         try {
-            $pathUrl = route('sale.quotation.index');
-            $quotation = ErpSaleOrder::with(['discount_ted', 'expense_ted', 
-            'billing_address_details', 'shipping_address_details'])->with('customer', function ($sQuery) {
-                $sQuery->with(['currency', 'payment_terms']);
-            })->whereHas('items', function ($subQuery) use ($request) {
-                $subQuery->whereIn('id', $request->items_id);
-            })->with('items', function ($itemQuery) use ($request) {
-                $itemQuery->whereIn('id', $request->items_id)->with(['discount_ted', 'tax_ted', 'item_deliveries'])->with([
-                    'item' => function ($itemQuery) {
-                        $itemQuery->with(['specifications', 'alternateUoms.uom', 'uom', 'hsn']);
+            if ($request -> doc_type === ConstantHelper::PO_SERVICE_ALIAS) {
+                $pathUrl = route('po.index', ['po']);
+                $quotation = PurchaseOrder::with(['discount_ted', 'expense_ted'])->whereHas('items', function ($subQuery) use ($request) {
+                    $subQuery->whereIn('id', $request->items_id);
+                })->with('items', function ($itemQuery) use ($request) {
+                    $itemQuery->whereIn('id', $request->items_id)->with(['discount_ted', 'tax_ted'])->with([
+                        'item' => function ($itemQuery) {
+                            $itemQuery->with(['specifications', 'alternateUoms.uom', 'uom', 'hsn']);
+                        }
+                    ]);
+                }) -> bookViewAccess($pathUrl) -> whereIn('id', $request->quotation_id)->get();
+                foreach ($quotation as &$header) {
+                    $customer = Customer::with(['payment_terms', 'currency']) -> withDefaultGroupCompanyOrg() 
+                    -> where('related_party', 'Yes') -> where('enter_company_org_id', $header -> organization_id)
+                    -> first();
+                    $header -> customer = $customer;
+                    $header -> customer_id = $customer ?-> id;
+                    $header -> customer_code = $customer ?-> customer_code;
+                    $header -> customer_phone_no = $customer ?-> mobile;
+                    $header -> customer_email = $customer ?-> email;
+                    $header -> customer_gstin = $customer ?-> compliances ?-> gstin_no;
+    
+                    $customerShipping = $customer ?-> addresses() -> whereIn('type', ['shipping', 'both']) -> with(['city', 'state', 'country']) -> first();
+                    $customerBilling = $customer ?-> addresses() -> whereIn('type', ['billing', 'both']) -> with(['city', 'state', 'country']) -> first();
+    
+                    $header -> billing_address_details = $customerBilling;
+                    $header -> billing_address = $customerBilling ?-> id;
+                    $header -> shipping_address_details = $customerShipping;
+                    $header -> shipping_address = $customerShipping ?-> id;
+                    foreach ($header->items as &$orderItem) {
+                        $orderItem->item_attributes_array = $orderItem->item_attributes_array();
+                        $orderItem->quotation_balance_qty = $orderItem->inter_org_so_bal_qty;
                     }
-                ]);
-            }) -> bookViewAccess($pathUrl) -> withDefaultGroupCompanyOrg() -> withDraftListingLogic()
-            ->where('document_type', ConstantHelper::SQ_SERVICE_ALIAS)->whereIn('id', $request->quotation_id)->get();
-            foreach ($quotation as $header) {
-                foreach ($header->items as &$orderItem) {
-                    $orderItem->item_attributes_array = $orderItem->item_attributes_array();
                 }
+            } else {
+                $pathUrl = route('sale.quotation.index');
+                $quotation = ErpSaleOrder::with(['discount_ted', 'expense_ted', 
+                'billing_address_details', 'shipping_address_details'])->with('customer', function ($sQuery) {
+                    $sQuery->with(['currency', 'payment_terms']);
+                })->whereHas('items', function ($subQuery) use ($request) {
+                    $subQuery->whereIn('id', $request->items_id);
+                })->with('items', function ($itemQuery) use ($request) {
+                    $itemQuery->whereIn('id', $request->items_id)->with(['discount_ted', 'tax_ted', 'item_deliveries'])->with([
+                        'item' => function ($itemQuery) {
+                            $itemQuery->with(['specifications', 'alternateUoms.uom', 'uom', 'hsn']);
+                        }
+                    ]);
+                }) -> bookViewAccess($pathUrl) -> withDefaultGroupCompanyOrg() -> withDraftListingLogic()
+                ->where('document_type', ConstantHelper::SQ_SERVICE_ALIAS)->whereIn('id', $request->quotation_id)->get();
             }
             return response()->json([
                 'message' => 'Data found',
@@ -1562,25 +1595,53 @@ class ErpSaleOrderController extends Controller
     public function getQuotations(Request $request)
     {
         try {
+            $orgId = Helper::getAuthenticatedUser() ?-> organization_id;
             $pathUrl = route('sale.quotation.index');
             $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request->header_book_id);
-            $quotation = ErpSoItem::whereHas('header', function ($subQuery) use ($request, $applicableBookIds, $pathUrl) {
-                $subQuery->where('document_type', ConstantHelper::SQ_SERVICE_ALIAS)->
-                whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
-                ->whereIn('book_id', $applicableBookIds)->when($request->customer_id, function ($custQuery) use ($request) {
-                    $custQuery->where('customer_id', $request->customer_id);
-                })->when($request->book_id, function ($bookQuery) use ($request) {
-                    $bookQuery->where('book_id', $request->book_id);
-                })->when($request->document_id, function ($docQuery) use ($request) {
-                    $docQuery->where('id', $request->document_id);
-                }) -> bookViewAccess($pathUrl) -> withDefaultGroupCompanyOrg();
-            })-> with('attributes') -> with('uom') -> with(['header.customer']) -> whereColumn('quotation_order_qty', "<", "order_qty");
-
-            if ($request->item_id) {
-                $quotation = $quotation->where('item_id', $request->item_id);
+            if ($request -> doc_type === ConstantHelper::PO_SERVICE_ALIAS) {
+                $quotation = PoItem::withWhereHas('header', function ($subQuery) use ($request, $applicableBookIds, $pathUrl, $orgId) {
+                    $subQuery->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
+                    ->whereIn('book_id', $applicableBookIds)->when($request->book_id, function ($bookQuery) use ($request) {
+                        $bookQuery->where('book_id', $request->book_id);
+                    })->when($request->document_id, function ($docQuery) use ($request) {
+                        $docQuery->where('id', $request->document_id);
+                    })
+                    ->where('organization_id', '!=', $orgId)
+                    -> whereHas('vendor', function ($vendorQuery) use($orgId) {
+                        $vendorQuery -> where('related_party', 'Yes') -> where('enter_company_org_id', $orgId);
+                    });
+                })-> with('attributes') -> with('uom');
+    
+                if ($request->item_id) {
+                    $quotation = $quotation->where('item_id', $request->item_id);
+                }
+    
+                $quotation = $quotation->get();
+                foreach ($quotation as $qt) {
+                    $customer = Customer::with(['payment_terms', 'currency']) -> withDefaultGroupCompanyOrg() ->
+                     where('related_party', 'Yes') -> where('enter_company_org_id', $qt ?-> header ?-> organization_id)-> 
+                     first();
+                    $qt -> customer = $customer;
+                }
+            } else {
+                $quotation = ErpSoItem::whereHas('header', function ($subQuery) use ($request, $applicableBookIds, $pathUrl) {
+                    $subQuery->where('document_type', ConstantHelper::SQ_SERVICE_ALIAS)->
+                    whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
+                    ->whereIn('book_id', $applicableBookIds)->when($request->customer_id, function ($custQuery) use ($request) {
+                        $custQuery->where('customer_id', $request->customer_id);
+                    })->when($request->book_id, function ($bookQuery) use ($request) {
+                        $bookQuery->where('book_id', $request->book_id);
+                    })->when($request->document_id, function ($docQuery) use ($request) {
+                        $docQuery->where('id', $request->document_id);
+                    }) -> bookViewAccess($pathUrl) -> withDefaultGroupCompanyOrg();
+                })-> with('attributes') -> with('uom') -> with(['header.customer']) -> whereColumn('quotation_order_qty', "<", "order_qty");
+    
+                if ($request->item_id) {
+                    $quotation = $quotation->where('item_id', $request->item_id);
+                }
+    
+                $quotation = $quotation->get();
             }
-
-            $quotation = $quotation->get();
 
             return response()->json([
                 'data' => $quotation
@@ -2457,6 +2518,67 @@ class ErpSaleOrderController extends Controller
             ->rawColumns(['item_attributes','delivery_schedule', 'finalcrd_CUSTOMONLY','status'])
             ->make(true);
             return $datatables;
+    }
+
+    public function getItemOrgLocationStoreWiseStock(Request $request)
+    {
+        try {
+            $itemId = $request -> item_id ?? null;
+            $locationId = $request -> location_id ?? null;
+            $selectedAttributes = $request -> item_attributes ?? [];
+            $item = Item::withDefaultGroupCompanyOrg() -> where('id', $itemId) -> first();
+            $location = ErpStore::withDefaultGroupCompanyOrg() -> where('id', $locationId) -> first();
+            if (!$item || !$location) {
+                return response() -> json([
+                    'status' => 'error',
+                    'message' => 'Item Or Location Not Found',
+                ], 422);
+            }
+            $uomId = $item -> uom_id;
+            $processedItems = ItemHelper::generateOrgLocStoreWiseItemStock($item, $selectedAttributes, $uomId, $location);
+            return view('components.inventory.partials.item_stock_details', [
+                'processedItems' => $processedItems
+            ]);
+        } catch(Exception $ex) {
+            return response() -> json([
+                'status' => 'exception',
+                'message' => $ex -> getMessage() . $ex -> getFile() . $ex -> getLine()
+            ], 500);
+        }
+    }
+
+    function getCurrentItemStock(Request $request)
+    {
+        try {
+            $itemId = $request -> item_id ?? null;
+            $locationId = $request -> location_id ?? null;
+            $sub_store_id = $request -> sub_store_id ?? null;
+            $selectedAttributes = $request -> item_attributes ?? [];
+            $item = Item::withDefaultGroupCompanyOrg() -> where('id', $itemId) -> first();
+            $location = ErpStore::withDefaultGroupCompanyOrg() -> where('id', $locationId) -> first();
+            if (!$item || !$location) {
+                return response() -> json([
+                    'status' => 'error',
+                    'message' => 'Item Or Location Not Found',
+                ], 422);
+            }
+            $totalStocks = InventoryHelper::totalInventoryAndStock($item -> id, $selectedAttributes, $item -> uom_id, $locationId, $sub_store_id);
+            $confirmedStocks = isset($totalStocks['confirmedStocks']) ? $totalStocks['confirmedStocks'] : 0.00;
+            $unconfirmedStocks = isset($totalStocks['pendingStocks']) ? $totalStocks['pendingStocks'] : 0.00;
+            return response() -> json([
+                'status' => 'success',
+                'message' => 'Stocks retrieved',
+                'data' => array(
+                    'confirmed' => number_format($confirmedStocks, 2),
+                    'unconfirmed' => number_format($unconfirmedStocks, 2)
+                )
+            ]);
+        } catch(Exception $ex) {
+            return response() -> json([
+                'status' => 'exception',
+                'message' => $ex -> getMessage() . $ex -> getFile() . $ex -> getLine()
+            ], 500);
+        }
     }
     
 }

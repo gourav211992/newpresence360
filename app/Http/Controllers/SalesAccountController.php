@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Http\Controllers;
-use Yajra\DataTables\Facades\DataTables;
 use App\Models\SalesAccount;
 use App\Models\Organization;
 use App\Models\OrganizationCompany;
@@ -31,14 +30,6 @@ class SalesAccountController extends Controller
             ->pluck('company_id')
             ->toArray();
         $companies = OrganizationCompany::whereIn('id', $companyIds)->get();
-        $categories = Category::withDefaultGroupCompanyOrg()
-        ->where('status', 'active')
-        ->get();  
-    
-        $subCategories = Category::withDefaultGroupCompanyOrg()
-            ->where('status', 'active') 
-            ->whereNotNull('parent_id') 
-            ->get();
         $ledgerGroups = Group::all();
         $ledgers = Ledger::withDefaultGroupCompanyOrg()
         ->where('status', '1') 
@@ -53,51 +44,8 @@ class SalesAccountController extends Controller
         $erpBooks = Book::withDefaultGroupCompanyOrg()
         ->where('status', 'active') 
         ->get(); 
-        if ($request->ajax()) {
-            $salesAccounts = SalesAccount::with([
-                'organization', 'group', 'company', 'ledgerGroup',
-                'ledger', 'customerCategory.customers',
-                'customerSubCategory.customersSub','customerCategory', 'customerSubCategory','itemCategory.items', 'itemCategory', 'itemSubCategory','itemSubCategory.itemsSub', 'item', 'book'
-            ])
-            ->orderBy('group_id')
-            ->orderBy('company_id') 
-            ->orderBy('organization_id')
-            ->orderBy('id', 'desc');
-
-            return DataTables::of($salesAccounts)
-                ->addIndexColumn()
-                ->addColumn('status', function ($row) {
-                    return '<span class="badge rounded-pill ' . 
-                        ($row->status == 'active' ? 'badge-light-success' : 'badge-light-danger') . 
-                        ' badgeborder-radius">' . ucfirst($row->status) . '</span>';
-                })
-                ->addColumn('action', function ($row) {
-                    $editUrl = route('sales-accounts.edit', $row->id);
-                    $deleteUrl = route('sales-accounts.destroy', $row->id);
-                    return '<div class="dropdown">
-                                <button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
-                                    <i data-feather="more-vertical"></i>
-                                </button>
-                                <div class="dropdown-menu dropdown-menu-end">
-                                    <a class="dropdown-item" href="' . $editUrl . '">
-                                       <i data-feather="edit-3" class="me-50"></i>
-                                        <span>Edit</span>
-                                    </a>
-                                    <form action="' . $deleteUrl . '" method="POST" class="dropdown-item">
-                                        ' . csrf_field() . method_field('DELETE') . '
-                                        <button type="submit" class="btn btn-danger btn-sm">
-                                            <i data-feather="trash" class="me-50"></i> Delete
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>';
-                })
-                ->rawColumns(['status', 'action'])
-                ->make(true);
-        }
-
         return view('procurement.sales-account.index', compact(
-            'companies', 'categories', 'subCategories', 'ledgerGroups', 'ledgers', 'items', 'salesAccount','erpBooks','customers','orgIds'
+            'companies', 'ledgerGroups', 'ledgers', 'items', 'salesAccount','erpBooks','customers','orgIds'
         ));
     }
 
@@ -197,211 +145,269 @@ class SalesAccountController extends Controller
     
     public function getDataByOrganization($organizationId)
     {
-        $itemCategories = Category::withDefaultGroupCompanyOrg()
-        ->whereNull('parent_id') 
-        ->where('type', 'product')
-        ->where('status', 'active')  
-        ->get();
-
-        $customerCategories = Category::withDefaultGroupCompanyOrg()
-        ->whereNull('parent_id') 
-        ->where('type', 'customer')
-        ->where('status', 'active')  
-        ->get();
-
-        $ledgers = Ledger::withDefaultGroupCompanyOrg()  
-            ->get();
-        $erpBooks = Book::withDefaultGroupCompanyOrg()  
+        $itemCategories = Category::query()
+            ->with('parent')
+            ->doesntHave('subCategories')
+            ->where('type', 'product')
             ->where('status', 'active')
+            ->withDefaultGroupCompanyOrg()
+            ->when($organizationId, function ($query) use ($organizationId) {
+                $exists = Category::where('organization_id', $organizationId)
+                    ->doesntHave('subCategories')
+                    ->where('type', 'product')
+                    ->where('status', 'active')
+                    ->exists();
+    
+                if ($exists) {
+                    $query->where('organization_id', $organizationId);
+                }
+            })
             ->get();
-
-        $items = Item::withDefaultGroupCompanyOrg() 
-        ->where('status', 'active')
-        ->get();
-        $customers = Customer::withDefaultGroupCompanyOrg() 
-        ->where('status', 'active')->get();
+    
+        $customerCategories = Category::query()
+            ->with('parent')
+            ->doesntHave('subCategories')
+            ->where('type', 'Customer')
+            ->where('status', 'active')
+            ->withDefaultGroupCompanyOrg()
+            ->when($organizationId, function ($query) use ($organizationId) {
+                $exists = Category::where('organization_id', $organizationId)
+                    ->doesntHave('subCategories')
+                    ->where('type', 'Customer')
+                    ->where('status', 'active')
+                    ->exists();
+    
+                if ($exists) {
+                    $query->where('organization_id', $organizationId);
+                }
+            })
+            ->get();
+    
+        $ledgers = Ledger::query()
+            ->withDefaultGroupCompanyOrg()
+            ->when($organizationId, function ($query) use ($organizationId) {
+                $exists = Ledger::where('organization_id', $organizationId)->exists();
+    
+                if ($exists) {
+                    $query->where('organization_id', $organizationId);
+                }
+            })
+            ->get();
+    
+        $erpBooks = Book::query()
+            ->where('status', 'active')
+            ->withDefaultGroupCompanyOrg()
+            ->when($organizationId, function ($query) use ($organizationId) {
+                $exists = Book::where('organization_id', $organizationId)
+                    ->where('status', 'active')
+                    ->exists();
+    
+                if ($exists) {
+                    $query->where('organization_id', $organizationId);
+                }
+            })
+            ->get();
+    
+        $items = Item::query()
+            ->where('status', 'active')
+            ->withDefaultGroupCompanyOrg()
+            ->when($organizationId, function ($query) use ($organizationId) {
+                $exists = Item::where('organization_id', $organizationId)
+                    ->where('status', 'active')
+                    ->exists();
+    
+                if ($exists) {
+                    $query->where('organization_id', $organizationId);
+                }
+            })
+            ->get();
+    
+        $customers = Customer::query()
+            ->where('status', 'active')
+            ->withDefaultGroupCompanyOrg()
+            ->when($organizationId, function ($query) use ($organizationId) {
+                $exists = Customer::where('organization_id', $organizationId)
+                    ->where('status', 'active')
+                    ->exists();
+    
+                if ($exists) {
+                    $query->where('organization_id', $organizationId);
+                }
+            })
+            ->get();
+    
         return response()->json([
-            'itemCategories'=>$itemCategories,
-            'customerCategories'=>$customerCategories,
+            'itemCategories' => $itemCategories,
+            'customerCategories' => $customerCategories,
             'ledgers' => $ledgers,
             'erpBooks' => $erpBooks,
             'items' => $items,
-            'customers'=>$customers,
+            'customers' => $customers,
         ]);
     }
-
+    
     public function getCustomerAndSubCategoriesByCategory(Request $request)
     {
         $categoryId = $request->category_id;
+        $organizationId = $request->input('organizationId');
         $searchTerm = $request->input('search', '');
-        $subCategoryQuery = Category::withDefaultGroupCompanyOrg()
-            ->where('parent_id', $categoryId)
-            ->where('status', 'active');
     
-        if ($searchTerm) {
-            $subCategoryQuery->where('name', 'LIKE', "%$searchTerm%"); 
+        $customerQuery = Customer::query()->where('status', 'active');
+    
+        if ($categoryId && $organizationId) {
+            $existsBoth = Customer::where('subcategory_id', $categoryId)
+                ->where('status', 'active')
+                ->where('organization_id', $organizationId)
+                ->exists();
+    
+            if ($existsBoth) {
+                $customers = Customer::where('subcategory_id', $categoryId)
+                    ->where('status', 'active')
+                    ->where('organization_id', $organizationId)
+                    ->get();
+            } else {
+                $customers = Customer::where('subcategory_id', $categoryId)
+                    ->where('status', 'active')
+                    ->withDefaultGroupCompanyOrg()
+                    ->get();
+            }
+        } else {
+            $customers = collect();
         }
     
-        $subCategories = $subCategoryQuery->get(['id', 'name']);
-
-        $customerQuery = Customer::withDefaultGroupCompanyOrg()
-            ->where('category_id', $categoryId)
-            ->where('status', 'active');
-    
         if ($searchTerm) {
-            $customerQuery->where(function ($query) use ($searchTerm) {
-                $query->where('company_name', 'LIKE', "%$searchTerm%") 
-                      ->orWhere('customer_code', 'LIKE', "%$searchTerm%"); 
-            });
+             $customers = collect($customers)->filter(function ($customer) use ($searchTerm) {
+                return stripos($customer->company_name, $searchTerm) !== false || stripos($customer->customer_code, $searchTerm) !== false;
+            })->values();
         }
-        $customers = $customerQuery->get();
-        return response()->json([
-            'subCategories' => $subCategories,
-            'customers' => $customers
-        ]);
-    }
     
-    public function getCustomerBySubCategory(Request $request)
-    {
-        $subCategoryId = $request->sub_category_id;
-        $searchTerm = $request->input('search', '');
-        $customerQuery = Customer::withDefaultGroupCompanyOrg()
-            ->where('subcategory_id', $subCategoryId)
-            ->where('status', 'active');
-        if ($searchTerm) {
-            $customerQuery->where(function ($query) use ($searchTerm) {
-                $query->where('company_name', 'LIKE', "%$searchTerm%")
-                      ->orWhere('customer_code', 'LIKE', "%$searchTerm%"); 
-            });
-        }
-        $customers = $customerQuery->get();
-
         return response()->json([
             'customers' => $customers
         ]);
     }
-    
-    
+
     public function getItemsAndSubCategoriesByCategory(Request $request)
     {
         $categoryId = $request->category_id;
-        $searchTerm = $request->input('search', '');
-        $subCategoryQuery = Category::withDefaultGroupCompanyOrg()
-            ->where('parent_id', $categoryId)
-            ->where('status', 'active');
-
-        if ($searchTerm) {
-            $subCategoryQuery->where('name', 'LIKE', "%$searchTerm%");
+        $organizationId = $request->input('organizationId');
+        if ($categoryId && $organizationId) {
+            $existsBoth = Item::where('subcategory_id', $categoryId)
+                ->where('status', 'active')
+                ->where('organization_id', $organizationId)
+                ->exists();
+        
+            if ($existsBoth) {
+                $items = Item::where('subcategory_id', $categoryId)
+                    ->where('status', 'active')
+                    ->where('organization_id', $organizationId)
+                    ->get();
+            } else {
+                $items = Item::where('subcategory_id', $categoryId)
+                    ->where('status', 'active')
+                    ->withDefaultGroupCompanyOrg() 
+                    ->get();
+            }
+        } else {
+            $items = collect();
         }
-
-        $subCategories = $subCategoryQuery->get(['id', 'name']);
-
-        $items = Item::withDefaultGroupCompanyOrg()
-            ->where('category_id', $categoryId)
-            ->where('status', 'active')
-            ->get();
-
-        return response()->json([
-            'subCategories' => $subCategories,
-            'items' => $items
-        ]);
-    }
-    
-    public function getItemsBySubCategory(Request $request)
-    {
-        $subCategoryId = $request->sub_category_id;
-        $searchTerm = $request->input('search', '');
-        $query = Item::withDefaultGroupCompanyOrg()
-            ->where('subcategory_id', $subCategoryId)
-            ->where('status', 'active');
-    
-        if ($searchTerm) {
-            $query->where(function ($query) use ($searchTerm) {
-                $query->where('item_name', 'LIKE', "%$searchTerm%")
-                    ->orWhere('item_code', 'LIKE', "%$searchTerm%");
-            });
-        }
-        $items = $query->get(['id', 'item_name', 'item_code']);
-
         return response()->json([
             'items' => $items
         ]);
     }
-    
-    public function getCategoriesByOrganization(Request $request, $organizationId)
+
+        public function getCategoriesByOrganization(Request $request, $organizationId)
     {
-        $searchTerm = $request->input('search', ''); 
-        $itemCategoriesQuery = Category::withDefaultGroupCompanyOrg()
-            ->whereNull('parent_id')
+        $searchTerm = $request->input('search', '');
+    
+        // Item Categories
+        $itemCategoriesQuery = Category::query()
+            ->with('parent')
+            ->doesntHave('subCategories')
             ->where('status', 'active')
-            ->where('type', 'product');
+            ->where('type', 'Product')
+            ->withDefaultGroupCompanyOrg();
+    
+        $itemCategoriesQuery->when($organizationId, function ($q) use ($organizationId) {
+            $exists = Category::query()
+                ->doesntHave('subCategories')
+                ->where('type', 'Product')
+                ->where('status', 'active')
+                ->where('organization_id', $organizationId)
+                ->exists();
+    
+            if ($exists) {
+                $q->where('organization_id', $organizationId);
+            }
+        });
+    
         if ($searchTerm) {
             $itemCategoriesQuery->where('name', 'LIKE', "%$searchTerm%");
         }
-        $itemCategories = $itemCategoriesQuery->get(['id', 'name']);
-
-        $customerCategoriesQuery = Category::withDefaultGroupCompanyOrg()
-            ->whereNull('parent_id')
+    
+        $itemCategories = $itemCategoriesQuery->get(['id', 'name', 'parent_id']);
+    
+        // Customer Categories
+        $customerCategoriesQuery = Category::query()
+            ->with('parent')
+            ->doesntHave('subCategories')
             ->where('status', 'active')
-            ->where('type', 'customer');
-
+            ->where('type', 'Customer')
+            ->withDefaultGroupCompanyOrg();
+    
+        $customerCategoriesQuery->when($organizationId, function ($q) use ($organizationId) {
+            $exists = Category::query()
+                ->doesntHave('subCategories')
+                ->where('type', 'Customer')
+                ->where('status', 'active')
+                ->where('organization_id', $organizationId)
+                ->exists();
+    
+            if ($exists) {
+                $q->where('organization_id', $organizationId);
+            }
+        });
+    
         if ($searchTerm) {
             $customerCategoriesQuery->where('name', 'LIKE', "%$searchTerm%");
         }
-        $customerCategories = $customerCategoriesQuery->get(['id', 'name']);
+    
+        $customerCategories = $customerCategoriesQuery->get(['id', 'name', 'parent_id']);
+    
         return response()->json([
             'item_categories' => $itemCategories,
             'customer_categories' => $customerCategories
         ]);
     }
     
-
-    public function getSubcategoriesByCategory(Request $request, $categoryId)
-    {
-        $category = Category::withDefaultGroupCompanyOrg()->find($categoryId);
-        if (!$category) {
-            return response()->json([
-                'message' => 'Category not found.'
-            ], 404);
-        }
-        $query = $category->subCategories()->where('status', 'active'); 
-
-        $searchTerm = $request->input('search', '');
-        if ($searchTerm) {
-            $query->where('name', 'LIKE', "%$searchTerm%");
-        }
-        $subCategories = $query->get(['id', 'name']);
-
-        if ($subCategories->isEmpty()) {
-            return response()->json([
-                'subCategories' => [], 
-            ]);
-        }
-        return response()->json([
-            'subCategories' => $subCategories
-        ]);
-    }
-    
     public function getLedgersByOrganization(Request $request, $organizationId)
     {
         $searchTerm = $request->input('search', '');
-        $query = Ledger::withDefaultGroupCompanyOrg()
-                       ->where('status', '1');
-
+    
+        $query = Ledger::query()
+            ->where('status', '1')
+            ->withDefaultGroupCompanyOrg();
+    
+        $query->when($organizationId, function ($q) use ($organizationId) {
+            $exists = Ledger::where('organization_id', $organizationId)
+                ->where('status', '1')
+                ->exists();
+    
+            if ($exists) {
+                $q->where('organization_id', $organizationId);
+            }
+        });
+    
         if ($searchTerm) {
             $query->where('name', 'LIKE', "%$searchTerm%");
         }
+    
         $ledgers = $query->get(['id', 'name', 'code']);
-
-        if ($ledgers->isEmpty()) {
-            return response()->json([
-                'ledgers' => [],
-            ]);
-        }
+    
         return response()->json([
-            'ledgers' => $ledgers
+            'ledgers' => $ledgers->isEmpty() ? [] : $ledgers,
         ]);
     }
+    
     
     public function getLedgerGroupByLedger(Request $request)
     {

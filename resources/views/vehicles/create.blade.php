@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
- <form method="POST" action="{{ route('vehicle.store') }}" enctype="multipart/form-data" data-redirect="{{ url('/vehicle') }}" class="ajax-input-form">
+ <form method="POST" action="{{ route('logistics.vehicle.store') }}" enctype="multipart/form-data" data-redirect="{{ url('/logistics/vehicle') }}" class="ajax-input-form">
     @csrf
     <!-- BEGIN: Content-->
     <div class="app-content content ">

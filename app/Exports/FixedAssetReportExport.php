@@ -156,22 +156,22 @@ class FixedAssetReportExport implements FromCollection, WithHeadings, WithMappin
                 : 'N/A',
             $item?->condition ?? 'N/A',
             $item?->rev?->currentvalue !== null
-                ? Helper::formatIndianNumber($item->rev->currentvalue)
+                ? Helper::formatIndianNumber($item->rev->revaluate)
                 : 'N/A',
             $item?->rev?->document_date != null
                 ? Carbon::parse($item->rev->document_date)->format('d-m-Y')
                 : 'N/A',
             $item?->rev?->revaluate !== null
-                ? Helper::formatIndianNumber($item->rev->revaluate)
+                ? Helper::formatIndianNumber($item->rev->revaluate - $item->rev->currentvalue)
                 : 'N/A',
-            $item?->imp?->currentvalue !== null
-                ? Helper::formatIndianNumber($item->imp->currentvalue)
+            $item?->imp?->revaluate !== null
+                ? Helper::formatIndianNumber($item->imp->revaluate)
                 : 'N/A',
             $item?->imp?->document_date != null
                 ? Carbon::parse($item->imp->document_date)->format('d-m-Y')
                 : 'N/A',
             $item?->imp?->revaluate !== null
-                ? Helper::formatIndianNumber($item->imp->revaluate)
+                ? Helper::formatIndianNumber($item->imp->currentvalue - $item->imp->revaluate)
                 : 'N/A',
         ];
     }

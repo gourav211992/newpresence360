@@ -103,7 +103,7 @@ class PriceVarianceAccountRequest extends FormRequest
             'price_variance_accounts.*.ledger_group_id.required' => 'The ledger group field is required.',
             'price_variance_accounts.*.ledger_id.exists' => 'The selected ledger does not exist.',
             'price_variance_accounts.*.category_id.exists' => 'The selected category does not exist.',
-            'price_variance_accounts.*.sub_category_id.exists' => 'The selected sub-category does not exist.',
+            'price_variance_accounts.*.sub_category_id.exists' => 'The selected item group does not exist.',
             'price_variance_accounts.*.item_id.exists' => 'The selected item does not exist.',
             'price_variance_accounts.*.book_id.exists' => 'The selected book does not exist.',
             'price_variance_accounts.*.company_id.required' => 'The company field is required.',

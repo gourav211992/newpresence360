@@ -189,6 +189,10 @@ class ErpSoItem extends Model
     {
         return $this -> belongsTo(ErpSaleOrder::class, 'sale_order_id');
     }
+    public function sale_order()
+    {
+        return $this -> belongsTo(ErpSaleOrder::class, 'sale_order_id');
+    }
     public function quotation()
     {
         return $this -> belongsTo(ErpSaleOrder::class, 'order_quotation_id');

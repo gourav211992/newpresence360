@@ -6,8 +6,10 @@ use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use Maatwebsite\Excel\Events\AfterSheet;
+use Maatwebsite\Excel\Concerns\WithEvents;
 
-class CashflowExport implements FromView, WithStyles
+class CashflowExport implements FromView,WithEvents
 {
     public function __construct(
         public $data,
@@ -28,14 +30,30 @@ class CashflowExport implements FromView, WithStyles
             'in_words' => $this->data['in_words'],
         ]);
     }
-
-    public function styles(Worksheet $sheet)
+    public function registerEvents(): array
     {
+        // Updated for Sr. No column
+              
         return [
-            // Header
-            'A1:G1' => ['font' => ['bold' => true], 'borders' => ['allBorders' => ['borderStyle' => 'thin']]],
-            // Apply borders to all
-            'A1:G100' => ['borders' => ['allBorders' => ['borderStyle' => 'thin']]],
+            AfterSheet::class => function (AfterSheet $event) {
+                 $totalColumns = 7;
+                $sheet = $event->sheet->getDelegate();
+            for ($col = 0; $col < $totalColumns; $col++) {
+                    $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col + 1);
+                    $sheet->getColumnDimension($columnLetter)->setAutoSize(true);
+                }
+            }
         ];
+        
     }
+
+    // public function styles(Worksheet $sheet)
+    // {
+    //     return [
+    //         // Header
+    //         'A1:G1' => ['font' => ['bold' => true], 'borders' => ['allBorders' => ['borderStyle' => 'thin']]],
+    //         // Apply borders to all
+    //         'A1:G100' => ['borders' => ['allBorders' => ['borderStyle' => 'thin']]],
+    //     ];
+    // }
 }

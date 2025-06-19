@@ -79,7 +79,7 @@
                                                             <label class="form-label">Customer Name<span class="text-danger">*</span></label>  
                                                         </div>
                                                         <div class="col-md-9"> 
-                                                            <input type="text" name="company_name" class="form-control" placeholder="Enter Customer Name" value="{{ $customer->company_name ?? '' }}" />
+                                                            <input type="text" name="company_name" class="form-control customer-name-autocomplete" placeholder="Enter Customer Name" value="{{ $customer->company_name ?? '' }}" />
                                                         </div>
                                                     </div>
                                                         <!-- Customer Type -->
@@ -155,22 +155,13 @@
                                                           
                                                     <div class="row align-items-center mb-1">
                                                         <div class="col-md-3">
-                                                            <label class="form-label">Category</label>
+                                                            <label class="form-label">Group</label>
                                                         </div>
                                                         <div class="col-md-4">
-                                                            <input type="text" name="category_name" class="form-control category-autocomplete" placeholder="Type to search category" value="{{ $customer->category->name ?? '' }}">
-                                                            <input type="hidden" name="category_id" class="category-id" value="{{ $customer->category_id ?? '' }}">
+                                                            <input type="text" name="subcategory_name" class="form-control category-autocomplete" placeholder="Type to search group" value="{{ $customer->subcategory->name ?? '' }}">
+                                                            <input type="hidden" name="subcategory_id" class="category-id" value="{{ $customer->subcategory_id ?? '' }}">
                                                             <input type="hidden" name="category_type" class="category-type" value="Customer">
-                                                            <input type="hidden" name="cat_initials" class="cat_initials-id"  value="{{ $item->customer->cat_initials ?? '' }}">
-                                                        </div>
-                                                        <div class="col-md-2">
-                                                            <label class="form-label">Sub Category</label>
-                                                        </div>
-                                                        <div class="col-md-3">
-                                                            <input type="text" name="subcategory_name" class="form-control subcategory-autocomplete" placeholder="Type to search sub-category" value="{{ $customer->subCategory->name ?? '' }}">
-                                                            <input type="hidden" name="subcategory_id" class="subcategory-id" value="{{ $customer->subcategory_id ?? '' }}">
-                                                            <input type="hidden" name="category_type" class="category-type" value="Customer">
-                                                            <input type="hidden" name="sub_cat_initials" class="sub_cat_initials-id" value="{{ $customer->subcategory->sub_cat_initials ?? '' }}">
+                                                            <input type="hidden" name="cat_initials" class="cat_initials-id"  value="{{ $customer->subcategory->cat_initials ?? '' }}">
                                                         </div>
                                                     </div>
                                                     <p class="mb-0" style="color: red;"><b>Note*:</b> File must be 2MB max | Formats: pdf, jpg, jpeg, png</p>
@@ -259,6 +250,16 @@
 											<div class="tab-content pb-1 px-1">
                                                         <!-- Customer Detail Start -->
                                                         <div class="tab-pane active" id="payment">
+                                                            <div class="row align-items-center mb-1" id="reldCustomerDropdown">
+                                                                <div class="col-md-2">
+                                                                    <label class="form-label">Parent Customer</label>
+                                                                </div>
+                                                                <div class="col-md-3">
+                                                                    <input type="text" name="reld_customer_name" class="form-control parent-customer-autocomplete" placeholder="Type to search customers" value="{{ $customer->parentdCustomer->company_name ?? ''}}">
+                                                                    <input type="hidden" name="reld_customer_id" class="reld_customer_id" value=" {{ $customer->reld_customer_id ?? ''}}">
+                                                                    <input type="hidden" class="customer_id"  value="{{ $customer->id ?? '' }}">
+                                                                </div>
+                                                            </div>
                                                             <!-- Related Party -->
                                                             <div class="row align-items-center mb-1">
                                                                 <div class="col-md-2">
@@ -269,6 +270,15 @@
                                                                         <input type="checkbox" class="form-check-input" id="Related" name="related_party" {{ $customer->related_party =='Yes'? 'checked' : '' }}>
                                                                         <label class="form-check-label" for="Related">Yes/No</label>
                                                                     </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="row align-items-center mb-1" id="contraLedger">
+                                                                <div class="col-md-2">
+                                                                    <label class="form-label">Contra Ledger</label>
+                                                                </div>
+                                                                <div class="col-md-3">
+                                                                    <input type="text" name="contra_ledger_name" class="form-control contra-ledger-autocomplete" placeholder="Type to search contra ledger" value="{{ $customer->contraLedger->name ?? ''}}">
+                                                                    <input type="hidden" name="contra_ledger_id" class="contra_ledger_id" value=" {{ $customer->contra_ledger_id ?? ''}}">
                                                                 </div>
                                                             </div>
 
@@ -289,23 +299,6 @@
                                                                     </select>
                                                                 </div>
                                                              </div>
-
-                                                             <div class="row align-items-center mb-1" id="reldCustomerDropdown">
-                                                                <div class="col-md-2">
-                                                                    <label class="form-label">Parent Customer</label>
-                                                                </div>
-                                                                <div class="col-md-3">
-                                                                    <select class="form-select select2" name="reld_customer_id" id="reld_customer_id">
-                                                                       <option value="">Select</option>
-                                                                        @foreach ($relatedCustomers as $relatedCustomer)
-                                                                            <option value="{{ $relatedCustomer->id }}" 
-                                                                                {{ $customer->reld_customer_id == $relatedCustomer->id ? 'selected' : '' }}>
-                                                                                {{ $relatedCustomer->company_name }}
-                                                                            </option>
-                                                                        @endforeach
-                                                                    </select>
-                                                                </div>
-                                                            </div>
 
                                                             <!-- Email -->
                                                             <div class="row align-items-center mb-1">
@@ -2004,7 +1997,7 @@
         const companyNameInput = $('input[name="company_name"]'); 
         const customerTypeInput = $('input[name="customer_type"]');
         const catInitialsInput = $('input[name="cat_initials"]');
-        const subCatInitialsInput = $('input[name="sub_cat_initials"]');
+        const subCatInitialsInput = $('input[name="cat_initials"]');
         const customerInitialInput = $('input[name="customer_initial"]');
         const customerCodeInput = $('input[name="customer_code"]'); 
         const customerIdInput = $('input[name="customer_id"]'); 
@@ -2036,10 +2029,9 @@
             const companyName = companyNameInput.val().trim();
             const customerInitials = customerInitialInput.val().trim() || getCustomerInitials(companyName); 
             customerInitialInput.val(customerInitials); 
-            const categoryInitials = catInitialsInput.val().trim();
-            const subCategoryInitials = subCatInitialsInput.val().trim();
+            const categoryInitials = (catInitialsInput.val() || '').trim();
+            const subCategoryInitials = (subCatInitialsInput.val() || '').trim();
             const selectedCustomerType = customerTypeInput.filter(':checked').val();  
-
             let customerTypeCode = '';
             if (selectedCustomerType === 'Regular') {
                 customerTypeCode = 'R'; 
@@ -2093,14 +2085,18 @@
 <script>
     if ($('#Related').is(':checked')) {
         $('#groupOrganizationsDropdown').show();
+        $('#contraLedger').show();
     } else {
-        $('#groupOrganizationsDropdown').hide();  
+        $('#groupOrganizationsDropdown').hide(); 
+        $('#contraLedger').hide(); 
     }
     $('#Related').change(function() {
         if ($(this).is(':checked')) {
             $('#groupOrganizationsDropdown').show();
+            $('#contraLedger').show(); 
         } else {
             $('#groupOrganizationsDropdown').hide();
+            $('#contraLedger').hide(); 
             $('#enter_company_org_id').val('').trigger('change');
         }
     });
