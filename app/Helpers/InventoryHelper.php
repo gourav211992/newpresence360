@@ -1988,11 +1988,11 @@ class InventoryHelper
                 -> where('state_id', $editStore -> address ?-> state_id);
             });
         })
-        // ->when(($employee->authenticable_type == "employee"), function ($locationQuery) use($employee) { // Location with same country and state
-        //     $locationQuery->whereHas('employees', function ($employeeQuery) use ($employee) {
-        //         $employeeQuery->where('employee_id', $employee->id);
-        //     });
-        // })
+        ->when(($employee->authenticable_type == "employee"), function ($locationQuery) use($employee) { // Location with same country and state
+            $locationQuery->whereHas('employees', function ($employeeQuery) use ($employee) {
+                $employeeQuery->where('employee_id', $employee->id);
+            });
+        })
         ->get();
         if ($withMultiStore) {
             $stores = $stores -> filter(function ($store) {

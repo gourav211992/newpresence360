@@ -2,6 +2,7 @@
 
 namespace App\Services\Mailers;
 
+use Error;
 use Log;
 use Mail;
 use App\Models\MailBox;
@@ -34,7 +35,11 @@ class Mailer
 
 		// $mail = new Swift_Mailer($transport);
 		// Mail::setSwiftMailer($mail);
-
+		Log::info('Mailer::emailTo called', ['MAILBOX' => $mailbox->toArray()]);
+		if (!$mailbox) {
+			Log::error('Mailer::emailTo called with null mailbox');
+			return;
+		}
 		$view = $mailbox->layout ?: 'email.generic';
 		try {
 			Mail::send($view, ['body' => json_decode($mailbox->mail_body)], function ($message) use ($mailbox) {
@@ -46,9 +51,21 @@ class Mailer
 				if ($mailbox->mail_bcc) {
 					$message->bcc(explode(',', $mailbox->mail_bcc));
 				}
-				if ($mailbox->attachment) {
-					$message->attach($mailbox->attachment);
+				Log::info('Attachments ajwfound in mailbox', ['attachments' => $mailbox->attachment]);
+				if (!empty($mailbox->attachment) && count(json_decode($mailbox->attachment)) > 0) {
+					Log::info('Attachments found in mailbox', [
+						'attachments' => json_decode($mailbox->attachment, true) // just for logging
+					]);
+
+					foreach (json_decode($mailbox->attachment, true) as $file) {
+						$message->attachFromPath(
+							$file['path'],
+							$file['as'] ?? null,
+							$file['mime'] ?? 'application/octet-stream'
+						);
+					}
 				}
+
 				// $message->from(explode(',', $mailbox->mail_from), explode(',',$mailbox->mail_from_name));
 			});
 			if ($mailbox) {
@@ -74,7 +91,12 @@ class Mailer
 				$mailbox->response = $e->getMessage();
 				$mailbox->save();
 			}
-
+			Log::info('Email not sent successfully:', [
+				'error' => $errorMessage,
+				'mailbox_id' => $mailbox->id,
+				'attachment' => $mailbox->attachment,
+				'mail_bcc' => $mailbox->mail_bcc,
+			]);
 			$mode = "web";
 			if (app()->runningInConsole()) {
 				$mode = "cron";

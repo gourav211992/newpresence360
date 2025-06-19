@@ -77,6 +77,8 @@ class ErpSaleReturnController extends Controller
         $createRoute = route('sale.return.create');
         request()->merge(['type' => $orderType]);
         $typeName = SaleModuleHelper::getAndReturnReturnTypeName($orderType);
+        $parentURL = request() -> segments()[0];
+        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
         $create_button = (count($servicesBooks['services']) > 0 && $selectedfyYear['authorized'] && !$selectedfyYear['lock_fy']) ? true : false;
         $autoCompleteFilters = self::getBasicFilters();
         request() -> merge(['type' => $orderType]);
@@ -1924,58 +1926,149 @@ class ErpSaleReturnController extends Controller
     public function CreditNoteMail(Request $request)
     {
         $request->validate([
-            'email_to'  => 'required|email',
+            'email_to' => 'required|email',
         ], [
             'email_to.required' => 'Recipient email is required.',
-            'email_to.email'    => 'Please enter a valid email address.',
+            'email_to.email' => 'Please enter a valid email address.',
         ]);
-        $invoice =ErpSaleReturn::with(['customer'])->find($request->id);
+
+        $invoice = ErpSaleReturn::with(['customer'])->find($request->id);
         $customer = $invoice->customer;
+
         $sendTo = $request->email_to ?? $customer->email;
         $customer->email = $sendTo;
+
         $title = "Credit Note Generated";
         $pattern = "Credit Note";
         $remarks = $request->remarks ?? null;
+
         $mail_from = '';
         $mail_from_name = '';
         $cc = $request->cc_to ? implode(',', $request->cc_to) : null;
-        $attachment = $request->file('attachments') ?? null;
-        $name = $customer->company_name; // Assuming vendor is already defined
-        $viewLink = route('sale.return.generate-pdf', ['id'=>$request->id,'pattern'=>$pattern]);
+        $name = $customer->company_name;
+
+        $viewLink = route('sale.return.generate-pdf', ['id' => $request->id, 'pattern' => $pattern]);
+
         $description = <<<HTML
         <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; padding: 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); font-family: Arial, sans-serif;">
             <tr>
                 <td>
-                    <h2 style="color: #2c3e50;">Your Credit Note </h2>
+                    <h2 style="color: #2c3e50;">Your Credit Note</h2>
                     <p style="font-size: 16px; color: #555;">Dear {$name},</p>
-                        <p style='font-size: 15px; color: #333;'>
-                            {$remarks}
-                        </p>
+                    <p style="font-size: 15px; color: #333;">{$remarks}</p>
                     <p style="font-size: 15px; color: #333;">
-                        Please click the button below to view or download your credit note:
+                        Please find the attached Credit Note PDF for your reference. You can download and review it at your convenience.
                     </p>
-                    <p style="text-align: center; margin: 20px 0;">
-                        <a href="{$viewLink}" target="_blank" style="background-color: #7415ae; color: #ffffff; padding: 12px 24px; border-radius: 5px; font-size: 16px; text-decoration: none; font-weight: bold;">
-                            Credit Note
-                        </a>
+                    <p style="font-size: 15px; color: #333;">
+                        If you have any questions or need further assistance, feel free to reach out.
                     </p>
                 </td>
             </tr>
         </table>
         HTML;
-        self::sendMail($customer,$title,$description,$cc,$attachment,$mail_from,$mail_from_name);
-    }
-    public function sendMail($receiver, $title, $description, $cc = null, $attachment, $mail_from=null, $mail_from_name=null)
-    {
-        if (!$receiver || !isset($receiver->email)) {
-            return "Error: Receiver details are missing or invalid.";
+
+
+        $attachments = [];
+
+        // Attach generated credit note PDF
+        try {
+            $pdfContent = $this->generatePdf(
+                $request,
+                $request->id,
+                $pattern,
+            );
+
+            $pdfFileName = "CreditNote_{$invoice->document_number}.pdf";
+            $attachments[] = [
+                'file' => $pdfContent,
+                'options' => [
+                    'as' => $pdfFileName,
+                    'mime' => 'application/pdf',
+                ]
+            ];
+        } catch (\Exception $e) {
+            \Log::error("Failed to generate credit note PDF for email: " . $e->getMessage());
         }
-        dispatch(new SendEmailJob($receiver, $mail_from, $mail_from_name,$title,$description,$cc,$attachment));
-        return response() -> json([
-            'status' => 'success',
-            'message' => 'Email request sent succesfully',
-        ]);
-            
+
+        // Attach any uploaded files
+        if ($request->hasFile('attachments')) {
+            foreach ((array) $request->file('attachments') as $uploadedFile) {
+                $attachments[] = [
+                    'file' => file_get_contents($uploadedFile->getRealPath()),
+                    'options' => [
+                        'as' => $uploadedFile->getClientOriginalName(),
+                        'mime' => $uploadedFile->getMimeType(),
+                    ]
+                ];
+            }
+        }
+
+        // Send email with attachments
+        return self::sendMail(
+            $customer,
+            $title,
+            $description,
+            $cc,
+            $attachments,
+            $mail_from,
+            $mail_from_name
+        );
+    }
+
+    public function sendMail($receiver, $title, $description, $cc = null, $attachments = [], $mail_from = null, $mail_from_name = null,$bcc=null)
+    {
+        try {
+            if (!$receiver || !isset($receiver->email)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Receiver details are missing or invalid.',
+                ], 400);
+            }
+
+            // Prepare attachment paths to pass to the job (avoid binary content in queue)
+            $storedAttachments = [];
+
+            foreach ($attachments as $attachment) {
+                $filename = $attachment['options']['as'] ?? uniqid() . '.pdf';
+                $mime = $attachment['options']['mime'] ?? 'application/octet-stream';
+                $tempPath = storage_path("app/temp_mails/{$filename}");
+
+                // Ensure directory exists
+                if (!file_exists(dirname($tempPath))) {
+                    mkdir(dirname($tempPath), 0777, true);
+                }
+
+                file_put_contents($tempPath, $attachment['file']);
+
+                $storedAttachments[] = [
+                    'path' => $tempPath,
+                    'as' => $filename,
+                    'mime' => $mime
+                ];
+            }
+
+            dispatch(new SendEmailJob(
+            $receiver,
+            $mail_from,
+            $mail_from_name,
+            $title,
+            $description,
+            $cc,
+            $bcc,
+            $storedAttachments
+            ));
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Email request sent successfully',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error sending email: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to send email. ' . $e->getMessage(),
+            ], 500);
+        }
     }
     // public function returnPod(Request $request)
     // {

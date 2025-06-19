@@ -50,10 +50,6 @@ function initializeDataTable(selector, ajaxUrl, columns, filters = {}, exportTit
                     targets: '_all',
                     defaultContent: 'N/A' // Sets 'N/A' for all columns missing data
                 },
-                {
-                    targets: 10, // This sets the width of the 11th column (0-based index)
-                    width: '180px'
-                }
             ],
             dom: `
                 <"d-flex justify-content-between align-items-center mx-2 row"

@@ -1893,7 +1893,7 @@
                 <div class="col-md-12">
                     <div class="mb-1 ">
                         <label class="form-label">Remarks</label>
-                        <textarea name="remarks" id="mail_remarks" class="form-control cannot_disable reset_mail"></textarea>
+                        <textarea name="remarks" id="mail_remarks" class="form-control cannot_disable reset_mail" placeholder = "Please Enter Required Remarks"></textarea>
                     </div>
                 </div>
             </div>
