@@ -329,14 +329,72 @@
                 text: feather.icons['share'].toSvg({
                     class: 'font-small-3 me-50'
                 }) + 'Export',
-                buttons: [{
-                        extend: 'excel',
-                        text: feather.icons['file'].toSvg({
-                            class: 'font-small-4 me-50'
-                        }) + 'Excel',
-                        className: 'dropdown-item',
-                    },
-                    ],
+            buttons: [
+    {
+        extend: 'excelHtml5',
+         title: null,
+        text: feather.icons['file'].toSvg({
+            class: 'font-small-4 me-50'
+        }) + 'Excel',
+        className: 'dropdown-item',
+        filename: 'TDS Report',
+        customize: function (xlsx) {
+            const sheet = xlsx.xl.worksheets['sheet1.xml'];
+            const sheetData = sheet.getElementsByTagName('sheetData')[0];
+
+            // Shift all existing rows down by 2
+            const rows = sheetData.getElementsByTagName('row');
+            for (let i = 0; i < rows.length; i++) {
+                const r = rows[i];
+                const currentRowNum = parseInt(r.getAttribute('r'));
+                r.setAttribute('r', currentRowNum + 2);
+
+                const cells = r.getElementsByTagName('c');
+                for (let j = 0; j < cells.length; j++) {
+                    const cell = cells[j];
+                    const cellRef = cell.getAttribute('r');
+                    if (cellRef) {
+                        const col = cellRef.replace(/[0-9]/g, '');
+                        cell.setAttribute('r', col + (currentRowNum + 2));
+                    }
+                }
+            }
+
+            // Helper to create a row with text in column A
+            function createRow(index, text) {
+                const row = sheet.createElement('row');
+                row.setAttribute('r', index);
+
+                const c = sheet.createElement('c');
+                c.setAttribute('t', 'inlineStr');
+                c.setAttribute('r', 'A' + index);
+
+                const is = sheet.createElement('is');
+                const t = sheet.createElement('t');
+                t.textContent = text;
+
+                is.appendChild(t);
+                c.appendChild(is);
+                row.appendChild(c);
+
+                return row;
+            }
+            const org_names = $('#organization_filter option:selected').map(function() {
+                return $(this).text().trim();
+            }).get().join(', ');
+            const date_range = $('#fp-range').val();
+
+            // Insert custom rows at the top
+            const orgRow = createRow(1, org_names);
+            const dateRow = createRow(2, date_range);
+
+            sheetData.insertBefore(dateRow, sheetData.firstChild);
+            sheetData.insertBefore(orgRow, sheetData.firstChild);
+        }
+    }
+]
+
+,
                 init: function(api, node, config) {
                     $(node).removeClass('btn-secondary');
                     $(node).parent().removeClass('btn-group');

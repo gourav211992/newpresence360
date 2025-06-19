@@ -3690,7 +3690,7 @@ class FinancialPostingHelper
         $asset_details = json_decode($document->asset_details);
         foreach ($asset_details as $docItemKey => $docItem) {
             $asset = FixedAssetSub::find($docItem->sub_asset_id);
-            $docValue = $docItem->revaluate;
+            $docValue = $docItem->revaluate - $docItem->currentvalue;
             $assetsLedgerId = $asset->asset->ledger_id;
             $assetsLedgerGroupId = $asset->asset->ledger_group_id;
             $totalValue += $docValue;
@@ -3737,7 +3737,7 @@ class FinancialPostingHelper
         $expLedger = Ledger::find($expLedgerId);
         $expLedgerGroup = Group::find($expLedgerGroupId);
         if (!isset($expLedger) || !isset($expLedgerGroup)) {
-            $ledgerErrorStatus = self::ERROR_PREFIX . 'Expense Account not setup';
+            $ledgerErrorStatus = self::ERROR_PREFIX . 'Surplus Account not setup';
         }
 
         $postingArray[self::EXPENSE_ACCOUNT][] = [
@@ -3866,7 +3866,7 @@ class FinancialPostingHelper
         $asset_details = json_decode($document->asset_details);
         foreach ($asset_details as $docItemKey => $docItem) {
             $asset = FixedAssetSub::find($docItem->sub_asset_id);
-            $docValue = $docItem->revaluate;
+            $docValue = $docItem->currentvalue - $docItem->revaluate;
             $assetsLedgerId = $asset->asset->ledger_id;
             $assetsLedgerGroupId = $asset->asset->ledger_group_id;
             $totalValue += $docValue;
@@ -3913,7 +3913,7 @@ class FinancialPostingHelper
         $impLedger = Ledger::find($impLedgerId);
         $impLedgerGroup = Group::find($impLedgerGroupId);
         if (!isset($impLedger) || !isset($impLedgerGroup)) {
-            $ledgerErrorStatus = self::ERROR_PREFIX . 'Surplus Account not setup';
+            $ledgerErrorStatus = self::ERROR_PREFIX . 'Expense Account not setup';
         }
 
         $postingArray[self::SURPLUS_ACCOUNT][] = [

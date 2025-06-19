@@ -276,14 +276,14 @@
                                                                 <td><input type="number" name="quantity[]" id="quantity_1" readonly data-id="1" value="{{$value->quantity??null}}" readonly
                                                                         class="form-control mw-100 quantity" /></td>
                                                                 <td class="text-end"><input type="text" name="currentvalue[]" id="currentvalue_1" data-id="1"
-                                                                        class="form-control mw-100 text-end currentvalue" value="{{$value->currentvalue??null}}" readonly/>
+                                                                        class="form-control mw-100 text-end currentvalue indian-number" value="{{$value->currentvalue??null}}" readonly/>
                                                                 </td>
                                                                 
                                                                 <td><input type="date" name="last_dep_date[]" id="last_dep_date_1" data-id="1"
                                                                     class="form-control mw-100 last_dep_date" value="{{$value->last_dep_date??null}}" readonly/>
                                                             </td>
                                                                 <td><input type="number" step="2" value="{{$value->revaluate??null}}" readonly required name="revaluate_amount[]" id="revaluate_amount_1" data-id="1"
-            class="form-control mw-100 text-end revaluate_amount" /></td>
+                                                                    class="form-control mw-100 text-end revaluate_amount indian-number" /></td>
                                                             </tr>
 
 
@@ -374,7 +374,7 @@
                         <div class="col-md-3">
                             <div class="mb-1">
                                 <label class="form-label">Series <span class="text-danger">*</span></label>
-                                <input id = "voucher_book_code" class="form-control indian-number " disabled="" >
+                                <input id = "voucher_book_code" class="form-control" disabled="" >
                             </div>
                         </div>
                         <div class="col-md-3">
