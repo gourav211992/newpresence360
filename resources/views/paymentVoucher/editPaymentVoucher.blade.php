@@ -295,17 +295,6 @@
                                                                 Cheque</option>
                                                         </select>
                                                     </div>
-                                                    <div class="col-md-2" style="display: none;">
-                                                        <label class="form-label">Ref No. <span
-                                                                class="text-danger">*</span></label>
-                                                    </div>
-                                                    <div class="col-md-3" style="display: none;">
-
-                                                        <input type="text" class="form-control bankInput" id="reference_no"
-                                                            name="reference_no" value="{{ $data->reference_no }}"
-                                                            @if ($data->payment_type == 'Bank') required @endif />
-                                                             <span class="text-danger bankInput" id="reference_error" style="font-size:12px"></span>
-                                                    </div>
                                                 </div>
 
                                                 <div class="row align-items-center mb-1 cashfield"
@@ -425,7 +414,7 @@
 
                                                     <div class="col-md-5">
                                                         <select id="locations" class="form-select" name="location">
-                                                            <option disabled value="" selected>Select Location</option>
+                                                            <option value="" selected>Select Location</option>
                                                             @foreach ($locations as $location)
                                                             <option value="{{ $location->id }}"
                                                                 {{ (isset($data->location) && $data->location == $location->id) ? 'selected' : '' }}>
@@ -461,7 +450,9 @@
                                                     $locationCostCenters = $cost_centers ?? [];
 
                                                     // Check if the selected cost center exists in this location
-                                                    $showCostCenter = count($locationCostCenters) > 0 || collect($locationCostCenters)->contains('id', $data->cost_center_id);
+                                                    $showCostCenter = !empty($locationCostCenters) &&
+                                                    !is_null($data->cost_center_id) &&
+                                                    collect($locationCostCenters)->contains('id', $data->cost_center_id);
                                                 @endphp
 
                                                 <div class="row align-items-center mb-1" id="costCenterRow" style="{{ $showCostCenter ? '' : 'display:none;' }}">
@@ -471,6 +462,7 @@
 
                                                     <div class="col-md-5 mb-1 mb-sm-0">
                                                         <select class="costCenter form-control select2" name="cost_center_id" id="cost_center_id">
+                                                            <option value="">Select</option>
                                                             @foreach ($locationCostCenters as $value)
                                                             <option value="{{ $value['id'] }}"
                                                                 @if($value['id'] == $data->cost_center_id) selected @endif>
@@ -581,7 +573,7 @@
                                                                         </div>
                                                                     </td>
                                                                     <td>
-                                                                            <input type="text" class="form-control mw-100 text-end bankInput reference_no" 
+                                                                            <input type="text" class="form-control mw-100 bankInput reference_no" 
                                                                                 name="reference_no[]" data-row="{{ $no }}" id="reference_no{{ $no }}" 
                                                                                 @if($item->reference_no) value="{{ $item->reference_no }}" @endif />
                                                                             <span class="text-danger bankInput" id="reference_error{{ $no }}" style="font-size:12px"></span>
@@ -592,7 +584,7 @@
                                                                             id="excAmount{{ $no }}"
                                                                             value="{{ $item->currentAmount }}" required />
                                                                     </td>
-                                                                    <td><input type="number" readonly
+                                                                    <td><input type="text" readonly
                                                                             class="form-control mw-100 text-end amount_exc excAmount{{ $no }}"
                                                                             name="amount_exc[]"
                                                                             value="{{ $item->orgAmount }}" required />
@@ -608,7 +600,7 @@
                                                         </tbody>
                                                         <tfoot>
                                                             <tr class="totalsubheadpodetail">
-                                                                <td colspan="7" class="text-end">Total</td>
+                                                                <td colspan="{{ $data->payment_type == 'Bank' ? '7' : '6' }}"  class="text-end">Total</td>
                                                                 <td class="text-end currentCurrencySum">0</td>
                                                                 <td class="text-end orgCurrencySum">0</td>
                                                                 <td></td>
@@ -1049,7 +1041,7 @@ $('.settleInput').each(function () {
         return false;
     }
 
-            $('#excAmount' + $('#currentRow').val()).val($('.settleTotal').text());
+            $('#excAmount' + $('#currentRow').val()).val($('.settleTotal').text().replace(/,/g, ''));
             $('#excAmount' + $('#currentRow').val()).trigger('keyup');
             $('#invoice').modal('toggle');
 
@@ -1169,7 +1161,7 @@ $('.settleInput').each(function () {
                                             <td>${val['date']}</td>
                                             <td class="fw-bolder text-dark">${val['series']['book_code'].toUpperCase()}</td>
                                             <td>${val['voucher_no']}</td>
-                                            <td>${val['erp_location']?.store_name ?? '-'}</td>
+                                            <td class="">${val['erp_location']?.store_name ?? '-'}</td>
                                             <td>${item.cost_center?.name ?? '-'}</td>
                                             <td class="text-end">${formatIndianNumber(val['amount'])}</td>
                                             <td class="text-end balanceInput">${formatIndianNumber(val['balance'])}</td>
@@ -1188,6 +1180,8 @@ $('.settleInput').each(function () {
                                             <td>${val['date']}</td>
                                             <td class="fw-bolder text-dark">${val['series']['book_code']}</td>
                                             <td>${val['voucher_no']}</td>
+                                            <td class="">${val['erp_location']?.store_name ?? '-'}</td>
+                                            <td>${item.cost_center?.name ?? '-'}</td>
                                             <td class="text-end">${formatIndianNumber(val['amount'])}</td>
                                             <td class="text-end balanceInput">${formatIndianNumber(val['balance'])}</td>
                                             <td class="text-end">
@@ -1308,9 +1302,9 @@ $('.settleInput').each(function () {
             let settleSum = 0;
             $('.vouchers:checked').map(function() {
                 const value = parseFloat($('.settleAmount' + this.value).val()) || 0;
-                settleSum = parseFloat(settleSum) + value;
+                settleSum += value;
             }).get();
-            $('.settleTotal').text(parseFloat(settleSum).toFixed(2));
+            $('.settleTotal').text(formatIndianNumber(settleSum));
         }
 
         $(function() {
@@ -1411,6 +1405,41 @@ function check_amount() {
             calculateSettle();
         }
 
+         // Now define this BELOW or inside DOM ready:
+        function evaluateCostCenterVisibility() {
+            const rows = $('.invoiceDrop');
+            const rowCount = rows.length;
+            let hasNonInvoiceSelected = false;
+            let allInvoice = true;
+
+            rows.each(function () {
+                const value = $(this).val();
+                if (value !== 'Invoice') {
+                    hasNonInvoiceSelected = true;
+                    allInvoice = false;
+                    return false;
+                }
+            });
+
+            const $costCenterRow = $('#costCenterRow');
+            const $costCenterDropdown = $('#cost_center_id');
+
+            if (rowCount === 1 && allInvoice) {
+                $costCenterRow.hide();
+                $costCenterDropdown.val('');
+            } else if (hasNonInvoiceSelected) {
+                const isHidden = $('#costCenterRow').is(':hidden');
+                const isEmpty = $('#cost_center_id').val() == null;
+
+                if (isHidden && isEmpty) {
+                    let selectedLocationId = $('#locations').val();
+                    renderCostCentersForLocation(selectedLocationId); // <- now this will be available
+                }
+            } else {
+                $costCenterRow.hide();
+                $costCenterDropdown.val('');
+            }
+        }
         $(document).on('change', '.invoiceDrop', function() {
             if ($(this).val() == "Invoice") {
                 $('.invoice' + $(this).attr('data-id')).attr('disabled', false);
@@ -1421,6 +1450,8 @@ function check_amount() {
                 $('#excAmount' + $(this).attr('data-id')).attr('readonly', false);
                 $('#party_vouchers' + $(this).attr('data-id')).val('[]');
             }
+             calculateTotal();
+            evaluateCostCenterVisibility();
         });
 
         $(document).on('click', '.vouchers', function() {
@@ -1485,6 +1516,7 @@ function check_amount() {
 
         $(document).ready(function() {
             bind();
+            evaluateCostCenterVisibility();
             if ($("#Bank").is(":checked")) {
                 $(".bankfield").show();
                 $(".cashfield").hide();
@@ -1548,6 +1580,19 @@ $('#revisionNumber').prop('disabled', false);
         });
 
         $(function() {
+            function updateTotalColspan() {
+                    const isBank = $("#Bank").is(":checked");
+                    $(".totalsubheadpodetail td:first-child").attr("colspan", isBank ? "7" : "6");
+                }
+
+                // Initial update
+                updateTotalColspan();
+
+                // Update when payment type changes
+                $("input[name='payment_type']").change(function() {
+                    updateTotalColspan();
+                });
+
             function initializeAutocomplete() {
                 $(".ledgerselect").autocomplete({
                     source: function(request, response) {
@@ -1698,6 +1743,7 @@ $('#revisionNumber').prop('disabled', false);
                 let row = $(this).closest('tr');
                 row.remove();
                 updateLevelNumbers();
+                evaluateCostCenterVisibility();
                 calculateTotal();
             });
 
@@ -1748,7 +1794,7 @@ $('#revisionNumber').prop('disabled', false);
                             <span class="text-danger bankInput" id="reference_error${rowCount}" style="font-size:12px"></span>
                         </td>
                         <td><input type="number" value="0" class="form-control mw-100 text-end amount" name="amount[]" id="excAmount${rowCount}" required/></td>
-                        <td><input type="number" value="0" readonly class="form-control mw-100 text-end amount_exc excAmount${rowCount}" name="amount_exc[]" required/></td>
+                        <td><input type="text" value="0" readonly class="form-control mw-100 text-end amount_exc excAmount${rowCount}" name="amount_exc[]" required/></td>
                         <td><a href="#" class="text-danger deleteRow"><i data-feather="trash-2"></i></a></td>
                     </tr>`;
                 $('.mrntableselectexcel').append(newRow);
@@ -2254,22 +2300,23 @@ function showToast(icon, title) {
                 "@foreach ($errors->all() as $error){{ $error }}@endforeach"
             );
         @endif
-
-       $('#locations').on('change', function() {
-            let selectedLocationIds = $(this).val();
-
-            const costCenterSet = locationCostCentersMap.filter(center => {
-                if (!center.location) return false;
-                const locationArray = Array.isArray(center.location) ?
-                    center.location.flatMap(loc => loc.split(',')) :
-                    [];
-                return locationArray.includes(String(selectedLocationIds));
+            $('#locations').on('change', function() {
+                let selectedLocationIds = $(this).val();
+                renderCostCentersForLocation(selectedLocationIds);
+                evaluateCostCenterVisibility(); // <- Add this line
             });
 
-            // Get the div
-            let $costCenterRow = $('#costCenterRow');
-            let $dropdown = $('.costCenter');
-            // Show or hide the row based on availability
+        function renderCostCentersForLocation(selectedLocationId) {
+            const costCenterSet = locationCostCentersMap.filter(center => {
+                if (!center.location) return false;
+                const locationArray = Array.isArray(center.location)
+                    ? center.location.flatMap(loc => loc.split(','))
+                    : [];
+                return locationArray.includes(String(selectedLocationId));
+            });
+
+            const $costCenterRow = $('#costCenterRow');
+            const $dropdown = $('.costCenter');
             if (costCenterSet.length > 0) {
                 $costCenterRow.show();
                 $dropdown.empty();
@@ -2280,7 +2327,7 @@ function showToast(icon, title) {
                 $costCenterRow.hide();
                 $dropdown.empty();
             }
-        });
+        }
         let timer;
 
         $('#reference_no').on('input', function () {

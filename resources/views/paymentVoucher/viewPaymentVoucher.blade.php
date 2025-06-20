@@ -10,12 +10,9 @@
                                                     }
 
                                                     // Check if the selected cost center exists in this location
-                                                    $showCostCenter =
-                                                        count($locationCostCenters) > 0 ||
-                                                        collect($locationCostCenters)->contains(
-                                                            'id',
-                                                            $data->cost_center_id,
-                                                        );
+                                                     $showCostCenter = !empty($locationCostCenters) &&
+                                                    !is_null($data->cost_center_id) &&
+                                                    collect($locationCostCenters)->contains('id', $data->cost_center_id);
 @endphp
 @php use App\Helpers\ConstantHelper; @endphp
 @extends('layouts.app')
@@ -344,15 +341,6 @@
                                                                 Cheque</option>
                                                         </select>
                                                     </div>
-                                                    <div class="col-md-2" style="display: none;">
-                                                        <label class="form-label">Ref No. <span
-                                                                class="text-danger">*</span></label>
-                                                    </div>
-                                                    <div class="col-md-3" style="display: none;">
-                                                        <input type="text" class="form-control bankInput"
-                                                            name="reference_no" value="{{ $data->reference_no }}"
-                                                            @if ($data->payment_type == 'Bank') required @endif />
-                                                    </div>
                                                 </div>
 
                                                 <div class="row align-items-center mb-1 cashfield"
@@ -518,6 +506,7 @@
                                                         <select class="costCenter form-control select2"
                                                             name="cost_center_id" id="cost_center_id">
                                                             @isset($locationCostCenters)
+                                                            <option value="">Select</option>
                                                             @foreach ($locationCostCenters as $value)
                                                                 <option value="{{ $value['id'] }}"
                                                                     @if ($value['id'] == $data->cost_center_id) selected @endif>
@@ -659,7 +648,7 @@
                                                                             id="excAmount{{ $no }}"
                                                                             value="{{ $item->currentAmount }}" required />
                                                                     </td>
-                                                                    <td><input type="number" readonly
+                                                                    <td><input type="text" readonly
                                                                             class="form-control mw-100 text-end amount_exc excAmount{{ $no }}"
                                                                             name="amount_exc[]"
                                                                             value="{{ $item->orgAmount }}" required />
@@ -680,7 +669,7 @@
                                                         </tbody>
                                                         <tfoot>
                                                             <tr class="totalsubheadpodetail">
-                                                                <td colspan="7" class="text-end">Total</td>
+                                                                <td colspan="{{ $data->payment_type == 'Bank' ? '7' : '6' }}" class="text-end">Total</td>
                                                                 <td class="text-end currentCurrencySum">0</td>
                                                                 <td class="text-end orgCurrencySum">0</td>
                                                                 <td></td>
@@ -1209,7 +1198,8 @@
 
 
         function setAmount() {
-            $('#excAmount' + $('#currentRow').val()).val($('.settleTotal').text());
+            // $('#excAmount' + $('#currentRow').val()).val($('.settleTotal').text());
+            $('#excAmount' + $('#currentRow').val()).val($('.settleTotal').text().replace(/,/g, ''));
             $('#excAmount' + $('#currentRow').val()).trigger('keyup');
             $('#invoice').modal('toggle');
 
@@ -1330,7 +1320,7 @@
                                             <td>${val['date']}</td>
                                             <td class="fw-bolder text-dark">${val['series']['book_code'].toUpperCase()}</td>
                                             <td>${val['voucher_no']}</td>
-                                            <td>${val['erp_location']?.store_name ?? '-'}</td>
+                                            <td class="">${val['erp_location']?.store_name ?? '-'}</td>
                                             <td>${item.cost_center?.name ?? '-'}</td>
                                             <td class="text-end">${formatIndianNumber(val['amount'])}</td>
                                             <td class="text-end">${formatIndianNumber(val['balance'])}</td>
@@ -1358,6 +1348,42 @@
             });
         }
 
+                // Now define this BELOW or inside DOM ready:
+         function evaluateCostCenterVisibility() {
+            const rows = $('.invoiceDrop');
+            const rowCount = rows.length;
+            let hasNonInvoiceSelected = false;
+            let allInvoice = true;
+
+            rows.each(function () {
+                const value = $(this).val();
+                if (value !== 'Invoice') {
+                    hasNonInvoiceSelected = true;
+                    allInvoice = false;
+                    return false;
+                }
+            });
+
+            const $costCenterRow = $('#costCenterRow');
+            const $costCenterDropdown = $('#cost_center_id');
+
+            if (rowCount === 1 && allInvoice) {
+                $costCenterRow.hide();
+                $costCenterDropdown.val('');
+            } else if (hasNonInvoiceSelected) {
+                const isHidden = $('#costCenterRow').is(':hidden');
+                const isEmpty = $('#cost_center_id').val() == null;
+
+                if (isHidden && isEmpty) {
+                    let selectedLocationId = $('#locations').val();
+                    renderCostCentersForLocation(selectedLocationId); // <- now this will be available
+                }
+            } else {
+                $costCenterRow.hide();
+                $costCenterDropdown.val('');
+            }
+        }
+
         function updateVoucherNumbers() {
             $('.voucherRows').each(function(index) {
                 var level = index + 1;
@@ -1369,9 +1395,9 @@
             let settleSum = 0;
             $('.vouchers:checked').map(function() {
                 const value = parseFloat($('.settleAmount' + this.value).val()) || 0;
-                settleSum = parseFloat(settleSum) + value;
+                settleSum += value;
             }).get();
-            $('.settleTotal').text(parseFloat(settleSum).toFixed(2));
+            $('.settleTotal').text(formatIndianNumber(settleSum));
         }
 
         $(function() {
@@ -1446,6 +1472,8 @@
                 $('#excAmount' + $(this).attr('data-id')).attr('readonly', false);
                 $('#party_vouchers' + $(this).attr('data-id')).val('[]');
             }
+            calculateTotal();
+            evaluateCostCenterVisibility();
         });
 
         $(document).on('click', '.vouchers', function() {
@@ -1477,6 +1505,7 @@
 
         $(document).ready(function() {
             bind();
+            evaluateCostCenterVisibility();
             if ($("#Bank").is(":checked")) {
                 $(".bankfield").show();
                 $(".cashfield").hide();
@@ -1536,6 +1565,19 @@
         });
 
         $(function() {
+                function updateTotalColspan() {
+                    const isBank = $("#Bank").is(":checked");
+                    $(".totalsubheadpodetail td:first-child").attr("colspan", isBank ? "7" : "6");
+                }
+
+                // Initial update
+                updateTotalColspan();
+
+                // Update when payment type changes
+                $("input[name='payment_type']").change(function() {
+                    updateTotalColspan();
+                });
+
             function initializeAutocomplete() {
                 $(".ledgerselect").autocomplete({
                     source: function(request, response) {
@@ -1653,6 +1695,7 @@
                 let row = $(this).closest('tr');
                 row.remove();
                 updateLevelNumbers();
+                evaluateCostCenterVisibility();
                 calculateTotal();
             });
 
@@ -1703,7 +1746,7 @@
                             <span class="text-danger bankInput" id="reference_error${rowCount}" style="font-size:12px"></span>
                         </td>
                         <td><input type="number" value="0" class="form-control mw-100 text-end amount" name="amount[]" id="excAmount${rowCount}" required/></td>
-                        <td><input type="number" value="0" readonly class="form-control mw-100 text-end amount_exc excAmount${rowCount}" name="amount_exc[]" required/></td>
+                        <td><input type="text" value="0" readonly class="form-control mw-100 text-end amount_exc excAmount${rowCount}" name="amount_exc[]" required/></td>
                         <td><a href="#" class="text-danger deleteRow"><i data-feather="trash-2"></i></a></td>
                     </tr>`;
                 $('.mrntableselectexcel').append(newRow);
